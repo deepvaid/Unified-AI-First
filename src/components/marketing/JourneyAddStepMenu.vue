@@ -80,7 +80,7 @@ function pick(item: CatalogItem) {
             <v-list-item v-for="tmpl in commonItems" :key="`c-${tmpl.kind}`" rounded="lg" @click="pick(tmpl)">
               <template #prepend>
                 <v-avatar :color="categoryColor[tmpl.category]" size="22" rounded="md">
-                  <v-icon :color="categoryOnColor[tmpl.category]" size="13">{{ tmpl.icon }}</v-icon>
+                  <v-icon :color="categoryOnColor[tmpl.category]" size="16">{{ tmpl.icon }}</v-icon>
                 </v-avatar>
               </template>
               <v-list-item-title class="text-caption ml-2">{{ tmpl.title }}</v-list-item-title>
@@ -93,7 +93,7 @@ function pick(item: CatalogItem) {
             <v-list-item v-for="tmpl in group.items" :key="tmpl.kind" rounded="lg" @click="pick(tmpl)">
               <template #prepend>
                 <v-avatar :color="categoryColor[tmpl.category]" size="22" rounded="md">
-                  <v-icon :color="categoryOnColor[tmpl.category]" size="13">{{ tmpl.icon }}</v-icon>
+                  <v-icon :color="categoryOnColor[tmpl.category]" size="16">{{ tmpl.icon }}</v-icon>
                 </v-avatar>
               </template>
               <v-list-item-title class="text-caption ml-2">{{ tmpl.title }}</v-list-item-title>
@@ -108,7 +108,7 @@ function pick(item: CatalogItem) {
 
 <style scoped>
 .border-b {
-  border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  border-bottom: 1px solid var(--border-subtle);
 }
 .jas-scroll {
   max-height: 320px;

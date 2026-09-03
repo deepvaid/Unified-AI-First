@@ -166,7 +166,7 @@ watch(model, (open) => {
 .cce__palette { width: 220px; flex-shrink: 0; padding-block: var(--mp-space-12); }
 .cce__palette-title {
   font-size: var(--mp-fontSize-11);
-  font-weight: 600;
+  font-weight: var(--mp-fontWeight-semibold);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--text-secondary);

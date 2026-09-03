@@ -11,6 +11,9 @@ import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpKpiCard from '@/components/MpKpiCard.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
+import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
+import { useInitialLoad } from '@/composables/useInitialLoad'
 import { formatCurrency } from '@/utils/formatCurrency'
 import { useToast } from '@/composables/useToast'
 
@@ -45,19 +48,22 @@ function openCreateWizard() {
 }
 const search = ref('')
 const activeTab = ref('all')
+const { loading } = useInitialLoad()
 
 // Mirror the real Maropost journeys table structure
 const headers = [
   { title: 'Name', key: 'name', sortable: true },
   { title: 'Status', key: 'status', sortable: false, width: 120 },
-  { title: 'Trigger', key: 'trigger' },
+  { title: 'Trigger', key: 'trigger', hideBelow: 'md' as const },
   { title: 'Enrolled', key: 'enrolled', align: 'end' as const, sortable: true },
-  { title: 'Completed', key: 'completed', align: 'end' as const, sortable: true },
+  { title: 'Completed', key: 'completed', align: 'end' as const, sortable: true, hideBelow: 'lg' as const },
   { title: 'Revenue', key: 'revenue', align: 'end' as const, sortable: true },
-  { title: 'Steps', key: 'items', align: 'end' as const, sortable: true, width: 90 },
-  { title: 'Created', key: 'created', sortable: true },
+  { title: 'Steps', key: 'items', align: 'end' as const, sortable: true, width: 90, hideBelow: 'lg' as const },
+  { title: 'Created', key: 'created', sortable: true, hideBelow: 'md' as const },
   { title: '', key: 'actions', sortable: false, width: 72 },
 ]
+
+const { visibleHeaders } = useResponsiveTableHeaders(headers)
 
 /** Node count in a journey's flow — mirrors the legacy list's "Items" column. */
 function itemsCount(id: number) {
@@ -152,8 +158,11 @@ function confirmDelete() {
         :total-count="filteredJourneys.length"
       />
 
+      <MpTableSkeleton v-if="loading" :rows="8" :columns="6" />
+
       <v-data-table
-        :headers="headers"
+        v-else
+        :headers="visibleHeaders"
         :items="filteredJourneys"
         :search="search"
         item-value="id"
@@ -163,15 +172,11 @@ function confirmDelete() {
         fixed-header
         class="flex-grow-1"
       >
-        <!-- Journey name — bold, clickable -->
+        <!-- Journey name — a real button that opens the builder -->
         <template v-slot:item.name="{ item }">
-          <div
-            class="font-weight-medium text-body-2 cursor-pointer text-primary-hover"
-            style="max-width: 320px;"
-            @click="openBuilder(item.id)"
-          >
+          <button type="button" class="journey-name font-weight-medium text-body-2 text-start" @click="openBuilder(item.id)">
             {{ item.name }}
-          </div>
+          </button>
         </template>
 
         <!-- Status — inline v-switch (matches real Maropost UX) -->
@@ -181,7 +186,7 @@ function confirmDelete() {
 
         <!-- Trigger -->
         <template v-slot:item.trigger="{ item }">
-          <v-chip size="x-small" variant="tonal" color="secondary" class="font-weight-medium">
+          <v-chip size="small" variant="tonal" color="secondary" class="font-weight-medium">
             {{ item.trigger }}
           </v-chip>
         </template>
@@ -198,7 +203,7 @@ function confirmDelete() {
 
         <!-- Revenue -->
         <template v-slot:item.revenue="{ item }">
-          <span :class="item.revenue > 0 ? 'text-success font-weight-bold' : 'text-medium-emphasis'">
+          <span :class="item.revenue > 0 ? 'font-weight-medium' : 'text-medium-emphasis'">
             {{ item.revenue > 0 ? formatCurrency(item.revenue) : '—' }}
           </span>
         </template>
@@ -222,7 +227,7 @@ function confirmDelete() {
                   v-bind="props"
                   icon="pencil"
                   variant="text"
-                  size="x-small"
+                  size="small"
                   class="text-medium-emphasis"
                   aria-label="Edit in builder"
                   @click="openBuilder(item.id)"
@@ -270,6 +275,19 @@ function confirmDelete() {
 </template>
 
 <style scoped>
-.text-primary-hover:hover { color: rgb(var(--v-theme-primary)) !important; }
+/* Name cell is a real control: inherits the cell's type, reads as a link on
+   hover, and shows the shared focus ring. */
+.journey-name {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  border-radius: var(--mp-radius-4);
+}
+.journey-name:hover { color: var(--accent-default); }
+.journey-name:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 .created-cell { white-space: nowrap; }
 </style>

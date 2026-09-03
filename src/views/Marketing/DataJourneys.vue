@@ -2,6 +2,8 @@
 import { computed, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
+import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
+import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpDialog from '@/components/MpDialog.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
@@ -12,22 +14,32 @@ import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
 import { useDataJourneysStore, type DataJourney } from '@/stores/useDataJourneys'
 import { useToast } from '@/composables/useToast'
+import { useInitialLoad } from '@/composables/useInitialLoad'
+import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 
 const store = useDataJourneysStore()
 const router = useRouter()
 const route = useRoute()
 const toast = useToast()
 const accountId = computed(() => route.params.accountId as string)
+const { loading } = useInitialLoad()
+const search = ref('')
 
-// ── Filter (mirrors the production select: one list, statuses + a recency sort) ──
+// ── Filter (mirrors the production select: one list, statuses + a recency sort).
+// Promoted to the toolbar's exclusive quick filter; the toolbar model is an
+// array that always holds exactly one value, bridged to the single `filter`. ──
 const filter = ref('all')
 const filterOptions = [
-  { title: 'All', value: 'all' },
-  { title: 'Recently Modified', value: 'recent' },
-  { title: 'Draft', value: 'Draft' },
-  { title: 'Enabled', value: 'Enabled' },
-  { title: 'Disabled', value: 'Disabled' },
+  { label: 'All', value: 'all' },
+  { label: 'Recently Modified', value: 'recent' },
+  { label: 'Draft', value: 'Draft' },
+  { label: 'Enabled', value: 'Enabled' },
+  { label: 'Disabled', value: 'Disabled' },
 ]
+const filterModel = computed<string[]>({
+  get: () => [filter.value],
+  set: v => { filter.value = v[0] ?? 'all' },
+})
 
 const rows = computed<DataJourney[]>(() => {
   const list = [...store.dataJourneys]
@@ -40,10 +52,11 @@ const headers = [
   { title: 'Name', key: 'name', sortable: true },
   { title: 'Journey status', key: 'status', sortable: false, width: 140 },
   { title: 'Instances', key: 'instances', align: 'end' as const, sortable: false, width: 110 },
-  { title: 'Updated at', key: 'updatedAt', sortable: true },
-  { title: 'Created at', key: 'createdAt', sortable: true },
+  { title: 'Updated at', key: 'updatedAt', sortable: true, hideBelow: 'md' as const },
+  { title: 'Created at', key: 'createdAt', sortable: true, hideBelow: 'lg' as const },
   { title: 'Actions', key: 'actions', sortable: false, width: 84, align: 'end' as const },
 ]
+const { visibleHeaders } = useResponsiveTableHeaders(headers)
 
 function formatAt(iso: string): string {
   const d = new Date(iso)
@@ -141,30 +154,38 @@ function confirmBulkDelete() {
 </script>
 
 <template>
-  <div class="pa-6">
+  <div class="h-100 d-flex flex-column gap-5">
     <MpPageHeader eyebrow="My Journeys" title="Data Journeys">
       <template #actions>
-        <v-select
-          v-model="filter"
-          :items="filterOptions"
-          aria-label="Filter data journeys"
-          hide-details
-          style="width: 200px;"
-        ></v-select>
         <v-btn color="primary" variant="flat" class="text-none" prepend-icon="plus" @click="openNew">
           New data journey
         </v-btn>
       </template>
     </MpPageHeader>
 
-    <v-card flat border rounded="lg" class="mt-4">
+    <v-card flat border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
+      <MpDataTableToolbar
+        v-model:search="search"
+        v-model:quick-filter-value="filterModel"
+        title="Data journeys"
+        search-placeholder="Search data journeys..."
+        :total-count="rows.length"
+        :quick-filter="{ key: 'status', label: 'Filter', icon: 'list-filter', multiple: false, options: filterOptions }"
+      />
+
+      <MpTableSkeleton v-if="loading" :rows="8" :columns="5" />
+
       <v-data-table
+        v-else
         v-model="selected"
-        :headers="headers"
+        :headers="visibleHeaders"
         :items="rows"
+        :search="search"
         item-value="id"
         show-select
+        hover
         :items-per-page="10"
+        class="flex-grow-1"
       >
         <!-- Labelled select checkboxes (the default show-select inputs have no accessible name) -->
         <template v-slot:header.data-table-select="{ allSelected, selectAll, someSelected }">
@@ -227,9 +248,9 @@ function confirmBulkDelete() {
         <template #no-data>
           <MpEmptyState
             icon="workflow"
-            title="No data journeys match this filter"
-            description="Change the filter, or create a new data journey to automate imports, exports and sends."
-            actionLabel="New data journey"
+            :title="search ? 'No data journeys match your search' : 'No data journeys match this filter'"
+            :description="search ? 'Try a different search term.' : 'Change the filter, or create a new data journey to automate imports, exports and sends.'"
+            :actionLabel="search ? undefined : 'New data journey'"
             @action="openNew"
           />
         </template>

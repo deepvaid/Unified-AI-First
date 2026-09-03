@@ -10,16 +10,18 @@ import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import { useToast } from '@/composables/useToast'
+import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 
 const store = useMarketingAssetsStore()
 const search = ref('')
 
 const headers = [
   { title: 'Tag Name', key: 'name', sortable: true },
-  { title: 'Created', key: 'createdAt', sortable: true },
+  { title: 'Created', key: 'createdAt', sortable: true, hideBelow: 'sm' as const },
   { title: 'Updated', key: 'updatedAt', sortable: true },
   { title: '', key: 'actions', sortable: false, align: 'end' as const },
 ]
+const { visibleHeaders } = useResponsiveTableHeaders(headers)
 
 // ── Create / rename drawer ───────────────────────────────────────────────
 const drawer = ref(false)
@@ -93,7 +95,7 @@ function notify(text: string) { toast.success(text) }
       :subtitle="`${store.tags.length} tags`"
     >
       <template #actions>
-        <v-btn variant="flat" prepend-icon="upload" class="text-none" color="surface" @click="importDialog = true">Import Tags</v-btn>
+        <v-btn variant="outlined" prepend-icon="upload" class="text-none" @click="importDialog = true">Import Tags</v-btn>
         <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="openCreate">New Tag</v-btn>
       </template>
     </MpPageHeader>
@@ -106,7 +108,7 @@ function notify(text: string) { toast.success(text) }
         :total-count="store.tags.length"
       />
 
-      <v-data-table :headers="headers" :items="store.tags" :search="search" hover density="comfortable" :items-per-page="15" fixed-header class="flex-grow-1">
+      <v-data-table :headers="visibleHeaders" :items="store.tags" :search="search" hover density="comfortable" :items-per-page="15" fixed-header class="flex-grow-1">
         <template v-slot:item.name="{ item }">
           <span class="text-body-2 font-weight-medium">{{ item.name }}</span>
         </template>
@@ -124,7 +126,6 @@ function notify(text: string) { toast.success(text) }
             :description="search ? 'Try a different search term.' : 'Create tags to group and filter your campaigns.'"
             :action-label="!search ? 'New Tag' : undefined"
             action-icon="plus"
-            class="py-10"
             @action="openCreate"
           />
         </template>

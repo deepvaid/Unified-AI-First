@@ -148,13 +148,13 @@ const openCreator = () => {
       :subtitle="`${store.campaigns.length} campaigns · ${formatCurrency(totalRevenue)} total attributed revenue`"
     >
       <template #actions>
-        <v-btn variant="flat" prepend-icon="folder" class="text-none" color="surface" @click="manageFoldersOpen = true">Manage Folders</v-btn>
+        <v-btn variant="outlined" prepend-icon="folder" class="text-none" @click="manageFoldersOpen = true">Manage Folders</v-btn>
         <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="openCreator">New Campaign</v-btn>
       </template>
     </MpPageHeader>
 
     <!-- Summary Stats -->
-    <v-row class="mb-6 mp-enter-stagger" dense>
+    <v-row class="mp-enter-stagger" dense>
       <v-col cols="12" md="6">
         <MpKpiCard label="Total Revenue" :value="formatCurrency(totalRevenue)" emphasis="hero">
           <template #value>
@@ -162,13 +162,13 @@ const openCreator = () => {
           </template>
         </MpKpiCard>
       </v-col>
-      <v-col cols="4" md="2">
+      <v-col cols="12" sm="4" md="2">
         <MpKpiCard label="Sent" :value="store.campaigns.filter(c => c.status === 'Sent').length" />
       </v-col>
-      <v-col cols="4" md="2">
+      <v-col cols="12" sm="4" md="2">
         <MpKpiCard label="Avg. Open Rate" :value="`${avgOpenRate}%`" />
       </v-col>
-      <v-col cols="4" md="2">
+      <v-col cols="12" sm="4" md="2">
         <MpKpiCard label="Total Sends" :value="totalSent.toLocaleString()" />
       </v-col>
     </v-row>
@@ -212,11 +212,11 @@ const openCreator = () => {
       >
         <template v-slot:item.name="{ item }">
           <div class="d-flex align-center py-2 gap-3">
-            <v-icon :color="item.status === 'Sent' ? 'success' : item.status === 'Sending' ? 'warning' : 'medium-emphasis'" size="20">
+            <v-icon :color="item.status === 'Sent' ? 'success' : item.status === 'Sending' ? 'warning' : 'medium-emphasis'" size="16">
               {{ item.status === 'Sent' ? 'mail-check' : 'mail' }}
             </v-icon>
             <div>
-              <div class="font-weight-medium text-body-2 cursor-pointer text-primary">{{ item.name }}</div>
+              <div class="font-weight-medium text-body-2">{{ item.name }}</div>
               <div v-if="item.folderId" class="text-caption text-medium-emphasis">{{ folderName(item.folderId) }}</div>
             </div>
           </div>
@@ -275,7 +275,6 @@ const openCreator = () => {
             icon="search"
             title="No campaigns match your search"
             description="Try a different term or clear the search."
-            class="py-10"
           />
           <MpEmptyState
             v-else-if="selectedFolderId"
@@ -284,7 +283,6 @@ const openCreator = () => {
             :description="`No campaigns filed under ${folderName(selectedFolderId)} yet.`"
             action-label="New Campaign"
             action-icon="plus"
-            class="py-10"
             @action="openCreator"
           />
           <MpEmptyState
@@ -292,7 +290,6 @@ const openCreator = () => {
             variant="launcher"
             title="Create your first campaign"
             description="Start from scratch, adapt a template, or let Da Vinci draft it."
-            class="py-10"
           >
             <v-btn variant="outlined" class="text-none" prepend-icon="pencil" @click="openCreator">Start from scratch</v-btn>
             <v-btn variant="tonal" class="text-none" prepend-icon="layout-template" @click="openCreator">Use a template</v-btn>
@@ -360,18 +357,8 @@ const openCreator = () => {
 /* One-accent table: open/click rate + revenue read through weight, not color.
    Ink figures with tabular alignment; sub-counts stay muted below. */
 .mp-cell-figure {
-  font-weight: 600;
+  font-weight: var(--mp-fontWeight-semibold);
   color: rgb(var(--v-theme-on-surface));
   font-variant-numeric: tabular-nums;
-}
-
-/* MpPageHeader's title + actions row doesn't wrap by default, so on narrow
-   phones this page's two header buttons (Manage Folders, New Campaign) push
-   past the viewport. Let the actions drop to their own line instead of
-   causing horizontal scroll — scoped so it only affects this page. */
-@media (max-width: 600px) {
-  :deep(.mp-page-header__main) {
-    flex-wrap: wrap;
-  }
 }
 </style>

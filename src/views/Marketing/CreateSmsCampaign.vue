@@ -229,7 +229,7 @@ const pageTitle = computed(() => (draftId.value != null ? 'Edit SMS Campaign' : 
             <v-divider></v-divider>
             <MpFormSection title="Send a test" />
             <div class="d-flex gap-3 align-center flex-wrap">
-              <v-text-field v-model="testPhone" label="Test phone number" placeholder="+61…" style="max-width: 260px;"></v-text-field>
+              <v-text-field v-model="testPhone" label="Test phone number" placeholder="+61…" class="flex-grow-1"></v-text-field>
               <v-btn variant="outlined" class="text-none" prepend-icon="send" :disabled="!testPhone.trim()" @click="sendTest">Send test</v-btn>
             </div>
           </MpFormGrid>

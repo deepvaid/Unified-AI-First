@@ -11,6 +11,7 @@ import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 
 const route = useRoute()
 const router = useRouter()
@@ -32,14 +33,15 @@ const filtered = computed(() => {
 
 const headers = [
   { title: 'Campaign', key: 'name', sortable: true },
-  { title: 'Message', key: 'messagePreview', sortable: false },
-  { title: 'Audience', key: 'audience' },
+  { title: 'Message', key: 'messagePreview', sortable: false, hideBelow: 'md' as const },
+  { title: 'Audience', key: 'audience', hideBelow: 'lg' as const },
   { title: 'Status', key: 'status' },
-  { title: 'Sent', key: 'sent', align: 'end' as const },
-  { title: 'Delivered', key: 'delivered', align: 'end' as const },
-  { title: 'Clicks', key: 'clicks', align: 'end' as const },
+  { title: 'Sent', key: 'sent', align: 'end' as const, hideBelow: 'sm' as const },
+  { title: 'Delivered', key: 'delivered', align: 'end' as const, hideBelow: 'lg' as const },
+  { title: 'Clicks', key: 'clicks', align: 'end' as const, hideBelow: 'md' as const },
   { title: '', key: 'actions', sortable: false, align: 'end' as const },
 ]
+const { visibleHeaders } = useResponsiveTableHeaders(headers)
 
 function openCompose() {
   router.push({ name: 'CreateSmsCampaign', params: { accountId: route.params.accountId } })
@@ -78,7 +80,6 @@ function confirmDelete() {
         description="SMS campaigns aren't part of your current plan. Upgrade to reach customers by text."
         action-label="View plans"
         action-icon="arrow-right"
-        class="py-10"
         @action="viewPlans"
       />
       <div class="d-flex justify-center pb-8">
@@ -96,7 +97,7 @@ function confirmDelete() {
 
       <v-data-table
         v-if="smsCampaigns.length"
-        :headers="headers"
+        :headers="visibleHeaders"
         :items="filtered"
         :search="search"
         hover
