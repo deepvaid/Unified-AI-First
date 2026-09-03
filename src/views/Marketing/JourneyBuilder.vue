@@ -698,7 +698,7 @@ onBeforeUnmount(() => {
       <button v-if="!editingName" type="button" class="text-truncate jb-name"
         aria-label="Rename journey" @click="editingName = true; nameInput = journeyName">
         {{ journeyName }}
-        <v-icon size="13" class="jb-name__pencil ml-1">pencil</v-icon>
+        <v-icon size="16" class="jb-name__pencil ml-1">pencil</v-icon>
       </button>
       <!-- Toolbar chrome, not a form: the inline rename field, the contact search and
            the palette search below keep compact + hide-details deliberately. -->
@@ -764,13 +764,13 @@ onBeforeUnmount(() => {
             <v-list-item v-for="(issue, i) in issues" :key="i" rounded="lg"
               :disabled="!issue.nodeId" @click="jumpToIssue(issue.nodeId)">
               <template #prepend>
-                <v-icon size="15" :color="issue.level === 'error' ? 'error' : 'warning'">
+                <v-icon size="16" :color="issue.level === 'error' ? 'error' : 'warning'">
                   {{ issue.level === 'error' ? 'circle-alert' : 'triangle-alert' }}
                 </v-icon>
               </template>
               <v-list-item-title class="text-caption ml-2 jb-issue__text">{{ issue.message }}</v-list-item-title>
               <template v-if="issue.nodeId" #append>
-                <v-icon size="13" class="text-disabled">locate</v-icon>
+                <v-icon size="16" class="text-disabled">locate</v-icon>
               </template>
             </v-list-item>
           </v-list>
@@ -824,13 +824,13 @@ onBeforeUnmount(() => {
               <button v-for="item in s.items" :key="item.kind" class="palette-item" :title="item.subtitle"
                 @click="addFromPalette(item)">
                 <span class="palette-tile" :style="tileStyle(item.category)">
-                  <v-icon size="15">{{ item.icon }}</v-icon>
+                  <v-icon size="16">{{ item.icon }}</v-icon>
                 </span>
                 <span class="palette-item__text">
                   <span class="palette-item__title">{{ item.title }}</span>
                   <span class="palette-item__sub">{{ item.subtitle }}</span>
                 </span>
-                <v-icon size="15" class="palette-item__add">plus</v-icon>
+                <v-icon size="16" class="palette-item__add">plus</v-icon>
               </button>
             </div>
           </div>
@@ -888,7 +888,7 @@ onBeforeUnmount(() => {
           <div class="pa-4 border-b d-flex align-center justify-space-between flex-shrink-0">
             <div class="d-flex align-center gap-3 jb-panel__head">
               <span class="jb-panel__tile flex-shrink-0" :style="tileStyle(selectedNode.category)">
-                <v-icon size="17">{{ selectedNode.icon }}</v-icon>
+                <v-icon size="18">{{ selectedNode.icon }}</v-icon>
               </span>
               <div class="jb-panel__head">
                 <div class="jb-panel__eyebrow" :style="{ color: tileStyle(selectedNode.category).color }">
@@ -967,7 +967,7 @@ onBeforeUnmount(() => {
                   <router-link v-else-if="f.type === 'link'" :to="{ name: f.to ?? 'Journeys', params: { accountId } }"
                     class="text-body-2 font-weight-medium text-primary jb-panel__link">
                     {{ f.label }}
-                    <v-icon size="14" class="ml-1">arrow-up-right</v-icon>
+                    <v-icon size="16" class="ml-1">arrow-up-right</v-icon>
                   </router-link>
                   <v-text-field v-else :model-value="String(draftConfig[f.key] ?? '')" :label="f.label" :placeholder="f.placeholder"
                     :hint="f.hint" :persistent-hint="!!f.hint"
@@ -1046,9 +1046,9 @@ onBeforeUnmount(() => {
   border: 0; background: transparent; font-family: inherit; text-align: left;
   display: block; max-width: 100%;
 }
-.jb-name:hover { background: rgba(var(--v-theme-on-surface), 0.06); }
-.jb-name:focus-visible { outline: 2px solid rgb(var(--v-theme-primary)); outline-offset: 2px; }
-.jb-name__pencil { opacity: 0; color: rgba(var(--v-theme-on-surface), 0.5); transition: opacity var(--dur-fast) var(--ease); }
+.jb-name:hover { background: var(--surface-secondary); }
+.jb-name:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.jb-name__pencil { opacity: 0; color: var(--on-surface-muted); transition: opacity var(--dur-fast) var(--ease); }
 .jb-name:hover .jb-name__pencil, .jb-name:focus-visible .jb-name__pencil { opacity: 1; }
 .jb-name-field { width: 320px; }
 .jb-contact-search { width: 260px; }
@@ -1059,10 +1059,10 @@ onBeforeUnmount(() => {
 .jb-davinci :deep(.v-icon) { opacity: 0.55; }
 .jb-davinci:hover :deep(.v-icon) { opacity: 0.9; }
 
-.border-b { border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); }
-.border-t { border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); }
-.border-r { border-right: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); }
-.border-l { border-left: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); }
+.border-b { border-bottom: 1px solid var(--border-subtle); }
+.border-t { border-top: 1px solid var(--border-subtle); }
+.border-r { border-right: 1px solid var(--border-subtle); }
+.border-l { border-left: 1px solid var(--border-subtle); }
 
 /* ── Palette ─────────────────────────────────────────────────────────────── */
 .jb-palette-toggle { display: none; }
