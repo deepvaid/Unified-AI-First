@@ -159,8 +159,7 @@ function performDelete() {
       <template #actions>
         <v-btn
           v-if="!isNew"
-          variant="flat"
-          color="surface"
+          variant="outlined"
           class="text-none"
           prepend-icon="trash-2"
           @click="confirmDelete = true"
@@ -216,17 +215,17 @@ function performDelete() {
       <!-- Pinned pane -->
       <section class="pin-pane pin-pane--pinned d-flex flex-column">
         <div class="pin-pane__head px-4 py-3 d-flex align-center justify-space-between">
-          <span class="text-subtitle-2 font-weight-bold">Pinned ({{ pinnedProducts.length }})</span>
+          <h2 class="mp-section-title">Pinned ({{ pinnedProducts.length }})</h2>
           <span class="text-caption text-medium-emphasis">Drag to reorder</span>
         </div>
         <v-divider />
         <div class="pin-pane__body pa-4 flex-grow-1 overflow-y-auto">
-          <div v-if="pinnedProducts.length === 0" class="pin-empty text-center pa-8">
-            <v-icon size="28" class="text-medium-emphasis mb-2">pin</v-icon>
-            <div class="text-body-2 text-medium-emphasis">
-              No pinned products yet. Pin products from the right to fix their position at the top of this collection.
-            </div>
-          </div>
+          <MpEmptyState
+            v-if="pinnedProducts.length === 0"
+            icon="pin"
+            title="No pinned products yet"
+            description="Pin products from the right to fix their position at the top of this collection."
+          />
           <div v-else class="pin-grid">
             <div
               v-for="(product, index) in pinnedProducts"
@@ -260,7 +259,7 @@ function performDelete() {
       <!-- Unpinned pane -->
       <section class="pin-pane flex-grow-1 d-flex flex-column">
         <div class="pin-pane__head px-4 py-3 d-flex align-center justify-space-between">
-          <span class="text-subtitle-2 font-weight-bold">Unpinned</span>
+          <h2 class="mp-section-title">Unpinned</h2>
           <span class="text-caption text-medium-emphasis">{{ unpinnedProducts.length }} products</span>
         </div>
         <v-divider />
@@ -270,7 +269,6 @@ function performDelete() {
             icon="scan-search"
             title="No products match"
             description="Try a different search term."
-            class="py-8"
           />
           <div v-else class="pin-grid">
             <MerchProductCard
@@ -289,24 +287,20 @@ function performDelete() {
     <MpFloatingBulkBar :count="selectedIds.length" @clear="selectedIds = []">
       <v-btn
         v-if="selectedUnpinnedCount > 0"
-        variant="flat"
-        color="surface"
+        variant="text"
         size="small"
         class="text-none"
         prepend-icon="pin"
-        rounded="lg"
         @click="bulkPin"
       >
         Pin selected
       </v-btn>
       <v-btn
         v-if="selectedPinnedCount > 0"
-        variant="flat"
-        color="surface"
+        variant="text"
         size="small"
         class="text-none"
         prepend-icon="pin-off"
-        rounded="lg"
         @click="bulkUnpin"
       >
         Unpin selected
@@ -326,36 +320,29 @@ function performDelete() {
 
   </div>
 
-  <div v-else class="pa-10">
-    <MpErrorState
-      icon="pin-off"
-      title="Pinning rule not found"
-      description="This rule may have been deleted, or the link is incorrect."
-      action-label="Back to Default Merchandising"
-      action-icon="arrow-left"
-      @action="router.push(listRoute)"
-    />
-  </div>
+  <MpErrorState
+    v-else
+    icon="pin-off"
+    title="Pinning rule not found"
+    description="This rule may have been deleted, or the link is incorrect."
+    action-label="Back to Default Merchandising"
+    action-icon="arrow-left"
+    @action="router.push(listRoute)"
+  />
 </template>
 
-<style scoped>
-.pin-collection-select {
-  width: 300px;
-  flex: 0 0 auto;
-}
-
+<style scoped lang="scss">
+/* Toolbar controls sit on the toolbar width ramp; the workspace fills the
+   remaining frame height (the page root is h-100 inside the shell). */
+.pin-collection-select,
 .pin-search {
-  width: 260px;
+  width: var(--mp-component-toolbar-searchWidth);
   flex: 0 0 auto;
 }
 
 .pin-sort {
-  width: 210px;
+  width: var(--mp-component-toolbar-searchMinWidth);
   flex: 0 0 auto;
-}
-
-.pin-workspace {
-  min-height: 480px;
 }
 
 .pin-pane {
@@ -371,7 +358,7 @@ function performDelete() {
 .pin-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 12px;
+  gap: var(--mp-space-12);
 }
 
 .pin-draggable {
@@ -387,17 +374,12 @@ function performDelete() {
 }
 
 .pin-draggable--over {
-  outline: 2px dashed rgb(var(--v-theme-primary));
+  outline: 2px dashed var(--accent-default);
   outline-offset: 2px;
-  border-radius: 12px;
+  border-radius: var(--mp-radius-12);
 }
 
-.pin-empty {
-  border: 1px dashed rgba(var(--v-border-color), var(--v-border-opacity));
-  border-radius: 12px;
-}
-
-@media (max-width: 860px) {
+@media (max-width: ($mp-layout-breakpointSplit - 0.02px)) {
   .pin-workspace {
     flex-direction: column;
   }
@@ -407,7 +389,7 @@ function performDelete() {
   }
 
   .pin-pane--pinned {
-    border-bottom: 1px dashed rgba(var(--v-border-color), var(--v-border-opacity));
+    border-bottom: 1px dashed var(--border-subtle);
   }
 
   .pin-collection-select,
