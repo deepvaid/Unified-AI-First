@@ -2,6 +2,7 @@
 import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useRetailStore } from '@/stores/useRetail'
+import MpSegmentedControl from '@/components/MpSegmentedControl.vue'
 import { useContactsStore, LOYALTY_TIER_LABELS, type Contact, type LoyaltyTier } from '@/stores/useContacts'
 import { useCommerceStore } from '@/stores/useCommerce'
 import type { Order, TenderType } from '@/stores/useCommerce'
@@ -909,55 +910,55 @@ const apkQrUrl = computed(() =>
       </v-btn>
 
       <div class="pos-header__title">
-        <v-icon size="16" color="primary" style="margin-right: 6px;">monitor-smartphone</v-icon>
+        <v-icon size="16" color="primary" class="me-2">monitor-smartphone</v-icon>
         <span>POS Preview</span>
       </div>
 
       <div class="pos-header__controls">
         <!-- Location select -->
+        <!-- Chrome control: no label (aria-label instead) and hide-details keeps it flush in the header row. -->
         <v-select
           :model-value="store.activeLocationId"
           :items="store.locationList.map((l) => ({ title: l.name, value: l.id }))"
           density="compact"
-          variant="outlined"
           hide-details
-          style="min-width: 160px; max-width: 180px;"
+          aria-label="Location"
+          class="pos-header__location"
           @update:model-value="store.setActiveLocation"
         />
 
         <!-- Device frame select -->
-        <v-btn-toggle v-model="device" mandatory density="compact" rounded="lg" border>
-          <v-btn
-            v-for="df in DEVICE_FRAMES"
-            :key="df.value"
-            :value="df.value"
-            size="small"
-            :icon="df.icon"
-            :title="df.label"
-          />
-        </v-btn-toggle>
+        <MpSegmentedControl
+          :model-value="device"
+          :items="DEVICE_FRAMES.map((df) => ({ value: df.value, label: df.label, icon: df.icon, tooltip: df.label }))"
+          size="sm"
+          ariaLabel="Device frame"
+          @update:model-value="(v) => { if (v) device = v as DeviceFrame }"
+        />
 
         <!-- Orientation toggle (tablets only) -->
-        <v-btn-toggle
+        <MpSegmentedControl
           v-if="currentFrame.supportsLandscape"
-          v-model="orientation"
-          mandatory
-          density="compact"
-          rounded="lg"
-          border
-        >
-          <v-btn value="portrait"  size="small" icon="rectangle-vertical"   title="Portrait" />
-          <v-btn value="landscape" size="small" icon="rectangle-horizontal" title="Landscape" />
-        </v-btn-toggle>
+          :model-value="orientation"
+          :items="[
+            { value: 'portrait', label: 'Portrait', icon: 'rectangle-vertical', tooltip: 'Portrait' },
+            { value: 'landscape', label: 'Landscape', icon: 'rectangle-horizontal', tooltip: 'Landscape' },
+          ]"
+          size="sm"
+          ariaLabel="Orientation"
+          @update:model-value="(v) => { if (v) orientation = v as Orientation }"
+        />
 
         <!-- Offline toggle -->
         <div class="d-flex align-center ga-2">
-          <span class="text-body-2" style="font-size: 12px; color: var(--muted);">Offline</span>
+          <span class="text-caption text-medium-emphasis">Offline</span>
+          <!-- Chrome toggle: the visible caption is decorative, the switch names itself. -->
           <v-switch
             :model-value="isOffline"
             color="warning"
             hide-details
             density="compact"
+            aria-label="Simulate offline mode"
             @change="toggleOffline"
           />
           <div v-if="isOffline" class="offline-badge">OFFLINE</div>
@@ -2388,46 +2389,54 @@ const apkQrUrl = computed(() =>
 }
 
 /* ── Header ────────────────────────────────────────────────────── */
+/* Page chrome (header + stage) is app UI and sits on tokens; only the device mock
+   below is the sanctioned fixed-look surface. */
 .pos-header {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 10px 20px;
-  background: rgb(var(--v-theme-surface));
-  border-bottom: 1px solid color-mix(in oklch, var(--text-primary) 8%, transparent);
+  gap: var(--mp-space-16);
+  padding: var(--mp-space-10) var(--mp-space-20);
+  background: var(--surface-primary);
+  color: var(--on-surface);
+  border-bottom: 1px solid var(--border-subtle);
   flex-shrink: 0;
   flex-wrap: wrap;
 
   &__back {
-    color: var(--muted);
-    font-size: 13px;
+    color: var(--on-surface-muted);
+    font-size: var(--mp-text-label-fontSize);
   }
 
   &__title {
     display: flex;
     align-items: center;
-    font-weight: 600;
-    font-size: 14px;
-    color: var(--text-primary);
+    font-weight: var(--mp-fontWeight-semibold);
+    font-size: var(--mp-text-body-fontSize);
+    color: var(--on-surface);
   }
 
   &__controls {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: var(--mp-space-12);
     margin-left: auto;
     flex-wrap: wrap;
+  }
+
+  &__location {
+    min-width: var(--mp-component-menu-minWidth);
+    max-width: var(--mp-component-toolbar-searchMinWidth);
   }
 }
 
 .offline-badge {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  color: white;
-  background: #f59e0b;
-  padding: 2px 6px;
-  border-radius: 4px;
+  font-size: var(--mp-fontSize-11);
+  font-weight: var(--mp-fontWeight-bold);
+  letter-spacing: var(--mp-text-eyebrow-letterSpacing);
+  color: var(--on-warn);
+  background: var(--warn);
+  padding: var(--mp-space-2) var(--mp-space-6);
+  border-radius: var(--mp-radius-4);
 }
 
 /* ── Stage ─────────────────────────────────────────────────────── */
@@ -2436,7 +2445,7 @@ const apkQrUrl = computed(() =>
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: var(--mp-space-24);
   overflow: auto;
 }
 
@@ -4859,20 +4868,20 @@ $pos-bg: #f4f4f5;
   }
 
   .pos-header {
-    padding: 10px 12px;
-    gap: 8px;
+    padding: var(--mp-space-10) var(--mp-space-12);
+    gap: var(--mp-space-8);
 
-    &__back  { font-size: 12px; }
+    &__back  { font-size: var(--mp-text-caption-fontSize); }
     &__title { display: none; }
     &__controls {
       width: 100%;
       margin-left: 0;
       justify-content: space-between;
-      gap: 8px;
+      gap: var(--mp-space-8);
     }
   }
 
-  .pos-stage { padding: 12px; }
+  .pos-stage { padding: var(--mp-space-12); }
 
   .pos-device-frame__bezel-top,
   .pos-device-frame__bezel-bottom { height: 18px; }
@@ -4881,7 +4890,7 @@ $pos-bg: #f4f4f5;
 /* Small tablet (sm 601–960): tighten chrome but keep layout intact */
 @media (min-width: 601px) and (max-width: 960px) {
   .pos-preview-shell { --frame-margin: 32px; }
-  .pos-header        { padding: 10px 16px; gap: 12px; }
-  .pos-stage         { padding: 16px; }
+  .pos-header        { padding: var(--mp-space-10) var(--mp-space-16); gap: var(--mp-space-12); }
+  .pos-stage         { padding: var(--mp-space-16); }
 }
 </style>
