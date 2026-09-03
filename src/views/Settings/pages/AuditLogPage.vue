@@ -6,6 +6,8 @@ import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpSegmentedControl from '@/components/MpSegmentedControl.vue'
+import MpAlert from '@/components/MpAlert.vue'
 import { useRbacStore } from '@/stores/useRbac'
 import { useInitialLoad } from '@/composables/useInitialLoad'
 import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
@@ -23,8 +25,12 @@ const targetTab = ref('all')
  * log is only visible to Account Owner / Platform Admins, so previewing as a
  * Marketing Manager swaps the table for the standardized 403.
  */
-const previewAs = ref<'owner' | 'manager'>('owner')
+const previewAs = ref<string | null>('owner')
 const accessDenied = computed(() => previewAs.value === 'manager')
+const previewItems = [
+  { value: 'owner', label: 'Account Owner' },
+  { value: 'manager', label: 'Marketing Manager' },
+]
 
 const tabs = computed(() => [
   { label: 'All', key: 'all', count: rbac.events.length },
@@ -131,18 +137,14 @@ function actionMeta(event: AuditEvent) {
       subtitle="Every access change — who changed what, and when. Visible to the Account Owner and Platform Admins."
     >
       <template #actions>
-        <div class="d-flex align-center gap-2">
+        <div class="d-flex align-center flex-wrap gap-2">
           <span class="text-caption text-medium-emphasis">Preview as</span>
-          <v-btn-toggle
+          <MpSegmentedControl
             v-model="previewAs"
-            density="compact"
-            mandatory
-            rounded="lg"
-            aria-label="Preview the audit log as a different role"
-          >
-            <v-btn value="owner" size="small" class="text-none">Account Owner</v-btn>
-            <v-btn value="manager" size="small" class="text-none">Marketing Manager</v-btn>
-          </v-btn-toggle>
+            :items="previewItems"
+            size="sm"
+            ariaLabel="Preview the audit log as a different role"
+          />
         </div>
       </template>
     </MpPageHeader>
@@ -154,13 +156,12 @@ function actionMeta(event: AuditEvent) {
           icon="lock"
           :title="ACCESS_DENIED_COPY.title"
           :description="ACCESS_DENIED_COPY.description"
-          class="py-14"
         />
       </v-card>
-      <v-alert type="info" variant="tonal" density="compact" rounded="lg" class="text-body-2">
+      <MpAlert tone="info" live="off">
         This is the standardized access error every product shows when a user’s roles don’t include a permission —
         Marketing Manager doesn’t have <strong>View audit log</strong>. Switch back to Account Owner to restore the view.
-      </v-alert>
+      </MpAlert>
     </template>
 
     <template v-else>
@@ -257,14 +258,12 @@ function actionMeta(event: AuditEvent) {
               illustration="no-results"
               title="No events match"
               description="Try a different search, filter, or period."
-              class="py-10"
             />
             <MpEmptyState
               v-else
               icon="scroll-text"
               title="No activity yet"
               description="Access changes — invitations, role assignments, and role edits — will appear here."
-              class="py-10"
             />
           </template>
         </v-data-table>
@@ -283,18 +282,18 @@ function actionMeta(event: AuditEvent) {
 }
 
 .audit-avatar {
-  font-size: 10px;
+  font-size: var(--mp-fontSize-10);
 }
 
 .audit-target__label {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-semibold);
   color: var(--text-primary);
   white-space: nowrap;
 }
 
 .audit-target__type {
-  font-size: 11px;
+  font-size: var(--mp-fontSize-11);
   color: var(--muted);
 }
 
