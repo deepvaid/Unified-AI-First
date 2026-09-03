@@ -32,7 +32,6 @@ onMounted(goToAcquisitionForms)
         description="Signup forms now live under Acquisition Forms, with the same popup and embedded builder."
         action-label="Go to Acquisition Forms"
         action-icon="arrow-right"
-        class="py-10"
         @action="goToAcquisitionForms"
       />
     </v-card>
