@@ -5,6 +5,7 @@ import SettingsSection from '@/components/settings/SettingsSection.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpFormField from '@/components/MpFormField.vue'
+import MpSegmentedControl from '@/components/MpSegmentedControl.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import { useToast } from '@/composables/useToast'
 
@@ -22,7 +23,11 @@ const webhooks = ref([
 
 const addKeyDrawer = ref(false)
 const newKeyLabel = ref('')
-const newKeyEnv = ref<'production' | 'test'>('production')
+const newKeyEnv = ref<string | null>('production')
+const envItems = [
+  { value: 'production', label: 'Production' },
+  { value: 'test', label: 'Test / Staging' },
+]
 
 function generateKey() {
   const prefix = newKeyEnv.value === 'production' ? 'mp_live_sk_' : 'mp_test_sk_'
@@ -51,51 +56,71 @@ function generateKey() {
     />
 
     <SettingsSection title="API Keys" description="Generate keys for server-to-server access. Keep them secret.">
-      <template v-slot:default>
-        <div class="section-actions">
-          <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="addKeyDrawer = true">
-            Generate Key
-          </v-btn>
-        </div>
-
-        <div class="stack">
-          <div v-for="k in apiKeys" :key="k.id" class="connection-card">
-            <div class="connection-card__header">
-              <div>
-                <div class="connection-card__title">{{ k.label }}</div>
-                <div class="connection-card__sub">User: {{ k.user }}</div>
-              </div>
-              <div class="connection-card__actions">
-                <MpStatusChip :status="k.status" type="general" size="sm" />
-                <v-btn icon="copy" variant="text" size="small" color="primary" aria-label="Copy key" />
-                <v-btn icon="trash-2" variant="text" size="small" color="error" aria-label="Revoke key" />
-              </div>
-            </div>
-            <code class="connection-card__value">{{ k.key }}</code>
-            <div class="connection-card__meta">Created {{ k.created }} · Last used {{ k.lastUsed }}</div>
-          </div>
-        </div>
+      <template #actions>
+        <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="addKeyDrawer = true">
+          Generate Key
+        </v-btn>
       </template>
+
+      <!-- Divided rows inside the section card — a hairline between rows is the only
+           separator, so a key is not a second bordered box inside a bordered card. -->
+      <div class="connection-list">
+        <div v-for="k in apiKeys" :key="k.id" class="connection-row">
+          <div class="connection-row__header">
+            <div>
+              <div class="connection-row__title">{{ k.label }}</div>
+              <div class="connection-row__sub">User: {{ k.user }}</div>
+            </div>
+            <div class="connection-row__actions">
+              <MpStatusChip :status="k.status" type="general" size="sm" />
+              <v-tooltip text="Copy key" location="top">
+                <template #activator="{ props: tipProps }">
+                  <v-btn v-bind="tipProps" icon="copy" variant="text" size="small" aria-label="Copy key" />
+                </template>
+              </v-tooltip>
+              <v-tooltip text="Revoke key" location="top">
+                <template #activator="{ props: tipProps }">
+                  <v-btn v-bind="tipProps" icon="trash-2" variant="text" size="small" color="error" aria-label="Revoke key" />
+                </template>
+              </v-tooltip>
+            </div>
+          </div>
+          <code class="connection-row__value">{{ k.key }}</code>
+          <div class="connection-row__meta">Created {{ k.created }} · Last used {{ k.lastUsed }}</div>
+        </div>
+      </div>
     </SettingsSection>
 
     <SettingsSection title="HTTP Post URLs" description="Receive real-time event notifications via webhook callbacks.">
-      <div class="section-actions">
-        <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none">Add Webhook</v-btn>
-      </div>
+      <template #actions>
+        <v-btn variant="outlined" prepend-icon="plus" class="text-none">Add Webhook</v-btn>
+      </template>
 
-      <div class="stack">
-        <div v-for="w in webhooks" :key="w.id" class="connection-card">
-          <div class="connection-card__header">
-            <div class="connection-card__title">{{ w.label }}</div>
-            <div class="connection-card__actions">
+      <div class="connection-list">
+        <div v-for="w in webhooks" :key="w.id" class="connection-row">
+          <div class="connection-row__header">
+            <div class="connection-row__title">{{ w.label }}</div>
+            <div class="connection-row__actions">
               <MpStatusChip :status="w.status" type="general" size="sm" />
-              <v-btn icon="circle-play" variant="text" size="small" color="primary" aria-label="Test endpoint" />
-              <v-btn icon="pencil" variant="text" size="small" aria-label="Edit" />
-              <v-btn icon="trash-2" variant="text" size="small" color="error" aria-label="Delete" />
+              <v-tooltip text="Test endpoint" location="top">
+                <template #activator="{ props: tipProps }">
+                  <v-btn v-bind="tipProps" icon="circle-play" variant="text" size="small" aria-label="Test endpoint" />
+                </template>
+              </v-tooltip>
+              <v-tooltip text="Edit" location="top">
+                <template #activator="{ props: tipProps }">
+                  <v-btn v-bind="tipProps" icon="pencil" variant="text" size="small" aria-label="Edit" />
+                </template>
+              </v-tooltip>
+              <v-tooltip text="Delete" location="top">
+                <template #activator="{ props: tipProps }">
+                  <v-btn v-bind="tipProps" icon="trash-2" variant="text" size="small" color="error" aria-label="Delete" />
+                </template>
+              </v-tooltip>
             </div>
           </div>
-          <code class="connection-card__value">{{ w.url }}</code>
-          <div class="connection-card__chips">
+          <code class="connection-row__value">{{ w.url }}</code>
+          <div class="connection-row__chips">
             <v-chip v-for="ev in w.events" :key="ev" size="x-small" variant="tonal" color="secondary">{{ ev }}</v-chip>
           </div>
         </div>
@@ -112,12 +137,7 @@ function generateKey() {
         placeholder="e.g. Shopify Integration"
       />
       <MpFormField label="Environment">
-        <div>
-          <v-btn-toggle v-model="newKeyEnv" mandatory>
-            <v-btn value="production" class="text-none">Production</v-btn>
-            <v-btn value="test" class="text-none">Test / Staging</v-btn>
-          </v-btn-toggle>
-        </div>
+        <MpSegmentedControl v-model="newKeyEnv" :items="envItems" ariaLabel="Environment" />
       </MpFormField>
     </MpFormGrid>
     <template #footer>
@@ -129,82 +149,72 @@ function generateKey() {
 </template>
 
 <style scoped lang="scss">
-
-.section-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 12px;
+.connection-row {
+  padding-block: var(--mp-space-16);
 }
 
-.stack {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+.connection-row + .connection-row {
+  border-top: 1px solid var(--border-subtle);
 }
 
-.connection-card {
-  padding: 14px 16px;
-  border: 1px solid var(--border-subtle);
-  border-radius: 10px;
-  background: color-mix(in oklch, var(--surface-secondary) 34%, transparent);
-}
-
-.connection-card__header {
+.connection-row__header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 10px;
+  gap: var(--mp-space-12);
+  margin-bottom: var(--mp-space-8);
 }
 
-.connection-card__title {
-  font-size: 14px;
-  font-weight: 700;
+.connection-row__title {
+  font-size: var(--mp-fontSize-14);
+  font-weight: var(--mp-fontWeight-semibold);
   color: var(--text-primary);
 }
 
-.connection-card__sub {
-  font-size: 12px;
+.connection-row__sub {
+  font-size: var(--mp-fontSize-12);
   color: var(--muted);
-  margin-top: 2px;
+  margin-top: var(--mp-space-2);
 }
 
-.connection-card__actions {
+.connection-row__actions {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--mp-space-4);
   flex-shrink: 0;
 }
 
-.connection-card__value {
+.connection-row__value {
   display: block;
-  padding: 10px 12px;
-  border-radius: 8px;
+  padding: var(--mp-space-8) var(--mp-space-12);
+  border-radius: var(--mp-component-chip-radius);
   background: var(--surface-secondary);
-  font-family: ui-monospace, 'SF Mono', monospace;
-  font-size: 12px;
+  color: var(--on-surface);
+  font-family: var(--mp-fontFamily-mono);
+  font-size: var(--mp-fontSize-12);
   word-break: break-all;
 }
 
-.connection-card__meta {
-  margin-top: 8px;
-  font-size: 12px;
+.connection-row__meta {
+  margin-top: var(--mp-space-8);
+  font-size: var(--mp-fontSize-12);
   color: var(--muted);
+  font-variant-numeric: tabular-nums;
 }
 
-.connection-card__chips {
+.connection-row__chips {
   display: flex;
-  gap: 6px;
+  gap: var(--mp-space-6);
   flex-wrap: wrap;
-  margin-top: 10px;
+  margin-top: var(--mp-space-8);
 }
 
-@media (max-width: 640px) {
-  .connection-card__header {
+@media (max-width: $mp-layout-breakpointCompact) {
+  .connection-row__header {
     flex-direction: column;
   }
 
-  .connection-card__actions {
+  .connection-row__actions {
     align-self: stretch;
     flex-wrap: wrap;
   }
