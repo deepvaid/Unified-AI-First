@@ -5,7 +5,7 @@ import { useChatbotStore } from '@/stores/useChatbot'
 import { useAccountsStore } from '@/stores/useAccounts'
 import { usePlgStore } from '@/stores/usePlg'
 import { storeToRefs } from 'pinia'
-import type { Chatbot, ChatbotStatus } from '@/stores/useChatbot'
+import type { Chatbot } from '@/stores/useChatbot'
 import MpAlert from '@/components/MpAlert.vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpFilterTabs from '@/components/MpFilterTabs.vue'
@@ -13,9 +13,13 @@ import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpStatusChip from '@/components/MpStatusChip.vue'
+import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
+import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
+import { useInitialLoad } from '@/composables/useInitialLoad'
 
 const route = useRoute()
 const router = useRouter()
@@ -48,6 +52,7 @@ const filterTabs = computed(() => [
 ])
 
 const search = ref('')
+const { loading } = useInitialLoad()
 const rows = computed(() => {
   const q = search.value.trim().toLowerCase()
   return active.value.filter(c =>
@@ -58,15 +63,14 @@ const rows = computed(() => {
 
 const headers = [
   { title: 'Store', key: 'store' },
-  { title: 'Store URL', key: 'storeUrl' },
+  { title: 'Store URL', key: 'storeUrl', hideBelow: 'md' as const },
   { title: 'Status', key: 'status', sortable: false },
-  { title: 'Conversations', key: 'conversations', align: 'end' as const },
-  { title: 'Created on', key: 'createdOn' },
-  { title: 'Last Modified', key: 'lastModified' },
+  { title: 'Conversations', key: 'conversations', align: 'end' as const, hideBelow: 'sm' as const },
+  { title: 'Created on', key: 'createdOn', hideBelow: 'lg' as const },
+  { title: 'Last Modified', key: 'lastModified', hideBelow: 'md' as const },
   { title: '', key: 'actions', sortable: false, align: 'end' as const },
 ]
-
-const statusColor: Record<ChatbotStatus, string> = { Active: 'success', Inactive: 'default', Disabled: 'warning', Archived: 'default' }
+const { visibleHeaders } = useResponsiveTableHeaders(headers)
 
 function openBuilder(c: Chatbot) {
   router.push({ name: 'ChatbotBuilder', params: { accountId: accountId.value, id: c.id } })
@@ -120,7 +124,7 @@ function doCreate() {
       </template>
     </MpPageHeader>
 
-    <MpFilterTabs v-if="hasChatbotAccess" v-model="tab" :tabs="filterTabs" aria-label="Filter chatbots by status" />
+    <MpFilterTabs v-if="hasChatbotAccess" v-model="tab" :tabs="filterTabs" aria-label="Filter chatbots by status" controls-id="chatbots-table" />
 
     <MpAlert v-if="hasChatbotAccess && limitReached" tone="warning">
       {{ chatbotUsage.used }} of {{ chatbotLimit }} chatbots used on your plan.
@@ -139,7 +143,6 @@ function doCreate() {
         description="Chatbot is part of Service Cloud and Commerce Cloud. Upgrade your plan to build assistants for your stores."
         action-label="View plans"
         action-icon="arrow-right"
-        class="py-10"
         @action="viewPlans"
       />
       <div class="d-flex justify-center pb-8">
@@ -147,7 +150,7 @@ function doCreate() {
       </div>
     </v-card>
 
-    <v-card v-else variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
+    <v-card v-else id="chatbots-table" variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
         v-model:search="search"
         title="Chatbots"
@@ -155,9 +158,11 @@ function doCreate() {
         :total-count="rows.length"
       />
 
+      <MpTableSkeleton v-if="loading" :rows="7" :columns="7" />
+
       <v-data-table
-        v-if="active.length"
-        :headers="headers"
+        v-else-if="active.length"
+        :headers="visibleHeaders"
         :items="rows"
         item-value="id"
         hover
@@ -185,7 +190,7 @@ function doCreate() {
               hide-details
               @update:model-value="(v: boolean | null) => toggleActive(item, !!v)"
             />
-            <v-chip size="x-small" variant="tonal" :color="statusColor[item.status]">{{ item.status }}</v-chip>
+            <MpStatusChip :status="item.status" size="sm" />
           </div>
         </template>
         <template #item.conversations="{ item }">
@@ -214,9 +219,18 @@ function doCreate() {
         </template>
         <template #no-data>
           <MpEmptyState
+            v-if="search.trim()"
             icon="search-x"
-            title="No chatbots match your filter"
-            description="Try a different status or search term."
+            :title="`No chatbots match \u201C${search.trim()}\u201D`"
+            description="Try a different search term, or clear it to see every chatbot."
+            action-label="Clear search"
+            @action="search = ''"
+          />
+          <MpEmptyState
+            v-else
+            icon="filter-x"
+            title="No chatbots in this status"
+            description="Choose a different status tab to see more chatbots."
           />
         </template>
       </v-data-table>
