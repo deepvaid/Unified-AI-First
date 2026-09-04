@@ -18,7 +18,6 @@ import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpFormSection from '@/components/MpFormSection.vue'
 import MpFormField from '@/components/MpFormField.vue'
-import MpListRow from '@/components/MpListRow.vue'
 import { useToast } from '@/composables/useToast'
 
 const store = useCommerceStore()
@@ -202,9 +201,9 @@ const headers = [
   { title: 'Gift card', key: 'code', sortable: true },
   { title: 'Contact', key: 'contact', hideBelow: 'lg' as const },
   { title: 'Recipient', key: 'recipient', sortable: false, hideBelow: 'md' as const },
-  { title: 'Initial balance', key: 'initialValue', align: 'end' as const },
+  { title: 'Initial balance', key: 'initialValue', align: 'end' as const, hideBelow: 'md' as const },
   { title: 'Current balance', key: 'balance' },
-  { title: 'Status', key: 'status' },
+  { title: 'Status', key: 'status', hideBelow: 'sm' as const },
   { title: 'Date added', key: 'issued', hideBelow: 'lg' as const },
   { title: '', key: 'actions', align: 'end' as const, sortable: false },
 ]
@@ -218,7 +217,7 @@ function notify(text: string) { toast.success(text) }
   <div class="h-100 d-flex flex-column gap-5">
     <MpPageHeader title="Custom Gift Cards" :subtitle="summary">
       <template #actions>
-        <v-btn variant="flat" prepend-icon="download" class="text-none" color="surface" @click="exportCsv">Export</v-btn>
+        <v-btn variant="outlined" prepend-icon="download" class="text-none" @click="exportCsv">Export</v-btn>
         <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="openIssue">New custom gift card</v-btn>
       </template>
     </MpPageHeader>
@@ -279,7 +278,7 @@ function notify(text: string) { toast.success(text) }
         </template>
 
         <template v-slot:item.balance="{ item }">
-          <div style="min-width: 96px">
+          <div class="gift-balance">
             <span class="font-weight-bold text-body-2">{{ money(item.balance) }}</span>
             <v-progress-linear
               :model-value="(item.balance / item.initialValue) * 100"
@@ -346,11 +345,11 @@ function notify(text: string) { toast.success(text) }
              a justify-space-between row, which pushed the word "Gift card" away
              from the icon it names and left a gap that meant nothing (P6-14). -->
         <div class="d-flex align-center ga-2">
-          <v-icon size="22">gift</v-icon>
-          <span class="gift-preview__kicker">Gift card</span>
+          <v-icon size="18">gift</v-icon>
+          <span class="mp-meta-label">Gift card</span>
         </div>
         <div>
-          <div class="text-h4 font-weight-bold">{{ money(Number(form.initialValue) || 0) }}</div>
+          <div class="mp-kpi-value">{{ money(Number(form.initialValue) || 0) }}</div>
           <div class="text-body-2 text-medium-emphasis">{{ form.email || 'For your recipient' }}</div>
         </div>
         <div class="text-caption text-medium-emphasis">
@@ -425,6 +424,7 @@ function notify(text: string) { toast.success(text) }
               class="gift-image-tile d-flex flex-column align-center justify-center"
               :class="{ selected: !form.image }"
               aria-label="No image"
+              :aria-pressed="!form.image"
               @click="form.image = undefined"
             >
               <v-icon size="18" class="text-medium-emphasis">image-off</v-icon>
@@ -437,10 +437,11 @@ function notify(text: string) { toast.success(text) }
               class="gift-image-tile gift-image-tile--art d-flex flex-column align-center justify-center"
               :class="[`gift-image-tile--g${i % 3}`, { selected: form.image === name }]"
               :aria-label="`Use image ${name}`"
+              :aria-pressed="form.image === name"
               @click="form.image = name"
             >
               <v-icon size="18">gift</v-icon>
-              <span class="text-caption gift-image-name">{{ name }}</span>
+              <span class="gift-image-name">{{ name }}</span>
             </button>
           </div>
         </MpFormField>
@@ -448,7 +449,7 @@ function notify(text: string) { toast.success(text) }
 
       <template #footer>
         <v-btn variant="text" class="text-none" @click="requestCloseDrawer">Cancel</v-btn>
-        <v-btn color="primary" variant="elevated" class="text-none" prepend-icon="gift" @click="issueGiftCard">
+        <v-btn color="primary" variant="flat" class="text-none" prepend-icon="gift" @click="issueGiftCard">
           Save gift card
         </v-btn>
       </template>
@@ -463,26 +464,34 @@ function notify(text: string) { toast.success(text) }
       <template v-if="viewing">
         <v-card color="primary" variant="tonal" rounded="lg" class="gift-preview">
           <div class="d-flex align-center justify-space-between">
-            <v-icon size="22">gift</v-icon>
+            <v-icon size="18">gift</v-icon>
             <MpStatusChip :status="viewing.status" type="coupon" size="sm" />
           </div>
           <div>
-            <div class="text-h4 font-weight-bold">{{ money(viewing.balance) }}</div>
+            <div class="mp-kpi-value">{{ money(viewing.balance) }}</div>
             <div class="text-body-2 text-medium-emphasis">of {{ money(viewing.initialValue) }} initial value</div>
           </div>
         </v-card>
 
         <MpFormSection title="Details" />
-        <div class="d-flex flex-column">
-          <MpListRow variant="divided" eyebrow="Code" :title="viewing.code" />
-          <MpListRow variant="divided" eyebrow="Contact" :title="viewing.contact" />
-          <MpListRow variant="divided" eyebrow="Recipient email" :title="viewing.recipient.email" />
-          <MpListRow variant="divided" eyebrow="Message" :title="viewing.message || '—'" />
-          <MpListRow variant="divided" eyebrow="Date added" :title="viewing.issued" />
-          <MpListRow variant="divided" eyebrow="Expiration" :title="viewing.expiry || 'No expiration date'" />
-          <MpListRow variant="divided" eyebrow="Last used" :title="viewing.lastUsed || 'Never used'" />
-          <MpListRow variant="divided" eyebrow="Image" :title="viewing.image || 'None'" />
-        </div>
+        <dl class="mp-label-value gift-details">
+          <dt>Code</dt>
+          <dd class="mp-meta-value">{{ viewing.code }}</dd>
+          <dt>Contact</dt>
+          <dd class="mp-meta-value">{{ viewing.contact }}</dd>
+          <dt>Recipient email</dt>
+          <dd class="mp-meta-value">{{ viewing.recipient.email }}</dd>
+          <dt>Message</dt>
+          <dd class="mp-meta-value">{{ viewing.message || '—' }}</dd>
+          <dt>Date added</dt>
+          <dd class="mp-meta-value">{{ viewing.issued }}</dd>
+          <dt>Expiration</dt>
+          <dd class="mp-meta-value">{{ viewing.expiry || 'No expiration date' }}</dd>
+          <dt>Last used</dt>
+          <dd class="mp-meta-value">{{ viewing.lastUsed || 'Never used' }}</dd>
+          <dt>Image</dt>
+          <dd class="mp-meta-value">{{ viewing.image || 'None' }}</dd>
+        </dl>
       </template>
 
       <template #footer>
@@ -521,8 +530,10 @@ function notify(text: string) { toast.success(text) }
 </template>
 
 <style scoped>
-.font-mono { font-family: monospace; white-space: nowrap; }
+.font-mono { font-family: var(--mp-fontFamily-mono); white-space: nowrap; }
 .min-width-0 { min-width: 0; }
+/* Keeps the balance bar a readable length even for small amounts. */
+.gift-balance { min-width: var(--mp-space-80); }
 .gift-preview {
   overflow: hidden;
   padding: var(--mp-component-card-padding);
@@ -532,39 +543,46 @@ function notify(text: string) { toast.success(text) }
   gap: var(--mp-component-card-gapCompact);
 }
 
-.gift-preview__kicker {
-  font-size: var(--mp-fontSize-11);
-  font-weight: var(--mp-fontWeight-semibold);
-  letter-spacing: var(--mp-letterSpacing-eyebrow);
-  text-transform: uppercase;
-}
 
 .gift-image-tile {
-  width: 84px;
-  height: 60px;
-  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
-  border-radius: 8px;
-  background: rgb(var(--v-theme-background));
+  width: var(--mp-space-80);
+  height: var(--mp-space-64);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--mp-radius-8);
+  background: var(--surface-secondary);
+  color: var(--on-surface);
   cursor: pointer;
-  gap: 2px;
-  padding: 4px;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  gap: var(--mp-space-2);
+  padding: var(--mp-space-4);
+  transition:
+    border-color var(--mp-motion-duration-fast) var(--mp-motion-easing-standard),
+    box-shadow var(--mp-motion-duration-fast) var(--mp-motion-easing-standard);
 }
-.gift-image-tile:hover { border-color: rgba(var(--v-theme-primary), 0.5); }
-.gift-image-tile:focus-visible { outline: 2px solid rgb(var(--v-theme-primary)); outline-offset: 2px; }
+/* Border only — a background here would out-specify the artwork gradients
+   below and blank the swatch being previewed. */
+.gift-image-tile:hover { border-color: var(--accent-default); }
+.gift-image-tile:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+/* A ring, not a fill: the tile's own artwork is the thing being selected. */
 .gift-image-tile.selected {
-  border-color: rgb(var(--v-theme-primary));
-  box-shadow: 0 0 0 1px rgb(var(--v-theme-primary));
+  border-color: var(--accent-default);
+  box-shadow: 0 0 0 1px var(--accent-default);
 }
-.gift-image-tile--art { color: rgb(var(--v-theme-on-primary)); }
-.gift-image-tile--g0 { background: linear-gradient(135deg, rgba(var(--v-theme-primary), 0.85), rgba(var(--v-theme-secondary), 0.85)); }
-.gift-image-tile--g1 { background: linear-gradient(135deg, rgba(var(--v-theme-secondary), 0.85), rgba(var(--v-theme-primary), 0.55)); }
-.gift-image-tile--g2 { background: linear-gradient(135deg, rgba(var(--v-theme-primary), 0.6), rgba(var(--v-theme-secondary), 0.6)); }
+/* Mock artwork on fully opaque accent/secondary stops, so --accent-on is a
+   truthful foreground. The old alpha washes let the white surface through and
+   put white text at roughly 2.5:1 on the lightest stop. The three variants
+   differ by direction rather than by opacity. */
+.gift-image-tile--art { color: var(--accent-on); }
+.gift-image-tile--g0 { background: linear-gradient(135deg, var(--accent-default), rgb(var(--v-theme-secondary))); }
+.gift-image-tile--g1 { background: linear-gradient(135deg, rgb(var(--v-theme-secondary)), var(--accent-default)); }
+.gift-image-tile--g2 { background: linear-gradient(90deg, var(--accent-default), rgb(var(--v-theme-secondary))); }
 .gift-image-name {
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 0.6rem !important;
+  font-size: var(--mp-fontSize-11);
 }
+
+/* F5 single-column label/value pairs inside the drawer. */
+.gift-details { grid-template-columns: 1fr; }
 </style>
