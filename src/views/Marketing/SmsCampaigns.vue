@@ -99,7 +99,6 @@ function confirmDelete() {
         v-if="smsCampaigns.length"
         :headers="visibleHeaders"
         :items="filtered"
-        :search="search"
         hover
         density="comfortable"
         :items-per-page="15"

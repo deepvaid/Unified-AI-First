@@ -125,7 +125,7 @@
 
 /* ── Progress bar ─────────────────────────────────────────────── */
 .retail-widget-progress {
-  padding: 0 22px 12px;
+  padding: 0 var(--mp-component-card-padding) var(--mp-space-12);
 }
 
 /* ── Lists (todo + recent) ────────────────────────────────────── */

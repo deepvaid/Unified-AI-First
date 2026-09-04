@@ -342,7 +342,7 @@ function sendChat() {
       <v-btn color="primary" variant="flat" size="small" class="text-none" prepend-icon="rocket" @click="publishOpen = true">Publish Chatbot</v-btn>
     </template>
 
-      <div class="cb__body d-flex h-100 overflow-hidden">
+      <div class="cb__body d-flex h-100">
         <!-- Section nav -->
         <nav class="cb__nav border-r bg-surface py-3 flex-shrink-0" aria-label="Chatbot settings">
           <div v-for="group in NAV_GROUPS" :key="group.title" class="cb__nav-group">
@@ -368,7 +368,7 @@ function sendChat() {
         </nav>
 
         <!-- Settings panel -->
-        <div class="cb__panel flex-grow-1 overflow-y-auto pa-6">
+        <div class="cb__panel pa-6">
           <div class="cb__panel-inner">
             <!-- PLAN-LOCKED CAPABILITY -->
             <template v-if="isSectionLocked(section)">
@@ -976,7 +976,17 @@ function sendChat() {
 .cb__nav-item:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
 .cb__nav-crown { margin-left: auto; color: var(--warn); flex-shrink: 0; }
 
-.cb__panel { min-width: 0; }
+/* Desktop: nav | scrolling panel | preview, side by side inside a clipped body.
+   These live here rather than as d-flex/overflow utilities because Vuetify's
+   utilities carry !important, which made the ≤1024 block below unable to
+   override them — the panel ended up either unshrinkable or squeezed to 48px. */
+.cb__body { overflow: hidden; }
+.cb__panel {
+  min-width: 0;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+}
 .cb__panel-inner { max-width: 640px; }
 
 .cb-upload {
@@ -1082,8 +1092,12 @@ function sendChat() {
 .cb__preview { width: 380px; }
 
 @media (max-width: 1024px) {
+  /* Stacked: the body scrolls as one and each pane takes its natural height. */
   .cb__body { flex-direction: column; overflow-y: auto; }
-  .cb__panel { flex: 0 0 auto; overflow: visible; }
+  .cb__panel {
+    flex: 0 0 auto;
+    overflow: visible;
+  }
   .cb__preview {
     width: 100%;
     border-top: 1px solid var(--border-subtle);

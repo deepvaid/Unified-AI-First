@@ -1073,8 +1073,8 @@ function locationRoleText(locationId: string) {
             size="sm"
             ariaLabel="Preview device"
             :items="[
-              { value: 'desktop', label: 'Desktop', icon: 'monitor' },
-              { value: 'mobile', label: 'Mobile', icon: 'smartphone' },
+              { value: 'desktop', label: 'Desktop', icon: 'monitor', tooltip: 'Desktop' },
+              { value: 'mobile', label: 'Mobile', icon: 'smartphone', tooltip: 'Mobile' },
             ]"
             @update:model-value="(value) => { previewDevice = value === 'mobile' ? 'mobile' : 'desktop' }"
           />

@@ -445,7 +445,7 @@ function bulkDeactivate() {
             Assign role
           </v-btn>
         </template>
-        <v-list density="compact">
+        <v-list density="compact" role="menu" aria-label="Assign role">
           <template v-for="group in bulkAssignGroups" :key="group.product">
             <v-list-subheader>{{ group.label }}</v-list-subheader>
             <MpMenuItem v-for="role in group.roles" :key="role.id" :title="role.name" @click="bulkAssignRole(role.id)" />

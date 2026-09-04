@@ -236,9 +236,11 @@ const barPath = computed(() => heroBars
   max-width: var(--mp-component-state-measure);
 }
 
-/* Specificity over Vuetify's size class, so no !important is needed. */
+/* !important is load-bearing: maropostDefaults.VBtn writes padding-inline as an
+   INLINE style on every v-btn, and an inline style beats any class selector
+   however specific. Same reason MpSegmentedControl marks its own geometry. */
 .v-btn.commerce-landing__cta {
-  padding-inline: var(--mp-space-28);
+  padding-inline: var(--mp-space-28) !important;
   font-weight: var(--mp-fontWeight-semibold);
 }
 
@@ -294,19 +296,20 @@ const barPath = computed(() => heroBars
   font-variant-numeric: tabular-nums;
 }
 
-/* The svg is taken out of flow so the box keeps its own ratio rather than
-   inheriting the viewBox's 100:80. */
+/* aspect-ratio gives the BOX its 16:5 shape; the svg then fills that box.
+   It must stay in flow — absolutely positioned with `inset` and `width/height:
+   auto`, a replaced element resolves its height from the viewBox ratio (100:80)
+   and over-constrains `bottom` away, which rendered the chart 2.3x too tall and
+   painted it over the hero footer. */
 .commerce-landing__hero-chart {
-  position: relative;
   border-radius: var(--mp-radius-12);
   background: var(--surface-secondary);
   aspect-ratio: 16 / 5;
+  padding: var(--mp-space-16);
 
   svg {
-    position: absolute;
-    inset: var(--mp-space-16);
-    width: auto;
-    height: auto;
+    width: 100%;
+    height: 100%;
     display: block;
   }
 }

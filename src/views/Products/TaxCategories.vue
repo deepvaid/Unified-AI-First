@@ -49,9 +49,22 @@ const activeFilterEntries = computed(() =>
     : []
 )
 function clearAllFilters() { typeFilter.value = [] }
-const filteredCategories = computed(() =>
-  typeFilter.value.length ? store.taxCategories.filter(c => typeFilter.value.includes(c.type)) : store.taxCategories
-)
+// The computed owns BOTH the type filter and the text search. Vuetify's own
+// `:search` only matches the RENDERED columns, so once ID and Description are
+// tiered away the query silently stopped matching them below md/lg.
+const filteredCategories = computed(() => {
+  const byType = typeFilter.value.length
+    ? store.taxCategories.filter(c => typeFilter.value.includes(c.type))
+    : store.taxCategories
+  const q = search.value.trim().toLowerCase()
+  if (!q) return byType
+  return byType.filter(c =>
+    c.id.toLowerCase().includes(q) ||
+    c.type.toLowerCase().includes(q) ||
+    c.name.toLowerCase().includes(q) ||
+    c.description.toLowerCase().includes(q),
+  )
+})
 
 // ── Add / Edit drawer ───────────────────────────────────────────────
 const drawer = ref(false)
@@ -135,7 +148,6 @@ function exportCategories() {
       <v-data-table
         :headers="visibleHeaders"
         :items="filteredCategories"
-        :search="search"
         :items-per-page="15"
         hover
         density="comfortable"

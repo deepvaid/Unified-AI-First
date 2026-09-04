@@ -83,7 +83,6 @@ const { visibleHeaders } = useResponsiveTableHeaders(headers)
         v-if="transactionalSms.length"
         :headers="visibleHeaders"
         :items="filtered"
-        :search="search"
         hover
         density="comfortable"
         :items-per-page="15"
