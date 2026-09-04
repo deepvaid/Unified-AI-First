@@ -180,10 +180,12 @@ function confirmDelete() {
 <style scoped>
 /* A soft fill alone groups a column's six fields — no hairline on top of a
    background (recipe B4). */
+/* A hairline, not a fill: --surface-secondary behind these transparent outlined
+   fields dropped their resting border to 2.92:1, below the 3:1 a control
+   boundary must hold. The group still reads as one block. */
 .column-block {
+  border: 1px solid var(--border-subtle);
   border-radius: var(--mp-radius-12);
   padding: var(--mp-component-card-paddingCompact);
-  background: var(--surface-secondary);
-  color: var(--on-surface);
 }
 </style>

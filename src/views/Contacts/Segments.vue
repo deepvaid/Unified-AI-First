@@ -388,15 +388,16 @@ function confirmDelete() {
 <style scoped>
 .rule-block {
   /* The block owns the rhythm between its header, its criteria grid and its
-     footer, on the same gap the criteria themselves sit on. A soft fill alone
-     separates it from the drawer — no hairline on top of a background. */
+     footer, on the same gap the criteria themselves sit on. A hairline, not a
+     fill: --surface-secondary behind the transparent outlined criteria fields
+     dropped their resting border to 2.92:1, below the 3:1 a control boundary
+     must hold. */
   display: flex;
   flex-direction: column;
   gap: var(--mp-component-field-groupGap);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--mp-radius-12);
   padding: var(--mp-space-16);
-  background: var(--surface-secondary);
-  color: var(--on-surface);
 }
 
 .builder-note {
