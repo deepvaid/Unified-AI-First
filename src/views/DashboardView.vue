@@ -1070,8 +1070,19 @@ function toggleFavoriteActive() {
   color: rgb(var(--v-theme-error));
 }
 
+/* The soft container names its own foreground (CLAUDE.md pairing table):
+   --neg-soft pairs with --neg-ink. The resting ink below is the bare error
+   colour, which only clears AA against the page surface, not against this
+   fill — so the hovered state re-declares it. */
 .mp-menu-row--danger:hover:not(:disabled) {
   background: var(--neg-soft);
+  color: var(--neg-ink);
+}
+
+.mp-menu-row--danger:hover:not(:disabled) .mp-menu-row__icon,
+.mp-menu-row--danger:hover:not(:disabled) .mp-menu-row__body strong,
+.mp-menu-row--danger:hover:not(:disabled) .mp-menu-row__body small {
+  color: var(--neg-ink);
 }
 
 .dashboard-date-menu {

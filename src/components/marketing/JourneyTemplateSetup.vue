@@ -413,7 +413,10 @@ function setProductMode(mode: 'product' | 'categories') {
 
 <style scoped>
 .jts-card { padding: var(--mp-component-card-padding); }
-.jts-intro { min-width: var(--mp-component-toolbar-search-min-width); }
+/* Keeps the intro from being squeezed before the wrapping row breaks. The
+   token is camelCase; the kebab spelling here resolved to nothing, so this
+   declaration was silently dropped. */
+.jts-intro { min-width: min(var(--mp-component-toolbar-searchMinWidth), 100%); }
 .jts-preview {
   padding: var(--mp-space-16) var(--mp-space-12);
   max-width: 100%;

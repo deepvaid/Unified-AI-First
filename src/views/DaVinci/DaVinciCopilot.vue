@@ -131,11 +131,22 @@ function startNewChat() {
   overflow-y: auto;
 }
 
-/* Below the split breakpoint the 260px history rail would leave the chat
-   ~115px wide; the conversation gets the whole frame instead. */
+/* Below the split breakpoint a side-by-side rail leaves the conversation ~115px
+   wide, so the two panes stack instead — the same treatment MerchandisingLayout
+   gives its rail. Hiding the rail here is not an option: it is the only history
+   surface on this page (MpDaVinciBot is headerless, so its own history trigger
+   is not rendered), and F6 keeps a side panel reachable below the breakpoint. */
 @media (max-width: ($mp-layout-breakpointSplit - 0.02px)) {
+  .davinci-copilot__body {
+    flex-direction: column;
+  }
+
   .davinci-copilot__rail {
-    display: none;
+    width: 100%;
+    flex: 0 0 auto;
+    max-height: 35vh;
+    border-right: 0;
+    border-bottom: 1px solid var(--border-subtle);
   }
 }
 

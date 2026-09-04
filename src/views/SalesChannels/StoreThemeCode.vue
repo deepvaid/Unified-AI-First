@@ -362,7 +362,10 @@ watch(channelId, () => {
   color: var(--on-surface-muted);
 }
 .tc-rail__btn:hover { background: var(--surface-secondary); color: var(--text-primary); }
-.tc-rail__btn--active {
+/* `:hover` out-specifies a single class, so the active pair is restated for the
+   hovered case — same guard the file already uses on .tc-file-row--active. */
+.tc-rail__btn--active,
+.tc-rail__btn--active:hover {
   background: var(--accent-soft);
   color: var(--accent);
 }
