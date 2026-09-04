@@ -4,6 +4,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { useProductExtrasStore, type PricingConfiguration } from '@/stores/useProductExtras'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import { useToast } from '@/composables/useToast'
+import { useInitialLoad } from '@/composables/useInitialLoad'
+import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
@@ -13,6 +15,7 @@ import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 
 /**
  * Price lists — scheduled, audience-scoped price adjustments per sales channel.
@@ -27,6 +30,7 @@ const salesChannels = useSalesChannelsStore()
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
+const { loading } = useInitialLoad()
 
 const accountId = computed(() => String(route.params.accountId))
 const basePath = computed(() => `/commerce/${accountId.value}/price-lists`)
@@ -44,14 +48,19 @@ const channelFilter = ref<'All channels' | string>('All channels')
 
 const headers = [
   { title: 'Title', key: 'title', sortable: true, minWidth: '240px' },
-  { title: 'Sales channel', key: 'salesChannel', sortable: true },
-  { title: 'Audience', key: 'audienceValue' },
-  { title: 'Schedule', key: 'startDate', sortable: true },
+  { title: 'Sales channel', key: 'salesChannel', sortable: true, hideBelow: 'lg' as const },
+  { title: 'Audience', key: 'audienceValue', hideBelow: 'lg' as const },
+  { title: 'Schedule', key: 'startDate', sortable: true, hideBelow: 'md' as const },
   { title: 'Adjustment', key: 'percentage', align: 'end' as const, sortable: true },
-  { title: 'Products', key: 'productCount', align: 'end' as const, sortable: true },
-  { title: 'Status', key: 'status', sortable: true },
+  { title: 'Products', key: 'productCount', align: 'end' as const, sortable: true, hideBelow: 'md' as const },
+  { title: 'Status', key: 'status', sortable: true, hideBelow: 'sm' as const },
   { title: '', key: 'actions', sortable: false, width: 56 },
 ]
+
+// Manual hides from the toolbar's column menu, merged with the responsive
+// tiers above so the two cannot fight. Without this the menu was inert.
+const hiddenColumns = ref<string[]>([])
+const { visibleHeaders } = useResponsiveTableHeaders(headers, hiddenColumns)
 
 const channels = computed(() => {
   const fromStore = salesChannels.channelsForAccount(accountId.value).map((c) => c.name)
@@ -146,6 +155,7 @@ function doDelete() {
         v-model:quick-filter-value="statusFilter"
         :quick-filter="statusQuickFilter"
         v-model:search="search"
+        v-model:hidden-columns="hiddenColumns"
         title="All price lists"
         search-placeholder="Search title or audience"
         :total-count="filtered.length"
@@ -164,8 +174,11 @@ function doDelete() {
         </template>
       </MpDataTableToolbar>
 
+      <MpTableSkeleton v-if="loading" :rows="8" :columns="8" />
+
       <v-data-table
-        :headers="headers"
+        v-else
+        :headers="visibleHeaders"
         :items="filtered"
         :items-per-page="10"
         hover
@@ -189,7 +202,7 @@ function doDelete() {
           <span class="text-body-2 text-medium-emphasis">{{ scheduleLabel(item) }}</span>
         </template>
         <template #item.percentage="{ item }">
-          <span class="text-body-2 font-weight-medium" :class="item.adjustment === 'Decrease' ? 'text-success' : ''">
+          <span class="text-body-2 font-weight-medium">
             {{ item.adjustment === 'Decrease' ? '−' : '+' }}{{ item.percentage }}%
           </span>
         </template>
@@ -213,7 +226,6 @@ function doDelete() {
             :description="hasFilters ? 'Try a different search term or clear your filters.' : 'A price list adjusts prices for a sales channel and audience over a scheduled window.'"
             :action-label="hasFilters ? 'Clear filters' : 'New price list'"
             :action-icon="hasFilters ? 'x' : 'plus'"
-            class="py-10"
             @action="hasFilters ? clearFilters() : createConfig()"
           />
         </template>
@@ -232,7 +244,9 @@ function doDelete() {
 </template>
 
 <style scoped>
+/* Reading measure for the one-line description under a price-list title —
+   a typographic axis, so it needs no layout token (same call as Coupons). */
 .pl-desc {
-  max-width: 280px;
+  max-width: 28ch;
 }
 </style>
