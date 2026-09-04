@@ -17,6 +17,7 @@ import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpFormSection from '@/components/MpFormSection.vue'
 import MpFormField from '@/components/MpFormField.vue'
+import MpSegmentedControl from '@/components/MpSegmentedControl.vue'
 import { useToast } from '@/composables/useToast'
 
 const store = useCommerceStore()
@@ -31,6 +32,10 @@ const TAX_CATEGORIES = ['Standard', 'Reduced', 'Zero-rated', 'Exempt']
 const BRANDS = ['Acme Corp', 'Brand House', 'Global Goods', 'Prime Supplier', 'Local Artisan']
 const TAGS = ['Featured', 'New', 'Sale', 'Seasonal', 'Clearance']
 const COLLECTIONS = ['Gifts', 'Best Sellers', 'Holiday', 'Corporate']
+const KIND_ITEMS = [
+  { value: 'Digital', label: 'Digital' },
+  { value: 'Physical', label: 'Physical' },
+]
 
 function slugify(value: string): string {
   return value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
@@ -283,7 +288,7 @@ function notify(text: string) { toast.success(text) }
   <div class="h-100 d-flex flex-column gap-5">
     <MpPageHeader title="Purchasable Gift Cards" :subtitle="summary">
       <template #actions>
-        <v-btn variant="flat" prepend-icon="download" class="text-none" color="surface" @click="exportCsv">Export</v-btn>
+        <v-btn variant="outlined" prepend-icon="download" class="text-none" @click="exportCsv">Export</v-btn>
         <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="openCreate">New purchasable gift card</v-btn>
       </template>
     </MpPageHeader>
@@ -301,15 +306,11 @@ function notify(text: string) { toast.success(text) }
         @clear-filters="clearAllFilters"
       >
         <template #filter-content>
-          <div class="pa-4 pb-2">
-            <!-- Toolbar filters stay compact and suppress details deliberately: this is a
-                 dense popover, not a form, and the select cannot carry validation. -->
-            <MpFormSection title="Filter by">
-              <MpFormGrid>
-                <v-select v-model="filters.kind" label="Type" :items="filterOptions.kind" hide-details clearable />
-              </MpFormGrid>
-            </MpFormSection>
-          </div>
+          <!-- The drawer body already owns the inset and the field rhythm. The select
+               suppresses details deliberately: it cannot carry validation. -->
+          <MpFormGrid>
+            <v-select v-model="filters.kind" label="Type" :items="filterOptions.kind" hide-details clearable />
+          </MpFormGrid>
         </template>
       </MpDataTableToolbar>
 
@@ -424,12 +425,12 @@ function notify(text: string) { toast.success(text) }
           @update:model-value="slugTouched = true"
         />
         <MpFormField label="Delivery type">
-          <div>
-            <v-btn-toggle v-model="form.kind" mandatory>
-              <v-btn value="Digital" class="text-none" prepend-icon="mail">Digital</v-btn>
-              <v-btn value="Physical" class="text-none" prepend-icon="credit-card">Physical</v-btn>
-            </v-btn-toggle>
-          </div>
+          <MpSegmentedControl
+            :model-value="form.kind"
+            :items="KIND_ITEMS"
+            ariaLabel="Delivery type"
+            @update:model-value="(v) => { if (v) form.kind = v as typeof form.kind }"
+          />
         </MpFormField>
         <v-textarea v-model="form.message" label="Gift card message" rows="3" auto-grow />
       </MpFormGrid>
@@ -449,18 +450,21 @@ function notify(text: string) { toast.success(text) }
             prefix="AUD $"
           />
           <v-btn
-            icon="trash-2"
+            icon
             variant="text"
             size="small"
             class="text-medium-emphasis"
             :disabled="form.denominations.length === 1"
             :aria-label="`Remove denomination ${i + 1}`"
             @click="removeDenomination(i)"
-          />
+          >
+            <v-icon size="18">trash-2</v-icon>
+            <v-tooltip activator="parent" location="top">Remove denomination</v-tooltip>
+          </v-btn>
         </div>
         <div>
           <v-btn variant="text" color="primary" class="text-none" prepend-icon="plus" size="small" @click="addDenomination">Add denomination</v-btn>
-          <div v-if="submitted && !validDenominations.length" class="text-caption text-error">Add at least one denomination greater than zero.</div>
+          <div v-if="submitted && !validDenominations.length" role="alert" class="text-caption text-error">Add at least one denomination greater than zero.</div>
         </div>
       </MpFormGrid>
 
@@ -470,15 +474,15 @@ function notify(text: string) { toast.success(text) }
       </MpFormGrid>
 
       <MpFormSection title="Media" />
-      <v-card variant="flat" border rounded="lg" class="pa-6 d-flex flex-column align-center justify-center text-center media-placeholder">
-        <v-icon size="28" class="text-medium-emphasis mb-2">image-plus</v-icon>
+      <v-card variant="flat" border rounded="lg" class="d-flex flex-column align-center justify-center text-center media-placeholder">
+        <v-icon size="20" class="text-medium-emphasis mb-2">image-plus</v-icon>
         <div class="text-body-2 font-weight-medium">Add media</div>
         <div class="text-caption text-medium-emphasis">Drag & drop or click to upload (mock)</div>
       </v-card>
 
       <v-expansion-panels v-model="organiseOpen" variant="accordion" class="organise-panels" multiple>
         <v-expansion-panel elevation="0" rounded="lg">
-          <v-expansion-panel-title class="organise-panels__title">Organise</v-expansion-panel-title>
+          <v-expansion-panel-title class="mp-meta-label organise-panels__title">Organise</v-expansion-panel-title>
           <v-expansion-panel-text>
             <MpFormGrid>
               <v-select v-model="form.taxCategory" label="Tax Category" :items="TAX_CATEGORIES" clearable />
@@ -492,7 +496,7 @@ function notify(text: string) { toast.success(text) }
 
       <template #footer>
         <v-btn variant="text" class="text-none" @click="requestCloseDrawer">Cancel</v-btn>
-        <v-btn color="primary" variant="elevated" class="text-none" prepend-icon="check" @click="saveProduct">
+        <v-btn color="primary" variant="flat" class="text-none" prepend-icon="check" @click="saveProduct">
           {{ isEdit ? 'Save changes' : 'Save gift card' }}
         </v-btn>
       </template>
@@ -520,16 +524,18 @@ function notify(text: string) { toast.success(text) }
 
 <style scoped>
 .min-width-0 { min-width: 0; }
-.font-mono-field :deep(input) { font-family: monospace; }
-.media-placeholder { border-style: dashed !important; cursor: pointer; }
-.organise-panels :deep(.v-expansion-panel) { border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); }
-/* The panel title reads as an in-form section heading (MpFormSection's type spec),
-   so the accordion doesn't introduce a second heading style into the drawer. */
-.organise-panels__title {
-  font-size: var(--mp-fontSize-11);
-  font-weight: var(--mp-fontWeight-semibold);
-  letter-spacing: var(--mp-letterSpacing-eyebrow);
-  text-transform: uppercase;
-  color: var(--muted);
+.font-mono-field :deep(input) { font-family: var(--mp-fontFamily-mono); }
+/* Card-root inset on the card token (B1). `.media-placeholder.v-card` out-specifies
+   v-card's own border rule, so the dashed hairline needs no !important. The old
+   cursor: pointer is dropped — nothing handles a click on this placeholder. */
+.media-placeholder.v-card {
+  padding: var(--mp-component-card-paddingSpacious);
+  border-style: dashed;
+  border-color: var(--border-strong);
 }
+.organise-panels :deep(.v-expansion-panel) { border: 1px solid var(--border-subtle); }
+/* Eyebrow type comes from the global .mp-meta-label utility (the same
+   --mp-text-metaLabel-* tokens MpFormSection's heading uses), so the accordion
+   doesn't introduce a second heading style into the drawer. */
+.organise-panels__title { color: var(--muted); }
 </style>
