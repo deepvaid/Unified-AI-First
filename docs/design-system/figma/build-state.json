@@ -7,8 +7,8 @@
     "fileName": "Marobase Design System",
     "url": "https://www.figma.com/design/RJJ0qDChSdh0FwH2UG0t7t"
   },
-  "phase": "phase3a",
-  "step": "checkpoint after fidelity pass",
+  "phase": "phase3b",
+  "step": "checkpoint after molecules",
   "entities": {
     "collections": {
       "Primitives": "VariableCollectionId:2:2",
@@ -305,7 +305,12 @@
       "Dimensions/wizard/measure-md": "VariableID:9:38",
       "Dimensions/wizard/measure-lg": "VariableID:9:39",
       "Dimensions/banner/min-height": "VariableID:9:40",
-      "Color/status/error/hover": "VariableID:27:2"
+      "Color/status/error/hover": "VariableID:27:2",
+      "Color/border/hairline": "VariableID:69:2",
+      "Color/text/medium-emphasis": "VariableID:69:3",
+      "Color/surface/tooltip": "VariableID:69:4",
+      "Color/surface/skeleton": "VariableID:69:5",
+      "Color/accent/border-soft": "VariableID:81:3"
     },
     "textStyles": {
       "Display/XL": "S:c1def37fb6b05ac8a6091d137168aae18d23c23e,",
@@ -327,7 +332,19 @@
       "Code/Mono": "S:c2bd3471d7309939243502f34527e978e0f42d89,",
       "Component/Chip": "S:6b667e326ecb0afb9aa910c8b144ec65a3ba8b3c,",
       "Component/Label Strong": "S:e27c14af05b3803092519c4599fb29b9ef61143c,",
-      "Code/Kbd": "S:6fa4d21fbcb141605cac86729bfad049fdff9189,"
+      "Code/Kbd": "S:6fa4d21fbcb141605cac86729bfad049fdff9189,",
+      "Heading/Page Title SM": "S:1c912163ed2d1011607a0692cc9ed605c30222e8,",
+      "Body/Small": "S:07906c651dc6a48ea8408f9f7734cd46fcc069e4,",
+      "Body/Strong": "(see Figma \u2014 created P3b.e)",
+      "Component/Rail Title": "(P3b.t)",
+      "Component/Rail Group": "(P3b.t)",
+      "Body/Micro": "(P3b.m)",
+      "Data/Total": "(P3b.o)",
+      "Body/Caption Strong": "(P3b.f)",
+      "Heading/Dialog Title": "(P3b.i)",
+      "Heading/State Title": "(P3b.g)",
+      "Heading/State Title Launcher": "(P3b.g)",
+      "Heading/State Title Prominent": "(P3b.g)"
     },
     "effectStyles": {
       "Elevation/Light/Raised": "S:45fee83d2fe52db482b772a7f952f71c01eb6322,",
@@ -370,7 +387,27 @@
       "Avatar": "41:2",
       "List & Nav Items": "42:2",
       "Utility Atoms": "43:2",
-      "Illustration": "45:2"
+      "Illustration": "45:2",
+      "Headers": "59:2",
+      "KPI Card": "65:2",
+      "Data Table Toolbar": "72:2",
+      "Filter Tabs & Segmented Control": "75:2",
+      "Feedback": "77:2",
+      "Empty State": "80:2",
+      "Chat Bubble": "81:2",
+      "Floating Bulk Bar": "79:41",
+      "Dialog": "84:2",
+      "Form Drawer": "87:2",
+      "Form": "89:2",
+      "Option Card & Status Toggle": "91:2",
+      "List Row & Identity Cell": "92:2",
+      "Table Cells": "98:2",
+      "Label-Value, Timeline & Summary": "101:2",
+      "Menu & Row Actions": "105:2",
+      "Notifications": "106:2",
+      "Usage, Wizard & Coming Soon": "110:2",
+      "Selects & Search": "111:2",
+      "Section Rail": "112:2"
     },
     "components": {
       "Button": {
@@ -383,8 +420,8 @@
           "Leading icon": "Leading icon#30:31",
           "Trailing icon": "Trailing icon#30:62",
           "Focus ring": "Focus ring#30:93",
-          "Leading icon ↔": "Leading icon ↔#30:124",
-          "Trailing icon ↔": "Trailing icon ↔#30:155"
+          "Leading icon \u2194": "Leading icon \u2194#30:124",
+          "Trailing icon \u2194": "Trailing icon \u2194#30:155"
         },
         "gridLabels": [
           "30:63",
@@ -408,7 +445,7 @@
         "set": "34:153",
         "variants": 24,
         "properties": {
-          "Icon ↔": "Icon ↔#34:0",
+          "Icon \u2194": "Icon \u2194#34:0",
           "Focus ring": "Focus ring#34:25"
         },
         "gridLabels": [
@@ -507,7 +544,8 @@
       "Segment": {
         "page": "42:2",
         "set": "42:285",
-        "variants": 6
+        "variants": 12,
+        "note": "Size axis added 2026-09-07 (sm 24-in-32 / md 32-in-40)"
       },
       "Step": {
         "page": "42:2",
@@ -575,7 +613,409 @@
       "square": "47:4",
       "square-check": "47:8",
       "square-minus": "47:12",
-      "circle": "47:15"
+      "circle": "47:15",
+      "trending-down": "64:5",
+      "circle-alert": "64:12",
+      "arrow-down": "95:310"
+    },
+    "molecules": {
+      "Page Header": {
+        "page": "59:2",
+        "doc": "62:64",
+        "set": "60:178",
+        "variants": 4,
+        "props": [
+          "Show eyebrow",
+          "Show subtitle",
+          "Show back",
+          "Show actions",
+          "Show tabs",
+          "Eyebrow",
+          "Title",
+          "Subtitle"
+        ]
+      },
+      "Section Header": {
+        "page": "59:2",
+        "doc": "62:64",
+        "component": "61:66",
+        "props": [
+          "Show icon",
+          "Show eyebrow",
+          "Show description",
+          "Show actions",
+          "Icon",
+          "Eyebrow",
+          "Title",
+          "Description"
+        ]
+      },
+      "Trend Indicator": {
+        "page": "65:2",
+        "doc": "66:187",
+        "set": "65:12",
+        "variants": 2,
+        "props": [
+          "Label"
+        ]
+      },
+      "KPI Card": {
+        "page": "65:2",
+        "doc": "66:187",
+        "set": "65:611",
+        "variants": 26,
+        "props": [
+          "Show icon",
+          "Show period",
+          "Show trend",
+          "Show sub stat",
+          "Show sparkline",
+          "Show updated at",
+          "Icon",
+          "Label",
+          "Value",
+          "Period",
+          "Sub stat",
+          "Updated at"
+        ]
+      },
+      "Data Table Toolbar": {
+        "page": "Data Table Toolbar",
+        "doc": "73:29",
+        "component": "72:3",
+        "props": 16
+      },
+      "Filter Tabs": {
+        "page": "75:2",
+        "doc": "76:64",
+        "component": "75:3",
+        "props": [
+          "Show tab 4",
+          "+ exposed Tab instances"
+        ]
+      },
+      "Segmented Control": {
+        "page": "75:2",
+        "doc": "76:64",
+        "set": "75:101",
+        "variants": 4,
+        "props": [
+          "exposed Segment instances"
+        ]
+      },
+      "Alert": {
+        "page": "77:2",
+        "doc": "78:73",
+        "set": "77:124",
+        "variants": 4
+      },
+      "Banner": {
+        "page": "77:2",
+        "doc": "78:73",
+        "set": "77:202",
+        "variants": 4
+      },
+      "Toast": {
+        "page": "77:2",
+        "doc": "78:73",
+        "set": "77:306",
+        "variants": 4
+      },
+      "Empty State": {
+        "page": "80:2",
+        "set": "80:440",
+        "variants": 8,
+        "props": [
+          "Show illustration",
+          "Show icon",
+          "Show description",
+          "Show action",
+          "Illustration",
+          "Icon",
+          "Title",
+          "Description"
+        ],
+        "doc": "82:130",
+        "note": "Tone=error glyph pinned to circle-alert (no swap ref)"
+      },
+      "Chat Bubble": {
+        "page": "81:2",
+        "set": "81:107",
+        "variants": 12,
+        "props": [
+          "Show avatar",
+          "Show meta",
+          "Show footer",
+          "Author",
+          "Time",
+          "Message",
+          "Footer"
+        ],
+        "doc": "82:286",
+        "note": "Loading is a variant axis (body hidden) \u2014 booleans cannot hide a sibling"
+      },
+      "Floating Bulk Bar": {
+        "page": "79:41",
+        "component": "79:42",
+        "props": [
+          "Show select all",
+          "Count",
+          "+ exposed buttons"
+        ],
+        "doc": "82:385"
+      },
+      "Dialog": {
+        "page": "84:2",
+        "set": "84:339",
+        "variants": 6,
+        "slot": "84:4",
+        "props": [
+          "Show icon",
+          "Show eyebrow",
+          "Show subtitle",
+          "Show footer start",
+          "Show footer",
+          "Body content (swap)",
+          "Eyebrow",
+          "Title",
+          "Subtitle"
+        ],
+        "doc": "86:252"
+      },
+      "Confirm Dialog": {
+        "page": "84:2",
+        "doc": "86:252",
+        "set": "86:251",
+        "variants": 2,
+        "body": "86:87"
+      },
+      "Form Drawer": {
+        "page": "87:2",
+        "doc": "88:48",
+        "set": "87:153",
+        "variants": 3,
+        "props": [
+          "Show subtitle",
+          "Show footer start",
+          "Show footer",
+          "Body content (swap)",
+          "Title",
+          "Subtitle"
+        ]
+      },
+      "Form Grid": {
+        "page": "89:2",
+        "set": "89:153",
+        "variants": 2,
+        "props": [
+          "Show trailing row",
+          "+ exposed Fields"
+        ],
+        "doc": "90:144"
+      },
+      "Form Field": {
+        "page": "89:2",
+        "set": "89:225",
+        "variants": 2,
+        "slot": "89:154",
+        "props": [
+          "Required",
+          "Show description",
+          "Control (swap)",
+          "Label",
+          "Description"
+        ],
+        "doc": "90:144"
+      },
+      "Form Section": {
+        "page": "89:2",
+        "component": "89:226",
+        "props": [
+          "Required",
+          "Show description",
+          "Content (swap)",
+          "Title",
+          "Description"
+        ],
+        "doc": "90:144"
+      },
+      "Form Error Summary": {
+        "page": "89:2",
+        "component": "89:277",
+        "note": "NEW \u2014 composes Alert error; ticket A6",
+        "doc": "90:144"
+      },
+      "Option Card": {
+        "page": "91:2",
+        "doc": "96:29",
+        "set": "91:83",
+        "variants": 5,
+        "props": [
+          "Show icon",
+          "Show description",
+          "Show media",
+          "Focus ring",
+          "Icon",
+          "Title",
+          "Description"
+        ]
+      },
+      "Status Toggle": {
+        "page": "91:2",
+        "doc": "96:29",
+        "set": "93:38",
+        "variants": 3
+      },
+      "List Row": {
+        "page": "92:2",
+        "doc": "93:54",
+        "set": "92:136",
+        "variants": 12,
+        "props": [
+          "Show lead",
+          "Show eyebrow",
+          "Show trailing",
+          "Show chevron",
+          "Lead (swap)",
+          "Eyebrow",
+          "Title",
+          "Meta"
+        ]
+      },
+      "Identity Cell": {
+        "page": "92:2",
+        "doc": "93:54",
+        "set": "92:155",
+        "variants": 3,
+        "props": [
+          "Show secondary",
+          "Name",
+          "Secondary"
+        ],
+        "note": "NEW"
+      },
+      "Table Header Cell": {
+        "page": "98:2",
+        "doc": "100:41",
+        "set": "98:24",
+        "variants": 4
+      },
+      "Table Cell": {
+        "page": "98:2",
+        "doc": "100:41",
+        "set": "98:73",
+        "variants": 8
+      },
+      "Label-Value": {
+        "page": "101:2",
+        "component": "101:4",
+        "doc": "103:34"
+      },
+      "Label-Value Grid": {
+        "page": "101:2",
+        "component": "101:7"
+      },
+      "Timeline Item": {
+        "page": "101:2",
+        "set": "101:66",
+        "variants": 4,
+        "doc": "103:34",
+        "note": "Kind=note glyph pinned to message-square"
+      },
+      "Summary Row": {
+        "page": "101:2",
+        "set": "101:73",
+        "variants": 2
+      },
+      "Summary List": {
+        "page": "101:2",
+        "component": "101:82",
+        "note": "NEW",
+        "doc": "103:34"
+      },
+      "Menu": {
+        "page": "105:2",
+        "component": "105:3",
+        "props": [
+          "Show danger item",
+          "Show item 3",
+          "+ exposed Menu Items"
+        ],
+        "doc": "107:2895"
+      },
+      "Row Actions Menu": {
+        "page": "105:2",
+        "set": "105:130",
+        "variants": 2,
+        "doc": "107:2895"
+      },
+      "Notification Row": {
+        "page": "106:2",
+        "set": "106:44",
+        "variants": 2,
+        "props": [
+          "Show download",
+          "Title",
+          "Time"
+        ],
+        "doc": "108:2960"
+      },
+      "Notifications Bell": {
+        "page": "106:2",
+        "component": "106:45",
+        "doc": "108:2960"
+      },
+      "Notifications Panel": {
+        "page": "106:2",
+        "set": "106:270",
+        "variants": 2,
+        "doc": "108:2960"
+      },
+      "Usage Meter": {
+        "page": "110:2",
+        "set": "110:25",
+        "variants": 2,
+        "doc": "111:3359"
+      },
+      "Wizard Step Card": {
+        "page": "110:2",
+        "component": "110:26",
+        "doc": "111:3359"
+      },
+      "Coming Soon Tile": {
+        "page": "110:2",
+        "component": "110:83",
+        "doc": "111:3359"
+      },
+      "Coming Soon Tiles": {
+        "page": "110:2",
+        "component": "110:94",
+        "doc": "111:3359"
+      },
+      "Folder Select": {
+        "page": "111:2",
+        "doc": "113:87",
+        "set": "111:95",
+        "variants": 2
+      },
+      "Date Range Select": {
+        "page": "111:2",
+        "doc": "113:87",
+        "set": "111:221",
+        "variants": 2
+      },
+      "Search Pill": {
+        "page": "111:2",
+        "doc": "113:87",
+        "set": "111:237",
+        "variants": 2
+      },
+      "Section Rail": {
+        "page": "112:2",
+        "doc": "113:340",
+        "component": "112:5",
+        "props": 11
+      }
     }
   },
   "completedSteps": [
@@ -588,10 +1028,10 @@
     "P1.b primitives (31)",
     "P1.c color batch1 (46)",
     "P1.c color batch2 (46)",
-    "P1.c color batch3 (45) — Color complete 137",
+    "P1.c color batch3 (45) \u2014 Color complete 137",
     "P1.d nav-skin (9) + typography (2)",
     "P1.e dimensions batch1 (49)",
-    "P1.e dimensions batch2 (39) — all 267 variables created",
+    "P1.e dimensions batch2 (39) \u2014 all 267 variables created",
     "P1.f text styles (17, 14 font-size-bound)",
     "P1.g effect styles (8)",
     "P1.h paint styles (3)",
@@ -605,12 +1045,12 @@
     "P2.f elevation/motion/layering page (21:2)",
     "P2.g icons batch1 (70; 23:10..23:369)",
     "P2.g icons batch2 (70; 24:4..24:362)",
-    "P2.g icons batch3 (70; 25:8..25:404) — 210 Icon/* components in grid 23:7",
+    "P2.g icons batch3 (70; 25:8..25:404) \u2014 210 Icon/* components in grid 23:7",
     "P2.h layout & breakpoints page (26:2)",
-    "PHASE 2 BUILD COMPLETE — awaiting user review (P2.i)",
-    "P2.i user review OK — proceed to atoms (2026-09-07)",
+    "PHASE 2 BUILD COMPLETE \u2014 awaiting user review (P2.i)",
+    "P2.i user review OK \u2014 proceed to atoms (2026-09-07)",
     "P3a prep: icon vectors SCALE constraints (706), status/error/hover added (27:2)",
-    "P3a.a Button set 30:62 (30 variants, 6 props) — validation pending",
+    "P3a.a Button set 30:62 (30 variants, 6 props) \u2014 validation pending",
     "P3a.a Button VALIDATED (30 variants, 6 props, 90 paints seeded)",
     "P3a.b Icon Button set 34:153 (24 variants) VALIDATED",
     "P3a.c Field set 35:232 (18 variants, 13 props) VALIDATED",
@@ -622,15 +1062,49 @@
     "P3a.g Utility Atoms: Tooltip 43:9, Divider 43:13 (2), Spinner 43:20 (2), Progress Linear 43:21, Skeleton 43:26 (3), Kbd 43:27 VALIDATED",
     "P3a.c Textarea set 44:41 (4) VALIDATED",
     "P3a.g Illustration set 45:77 (8) VALIDATED",
-    "PHASE 3a ATOMS BUILT — exit audit + user review pending",
+    "PHASE 3a ATOMS BUILT \u2014 exit audit + user review pending",
     "P3a exit audit PASSED (1125 paints, 0 unbound)",
     "Fix pass prereqs: 4 glyph icons (214 total), text styles Component/Chip, Component/Label Strong, Code/Kbd (20 total)",
-    "Fix pass: Button/Icon Button outline → border/subtle + prop renames; Field/Textarea resting → border/strong + prop renames; Selection Controls rebuilt (51:40/51:63/51:88)",
-    "Fix pass: Chips (sizes/strokes/type), List & Nav (tab 44, segment, step), Utility (tooltip, skeleton, Kbd set 54:6) — opacity remap pending",
-    "Fix pass: opacities remapped (tooltip, skeleton, switch tracks, source-cloud icons); property names de-duplicated"
+    "Fix pass: Button/Icon Button outline \u2192 border/subtle + prop renames; Field/Textarea resting \u2192 border/strong + prop renames; Selection Controls rebuilt (51:40/51:63/51:88)",
+    "Fix pass: Chips (sizes/strokes/type), List & Nav (tab 44, segment, step), Utility (tooltip, skeleton, Kbd set 54:6) \u2014 opacity remap pending",
+    "Fix pass: opacities remapped (tooltip, skeleton, switch tracks, source-cloud icons); property names de-duplicated",
+    "P3b checklist posted; P3b.a Headers: Page Header 60:178 (4) + Section Header 61:66 VALIDATED (doc 62:64)",
+    "P3b.b KPI Card 65:611 (26) + Trend Indicator 65:12 (2) VALIDATED (doc 66:187); icons trending-down 64:5, circle-alert 64:12 added (216)",
+    "Alpha fix: 4 RGBA Color variables (border/hairline, text/medium-emphasis, surface/tooltip, surface/skeleton); tooltip/skeleton/back-link/KPI rebound; switch tracks + source-cloud icons moved to layer opacity",
+    "P3b.c Data Table Toolbar 72:3 (16 props) VALIDATED (doc 73:29)",
+    "Segment atom extended with Size sm/md (12 variants)",
+    "P3b.d Filter Tabs 75:3 + Segmented Control 75:101 (4) VALIDATED (doc 76:64)",
+    "P3b.e Feedback: Alert 77:124 (4) + Banner 77:202 (4) + Toast 77:306 (4) VALIDATED (doc 78:73); text style Body/Strong",
+    "P3b.f Chat Bubble 81:107 (6) built; accent/border-soft 81:3",
+    "P3b.g Empty State 80:440 (8) built; 3 Heading/State Title styles",
+    "P3b.h Floating Bulk Bar 79:42 VALIDATED",
+    "P3b.f/g/h docs 82:286 / 82:130 / 82:385; Chat Bubble Loading \u2192 variant axis (12); Empty State error glyph pinned",
+    "P3b.i Dialog 84:339 (6) + body slot 84:4 VALIDATED; Heading/Dialog Title style",
+    "P3b.i Confirm Dialog 86:251 (2) + body 86:87 VALIDATED (doc 86:252)",
+    "P3b.j Form Drawer 87:153 (3) VALIDATED (doc 88:48)",
+    "P3b.k Form family built: Grid 89:153, Field 89:225, Section 89:226, Error Summary 89:277 \u2014 doc pending",
+    "P3b.k Form doc 90:144",
+    "P3b.l Option Card 91:83 (5) + Status Toggle 93:38 (3) built (doc 96:29)",
+    "P3b.m List Row 92:136 (12) + Identity Cell 92:155 (3) VALIDATED (doc 93:54)",
+    "Atom repair: Field/Textarea roots were FIXED height 10 (children overflowed) \u2192 primaryAxisSizingMode AUTO; Switch/Checkbox/Radio roots hug",
+    "P3b.n Table Header Cell 98:24 (4) + Table Cell 98:73 (8) VALIDATED (doc 100:41)",
+    "P3b.o Label-Value 101:4 / Grid 101:7, Timeline Item 101:66 (4), Summary Row 101:73 (2) + Summary List 101:82 built; Data/Total style",
+    "Form Grid fields set to Value \"\" (placeholder-only convention recorded on the Field atom)",
+    "P3b.o doc 103:34; Timeline Item / Summary Row / Notification Row roots repaired (horizontal: width FIXED, height AUTO)",
+    "P3b.p Menu 105:3 + Row Actions Menu 105:130 (2) built",
+    "P3b.q Notification Row 106:44 (2) + Bell 106:45 + Panel 106:270 (2) built",
+    "P3b.p doc 107:2895 VALIDATED; P3b.q Notifications Panel VALIDATED, doc 108:2960",
+    "P3b.s Usage Meter 110:25 (2), Wizard Step Card 110:26, Coming Soon Tile 110:83 + Tiles 110:94 built",
+    "Timeline Item / Summary Row widths restored (420 / 360)",
+    "P3b.r Folder Select 111:95 (2) + Date Range Select 111:221 (2) + Search Pill 111:237 (2) built (doc 113:87)",
+    "P3b.s doc 111:3359 VALIDATED",
+    "P3b.t Section Rail 112:5 (11 props) VALIDATED (doc 113:340); styles Component/Rail Title, Component/Rail Group",
+    "P3b.u exit audit + page reorder running",
+    "P3b.u exit audit PASSED (20 pages, 1605 paints, 0 unbound, 138 variants \u226426); pages reordered to plan \u00a74; Field placeholder left/FILL fix (44 nodes)",
+    "PHASE 3b MOLECULES COMPLETE \u2014 component-map + code-tickets (T17\u2013T21) written; awaiting user review"
   ],
   "pendingValidations": [
-    "user review before Phase 3b molecules"
+    "user review before Phase 3c AI kit"
   ],
   "decisions": {
     "file": "new file; old kit RyWEOafKLPhvZCltyQicOm is reference only",
@@ -647,20 +1121,25 @@
     "note": "July 2026 kit, intact: 21 pages, 121 vars (Primitives 23 / Color 64 / Dimensions 34), 16 text styles, 3 effect styles. Reference only."
   },
   "plan_counts": {
-    "variables": 268,
+    "variables": 273,
     "primitives": 31,
-    "color": 138,
+    "color": 143,
     "navSkin": 9,
     "dimensions": 88,
     "typography": 2,
-    "textStyles": 17,
+    "textStyles": 33,
     "effectStyles": 8,
     "paintStyles": 3
   },
   "gotchas": [
-    "setBoundVariableForPaint: seed the paint color with the variable value resolved in the default mode — some nodes render the stored fallback (0.5 gray) instead of the bound value",
-    "resize() before primaryAxisSizingMode=AUTO pins FIXED width — set sizing modes AFTER resize (Chip set came out 10px wide)",
-    "Paint opacity: spreading the paint returned by setBoundVariableForPaint drops opacity — assign fills first, then node.fills = node.fills.map(p => ({...p, opacity}))"
+    "setBoundVariableForPaint: seed the paint color with the variable value resolved in the default mode \u2014 some nodes render the stored fallback (0.5 gray) instead of the bound value",
+    "resize() before primaryAxisSizingMode=AUTO pins FIXED width \u2014 set sizing modes AFTER resize (Chip set came out 10px wide)",
+    "Paint opacity: spreading the paint returned by setBoundVariableForPaint drops opacity \u2014 assign fills first, then node.fills = node.fills.map(p => ({...p, opacity}))",
+    "Paint opacity on a variable-bound paint is NOT inherited by instances (fresh instance reads opacity 1, no override) \u2014 alpha must live in the variable (RGBA Color variable) or in layer opacity (node.opacity) where the code itself uses `opacity`. The 3a opacity remaps were rebound on 2026-09-07.",
+    "A BOOLEAN property can only hide the node it references \u2014 a state that hides one sibling and shows another (e.g. loading) must be a variant axis",
+    "Instances of a variant are named after the SET, not the variant \u2014 match doc instances on variantProperties, not name",
+    "A component whose root is FIXED at a stale size still LOOKS fine (children overflow, clipsContent off) but collapses every auto-layout parent it is placed in \u2014 audit roots with primaryAxisSizingMode !== AUTO after any resize()",
+    "HORIZONTAL auto-layout roots: primaryAxisSizingMode governs WIDTH, counterAxisSizingMode governs HEIGHT \u2014 a fixed-width row needs primary FIXED + counter AUTO (the reverse of a VERTICAL card)"
   ],
   "audits": [
     {
@@ -679,19 +1158,33 @@
       "solidPaints": 1008,
       "unbound": 0,
       "note": "all atoms rebound to the tokens the app CSS uses; property names de-glyphed; 20 text styles, 214 icons"
+    },
+    {
+      "phase": "3b",
+      "date": "2026-09-07",
+      "pages": 20,
+      "setsOrComponents": 44,
+      "solidPaints": 1605,
+      "unbound": 0,
+      "variants": 138,
+      "maxVariants": 26,
+      "allDescribed": true,
+      "allDocumented": true
     }
   ],
   "fidelityFindings": [
     "Field resting border is border/strong in settings-form.scss (Figma had border/default)",
-    "Outlined button border is border/subtle in global.scss (Figma had border/strong — a11y ticket A8 stays)",
+    "Outlined button border is border/subtle in global.scss (Figma had border/strong \u2014 a11y ticket A8 stays)",
     "Vuetify checkbox/radio render 24px Lucide glyphs square/square-check/square-minus/circle/circle-dot, not drawn boxes",
     "MpStatusChip: padding chip/paddingInline (space/8) for all sizes, 12/600 label",
     "MpSourceCloudChip: pill (radius/full), surface/primary + border/subtle, icon in the text colour (.9), 12/600",
-    "MpFilterTabs: density comfortable → 44px, padding space/14, selected 13/600, count = plain x-small chip text (10px) muted, primary when selected",
+    "MpFilterTabs: density comfortable \u2192 44px, padding space/14, selected 13/600, count = plain x-small chip text (10px) muted, primary when selected",
     "MpSegmentedControl: item text --muted, active surface/primary + 0 1px 3px 8% shadow (no stroke)",
     "MpWizardSteps: disc 20 (chip/height-sm), label 13/600, todo on-surface 50%, done primary 12% bg + primary text",
     "Default v-chip: size small = 24 (Figma md was 32)",
-    "Kbd: two variants — palette 20 (border/default, surface/primary) and create-kbd 24 (border/subtle, surface/secondary), mono 11",
-    "Tooltip: Vuetify on-surface @ .9 + surface text (no app override); Skeleton bars = text/primary @ 8%, height space/12, radius/4"
+    "Kbd: two variants \u2014 palette 20 (border/default, surface/primary) and create-kbd 24 (border/subtle, surface/secondary), mono 11",
+    "Tooltip: Vuetify on-surface @ .9 + surface text (no app override); Skeleton bars = text/primary @ 8%, height space/12, radius/4",
+    "v-card `border` = Vuetify default on-surface @12% (no app override); text-medium-emphasis = on-surface @60% \u2014 KPI Card binds text/primary with those opacities",
+    "MpKpiCard trending-down and MpAlert/MpBanner circle-alert were missing from icons-used.json (ternary/map lookups) \u2014 added to the grid by hand"
   ]
 }

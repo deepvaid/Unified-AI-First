@@ -27,6 +27,11 @@ Source: `docs/design-system/figma/variable-plan.json` (conflicts list), the appr
 | T14 | Chart palettes: `grayBlue` is the only shipping palette; `ocean / grayBlueGold / social` + 4 gradient twins and the 9-series “default” ramp are `?chart=` demo overrides | `chartPalette.ts`, `App.vue` | `chart/*` = grayBlue only | Move demo palettes behind a flag or delete; keep the token file to one palette |
 | T15 | Accent presets blue / gray / purple exist at runtime (`[data-accent]`) while Marobase declares one accent | `accent-presets.css`, `useAppTheme.ts` | Cyan only; a future 4-mode Accent collection is documented | Product decision: keep as an account setting (then build the Accent collection) or remove |
 | T16 | JetBrains Mono is declared but not available to designers; Fira Code (the declared fallback) is | `tokens.json` fontFamily.mono | `Code/Mono` uses Fira Code | Confirm the mono stack or install JetBrains Mono for design |
+| T17 | Notification unread badge is a 16px v-badge (`.mp-notifications__badge`), while `component.chip.height.sm` / the Badge atom are 20 | `MpNotificationsMenu.vue` | Badge Tone=danger instance (20) with a 2px surface ring | Add a 16px badge size to the token scale or move the bell badge onto chip/height-sm |
+| T18 | Two `<kbd>` recipes: app-bar ⌘K (`border/subtle`, transparent, mono 11) vs command-palette keys (`border/default`, surface/primary) | `AppBar.vue` `.appbar-search-cmd`, palette kbd | Kbd sm = palette recipe; Search Pill overrides border to border/subtle | Pick one kbd recipe (or make the app-bar one a documented variant) |
+| T19 | Toolbar title is `text-subtitle-1 font-weight-bold` (16/700), Option Card title `text-body-2 font-weight-bold` (14/700), dialog/drawer titles 16/700 — three ad-hoc bold pairings beside `text.sectionTitle` 16/650 | `MpDataTableToolbar.vue`, `MpOptionCard.vue`, `MpDialog.vue` | `Heading/Section Title` (toolbar), `Body/Strong` 14/600 (Option Card), `Heading/Dialog Title` 16/700 | Route the toolbar title through `text.sectionTitle`; decide 600 vs 700 for card titles (see T7) |
+| T20 | Tint-by-alpha literals with no token: Timeline note node `rgba(primary,.35)` border / `.06` fill, Coming Soon `color-mix(text 7–8 %)` borders and `color-mix(retail 12 %)` discs, v-card `border` 12 %, Vuetify `text-medium-emphasis` 60 % | `OrderDetail.vue`, `MpComingSoonTiles.vue`, Vuetify defaults | RGBA variables `border/hairline` 12 %, `text/medium-emphasis` 60 %, `surface/tooltip` 90 %, `surface/skeleton` 8 %, `accent/border-soft` 22 %; 12 % layer tints elsewhere | Add the alpha roles to tokens.json (`border.hairline`, `text.mediumEmphasis`, `accent.borderSoft`) and consume them instead of color-mix literals |
+| T21 | `MpChatBubble` time (12/400), `MpListRow` eyebrow (11/400), `MpSectionRail` title/group (13/700 +.02em, 11/700 +.08em) and `.summary-line` (13.5px / 15/700) are type combinations outside `text.*` | components above | New styles `Body/Caption Strong`, `Body/Micro`, `Body/Small`, `Body/Strong`, `Component/Rail Title`, `Component/Rail Group`, `Data/Total`, `Heading/State Title ×3`, `Heading/Dialog Title`, `Heading/Page Title SM` (33 text styles total) | Promote the ones that survive review into `text.*` roles; retire 13.5px |
 
 ## Accessibility findings (from the audit sweep — fix in code, never reproduce)
 
@@ -42,6 +47,10 @@ Source: `docs/design-system/figma/variable-plan.json` (conflicts list), the appr
 | A8 | Outlined-button border ≈ 1.23:1 (open finding P5.5-15) | `.v-btn--variant-outlined` | Outline button uses `border/strong` (3:1 control boundary) — a design decision to confirm |
 | A9 | Local disabled opacity overrides | `PosPreview.vue:4043`, `AddSectionDialog.vue:354` | `text/disabled` stays visible; no opacity tricks |
 | A10 | Icon button without `aria-label`; `<v-icon @click>` not focusable | `CreateAbCampaign.vue:427`, `AudienceView.vue:95` | Icon Button always has a name; never bind click to `v-icon` |
+
+## Figma-only components proposed for code (Phase 3b)
+
+Identity Cell (`MpIdentityCell {name, secondary?, size sm|md|lg, avatar}`) · Summary List (`MpSummaryList {lines, total}`) · Form Error Summary (`MpFormErrorSummary {errors}` composing `MpAlert` role=alert — closes A6) · Timeline Item (`MpTimelineItem {title, time, kind event|note, meta?, icon?, last?}` from OrderDetail `.od-event`) · Menu panel + Table Header/Body Cell are documentation of existing global rules, not new components.
 
 ## Duplicates the Figma system merged (code should follow)
 
