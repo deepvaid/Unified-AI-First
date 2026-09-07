@@ -1,0 +1,5688 @@
+{
+  "generatedAt": "2026-09-07",
+  "source": "src/design-tokens/tokens.json",
+  "collections": [
+    {
+      "name": "Primitives",
+      "modes": [
+        "Value"
+      ],
+      "hidden": true,
+      "variables": [
+        {
+          "name": "blue/50",
+          "type": "COLOR",
+          "scopes": [],
+          "codeSyntax": "var(--mp-color-blue-50)",
+          "description": "tokens.json: color.blue.50",
+          "values": {
+            "Value": {
+              "hex": "#ebf8fe"
+            }
+          }
+        },
+        {
+          "name": "blue/100",
+          "type": "COLOR",
+          "scopes": [],
+          "codeSyntax": "var(--mp-color-blue-100)",
+          "description": "tokens.json: color.blue.100",
+          "values": {
+            "Value": {
+              "hex": "#d6eefb"
+            }
+          }
+        },
+        {
+          "name": "blue/200",
+          "type": "COLOR",
+          "scopes": [],
+          "codeSyntax": "var(--mp-color-blue-200)",
+          "description": "tokens.json: color.blue.200",
+          "values": {
+            "Value": {
+              "hex": "#a8ddf1"
+            }
+          }
+        },
+        {
+          "name": "blue/300",
+          "type": "COLOR",
+          "scopes": [],
+          "codeSyntax": "var(--mp-color-blue-300)",
+          "description": "tokens.json: color.blue.300",
+          "values": {
+            "Value": {
+              "hex": "#72d2f2"
+            }
+          }
+        },
+        {
+          "name": "blue/400",
+          "type": "COLOR",
+          "scopes": [],
+          "codeSyntax": "var(--mp-color-blue-400)",
+          "description": "tokens.json: color.blue.400",
+          "values": {
+            "Value": {
+              "hex": "#4ec8f2"
+            }
+          }
+        },
+        {
+          "name": "blue/500",
+          "type": "COLOR",
+          "scopes": [],
+          "codeSyntax": "var(--mp-color-blue-500)",
+          "description": "tokens.json: color.blue.500",
+          "values": {
+            "Value": {
+              "hex": "#1ab7ea"
+            }
+          }
+        },
+        {
+          "name": "blue/600",
+          "type": "COLOR",
+          "scopes": [],
+          "codeSyntax": "var(--mp-color-blue-600)",
+          "description": "tokens.json: color.blue.600",
+          "values": {
+            "Value": {
+              "hex": "#0d8cb8"
+            }
+          }
+        },
+        {
+          "name": "blue/700",
+          "type": "COLOR",
+          "scopes": [],
+          "codeSyntax": "var(--mp-color-blue-700)",
+          "description": "tokens.json: color.blue.700",
+          "values": {
+            "Value": {
+              "hex": "#0a4f6c"
+            }
+          }
+        },
+        {
+          "name": "blue/800",
+          "type": "COLOR",
+          "scopes": [],
+          "codeSyntax": "var(--mp-color-blue-800)",
+          "description": "tokens.json: color.blue.800",
+          "values": {
+            "Value": {
+              "hex": "#0b3558"
+            }
+          }
+        },
+        {
+          "name": "blue/900",
+          "type": "COLOR",
+          "scopes": [],
+          "codeSyntax": "var(--mp-color-blue-900)",
+          "description": "tokens.json: color.blue.900",
+          "values": {
+            "Value": {
+              "hex": "#06212c"
+            }
+          }
+        },
+        {
+          "name": "blue/950",
+          "type": "COLOR",
+          "scopes": [],
+          "codeSyntax": "var(--mp-color-blue-950)",
+          "description": "tokens.json: color.blue.950",
+          "values": {
+            "Value": {
+              "hex": "#04141b"
+            }
+          }
+        },
+        {
+          "name": "neutral/0",
+          "type": "COLOR",
+          "scopes": [],
+          "codeSyntax": "var(--mp-color-neutral-0)",
+          "description": "tokens.json: color.neutral.0",
+          "values": {
+            "Value": {
+              "hex": "#ffffff"
+            }
+          }
+        },
+        {
+          "name": "neutral/50",
+          "type": "COLOR",
+          "scopes": [],
+          "codeSyntax": "var(--mp-color-neutral-50)",
+          "description": "tokens.json: color.neutral.50",
+          "values": {
+            "Value": {
+              "hex": "#f9f9f9"
+            }
+          }
+        },
+        {
+          "name": "neutral/100",
+          "type": "COLOR",
+          "scopes": [],
+          "codeSyntax": "var(--mp-color-neutral-100)",
+          "description": "tokens.json: color.neutral.100",
+          "values": {
+            "Value": {
+              "hex": "#f0f0f0"
+            }
+          }
+        },
+        {
+          "name": "neutral/200",
+          "type": "COLOR",
+          "scopes": [],
+          "codeSyntax": "var(--mp-color-neutral-200)",
+          "description": "tokens.json: color.neutral.200",
+          "values": {
+            "Value": {
+              "hex": "#e5e5e5"
+            }
+          }
+        },
+        {
+          "name": "neutral/300",
+          "type": "COLOR",
+          "scopes": [],
+          "codeSyntax": "var(--mp-color-neutral-300)",
+          "description": "tokens.json: color.neutral.300",
+          "values": {
+            "Value": {
+              "hex": "#d4d4d4"
+            }
+          }
+        },
+        {
+          "name": "neutral/400",
+          "type": "COLOR",
+          "scopes": [],
+          "codeSyntax": "var(--mp-color-neutral-400)",
+          "description": "tokens.json: color.neutral.400",
+          "values": {
+            "Value": {
+              "hex": "#a3a3a3"
+            }
+          }
+        },
+        {
+          "name": "neutral/500",
+          "type": "COLOR",
+          "scopes": [],
+          "codeSyntax": "var(--mp-color-neutral-500)",
+          "description": "tokens.json: color.neutral.500",
+          "values": {
+            "Value": {
+              "hex": "#737373"
+            }
+          }
+        },
+        {
+          "name": "neutral/600",
+          "type": "COLOR",
+          "scopes": [],
+          "codeSyntax": "var(--mp-color-neutral-600)",
+          "description": "tokens.json: color.neutral.600",
+          "values": {
+            "Value": {
+              "hex": "#525252"
+            }
+          }
+        },
+        {
+          "name": "neutral/700",
+          "type": "COLOR",
+          "scopes": [],
+          "codeSyntax": "var(--mp-color-neutral-700)",
+          "description": "tokens.json: color.neutral.700",
+          "values": {
+            "Value": {
+              "hex": "#404040"
+            }
+          }
+        },
+        {
+          "name": "neutral/800",
+          "type": "COLOR",
+          "scopes": [],
+          "codeSyntax": "var(--mp-color-neutral-800)",
+          "description": "tokens.json: color.neutral.800",
+          "values": {
+            "Value": {
+              "hex": "#262626"
+            }
+          }
+        },
+        {
+          "name": "neutral/900",
+          "type": "COLOR",
+          "scopes": [],
+          "codeSyntax": "var(--mp-color-neutral-900)",
+          "description": "tokens.json: color.neutral.900",
+          "values": {
+            "Value": {
+              "hex": "#171717"
+            }
+          }
+        },
+        {
+          "name": "graphite/950",
+          "type": "COLOR",
+          "scopes": [],
+          "codeSyntax": "var(--mp-color-dark-background)",
+          "description": "tokens.json: color.dark.background (graphite ramp derived from dark roles)",
+          "values": {
+            "Value": {
+              "hex": "#17191c"
+            }
+          }
+        },
+        {
+          "name": "graphite/900",
+          "type": "COLOR",
+          "scopes": [],
+          "codeSyntax": "var(--mp-color-dark-surface)",
+          "description": "tokens.json: color.dark.surface (graphite ramp derived from dark roles)",
+          "values": {
+            "Value": {
+              "hex": "#1f2226"
+            }
+          }
+        },
+        {
+          "name": "graphite/850",
+          "type": "COLOR",
+          "scopes": [],
+          "codeSyntax": "var(--mp-color-dark-surfaceRaised)",
+          "description": "tokens.json: color.dark.surfaceRaised (graphite ramp derived from dark roles)",
+          "values": {
+            "Value": {
+              "hex": "#24272c"
+            }
+          }
+        },
+        {
+          "name": "graphite/800",
+          "type": "COLOR",
+          "scopes": [],
+          "codeSyntax": "var(--mp-color-dark-surfaceVariant)",
+          "description": "tokens.json: color.dark.surfaceVariant (graphite ramp derived from dark roles)",
+          "values": {
+            "Value": {
+              "hex": "#272b30"
+            }
+          }
+        },
+        {
+          "name": "graphite/700",
+          "type": "COLOR",
+          "scopes": [],
+          "codeSyntax": "var(--mp-color-dark-surfaceBright)",
+          "description": "tokens.json: color.dark.surfaceBright (graphite ramp derived from dark roles)",
+          "values": {
+            "Value": {
+              "hex": "#32373e"
+            }
+          }
+        },
+        {
+          "name": "graphite/650",
+          "type": "COLOR",
+          "scopes": [],
+          "codeSyntax": "var(--mp-color-dark-borderSubtle)",
+          "description": "tokens.json: color.dark.borderSubtle (graphite ramp derived from dark roles)",
+          "values": {
+            "Value": {
+              "hex": "#33373d"
+            }
+          }
+        },
+        {
+          "name": "graphite/600",
+          "type": "COLOR",
+          "scopes": [],
+          "codeSyntax": "var(--mp-color-dark-border)",
+          "description": "tokens.json: color.dark.border (graphite ramp derived from dark roles)",
+          "values": {
+            "Value": {
+              "hex": "#3d4249"
+            }
+          }
+        },
+        {
+          "name": "graphite/400",
+          "type": "COLOR",
+          "scopes": [],
+          "codeSyntax": "var(--mp-color-dark-borderStrong)",
+          "description": "tokens.json: color.dark.borderStrong (graphite ramp derived from dark roles)",
+          "values": {
+            "Value": {
+              "hex": "#7c848f"
+            }
+          }
+        },
+        {
+          "name": "graphite/300",
+          "type": "COLOR",
+          "scopes": [],
+          "codeSyntax": "var(--mp-color-dark-textDisabled)",
+          "description": "tokens.json: color.dark.textDisabled (graphite ramp derived from dark roles)",
+          "values": {
+            "Value": {
+              "hex": "#8a9199"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Color",
+      "modes": [
+        "Light",
+        "Dark"
+      ],
+      "variables": [
+        {
+          "name": "surface/canvas",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--surface-canvas)",
+          "description": "tokens.json: color.light.background · color.dark.background — page background",
+          "values": {
+            "Light": {
+              "hex": "#f4f6fa",
+              "via": [
+                "color.light.background"
+              ]
+            },
+            "Dark": {
+              "alias": "graphite/950",
+              "hex": "#17191c",
+              "via": [
+                "color.dark.background"
+              ]
+            }
+          }
+        },
+        {
+          "name": "surface/primary",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--surface-primary)",
+          "description": "tokens.json: color.light.surface · color.dark.surface — cards, sheets (= Vuetify surface)",
+          "values": {
+            "Light": {
+              "alias": "neutral/0",
+              "hex": "#ffffff",
+              "via": [
+                "color.light.surface"
+              ]
+            },
+            "Dark": {
+              "alias": "graphite/900",
+              "hex": "#1f2226",
+              "via": [
+                "color.dark.surface"
+              ]
+            }
+          }
+        },
+        {
+          "name": "surface/secondary",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--surface-secondary)",
+          "description": "tokens.json: color.light.surfaceVariant · color.dark.surfaceVariant — tinted wells, hover fills",
+          "values": {
+            "Light": {
+              "hex": "#ececec",
+              "via": [
+                "color.light.surfaceVariant"
+              ]
+            },
+            "Dark": {
+              "alias": "graphite/800",
+              "hex": "#272b30",
+              "via": [
+                "color.dark.surfaceVariant"
+              ]
+            }
+          }
+        },
+        {
+          "name": "surface/raised",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--surface-raised)",
+          "description": "tokens.json: color.light.surfaceRaised · color.dark.surfaceRaised — = surfaceBright in light",
+          "values": {
+            "Light": {
+              "alias": "neutral/0",
+              "hex": "#ffffff",
+              "via": [
+                "color.light.surfaceRaised",
+                "color.light.surfaceBright"
+              ]
+            },
+            "Dark": {
+              "alias": "graphite/850",
+              "hex": "#24272c",
+              "via": [
+                "color.dark.surfaceRaised"
+              ]
+            }
+          }
+        },
+        {
+          "name": "surface/overlay",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--surface-overlay)",
+          "description": "tokens.json: color.light.surfaceOverlay · color.dark.surfaceOverlay — menus, dialogs, drawers",
+          "values": {
+            "Light": {
+              "alias": "neutral/0",
+              "hex": "#ffffff",
+              "via": [
+                "color.light.surfaceOverlay"
+              ]
+            },
+            "Dark": {
+              "alias": "graphite/700",
+              "hex": "#32373e",
+              "via": [
+                "color.dark.surfaceOverlay",
+                "color.dark.surfaceBright"
+              ]
+            }
+          }
+        },
+        {
+          "name": "surface/sunken",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--surface-sunken)",
+          "description": "tokens.json: color.light.surfaceSunken · color.dark.surfaceSunken — = background in light",
+          "values": {
+            "Light": {
+              "hex": "#f4f6fa",
+              "via": [
+                "color.light.surfaceSunken",
+                "color.light.background"
+              ]
+            },
+            "Dark": {
+              "alias": "graphite/950",
+              "hex": "#17191c",
+              "via": [
+                "color.dark.surfaceSunken",
+                "color.dark.background"
+              ]
+            }
+          }
+        },
+        {
+          "name": "surface/bright",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--mp-color-light-surfaceBright)",
+          "description": "tokens.json: color.light.surfaceBright · color.dark.surfaceBright — Vuetify surface-bright / surface-light",
+          "values": {
+            "Light": {
+              "alias": "neutral/0",
+              "hex": "#ffffff",
+              "via": [
+                "color.light.surfaceBright"
+              ]
+            },
+            "Dark": {
+              "alias": "graphite/700",
+              "hex": "#32373e",
+              "via": [
+                "color.dark.surfaceBright"
+              ]
+            }
+          }
+        },
+        {
+          "name": "surface/tint",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--mp-surface-tint)",
+          "description": "tokens.json: color.light.surfaceTint · color.dark.surfaceTint — selected-row tint",
+          "values": {
+            "Light": {
+              "hex": "#eef0ff",
+              "via": [
+                "color.light.surfaceTint"
+              ]
+            },
+            "Dark": {
+              "hex": "#2cc4ff",
+              "via": [
+                "color.dark.surfaceTint"
+              ]
+            }
+          }
+        },
+        {
+          "name": "text/primary",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL"
+          ],
+          "codeSyntax": "var(--text-primary)",
+          "description": "tokens.json: color.light.textPrimary · color.dark.textPrimary — = on-surface, = Vuetify on-surface/on-background",
+          "values": {
+            "Light": {
+              "hex": "#1a1814",
+              "via": [
+                "color.light.textPrimary"
+              ]
+            },
+            "Dark": {
+              "hex": "#ececec",
+              "via": [
+                "color.dark.textPrimary"
+              ]
+            }
+          }
+        },
+        {
+          "name": "text/secondary",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL"
+          ],
+          "codeSyntax": "var(--text-secondary)",
+          "description": "tokens.json: color.light.textSecondary · color.dark.textSecondary — = Vuetify on-surface-variant",
+          "values": {
+            "Light": {
+              "hex": "#5c6066",
+              "via": [
+                "color.light.textSecondary",
+                "color.light.onSurfaceVariant"
+              ]
+            },
+            "Dark": {
+              "hex": "#c2c7cd",
+              "via": [
+                "color.dark.textSecondary"
+              ]
+            }
+          }
+        },
+        {
+          "name": "text/muted",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL"
+          ],
+          "codeSyntax": "var(--text-muted)",
+          "description": "tokens.json: color.light.textMuted · color.dark.textMuted — = on-surface-muted",
+          "values": {
+            "Light": {
+              "hex": "#5a6573",
+              "via": [
+                "color.light.textMuted"
+              ]
+            },
+            "Dark": {
+              "hex": "#9ba3ac",
+              "via": [
+                "color.dark.textMuted"
+              ]
+            }
+          }
+        },
+        {
+          "name": "text/disabled",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL"
+          ],
+          "codeSyntax": "var(--text-disabled)",
+          "description": "tokens.json: color.light.textDisabled · color.dark.textDisabled",
+          "values": {
+            "Light": {
+              "alias": "neutral/400",
+              "hex": "#a3a3a3",
+              "via": [
+                "color.light.textDisabled",
+                "color.neutral.400"
+              ]
+            },
+            "Dark": {
+              "alias": "graphite/300",
+              "hex": "#8a9199",
+              "via": [
+                "color.dark.textDisabled"
+              ]
+            }
+          }
+        },
+        {
+          "name": "icon/primary",
+          "type": "COLOR",
+          "scopes": [
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--icon-primary)",
+          "description": "tokens.json: color.light.iconPrimary · color.dark.iconPrimary",
+          "values": {
+            "Light": {
+              "hex": "#1a1814",
+              "via": [
+                "color.light.iconPrimary",
+                "color.light.textPrimary"
+              ]
+            },
+            "Dark": {
+              "hex": "#ececec",
+              "via": [
+                "color.dark.iconPrimary",
+                "color.dark.textPrimary"
+              ]
+            }
+          }
+        },
+        {
+          "name": "icon/secondary",
+          "type": "COLOR",
+          "scopes": [
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--icon-secondary)",
+          "description": "tokens.json: color.light.iconSecondary · color.dark.iconSecondary",
+          "values": {
+            "Light": {
+              "hex": "#5a6573",
+              "via": [
+                "color.light.iconSecondary",
+                "color.light.textMuted"
+              ]
+            },
+            "Dark": {
+              "hex": "#9ba3ac",
+              "via": [
+                "color.dark.iconSecondary",
+                "color.dark.textMuted"
+              ]
+            }
+          }
+        },
+        {
+          "name": "icon/disabled",
+          "type": "COLOR",
+          "scopes": [
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--icon-disabled)",
+          "description": "tokens.json: color.light.iconDisabled · color.dark.iconDisabled",
+          "values": {
+            "Light": {
+              "alias": "neutral/400",
+              "hex": "#a3a3a3",
+              "via": [
+                "color.light.iconDisabled",
+                "color.light.textDisabled",
+                "color.neutral.400"
+              ]
+            },
+            "Dark": {
+              "alias": "graphite/300",
+              "hex": "#8a9199",
+              "via": [
+                "color.dark.iconDisabled",
+                "color.dark.textDisabled"
+              ]
+            }
+          }
+        },
+        {
+          "name": "border/subtle",
+          "type": "COLOR",
+          "scopes": [
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--border-subtle)",
+          "description": "tokens.json: color.light.borderSubtle · color.dark.borderSubtle — card and section hairlines",
+          "values": {
+            "Light": {
+              "hex": "#e2e8f0",
+              "via": [
+                "color.light.borderSubtle"
+              ]
+            },
+            "Dark": {
+              "alias": "graphite/650",
+              "hex": "#33373d",
+              "via": [
+                "color.dark.borderSubtle"
+              ]
+            }
+          }
+        },
+        {
+          "name": "border/default",
+          "type": "COLOR",
+          "scopes": [
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--border-default)",
+          "description": "tokens.json: color.light.border · color.dark.border — = Vuetify border / outline-variant",
+          "values": {
+            "Light": {
+              "alias": "neutral/200",
+              "hex": "#e5e5e5",
+              "via": [
+                "color.light.border"
+              ]
+            },
+            "Dark": {
+              "alias": "graphite/600",
+              "hex": "#3d4249",
+              "via": [
+                "color.dark.border"
+              ]
+            }
+          }
+        },
+        {
+          "name": "border/strong",
+          "type": "COLOR",
+          "scopes": [
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--border-strong)",
+          "description": "tokens.json: color.light.outline · color.dark.borderStrong — control boundaries (3:1); = Vuetify outline",
+          "values": {
+            "Light": {
+              "hex": "#8a8a8a",
+              "via": [
+                "color.light.outline"
+              ]
+            },
+            "Dark": {
+              "alias": "graphite/400",
+              "hex": "#7c848f",
+              "via": [
+                "color.dark.borderStrong"
+              ]
+            }
+          }
+        },
+        {
+          "name": "border/hover",
+          "type": "COLOR",
+          "scopes": [
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--border-hover)",
+          "description": "tokens.json: color.light.border · color.dark.borderHover",
+          "values": {
+            "Light": {
+              "alias": "neutral/200",
+              "hex": "#e5e5e5",
+              "via": [
+                "color.light.border"
+              ]
+            },
+            "Dark": {
+              "alias": "graphite/600",
+              "hex": "#3d4249",
+              "via": [
+                "color.dark.borderHover",
+                "color.dark.border"
+              ]
+            }
+          }
+        },
+        {
+          "name": "border/table-row",
+          "type": "COLOR",
+          "scopes": [
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--mp-border-table-row)",
+          "description": "tokens.json: color.light.borderTableRow · color.dark.borderTableRow",
+          "values": {
+            "Light": {
+              "hex": "#1a18140f",
+              "via": [
+                "color.light.borderTableRow"
+              ]
+            },
+            "Dark": {
+              "hex": "#ffffff14",
+              "via": [
+                "color.dark.borderTableRow"
+              ]
+            }
+          }
+        },
+        {
+          "name": "border/table-header",
+          "type": "COLOR",
+          "scopes": [
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--mp-border-table-header)",
+          "description": "tokens.json: color.light.borderTableHeader · color.dark.borderTableHeader",
+          "values": {
+            "Light": {
+              "alias": "neutral/200",
+              "hex": "#e5e5e5",
+              "via": [
+                "color.light.borderTableHeader"
+              ]
+            },
+            "Dark": {
+              "alias": "graphite/600",
+              "hex": "#3d4249",
+              "via": [
+                "color.dark.borderTableHeader",
+                "color.dark.border"
+              ]
+            }
+          }
+        },
+        {
+          "name": "border/table-footer",
+          "type": "COLOR",
+          "scopes": [
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--mp-border-table-footer-divider)",
+          "description": "tokens.json: color.light.borderTableFooterDivider · color.dark.borderTableFooterDivider",
+          "values": {
+            "Light": {
+              "hex": "#1a18140a",
+              "via": [
+                "color.light.borderTableFooterDivider"
+              ]
+            },
+            "Dark": {
+              "hex": "#ffffff1f",
+              "via": [
+                "color.dark.borderTableFooterDivider"
+              ]
+            }
+          }
+        },
+        {
+          "name": "border/divider-muted",
+          "type": "COLOR",
+          "scopes": [
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--mp-color-light-borderDividerMuted)",
+          "description": "tokens.json: color.light.borderDividerMuted · color.dark.borderDividerMuted",
+          "values": {
+            "Light": {
+              "hex": "#1a18140f",
+              "via": [
+                "color.light.borderDividerMuted"
+              ]
+            },
+            "Dark": {
+              "hex": "#ffffff1f",
+              "via": [
+                "color.dark.borderDividerMuted"
+              ]
+            }
+          }
+        },
+        {
+          "name": "accent/default",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "TEXT_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--accent-default)",
+          "description": "tokens.json: color.light.accent.cyan.default · color.dark.accent.cyan.default — = Vuetify primary / info",
+          "values": {
+            "Light": {
+              "hex": "#0073ab",
+              "via": [
+                "color.light.accent.cyan.default"
+              ]
+            },
+            "Dark": {
+              "hex": "#2cc4ff",
+              "via": [
+                "color.dark.accent.cyan.default"
+              ]
+            }
+          }
+        },
+        {
+          "name": "accent/hover",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "TEXT_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--accent-hover)",
+          "description": "tokens.json: color.light.accent.cyan.hover · color.dark.accent.cyan.hover — = Vuetify primary-darken-1",
+          "values": {
+            "Light": {
+              "hex": "#005e8a",
+              "via": [
+                "color.light.accent.cyan.hover"
+              ]
+            },
+            "Dark": {
+              "hex": "#59d1ff",
+              "via": [
+                "color.dark.accent.cyan.hover"
+              ]
+            }
+          }
+        },
+        {
+          "name": "accent/active",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "TEXT_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--accent-active)",
+          "description": "tokens.json: color.light.accent.cyan.active · color.dark.accent.cyan.active — = --accent-ink",
+          "values": {
+            "Light": {
+              "hex": "#004a6d",
+              "via": [
+                "color.light.accent.cyan.active"
+              ]
+            },
+            "Dark": {
+              "hex": "#00adf1",
+              "via": [
+                "color.dark.accent.cyan.active"
+              ]
+            }
+          }
+        },
+        {
+          "name": "accent/container",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--accent-container)",
+          "description": "tokens.json: color.light.accent.cyan.container · color.dark.accent.cyan.container — = Vuetify primary-container",
+          "values": {
+            "Light": {
+              "hex": "#def3ff",
+              "via": [
+                "color.light.accent.cyan.container"
+              ]
+            },
+            "Dark": {
+              "hex": "#04324d",
+              "via": [
+                "color.dark.accent.cyan.container"
+              ]
+            }
+          }
+        },
+        {
+          "name": "accent/on-accent",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--accent-on)",
+          "description": "tokens.json: color.light.accent.cyan.onAccent · color.dark.accent.cyan.onAccent — = Vuetify on-primary",
+          "values": {
+            "Light": {
+              "alias": "neutral/0",
+              "hex": "#ffffff",
+              "via": [
+                "color.light.accent.cyan.onAccent"
+              ]
+            },
+            "Dark": {
+              "alias": "blue/900",
+              "hex": "#06212c",
+              "via": [
+                "color.dark.accent.cyan.onAccent"
+              ]
+            }
+          }
+        },
+        {
+          "name": "accent/on-container",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--accent-on-container)",
+          "description": "tokens.json: color.light.accent.cyan.onContainer · color.dark.accent.cyan.onContainer — = Vuetify on-primary-container",
+          "values": {
+            "Light": {
+              "hex": "#04324d",
+              "via": [
+                "color.light.accent.cyan.onContainer"
+              ]
+            },
+            "Dark": {
+              "hex": "#def3ff",
+              "via": [
+                "color.dark.accent.cyan.onContainer"
+              ]
+            }
+          }
+        },
+        {
+          "name": "accent/selected-bg",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--accent-selected-bg)",
+          "description": "tokens.json: color.light.accent.cyan.selectedBackground · color.dark.accent.cyan.selectedBackground — = --surface-interactive-selected",
+          "values": {
+            "Light": {
+              "hex": "#def3ff",
+              "via": [
+                "color.light.accent.cyan.selectedBackground"
+              ]
+            },
+            "Dark": {
+              "hex": "#213a47",
+              "via": [
+                "color.dark.accent.cyan.selectedBackground"
+              ]
+            }
+          }
+        },
+        {
+          "name": "accent/subtle-bg",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--accent-subtle-bg)",
+          "description": "tokens.json: color.light.accent.cyan.subtleBackground · color.dark.accent.cyan.subtleBackground — = --accent-soft",
+          "values": {
+            "Light": {
+              "hex": "#eff9ff",
+              "via": [
+                "color.light.accent.cyan.subtleBackground"
+              ]
+            },
+            "Dark": {
+              "hex": "#202f37",
+              "via": [
+                "color.dark.accent.cyan.subtleBackground"
+              ]
+            }
+          }
+        },
+        {
+          "name": "accent/focus-ring",
+          "type": "COLOR",
+          "scopes": [
+            "STROKE_COLOR",
+            "EFFECT_COLOR"
+          ],
+          "codeSyntax": "var(--focus-ring)",
+          "description": "tokens.json: color.light.accent.cyan.focusRing · color.dark.accent.cyan.focusRing — 2px ring, 2px offset — code pins this to cyan for every preset (bug)",
+          "values": {
+            "Light": {
+              "hex": "#0073ab",
+              "via": [
+                "color.light.accent.cyan.focusRing"
+              ]
+            },
+            "Dark": {
+              "hex": "#2cc4ff",
+              "via": [
+                "color.dark.accent.cyan.focusRing"
+              ]
+            }
+          }
+        },
+        {
+          "name": "brand/secondary",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "TEXT_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--mp-color-light-secondary)",
+          "description": "tokens.json: color.light.secondary · color.dark.secondary — ink black; = Vuetify secondary",
+          "values": {
+            "Light": {
+              "hex": "#1a1814",
+              "via": [
+                "color.light.secondary"
+              ]
+            },
+            "Dark": {
+              "hex": "#c2c7cd",
+              "via": [
+                "color.dark.secondary"
+              ]
+            }
+          }
+        },
+        {
+          "name": "brand/on-secondary",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--mp-color-light-onSecondary)",
+          "description": "tokens.json: color.light.onSecondary · color.dark.onSecondary",
+          "values": {
+            "Light": {
+              "alias": "neutral/0",
+              "hex": "#ffffff",
+              "via": [
+                "color.light.onSecondary"
+              ]
+            },
+            "Dark": {
+              "hex": "#1a1814",
+              "via": [
+                "color.dark.onSecondary"
+              ]
+            }
+          }
+        },
+        {
+          "name": "status/success/default",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "TEXT_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--pos)",
+          "description": "tokens.json: color.light.success · color.dark.success — = Vuetify success",
+          "values": {
+            "Light": {
+              "hex": "#1a7f54",
+              "via": [
+                "color.light.success"
+              ]
+            },
+            "Dark": {
+              "hex": "#4cc28a",
+              "via": [
+                "color.dark.success"
+              ]
+            }
+          }
+        },
+        {
+          "name": "status/success/container",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--pos-soft)",
+          "description": "tokens.json: color.light.successContainer · color.dark.successContainer — = Vuetify success-container",
+          "values": {
+            "Light": {
+              "hex": "#d6f0e2",
+              "via": [
+                "color.light.successContainer"
+              ]
+            },
+            "Dark": {
+              "hex": "#0f3a28",
+              "via": [
+                "color.dark.successContainer"
+              ]
+            }
+          }
+        },
+        {
+          "name": "status/success/on",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--on-pos)",
+          "description": "tokens.json: color.light.onSuccess · color.dark.onSuccess — = Vuetify on-success",
+          "values": {
+            "Light": {
+              "alias": "neutral/0",
+              "hex": "#ffffff",
+              "via": [
+                "color.light.onSuccess"
+              ]
+            },
+            "Dark": {
+              "hex": "#0b2a1e",
+              "via": [
+                "color.dark.onSuccess"
+              ]
+            }
+          }
+        },
+        {
+          "name": "status/success/on-container",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--pos-ink)",
+          "description": "tokens.json: color.light.onSuccessContainer · color.dark.onSuccessContainer — = Vuetify on-success-container",
+          "values": {
+            "Light": {
+              "hex": "#0c5238",
+              "via": [
+                "color.light.onSuccessContainer"
+              ]
+            },
+            "Dark": {
+              "hex": "#bfe6d2",
+              "via": [
+                "color.dark.onSuccessContainer"
+              ]
+            }
+          }
+        },
+        {
+          "name": "status/warning/default",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "TEXT_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--warn)",
+          "description": "tokens.json: color.light.warning · color.dark.warning — = Vuetify warning",
+          "values": {
+            "Light": {
+              "hex": "#a8630f",
+              "via": [
+                "color.light.warning"
+              ]
+            },
+            "Dark": {
+              "hex": "#e1a04a",
+              "via": [
+                "color.dark.warning"
+              ]
+            }
+          }
+        },
+        {
+          "name": "status/warning/container",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--warn-soft)",
+          "description": "tokens.json: color.light.warningContainer · color.dark.warningContainer — = Vuetify warning-container",
+          "values": {
+            "Light": {
+              "hex": "#fbe7c8",
+              "via": [
+                "color.light.warningContainer"
+              ]
+            },
+            "Dark": {
+              "hex": "#4a3210",
+              "via": [
+                "color.dark.warningContainer"
+              ]
+            }
+          }
+        },
+        {
+          "name": "status/warning/on",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--on-warn)",
+          "description": "tokens.json: color.light.onWarning · color.dark.onWarning — = Vuetify on-warning",
+          "values": {
+            "Light": {
+              "alias": "neutral/0",
+              "hex": "#ffffff",
+              "via": [
+                "color.light.onWarning"
+              ]
+            },
+            "Dark": {
+              "hex": "#2f1d05",
+              "via": [
+                "color.dark.onWarning"
+              ]
+            }
+          }
+        },
+        {
+          "name": "status/warning/on-container",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--warn-ink)",
+          "description": "tokens.json: color.light.onWarningContainer · color.dark.onWarningContainer — = Vuetify on-warning-container",
+          "values": {
+            "Light": {
+              "hex": "#7a4a08",
+              "via": [
+                "color.light.onWarningContainer"
+              ]
+            },
+            "Dark": {
+              "hex": "#f7dcb1",
+              "via": [
+                "color.dark.onWarningContainer"
+              ]
+            }
+          }
+        },
+        {
+          "name": "status/error/default",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "TEXT_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--neg)",
+          "description": "tokens.json: color.light.error · color.dark.error — = Vuetify error",
+          "values": {
+            "Light": {
+              "hex": "#c0392b",
+              "via": [
+                "color.light.error"
+              ]
+            },
+            "Dark": {
+              "hex": "#f18e84",
+              "via": [
+                "color.dark.error"
+              ]
+            }
+          }
+        },
+        {
+          "name": "status/error/container",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--neg-soft)",
+          "description": "tokens.json: color.light.errorContainer · color.dark.errorContainer — = Vuetify error-container",
+          "values": {
+            "Light": {
+              "hex": "#fbe1dc",
+              "via": [
+                "color.light.errorContainer"
+              ]
+            },
+            "Dark": {
+              "hex": "#4a1f19",
+              "via": [
+                "color.dark.errorContainer"
+              ]
+            }
+          }
+        },
+        {
+          "name": "status/error/on",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--on-neg)",
+          "description": "tokens.json: color.light.onError · color.dark.onError — = Vuetify on-error",
+          "values": {
+            "Light": {
+              "alias": "neutral/0",
+              "hex": "#ffffff",
+              "via": [
+                "color.light.onError"
+              ]
+            },
+            "Dark": {
+              "hex": "#35100d",
+              "via": [
+                "color.dark.onError"
+              ]
+            }
+          }
+        },
+        {
+          "name": "status/error/on-container",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--neg-ink)",
+          "description": "tokens.json: color.light.onErrorContainer · color.dark.onErrorContainer — = Vuetify on-error-container",
+          "values": {
+            "Light": {
+              "hex": "#7a1f15",
+              "via": [
+                "color.light.onErrorContainer"
+              ]
+            },
+            "Dark": {
+              "hex": "#f7c8c1",
+              "via": [
+                "color.dark.onErrorContainer"
+              ]
+            }
+          }
+        },
+        {
+          "name": "status/info/default",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "TEXT_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--mp-color-light-info)",
+          "description": "tokens.json: color.light.info · color.dark.info — = Vuetify info (= accent in light)",
+          "values": {
+            "Light": {
+              "hex": "#0073ab",
+              "via": [
+                "color.light.info"
+              ]
+            },
+            "Dark": {
+              "hex": "#2cc4ff",
+              "via": [
+                "color.dark.info"
+              ]
+            }
+          }
+        },
+        {
+          "name": "status/info/container",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--mp-color-dark-infoContainer)",
+          "description": "tokens.json: color.light.primaryContainer · color.dark.infoContainer — light has no infoContainer token — uses primaryContainer as code does",
+          "values": {
+            "Light": {
+              "hex": "#def3ff",
+              "via": [
+                "color.light.primaryContainer"
+              ]
+            },
+            "Dark": {
+              "hex": "#04324d",
+              "via": [
+                "color.dark.infoContainer",
+                "color.dark.primaryContainer"
+              ]
+            }
+          }
+        },
+        {
+          "name": "status/info/on",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--mp-color-dark-onInfo)",
+          "description": "tokens.json: color.light.onPrimary · color.dark.onInfo — light has no onInfo token — uses onPrimary",
+          "values": {
+            "Light": {
+              "alias": "neutral/0",
+              "hex": "#ffffff",
+              "via": [
+                "color.light.onPrimary"
+              ]
+            },
+            "Dark": {
+              "alias": "blue/900",
+              "hex": "#06212c",
+              "via": [
+                "color.dark.onInfo",
+                "color.dark.onPrimary"
+              ]
+            }
+          }
+        },
+        {
+          "name": "status/info/on-container",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--mp-color-dark-onInfoContainer)",
+          "description": "tokens.json: color.light.onPrimaryContainer · color.dark.onInfoContainer — light has no onInfoContainer token — uses onPrimaryContainer",
+          "values": {
+            "Light": {
+              "hex": "#04324d",
+              "via": [
+                "color.light.onPrimaryContainer"
+              ]
+            },
+            "Dark": {
+              "hex": "#def3ff",
+              "via": [
+                "color.dark.onInfoContainer",
+                "color.dark.onPrimaryContainer"
+              ]
+            }
+          }
+        },
+        {
+          "name": "interactive/default",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--surface-interactive)",
+          "description": "tokens.json: color.light.interactiveDefault · color.dark.interactiveDefault",
+          "values": {
+            "Light": {
+              "alias": "neutral/0",
+              "hex": "#ffffff",
+              "via": [
+                "color.light.interactiveDefault",
+                "color.light.surface"
+              ]
+            },
+            "Dark": {
+              "alias": "graphite/900",
+              "hex": "#1f2226",
+              "via": [
+                "color.dark.interactiveDefault",
+                "color.dark.surface"
+              ]
+            }
+          }
+        },
+        {
+          "name": "interactive/hover",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--surface-interactive-hover)",
+          "description": "tokens.json: color.light.interactiveHover · color.dark.interactiveHover",
+          "values": {
+            "Light": {
+              "hex": "#ececec",
+              "via": [
+                "color.light.interactiveHover",
+                "color.light.surfaceVariant"
+              ]
+            },
+            "Dark": {
+              "alias": "graphite/800",
+              "hex": "#272b30",
+              "via": [
+                "color.dark.interactiveHover",
+                "color.dark.surfaceVariant"
+              ]
+            }
+          }
+        },
+        {
+          "name": "interactive/active",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--surface-interactive-active)",
+          "description": "tokens.json: color.light.interactiveActive · color.dark.interactiveActive",
+          "values": {
+            "Light": {
+              "alias": "neutral/0",
+              "hex": "#ffffff",
+              "via": [
+                "color.light.interactiveActive",
+                "color.light.surfaceBright"
+              ]
+            },
+            "Dark": {
+              "alias": "graphite/700",
+              "hex": "#32373e",
+              "via": [
+                "color.dark.interactiveActive",
+                "color.dark.surfaceBright"
+              ]
+            }
+          }
+        },
+        {
+          "name": "interactive/disabled",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--surface-interactive-disabled)",
+          "description": "tokens.json: color.light.interactiveDisabled · color.dark.interactiveDisabled",
+          "values": {
+            "Light": {
+              "hex": "#ececec",
+              "via": [
+                "color.light.interactiveDisabled",
+                "color.light.surfaceVariant"
+              ]
+            },
+            "Dark": {
+              "alias": "graphite/800",
+              "hex": "#272b30",
+              "via": [
+                "color.dark.interactiveDisabled",
+                "color.dark.surfaceVariant"
+              ]
+            }
+          }
+        },
+        {
+          "name": "button/disabled",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--button-disabled)",
+          "description": "tokens.json: color.light.buttonDisabled · color.dark.buttonDisabled",
+          "values": {
+            "Light": {
+              "hex": "#ececec",
+              "via": [
+                "color.light.buttonDisabled",
+                "color.light.interactiveDisabled",
+                "color.light.surfaceVariant"
+              ]
+            },
+            "Dark": {
+              "alias": "graphite/800",
+              "hex": "#272b30",
+              "via": [
+                "color.dark.buttonDisabled",
+                "color.dark.interactiveDisabled",
+                "color.dark.surfaceVariant"
+              ]
+            }
+          }
+        },
+        {
+          "name": "button/on-disabled",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--on-button-disabled)",
+          "description": "tokens.json: color.light.onButtonDisabled · color.dark.onButtonDisabled",
+          "values": {
+            "Light": {
+              "hex": "#828282",
+              "via": [
+                "color.light.onButtonDisabled"
+              ]
+            },
+            "Dark": {
+              "alias": "graphite/300",
+              "hex": "#8a9199",
+              "via": [
+                "color.dark.onButtonDisabled"
+              ]
+            }
+          }
+        },
+        {
+          "name": "scrim",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--scrim-overlay)",
+          "description": "tokens.json: color.light.scrim · color.dark.scrim",
+          "values": {
+            "Light": {
+              "hex": "#1a181452",
+              "via": [
+                "color.light.scrim"
+              ]
+            },
+            "Dark": {
+              "hex": "#06080aa3",
+              "via": [
+                "color.dark.scrim"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ink-panel/bg",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--ink-panel-bg)",
+          "description": "tokens.json: color.light.inkPanel.bg · color.dark.inkPanel.bg — bulk bar, dark side cards",
+          "values": {
+            "Light": {
+              "hex": "#1a1814",
+              "via": [
+                "color.light.inkPanel.bg"
+              ]
+            },
+            "Dark": {
+              "hex": "#343a41",
+              "via": [
+                "color.dark.inkPanel.bg"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ink-panel/fg",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--ink-panel-fg)",
+          "description": "tokens.json: color.light.inkPanel.fg · color.dark.inkPanel.fg",
+          "values": {
+            "Light": {
+              "hex": "#f7f5f2",
+              "via": [
+                "color.light.inkPanel.fg"
+              ]
+            },
+            "Dark": {
+              "hex": "#f7f5f2",
+              "via": [
+                "color.dark.inkPanel.fg"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ink-panel/muted-fg",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--ink-panel-muted-fg)",
+          "description": "tokens.json: color.light.inkPanel.mutedFg · color.dark.inkPanel.mutedFg",
+          "values": {
+            "Light": {
+              "hex": "#f7f5f2a3",
+              "via": [
+                "color.light.inkPanel.mutedFg"
+              ]
+            },
+            "Dark": {
+              "hex": "#f7f5f2a3",
+              "via": [
+                "color.dark.inkPanel.mutedFg"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ink-panel/border",
+          "type": "COLOR",
+          "scopes": [
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--ink-panel-border)",
+          "description": "tokens.json: color.light.inkPanel.border · color.dark.inkPanel.border",
+          "values": {
+            "Light": {
+              "hex": "#f7f5f224",
+              "via": [
+                "color.light.inkPanel.border"
+              ]
+            },
+            "Dark": {
+              "alias": "graphite/600",
+              "hex": "#3d4249",
+              "via": [
+                "color.dark.inkPanel.border"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ink-panel/accent",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "STROKE_COLOR",
+            "TEXT_FILL"
+          ],
+          "codeSyntax": "var(--ink-panel-accent)",
+          "description": "tokens.json: color.light.inkPanel.accent · color.dark.inkPanel.accent",
+          "values": {
+            "Light": {
+              "hex": "#2cc4ff",
+              "via": [
+                "color.light.inkPanel.accent"
+              ]
+            },
+            "Dark": {
+              "hex": "#2cc4ff",
+              "via": [
+                "color.dark.inkPanel.accent"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ai/soft",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--dv-accent-soft)",
+          "description": "tokens.json: color.light.aiAccent.soft · color.dark.aiAccent.soft",
+          "values": {
+            "Light": {
+              "hex": "#ebf2fe",
+              "via": [
+                "color.light.aiAccent.soft"
+              ]
+            },
+            "Dark": {
+              "hex": "#1b2440",
+              "via": [
+                "color.dark.aiAccent.soft"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ai/muted",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--dv-muted)",
+          "description": "tokens.json: color.light.aiAccent.muted · color.dark.aiAccent.muted",
+          "values": {
+            "Light": {
+              "hex": "#f4f7fb",
+              "via": [
+                "color.light.aiAccent.muted"
+              ]
+            },
+            "Dark": {
+              "hex": "#181a23",
+              "via": [
+                "color.dark.aiAccent.muted"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ai/border",
+          "type": "COLOR",
+          "scopes": [
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--dv-border)",
+          "description": "tokens.json: color.light.aiAccent.border · color.dark.aiAccent.border",
+          "values": {
+            "Light": {
+              "hex": "#c7dcff",
+              "via": [
+                "color.light.aiAccent.border"
+              ]
+            },
+            "Dark": {
+              "hex": "#5b73a8",
+              "via": [
+                "color.dark.aiAccent.border"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ai/text-primary",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL"
+          ],
+          "codeSyntax": "var(--dv-text-primary)",
+          "description": "tokens.json: color.light.aiAccent.textPrimary · color.dark.aiAccent.textPrimary",
+          "values": {
+            "Light": {
+              "hex": "#15326a",
+              "via": [
+                "color.light.aiAccent.textPrimary"
+              ]
+            },
+            "Dark": {
+              "hex": "#dce9ff",
+              "via": [
+                "color.dark.aiAccent.textPrimary"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ai/text-secondary",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL"
+          ],
+          "codeSyntax": "var(--dv-text-secondary)",
+          "description": "tokens.json: color.light.aiAccent.textSecondary · color.dark.aiAccent.textSecondary",
+          "values": {
+            "Light": {
+              "hex": "#3f5a89",
+              "via": [
+                "color.light.aiAccent.textSecondary"
+              ]
+            },
+            "Dark": {
+              "hex": "#a6bbe0",
+              "via": [
+                "color.dark.aiAccent.textSecondary"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ai/on-accent",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--dv-on-accent)",
+          "description": "tokens.json: color.light.aiAccent.onAccent · color.dark.aiAccent.onAccent",
+          "values": {
+            "Light": {
+              "alias": "neutral/0",
+              "hex": "#ffffff",
+              "via": [
+                "color.light.aiAccent.onAccent"
+              ]
+            },
+            "Dark": {
+              "hex": "#0b1530",
+              "via": [
+                "color.dark.aiAccent.onAccent"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ai/gradient/from",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--mp-color-light-dv-gradFrom)",
+          "description": "tokens.json: color.light.dv.gradFrom · color.dark.dv.gradFrom — stop of --dv-grad (135°: 0% / 52% / 100%) — identity gradient (orb, hero)",
+          "values": {
+            "Light": {
+              "hex": "#7c3aed",
+              "via": [
+                "color.light.dv.gradFrom"
+              ]
+            },
+            "Dark": {
+              "hex": "#8b5cf6",
+              "via": [
+                "color.dark.dv.gradFrom"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ai/action-gradient/from",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--mp-color-light-aiAccent-actionGradientFrom)",
+          "description": "tokens.json: color.light.aiAccent.actionGradientFrom · color.dark.aiAccent.actionGradientFrom — stop of --dv-action-gradient — AI action buttons",
+          "values": {
+            "Light": {
+              "hex": "#7c3aed",
+              "via": [
+                "color.light.aiAccent.actionGradientFrom"
+              ]
+            },
+            "Dark": {
+              "hex": "#60a5fa",
+              "via": [
+                "color.dark.aiAccent.actionGradientFrom"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ai/gradient/mid",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--mp-color-light-dv-gradMid)",
+          "description": "tokens.json: color.light.dv.gradMid · color.dark.dv.gradMid — stop of --dv-grad (135°: 0% / 52% / 100%) — identity gradient (orb, hero)",
+          "values": {
+            "Light": {
+              "hex": "#2563eb",
+              "via": [
+                "color.light.dv.gradMid"
+              ]
+            },
+            "Dark": {
+              "hex": "#3b82f6",
+              "via": [
+                "color.dark.dv.gradMid"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ai/action-gradient/mid",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--mp-color-light-aiAccent-actionGradientMid)",
+          "description": "tokens.json: color.light.aiAccent.actionGradientMid · color.dark.aiAccent.actionGradientMid — stop of --dv-action-gradient — AI action buttons",
+          "values": {
+            "Light": {
+              "hex": "#2563eb",
+              "via": [
+                "color.light.aiAccent.actionGradientMid"
+              ]
+            },
+            "Dark": {
+              "hex": "#4388f7",
+              "via": [
+                "color.dark.aiAccent.actionGradientMid"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ai/gradient/to",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--mp-color-light-dv-gradTo)",
+          "description": "tokens.json: color.light.dv.gradTo · color.dark.dv.gradTo — stop of --dv-grad (135°: 0% / 52% / 100%) — identity gradient (orb, hero)",
+          "values": {
+            "Light": {
+              "hex": "#0891b2",
+              "via": [
+                "color.light.dv.gradTo"
+              ]
+            },
+            "Dark": {
+              "hex": "#06b6d4",
+              "via": [
+                "color.dark.dv.gradTo"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ai/action-gradient/to",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--mp-color-light-aiAccent-actionGradientTo)",
+          "description": "tokens.json: color.light.aiAccent.actionGradientTo · color.dark.aiAccent.actionGradientTo — stop of --dv-action-gradient — AI action buttons",
+          "values": {
+            "Light": {
+              "hex": "#0e7490",
+              "via": [
+                "color.light.aiAccent.actionGradientTo"
+              ]
+            },
+            "Dark": {
+              "hex": "#22d3ee",
+              "via": [
+                "color.dark.aiAccent.actionGradientTo"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ai/action-gradient/on",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--dv-action-on-gradient)",
+          "description": "tokens.json: color.light.aiAccent.actionOnGradient · color.dark.aiAccent.actionOnGradient",
+          "values": {
+            "Light": {
+              "alias": "neutral/0",
+              "hex": "#ffffff",
+              "via": [
+                "color.light.aiAccent.actionOnGradient"
+              ]
+            },
+            "Dark": {
+              "hex": "#0b1530",
+              "via": [
+                "color.dark.aiAccent.actionOnGradient"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ai/orb/1",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--dv-orb-c1)",
+          "description": "tokens.json: color.light.dv.orbC1 · color.dark.dv.orbC1 — orb particle colour (WebGL uniform)",
+          "values": {
+            "Light": {
+              "hex": "#0891b2",
+              "via": [
+                "color.light.dv.orbC1"
+              ]
+            },
+            "Dark": {
+              "hex": "#22d3ee",
+              "via": [
+                "color.dark.dv.orbC1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ai/ring/1",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--dv-ring-c1)",
+          "description": "tokens.json: color.light.dv.ringC1 · color.dark.dv.ringC1",
+          "values": {
+            "Light": {
+              "hex": "#2563eb",
+              "via": [
+                "color.light.dv.ringC1"
+              ]
+            },
+            "Dark": {
+              "hex": "#3b82f6",
+              "via": [
+                "color.dark.dv.ringC1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ai/orb/2",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--dv-orb-c2)",
+          "description": "tokens.json: color.light.dv.orbC2 · color.dark.dv.orbC2 — orb particle colour (WebGL uniform)",
+          "values": {
+            "Light": {
+              "hex": "#3b82f6",
+              "via": [
+                "color.light.dv.orbC2"
+              ]
+            },
+            "Dark": {
+              "hex": "#60a5fa",
+              "via": [
+                "color.dark.dv.orbC2"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ai/ring/2",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--dv-ring-c2)",
+          "description": "tokens.json: color.light.dv.ringC2 · color.dark.dv.ringC2",
+          "values": {
+            "Light": {
+              "hex": "#7c3aed",
+              "via": [
+                "color.light.dv.ringC2"
+              ]
+            },
+            "Dark": {
+              "hex": "#8b5cf6",
+              "via": [
+                "color.dark.dv.ringC2"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ai/orb/3",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--dv-orb-c3)",
+          "description": "tokens.json: color.light.dv.orbC3 · color.dark.dv.orbC3 — orb particle colour (WebGL uniform)",
+          "values": {
+            "Light": {
+              "hex": "#8b5cf6",
+              "via": [
+                "color.light.dv.orbC3"
+              ]
+            },
+            "Dark": {
+              "hex": "#a78bfa",
+              "via": [
+                "color.dark.dv.orbC3"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ai/ring/3",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--dv-ring-c3)",
+          "description": "tokens.json: color.light.dv.ringC3 · color.dark.dv.ringC3",
+          "values": {
+            "Light": {
+              "hex": "#d946ef",
+              "via": [
+                "color.light.dv.ringC3"
+              ]
+            },
+            "Dark": {
+              "hex": "#e879f9",
+              "via": [
+                "color.dark.dv.ringC3"
+              ]
+            }
+          }
+        },
+        {
+          "name": "hue/blue/accent",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--mp-color-light-moduleTile-blue-accent)",
+          "description": "tokens.json: color.light.moduleTile.blue.accent · color.dark.moduleTile.blue.accent — category hue — no alias-layer name yet (flag --hue-* for code)",
+          "values": {
+            "Light": {
+              "hex": "#2563eb",
+              "via": [
+                "color.light.moduleTile.blue.accent"
+              ]
+            },
+            "Dark": {
+              "hex": "#60a5fa",
+              "via": [
+                "color.dark.moduleTile.blue.accent"
+              ]
+            }
+          }
+        },
+        {
+          "name": "hue/blue/ink",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--mp-color-light-moduleTile-blue-ink)",
+          "description": "tokens.json: color.light.moduleTile.blue.ink · color.dark.moduleTile.blue.ink",
+          "values": {
+            "Light": {
+              "hex": "#1d4ed8",
+              "via": [
+                "color.light.moduleTile.blue.ink"
+              ]
+            },
+            "Dark": {
+              "hex": "#93c5fd",
+              "via": [
+                "color.dark.moduleTile.blue.ink"
+              ]
+            }
+          }
+        },
+        {
+          "name": "hue/violet/accent",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--mp-color-light-moduleTile-violet-accent)",
+          "description": "tokens.json: color.light.moduleTile.violet.accent · color.dark.moduleTile.violet.accent — category hue — no alias-layer name yet (flag --hue-* for code)",
+          "values": {
+            "Light": {
+              "hex": "#7c3aed",
+              "via": [
+                "color.light.moduleTile.violet.accent"
+              ]
+            },
+            "Dark": {
+              "hex": "#a78bfa",
+              "via": [
+                "color.dark.moduleTile.violet.accent"
+              ]
+            }
+          }
+        },
+        {
+          "name": "hue/violet/ink",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--mp-color-light-moduleTile-violet-ink)",
+          "description": "tokens.json: color.light.moduleTile.violet.ink · color.dark.moduleTile.violet.ink",
+          "values": {
+            "Light": {
+              "hex": "#6d28d9",
+              "via": [
+                "color.light.moduleTile.violet.ink"
+              ]
+            },
+            "Dark": {
+              "hex": "#c4b5fd",
+              "via": [
+                "color.dark.moduleTile.violet.ink"
+              ]
+            }
+          }
+        },
+        {
+          "name": "hue/rose/accent",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--mp-color-light-moduleTile-rose-accent)",
+          "description": "tokens.json: color.light.moduleTile.rose.accent · color.dark.moduleTile.rose.accent — category hue — no alias-layer name yet (flag --hue-* for code)",
+          "values": {
+            "Light": {
+              "hex": "#e11d48",
+              "via": [
+                "color.light.moduleTile.rose.accent"
+              ]
+            },
+            "Dark": {
+              "hex": "#fb7185",
+              "via": [
+                "color.dark.moduleTile.rose.accent"
+              ]
+            }
+          }
+        },
+        {
+          "name": "hue/rose/ink",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--mp-color-light-moduleTile-rose-ink)",
+          "description": "tokens.json: color.light.moduleTile.rose.ink · color.dark.moduleTile.rose.ink",
+          "values": {
+            "Light": {
+              "hex": "#be123c",
+              "via": [
+                "color.light.moduleTile.rose.ink"
+              ]
+            },
+            "Dark": {
+              "hex": "#fda4af",
+              "via": [
+                "color.dark.moduleTile.rose.ink"
+              ]
+            }
+          }
+        },
+        {
+          "name": "hue/green/accent",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--mp-color-light-moduleTile-green-accent)",
+          "description": "tokens.json: color.light.moduleTile.green.accent · color.dark.moduleTile.green.accent — category hue — no alias-layer name yet (flag --hue-* for code)",
+          "values": {
+            "Light": {
+              "hex": "#16a34a",
+              "via": [
+                "color.light.moduleTile.green.accent"
+              ]
+            },
+            "Dark": {
+              "hex": "#4ade80",
+              "via": [
+                "color.dark.moduleTile.green.accent"
+              ]
+            }
+          }
+        },
+        {
+          "name": "hue/green/ink",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--mp-color-light-moduleTile-green-ink)",
+          "description": "tokens.json: color.light.moduleTile.green.ink · color.dark.moduleTile.green.ink",
+          "values": {
+            "Light": {
+              "hex": "#15803d",
+              "via": [
+                "color.light.moduleTile.green.ink"
+              ]
+            },
+            "Dark": {
+              "hex": "#86efac",
+              "via": [
+                "color.dark.moduleTile.green.ink"
+              ]
+            }
+          }
+        },
+        {
+          "name": "hue/amber/accent",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--mp-color-light-moduleTile-amber-accent)",
+          "description": "tokens.json: color.light.moduleTile.amber.accent · color.dark.moduleTile.amber.accent — category hue — no alias-layer name yet (flag --hue-* for code)",
+          "values": {
+            "Light": {
+              "hex": "#d97706",
+              "via": [
+                "color.light.moduleTile.amber.accent"
+              ]
+            },
+            "Dark": {
+              "hex": "#fbbf24",
+              "via": [
+                "color.dark.moduleTile.amber.accent"
+              ]
+            }
+          }
+        },
+        {
+          "name": "hue/amber/ink",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--mp-color-light-moduleTile-amber-ink)",
+          "description": "tokens.json: color.light.moduleTile.amber.ink · color.dark.moduleTile.amber.ink",
+          "values": {
+            "Light": {
+              "hex": "#b45309",
+              "via": [
+                "color.light.moduleTile.amber.ink"
+              ]
+            },
+            "Dark": {
+              "hex": "#fcd34d",
+              "via": [
+                "color.dark.moduleTile.amber.ink"
+              ]
+            }
+          }
+        },
+        {
+          "name": "hue/cyan/accent",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--mp-color-light-moduleTile-cyan-accent)",
+          "description": "tokens.json: color.light.moduleTile.cyan.accent · color.dark.moduleTile.cyan.accent — category hue — no alias-layer name yet (flag --hue-* for code)",
+          "values": {
+            "Light": {
+              "hex": "#0891b2",
+              "via": [
+                "color.light.moduleTile.cyan.accent"
+              ]
+            },
+            "Dark": {
+              "hex": "#22d3ee",
+              "via": [
+                "color.dark.moduleTile.cyan.accent"
+              ]
+            }
+          }
+        },
+        {
+          "name": "hue/cyan/ink",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--mp-color-light-moduleTile-cyan-ink)",
+          "description": "tokens.json: color.light.moduleTile.cyan.ink · color.dark.moduleTile.cyan.ink",
+          "values": {
+            "Light": {
+              "hex": "#0e7490",
+              "via": [
+                "color.light.moduleTile.cyan.ink"
+              ]
+            },
+            "Dark": {
+              "hex": "#67e8f9",
+              "via": [
+                "color.dark.moduleTile.cyan.ink"
+              ]
+            }
+          }
+        },
+        {
+          "name": "hue/indigo/accent",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--mp-color-light-moduleTile-indigo-accent)",
+          "description": "tokens.json: color.light.moduleTile.indigo.accent · color.dark.moduleTile.indigo.accent — category hue — no alias-layer name yet (flag --hue-* for code)",
+          "values": {
+            "Light": {
+              "hex": "#4f46e5",
+              "via": [
+                "color.light.moduleTile.indigo.accent"
+              ]
+            },
+            "Dark": {
+              "hex": "#818cf8",
+              "via": [
+                "color.dark.moduleTile.indigo.accent"
+              ]
+            }
+          }
+        },
+        {
+          "name": "hue/indigo/ink",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--mp-color-light-moduleTile-indigo-ink)",
+          "description": "tokens.json: color.light.moduleTile.indigo.ink · color.dark.moduleTile.indigo.ink",
+          "values": {
+            "Light": {
+              "hex": "#4338ca",
+              "via": [
+                "color.light.moduleTile.indigo.ink"
+              ]
+            },
+            "Dark": {
+              "hex": "#a5b4fc",
+              "via": [
+                "color.dark.moduleTile.indigo.ink"
+              ]
+            }
+          }
+        },
+        {
+          "name": "hue/teal/accent",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--mp-color-light-moduleTile-teal-accent)",
+          "description": "tokens.json: color.light.moduleTile.teal.accent · color.dark.moduleTile.teal.accent — category hue — no alias-layer name yet (flag --hue-* for code)",
+          "values": {
+            "Light": {
+              "hex": "#0d9488",
+              "via": [
+                "color.light.moduleTile.teal.accent"
+              ]
+            },
+            "Dark": {
+              "hex": "#2dd4bf",
+              "via": [
+                "color.dark.moduleTile.teal.accent"
+              ]
+            }
+          }
+        },
+        {
+          "name": "hue/teal/ink",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--mp-color-light-moduleTile-teal-ink)",
+          "description": "tokens.json: color.light.moduleTile.teal.ink · color.dark.moduleTile.teal.ink",
+          "values": {
+            "Light": {
+              "hex": "#0f766e",
+              "via": [
+                "color.light.moduleTile.teal.ink"
+              ]
+            },
+            "Dark": {
+              "hex": "#5eead4",
+              "via": [
+                "color.dark.moduleTile.teal.ink"
+              ]
+            }
+          }
+        },
+        {
+          "name": "cloud/commerce/accent",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--cloud-commerce-accent)",
+          "description": "tokens.json: color.light.cloud.commerce.accent · color.dark.cloud.commerce.accent — source-cloud chip",
+          "values": {
+            "Light": {
+              "hex": "#16a34a",
+              "via": [
+                "color.light.cloud.commerce.accent"
+              ]
+            },
+            "Dark": {
+              "hex": "#4ade80",
+              "via": [
+                "color.dark.cloud.commerce.accent"
+              ]
+            }
+          }
+        },
+        {
+          "name": "cloud/commerce/text",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--cloud-commerce-text)",
+          "description": "tokens.json: color.light.cloud.commerce.text · color.dark.cloud.commerce.text",
+          "values": {
+            "Light": {
+              "hex": "#166534",
+              "via": [
+                "color.light.cloud.commerce.text"
+              ]
+            },
+            "Dark": {
+              "hex": "#86efac",
+              "via": [
+                "color.dark.cloud.commerce.text"
+              ]
+            }
+          }
+        },
+        {
+          "name": "cloud/marketing/accent",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--cloud-marketing-accent)",
+          "description": "tokens.json: color.light.cloud.marketing.accent · color.dark.cloud.marketing.accent — source-cloud chip",
+          "values": {
+            "Light": {
+              "hex": "#7c3aed",
+              "via": [
+                "color.light.cloud.marketing.accent"
+              ]
+            },
+            "Dark": {
+              "hex": "#a78bfa",
+              "via": [
+                "color.dark.cloud.marketing.accent"
+              ]
+            }
+          }
+        },
+        {
+          "name": "cloud/marketing/text",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--cloud-marketing-text)",
+          "description": "tokens.json: color.light.cloud.marketing.text · color.dark.cloud.marketing.text",
+          "values": {
+            "Light": {
+              "hex": "#5b21b6",
+              "via": [
+                "color.light.cloud.marketing.text"
+              ]
+            },
+            "Dark": {
+              "hex": "#c4b5fd",
+              "via": [
+                "color.dark.cloud.marketing.text"
+              ]
+            }
+          }
+        },
+        {
+          "name": "cloud/analytics/accent",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--cloud-analytics-accent)",
+          "description": "tokens.json: color.light.cloud.analytics.accent · color.dark.cloud.analytics.accent — source-cloud chip",
+          "values": {
+            "Light": {
+              "hex": "#2563eb",
+              "via": [
+                "color.light.cloud.analytics.accent"
+              ]
+            },
+            "Dark": {
+              "hex": "#60a5fa",
+              "via": [
+                "color.dark.cloud.analytics.accent"
+              ]
+            }
+          }
+        },
+        {
+          "name": "cloud/analytics/text",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--cloud-analytics-text)",
+          "description": "tokens.json: color.light.cloud.analytics.text · color.dark.cloud.analytics.text",
+          "values": {
+            "Light": {
+              "hex": "#1d4ed8",
+              "via": [
+                "color.light.cloud.analytics.text"
+              ]
+            },
+            "Dark": {
+              "hex": "#93c5fd",
+              "via": [
+                "color.dark.cloud.analytics.text"
+              ]
+            }
+          }
+        },
+        {
+          "name": "cloud/contacts/accent",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--cloud-contacts-accent)",
+          "description": "tokens.json: color.light.cloud.contacts.accent · color.dark.cloud.contacts.accent — source-cloud chip",
+          "values": {
+            "Light": {
+              "hex": "#0891b2",
+              "via": [
+                "color.light.cloud.contacts.accent"
+              ]
+            },
+            "Dark": {
+              "hex": "#22d3ee",
+              "via": [
+                "color.dark.cloud.contacts.accent"
+              ]
+            }
+          }
+        },
+        {
+          "name": "cloud/contacts/text",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--cloud-contacts-text)",
+          "description": "tokens.json: color.light.cloud.contacts.text · color.dark.cloud.contacts.text",
+          "values": {
+            "Light": {
+              "hex": "#155e75",
+              "via": [
+                "color.light.cloud.contacts.text"
+              ]
+            },
+            "Dark": {
+              "hex": "#67e8f9",
+              "via": [
+                "color.dark.cloud.contacts.text"
+              ]
+            }
+          }
+        },
+        {
+          "name": "cloud/service/accent",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--cloud-service-accent)",
+          "description": "tokens.json: color.light.cloud.service.accent · color.dark.cloud.service.accent — source-cloud chip",
+          "values": {
+            "Light": {
+              "hex": "#4f46e5",
+              "via": [
+                "color.light.cloud.service.accent"
+              ]
+            },
+            "Dark": {
+              "hex": "#818cf8",
+              "via": [
+                "color.dark.cloud.service.accent"
+              ]
+            }
+          }
+        },
+        {
+          "name": "cloud/service/text",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--cloud-service-text)",
+          "description": "tokens.json: color.light.cloud.service.text · color.dark.cloud.service.text",
+          "values": {
+            "Light": {
+              "hex": "#3730a3",
+              "via": [
+                "color.light.cloud.service.text"
+              ]
+            },
+            "Dark": {
+              "hex": "#a5b4fc",
+              "via": [
+                "color.dark.cloud.service.text"
+              ]
+            }
+          }
+        },
+        {
+          "name": "cloud/retail/accent",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--cloud-retail-accent)",
+          "description": "tokens.json: color.light.cloud.retail.accent · color.dark.cloud.retail.accent — source-cloud chip",
+          "values": {
+            "Light": {
+              "hex": "#0d9488",
+              "via": [
+                "color.light.cloud.retail.accent"
+              ]
+            },
+            "Dark": {
+              "hex": "#2dd4bf",
+              "via": [
+                "color.dark.cloud.retail.accent"
+              ]
+            }
+          }
+        },
+        {
+          "name": "cloud/retail/text",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--cloud-retail-text)",
+          "description": "tokens.json: color.light.cloud.retail.text · color.dark.cloud.retail.text",
+          "values": {
+            "Light": {
+              "hex": "#0f766e",
+              "via": [
+                "color.light.cloud.retail.text"
+              ]
+            },
+            "Dark": {
+              "hex": "#5eead4",
+              "via": [
+                "color.dark.cloud.retail.text"
+              ]
+            }
+          }
+        },
+        {
+          "name": "flow-logic/primary",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--mp-color-light-flowLogic-primary)",
+          "description": "tokens.json: color.light.flowLogic.primary · color.dark.flowLogic.primary — = Vuetify flow-logic",
+          "values": {
+            "Light": {
+              "hex": "#6d28d9",
+              "via": [
+                "color.light.flowLogic.primary"
+              ]
+            },
+            "Dark": {
+              "hex": "#a78bfa",
+              "via": [
+                "color.dark.flowLogic.primary"
+              ]
+            }
+          }
+        },
+        {
+          "name": "flow-logic/on-primary",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--mp-color-light-flowLogic-onPrimary)",
+          "description": "tokens.json: color.light.flowLogic.onPrimary · color.dark.flowLogic.onPrimary",
+          "values": {
+            "Light": {
+              "alias": "neutral/0",
+              "hex": "#ffffff",
+              "via": [
+                "color.light.flowLogic.onPrimary"
+              ]
+            },
+            "Dark": {
+              "hex": "#1e1b4b",
+              "via": [
+                "color.dark.flowLogic.onPrimary"
+              ]
+            }
+          }
+        },
+        {
+          "name": "flow-logic/container",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--mp-color-light-flowLogic-container)",
+          "description": "tokens.json: color.light.flowLogic.container · color.dark.flowLogic.container",
+          "values": {
+            "Light": {
+              "hex": "#ede9fe",
+              "via": [
+                "color.light.flowLogic.container"
+              ]
+            },
+            "Dark": {
+              "hex": "#2e2352",
+              "via": [
+                "color.dark.flowLogic.container"
+              ]
+            }
+          }
+        },
+        {
+          "name": "chart/series/1",
+          "type": "COLOR",
+          "scopes": [
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--mp-color-chart-light-grayBlue-series1)",
+          "description": "tokens.json: color.chart.light.grayBlue.series1 · color.chart.dark.grayBlue.series1 — grayBlue palette (app default)",
+          "values": {
+            "Light": {
+              "hex": "#1e9be3",
+              "via": [
+                "color.chart.light.grayBlue.series1"
+              ]
+            },
+            "Dark": {
+              "hex": "#1e9be3",
+              "via": [
+                "color.chart.dark.grayBlue.series1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "chart/series/2",
+          "type": "COLOR",
+          "scopes": [
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--mp-color-chart-light-grayBlue-series2)",
+          "description": "tokens.json: color.chart.light.grayBlue.series2 · color.chart.dark.grayBlue.series2 — grayBlue palette (app default)",
+          "values": {
+            "Light": {
+              "hex": "#d2d2d2",
+              "via": [
+                "color.chart.light.grayBlue.series2"
+              ]
+            },
+            "Dark": {
+              "hex": "#d2d2d2",
+              "via": [
+                "color.chart.dark.grayBlue.series2"
+              ]
+            }
+          }
+        },
+        {
+          "name": "chart/series/3",
+          "type": "COLOR",
+          "scopes": [
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--mp-color-chart-light-grayBlue-series3)",
+          "description": "tokens.json: color.chart.light.grayBlue.series3 · color.chart.dark.grayBlue.series3 — grayBlue palette (app default)",
+          "values": {
+            "Light": {
+              "hex": "#1f4e79",
+              "via": [
+                "color.chart.light.grayBlue.series3"
+              ]
+            },
+            "Dark": {
+              "hex": "#1f4e79",
+              "via": [
+                "color.chart.dark.grayBlue.series3"
+              ]
+            }
+          }
+        },
+        {
+          "name": "chart/series/4",
+          "type": "COLOR",
+          "scopes": [
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--mp-color-chart-light-grayBlue-series4)",
+          "description": "tokens.json: color.chart.light.grayBlue.series4 · color.chart.dark.grayBlue.series4 — grayBlue palette (app default)",
+          "values": {
+            "Light": {
+              "hex": "#8bb8de",
+              "via": [
+                "color.chart.light.grayBlue.series4"
+              ]
+            },
+            "Dark": {
+              "hex": "#8bb8de",
+              "via": [
+                "color.chart.dark.grayBlue.series4"
+              ]
+            }
+          }
+        },
+        {
+          "name": "chart/series/5",
+          "type": "COLOR",
+          "scopes": [
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--mp-color-chart-light-grayBlue-series5)",
+          "description": "tokens.json: color.chart.light.grayBlue.series5 · color.chart.dark.grayBlue.series5 — grayBlue palette (app default)",
+          "values": {
+            "Light": {
+              "hex": "#3e6e9e",
+              "via": [
+                "color.chart.light.grayBlue.series5"
+              ]
+            },
+            "Dark": {
+              "hex": "#3e6e9e",
+              "via": [
+                "color.chart.dark.grayBlue.series5"
+              ]
+            }
+          }
+        },
+        {
+          "name": "chart/series/6",
+          "type": "COLOR",
+          "scopes": [
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--mp-color-chart-light-grayBlue-series6)",
+          "description": "tokens.json: color.chart.light.grayBlue.series6 · color.chart.dark.grayBlue.series6 — grayBlue palette (app default)",
+          "values": {
+            "Light": {
+              "hex": "#c3d9ec",
+              "via": [
+                "color.chart.light.grayBlue.series6"
+              ]
+            },
+            "Dark": {
+              "hex": "#c3d9ec",
+              "via": [
+                "color.chart.dark.grayBlue.series6"
+              ]
+            }
+          }
+        },
+        {
+          "name": "chart/axis/1",
+          "type": "COLOR",
+          "scopes": [
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--mp-color-chart-light-grayBlue-axis1)",
+          "description": "tokens.json: color.chart.light.grayBlue.axis1 · color.chart.dark.grayBlue.axis1",
+          "values": {
+            "Light": {
+              "hex": "#1f4e79",
+              "via": [
+                "color.chart.light.grayBlue.axis1"
+              ]
+            },
+            "Dark": {
+              "hex": "#1f4e79",
+              "via": [
+                "color.chart.dark.grayBlue.axis1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "chart/axis/2",
+          "type": "COLOR",
+          "scopes": [
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--mp-color-chart-light-grayBlue-axis2)",
+          "description": "tokens.json: color.chart.light.grayBlue.axis2 · color.chart.dark.grayBlue.axis2",
+          "values": {
+            "Light": {
+              "hex": "#3e6e9e",
+              "via": [
+                "color.chart.light.grayBlue.axis2"
+              ]
+            },
+            "Dark": {
+              "hex": "#3e6e9e",
+              "via": [
+                "color.chart.dark.grayBlue.axis2"
+              ]
+            }
+          }
+        },
+        {
+          "name": "chart/axis/3",
+          "type": "COLOR",
+          "scopes": [
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--mp-color-chart-light-grayBlue-axis3)",
+          "description": "tokens.json: color.chart.light.grayBlue.axis3 · color.chart.dark.grayBlue.axis3",
+          "values": {
+            "Light": {
+              "hex": "#1e9be3",
+              "via": [
+                "color.chart.light.grayBlue.axis3"
+              ]
+            },
+            "Dark": {
+              "hex": "#1e9be3",
+              "via": [
+                "color.chart.dark.grayBlue.axis3"
+              ]
+            }
+          }
+        },
+        {
+          "name": "chart/axis/4",
+          "type": "COLOR",
+          "scopes": [
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--mp-color-chart-light-grayBlue-axis4)",
+          "description": "tokens.json: color.chart.light.grayBlue.axis4 · color.chart.dark.grayBlue.axis4",
+          "values": {
+            "Light": {
+              "hex": "#8bb8de",
+              "via": [
+                "color.chart.light.grayBlue.axis4"
+              ]
+            },
+            "Dark": {
+              "hex": "#8bb8de",
+              "via": [
+                "color.chart.dark.grayBlue.axis4"
+              ]
+            }
+          }
+        },
+        {
+          "name": "chart/axis/5",
+          "type": "COLOR",
+          "scopes": [
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--mp-color-chart-light-grayBlue-axis5)",
+          "description": "tokens.json: color.chart.light.grayBlue.axis5 · color.chart.dark.grayBlue.axis5",
+          "values": {
+            "Light": {
+              "hex": "#c3d9ec",
+              "via": [
+                "color.chart.light.grayBlue.axis5"
+              ]
+            },
+            "Dark": {
+              "hex": "#c3d9ec",
+              "via": [
+                "color.chart.dark.grayBlue.axis5"
+              ]
+            }
+          }
+        },
+        {
+          "name": "chart/comparison",
+          "type": "COLOR",
+          "scopes": [
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--mp-color-chart-light-grayBlue-comparison)",
+          "description": "tokens.json: color.chart.light.grayBlue.comparison · color.chart.dark.grayBlue.comparison",
+          "values": {
+            "Light": {
+              "hex": "#d2d2d2",
+              "via": [
+                "color.chart.light.grayBlue.comparison"
+              ]
+            },
+            "Dark": {
+              "hex": "#d2d2d2",
+              "via": [
+                "color.chart.dark.grayBlue.comparison"
+              ]
+            }
+          }
+        },
+        {
+          "name": "chart/positive",
+          "type": "COLOR",
+          "scopes": [
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--mp-color-chart-light-grayBlue-positive)",
+          "description": "tokens.json: color.chart.light.grayBlue.positive · color.chart.dark.grayBlue.positive",
+          "values": {
+            "Light": {
+              "hex": "#178a50",
+              "via": [
+                "color.chart.light.grayBlue.positive"
+              ]
+            },
+            "Dark": {
+              "hex": "#178a50",
+              "via": [
+                "color.chart.dark.grayBlue.positive"
+              ]
+            }
+          }
+        },
+        {
+          "name": "chart/negative",
+          "type": "COLOR",
+          "scopes": [
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--mp-color-chart-light-grayBlue-negative)",
+          "description": "tokens.json: color.chart.light.grayBlue.negative · color.chart.dark.grayBlue.negative",
+          "values": {
+            "Light": {
+              "hex": "#c6403d",
+              "via": [
+                "color.chart.light.grayBlue.negative"
+              ]
+            },
+            "Dark": {
+              "hex": "#c6403d",
+              "via": [
+                "color.chart.dark.grayBlue.negative"
+              ]
+            }
+          }
+        },
+        {
+          "name": "chart/warning",
+          "type": "COLOR",
+          "scopes": [
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--mp-color-chart-light-grayBlue-warning)",
+          "description": "tokens.json: color.chart.light.grayBlue.warning · color.chart.dark.grayBlue.warning",
+          "values": {
+            "Light": {
+              "hex": "#b27b00",
+              "via": [
+                "color.chart.light.grayBlue.warning"
+              ]
+            },
+            "Dark": {
+              "hex": "#b27b00",
+              "via": [
+                "color.chart.dark.grayBlue.warning"
+              ]
+            }
+          }
+        },
+        {
+          "name": "chart/neutral",
+          "type": "COLOR",
+          "scopes": [
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--mp-color-chart-light-grayBlue-neutral)",
+          "description": "tokens.json: color.chart.light.grayBlue.neutral · color.chart.dark.grayBlue.neutral",
+          "values": {
+            "Light": {
+              "hex": "#d2d2d2",
+              "via": [
+                "color.chart.light.grayBlue.neutral"
+              ]
+            },
+            "Dark": {
+              "hex": "#d2d2d2",
+              "via": [
+                "color.chart.dark.grayBlue.neutral"
+              ]
+            }
+          }
+        },
+        {
+          "name": "chart/axis-label",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL"
+          ],
+          "codeSyntax": "var(--mp-color-chart-light-axisLabel)",
+          "description": "tokens.json: color.chart.light.axisLabel · color.chart.dark.axisLabel",
+          "values": {
+            "Light": {
+              "hex": "#1a1814a6",
+              "via": [
+                "color.chart.light.axisLabel"
+              ]
+            },
+            "Dark": {
+              "hex": "#ececec99",
+              "via": [
+                "color.chart.dark.axisLabel"
+              ]
+            }
+          }
+        },
+        {
+          "name": "chart/legend-label",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL"
+          ],
+          "codeSyntax": "var(--mp-color-chart-light-legendLabel)",
+          "description": "tokens.json: color.chart.light.legendLabel · color.chart.dark.legendLabel",
+          "values": {
+            "Light": {
+              "hex": "#1a1814b8",
+              "via": [
+                "color.chart.light.legendLabel"
+              ]
+            },
+            "Dark": {
+              "hex": "#ecececb8",
+              "via": [
+                "color.chart.dark.legendLabel"
+              ]
+            }
+          }
+        },
+        {
+          "name": "chart/grid",
+          "type": "COLOR",
+          "scopes": [
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--mp-color-chart-light-grid)",
+          "description": "tokens.json: color.chart.light.grid · color.chart.dark.grid",
+          "values": {
+            "Light": {
+              "hex": "#1a18140f",
+              "via": [
+                "color.chart.light.grid"
+              ]
+            },
+            "Dark": {
+              "hex": "#ffffff14",
+              "via": [
+                "color.chart.dark.grid"
+              ]
+            }
+          }
+        },
+        {
+          "name": "chart/tooltip/bg",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--mp-color-chart-light-tooltipBackground)",
+          "description": "tokens.json: color.chart.light.tooltipBackground · color.chart.dark.tooltipBackground",
+          "values": {
+            "Light": {
+              "alias": "neutral/0",
+              "hex": "#ffffff",
+              "via": [
+                "color.chart.light.tooltipBackground"
+              ]
+            },
+            "Dark": {
+              "alias": "graphite/700",
+              "hex": "#32373e",
+              "via": [
+                "color.chart.dark.tooltipBackground",
+                "color.dark.surfaceBright"
+              ]
+            }
+          }
+        },
+        {
+          "name": "chart/tooltip/text",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL"
+          ],
+          "codeSyntax": "var(--mp-color-chart-light-tooltipText)",
+          "description": "tokens.json: color.chart.light.tooltipText · color.chart.dark.tooltipText",
+          "values": {
+            "Light": {
+              "hex": "#1a1814",
+              "via": [
+                "color.chart.light.tooltipText"
+              ]
+            },
+            "Dark": {
+              "hex": "#ececec",
+              "via": [
+                "color.chart.dark.tooltipText"
+              ]
+            }
+          }
+        },
+        {
+          "name": "chart/tooltip/border",
+          "type": "COLOR",
+          "scopes": [
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--mp-color-chart-light-tooltipBorder)",
+          "description": "tokens.json: color.chart.light.tooltipBorder · color.chart.dark.tooltipBorder",
+          "values": {
+            "Light": {
+              "hex": "#1a18141a",
+              "via": [
+                "color.chart.light.tooltipBorder"
+              ]
+            },
+            "Dark": {
+              "alias": "graphite/600",
+              "hex": "#3d4249",
+              "via": [
+                "color.chart.dark.tooltipBorder"
+              ]
+            }
+          }
+        },
+        {
+          "name": "shadow/sm",
+          "type": "COLOR",
+          "scopes": [
+            "EFFECT_COLOR"
+          ],
+          "codeSyntax": "var(--mp-shadow-sm)",
+          "description": "tokens.json: shadow.sm · shadow.dark.sm — shadow tint only; geometry lives in the Effect Style",
+          "values": {
+            "Light": {
+              "hex": "#0b35580a"
+            },
+            "Dark": {
+              "hex": "#00000052"
+            }
+          }
+        },
+        {
+          "name": "shadow/md",
+          "type": "COLOR",
+          "scopes": [
+            "EFFECT_COLOR"
+          ],
+          "codeSyntax": "var(--mp-shadow-md)",
+          "description": "tokens.json: shadow.md · shadow.dark.md — shadow tint only; geometry lives in the Effect Style",
+          "values": {
+            "Light": {
+              "hex": "#0b355814"
+            },
+            "Dark": {
+              "hex": "#0000008c"
+            }
+          }
+        },
+        {
+          "name": "shadow/lg",
+          "type": "COLOR",
+          "scopes": [
+            "EFFECT_COLOR"
+          ],
+          "codeSyntax": "var(--mp-shadow-lg)",
+          "description": "tokens.json: shadow.lg · shadow.dark.lg — shadow tint only; geometry lives in the Effect Style",
+          "values": {
+            "Light": {
+              "hex": "#0b35581a"
+            },
+            "Dark": {
+              "hex": "#00000099"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Nav Skin",
+      "modes": [
+        "Gray",
+        "White",
+        "Dark"
+      ],
+      "variables": [
+        {
+          "name": "nav/surface",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--sidebar-bg)",
+          "description": "sidebar-{gray,white,dark}.css --sidebar-bg — gray = navSurfaceGray, white = surface, dark = dark surface",
+          "values": {
+            "Gray": {
+              "hex": "#eaedf2",
+              "via": [
+                ""
+              ]
+            },
+            "White": {
+              "alias": "neutral/0",
+              "hex": "#ffffff",
+              "via": [
+                ""
+              ]
+            },
+            "Dark": {
+              "alias": "graphite/900",
+              "hex": "#1f2226",
+              "via": [
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "nav/border",
+          "type": "COLOR",
+          "scopes": [
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--sidebar-border)",
+          "description": "sidebar-{gray,white,dark}.css --sidebar-border",
+          "values": {
+            "Gray": {
+              "hex": "#e2e8f0",
+              "via": [
+                ""
+              ]
+            },
+            "White": {
+              "hex": "#e2e8f0",
+              "via": [
+                ""
+              ]
+            },
+            "Dark": {
+              "alias": "graphite/650",
+              "hex": "#33373d",
+              "via": [
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "nav/divider",
+          "type": "COLOR",
+          "scopes": [
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--sidebar-line)",
+          "description": "sidebar-{gray,white,dark}.css --sidebar-line — light: text-primary @ 6%",
+          "values": {
+            "Gray": {
+              "hex": "#1a18140f",
+              "via": [
+                ""
+              ]
+            },
+            "White": {
+              "hex": "#1a18140f",
+              "via": [
+                ""
+              ]
+            },
+            "Dark": {
+              "hex": "#ffffff1f",
+              "via": [
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "nav/text",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--sidebar-text)",
+          "description": "sidebar-{gray,white,dark}.css --sidebar-text",
+          "values": {
+            "Gray": {
+              "hex": "#1a1814",
+              "via": [
+                ""
+              ]
+            },
+            "White": {
+              "hex": "#1a1814",
+              "via": [
+                ""
+              ]
+            },
+            "Dark": {
+              "hex": "#ececec",
+              "via": [
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "nav/text-muted",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--sidebar-muted)",
+          "description": "sidebar-{gray,white,dark}.css --sidebar-muted",
+          "values": {
+            "Gray": {
+              "hex": "#5a6573",
+              "via": [
+                ""
+              ]
+            },
+            "White": {
+              "hex": "#5a6573",
+              "via": [
+                ""
+              ]
+            },
+            "Dark": {
+              "hex": "#9ba3ac",
+              "via": [
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "nav/hover",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--sidebar-hover-bg)",
+          "description": "sidebar-{gray,white,dark}.css --sidebar-hover-bg — light: text-primary @ 6%",
+          "values": {
+            "Gray": {
+              "hex": "#1a18140f",
+              "via": [
+                ""
+              ]
+            },
+            "White": {
+              "hex": "#1a18140f",
+              "via": [
+                ""
+              ]
+            },
+            "Dark": {
+              "alias": "graphite/800",
+              "hex": "#272b30",
+              "via": [
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "nav/active",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--sidebar-active-bg)",
+          "description": "sidebar-{gray,white,dark}.css --sidebar-active-bg — light: text-primary @ 10%",
+          "values": {
+            "Gray": {
+              "hex": "#1a18141a",
+              "via": [
+                ""
+              ]
+            },
+            "White": {
+              "hex": "#1a18141a",
+              "via": [
+                ""
+              ]
+            },
+            "Dark": {
+              "hex": "#213a47",
+              "via": [
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "nav/active-text",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL",
+            "SHAPE_FILL"
+          ],
+          "codeSyntax": "var(--sidebar-active-text)",
+          "description": "sidebar-{gray,white,dark}.css --sidebar-active-text",
+          "values": {
+            "Gray": {
+              "hex": "#1a1814",
+              "via": [
+                ""
+              ]
+            },
+            "White": {
+              "hex": "#1a1814",
+              "via": [
+                ""
+              ]
+            },
+            "Dark": {
+              "hex": "#ececec",
+              "via": [
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "nav/focus-ring",
+          "type": "COLOR",
+          "scopes": [
+            "STROKE_COLOR",
+            "EFFECT_COLOR"
+          ],
+          "codeSyntax": "var(--sidebar-focus-ring)",
+          "description": "sidebar-{gray,white,dark}.css --sidebar-focus-ring — light: text-primary @ 55%",
+          "values": {
+            "Gray": {
+              "hex": "#1a18148c",
+              "via": [
+                ""
+              ]
+            },
+            "White": {
+              "hex": "#1a18148c",
+              "via": [
+                ""
+              ]
+            },
+            "Dark": {
+              "hex": "#2cc4ff",
+              "via": [
+                ""
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dimensions",
+      "modes": [
+        "Value"
+      ],
+      "variables": [
+        {
+          "name": "space/2",
+          "type": "FLOAT",
+          "scopes": [
+            "GAP"
+          ],
+          "codeSyntax": "var(--mp-space-2)",
+          "description": "tokens.json: space.2",
+          "values": {
+            "Value": {
+              "number": 2
+            }
+          }
+        },
+        {
+          "name": "space/4",
+          "type": "FLOAT",
+          "scopes": [
+            "GAP"
+          ],
+          "codeSyntax": "var(--mp-space-4)",
+          "description": "tokens.json: space.4",
+          "values": {
+            "Value": {
+              "number": 4
+            }
+          }
+        },
+        {
+          "name": "space/6",
+          "type": "FLOAT",
+          "scopes": [
+            "GAP"
+          ],
+          "codeSyntax": "var(--mp-space-6)",
+          "description": "tokens.json: space.6",
+          "values": {
+            "Value": {
+              "number": 6
+            }
+          }
+        },
+        {
+          "name": "space/8",
+          "type": "FLOAT",
+          "scopes": [
+            "GAP"
+          ],
+          "codeSyntax": "var(--mp-space-8)",
+          "description": "tokens.json: space.8",
+          "values": {
+            "Value": {
+              "number": 8
+            }
+          }
+        },
+        {
+          "name": "space/10",
+          "type": "FLOAT",
+          "scopes": [
+            "GAP"
+          ],
+          "codeSyntax": "var(--mp-space-10)",
+          "description": "tokens.json: space.10",
+          "values": {
+            "Value": {
+              "number": 10
+            }
+          }
+        },
+        {
+          "name": "space/12",
+          "type": "FLOAT",
+          "scopes": [
+            "GAP"
+          ],
+          "codeSyntax": "var(--mp-space-12)",
+          "description": "tokens.json: space.12",
+          "values": {
+            "Value": {
+              "number": 12
+            }
+          }
+        },
+        {
+          "name": "space/14",
+          "type": "FLOAT",
+          "scopes": [
+            "GAP"
+          ],
+          "codeSyntax": "var(--mp-space-14)",
+          "description": "tokens.json: space.14",
+          "values": {
+            "Value": {
+              "number": 14
+            }
+          }
+        },
+        {
+          "name": "space/16",
+          "type": "FLOAT",
+          "scopes": [
+            "GAP"
+          ],
+          "codeSyntax": "var(--mp-space-16)",
+          "description": "tokens.json: space.16",
+          "values": {
+            "Value": {
+              "number": 16
+            }
+          }
+        },
+        {
+          "name": "space/20",
+          "type": "FLOAT",
+          "scopes": [
+            "GAP"
+          ],
+          "codeSyntax": "var(--mp-space-20)",
+          "description": "tokens.json: space.20",
+          "values": {
+            "Value": {
+              "number": 20
+            }
+          }
+        },
+        {
+          "name": "space/24",
+          "type": "FLOAT",
+          "scopes": [
+            "GAP"
+          ],
+          "codeSyntax": "var(--mp-space-24)",
+          "description": "tokens.json: space.24",
+          "values": {
+            "Value": {
+              "number": 24
+            }
+          }
+        },
+        {
+          "name": "space/28",
+          "type": "FLOAT",
+          "scopes": [
+            "GAP"
+          ],
+          "codeSyntax": "var(--mp-space-28)",
+          "description": "tokens.json: space.28",
+          "values": {
+            "Value": {
+              "number": 28
+            }
+          }
+        },
+        {
+          "name": "space/32",
+          "type": "FLOAT",
+          "scopes": [
+            "GAP"
+          ],
+          "codeSyntax": "var(--mp-space-32)",
+          "description": "tokens.json: space.32",
+          "values": {
+            "Value": {
+              "number": 32
+            }
+          }
+        },
+        {
+          "name": "space/40",
+          "type": "FLOAT",
+          "scopes": [
+            "GAP"
+          ],
+          "codeSyntax": "var(--mp-space-40)",
+          "description": "tokens.json: space.40",
+          "values": {
+            "Value": {
+              "number": 40
+            }
+          }
+        },
+        {
+          "name": "space/48",
+          "type": "FLOAT",
+          "scopes": [
+            "GAP"
+          ],
+          "codeSyntax": "var(--mp-space-48)",
+          "description": "tokens.json: space.48",
+          "values": {
+            "Value": {
+              "number": 48
+            }
+          }
+        },
+        {
+          "name": "space/64",
+          "type": "FLOAT",
+          "scopes": [
+            "GAP"
+          ],
+          "codeSyntax": "var(--mp-space-64)",
+          "description": "tokens.json: space.64",
+          "values": {
+            "Value": {
+              "number": 64
+            }
+          }
+        },
+        {
+          "name": "space/80",
+          "type": "FLOAT",
+          "scopes": [
+            "GAP"
+          ],
+          "codeSyntax": "var(--mp-space-80)",
+          "description": "tokens.json: space.80",
+          "values": {
+            "Value": {
+              "number": 80
+            }
+          }
+        },
+        {
+          "name": "radius/4",
+          "type": "FLOAT",
+          "scopes": [
+            "CORNER_RADIUS"
+          ],
+          "codeSyntax": "var(--mp-radius-4)",
+          "description": "tokens.json: radius.4",
+          "values": {
+            "Value": {
+              "number": 4
+            }
+          }
+        },
+        {
+          "name": "radius/8",
+          "type": "FLOAT",
+          "scopes": [
+            "CORNER_RADIUS"
+          ],
+          "codeSyntax": "var(--mp-radius-8)",
+          "description": "tokens.json: radius.8",
+          "values": {
+            "Value": {
+              "number": 8
+            }
+          }
+        },
+        {
+          "name": "radius/10",
+          "type": "FLOAT",
+          "scopes": [
+            "CORNER_RADIUS"
+          ],
+          "codeSyntax": "var(--mp-radius-10)",
+          "description": "tokens.json: radius.10",
+          "values": {
+            "Value": {
+              "number": 10
+            }
+          }
+        },
+        {
+          "name": "radius/12",
+          "type": "FLOAT",
+          "scopes": [
+            "CORNER_RADIUS"
+          ],
+          "codeSyntax": "var(--mp-radius-12)",
+          "description": "tokens.json: radius.12",
+          "values": {
+            "Value": {
+              "number": 12
+            }
+          }
+        },
+        {
+          "name": "radius/16",
+          "type": "FLOAT",
+          "scopes": [
+            "CORNER_RADIUS"
+          ],
+          "codeSyntax": "var(--mp-radius-16)",
+          "description": "tokens.json: radius.16",
+          "values": {
+            "Value": {
+              "number": 16
+            }
+          }
+        },
+        {
+          "name": "radius/full",
+          "type": "FLOAT",
+          "scopes": [
+            "CORNER_RADIUS"
+          ],
+          "codeSyntax": "var(--mp-radius-full)",
+          "description": "tokens.json: radius.full — pills, buttons",
+          "values": {
+            "Value": {
+              "number": 9999
+            }
+          }
+        },
+        {
+          "name": "radius/surface",
+          "type": "FLOAT",
+          "scopes": [
+            "CORNER_RADIUS"
+          ],
+          "codeSyntax": "var(--r-card)",
+          "description": "tokens.json: component.card.radius = component.dialog.radius = radius.16 — the one outer-surface radius (cards, sections, dialogs, drawers)",
+          "values": {
+            "Value": {
+              "alias": "radius/16",
+              "number": 16
+            }
+          }
+        },
+        {
+          "name": "size/control/sm",
+          "type": "FLOAT",
+          "scopes": [
+            "WIDTH_HEIGHT"
+          ],
+          "codeSyntax": "var(--mp-component-field-height-sm)",
+          "description": "tokens.json: component.field.height.sm / segmented.height.sm — compact controls",
+          "values": {
+            "Value": {
+              "number": 32
+            }
+          }
+        },
+        {
+          "name": "size/control/md",
+          "type": "FLOAT",
+          "scopes": [
+            "WIDTH_HEIGHT"
+          ],
+          "codeSyntax": "var(--mp-component-control-height)",
+          "description": "tokens.json: component.control.height — buttons, fields, list rows, table header share this baseline",
+          "values": {
+            "Value": {
+              "number": 40
+            }
+          }
+        },
+        {
+          "name": "size/control/lg",
+          "type": "FLOAT",
+          "scopes": [
+            "WIDTH_HEIGHT"
+          ],
+          "codeSyntax": "var(--mp-component-field-height-lg)",
+          "description": "tokens.json: component.field.height.lg / table.rowMinHeight",
+          "values": {
+            "Value": {
+              "number": 48
+            }
+          }
+        },
+        {
+          "name": "font-size/10",
+          "type": "FLOAT",
+          "scopes": [
+            "FONT_SIZE"
+          ],
+          "codeSyntax": "var(--mp-fontSize-10)",
+          "description": "tokens.json: fontSize.10",
+          "values": {
+            "Value": {
+              "number": 10
+            }
+          }
+        },
+        {
+          "name": "font-size/11",
+          "type": "FLOAT",
+          "scopes": [
+            "FONT_SIZE"
+          ],
+          "codeSyntax": "var(--mp-fontSize-11)",
+          "description": "tokens.json: fontSize.11",
+          "values": {
+            "Value": {
+              "number": 11
+            }
+          }
+        },
+        {
+          "name": "font-size/12",
+          "type": "FLOAT",
+          "scopes": [
+            "FONT_SIZE"
+          ],
+          "codeSyntax": "var(--mp-fontSize-12)",
+          "description": "tokens.json: fontSize.12",
+          "values": {
+            "Value": {
+              "number": 12
+            }
+          }
+        },
+        {
+          "name": "font-size/13",
+          "type": "FLOAT",
+          "scopes": [
+            "FONT_SIZE"
+          ],
+          "codeSyntax": "var(--mp-fontSize-13)",
+          "description": "tokens.json: fontSize.13",
+          "values": {
+            "Value": {
+              "number": 13
+            }
+          }
+        },
+        {
+          "name": "font-size/14",
+          "type": "FLOAT",
+          "scopes": [
+            "FONT_SIZE"
+          ],
+          "codeSyntax": "var(--mp-fontSize-14)",
+          "description": "tokens.json: fontSize.14",
+          "values": {
+            "Value": {
+              "number": 14
+            }
+          }
+        },
+        {
+          "name": "font-size/15",
+          "type": "FLOAT",
+          "scopes": [
+            "FONT_SIZE"
+          ],
+          "codeSyntax": "var(--mp-fontSize-15)",
+          "description": "tokens.json: fontSize.15",
+          "values": {
+            "Value": {
+              "number": 15
+            }
+          }
+        },
+        {
+          "name": "font-size/16",
+          "type": "FLOAT",
+          "scopes": [
+            "FONT_SIZE"
+          ],
+          "codeSyntax": "var(--mp-fontSize-16)",
+          "description": "tokens.json: fontSize.16",
+          "values": {
+            "Value": {
+              "number": 16
+            }
+          }
+        },
+        {
+          "name": "font-size/18",
+          "type": "FLOAT",
+          "scopes": [
+            "FONT_SIZE"
+          ],
+          "codeSyntax": "var(--mp-fontSize-18)",
+          "description": "tokens.json: fontSize.18",
+          "values": {
+            "Value": {
+              "number": 18
+            }
+          }
+        },
+        {
+          "name": "font-size/20",
+          "type": "FLOAT",
+          "scopes": [
+            "FONT_SIZE"
+          ],
+          "codeSyntax": "var(--mp-fontSize-20)",
+          "description": "tokens.json: fontSize.20",
+          "values": {
+            "Value": {
+              "number": 20
+            }
+          }
+        },
+        {
+          "name": "font-size/24",
+          "type": "FLOAT",
+          "scopes": [
+            "FONT_SIZE"
+          ],
+          "codeSyntax": "var(--mp-fontSize-24)",
+          "description": "tokens.json: fontSize.24",
+          "values": {
+            "Value": {
+              "number": 24
+            }
+          }
+        },
+        {
+          "name": "font-size/28",
+          "type": "FLOAT",
+          "scopes": [
+            "FONT_SIZE"
+          ],
+          "codeSyntax": "var(--mp-fontSize-28)",
+          "description": "tokens.json: fontSize.28",
+          "values": {
+            "Value": {
+              "number": 28
+            }
+          }
+        },
+        {
+          "name": "font-size/32",
+          "type": "FLOAT",
+          "scopes": [
+            "FONT_SIZE"
+          ],
+          "codeSyntax": "var(--mp-fontSize-32)",
+          "description": "tokens.json: fontSize.32",
+          "values": {
+            "Value": {
+              "number": 32
+            }
+          }
+        },
+        {
+          "name": "font-size/40",
+          "type": "FLOAT",
+          "scopes": [
+            "FONT_SIZE"
+          ],
+          "codeSyntax": "var(--mp-fontSize-40)",
+          "description": "tokens.json: fontSize.40",
+          "values": {
+            "Value": {
+              "number": 40
+            }
+          }
+        },
+        {
+          "name": "font-size/48",
+          "type": "FLOAT",
+          "scopes": [
+            "FONT_SIZE"
+          ],
+          "codeSyntax": "var(--mp-fontSize-48)",
+          "description": "tokens.json: fontSize.48",
+          "values": {
+            "Value": {
+              "number": 48
+            }
+          }
+        },
+        {
+          "name": "layout/sidebar",
+          "type": "FLOAT",
+          "scopes": [
+            "WIDTH_HEIGHT"
+          ],
+          "codeSyntax": "var(--mp-layout-sidebarWidth)",
+          "description": "tokens.json: layout.sidebarWidth",
+          "values": {
+            "Value": {
+              "number": 248
+            }
+          }
+        },
+        {
+          "name": "layout/rail",
+          "type": "FLOAT",
+          "scopes": [
+            "WIDTH_HEIGHT"
+          ],
+          "codeSyntax": "var(--mp-layout-sidebarRailWidth)",
+          "description": "tokens.json: layout.sidebarRailWidth",
+          "values": {
+            "Value": {
+              "number": 72
+            }
+          }
+        },
+        {
+          "name": "layout/appbar",
+          "type": "FLOAT",
+          "scopes": [
+            "WIDTH_HEIGHT"
+          ],
+          "codeSyntax": "var(--mp-layout-appbarHeight)",
+          "description": "tokens.json: layout.appbarHeight (token 60, rendered 56 — code ticket)",
+          "values": {
+            "Value": {
+              "number": 56
+            }
+          }
+        },
+        {
+          "name": "layout/section-rail",
+          "type": "FLOAT",
+          "scopes": [
+            "WIDTH_HEIGHT"
+          ],
+          "codeSyntax": "var(--mp-layout-sectionRailWidth)",
+          "description": "tokens.json: layout.sectionRailWidth",
+          "values": {
+            "Value": {
+              "number": 260
+            }
+          }
+        },
+        {
+          "name": "layout/content-max",
+          "type": "FLOAT",
+          "scopes": [
+            "WIDTH_HEIGHT"
+          ],
+          "codeSyntax": "var(--mp-layout-contentMaxWidth)",
+          "description": "tokens.json: layout.contentMaxWidth",
+          "values": {
+            "Value": {
+              "number": 1280
+            }
+          }
+        },
+        {
+          "name": "layout/detail-sidebar",
+          "type": "FLOAT",
+          "scopes": [
+            "WIDTH_HEIGHT"
+          ],
+          "codeSyntax": "var(--mp-layout-detailSidebarWidth)",
+          "description": "tokens.json: layout.detailSidebarWidth",
+          "values": {
+            "Value": {
+              "number": 340
+            }
+          }
+        },
+        {
+          "name": "layout/inbox-list",
+          "type": "FLOAT",
+          "scopes": [
+            "WIDTH_HEIGHT"
+          ],
+          "codeSyntax": "var(--mp-layout-inboxListWidth)",
+          "description": "tokens.json: layout.inboxListWidth",
+          "values": {
+            "Value": {
+              "number": 380
+            }
+          }
+        },
+        {
+          "name": "layout/builder-left",
+          "type": "FLOAT",
+          "scopes": [
+            "WIDTH_HEIGHT"
+          ],
+          "codeSyntax": "var(--mp-component-builder-panelWidth)",
+          "description": "tokens.json: component.builder.panelWidth (token 380, rendered 220 — code ticket)",
+          "values": {
+            "Value": {
+              "number": 220
+            }
+          }
+        },
+        {
+          "name": "layout/builder-right",
+          "type": "FLOAT",
+          "scopes": [
+            "WIDTH_HEIGHT"
+          ],
+          "codeSyntax": "var(--mp-component-builder-panelWidth)",
+          "description": "tokens.json: component.builder.panelWidth (token 380, rendered 300 — code ticket)",
+          "values": {
+            "Value": {
+              "number": 300
+            }
+          }
+        },
+        {
+          "name": "button/padding-inline",
+          "type": "FLOAT",
+          "scopes": [
+            "GAP"
+          ],
+          "codeSyntax": "var(--mp-component-button-paddingInline)",
+          "description": "tokens.json: component.button.paddingInline = {space.14}",
+          "values": {
+            "Value": {
+              "alias": "space/14",
+              "number": 14
+            }
+          }
+        },
+        {
+          "name": "chip/radius",
+          "type": "FLOAT",
+          "scopes": [
+            "CORNER_RADIUS"
+          ],
+          "codeSyntax": "var(--mp-component-chip-radius)",
+          "description": "tokens.json: component.chip.radius = {radius.8}",
+          "values": {
+            "Value": {
+              "alias": "radius/8",
+              "number": 8
+            }
+          }
+        },
+        {
+          "name": "chip/height-sm",
+          "type": "FLOAT",
+          "scopes": [
+            "WIDTH_HEIGHT"
+          ],
+          "codeSyntax": "var(--mp-component-chip-height-sm)",
+          "description": "tokens.json: component.chip.height.sm = {space.20}",
+          "values": {
+            "Value": {
+              "alias": "space/20",
+              "number": 20
+            }
+          }
+        },
+        {
+          "name": "chip/height-md",
+          "type": "FLOAT",
+          "scopes": [
+            "WIDTH_HEIGHT"
+          ],
+          "codeSyntax": "var(--mp-component-chip-height-md)",
+          "description": "tokens.json: component.chip.height.md = {space.24}",
+          "values": {
+            "Value": {
+              "alias": "space/24",
+              "number": 24
+            }
+          }
+        },
+        {
+          "name": "chip/height-lg",
+          "type": "FLOAT",
+          "scopes": [
+            "WIDTH_HEIGHT"
+          ],
+          "codeSyntax": "var(--mp-component-chip-height-lg)",
+          "description": "tokens.json: component.chip.height.lg = {space.32}",
+          "values": {
+            "Value": {
+              "alias": "space/32",
+              "number": 32
+            }
+          }
+        },
+        {
+          "name": "input/radius",
+          "type": "FLOAT",
+          "scopes": [
+            "CORNER_RADIUS"
+          ],
+          "codeSyntax": "var(--mp-component-input-radius)",
+          "description": "tokens.json: component.input.radius = {radius.10}",
+          "values": {
+            "Value": {
+              "alias": "radius/10",
+              "number": 10
+            }
+          }
+        },
+        {
+          "name": "menu/radius",
+          "type": "FLOAT",
+          "scopes": [
+            "CORNER_RADIUS"
+          ],
+          "codeSyntax": "var(--mp-component-menu-radius)",
+          "description": "tokens.json: component.menu.radius = {radius.12}",
+          "values": {
+            "Value": {
+              "alias": "radius/12",
+              "number": 12
+            }
+          }
+        },
+        {
+          "name": "menu/min-width",
+          "type": "FLOAT",
+          "scopes": [
+            "WIDTH_HEIGHT"
+          ],
+          "codeSyntax": "var(--mp-component-menu-minWidth)",
+          "description": "tokens.json: component.menu.minWidth",
+          "values": {
+            "Value": {
+              "number": 180
+            }
+          }
+        },
+        {
+          "name": "menu/item-height",
+          "type": "FLOAT",
+          "scopes": [
+            "WIDTH_HEIGHT"
+          ],
+          "codeSyntax": "var(--mp-component-menu-itemHeight)",
+          "description": "tokens.json: component.menu.itemHeight",
+          "values": {
+            "Value": {
+              "number": 36
+            }
+          }
+        },
+        {
+          "name": "card/padding",
+          "type": "FLOAT",
+          "scopes": [
+            "GAP"
+          ],
+          "codeSyntax": "var(--mp-component-card-padding)",
+          "description": "tokens.json: component.card.padding = {space.20}",
+          "values": {
+            "Value": {
+              "alias": "space/20",
+              "number": 20
+            }
+          }
+        },
+        {
+          "name": "card/padding-compact",
+          "type": "FLOAT",
+          "scopes": [
+            "GAP"
+          ],
+          "codeSyntax": "var(--mp-component-card-paddingCompact)",
+          "description": "tokens.json: component.card.paddingCompact = {space.12}",
+          "values": {
+            "Value": {
+              "alias": "space/12",
+              "number": 12
+            }
+          }
+        },
+        {
+          "name": "card/padding-spacious",
+          "type": "FLOAT",
+          "scopes": [
+            "GAP"
+          ],
+          "codeSyntax": "var(--mp-component-card-paddingSpacious)",
+          "description": "tokens.json: component.card.paddingSpacious = {space.32}",
+          "values": {
+            "Value": {
+              "alias": "space/32",
+              "number": 32
+            }
+          }
+        },
+        {
+          "name": "card/gap",
+          "type": "FLOAT",
+          "scopes": [
+            "GAP"
+          ],
+          "codeSyntax": "var(--mp-component-card-gap)",
+          "description": "tokens.json: component.card.gap = {space.16}",
+          "values": {
+            "Value": {
+              "alias": "space/16",
+              "number": 16
+            }
+          }
+        },
+        {
+          "name": "card/gap-compact",
+          "type": "FLOAT",
+          "scopes": [
+            "GAP"
+          ],
+          "codeSyntax": "var(--mp-component-card-gapCompact)",
+          "description": "tokens.json: component.card.gapCompact = {space.8}",
+          "values": {
+            "Value": {
+              "alias": "space/8",
+              "number": 8
+            }
+          }
+        },
+        {
+          "name": "dialog/width-sm",
+          "type": "FLOAT",
+          "scopes": [
+            "WIDTH_HEIGHT"
+          ],
+          "codeSyntax": "var(--mp-component-dialog-width-sm)",
+          "description": "tokens.json: component.dialog.width.sm",
+          "values": {
+            "Value": {
+              "number": 440
+            }
+          }
+        },
+        {
+          "name": "dialog/width-md",
+          "type": "FLOAT",
+          "scopes": [
+            "WIDTH_HEIGHT"
+          ],
+          "codeSyntax": "var(--mp-component-dialog-width-md)",
+          "description": "tokens.json: component.dialog.width.md",
+          "values": {
+            "Value": {
+              "number": 640
+            }
+          }
+        },
+        {
+          "name": "dialog/width-lg",
+          "type": "FLOAT",
+          "scopes": [
+            "WIDTH_HEIGHT"
+          ],
+          "codeSyntax": "var(--mp-component-dialog-width-lg)",
+          "description": "tokens.json: component.dialog.width.lg",
+          "values": {
+            "Value": {
+              "number": 880
+            }
+          }
+        },
+        {
+          "name": "dialog/header-min-height",
+          "type": "FLOAT",
+          "scopes": [
+            "WIDTH_HEIGHT"
+          ],
+          "codeSyntax": "var(--mp-component-dialog-headerMinHeight)",
+          "description": "tokens.json: component.dialog.headerMinHeight",
+          "values": {
+            "Value": {
+              "number": 88
+            }
+          }
+        },
+        {
+          "name": "drawer/width-sm",
+          "type": "FLOAT",
+          "scopes": [
+            "WIDTH_HEIGHT"
+          ],
+          "codeSyntax": "var(--mp-component-drawer-width-sm)",
+          "description": "tokens.json: component.drawer.width.sm",
+          "values": {
+            "Value": {
+              "number": 440
+            }
+          }
+        },
+        {
+          "name": "drawer/width-md",
+          "type": "FLOAT",
+          "scopes": [
+            "WIDTH_HEIGHT"
+          ],
+          "codeSyntax": "var(--mp-component-drawer-width-md)",
+          "description": "tokens.json: component.drawer.width.md",
+          "values": {
+            "Value": {
+              "number": 480
+            }
+          }
+        },
+        {
+          "name": "drawer/width-lg",
+          "type": "FLOAT",
+          "scopes": [
+            "WIDTH_HEIGHT"
+          ],
+          "codeSyntax": "var(--mp-component-drawer-width-lg)",
+          "description": "tokens.json: component.drawer.width.lg",
+          "values": {
+            "Value": {
+              "number": 640
+            }
+          }
+        },
+        {
+          "name": "list-item/padding-block",
+          "type": "FLOAT",
+          "scopes": [
+            "GAP"
+          ],
+          "codeSyntax": "var(--mp-component-listItem-paddingBlock)",
+          "description": "tokens.json: component.listItem.paddingBlock = {space.8}",
+          "values": {
+            "Value": {
+              "alias": "space/8",
+              "number": 8
+            }
+          }
+        },
+        {
+          "name": "list-item/padding-inline",
+          "type": "FLOAT",
+          "scopes": [
+            "GAP"
+          ],
+          "codeSyntax": "var(--mp-component-listItem-paddingInline)",
+          "description": "tokens.json: component.listItem.paddingInline = {space.12}",
+          "values": {
+            "Value": {
+              "alias": "space/12",
+              "number": 12
+            }
+          }
+        },
+        {
+          "name": "list-item/gap",
+          "type": "FLOAT",
+          "scopes": [
+            "GAP"
+          ],
+          "codeSyntax": "var(--mp-component-listItem-gap)",
+          "description": "tokens.json: component.listItem.gap = {space.12}",
+          "values": {
+            "Value": {
+              "alias": "space/12",
+              "number": 12
+            }
+          }
+        },
+        {
+          "name": "field/label-gap",
+          "type": "FLOAT",
+          "scopes": [
+            "GAP"
+          ],
+          "codeSyntax": "var(--mp-component-field-labelGap)",
+          "description": "tokens.json: component.field.labelGap = {space.6}",
+          "values": {
+            "Value": {
+              "alias": "space/6",
+              "number": 6
+            }
+          }
+        },
+        {
+          "name": "field/group-gap",
+          "type": "FLOAT",
+          "scopes": [
+            "GAP"
+          ],
+          "codeSyntax": "var(--mp-component-field-groupGap)",
+          "description": "tokens.json: component.field.groupGap = {space.16}",
+          "values": {
+            "Value": {
+              "alias": "space/16",
+              "number": 16
+            }
+          }
+        },
+        {
+          "name": "field/section-gap",
+          "type": "FLOAT",
+          "scopes": [
+            "GAP"
+          ],
+          "codeSyntax": "var(--mp-component-field-sectionGap)",
+          "description": "tokens.json: component.field.sectionGap = {space.24}",
+          "values": {
+            "Value": {
+              "alias": "space/24",
+              "number": 24
+            }
+          }
+        },
+        {
+          "name": "state/measure",
+          "type": "FLOAT",
+          "scopes": [
+            "WIDTH_HEIGHT"
+          ],
+          "codeSyntax": "var(--mp-component-state-measure)",
+          "description": "tokens.json: component.state.measure",
+          "values": {
+            "Value": {
+              "number": 420
+            }
+          }
+        },
+        {
+          "name": "state/measure-wide",
+          "type": "FLOAT",
+          "scopes": [
+            "WIDTH_HEIGHT"
+          ],
+          "codeSyntax": "var(--mp-component-state-measureWide)",
+          "description": "tokens.json: component.state.measureWide",
+          "values": {
+            "Value": {
+              "number": 480
+            }
+          }
+        },
+        {
+          "name": "table/row-min-height",
+          "type": "FLOAT",
+          "scopes": [
+            "WIDTH_HEIGHT"
+          ],
+          "codeSyntax": "var(--mp-component-table-rowMinHeight)",
+          "description": "tokens.json: component.table.rowMinHeight = {space.48}",
+          "values": {
+            "Value": {
+              "alias": "space/48",
+              "number": 48
+            }
+          }
+        },
+        {
+          "name": "table/cell-padding-inline",
+          "type": "FLOAT",
+          "scopes": [
+            "GAP"
+          ],
+          "codeSyntax": "var(--mp-component-table-cellPaddingInline)",
+          "description": "tokens.json: component.table.cellPaddingInline = {space.16}",
+          "values": {
+            "Value": {
+              "alias": "space/16",
+              "number": 16
+            }
+          }
+        },
+        {
+          "name": "table/cell-padding-block",
+          "type": "FLOAT",
+          "scopes": [
+            "GAP"
+          ],
+          "codeSyntax": "var(--mp-component-table-cellPaddingBlock)",
+          "description": "tokens.json: component.table.cellPaddingBlock = {space.14}",
+          "values": {
+            "Value": {
+              "alias": "space/14",
+              "number": 14
+            }
+          }
+        },
+        {
+          "name": "toolbar/height",
+          "type": "FLOAT",
+          "scopes": [
+            "WIDTH_HEIGHT"
+          ],
+          "codeSyntax": "var(--mp-component-toolbar-minHeight)",
+          "description": "tokens.json: component.toolbar.minHeight = {space.64}",
+          "values": {
+            "Value": {
+              "alias": "space/64",
+              "number": 64
+            }
+          }
+        },
+        {
+          "name": "nav/item-radius",
+          "type": "FLOAT",
+          "scopes": [
+            "CORNER_RADIUS"
+          ],
+          "codeSyntax": "var(--mp-component-nav-itemRadius)",
+          "description": "tokens.json: component.nav.itemRadius = {radius.8}",
+          "values": {
+            "Value": {
+              "alias": "radius/8",
+              "number": 8
+            }
+          }
+        },
+        {
+          "name": "widget/action-size",
+          "type": "FLOAT",
+          "scopes": [
+            "WIDTH_HEIGHT"
+          ],
+          "codeSyntax": "var(--mp-component-widget-actionSize)",
+          "description": "tokens.json: component.widget.actionSize = {space.32}",
+          "values": {
+            "Value": {
+              "alias": "space/32",
+              "number": 32
+            }
+          }
+        },
+        {
+          "name": "wizard/measure-sm",
+          "type": "FLOAT",
+          "scopes": [
+            "WIDTH_HEIGHT"
+          ],
+          "codeSyntax": "var(--mp-component-wizard-measure-sm)",
+          "description": "tokens.json: component.wizard.measure.sm",
+          "values": {
+            "Value": {
+              "number": 780
+            }
+          }
+        },
+        {
+          "name": "wizard/measure-md",
+          "type": "FLOAT",
+          "scopes": [
+            "WIDTH_HEIGHT"
+          ],
+          "codeSyntax": "var(--mp-component-wizard-measure-md)",
+          "description": "tokens.json: component.wizard.measure.md",
+          "values": {
+            "Value": {
+              "number": 920
+            }
+          }
+        },
+        {
+          "name": "wizard/measure-lg",
+          "type": "FLOAT",
+          "scopes": [
+            "WIDTH_HEIGHT"
+          ],
+          "codeSyntax": "var(--mp-component-wizard-measure-lg)",
+          "description": "tokens.json: component.wizard.measure.lg",
+          "values": {
+            "Value": {
+              "number": 1040
+            }
+          }
+        },
+        {
+          "name": "banner/min-height",
+          "type": "FLOAT",
+          "scopes": [
+            "WIDTH_HEIGHT"
+          ],
+          "codeSyntax": "var(--mp-component-banner-minHeight)",
+          "description": "tokens.json: component.banner.minHeight",
+          "values": {
+            "Value": {
+              "number": 44
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Typography",
+      "modes": [
+        "Value"
+      ],
+      "variables": [
+        {
+          "name": "font-family/base",
+          "type": "STRING",
+          "scopes": [
+            "FONT_FAMILY"
+          ],
+          "codeSyntax": "var(--mp-fontFamily-base)",
+          "description": "tokens.json: fontFamily.base — Inter",
+          "values": {
+            "Value": {
+              "string": "Inter"
+            }
+          }
+        },
+        {
+          "name": "font-family/mono",
+          "type": "STRING",
+          "scopes": [
+            "FONT_FAMILY"
+          ],
+          "codeSyntax": "var(--mp-fontFamily-mono)",
+          "description": "tokens.json: fontFamily.mono — JetBrains Mono (Figma: Fira Code, the declared fallback)",
+          "values": {
+            "Value": {
+              "string": "Fira Code"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "textStyles": [
+    {
+      "name": "Display/XL",
+      "family": "Inter",
+      "style": "Extra Bold",
+      "size": 80,
+      "lineHeightPct": 95,
+      "letterSpacingPct": -3.5,
+      "codeWeight": 800,
+      "fontSizeVar": "font-size/80",
+      "path": "display.xl"
+    },
+    {
+      "name": "Display/LG",
+      "family": "Inter",
+      "style": "Extra Bold",
+      "size": 60,
+      "lineHeightPct": 100,
+      "letterSpacingPct": -3,
+      "codeWeight": 800,
+      "fontSizeVar": "font-size/60",
+      "path": "display.lg"
+    },
+    {
+      "name": "Display/MD",
+      "family": "Inter",
+      "style": "Bold",
+      "size": 44,
+      "lineHeightPct": 105,
+      "letterSpacingPct": -2,
+      "codeWeight": 700,
+      "fontSizeVar": null,
+      "path": "display.md"
+    },
+    {
+      "name": "Display/SM",
+      "family": "Inter",
+      "style": "Bold",
+      "size": 32,
+      "lineHeightPct": 110,
+      "letterSpacingPct": -1,
+      "codeWeight": 700,
+      "fontSizeVar": "font-size/32",
+      "path": "display.sm"
+    },
+    {
+      "name": "Heading/Page Title",
+      "family": "Inter",
+      "style": "Bold",
+      "size": 28,
+      "lineHeightPct": 115,
+      "letterSpacingPct": -2,
+      "codeWeight": 750,
+      "fontSizeVar": "font-size/28",
+      "path": "text.pageTitle"
+    },
+    {
+      "name": "Heading/Page Subtitle",
+      "family": "Inter",
+      "style": "Regular",
+      "size": 15,
+      "lineHeightPct": 150,
+      "letterSpacingPct": 0,
+      "codeWeight": 450,
+      "fontSizeVar": "font-size/15",
+      "path": "text.pageSubtitle"
+    },
+    {
+      "name": "Heading/Section Title",
+      "family": "Inter",
+      "style": "Semi Bold",
+      "size": 16,
+      "lineHeightPct": 130,
+      "letterSpacingPct": -1,
+      "codeWeight": 650,
+      "fontSizeVar": "font-size/16",
+      "path": "text.sectionTitle"
+    },
+    {
+      "name": "Data/KPI Value",
+      "family": "Inter",
+      "style": "Bold",
+      "size": 32,
+      "lineHeightPct": 115,
+      "letterSpacingPct": -2.5,
+      "codeWeight": 700,
+      "fontSizeVar": "font-size/32",
+      "path": "text.kpiValue"
+    },
+    {
+      "name": "Data/KPI Value Hero",
+      "family": "Inter",
+      "style": "Extra Bold",
+      "size": 48,
+      "lineHeightPct": 100,
+      "letterSpacingPct": -3,
+      "codeWeight": 800,
+      "fontSizeVar": "font-size/48",
+      "path": "text.kpiValueHero"
+    },
+    {
+      "name": "Data/Meta Value",
+      "family": "Inter",
+      "style": "Medium",
+      "size": 14,
+      "lineHeightPct": 140,
+      "letterSpacingPct": 0,
+      "codeWeight": 550,
+      "fontSizeVar": "font-size/14",
+      "path": "text.metaValue"
+    },
+    {
+      "name": "Body/Regular",
+      "family": "Inter",
+      "style": "Regular",
+      "size": 14,
+      "lineHeightPct": 157,
+      "letterSpacingPct": 0,
+      "codeWeight": 400,
+      "fontSizeVar": "font-size/14",
+      "path": "fontSize.14 (Vuetify text-body-2)"
+    },
+    {
+      "name": "Body/Medium",
+      "family": "Inter",
+      "style": "Medium",
+      "size": 14,
+      "lineHeightPct": 157,
+      "letterSpacingPct": 0,
+      "codeWeight": 500,
+      "fontSizeVar": "font-size/14",
+      "path": "text.body"
+    },
+    {
+      "name": "Body/Label",
+      "family": "Inter",
+      "style": "Medium",
+      "size": 13,
+      "lineHeightPct": 140,
+      "letterSpacingPct": 0,
+      "codeWeight": 500,
+      "fontSizeVar": "font-size/13",
+      "path": "text.label"
+    },
+    {
+      "name": "Body/Caption",
+      "family": "Inter",
+      "style": "Medium",
+      "size": 12,
+      "lineHeightPct": 140,
+      "letterSpacingPct": 0,
+      "codeWeight": 500,
+      "fontSizeVar": "font-size/12",
+      "path": "text.caption"
+    },
+    {
+      "name": "Body/Eyebrow",
+      "family": "Inter",
+      "style": "Semi Bold",
+      "size": 11,
+      "lineHeightPct": 140,
+      "letterSpacingPct": 6,
+      "codeWeight": 600,
+      "fontSizeVar": "font-size/11",
+      "path": "text.eyebrow (= text.metaLabel)",
+      "textCase": "UPPER"
+    },
+    {
+      "name": "Component/Button",
+      "family": "Inter",
+      "style": "Semi Bold",
+      "size": 14,
+      "lineHeightPct": 100,
+      "letterSpacingPct": 0,
+      "codeWeight": 600,
+      "fontSizeVar": "font-size/14",
+      "path": "component.button.typography"
+    },
+    {
+      "name": "Code/Mono",
+      "family": "Fira Code",
+      "style": "Regular",
+      "size": 13,
+      "lineHeightPct": 150,
+      "letterSpacingPct": 0,
+      "codeWeight": 400,
+      "fontSizeVar": "font-size/13",
+      "path": "fontFamily.mono"
+    }
+  ],
+  "effectStyles": [
+    {
+      "name": "Elevation/Light/Raised",
+      "x": 0,
+      "y": 1,
+      "blur": 2,
+      "spread": 0,
+      "colorVar": "shadow/sm",
+      "mode": "Light",
+      "css": "--elevation-raised"
+    },
+    {
+      "name": "Elevation/Light/Overlay",
+      "x": 0,
+      "y": 2,
+      "blur": 16,
+      "spread": -8,
+      "colorVar": "shadow/md",
+      "mode": "Light",
+      "css": "--elevation-overlay"
+    },
+    {
+      "name": "Elevation/Light/Modal",
+      "x": 0,
+      "y": 8,
+      "blur": 32,
+      "spread": -12,
+      "colorVar": "shadow/lg",
+      "mode": "Light",
+      "css": "--elevation-modal"
+    },
+    {
+      "name": "Elevation/Dark/Raised",
+      "x": 0,
+      "y": 1,
+      "blur": 2,
+      "spread": 0,
+      "colorVar": "shadow/sm",
+      "mode": "Dark",
+      "css": "--elevation-raised"
+    },
+    {
+      "name": "Elevation/Dark/Overlay",
+      "x": 0,
+      "y": 8,
+      "blur": 24,
+      "spread": -6,
+      "colorVar": "shadow/md",
+      "mode": "Dark",
+      "css": "--elevation-overlay"
+    },
+    {
+      "name": "Elevation/Dark/Modal",
+      "x": 0,
+      "y": 18,
+      "blur": 48,
+      "spread": -12,
+      "colorVar": "shadow/lg",
+      "mode": "Dark",
+      "css": "--elevation-modal"
+    },
+    {
+      "name": "Elevation/Button Inset",
+      "type": "INNER_SHADOW",
+      "x": 0,
+      "y": 1,
+      "blur": 0,
+      "spread": 0,
+      "color": "#ffffff29",
+      "css": "--mp-shadow-buttonInset",
+      "note": "light surfaces only"
+    },
+    {
+      "name": "Glow/Da Vinci Mic",
+      "x": 0,
+      "y": 10,
+      "blur": 26,
+      "spread": 0,
+      "color": "#637df761",
+      "css": "--dv-orbit-mic-shadow"
+    }
+  ],
+  "paintStyles": [
+    {
+      "name": "Gradient/Da Vinci Brand",
+      "angle": 135,
+      "stops": [
+        [
+          "ai/gradient/from",
+          0
+        ],
+        [
+          "ai/gradient/mid",
+          0.52
+        ],
+        [
+          "ai/gradient/to",
+          1
+        ]
+      ],
+      "css": "--dv-grad"
+    },
+    {
+      "name": "Gradient/Da Vinci Hero",
+      "angle": 90,
+      "stops": [
+        [
+          "ai/gradient/from",
+          0
+        ],
+        [
+          "ai/gradient/mid",
+          0.5
+        ],
+        [
+          "ai/gradient/to",
+          1
+        ]
+      ],
+      "css": "--dv-hero-grad",
+      "note": "dv.heroGrad* stops equal dv.grad* in light; dark differs — flagged"
+    },
+    {
+      "name": "Gradient/Da Vinci Action",
+      "angle": 135,
+      "stops": [
+        [
+          "ai/action-gradient/from",
+          0
+        ],
+        [
+          "ai/action-gradient/mid",
+          0.5
+        ],
+        [
+          "ai/action-gradient/to",
+          1
+        ]
+      ],
+      "css": "--dv-action-gradient"
+    }
+  ],
+  "conflicts": [
+    "radius.20 excluded (single use)",
+    "layout/appbar: token layout.appbarHeight = 60 but the app renders 56 — Figma uses 56",
+    "layout/builder-left: token component.builder.panelWidth = 380 but the app renders 220 — Figma uses 220",
+    "layout/builder-right: token component.builder.panelWidth = 380 but the app renders 300 — Figma uses 300",
+    "dv.gradFrom vs dv.heroGradFrom: light #7c3aed/#7c3aed, dark #8b5cf6/#a78bfa — Hero paint style reuses ai/gradient/* (light-identical); dark hero stops differ",
+    "dv.gradMid vs dv.heroGradMid: light #2563eb/#2563eb, dark #3b82f6/#60a5fa — Hero paint style reuses ai/gradient/* (light-identical); dark hero stops differ",
+    "dv.gradTo vs dv.heroGradTo: light #0891b2/#0891b2, dark #06b6d4/#22d3ee — Hero paint style reuses ai/gradient/* (light-identical); dark hero stops differ"
+  ]
+}
