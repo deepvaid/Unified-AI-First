@@ -8,7 +8,7 @@
     "url": "https://www.figma.com/design/RJJ0qDChSdh0FwH2UG0t7t"
   },
   "phase": "phase3a",
-  "step": "P3a.a Button",
+  "step": "P3a checkpoint",
   "entities": {
     "collections": {
       "Primitives": "VariableCollectionId:2:2",
@@ -304,7 +304,8 @@
       "Dimensions/wizard/measure-sm": "VariableID:9:37",
       "Dimensions/wizard/measure-md": "VariableID:9:38",
       "Dimensions/wizard/measure-lg": "VariableID:9:39",
-      "Dimensions/banner/min-height": "VariableID:9:40"
+      "Dimensions/banner/min-height": "VariableID:9:40",
+      "Color/status/error/hover": "VariableID:27:2"
     },
     "textStyles": {
       "Display/XL": "S:c1def37fb6b05ac8a6091d137168aae18d23c23e,",
@@ -357,9 +358,197 @@
       "sep:PATTERNS": "13:12",
       "sep:AI": "13:13",
       "sep:PRODUCT": "13:14",
-      "sep:UTILITIES": "13:15"
+      "sep:UTILITIES": "13:15",
+      "Button": "28:2",
+      "Icon Button": "34:2",
+      "Field": "35:2",
+      "Selection Controls": "36:2",
+      "Chips & Badges": "39:2",
+      "Avatar": "41:2",
+      "List & Nav Items": "42:2",
+      "Utility Atoms": "43:2",
+      "Illustration": "45:2"
     },
-    "components": {},
+    "components": {
+      "Button": {
+        "page": "28:2",
+        "doc": "28:3",
+        "set": "30:62",
+        "variants": 30,
+        "properties": {
+          "Label": "Label#30:0",
+          "Leading icon": "Leading icon#30:31",
+          "Trailing icon": "Trailing icon#30:62",
+          "Focus ring": "Focus ring#30:93",
+          "Leading icon ↔": "Leading icon ↔#30:124",
+          "Trailing icon ↔": "Trailing icon ↔#30:155"
+        },
+        "gridLabels": [
+          "30:63",
+          "30:64",
+          "30:65",
+          "30:66",
+          "30:67",
+          "30:68",
+          "30:69",
+          "30:70",
+          "30:71",
+          "30:72",
+          "30:73",
+          "30:74",
+          "30:75"
+        ]
+      },
+      "Icon Button": {
+        "page": "34:2",
+        "doc": "34:3",
+        "set": "34:153",
+        "variants": 24,
+        "properties": {
+          "Icon ↔": "Icon ↔#34:0",
+          "Focus ring": "Focus ring#34:25"
+        },
+        "gridLabels": [
+          "34:154",
+          "34:155",
+          "34:156",
+          "34:157",
+          "34:158",
+          "34:159",
+          "34:160",
+          "34:161",
+          "34:162",
+          "34:163",
+          "34:164"
+        ]
+      },
+      "Field": {
+        "page": "35:2",
+        "doc": "35:3",
+        "set": "35:232",
+        "variants": 18,
+        "props": 13,
+        "gridLabels": [
+          "35:233",
+          "35:234",
+          "35:235",
+          "35:236",
+          "35:237",
+          "35:238",
+          "35:239",
+          "35:240",
+          "35:241"
+        ]
+      },
+      "Checkbox": {
+        "page": "36:2",
+        "set": "36:41",
+        "variants": 6
+      },
+      "Radio": {
+        "page": "36:2",
+        "set": "36:60",
+        "variants": 4
+      },
+      "Switch": {
+        "page": "36:2",
+        "set": "36:81",
+        "variants": 4
+      },
+      "Selection Controls doc": "36:3",
+      "Chip": {
+        "page": "39:2",
+        "set": "39:71",
+        "variants": 8
+      },
+      "Status Chip": {
+        "page": "39:2",
+        "set": "39:228",
+        "variants": 30
+      },
+      "Chips doc": "39:3",
+      "Source Cloud Chip": {
+        "page": "39:2",
+        "set": "40:136",
+        "variants": 12
+      },
+      "Badge": {
+        "page": "39:2",
+        "set": "40:152",
+        "variants": 9
+      },
+      "Avatar": {
+        "page": "41:2",
+        "doc": "41:3",
+        "set": "41:53",
+        "variants": 12
+      },
+      "Menu Item": {
+        "page": "42:2",
+        "set": "42:47",
+        "variants": 5
+      },
+      "Nav Item": {
+        "page": "42:2",
+        "set": "42:244",
+        "variants": 12
+      },
+      "Tab": {
+        "page": "42:2",
+        "set": "42:260",
+        "variants": 3
+      },
+      "Segment": {
+        "page": "42:2",
+        "set": "42:285",
+        "variants": 6
+      },
+      "Step": {
+        "page": "42:2",
+        "set": "42:303",
+        "variants": 4
+      },
+      "List & Nav doc": "42:3",
+      "Tooltip": {
+        "page": "43:2",
+        "component": "43:9"
+      },
+      "Divider": {
+        "page": "43:2",
+        "set": "43:13",
+        "variants": 2
+      },
+      "Spinner": {
+        "page": "43:2",
+        "set": "43:20",
+        "variants": 2
+      },
+      "Progress Linear": {
+        "page": "43:2",
+        "component": "43:21"
+      },
+      "Skeleton": {
+        "page": "43:2",
+        "set": "43:26",
+        "variants": 3
+      },
+      "Kbd": {
+        "page": "43:2",
+        "component": "43:27"
+      },
+      "Utility doc": "43:3",
+      "Textarea": {
+        "page": "35:2",
+        "set": "44:41",
+        "variants": 4
+      },
+      "Illustration": {
+        "page": "45:2",
+        "doc": "45:3",
+        "set": "45:77",
+        "variants": 8
+      }
+    },
     "docFrames": {
       "cover": "14:2",
       "gettingStarted": "15:2",
@@ -406,9 +595,26 @@
     "P2.g icons batch3 (70; 25:8..25:404) — 210 Icon/* components in grid 23:7",
     "P2.h layout & breakpoints page (26:2)",
     "PHASE 2 BUILD COMPLETE — awaiting user review (P2.i)",
-    "P2.i user review OK — proceed to atoms (2026-09-07)"
+    "P2.i user review OK — proceed to atoms (2026-09-07)",
+    "P3a prep: icon vectors SCALE constraints (706), status/error/hover added (27:2)",
+    "P3a.a Button set 30:62 (30 variants, 6 props) — validation pending",
+    "P3a.a Button VALIDATED (30 variants, 6 props, 90 paints seeded)",
+    "P3a.b Icon Button set 34:153 (24 variants) VALIDATED",
+    "P3a.c Field set 35:232 (18 variants, 13 props) VALIDATED",
+    "P3a.d Selection Controls: Checkbox 36:41 (6), Radio 36:60 (4), Switch 36:81 (4) VALIDATED",
+    "P3a.e Chip 39:71 (8) + Status Chip 39:228 (30) built; hug fix + Source Cloud Chip + Badge in progress",
+    "P3a.e Chips & Badges COMPLETE: Chip 39:71 (8, hug fixed), Status Chip 39:228 (30), Source Cloud Chip 40:136 (12), Badge 40:152 (9) VALIDATED",
+    "P3a.e Avatar set 41:53 (12) VALIDATED",
+    "P3a.f List & Nav Items: Menu Item 42:47 (5), Nav Item 42:244 (12), Tab 42:260 (3), Segment 42:285 (6), Step 42:303 (4) VALIDATED",
+    "P3a.g Utility Atoms: Tooltip 43:9, Divider 43:13 (2), Spinner 43:20 (2), Progress Linear 43:21, Skeleton 43:26 (3), Kbd 43:27 VALIDATED",
+    "P3a.c Textarea set 44:41 (4) VALIDATED",
+    "P3a.g Illustration set 45:77 (8) VALIDATED",
+    "PHASE 3a ATOMS BUILT — exit audit + user review pending",
+    "P3a exit audit PASSED (1125 paints, 0 unbound)"
   ],
-  "pendingValidations": [],
+  "pendingValidations": [
+    "user review before Phase 3b molecules"
+  ],
   "decisions": {
     "file": "new file; old kit RyWEOafKLPhvZCltyQicOm is reference only",
     "libraries": "self-contained; Liquid Sky / Foundations / Desktop Components audit-only",
@@ -424,14 +630,29 @@
     "note": "July 2026 kit, intact: 21 pages, 121 vars (Primitives 23 / Color 64 / Dimensions 34), 16 text styles, 3 effect styles. Reference only."
   },
   "plan_counts": {
-    "variables": 267,
+    "variables": 268,
     "primitives": 31,
-    "color": 137,
+    "color": 138,
     "navSkin": 9,
     "dimensions": 88,
     "typography": 2,
     "textStyles": 17,
     "effectStyles": 8,
     "paintStyles": 3
-  }
+  },
+  "gotchas": [
+    "setBoundVariableForPaint: seed the paint color with the variable value resolved in the default mode — some nodes render the stored fallback (0.5 gray) instead of the bound value",
+    "resize() before primaryAxisSizingMode=AUTO pins FIXED width — set sizing modes AFTER resize (Chip set came out 10px wide)"
+  ],
+  "audits": [
+    {
+      "phase": "3a",
+      "date": "2026-09-07",
+      "pages": 9,
+      "setsOrComponents": 24,
+      "solidPaints": 1125,
+      "unbound": 0,
+      "maxVariants": 30
+    }
+  ]
 }

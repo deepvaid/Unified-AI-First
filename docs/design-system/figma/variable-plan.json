@@ -1541,6 +1541,32 @@
           }
         },
         {
+          "name": "status/error/hover",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "TEXT_FILL",
+            "STROKE_COLOR"
+          ],
+          "codeSyntax": "var(--mp-color-light-errorDarken)",
+          "description": "tokens.json: color.light.errorDarken · color.dark.errorDarken — hover of filled Danger buttons; = Vuetify error-darken-1 (added 2026-09-07 for the Button set)",
+          "values": {
+            "Light": {
+              "hex": "#8f2e22",
+              "via": [
+                "color.light.errorDarken"
+              ]
+            },
+            "Dark": {
+              "hex": "#d96c61",
+              "via": [
+                "color.dark.errorDarken"
+              ]
+            }
+          }
+        },
+        {
           "name": "status/info/default",
           "type": "COLOR",
           "scopes": [

@@ -38,7 +38,7 @@ Generated 2026-09-07 by `scripts/figma/build-variable-plan.mjs` from `src/design
 | `graphite/400` | `var(--mp-color-dark-borderStrong)` | tokens.json: color.dark.borderStrong (graphite ramp derived from dark roles) | #7c848f |
 | `graphite/300` | `var(--mp-color-dark-textDisabled)` | tokens.json: color.dark.textDisabled (graphite ramp derived from dark roles) | #8a9199 |
 
-## Color — modes: Light / Dark — 137 variables
+## Color — modes: Light / Dark — 138 variables
 
 | Figma variable | Code | Source / notes | Light | Dark |
 |---|---|---|---|---|
@@ -88,6 +88,7 @@ Generated 2026-09-07 by `scripts/figma/build-variable-plan.mjs` from `src/design
 | `status/error/container` | `var(--neg-soft)` | tokens.json: color.light.errorContainer · color.dark.errorContainer — = Vuetify error-container | #fbe1dc | #4a1f19 |
 | `status/error/on` | `var(--on-neg)` | tokens.json: color.light.onError · color.dark.onError — = Vuetify on-error | → neutral/0 | #35100d |
 | `status/error/on-container` | `var(--neg-ink)` | tokens.json: color.light.onErrorContainer · color.dark.onErrorContainer — = Vuetify on-error-container | #7a1f15 | #f7c8c1 |
+| `status/error/hover` | `var(--mp-color-light-errorDarken)` | tokens.json: color.light.errorDarken · color.dark.errorDarken — hover of filled Danger buttons; = Vuetify error-darken-1 (added 2026-09-07 for the Button set) | #8f2e22 | #d96c61 |
 | `status/info/default` | `var(--mp-color-light-info)` | tokens.json: color.light.info · color.dark.info — = Vuetify info (= accent in light) | #0073ab | #2cc4ff |
 | `status/info/container` | `var(--mp-color-dark-infoContainer)` | tokens.json: color.light.primaryContainer · color.dark.infoContainer — light has no infoContainer token — uses primaryContainer as code does | #def3ff | #04324d |
 | `status/info/on` | `var(--mp-color-dark-onInfo)` | tokens.json: color.light.onPrimary · color.dark.onInfo — light has no onInfo token — uses onPrimary | → neutral/0 | → blue/900 |

@@ -168,6 +168,7 @@ for (const s of ['success', 'warning', 'error']) {
   def(`status/${s}/on`, `on${s[0].toUpperCase()}${s.slice(1)}`, null, S.onColor, `--on-${c}`, `= Vuetify on-${s}`)
   def(`status/${s}/on-container`, `on${s[0].toUpperCase()}${s.slice(1)}Container`, null, S.onColor, `--${c}-ink`, `= Vuetify on-${s}-container`)
 }
+def('status/error/hover', 'errorDarken', null, S.any, '--mp-color-light-errorDarken', 'hover of filled Danger buttons; = Vuetify error-darken-1 (added 2026-09-07 for the Button set)')
 def('status/info/default', 'info', null, S.any, '--mp-color-light-info', '= Vuetify info (= accent in light)')
 def('status/info/container', 'primaryContainer', 'infoContainer', S.bg, '--mp-color-dark-infoContainer', 'light has no infoContainer token — uses primaryContainer as code does')
 def('status/info/on', 'onPrimary', 'onInfo', S.onColor, '--mp-color-dark-onInfo', 'light has no onInfo token — uses onPrimary')
