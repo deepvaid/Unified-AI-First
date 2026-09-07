@@ -8,7 +8,7 @@
     "url": "https://www.figma.com/design/RJJ0qDChSdh0FwH2UG0t7t"
   },
   "phase": "phase3a",
-  "step": "P3a checkpoint",
+  "step": "checkpoint after fidelity pass",
   "entities": {
     "collections": {
       "Primitives": "VariableCollectionId:2:2",
@@ -324,7 +324,10 @@
       "Body/Caption": "S:89533741f493c3d68ffc4c0f52d3871276aeb90c,",
       "Body/Eyebrow": "S:5022ae408294b8d078de3b7d953c58c7e210e028,",
       "Component/Button": "S:8f567b5d49d3305311fb764945e250e74837f396,",
-      "Code/Mono": "S:c2bd3471d7309939243502f34527e978e0f42d89,"
+      "Code/Mono": "S:c2bd3471d7309939243502f34527e978e0f42d89,",
+      "Component/Chip": "S:6b667e326ecb0afb9aa910c8b144ec65a3ba8b3c,",
+      "Component/Label Strong": "S:e27c14af05b3803092519c4599fb29b9ef61143c,",
+      "Code/Kbd": "S:6fa4d21fbcb141605cac86729bfad049fdff9189,"
     },
     "effectStyles": {
       "Elevation/Light/Raised": "S:45fee83d2fe52db482b772a7f952f71c01eb6322,",
@@ -442,18 +445,21 @@
       },
       "Checkbox": {
         "page": "36:2",
-        "set": "36:41",
-        "variants": 6
+        "set": "51:40",
+        "variants": 6,
+        "rebuilt": "glyph-based 2026-09-07"
       },
       "Radio": {
         "page": "36:2",
-        "set": "36:60",
-        "variants": 4
+        "set": "51:63",
+        "variants": 4,
+        "rebuilt": "glyph-based"
       },
       "Switch": {
         "page": "36:2",
-        "set": "36:81",
-        "variants": 4
+        "set": "51:88",
+        "variants": 4,
+        "rebuilt": "vuetify geometry"
       },
       "Selection Controls doc": "36:3",
       "Chip": {
@@ -534,7 +540,8 @@
       },
       "Kbd": {
         "page": "43:2",
-        "component": "43:27"
+        "set": "54:6",
+        "variants": 2
       },
       "Utility doc": "43:3",
       "Textarea": {
@@ -563,7 +570,13 @@
       "icons": "23:2",
       "layout": "26:2"
     },
-    "iconGrid": "23:7"
+    "iconGrid": "23:7",
+    "iconGlyphs": {
+      "square": "47:4",
+      "square-check": "47:8",
+      "square-minus": "47:12",
+      "circle": "47:15"
+    }
   },
   "completedSteps": [
     "P0.a create-file",
@@ -610,7 +623,11 @@
     "P3a.c Textarea set 44:41 (4) VALIDATED",
     "P3a.g Illustration set 45:77 (8) VALIDATED",
     "PHASE 3a ATOMS BUILT — exit audit + user review pending",
-    "P3a exit audit PASSED (1125 paints, 0 unbound)"
+    "P3a exit audit PASSED (1125 paints, 0 unbound)",
+    "Fix pass prereqs: 4 glyph icons (214 total), text styles Component/Chip, Component/Label Strong, Code/Kbd (20 total)",
+    "Fix pass: Button/Icon Button outline → border/subtle + prop renames; Field/Textarea resting → border/strong + prop renames; Selection Controls rebuilt (51:40/51:63/51:88)",
+    "Fix pass: Chips (sizes/strokes/type), List & Nav (tab 44, segment, step), Utility (tooltip, skeleton, Kbd set 54:6) — opacity remap pending",
+    "Fix pass: opacities remapped (tooltip, skeleton, switch tracks, source-cloud icons); property names de-duplicated"
   ],
   "pendingValidations": [
     "user review before Phase 3b molecules"
@@ -642,7 +659,8 @@
   },
   "gotchas": [
     "setBoundVariableForPaint: seed the paint color with the variable value resolved in the default mode — some nodes render the stored fallback (0.5 gray) instead of the bound value",
-    "resize() before primaryAxisSizingMode=AUTO pins FIXED width — set sizing modes AFTER resize (Chip set came out 10px wide)"
+    "resize() before primaryAxisSizingMode=AUTO pins FIXED width — set sizing modes AFTER resize (Chip set came out 10px wide)",
+    "Paint opacity: spreading the paint returned by setBoundVariableForPaint drops opacity — assign fills first, then node.fills = node.fills.map(p => ({...p, opacity}))"
   ],
   "audits": [
     {
@@ -653,6 +671,27 @@
       "solidPaints": 1125,
       "unbound": 0,
       "maxVariants": 30
+    },
+    {
+      "phase": "3a-fix",
+      "date": "2026-09-07",
+      "pages": 7,
+      "solidPaints": 1008,
+      "unbound": 0,
+      "note": "all atoms rebound to the tokens the app CSS uses; property names de-glyphed; 20 text styles, 214 icons"
     }
+  ],
+  "fidelityFindings": [
+    "Field resting border is border/strong in settings-form.scss (Figma had border/default)",
+    "Outlined button border is border/subtle in global.scss (Figma had border/strong — a11y ticket A8 stays)",
+    "Vuetify checkbox/radio render 24px Lucide glyphs square/square-check/square-minus/circle/circle-dot, not drawn boxes",
+    "MpStatusChip: padding chip/paddingInline (space/8) for all sizes, 12/600 label",
+    "MpSourceCloudChip: pill (radius/full), surface/primary + border/subtle, icon in the text colour (.9), 12/600",
+    "MpFilterTabs: density comfortable → 44px, padding space/14, selected 13/600, count = plain x-small chip text (10px) muted, primary when selected",
+    "MpSegmentedControl: item text --muted, active surface/primary + 0 1px 3px 8% shadow (no stroke)",
+    "MpWizardSteps: disc 20 (chip/height-sm), label 13/600, todo on-surface 50%, done primary 12% bg + primary text",
+    "Default v-chip: size small = 24 (Figma md was 32)",
+    "Kbd: two variants — palette 20 (border/default, surface/primary) and create-kbd 24 (border/subtle, surface/secondary), mono 11",
+    "Tooltip: Vuetify on-surface @ .9 + surface text (no app override); Skeleton bars = text/primary @ 8%, height space/12, radius/4"
   ]
 }
