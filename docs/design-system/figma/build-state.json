@@ -7,8 +7,8 @@
     "fileName": "Marobase Design System",
     "url": "https://www.figma.com/design/RJJ0qDChSdh0FwH2UG0t7t"
   },
-  "phase": "phase3c",
-  "step": "checkpoint after AI kit",
+  "phase": "phase3d-complete",
+  "step": "P3e Product tier \u2014 awaiting go",
   "entities": {
     "collections": {
       "Primitives": "VariableCollectionId:2:2",
@@ -416,7 +416,17 @@
       "AI \u00b7 Result & Draft Cards": "124:2",
       "AI \u00b7 Onboarding & History": "129:2",
       "AI \u00b7 Copilot Hero & Drawer": "132:2",
-      "AI \u00b7 Voice Surface & Docs Assistant": "133:2"
+      "AI \u00b7 Voice Surface & Docs Assistant": "133:2",
+      "App Bar & Side Nav": "136:2",
+      "App Shell": "137:7812",
+      "List Page": "138:2",
+      "Detail Page": "139:2",
+      "Wizard & Builder Shells": "140:2",
+      "Layering": "140:10795",
+      "Module Landing Page": "143:2",
+      "Settings Workspace & Inbox": "144:2",
+      "Dashboard": "145:2",
+      "Responsive": "149:2"
     },
     "components": {
       "Button": {
@@ -625,7 +635,20 @@
       "circle": "47:15",
       "trending-down": "64:5",
       "circle-alert": "64:12",
-      "arrow-down": "95:310"
+      "arrow-down": "95:310",
+      "house": "142:5",
+      "layout-dashboard": "142:13",
+      "headphones": "142:18",
+      "menu": "142:23",
+      "panel-left-close": "142:30",
+      "user-search": "142:38",
+      "barcode": "142:47",
+      "wifi-off": "142:58",
+      "hash": "142:66",
+      "chart-line": "142:72",
+      "wrench": "142:77",
+      "folders": "142:81",
+      "corner-down-right": "142:87"
     },
     "molecules": {
       "Page Header": {
@@ -1202,6 +1225,90 @@
         "component": "133:328",
         "doc": "134:1115"
       }
+    },
+    "patterns": {
+      "App Bar": {
+        "page": "136:2",
+        "set": "136:99",
+        "variants": 2,
+        "doc": "137:246"
+      },
+      "Side Nav": {
+        "page": "136:2",
+        "set": "136:527",
+        "variants": 2,
+        "note": "bound to Nav Skin collection",
+        "doc": "137:246"
+      },
+      "App Shell": {
+        "page": "137:7812",
+        "set": "137:8730",
+        "variants": 3,
+        "doc": "141:1069"
+      },
+      "List Page": {
+        "page": "138:2",
+        "set": "138:1231",
+        "variants": 4,
+        "doc": "141:11597"
+      },
+      "Detail Page": {
+        "page": "139:2",
+        "component": "139:3",
+        "doc": "141:12447"
+      },
+      "Wizard Shell": {
+        "page": "140:2",
+        "set": "140:477",
+        "variants": 3,
+        "doc": "142:12724"
+      },
+      "Builder Shell": {
+        "page": "140:2",
+        "set": "140:1555",
+        "variants": 3,
+        "doc": "142:12724"
+      },
+      "Layering": {
+        "page": "140:10795",
+        "set": "140:11598",
+        "variants": 2,
+        "doc": "142:12980"
+      },
+      "Module Landing Page": {
+        "page": "143:2",
+        "component": "143:3",
+        "doc": "146:14614"
+      },
+      "Settings Workspace": {
+        "page": "144:2",
+        "component": "144:3",
+        "doc": "146:14820"
+      },
+      "Master-Detail Inbox": {
+        "page": "144:2",
+        "component": "144:865",
+        "doc": "146:14820"
+      },
+      "Widget Card": {
+        "page": "145:2",
+        "component": "145:5",
+        "doc": "146:15407"
+      },
+      "_Slot / Widget body": {
+        "page": "145:2"
+      },
+      "Dashboard": {
+        "page": "145:2",
+        "component": "145:47",
+        "doc": "146:15407"
+      },
+      "Responsive": {
+        "page": "149:2",
+        "set": "149:2750",
+        "variants": 6,
+        "doc": "150:2563"
+      }
     }
   },
   "completedSteps": [
@@ -1303,10 +1410,25 @@
     "P3c.h Copilot Hero 132:57 (2) + Copilot Drawer 132:558 (3) VALIDATED (doc 134:425)",
     "P3c.i Voice Surface 133:327 (4) + Docs Assistant 133:328 VALIDATED (doc 134:1115)",
     "P3c.j exit audit PASSED (9 pages, 21 sets + 11 components, 766 paints, 0 unbound, 87 variants \u226412); Chat Bubble body \u2192 FILL; component-map AI rows written",
-    "PHASE 3c AI KIT COMPLETE \u2014 awaiting user review"
+    "PHASE 3c AI KIT COMPLETE \u2014 awaiting user review",
+    "Phase 3c docs committed a8412a9",
+    "P3d checklist posted; P3d.a App Bar 136:99 (2) + Side Nav 136:527 (2) built",
+    "P3d.a App Bar + Side Nav VALIDATED (doc 137:246, Nav Skin modes shown)",
+    "P3d.b App Shell 137:8730 (3) VALIDATED",
+    "P3d.c List Page 138:1231 (4) VALIDATED",
+    "P3d.d Detail Page 139:3 VALIDATED",
+    "P3d.e Layering 140:11598 (2) built",
+    "P3d.f Wizard Shell 140:477 (3) + Builder Shell 140:1555 (3) built",
+    "P3d docs: App Shell 141:1069, List Page 141:11597, Detail Page 141:12447, Wizard/Builder 142:12724, Layering 142:12980",
+    "13 glyphs added (230 icons) + fallback swaps re-pointed",
+    "P3d.g Module Landing 143:3 VALIDATED (doc 146:14614)",
+    "P3d.h Settings Workspace 144:3 + Inbox 144:865 VALIDATED (doc 146:14820)",
+    "P3d.i Widget Card 145:5 + Dashboard 145:47 VALIDATED (doc 146:15407)",
+    "P3d.j Responsive 149:2750 (6) built; component-map Patterns rows + tickets T24\u2013T25 written",
+    "P3d.k exit audit clean (10 pages / 1317 paints / 0 unbound / 25 variants); Responsive doc 150:2563"
   ],
   "pendingValidations": [
-    "user review before Phase 3d Patterns"
+    "P3d exit audit"
   ],
   "decisions": {
     "file": "new file; old kit RyWEOafKLPhvZCltyQicOm is reference only",
@@ -1385,6 +1507,19 @@
       "unbound": 0,
       "variants": 87,
       "maxVariants": 12,
+      "allDescribed": true,
+      "allDocumented": true
+    },
+    {
+      "phase": "3d",
+      "date": "2026-09-07",
+      "pages": 10,
+      "sets": 8,
+      "components": 7,
+      "solidPaints": 1317,
+      "unbound": 0,
+      "variants": 25,
+      "maxVariants": 6,
       "allDescribed": true,
       "allDocumented": true
     }
