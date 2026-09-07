@@ -169,4 +169,33 @@ Page `152:2`. Bodies swap into `Widget Card → Body` (standard header) or `Widg
 
 Not built (documented): `DtRingDonut` (dead), `DashboardGrid` drag/resize affordances (column guides, placeholder, 26px resize handle — described in the Dashboard pattern doc), the widget empty / loading states (compose Empty State and Skeleton).
 
-## Product tier — remaining families (Marketing → Sales Channels → RBAC/PLG → Merchandising/Service/Analytics) are appended here as each lands.
+## Product · Marketing (Phase 3e, 2026-09-08) — reference, not API
+
+Page `176:2`. Category colours: trigger `accent/default` · action `status/success/default` · filter `flow-logic/primary` · delay `status/warning/default` · end = End Pill; rgba tints in code are Tint layers at the same alpha (T29).
+
+| Figma component | Node | What it shows | Code |
+|---|---|---|---|
+| **Journey Node Card** | set `180:467` (16) | Category ×4 × Face card 300 · compact 64 × State default · selected; **Title**, **Body**, **Icon** swap, **Show footer** (contacts), **Show setup** (warning strip); kebab on selected | `JourneyFlowColumn.vue` node + `flowTheme.ts` `accentVars` |
+| Journey / Add Button · Connector · End Pill · Empty Branch Target | `180:472` · `180:480` · `180:485` · `180:490` | 24px disc on border/strong · 2×24 rails around it · flag pill on surface/secondary · 300 dashed drop target | `.add-btn`, `.flow-connector`, end pill, `.branch-empty` |
+| **Journey Flow Column** | set `181:455` | Face card · compact: trigger → action → delay → action → End Pill on Connectors | `JourneyFlowColumn.vue` linear flow |
+| Journey Branch | `181:568` | filter node → rails → Yes / No chips (Status Chip sm tonal success / danger) → node + Empty Branch Target → join arrow → End Pill | `JourneyFlowColumn.vue` branches, `branchChipColor()` |
+| Journey Add Step Menu | `182:437` | 260 card: ADD STEP · search · Common / Trigger groups, 22px category avatars | `JourneyAddStepMenu.vue` |
+| Journey Mini Preview | `182:480` | pill nodes (22px tinted disc, 11px title) on 2×14 rails, dashed End | `JourneyMiniPreview.vue` |
+| Journey Settings Form | `179:61` | Form Grid 2-col: name · End date · End time · Enable · Retrigger (+ hints) | `JourneySettingsForm.vue` |
+| Journey Template Dialog (+ body `182:527`) | `182:662` | Dialog lg “Welcome / Template”: preview panel with Mini Preview + copy; Cancel · Create → | `JourneyTemplateDialog.vue` |
+| Journey Template Setup | `182:749` | cards: intro + preview · PREREQUISITES (circle-check rows) · SENDER * (Form Grid 2-col + domains link) | `JourneyTemplateSetup.vue` |
+| Campaign Content Editor | `183:870` (1200×800) | fullscreen Dialog: header, toolbar toggle Editor / Device previews + chip, 220 palette of dashed block rows, sunken canvas with the email preview, Close · Done | `CampaignContentEditor.vue` |
+| **Campaign Email Preview** | set `183:650` | Mode light · dark: brand row, accent/container hero + CTA, body, footer; dark = ink-panel/* | `CampaignEmailPreview.vue` |
+| SMS Phone Preview | `183:662` | device art: radius 22 frame, notch, sender, inbound bubble 16/16/16/4, stamp (raw px by design) | `SmsPhonePreview.vue` |
+| Landing Block Palette | `184:817` | 2-col tiles (padding 14/6, input/radius, 20px icon + 12/600) — 14 block types | `landing/LandingBlockPalette.vue` |
+| **Landing Block View** | set `184:863` | State default · hover (accent 35 % outline) · selected (accent outline + 3 % wash + type chip + controls) · structure (dashed 25 %) | `landing/LandingBlockView.vue` |
+| **Landing Insertion Point** | set `184:885` | State idle · hover (2px accent line 50 % + 22px pill) · over (40 tall) | `landing/LandingInsertionPoint.vue` |
+| Landing Layers Panel | `184:995` | rows padding 7/6 radius 8: grip · type icon · label + preview · actions; selected = accent border + accent/subtle-bg | `landing/LandingLayersPanel.vue` |
+| Landing Page Style Panel | `185:904` | Background swatch · Content width slider · Base font · Accent swatch · Button radius slider | `landing/LandingPageStylePanel.vue` |
+| Landing Block Settings | `185:974` | TITLE SETTINGS: Text · Size segments · Text color · Alignment icon segments · Delete block | `landing/LandingBlockSettings.vue` |
+| Dynamic Content Block Editor | `179:158` | Content Feed select · 7 merge-tag menus · body textarea · Preview | `DynamicContentBlockEditor.vue` |
+| Footer Render | `179:169` | hairline rule, centred 13px lines, 3 primary links | `FooterRender.vue` |
+
+Documented, not built: the Landing Page Editor shell (264 / canvas / 320) and the block renderers beyond the title block (paragraph, list, image, button, form, divider, spacer, icons, menu, html, video); JourneyFlowColumn nested splits and flash / warn states.
+
+## Product tier — remaining families (Sales Channels → RBAC/PLG → Merchandising/Service/Analytics) are appended here as each lands.

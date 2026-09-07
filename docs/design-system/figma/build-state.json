@@ -7,8 +7,8 @@
     "fileName": "Marobase Design System",
     "url": "https://www.figma.com/design/RJJ0qDChSdh0FwH2UG0t7t"
   },
-  "phase": "phase3e-dashboards-complete",
-  "step": "P3e Marketing family \u2014 awaiting go",
+  "phase": "phase3e-marketing-complete",
+  "step": "P3e Sales Channels family \u2014 awaiting go",
   "entities": {
     "collections": {
       "Primitives": "VariableCollectionId:2:2",
@@ -427,7 +427,8 @@
       "Settings Workspace & Inbox": "144:2",
       "Dashboard": "145:2",
       "Responsive": "149:2",
-      "Dashboards": "152:2"
+      "Dashboards": "152:2",
+      "Marketing": "176:2"
     },
     "components": {
       "Button": {
@@ -654,7 +655,23 @@
       "chart-bar-big": "169:14",
       "chart-area": "169:18",
       "chart-pie": "169:22",
-      "shield-alert": "169:27"
+      "shield-alert": "169:27",
+      "hourglass": "178:7",
+      "percent": "178:12",
+      "flag": "178:15",
+      "heading": "178:20",
+      "type": "178:25",
+      "video": "178:29",
+      "share-2": "178:36",
+      "square-mouse-pointer": "178:40",
+      "move-vertical": "178:45",
+      "flask-conical": "178:50",
+      "text-align-start": "178:55",
+      "text-align-center": "178:60",
+      "text-align-end": "178:65",
+      "webhook": "178:70",
+      "list-checks": "178:77",
+      "pilcrow": "184:22538"
     },
     "molecules": {
       "Page Header": {
@@ -1363,6 +1380,42 @@
           "Widget Wizard Drawer (set, Step=library|edit)": "172:1110"
         },
         "notes": "KPI and Setup widgets are the KPI Card molecule and the Setup Guide card themselves; Widget Card (145:5) gained Show footer + Updated (footer 163:775)."
+      },
+      "Marketing": {
+        "page": "176:2",
+        "doc": "187:913",
+        "journeys": {
+          "Journey Node Card (set, 16)": "180:467",
+          "Journey / Add Button": "180:472",
+          "Journey / Connector": "180:480",
+          "Journey / End Pill": "180:485",
+          "Journey / Empty Branch Target": "180:490",
+          "Journey Flow Column (set, Face card|compact)": "181:455",
+          "Journey Branch": "181:568",
+          "Journey Add Step Menu": "182:437",
+          "Journey Mini Preview": "182:480",
+          "Journey Settings Form": "179:61",
+          "_Body / Template dialog": "182:527",
+          "Journey Template Dialog": "182:662",
+          "Journey Template Setup": "182:749"
+        },
+        "campaigns": {
+          "Campaign Content Editor": "183:870",
+          "Campaign Email Preview (set, Mode light|dark)": "183:650",
+          "SMS Phone Preview": "183:662"
+        },
+        "landing": {
+          "Landing Block Palette": "184:817",
+          "Landing Block View (set, 4 states)": "184:863",
+          "Landing Insertion Point (set, 3 states)": "184:885",
+          "Landing Layers Panel": "184:995",
+          "Landing Page Style Panel": "185:904",
+          "Landing Block Settings": "185:974"
+        },
+        "editors": {
+          "Dynamic Content Block Editor": "179:158",
+          "Footer Render": "179:169"
+        }
       }
     }
   },
@@ -1482,7 +1535,9 @@
     "P3d.j Responsive 149:2750 (6) built; component-map Patterns rows + tickets T24\u2013T25 written",
     "P3d.k exit audit clean (10 pages / 1317 paints / 0 unbound / 25 variants); Responsive doc 150:2563",
     "P3e.a\u2013g Dashboards family built on 152:2 (17 bodies + 3 dotted + 3 shells + 4 chrome + 5 wizard = 32 components; 5 icons added \u2192 235); Segment atom sm variants re-wired to Label; Widget Card footer added",
-    "P3e.h Dashboards doc 174:904 + exit audit clean (31 components + 1 set / 1071 paints / 0 unbound)"
+    "P3e.h Dashboards doc 174:904 + exit audit clean (31 components + 1 set / 1071 paints / 0 unbound)",
+    "P3e.M.a\u2013f Marketing family built on 176:2 (24 components/sets); 16 icons added \u2192 251; Segment icon-mode Icon reference re-wired",
+    "P3e.M.g Marketing doc 187:913 + exit audit clean (19 components + 5 sets / 1082 paints / 0 unbound)"
   ],
   "pendingValidations": [
     "P3d exit audit"
@@ -1591,6 +1646,19 @@
       "unbound": 0,
       "gradientPaints": 12,
       "variants": 2,
+      "allDescribed": true,
+      "allDocumented": true
+    },
+    {
+      "phase": "3e-marketing",
+      "date": "2026-09-08",
+      "pages": 1,
+      "sets": 5,
+      "components": 19,
+      "solidPaints": 1082,
+      "unbound": 0,
+      "variants": 27,
+      "maxVariants": 16,
       "allDescribed": true,
       "allDocumented": true
     }
