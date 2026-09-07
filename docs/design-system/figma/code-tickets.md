@@ -48,6 +48,9 @@ Source: `docs/design-system/figma/variable-plan.json` (conflicts list), the appr
 | A9 | Local disabled opacity overrides | `PosPreview.vue:4043`, `AddSectionDialog.vue:354` | `text/disabled` stays visible; no opacity tricks |
 | A10 | Icon button without `aria-label`; `<v-icon @click>` not focusable | `CreateAbCampaign.vue:427`, `AudienceView.vue:95` | Icon Button always has a name; never bind click to `v-icon` |
 
+| T22 | Da Vinci components carry six suggestion-chip recipes, four shimmer recipes, three disclaimer wordings and two mic bars; user bubble radius is card.radius 16 (+4 tail) vs bubble.radius 12 | `MpDaVinciBot`, `DaVinciExperience`, `DvDocsAssistant`, `ThemeDaVinciPanel`, `DvOrbitMicBar` | One AI/Suggestion Chip (3 styles), one Generating Skeleton (3 shapes), one Disclaimer Caption, one Mic Control (56/72), Message Turn on Chat Bubble | Adopt `MpChatBubble`, `MpAlert`-style single components; retire the per-view recipes (see merge list) |
+| T23 | Radius 20 on the docked composer (`--mp-radius-20`) is the token’s only consumer; Draft/Result cards mix radius/12 with card/dialog 16 and inputs 10 | `.dv-composer__field`, `Dv*Card` | Figma keeps 20 unbound on the composer; cards on radius/12 | Decide: fold the composer onto radius/16 (card) and delete radius.20, or keep and give it a role |
+
 ## Figma-only components proposed for code (Phase 3b)
 
 Identity Cell (`MpIdentityCell {name, secondary?, size sm|md|lg, avatar}`) · Summary List (`MpSummaryList {lines, total}`) · Form Error Summary (`MpFormErrorSummary {errors}` composing `MpAlert` role=alert — closes A6) · Timeline Item (`MpTimelineItem {title, time, kind event|note, meta?, icon?, last?}` from OrderDetail `.od-event`) · Menu panel + Table Header/Body Cell are documentation of existing global rules, not new components.

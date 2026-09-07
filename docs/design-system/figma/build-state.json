@@ -7,8 +7,8 @@
     "fileName": "Marobase Design System",
     "url": "https://www.figma.com/design/RJJ0qDChSdh0FwH2UG0t7t"
   },
-  "phase": "phase3b",
-  "step": "checkpoint after molecules",
+  "phase": "phase3c",
+  "step": "checkpoint after AI kit",
   "entities": {
     "collections": {
       "Primitives": "VariableCollectionId:2:2",
@@ -407,7 +407,16 @@
       "Notifications": "106:2",
       "Usage, Wizard & Coming Soon": "110:2",
       "Selects & Search": "111:2",
-      "Section Rail": "112:2"
+      "Section Rail": "112:2",
+      "AI \u00b7 Orb & Ambient": "115:2",
+      "AI \u00b7 Composer & Suggestions": "117:2",
+      "AI \u00b7 Message & Tool Steps": "119:2",
+      "AI \u00b7 Status & Mic": "121:2",
+      "AI \u00b7 Insight & Provenance": "122:2",
+      "AI \u00b7 Result & Draft Cards": "124:2",
+      "AI \u00b7 Onboarding & History": "129:2",
+      "AI \u00b7 Copilot Hero & Drawer": "132:2",
+      "AI \u00b7 Voice Surface & Docs Assistant": "133:2"
     },
     "components": {
       "Button": {
@@ -1016,6 +1025,183 @@
         "component": "112:5",
         "props": 11
       }
+    },
+    "ai": {
+      "AI/Orb": {
+        "page": "115:2",
+        "set": "115:59",
+        "variants": 12,
+        "doc": "118:18"
+      },
+      "AI/Launcher Pill": {
+        "page": "115:2",
+        "set": "115:74",
+        "variants": 2,
+        "doc": "118:18"
+      },
+      "AI/Orb Stage": {
+        "page": "115:2",
+        "component": "118:8"
+      },
+      "AI/Ambient Field": {
+        "page": "115:2",
+        "component": "118:13"
+      },
+      "AI/Suggestion Chip": {
+        "page": "117:2",
+        "set": "117:45",
+        "variants": 6
+      },
+      "AI/Suggestion Group": {
+        "page": "117:2",
+        "set": "117:112",
+        "variants": 2
+      },
+      "AI/Disclaimer Caption": {
+        "page": "117:2",
+        "component": "117:113"
+      },
+      "AI/Prompt Composer": {
+        "page": "117:2",
+        "set": "117:356",
+        "variants": 6,
+        "doc": "120:155"
+      },
+      "AI/Step Item": {
+        "page": "119:2",
+        "set": "119:18",
+        "variants": 3,
+        "doc": "123:55"
+      },
+      "AI/Tool Steps": {
+        "page": "119:2",
+        "set": "119:71",
+        "variants": 2,
+        "doc": "123:55"
+      },
+      "AI/Generating Skeleton": {
+        "page": "119:2",
+        "set": "119:114",
+        "variants": 3,
+        "doc": "123:55"
+      },
+      "_Slot / Result card": {
+        "page": "119:2",
+        "component": "119:115"
+      },
+      "AI/Message Turn": {
+        "page": "119:2",
+        "set": "119:180",
+        "variants": 2,
+        "doc": "123:55"
+      },
+      "AI/Wave Bars": {
+        "page": "121:2",
+        "component": "121:3",
+        "doc": "125:78"
+      },
+      "AI/Status Pill": {
+        "page": "121:2",
+        "set": "121:27",
+        "variants": 5,
+        "doc": "125:78",
+        "note": "Label property removed \u2014 per-state labels pinned"
+      },
+      "AI/Mic Control": {
+        "page": "121:2",
+        "set": "121:155",
+        "variants": 6,
+        "doc": "125:78"
+      },
+      "AI/Provenance Chip": {
+        "page": "122:2",
+        "set": "122:33",
+        "variants": 4,
+        "doc": "126:104",
+        "note": "hug re-applied after resize (clipped label)"
+      },
+      "AI/Insight Card": {
+        "page": "122:2",
+        "set": "122:262",
+        "variants": 12,
+        "doc": "126:104"
+      },
+      "AI/Result Card": {
+        "page": "124:2",
+        "set": "124:246",
+        "variants": 4,
+        "doc": "130:250"
+      },
+      "AI/Draft Preview": {
+        "page": "124:2",
+        "set": "124:300",
+        "variants": 2,
+        "doc": "130:250"
+      },
+      "AI/Draft Card": {
+        "page": "124:2",
+        "set": "124:513",
+        "variants": 3,
+        "doc": "130:250"
+      },
+      "AI/Onboarding Card": {
+        "page": "129:2",
+        "component": "129:3",
+        "doc": "131:398"
+      },
+      "AI/History Item": {
+        "page": "129:2",
+        "set": "129:81",
+        "variants": 2,
+        "doc": "131:398"
+      },
+      "AI/History Rail": {
+        "page": "129:2",
+        "set": "129:296",
+        "variants": 2,
+        "doc": "131:398"
+      },
+      "AI/Refine Dialog / Body": {
+        "page": "129:2",
+        "component": "129:297"
+      },
+      "AI/Expand Dialog / Body": {
+        "page": "129:2",
+        "component": "129:363"
+      },
+      "AI/Refine Dialog": {
+        "page": "129:2",
+        "component": "129:419",
+        "doc": "131:398"
+      },
+      "AI/Expand Dialog": {
+        "page": "129:2",
+        "component": "129:574",
+        "doc": "131:398"
+      },
+      "AI/Copilot Hero": {
+        "page": "132:2",
+        "set": "132:57",
+        "variants": 2,
+        "doc": "134:425"
+      },
+      "AI/Copilot Drawer": {
+        "page": "132:2",
+        "set": "132:558",
+        "variants": 3,
+        "doc": "134:425"
+      },
+      "AI/Voice Surface": {
+        "page": "133:2",
+        "set": "133:327",
+        "variants": 4,
+        "doc": "134:1115"
+      },
+      "AI/Docs Assistant": {
+        "page": "133:2",
+        "component": "133:328",
+        "doc": "134:1115"
+      }
     }
   },
   "completedSteps": [
@@ -1101,10 +1287,26 @@
     "P3b.t Section Rail 112:5 (11 props) VALIDATED (doc 113:340); styles Component/Rail Title, Component/Rail Group",
     "P3b.u exit audit + page reorder running",
     "P3b.u exit audit PASSED (20 pages, 1605 paints, 0 unbound, 138 variants \u226426); pages reordered to plan \u00a74; Field placeholder left/FILL fix (44 nodes)",
-    "PHASE 3b MOLECULES COMPLETE \u2014 component-map + code-tickets (T17\u2013T21) written; awaiting user review"
+    "PHASE 3b MOLECULES COMPLETE \u2014 component-map + code-tickets (T17\u2013T21) written; awaiting user review",
+    "Phase 3b docs committed c4a3084",
+    "P3c checklist posted; P3c.a AI/Orb 115:59 (12) + AI/Launcher Pill 115:74 (2) built",
+    "P3c.a Orb arcs \u2192 rings; Orb Stage 118:8 + Ambient Field 118:13 + doc 118:18 VALIDATED",
+    "P3c.b Suggestion Chip 117:45 (6) + Group 117:112 (2) + Disclaimer 117:113 + Prompt Composer 117:356 (6) VALIDATED (doc 120:155)",
+    "P3c.c Step Item 119:18 (3) + Tool Steps 119:71 (2) + Generating Skeleton 119:114 (3) + Message Turn 119:180 (2) built (Message Turn validated)",
+    "P3c.d Wave Bars 121:3 + Status Pill 121:27 (5) + Mic Control 121:155 (6) built \u2014 screenshots pending (Figma server timeouts)",
+    "P3c.e Provenance Chip 122:33 (4) + Insight Card 122:262 (12) built \u2014 screenshot pending",
+    "P3c.c doc 123:55; P3c.d Status Pill labels pinned + doc 125:78; P3c.e doc 126:104; Mic/Insight/Result/Draft VALIDATED",
+    "P3c.f Result Card 124:246 (4) + Draft Preview 124:300 (2) + Draft Card 124:513 (3) built",
+    "P3c.f doc 130:250; Provenance Chip hug fixed",
+    "P3c.g Onboarding Card 129:3, History Item 129:81 (2), History Rail 129:296 (2), Refine/Expand bodies 129:297/129:363, Refine Dialog 129:419, Expand Dialog 129:574 built",
+    "P3c.g doc 131:398 VALIDATED (History Rail, Refine Dialog)",
+    "P3c.h Copilot Hero 132:57 (2) + Copilot Drawer 132:558 (3) VALIDATED (doc 134:425)",
+    "P3c.i Voice Surface 133:327 (4) + Docs Assistant 133:328 VALIDATED (doc 134:1115)",
+    "P3c.j exit audit PASSED (9 pages, 21 sets + 11 components, 766 paints, 0 unbound, 87 variants \u226412); Chat Bubble body \u2192 FILL; component-map AI rows written",
+    "PHASE 3c AI KIT COMPLETE \u2014 awaiting user review"
   ],
   "pendingValidations": [
-    "user review before Phase 3c AI kit"
+    "user review before Phase 3d Patterns"
   ],
   "decisions": {
     "file": "new file; old kit RyWEOafKLPhvZCltyQicOm is reference only",
@@ -1139,7 +1341,9 @@
     "A BOOLEAN property can only hide the node it references \u2014 a state that hides one sibling and shows another (e.g. loading) must be a variant axis",
     "Instances of a variant are named after the SET, not the variant \u2014 match doc instances on variantProperties, not name",
     "A component whose root is FIXED at a stale size still LOOKS fine (children overflow, clipsContent off) but collapses every auto-layout parent it is placed in \u2014 audit roots with primaryAxisSizingMode !== AUTO after any resize()",
-    "HORIZONTAL auto-layout roots: primaryAxisSizingMode governs WIDTH, counterAxisSizingMode governs HEIGHT \u2014 a fixed-width row needs primary FIXED + counter AUTO (the reverse of a VERTICAL card)"
+    "HORIZONTAL auto-layout roots: primaryAxisSizingMode governs WIDTH, counterAxisSizingMode governs HEIGHT \u2014 a fixed-width row needs primary FIXED + counter AUTO (the reverse of a VERTICAL card)",
+    "appendChild into an INSTANCE (or anything inside one) throws and rolls back the whole script \u2014 layer decorations beside instances in a plain frame instead",
+    "EllipseNode.arcData with innerRadius 0 draws a filled pie wedge; a ring arc needs innerRadius \u2248 1 \u2212 thickness/radius and fill only (no stroke)"
   ],
   "audits": [
     {
@@ -1168,6 +1372,19 @@
       "unbound": 0,
       "variants": 138,
       "maxVariants": 26,
+      "allDescribed": true,
+      "allDocumented": true
+    },
+    {
+      "phase": "3c",
+      "date": "2026-09-07",
+      "pages": 9,
+      "sets": 21,
+      "components": 11,
+      "solidPaints": 766,
+      "unbound": 0,
+      "variants": 87,
+      "maxVariants": 12,
       "allDescribed": true,
       "allDocumented": true
     }
