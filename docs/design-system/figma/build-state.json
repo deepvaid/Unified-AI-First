@@ -7,8 +7,8 @@
     "fileName": "Marobase Design System",
     "url": "https://www.figma.com/design/RJJ0qDChSdh0FwH2UG0t7t"
   },
-  "phase": "phase3d-complete",
-  "step": "P3e Product tier \u2014 awaiting go",
+  "phase": "phase3e-dashboards-complete",
+  "step": "P3e Marketing family \u2014 awaiting go",
   "entities": {
     "collections": {
       "Primitives": "VariableCollectionId:2:2",
@@ -426,7 +426,8 @@
       "Module Landing Page": "143:2",
       "Settings Workspace & Inbox": "144:2",
       "Dashboard": "145:2",
-      "Responsive": "149:2"
+      "Responsive": "149:2",
+      "Dashboards": "152:2"
     },
     "components": {
       "Button": {
@@ -648,7 +649,12 @@
       "chart-line": "142:72",
       "wrench": "142:77",
       "folders": "142:81",
-      "corner-down-right": "142:87"
+      "corner-down-right": "142:87",
+      "grip-vertical": "169:9",
+      "chart-bar-big": "169:14",
+      "chart-area": "169:18",
+      "chart-pie": "169:22",
+      "shield-alert": "169:27"
     },
     "molecules": {
       "Page Header": {
@@ -1309,6 +1315,55 @@
         "variants": 6,
         "doc": "150:2563"
       }
+    },
+    "product": {
+      "Dashboards": {
+        "page": "152:2",
+        "doc": "174:904",
+        "widgetBodies": {
+          "Timeseries": "154:32",
+          "Bar": "154:55",
+          "Stacked Bar": "154:105",
+          "Pie": "157:24",
+          "Donut": "157:68",
+          "Gauge": "157:83",
+          "Table": "158:62",
+          "Activity": "158:107",
+          "Insights": "158:151",
+          "Funnel": "159:106",
+          "Heatmap": "159:272",
+          "Bar List": "160:93",
+          "Breakdown": "160:132",
+          "Palette": "160:210",
+          "Metric Explorer": "161:126",
+          "Tabs": "162:143",
+          "Attention": "162:231"
+        },
+        "dotted": {
+          "Dotted Bar": "155:4",
+          "Legend List": "155:30",
+          "Gauge": "155:37"
+        },
+        "shells": {
+          "Widget Overlay Actions": "166:134",
+          "Widget Card \u2014 KPI": "166:177",
+          "Widget Card \u2014 Bespoke": "166:206"
+        },
+        "chrome": {
+          "Widget Action Menu": "168:236",
+          "Setup Guide": "168:288",
+          "Dashboard Form Dialog": "168:426",
+          "_Body / Dashboard form": "168:310"
+        },
+        "wizard": {
+          "Library Card": "171:324",
+          "Library Step": "171:488",
+          "Chart Type Cards": "172:455",
+          "Edit Step": "172:706",
+          "Widget Wizard Drawer (set, Step=library|edit)": "172:1110"
+        },
+        "notes": "KPI and Setup widgets are the KPI Card molecule and the Setup Guide card themselves; Widget Card (145:5) gained Show footer + Updated (footer 163:775)."
+      }
     }
   },
   "completedSteps": [
@@ -1425,7 +1480,9 @@
     "P3d.h Settings Workspace 144:3 + Inbox 144:865 VALIDATED (doc 146:14820)",
     "P3d.i Widget Card 145:5 + Dashboard 145:47 VALIDATED (doc 146:15407)",
     "P3d.j Responsive 149:2750 (6) built; component-map Patterns rows + tickets T24\u2013T25 written",
-    "P3d.k exit audit clean (10 pages / 1317 paints / 0 unbound / 25 variants); Responsive doc 150:2563"
+    "P3d.k exit audit clean (10 pages / 1317 paints / 0 unbound / 25 variants); Responsive doc 150:2563",
+    "P3e.a\u2013g Dashboards family built on 152:2 (17 bodies + 3 dotted + 3 shells + 4 chrome + 5 wizard = 32 components; 5 icons added \u2192 235); Segment atom sm variants re-wired to Label; Widget Card footer added",
+    "P3e.h Dashboards doc 174:904 + exit audit clean (31 components + 1 set / 1071 paints / 0 unbound)"
   ],
   "pendingValidations": [
     "P3d exit audit"
@@ -1465,7 +1522,8 @@
     "A component whose root is FIXED at a stale size still LOOKS fine (children overflow, clipsContent off) but collapses every auto-layout parent it is placed in \u2014 audit roots with primaryAxisSizingMode !== AUTO after any resize()",
     "HORIZONTAL auto-layout roots: primaryAxisSizingMode governs WIDTH, counterAxisSizingMode governs HEIGHT \u2014 a fixed-width row needs primary FIXED + counter AUTO (the reverse of a VERTICAL card)",
     "appendChild into an INSTANCE (or anything inside one) throws and rolls back the whole script \u2014 layer decorations beside instances in a plain frame instead",
-    "EllipseNode.arcData with innerRadius 0 draws a filled pie wedge; a ring arc needs innerRadius \u2248 1 \u2212 thickness/radius and fill only (no stroke)"
+    "EllipseNode.arcData with innerRadius 0 draws a filled pie wedge; a ring arc needs innerRadius \u2248 1 \u2212 thickness/radius and fill only (no stroke)",
+    "Gradient stops CAN bind variables (boundVariables.color on each stop) but the variable's alpha wins \u2014 fades to 0 must stay literal. An empty auto-layout frame used as a spacer is 100\u00d7100 until resized. Icon Button / Menu Item INSTANCE_SWAP fallbacks land on Icon/circle silently \u2014 check the grid has the Lucide name (grip-vertical, chart-*, shield-alert were missing). isExposedInstance needs the instance to carry properties."
   ],
   "audits": [
     {
@@ -1520,6 +1578,19 @@
       "unbound": 0,
       "variants": 25,
       "maxVariants": 6,
+      "allDescribed": true,
+      "allDocumented": true
+    },
+    {
+      "phase": "3e-dashboards",
+      "date": "2026-09-08",
+      "pages": 1,
+      "sets": 1,
+      "components": 31,
+      "solidPaints": 1071,
+      "unbound": 0,
+      "gradientPaints": 12,
+      "variants": 2,
       "allDescribed": true,
       "allDocumented": true
     }
