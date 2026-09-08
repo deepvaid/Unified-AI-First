@@ -34,7 +34,32 @@ export interface GeminiReply {
   reply: string
   speech: string
   card?: { headline: string; description: string; severity?: 'info' | 'success' | 'warning' | 'error' }
+  /** One optional in-app destination the card can link to (allow-listed route name). */
+  action?: { label: string; routeName: GeminiActionRoute }
 }
+
+/**
+ * Pages the model may point the merchant to. Route names, not paths — the client
+ * resolves them with the current account. Anything else the model returns is dropped.
+ */
+export const GEMINI_ACTION_ROUTES = [
+  'SalesOrders',
+  'Fulfillments',
+  'Products',
+  'Inventory',
+  'Coupons',
+  'EmailCampaigns',
+  'CampaignReports',
+  'Journeys',
+  'AllContacts',
+  'Segments',
+  'Tickets',
+  'GetStarted',
+  'Settings',
+  'AppStore',
+  'Dashboard',
+] as const
+export type GeminiActionRoute = (typeof GEMINI_ACTION_ROUTES)[number]
 
 const API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models'
 
@@ -42,14 +67,14 @@ const SYSTEM_INSTRUCTION = `You are Da Vinci, the AI assistant inside Maropost �
 
 Maropost already handles four actions for the merchant through dedicated flows: running email campaigns, drafting product descriptions, reporting revenue, and building audience segments. You are NOT handling those — you are answering everything else: open-ended marketing/commerce questions, advice, explanations, and brainstorming.
 
-Be a sharp, practical e-commerce growth expert. Give concise, confident, voice-friendly answers. Never invent specific numbers about this merchant's store (orders, revenue, contact counts) — the ONLY store facts you may state are the ones in the "Live workspace context" block when one is provided (those are real and may be cited directly). Otherwise speak in general best-practice terms, and when relevant, point them to the matching Maropost action (campaign, product copy, revenue report, or segment builder). When workspace context is provided, ground your answer in it — reference where the merchant currently is and what they have set up.
+Be a sharp, practical e-commerce growth expert. Give concise, confident, voice-friendly answers. The "Live workspace context" block carries a real snapshot of this merchant's store — revenue, orders needing action, top sellers, low stock, contacts and segments, the last campaign's results, journeys, sending-domain status. Answer from it: name the actual products, numbers and campaigns, and say what to do about them. Never invent a store fact that is not in the block; if the block lacks what the question needs, say what you would need to look at and where in Maropost it lives. Reference where the merchant currently is (current page) when it helps.
 
 Persona: calm, precise, and warm, in plain modern English — the voice of a colleague who knows the platform well. Write the way good product copy reads: direct sentences, verb-first suggestions, no filler. Dry wit is welcome once in a while, but never at the expense of the answer. Avoid butler or concierge mannerisms entirely: no "Very good", "As requested", "I've taken the liberty", "Shall I…?", "At your service", or "sir". Never use exclamation marks. Say what you can and cannot do plainly — you explain, recommend, and point to the right page; you do not change anything in the merchant's account yourself. When the workspace context shows the merchant is in guided setup, keep answers anchored to their current setup task, and if they ask you to perform a setup step for them, say plainly that you guide but never change anything — then point them to the right page.
 
 Respond ONLY with the JSON object defined by the response schema:
 - "reply": the answer for the chat bubble. 1–4 short sentences. Plain text, no markdown.
 - "speech": a shorter spoken version of the reply (one sentence, natural to hear aloud).
-- "card": OPTIONAL. Include only when a single takeaway is worth highlighting — a short "headline" and one-sentence "description". Omit it otherwise.`
+- "card": OPTIONAL. Include only when a single takeaway is worth highlighting — a short "headline", a one-sentence "description", and where to act on it: "routeName" is the Maropost page for that takeaway, chosen from exactly this list — ${GEMINI_ACTION_ROUTES.join(', ')} — or "none" when no page fits; "actionLabel" is a short verb-first button label for that page ("Review orders", "Open products", "See campaign reports"), or "" when routeName is "none". Orders/fulfilment/returns → SalesOrders or Fulfillments; stock → Inventory or Products; campaigns → EmailCampaigns or CampaignReports; audiences → Segments or AllContacts; automations → Journeys; setup → GetStarted. Omit the whole card otherwise.`
 
 const DESIGN_SYSTEM_INSTRUCTION = `You are Da Vinci, answering questions about the Maropost design system and design sandbox for product managers, designers, engineers, and leaders.
 
@@ -71,7 +96,7 @@ Respond ONLY with the JSON object defined by the response schema:
 // Per-mode grounding caps: the default mode carries a compact live-workspace block;
 // design-system mode carries retrieved documentation excerpts, which need more room.
 const CONTEXT_CAPS: Record<GeminiMode, number> = {
-  default: 1500,
+  default: 3200, // page/account/plan lines + the ~12-line store snapshot
   'design-system': 12000,
 }
 
@@ -123,8 +148,12 @@ export async function generateReply(text: string, opts: GenerateOptions): Promis
               headline: { type: 'string' },
               description: { type: 'string' },
               severity: { type: 'string', enum: ['info', 'success', 'warning', 'error'] },
+              // Required (with an explicit "none") because Flash-Lite silently skips
+              // optional schema fields — an optional sibling `action` never came back.
+              routeName: { type: 'string', enum: [...GEMINI_ACTION_ROUTES, 'none'] },
+              actionLabel: { type: 'string' },
             },
-            required: ['headline', 'description'],
+            required: ['headline', 'description', 'routeName', 'actionLabel'],
           },
         },
         required: ['reply', 'speech'],
@@ -159,7 +188,9 @@ export async function generateReply(text: string, opts: GenerateOptions): Promis
 
   // responseMimeType is JSON, so the text should parse — but degrade gracefully
   // to treating the whole string as the reply if the model ever returns prose.
-  let parsed: Partial<GeminiReply>
+  let parsed: Partial<Omit<GeminiReply, 'card'>> & {
+    card?: Partial<GeminiReply['card'] & { routeName?: string; actionLabel?: string }>
+  }
   try {
     parsed = JSON.parse(raw)
   } catch {
@@ -177,5 +208,12 @@ export async function generateReply(text: string, opts: GenerateOptions): Promis
         }
       : undefined
 
-  return { reply, speech, card }
+  const routeName = parsed.card?.routeName
+  const label = (parsed.card?.actionLabel ?? '').trim()
+  const action =
+    card && label && routeName && (GEMINI_ACTION_ROUTES as readonly string[]).includes(routeName)
+      ? { label: label.slice(0, 40), routeName: routeName as GeminiActionRoute }
+      : undefined
+
+  return { reply, speech, card, action }
 }

@@ -12,6 +12,8 @@ export interface GeminiReply {
   reply: string
   speech: string
   card?: { headline: string; description: string; severity?: 'info' | 'success' | 'warning' | 'error' }
+  /** One in-app destination for the card, allow-listed server-side (route name + verb-first label). */
+  action?: { label: string; routeName: string }
 }
 
 export interface AskGeminiOptions {
@@ -42,6 +44,7 @@ export async function askGemini(
       reply: data.reply,
       speech: typeof data.speech === 'string' && data.speech.trim() ? data.speech : data.reply,
       card: data.card,
+      action: data.card && data.action?.label && data.action?.routeName ? data.action : undefined,
     }
   } catch (err) {
     // A user-initiated Stop must not surface the canned fallback — rethrow so the

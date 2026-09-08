@@ -4,6 +4,8 @@ defineProps<{
   headline: string
   description: string
   actionLabel?: string
+  /** Destination the host navigates to on `action` (declared so it does not leak onto the root as an attribute). */
+  routeName?: string
   severity?: 'info' | 'warning' | 'success' | 'error'
 }>()
 

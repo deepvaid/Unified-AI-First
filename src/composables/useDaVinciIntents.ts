@@ -65,6 +65,8 @@ export type DvCardDescriptor =
         severity?: 'info' | 'warning' | 'success' | 'error'
         icon?: string
         actionLabel?: string
+        /** Where the action button goes (route name, resolved with the current account). */
+        routeName?: string
       }
     }
 
@@ -147,15 +149,20 @@ export function classifyIntent(text: string): DvIntentKind {
   ) {
     return 'journey'
   }
+  // "Was my last campaign any good?" is a question for the advisor, not a brief for
+  // the campaign wizard — review/performance phrasing skips the creation intents.
+  const isReviewQuestion = /\b(was|were|did|how (good|well|is|are|many|big)|how's|performance|results|report|doing|any good)\b/.test(t)
   if (
-    /\b(campaign|promo|promotion|blast|newsletter)\b|send .*(email|campaign)|email .*(blast|campaign)/.test(t)
+    !isReviewQuestion
+    && (/\b(run|send|create|launch|draft|set ?up|start|schedule|build|make|want|need|plan)\b[^.]*\b(campaign|promo|promotion|blast|newsletter)\b/.test(t)
+      || /send .*(email|campaign)|email .*(blast|campaign)/.test(t))
   ) {
     return 'campaign'
   }
   if (/\brecommendation(s)?\s+(engine|widget|type)\b|which\s+(recommendation|engine)|\bengine\b.*\b(use|pick|choose|recommend)\b|shoppers\s+(should\s+)?see/.test(t)) {
     return 'engine'
   }
-  if (/\b(add|create|new|draft|write)\b.*\b(product|item|sku)\b|\bproduct description\b/.test(t)) {
+  if (!isReviewQuestion && /\b(add|create|new|draft|write)\b.*\b(product|item|sku)\b|\bproduct description\b/.test(t)) {
     return 'product'
   }
   // Revenue needs a revenue word. The old rule also fired on bare "this week" and
@@ -164,7 +171,7 @@ export function classifyIntent(text: string): DvIntentKind {
   if (/\b(revenue|sales|gmv|aov|average order value|earnings)\b|\bhow much (did|have|do) (we|i)\b/.test(t)) {
     return 'revenue'
   }
-  if (/\b(segment|audience|vip|cohort)\b|group of/.test(t)) {
+  if (!isReviewQuestion && (/\b(segment|audience|vip|cohort)\b|group of/.test(t))) {
     return 'segment'
   }
   return 'fallback'
@@ -305,7 +312,31 @@ export function useDaVinciIntents() {
     }
   }
 
-  function buildFallback(): DvIntentResult {
+  /**
+   * `advisorOffline` labels the canned reply when the Gemini advisor could not be
+   * reached — otherwise a merchant cannot tell a real answer from the fallback.
+   */
+  function buildFallback(advisorOffline = false): DvIntentResult {
+    if (advisorOffline) {
+      return {
+        intent: 'fallback',
+        reply: "Da Vinci's advisor is offline right now, so I can't answer that one. I can still run campaigns, draft product copy, report on revenue, or build audience segments:",
+        speech: "The advisor is offline right now. I can still run campaigns, draft product copy, report on revenue, or build segments.",
+        cards: [
+          {
+            type: 'insight',
+            props: {
+              headline: 'Advisor offline',
+              description: 'Open-ended answers need the Da Vinci connection. Try again in a moment — the actions below work without it.',
+              severity: 'warning',
+              icon: 'wifi-off',
+            },
+          },
+        ],
+        quickReplies: SUGGESTION_CHIPS,
+        pending: null,
+      }
+    }
     return {
       intent: 'fallback',
       reply: 'I can help you run campaigns, draft product copy, report on revenue, or build audience segments. Try one of these:',
@@ -521,7 +552,7 @@ export function useDaVinciIntents() {
     }
 
     const smart = await askGemini(trimmed, opts.history ?? [], { context: opts.context, signal: opts.signal })
-    if (!smart) return buildFallback()
+    if (!smart) return buildFallback(true)
 
     return {
       intent: 'fallback',
@@ -537,6 +568,8 @@ export function useDaVinciIntents() {
                 description: smart.card.description,
                 severity: smart.card.severity ?? 'info',
                 icon: 'sparkles',
+                actionLabel: smart.action?.label,
+                routeName: smart.action?.routeName,
               },
             },
           ]
@@ -585,6 +618,11 @@ export function useDaVinciIntents() {
         void router.push({ name: 'Segments', params: { accountId } })
         return { title: 'Opening segments', sub: 'Matching contacts are listed on the segment page.' }
       }
+    }
+    if (card.type === 'insight' && card.props.routeName) {
+      const name = card.props.routeName
+      void router.push({ name, params: { accountId } })
+      return { title: `Opening ${name.replace(/([a-z0-9])([A-Z])/g, '$1 $2')}` }
     }
     if (card.type === 'content') {
       if (action === 'copy') {

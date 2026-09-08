@@ -252,6 +252,44 @@ export const CampaignOnboarding: Story = {
   },
 }
 
+/** The Gemini advisor could not be reached: the canned reply is labelled as such instead of passing for an answer. */
+export const AdvisorOffline: Story = {
+  args: {
+    initialChatMode: true,
+    initialMessages: [
+      { id: 'offline-user', role: 'user', text: 'Which of my products should I put on sale this week and why?' },
+      {
+        id: 'offline-assistant',
+        role: 'assistant',
+        text: "Da Vinci's advisor is offline right now, so I can't answer that one. I can still run campaigns, draft product copy, report on revenue, or build audience segments:",
+        toolSteps: ['Consult Da Vinci brain'],
+        componentData: [
+          {
+            type: 'intentCards',
+            props: {
+              cards: [
+                {
+                  type: 'insight',
+                  props: {
+                    headline: 'Advisor offline',
+                    description: 'Open-ended answers need the Da Vinci connection. Try again in a moment — the actions below work without it.',
+                    severity: 'warning',
+                    icon: 'wifi-off',
+                  },
+                },
+              ],
+              quickReplies: [
+                { label: 'Run a campaign', value: 'Run a campaign', icon: 'megaphone' },
+                { label: "How's revenue this week?", value: "How's revenue this week?", icon: 'trending-up' },
+              ],
+            },
+          },
+        ],
+      },
+    ] satisfies ChatMessage[],
+  },
+}
+
 // ── Template: Variants · Sizes · States ──────────────────────────────────────
 
 /** Two structures: the full copilot surface with its own header, and `headerless` for hosts that supply their own chrome (the docked drawer does). */
