@@ -231,4 +231,19 @@ Page `198:2`.
 
 Documented, not built: PLG route views (Signup, Plans, Checkout — no stories), Invite step 2 review, drawer confirm dialogs (compose Confirm Dialog).
 
-## Product tier — remaining families (Merchandising/Service/Analytics) are appended here as each lands.
+## Product · Merchandising, Service & Analytics (Phase 3e, 2026-09-08) — reference, not API
+
+Page `204:2`. Only the Merch Product Card has Storybook stories; the rest were built from the view/component code.
+
+| Figma component | Node | What it shows | Code |
+|---|---|---|---|
+| **Merch Product Card** | set `206:75` | State default · pinned (rank badge + pinned Icon Button) · selected (accent ring + checkbox) · sale (struck compare-at) at 180 | `merchandising/MerchProductCard.vue` |
+| Ticket Workspace | `208:1137` (1160×760) | 380 list pane (views trigger, search, Filter Tabs, rows with unread dot + Status Chip) · workspace (head, prop pills, Chat Bubble thread, Reply / Forward / Note) · 300 contact panel + 48 rail | `service/TicketWorkspace.vue` in `views/Service/Tickets.vue` |
+| eRFM Matrix | `206:238` | 5 groups × 5 engagement levels + Total row/column on a series/1 opacity ramp, deltas, readout + Fewer/More scale | `analytics/ErfmMatrix.vue` (ERFMReport §B / §D) |
+| eRFM Group Drawer (+ body `208:284`) | `208:443` | Form Drawer sm: info Alert + 5 group-name fields; Restore defaults · Cancel · Save | `analytics/ErfmGroupDrawer.vue` |
+| eRFM Settings Drawer (+ body `208:595`) | `208:785` | Form Drawer md: warning Alert, Recency / Frequency / Monetary panels, acknowledge checkbox; Cancel · Apply | `analytics/ErfmSettingsDrawer.vue` |
+| Report Field Picker (+ body `206:301`) | `206:435` | Form Drawer md: Search, Select all / Clear all, Selected / Unselected sections; Cancel · Apply | `analytics/ReportFieldPicker.vue` (CreateCustomReportWizard) |
+
+Documented, not built: Tickets composer (Reply / Forward / Note card with mode + From selects, To / Cc / Bcc, split Send), Tags / Orders rail panels, TicketDetail page variant, PinningEditor / RuleEditor grids.
+
+## Product tier — complete (Dashboards · Marketing · Sales Channels · RBAC & PLG · Merchandising, Service & Analytics). Next: Phase 4 QA & publish.

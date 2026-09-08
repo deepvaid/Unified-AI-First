@@ -7,8 +7,8 @@
     "fileName": "Marobase Design System",
     "url": "https://www.figma.com/design/RJJ0qDChSdh0FwH2UG0t7t"
   },
-  "phase": "phase3e-rbac-plg-complete",
-  "step": "P3e Merchandising / Service / Analytics family \u2014 awaiting go",
+  "phase": "phase3e-complete",
+  "step": "Phase 4 QA & publish \u2014 awaiting go",
   "entities": {
     "collections": {
       "Primitives": "VariableCollectionId:2:2",
@@ -430,7 +430,8 @@
       "Dashboards": "152:2",
       "Marketing": "176:2",
       "Sales Channels": "189:2",
-      "RBAC & PLG": "198:2"
+      "RBAC & PLG": "198:2",
+      "Merchandising, Service & Analytics": "204:2"
     },
     "components": {
       "Button": {
@@ -679,7 +680,8 @@
       "gallery-horizontal": "196:24114",
       "landmark": "200:9",
       "clock-alert": "200:15",
-      "circle-minus": "200:19"
+      "circle-minus": "200:19",
+      "sticky-note": "210:5"
     },
     "molecules": {
       "Page Header": {
@@ -1458,8 +1460,28 @@
           "_Body / Talk to sales": "202:1067",
           "Talk to Sales Dialog": "202:1141"
         }
+      },
+      "Merchandising, Service & Analytics": {
+        "page": "204:2",
+        "doc": "209:677",
+        "merchandising": {
+          "Merch Product Card (set, State default|pinned|selected|sale)": "206:75"
+        },
+        "service": {
+          "Ticket Workspace": "208:1137"
+        },
+        "analytics": {
+          "eRFM Matrix": "206:238",
+          "_Body / Report field picker": "206:301",
+          "Report Field Picker": "206:435",
+          "_Body / eRFM groups": "208:284",
+          "eRFM Group Drawer": "208:443",
+          "_Body / eRFM settings": "208:595",
+          "eRFM Settings Drawer": "208:785"
+        }
       }
-    }
+    },
+    "iconCount": 258
   },
   "completedSteps": [
     "P0.a create-file",
@@ -1583,7 +1605,9 @@
     "P3e.SC.a\u2013f Sales Channels family built on 189:2 (4 components + 2 sets); icons lightbulb, panels-top-left, gallery-horizontal added",
     "P3e.SC.g Sales Channels doc 197:453 + exit audit clean (4 components + 2 sets / 498 paints / 0 unbound)",
     "P3e.RP.a\u2013f RBAC & PLG family built on 198:2 (10 components + 4 sets); icons landmark, clock-alert, circle-minus added \u2192 257",
-    "P3e.RP.g RBAC & PLG doc 203:976 + exit audit clean (10 components + 4 sets / 523 paints / 0 unbound)"
+    "P3e.RP.g RBAC & PLG doc 203:976 + exit audit clean (10 components + 4 sets / 523 paints / 0 unbound)",
+    "P3e.MSA.a\u2013f Merchandising / Service / Analytics family built on 204:2 (8 components + 1 set)",
+    "P3e.MSA.g Merch / Service / Analytics doc 209:677 + exit audit clean (8 components + 1 set / 520 paints / 0 unbound)"
   ],
   "pendingValidations": [
     "P3d exit audit"
@@ -1731,6 +1755,19 @@
       "unbound": 0,
       "variants": 9,
       "maxVariants": 3,
+      "allDescribed": true,
+      "allDocumented": true
+    },
+    {
+      "phase": "3e-merch-service-analytics",
+      "date": "2026-09-08",
+      "pages": 1,
+      "sets": 1,
+      "components": 8,
+      "solidPaints": 520,
+      "unbound": 0,
+      "variants": 4,
+      "maxVariants": 4,
       "allDescribed": true,
       "allDocumented": true
     }
