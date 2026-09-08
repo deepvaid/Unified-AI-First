@@ -221,10 +221,14 @@ const copilotDrawerWidth = computed(() => {
     </v-main>
 
     <!-- Da Vinci Copilot Drawer — also on fullPage routes (journey/campaign
-         builders dock it beside the canvas instead of covering it) -->
+         builders dock it beside the canvas instead of covering it). Docked (not a
+         temporary overlay) from 960px up: Vuetify's default `lg` breakpoint made
+         every 13" laptop a scrim-and-dismiss overlay, so a click on the page the
+         copilot was helping with closed the copilot. -->
     <v-navigation-drawer
       v-model="copilotVisible"
       location="right"
+      mobile-breakpoint="md"
       :width="copilotDrawerWidth + 12"
       :aria-hidden="copilotVisible ? undefined : 'true'"
       :inert="!copilotVisible"
