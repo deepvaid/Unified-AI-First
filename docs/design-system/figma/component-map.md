@@ -212,4 +212,23 @@ Page `189:2`.
 
 Documented, not built: SalesChannelsList (data table + MpStatusChip), SalesChannelDetail `.sc-app-row` cards, the colour-only `.sc-status-dot` / Registers `.retail-status-dot` (a11y — T30), PosPreview (filed under Retail, no story).
 
-## Product tier — remaining families (RBAC/PLG → Merchandising/Service/Analytics) are appended here as each lands.
+## Product · RBAC & PLG (Phase 3e, 2026-09-08) — reference, not API
+
+Page `198:2`.
+
+| Figma component | Node | What it shows | Code |
+|---|---|---|---|
+| **Role Row** | set `199:56` | State default · selected (accent 45 % outline + 4 % wash); **Name**, **Description**, **Usage**, **Show conflict** | `rbac/RolePicker.vue` `.picker-role` |
+| Role Picker | `199:192` | Core Platform · Marketing Cloud (MMC) groups of Role Rows + a locked Commerce Cloud (MCC) group (Provisional chip, lock, dashed note) | `rbac/RolePicker.vue` |
+| **Permission Matrix** | set `199:397` | Mode editable (checkboxes, module checkbox indeterminate, dependency lock) · readonly (circle-check / circle-minus); product tabs with count chips, module cards, MANAGE action tags | `rbac/PermissionMatrix.vue` |
+| Invite Users Drawer (+ body `201:305`) | `201:626` | Form Drawer md “Invite users · Step 1 of 2”: email chips combobox, ROLES * + Role Picker; Cancel · Continue | `rbac/InviteUsersDrawer.vue` |
+| User Access Drawer (+ body `201:800`) | `201:1113` | Form Drawer lg “Manage access”: identity row (avatar, name, active chip), Roles, Product access rows, danger zone; Cancel · Save changes | `rbac/UserAccessDrawer.vue` |
+| **Trial Chip** | set `202:811` | Tone primary · warning · error pill (rocket, 32 tall, tinted fill + border) | `plg/PlgTrialChip.vue` pill |
+| Trial Popover | `202:855` | 320 card: Free trial + status chip, trial track, Da Vinci token meter, limits, Upgrade now / Talk to sales | `plg/PlgTrialChip.vue` v-menu |
+| **Trial Banner** | set `202:921` | Banner tone warning (dismissible) · error, with Upgrade + Talk to sales | `plg/PlgTrialBanner.vue` (MpBanner) |
+| 3DS Dialog (+ body `202:934`) | `202:1043` | Dialog sm persistent: landmark lead, prompt, One-time passcode OTP ×6, hint; Cancel · Approve (disabled) | `plg/Plg3dsDialog.vue` |
+| Talk to Sales Dialog (+ body `202:1067`) | `202:1141` | Dialog sm messages-square: lede, interest select, note textarea, mailto; Cancel · Request a call | `plg/PlgTalkToSalesDialog.vue` |
+
+Documented, not built: PLG route views (Signup, Plans, Checkout — no stories), Invite step 2 review, drawer confirm dialogs (compose Confirm Dialog).
+
+## Product tier — remaining families (Merchandising/Service/Analytics) are appended here as each lands.

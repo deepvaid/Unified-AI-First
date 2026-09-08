@@ -7,8 +7,8 @@
     "fileName": "Marobase Design System",
     "url": "https://www.figma.com/design/RJJ0qDChSdh0FwH2UG0t7t"
   },
-  "phase": "phase3e-sales-channels-complete",
-  "step": "P3e RBAC/PLG family \u2014 awaiting go",
+  "phase": "phase3e-rbac-plg-complete",
+  "step": "P3e Merchandising / Service / Analytics family \u2014 awaiting go",
   "entities": {
     "collections": {
       "Primitives": "VariableCollectionId:2:2",
@@ -429,7 +429,8 @@
       "Responsive": "149:2",
       "Dashboards": "152:2",
       "Marketing": "176:2",
-      "Sales Channels": "189:2"
+      "Sales Channels": "189:2",
+      "RBAC & PLG": "198:2"
     },
     "components": {
       "Button": {
@@ -675,7 +676,10 @@
       "pilcrow": "184:22538",
       "lightbulb": "194:6",
       "panels-top-left": "196:24109",
-      "gallery-horizontal": "196:24114"
+      "gallery-horizontal": "196:24114",
+      "landmark": "200:9",
+      "clock-alert": "200:15",
+      "circle-minus": "200:19"
     },
     "molecules": {
       "Page Header": {
@@ -1432,6 +1436,28 @@
           "Storefront Preview (set, Device desktop|tablet|mobile)": "193:777",
           "Theme Da Vinci Panel (set, State welcome|conversation)": "193:971"
         }
+      },
+      "RBAC & PLG": {
+        "page": "198:2",
+        "doc": "203:976",
+        "rbac": {
+          "Role Row (set, State default|selected)": "199:56",
+          "Role Picker": "199:192",
+          "Permission Matrix (set, Mode editable|readonly)": "199:397",
+          "_Body / Invite users": "201:305",
+          "Invite Users Drawer": "201:626",
+          "_Body / Manage access": "201:800",
+          "User Access Drawer": "201:1113"
+        },
+        "plg": {
+          "Trial Chip (set, Tone primary|warning|error)": "202:811",
+          "Trial Popover": "202:855",
+          "Trial Banner (set, Tone warning|error)": "202:921",
+          "_Body / 3DS verification": "202:934",
+          "3DS Dialog": "202:1043",
+          "_Body / Talk to sales": "202:1067",
+          "Talk to Sales Dialog": "202:1141"
+        }
       }
     }
   },
@@ -1555,7 +1581,9 @@
     "P3e.M.a\u2013f Marketing family built on 176:2 (24 components/sets); 16 icons added \u2192 251; Segment icon-mode Icon reference re-wired",
     "P3e.M.g Marketing doc 187:913 + exit audit clean (19 components + 5 sets / 1082 paints / 0 unbound)",
     "P3e.SC.a\u2013f Sales Channels family built on 189:2 (4 components + 2 sets); icons lightbulb, panels-top-left, gallery-horizontal added",
-    "P3e.SC.g Sales Channels doc 197:453 + exit audit clean (4 components + 2 sets / 498 paints / 0 unbound)"
+    "P3e.SC.g Sales Channels doc 197:453 + exit audit clean (4 components + 2 sets / 498 paints / 0 unbound)",
+    "P3e.RP.a\u2013f RBAC & PLG family built on 198:2 (10 components + 4 sets); icons landmark, clock-alert, circle-minus added \u2192 257",
+    "P3e.RP.g RBAC & PLG doc 203:976 + exit audit clean (10 components + 4 sets / 523 paints / 0 unbound)"
   ],
   "pendingValidations": [
     "P3d exit audit"
@@ -1689,6 +1717,19 @@
       "solidPaints": 498,
       "unbound": 0,
       "variants": 5,
+      "maxVariants": 3,
+      "allDescribed": true,
+      "allDocumented": true
+    },
+    {
+      "phase": "3e-rbac-plg",
+      "date": "2026-09-08",
+      "pages": 1,
+      "sets": 4,
+      "components": 10,
+      "solidPaints": 523,
+      "unbound": 0,
+      "variants": 9,
       "maxVariants": 3,
       "allDescribed": true,
       "allDocumented": true
