@@ -48,7 +48,7 @@ This is NOT a production app — it uses mock data and has no backend API.
 │   ├── components/            ← 112 components, all with stories (see Component Inventory)
 │   │   ├── Mp*.vue / ModuleLandingPage.vue ← 30 top-level design-system components
 │   │   ├── layout/            ← AppBar (top bar) + AppSidebar (left nav, collapsible rail)
-│   │   ├── copilot/           ← 14 Dv* Da Vinci surfaces + voice/ (7 orbit voice components)
+│   │   ├── copilot/           ← 18 Dv* Da Vinci surfaces + voice/ (7 orbit voice components)
 │   │   ├── dashboards/        ← 7 dashboard containers + widgets/ (5) + wizard/ (2)
 │   │   ├── marketing/         ← Journey flow column, mini preview, add-step menu
 │   │   ├── merchandising/     ← MerchProductCard

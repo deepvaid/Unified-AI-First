@@ -182,6 +182,11 @@ field.
 > block); text chat has a Stop button + "Queue a follow-up…". One guard fix along the way:
 > open-ended questions now route to Gemini off dashboard *routes* (was gated on the default
 > dashboard's existence, which made grounding nearly unreachable). P1/P1.5/P2 remain open.
+>
+> **2026-09-08 — superseded by `davinci-copilot-audit-2026-09.md`**, a full product audit of the
+> copilot flow (live walkthrough + code trace). It found the widget lane still intercepting merchant
+> questions everywhere, thin Gemini grounding, incoherent numbers, and a dismiss-on-click drawer
+> below 1280px; its Slice 1 fixed those. The open P1/P1.5/P2 items here are folded into its Slices 2–5.
 
 ### P0 — the flow-level gaps
 1. **Docked (non-modal) copilot mode.** Make the drawer a persistent right co-surface that squeezes
