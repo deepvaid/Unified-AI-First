@@ -198,4 +198,18 @@ Page `176:2`. Category colours: trigger `accent/default` · action `status/succe
 
 Documented, not built: the Landing Page Editor shell (264 / canvas / 320) and the block renderers beyond the title block (paragraph, list, image, button, form, divider, spacer, icons, menu, html, video); JourneyFlowColumn nested splits and flash / warn states.
 
-## Product tier — remaining families (Sales Channels → RBAC/PLG → Merchandising/Service/Analytics) are appended here as each lands.
+## Product · Sales Channels (Phase 3e, 2026-09-08) — reference, not API
+
+Page `189:2`.
+
+| Figma component | Node | What it shows | Code |
+|---|---|---|---|
+| Add Section Dialog (+ body `190:92`) | `190:267` | Dialog md: 300px catalog (Generate with AI row on accent 6 %, Search sections, LAYOUT / MEDIA groups with 28px tonal avatars) \| layouts pane (on-surface 2 % wash, empty state) | `saleschannels/AddSectionDialog.vue` (MpDialog md flush, MpListRow, MpFormSection) |
+| Menu Preview Card | `190:296` | header variant: title + Header / Footer toggle, storefront frame (14px logo, inline nav on gap 12, 8px hero bars), caption | `saleschannels/MenuPreviewCard.vue` (toggle is a MpSegmentedControl candidate — T30) |
+| Store Editor Sidebar | `190:542` | Section Rail instance: back, identity (globe, store, domain, switcher), CUSTOMIZE / STORE CONTENT groups | `saleschannels/StoreEditorSidebar.vue` (pure MpSectionRail wrapper) |
+| **Storefront Preview** | set `193:777` | Device desktop 900 · tablet 768 · mobile 390: browser bar, announcement, header, hero 15 % wash, 4:5 product tiles, testimonials, newsletter, footer | `saleschannels/StorefrontPreview.vue` (sectioned mode; tokenisation-exempt device art, P4-8) |
+| **Theme Da Vinci Panel** | set `193:971` | State welcome (48px avatar, 5 outlined suggestion chips, tip strip) · conversation (Chat Bubble end/solid, result card with Undo); composer | `saleschannels/ThemeDaVinciPanel.vue` (composes MpChatBubble; hand-rolled bot avatar — T30) |
+
+Documented, not built: SalesChannelsList (data table + MpStatusChip), SalesChannelDetail `.sc-app-row` cards, the colour-only `.sc-status-dot` / Registers `.retail-status-dot` (a11y — T30), PosPreview (filed under Retail, no story).
+
+## Product tier — remaining families (RBAC/PLG → Merchandising/Service/Analytics) are appended here as each lands.
