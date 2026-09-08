@@ -3,11 +3,13 @@ import router from '@/router'
 import { askGemini, type GeminiTurn } from '@/services/geminiClient'
 import { generateJourneyDraft, goalOptions, type JourneyGoal } from '@/composables/useJourneyGenerator'
 import { useDaVinciCampaignOnboarding } from '@/composables/useDaVinciCampaignOnboarding'
+import type { DaVinciToastInput } from '@/composables/useDaVinciToasts'
+import { useCommerceStore } from '@/stores/useCommerce'
+import { useContactsStore } from '@/stores/useContacts'
 import {
   fallbackSpeech,
   productDrafts,
   productSpeech,
-  revenueSpeech,
   segmentSpeech,
   segmentVariants,
 } from './dvIntentData'
@@ -138,6 +140,10 @@ export function classifyIntent(text: string): DvIntentKind {
   if (
     /\b(build|create|draft|make|set ?up|start|want|need)\b[^.]*\b(journey|automation|drip|flow|series|sequence)\b/.test(t)
     || /welcome series|abandoned cart (journey|flow|recovery)|win[- ]?back (journey|flow|series)/.test(t)
+    // Goal language is a journey ask even without the word "journey": "win back
+    // customers who haven't bought in 90 days", "re-engage dormant subscribers",
+    // "recover abandoned carts". The handler maps it onto a goal via detectJourneyGoal.
+    || /\b(win[- ]?back|lapsed|stopped buying|re-?engage|dormant|abandoned carts?|cart abandon)/.test(t)
   ) {
     return 'journey'
   }
@@ -152,7 +158,10 @@ export function classifyIntent(text: string): DvIntentKind {
   if (/\b(add|create|new|draft|write)\b.*\b(product|item|sku)\b|\bproduct description\b/.test(t)) {
     return 'product'
   }
-  if (/\b(revenue|sales|earn|earned|made|aov)\b|how much|\b(this|last) week\b/.test(t)) {
+  // Revenue needs a revenue word. The old rule also fired on bare "this week" and
+  // "made", so "which products should I put on sale this week?" came back as a
+  // revenue card instead of reaching the advisor.
+  if (/\b(revenue|sales|gmv|aov|average order value|earnings)\b|\bhow much (did|have|do) (we|i)\b/.test(t)) {
     return 'revenue'
   }
   if (/\b(segment|audience|vip|cohort)\b|group of/.test(t)) {
@@ -164,7 +173,13 @@ export function classifyIntent(text: string): DvIntentKind {
 export function useDaVinciIntents() {
   const pending = ref<DvPending | null>(null)
   const campaignOnboarding = useDaVinciCampaignOnboarding()
+  const commerce = useCommerceStore()
+  const contacts = useContactsStore()
   let seq = 0
+
+  function currentAccountId(): string {
+    return String(router.currentRoute.value.params.accountId ?? '2000290')
+  }
 
   /**
    * Hands a campaign request to the onboarding wizard, which asks for the objective
@@ -201,19 +216,63 @@ export function useDaVinciIntents() {
     }
   }
 
+  /**
+   * Last 7 days vs the 7 before, from the same orders the dashboard KPIs read —
+   * the card used to quote canned figures ($128,420 / 1,284 orders) that
+   * contradicted the Overview dashboard in the same session.
+   */
   function buildRevenue(): DvIntentResult {
+    const DAY = 86_400_000
+    const now = new Date()
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
+    const orderTime = (order: { date?: string }) => new Date(order.date ?? '').getTime()
+    const ordersBetween = (from: number, to: number) =>
+      commerce.orders.filter((order) => {
+        const ts = orderTime(order)
+        return ts >= from && ts < to
+      })
+    const sumTotal = (orders: Array<{ total: string }>) => orders.reduce((sum, order) => sum + parseFloat(order.total), 0)
+
+    const current = ordersBetween(todayStart - 6 * DAY, todayStart + DAY)
+    const previous = ordersBetween(todayStart - 13 * DAY, todayStart - 6 * DAY)
+    const revenue = sumTotal(current)
+    const previousRevenue = sumTotal(previous)
+    const aov = current.length ? revenue / current.length : 0
+    const previousAov = previous.length ? previousRevenue / previous.length : 0
+
+    const pct = (value: number, base: number) => (base ? ((value - base) / base) * 100 : 0)
+    const trend = (value: number, base: number) => {
+      const change = pct(value, base)
+      return { trend: `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`, trendUp: change >= 0 }
+    }
+    const money = (value: number) =>
+      value.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
+    const count = (value: number) => value.toLocaleString('en-US')
+
+    const labels: string[] = []
+    const bars: number[][] = []
+    for (let daysAgo = 6; daysAgo >= 0; daysAgo--) {
+      const start = todayStart - daysAgo * DAY
+      labels.push(new Date(start).toLocaleDateString('en-US', { weekday: 'short' }))
+      bars.push([Math.round(sumTotal(ordersBetween(start, start + DAY)))])
+    }
+
+    const revenueChange = pct(revenue, previousRevenue)
+    const direction = revenueChange >= 0 ? 'up' : 'down'
+    const reply = `Revenue is ${direction} ${Math.abs(revenueChange).toFixed(1)}% on the week before — ${money(revenue)} across ${count(current.length)} orders in the last 7 days.`
+
     return {
       intent: 'revenue',
-      reply: 'Revenue is up this week. The last 7 days, at a glance.',
-      speech: revenueSpeech,
+      reply,
+      speech: `Revenue is ${direction} ${Math.abs(Math.round(revenueChange))} percent this week — ${money(revenue)}, across ${count(current.length)} orders.`,
       cards: [
         {
           type: 'kpis',
           props: {
             kpis: [
-              { label: 'Revenue', value: '$128,420', trend: '+12.4%', trendUp: true, icon: 'dollar-sign' },
-              { label: 'Orders', value: '1,284', trend: '+8.1%', trendUp: true, icon: 'shopping-cart' },
-              { label: 'Avg order value', value: '$99.86', trend: '+3.9%', trendUp: true, icon: 'receipt' },
+              { label: 'Revenue', value: money(revenue), ...trend(revenue, previousRevenue), icon: 'dollar-sign' },
+              { label: 'Orders', value: count(current.length), ...trend(current.length, previous.length), icon: 'shopping-cart' },
+              { label: 'Avg order value', value: money(aov), ...trend(aov, previousAov), icon: 'receipt' },
             ],
           },
         },
@@ -221,10 +280,10 @@ export function useDaVinciIntents() {
           type: 'chart',
           props: {
             title: 'Revenue · last 7 days',
-            subtitle: '$128.4k total · +12.4% vs prior week',
-            bars: [[14.2], [16.8], [12.4], [18.1], [20.6], [17.9], [28.4]],
-            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-            seriesNames: ['Revenue ($k)'],
+            subtitle: `${money(revenue)} total · ${trend(revenue, previousRevenue).trend} vs prior week`,
+            bars,
+            labels,
+            seriesNames: ['Revenue ($)'],
           },
         },
       ],
@@ -491,10 +550,67 @@ export function useDaVinciIntents() {
     pending.value = null
   }
 
+  function copyText(text: string) {
+    if (typeof navigator === 'undefined' || !navigator.clipboard) return
+    navigator.clipboard.writeText(text).catch(() => {})
+  }
+
+  /**
+   * Performs a card action for real and returns the toast to show. One shared
+   * implementation for the drawer and the full-page experience — the hosts used to
+   * answer "Save segment" with a "Segment saved" toast and write nothing, while the
+   * disclosure promised Da Vinci "won't change your account on its own".
+   */
+  function performCardAction(card: DvCardDescriptor, action: string): DaVinciToastInput | null {
+    const accountId = currentAccountId()
+    if (card.type === 'segment') {
+      if (action === 'save') {
+        const segment = contacts.addSegment({
+          name: card.props.name,
+          description: card.props.rules.join(' · '),
+          count: card.props.estimatedSize,
+          type: 'Dynamic',
+          status: 'Active',
+        })
+        return {
+          title: `Segment "${segment.name}" created`,
+          sub: 'It refreshes daily. Nothing has been sent to it.',
+          action: 'Open segments',
+          onAction: () => {
+            void router.push({ name: 'Segments', params: { accountId } })
+          },
+        }
+      }
+      if (action === 'preview') {
+        void router.push({ name: 'Segments', params: { accountId } })
+        return { title: 'Opening segments', sub: 'Matching contacts are listed on the segment page.' }
+      }
+    }
+    if (card.type === 'content') {
+      if (action === 'copy') {
+        copyText(card.props.content)
+        return { title: 'Copied to clipboard' }
+      }
+      if (action === 'edit' || action === 'use') {
+        copyText(card.props.content)
+        const target = card.props.type === 'product'
+          ? { name: 'ProductNew', params: { accountId }, query: { source: 'davinci' } }
+          : { name: 'EmailContent', params: { accountId }, query: { source: 'davinci' } }
+        void router.push(target)
+        return {
+          title: card.props.type === 'product' ? 'Copied — opening the product editor' : 'Copied — opening email content',
+          sub: 'Paste the draft where you want it. Nothing is saved until you do.',
+        }
+      }
+    }
+    return null
+  }
+
   return {
     pending,
     classify: classifyIntent,
     handle,
+    performCardAction,
     answer,
     reset,
     suggestionChips: SUGGESTION_CHIPS,

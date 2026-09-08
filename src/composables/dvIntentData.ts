@@ -55,8 +55,6 @@ export const segmentVariants = {
 export const campaignSpeech = (name: string, audienceLabel: string) =>
   `The ${name} email is drafted for ${audienceLabel.toLowerCase()} and ready for your review. Nothing has been sent or scheduled.`
 export const productSpeech = (title: string) => `Here's a product description draft for ${title}.`
-export const revenueSpeech =
-  'Revenue is up 12 percent this week — 128 thousand dollars, across 1,284 orders.'
 export const segmentSpeech = (name: string, estimatedSize: number) =>
   `Your ${name} segment is ready — about ${estimatedSize.toLocaleString('en-US')} contacts.`
 export const fallbackSpeech =
@@ -69,7 +67,6 @@ export function listCannedSpeech(): string[] {
     for (const a of Object.values(audiences)) lines.push(campaignSpeech(name, a.label))
   }
   for (const draft of productDrafts) lines.push(productSpeech(draft.title))
-  lines.push(revenueSpeech)
   for (const v of Object.values(segmentVariants)) lines.push(segmentSpeech(v.name, v.estimatedSize))
   lines.push(fallbackSpeech)
   return lines

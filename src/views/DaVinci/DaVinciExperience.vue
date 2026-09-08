@@ -699,15 +699,9 @@ function onCardAction(payload: { card: DvCardDescriptor; action: string }) {
       return
     }
   }
-  const titles: Record<string, string> = {
-    save: 'Segment saved',
-    use: 'Copy ready to use',
-    copy: 'Copied to clipboard',
-    edit: 'Opening editor…',
-    preview: 'Preview coming up…',
-    action: 'Done',
-  }
-  pushToast({ title: titles[payload.action] ?? 'Done' })
+  // Shared with the drawer: creates the segment / copies the draft and navigates,
+  // then reports what actually happened.
+  pushToast(intents.performCardAction(payload.card, payload.action) ?? { title: 'Done' })
 }
 
 function newChat() {

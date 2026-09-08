@@ -1066,14 +1066,16 @@ export const useDashboardsStore = defineStore('dashboards', () => {
 
     const availableMetrics = getAvailableMetrics(account)
     const normalizedPrompt = prompt.toLowerCase()
+    // Whole-word matching (plural tolerated). Substring `includes` used to let
+    // "customers" in "win back customers who haven't bought in 90 days" light up
+    // the Customer Count metric — a keyword must appear as a word to count.
+    const hasKeyword = (keyword: string) =>
+      new RegExp(`\\b${keyword.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}s?\\b`).test(normalizedPrompt)
 
     const scored = availableMetrics
       .map((metric) => ({
         metric,
-        score: metric.aiKeywords.reduce(
-          (total, keyword) => total + (normalizedPrompt.includes(keyword.toLowerCase()) ? keyword.length : 0),
-          0,
-        ),
+        score: metric.aiKeywords.reduce((total, keyword) => total + (hasKeyword(keyword) ? keyword.length : 0), 0),
       }))
       .filter((entry) => entry.score > 0 && isDashboardSourceAvailable(entry.metric.dataSource, account))
       .sort((left, right) => right.score - left.score)

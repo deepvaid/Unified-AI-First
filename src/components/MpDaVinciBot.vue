@@ -14,6 +14,7 @@ import DvLandingHero from './copilot/DvLandingHero.vue'
 import DvOrbitOrb from './copilot/voice/DvOrbitOrb.vue'
 import DvOrbitVoiceSurface from './copilot/voice/DvOrbitVoiceSurface.vue'
 import DvToolSteps, { type DvToolStep } from './copilot/DvToolSteps.vue'
+import MpConfirmDialog from './MpConfirmDialog.vue'
 import type { OrbitState } from './copilot/voice/orbit'
 import {
   useCopilotStore,
@@ -108,6 +109,11 @@ const historyOpen = ref(false)
 /** Bumped on every new generation and on stop — stale callbacks check it and bail. */
 let generationSeq = 0
 let geminiAbort: AbortController | null = null
+/**
+ * A prompt that is asking for a dashboard widget. Off a dashboard route this is the
+ * only way into the widget-draft lane — everything else routes on merchant intent.
+ */
+const WIDGET_GRAMMAR = /\b(widget|chart|graph|table|kpi|tile|visuali[sz]ation|dashboard)\b|\b(show|plot|add)\b[^.]*\b(trend|over time|by channel|by country|by device|by domain)\b/i
 const liveSteps = ref<DvToolStep[]>([])
 const queuedPrompts = ref<string[]>([])
 
@@ -718,15 +724,9 @@ function onIntentCardAction(payload: { card: DvCardDescriptor; action: string })
       return
     }
   }
-  const titles: Record<string, string> = {
-    save: 'Segment saved',
-    use: 'Copy ready to use',
-    copy: 'Copied to clipboard',
-    edit: 'Opening editor…',
-    preview: 'Preview coming up…',
-    action: 'Done',
-  }
-  pushToast({ title: titles[payload.action] ?? 'Done' })
+  // Shared with the full-page experience: creates the segment / copies the draft
+  // and navigates, then reports what actually happened.
+  pushToast(intents.performCardAction(payload.card, payload.action) ?? { title: 'Done' })
 }
 
 function processQuery(text: string) {
@@ -807,8 +807,15 @@ function runGeneration(text: string) {
   const isFirstPrompt = !currentConversationId.value
   currentConversationId.value = conversationId
 
-  // Widget-draft path (dashboard context)
-  if (targetAccountId.value && targetDashboard.value) {
+  // Route on what the merchant asked for first. The widget matcher used to run
+  // before the intent layer whenever a dashboard was resolvable — which is always,
+  // once the home page has been seen — so "win back customers who haven't bought
+  // in 90 days" came back as a Customer Count KPI widget. The widget lane now only
+  // fires for prompts that ask for a widget: on a dashboard route, or with an
+  // explicit widget/chart word anywhere in the app.
+  const intentKind = intents.classify(text)
+  const asksForWidget = isDashboardRoute.value || WIDGET_GRAMMAR.test(text)
+  if (intentKind === 'fallback' && asksForWidget && targetAccountId.value && targetDashboard.value) {
     const base = dashboardsStore.buildAiWidgetDraft(targetAccountId.value, targetDashboard.value.id, text)
     if (base) {
       const drafts = [base]
@@ -850,7 +857,7 @@ function runGeneration(text: string) {
 
   // Intent / Gemini path — preview the classified intent's steps while working;
   // the finished message carries the result's actual steps.
-  startStepTicker(INTENT_STEPS[intents.classify(text)], gen, 1200)
+  startStepTicker(INTENT_STEPS[intentKind], gen, 1200)
   pendingTimers.push(setTimeout(async () => {
     if (gen !== generationSeq) return
     // No widget mapping — try the unified intent layer (campaigns, products,
@@ -860,13 +867,11 @@ function runGeneration(text: string) {
       completeIntentResult(res, gen)
       return
     }
-    if (!isDashboardRoute.value) {
-      // Open-ended question outside a dashboard widget-building context — answer
-      // with Gemini Flash (falls back to the canned hint if Gemini is unavailable),
-      // grounded in the live workspace context block. (Guarded on the dashboard
-      // ROUTE, not the default dashboard's existence — every account has a default
-      // dashboard, so the old guard sent nearly all open-ended asks to the widget
-      // hint and Gemini almost never fired from the drawer.)
+    if (!WIDGET_GRAMMAR.test(text)) {
+      // Open-ended question — answer with Gemini Flash (falls back to the canned
+      // hint if Gemini is unavailable), grounded in the live workspace context
+      // block. Dashboard routes included: a merchant asking "what needs my
+      // attention?" from the home page deserves an answer, not a widget hint.
       const history = messages.value.slice(0, -1).slice(-6).map((m) => ({ role: m.role, text: m.text }))
       geminiAbort = new AbortController()
       let smart: DvIntentResult
@@ -884,7 +889,7 @@ function runGeneration(text: string) {
       completeIntentResult(smart, gen)
       return
     }
-    // Fallback on a dashboard route → widget-prompt hint
+    // Asked for a widget we can't map → widget-prompt hint
     if (isVoiceMode.value) {
       orbitResponse.value = {
         draft: null,
@@ -1000,9 +1005,13 @@ function getSetupOnboardingProps(msg: ChatMessage): SetupOnboardingProps | null 
   return comp.props as SetupOnboardingProps
 }
 
+const clearAllOpen = ref(false)
+
 function handleClearAll() {
-  const confirmed = window.confirm('Delete all Da Vinci conversations? This cannot be undone.')
-  if (!confirmed) return
+  clearAllOpen.value = true
+}
+
+function confirmClearAll() {
   clearAll()
   pushToast({ title: 'All conversations deleted' })
 }
@@ -1341,6 +1350,14 @@ function onComposerKeydown(event: KeyboardEvent) {
       </div>
     </div>
 
+    <MpConfirmDialog
+      v-model="clearAllOpen"
+      title="Delete all Da Vinci conversations?"
+      message="This cannot be undone."
+      confirm-label="Delete All"
+      danger
+      @confirm="confirmClearAll"
+    />
     <DvToastStack />
   </div>
 </template>
