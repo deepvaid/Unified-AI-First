@@ -4,7 +4,7 @@ Date: 2026-09-08 · Branch: `master` · Method: live walkthrough on the dev serv
 
 ## Context
 
-Da Vinci is the AI copilot inside the Maropost sandbox: a docked drawer (`MpDaVinciBot`), a full-page voice experience (`DaVinciExperience`), a guided-setup FTUE, and a Gemini brain. It has had three waves of work (Amboras P0 patterns, voice/TTS, guided onboarding) but no product audit since July. The user asked for a principal-level review of the copilot flow and how to improve it for online merchants. This document is the audit plus a sequenced roadmap. Slice 0 (this doc) landed 2026-09-08; Slice 1 (P0 fixes) follows as separate commits in the same session; Slices 2–5 are open. Prior audit: `davinci-amboras-audit-2026-07.md`.
+Da Vinci is the AI copilot inside the Maropost sandbox: a docked drawer (`MpDaVinciBot`), a full-page voice experience (`DaVinciExperience`), a guided-setup FTUE, and a Gemini brain. It has had three waves of work (Amboras P0 patterns, voice/TTS, guided onboarding) but no product audit since July. The user asked for a principal-level review of the copilot flow and how to improve it for online merchants. This document is the audit plus a sequenced roadmap. Slice 0 (this doc) and Slice 1 (P0 fixes: intent-first routing, whole-word widget matcher, goal-language journey intents, store-backed revenue, real card actions, docked drawer, dead view removed) landed 2026-09-08 — verified live with the eight-prompt script below. Slices 2–5 are open. Prior audit: `davinci-amboras-audit-2026-07.md`.
 
 ## Verdict
 
