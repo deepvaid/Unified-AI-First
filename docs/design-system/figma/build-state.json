@@ -7,8 +7,8 @@
     "fileName": "Marobase Design System",
     "url": "https://www.figma.com/design/RJJ0qDChSdh0FwH2UG0t7t"
   },
-  "phase": "phase3e-complete",
-  "step": "Phase 4 QA & publish \u2014 awaiting go",
+  "phase": "phase4-complete",
+  "step": "Publish library in Figma UI (Assets \u2192 Publish) \u2014 manual",
   "entities": {
     "collections": {
       "Primitives": "VariableCollectionId:2:2",
@@ -1481,7 +1481,11 @@
         }
       }
     },
-    "iconCount": 258
+    "iconCount": 258,
+    "gettingStarted": {
+      "frame": "15:2",
+      "productSection": "214:2"
+    }
   },
   "completedSteps": [
     "P0.a create-file",
@@ -1607,7 +1611,9 @@
     "P3e.RP.a\u2013f RBAC & PLG family built on 198:2 (10 components + 4 sets); icons landmark, clock-alert, circle-minus added \u2192 257",
     "P3e.RP.g RBAC & PLG doc 203:976 + exit audit clean (10 components + 4 sets / 523 paints / 0 unbound)",
     "P3e.MSA.a\u2013f Merchandising / Service / Analytics family built on 204:2 (8 components + 1 set)",
-    "P3e.MSA.g Merch / Service / Analytics doc 209:677 + exit audit clean (8 components + 1 set / 520 paints / 0 unbound)"
+    "P3e.MSA.g Merch / Service / Analytics doc 209:677 + exit audit clean (8 components + 1 set / 520 paints / 0 unbound)",
+    "P4.a\u2013c whole-file audits clean; contrast spot-check passed",
+    "P4.d Getting Started Product-tier section 214:2 + final tally; P4.e page order verified (65 pages, separators intact)"
   ],
   "pendingValidations": [
     "P3d exit audit"
@@ -1770,6 +1776,27 @@
       "maxVariants": 4,
       "allDescribed": true,
       "allDocumented": true
+    },
+    {
+      "phase": "4-whole-file",
+      "date": "2026-09-08",
+      "pages": 65,
+      "sets": 93,
+      "components": 110,
+      "variants": 511,
+      "maxVariants": 30,
+      "solidPaints": 3744,
+      "unbound": 0,
+      "missingDescriptions": 0,
+      "duplicateNames": 0,
+      "variables": 273,
+      "variablesMissingScopes": 0,
+      "variablesMissingCodeSyntax": 0,
+      "textStyles": 32,
+      "effectStyles": 8,
+      "paintStyles": 3,
+      "contrast": "all text pairs \u2265 4.5 in Light and Dark; border/default 1.26 / 1.58 and text/disabled 2.52 / 5.01 are decorative / disabled levels (never fail per $contrastPairs); Nav Skin Gray / White / Dark all pass",
+      "notes": "8 Icon/circle hits are the Radio atom's own empty ring (intentional); Ticket Workspace Line 1 / Line 2 frames renamed"
     }
   ],
   "fidelityFindings": [

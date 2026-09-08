@@ -246,4 +246,8 @@ Page `204:2`. Only the Merch Product Card has Storybook stories; the rest were b
 
 Documented, not built: Tickets composer (Reply / Forward / Note card with mode + From selects, To / Cc / Bcc, split Send), Tags / Orders rail panels, TicketDetail page variant, PinningEditor / RuleEditor grids.
 
-## Product tier — complete (Dashboards · Marketing · Sales Channels · RBAC & PLG · Merchandising, Service & Analytics). Next: Phase 4 QA & publish.
+## Product tier — complete (Dashboards · Marketing · Sales Channels · RBAC & PLG · Merchandising, Service & Analytics)
+
+## Phase 4 QA (2026-09-08)
+
+Whole-file audit: 65 pages · 93 sets + 110 components · 511 variants (max 30 / set) · 3,744 solid paints, **0 unbound** · 0 missing descriptions · 0 duplicate component names. Variables: 273 (Primitives 31 · Color 143 · Nav Skin 9 · Dimensions 88 · Typography 2), all scoped with WEB code syntax. Styles: 32 text · 8 effect · 3 paint. Contrast spot-check from resolved variable values: every text pair ≥ 4.5:1 in Light and Dark and in the Gray / White / Dark nav skins; `border/default` (1.26 / 1.58) and `text/disabled` (2.52 / 5.01) are the decorative / disabled levels of `$contrastPairs`. Publishing is a manual step in Figma (Assets → Publish); the Plugin API cannot publish a library.
