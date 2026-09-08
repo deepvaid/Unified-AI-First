@@ -114,6 +114,8 @@ let geminiAbort: AbortController | null = null
  * only way into the widget-draft lane — everything else routes on merchant intent.
  */
 const WIDGET_GRAMMAR = /\b(widget|chart|graph|table|kpi|tile|visuali[sz]ation|dashboard)\b|\b(show|plot|add)\b[^.]*\b(trend|over time|by channel|by country|by device|by domain)\b/i
+/** A question ("what needs my attention?") wants an answer, not a widget — even on a dashboard. */
+const QUESTION_GRAMMAR = /\?\s*$|^(what|which|why|how|should|is|are|do|does|can|could|would|who|when|where)\b/i
 const liveSteps = ref<DvToolStep[]>([])
 const queuedPrompts = ref<string[]>([])
 
@@ -814,7 +816,7 @@ function runGeneration(text: string) {
   // fires for prompts that ask for a widget: on a dashboard route, or with an
   // explicit widget/chart word anywhere in the app.
   const intentKind = intents.classify(text)
-  const asksForWidget = isDashboardRoute.value || WIDGET_GRAMMAR.test(text)
+  const asksForWidget = WIDGET_GRAMMAR.test(text) || (isDashboardRoute.value && !QUESTION_GRAMMAR.test(text))
   if (intentKind === 'fallback' && asksForWidget && targetAccountId.value && targetDashboard.value) {
     const base = dashboardsStore.buildAiWidgetDraft(targetAccountId.value, targetDashboard.value.id, text)
     if (base) {
