@@ -20,9 +20,9 @@ export interface PlaceholderRecord {
   amount: string
 }
 
-export const CATEGORY_OPTIONS = ['Category A', 'Category B', 'Category C'] as const
+export const CATEGORY_OPTIONS: string[] = ['Category A', 'Category B', 'Category C']
 export const STATUS_OPTIONS: PlaceholderStatus[] = ['Active', 'Inactive', 'Draft', 'Pending']
-export const OWNER_OPTIONS = ['Owner A', 'Owner B', 'Owner C'] as const
+export const OWNER_OPTIONS: string[] = ['Owner A', 'Owner B', 'Owner C']
 
 /** Cycles a fixed list — keeps `noUncheckedIndexedAccess` happy without assertions. */
 function cycle<T>(values: readonly T[], index: number): T {
@@ -50,7 +50,7 @@ export function makeRecords(count: number): PlaceholderRecord[] {
  * `useResponsiveTableHeaders` reads — the column-priority strategy the polish
  * playbook requires of every list view.
  */
-export const RECORD_HEADERS: ResponsiveHeader[] = [
+export const RECORD_HEADERS: (ResponsiveHeader & { title: string; key: string })[] = [
   { title: 'Column A · Name', key: 'name', sortable: true },
   { title: 'Column B · Category', key: 'category' },
   { title: 'Status', key: 'status' },
