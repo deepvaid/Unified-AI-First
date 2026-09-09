@@ -50,17 +50,17 @@ const backTo = computed(() => ({
   params: { accountId: accounts.activeId },
 }))
 
-/* The aside yields rather than squeeze the specimen. A builder is two fixed
-   asides plus a canvas, and a detail page is a fixed sidebar plus a body; below
-   the yield width the template stops representing what it is supposed to teach,
-   and a docs column is the thing that can wait. The three widths are tokens, so
-   this reads them from the generated constants rather than restating pixels. */
+/* The aside yields rather than squeeze a specimen that has nothing to give. A
+   builder is two fixed asides plus a canvas: take 360 away and the canvas stops
+   representing what it is supposed to teach. Templates that reflow on their own
+   keep the aside at any width. The widths are tokens, read from the generated
+   constants rather than restated as pixels. */
 const px = (token: string) => Number.parseInt(token, 10)
 const shell = ref<HTMLElement | null>(null)
 const { size } = useElementSize(shell)
 
 const roomForSpec = computed(() => {
-  if (size.value.width === 0) return true
+  if (!spec.value?.needsRoom || size.value.width === 0) return true
   const templateRoom = size.value.width - px(mp_layout_sectionRailWidth) - px(mp_layout_specPanelWidth)
   return templateRoom >= px(mp_layout_specPanelYieldWidth)
 })
@@ -88,7 +88,7 @@ const specYielded = computed(() => specOpen.value && !!spec.value && !roomForSpe
           hide-details
         />
         <p v-if="specYielded" class="templates-shell__yield mb-0">
-          Hidden while the window is this narrow — the template needs the room.
+          Hidden here: this template needs the full width to read correctly.
         </p>
       </template>
     </MpSectionRail>

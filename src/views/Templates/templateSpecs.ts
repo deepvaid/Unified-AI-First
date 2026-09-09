@@ -57,6 +57,11 @@ export interface TemplateSpec {
   rules: SpecRule[]
   /** Differences between the template and a real product route. */
   productNotes?: string[]
+  /**
+   * The template cannot be squeezed: its own fixed panes leave nothing to give,
+   * so the spec aside hides itself below layout.specPanelYieldWidth instead.
+   */
+  needsRoom?: boolean
 }
 
 export const TEMPLATE_SPECS: TemplateSpec[] = [
@@ -385,6 +390,7 @@ export const TEMPLATE_SPECS: TemplateSpec[] = [
     productNotes: [
       'standalone is set here for the same reason as the wizard. A product builder route sets meta.builderShell instead and fills the frame.',
     ],
+    needsRoom: true,
   },
   {
     slug: 'states',
