@@ -5,7 +5,13 @@ import MpSectionRail from '@/components/MpSectionRail.vue'
 import TemplateSpecPanel from './TemplateSpecPanel.vue'
 import { specForRoute } from './templateSpecs'
 import { templatesRailGroups } from './templatesMenu'
+import { useElementSize } from '@/composables/useElementSize'
 import { useAccountsStore } from '@/stores/useAccounts'
+import {
+  mp_layout_sectionRailWidth,
+  mp_layout_specPanelWidth,
+  mp_layout_specPanelYieldWidth,
+} from '@/design-tokens/generated/tokens'
 
 // Shell of the page-archetype gallery. Same three moves as SettingsLayout — the
 // route's railShell meta collapses the global AppSidebar, MpSectionRail becomes
@@ -43,10 +49,28 @@ const backTo = computed(() => ({
   name: 'DesignSystemDemo',
   params: { accountId: accounts.activeId },
 }))
+
+/* The aside yields rather than squeeze the specimen. A builder is two fixed
+   asides plus a canvas, and a detail page is a fixed sidebar plus a body; below
+   the yield width the template stops representing what it is supposed to teach,
+   and a docs column is the thing that can wait. The three widths are tokens, so
+   this reads them from the generated constants rather than restating pixels. */
+const px = (token: string) => Number.parseInt(token, 10)
+const shell = ref<HTMLElement | null>(null)
+const { size } = useElementSize(shell)
+
+const roomForSpec = computed(() => {
+  if (size.value.width === 0) return true
+  const templateRoom = size.value.width - px(mp_layout_sectionRailWidth) - px(mp_layout_specPanelWidth)
+  return templateRoom >= px(mp_layout_specPanelYieldWidth)
+})
+
+const specVisible = computed(() => specOpen.value && !!spec.value && roomForSpec.value)
+const specYielded = computed(() => specOpen.value && !!spec.value && !roomForSpec.value)
 </script>
 
 <template>
-  <div class="templates-shell mp-frame-fill d-flex">
+  <div ref="shell" class="templates-shell mp-frame-fill d-flex">
     <MpSectionRail
       ariaLabel="Templates navigation"
       title="Templates"
@@ -63,6 +87,9 @@ const backTo = computed(() => ({
           density="compact"
           hide-details
         />
+        <p v-if="specYielded" class="templates-shell__yield mb-0">
+          Hidden while the window is this narrow — the template needs the room.
+        </p>
       </template>
     </MpSectionRail>
 
@@ -74,7 +101,7 @@ const backTo = computed(() => ({
     </main>
 
     <TemplateSpecPanel
-      v-if="specOpen && spec"
+      v-if="specVisible && spec"
       :spec="spec"
       class="templates-shell__spec"
       @close="specOpen = false"
@@ -111,6 +138,13 @@ const backTo = computed(() => ({
   min-height: 0;
 }
 
+.templates-shell__yield {
+  margin-top: var(--mp-space-4);
+  color: var(--text-secondary);
+  font-size: var(--mp-fontSize-11);
+  line-height: 1.4;
+}
+
 .templates-shell__spec {
   flex: 0 0 var(--mp-layout-specPanelWidth);
   min-height: 0;
@@ -137,7 +171,14 @@ const backTo = computed(() => ({
     overflow: visible;
   }
 
-  .templates-shell__spec {
+  .templates-shell__yield {
+  margin-top: var(--mp-space-4);
+  color: var(--text-secondary);
+  font-size: var(--mp-fontSize-11);
+  line-height: 1.4;
+}
+
+.templates-shell__spec {
     display: none;
   }
 }
