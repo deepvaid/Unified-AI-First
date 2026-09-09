@@ -200,10 +200,16 @@ const reviewFields = computed(() => [
   />
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .tpl-options {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--mp-space-12);
+}
+
+@media (max-width: $mp-layout-breakpointCompact) {
+  .tpl-options {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

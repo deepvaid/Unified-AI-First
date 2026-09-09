@@ -145,7 +145,7 @@ function saveAndClose() {
             @keydown.enter="selectedId = block.id"
             @keydown.space.prevent="selectedId = block.id"
           >
-            <div class="tpl-block__body" :style="{ textAlign: block.align }">
+            <div class="tpl-block__body" :style="{ textAlign: block.align as 'start' | 'center' | 'end' }">
               <p class="mp-meta-label mb-1">{{ block.type }}</p>
               <p class="tpl-block__label mb-1">{{ block.label }}</p>
               <p class="tpl-block__text mb-0">{{ block.text }}</p>
@@ -178,7 +178,7 @@ function saveAndClose() {
                 v-model="selected.align"
                 :items="ALIGN_ITEMS"
                 size="sm"
-                aria-label="Block alignment"
+                ariaLabel="Block alignment"
               />
             </MpFormField>
           </MpFormGrid>

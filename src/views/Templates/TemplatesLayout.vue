@@ -152,6 +152,7 @@ const specYielded = computed(() => specOpen.value && !!spec.value && !roomForSpe
   border-inline-start: 1px solid var(--border-subtle);
 }
 
+/* 1024 matches .mp-main-shell's own medium step; there is no token for it. */
 @media (max-width: 1024px) {
   .templates-shell__content {
     padding: var(--mp-space-20) var(--mp-layout-shellInsetMedium) var(--mp-layout-shellInsetMedium) var(--mp-layout-shellInsetMedium);
@@ -160,7 +161,7 @@ const specYielded = computed(() => specOpen.value && !!spec.value && !roomForSpe
 
 /* Desktop reference surface: below the split the rail stacks and the spec aside
    steps aside entirely rather than squeezing the template it describes. */
-@media (max-width: 960px) {
+@media (max-width: $mp-layout-breakpointSplit) {
   .templates-shell {
     flex-direction: column;
     height: auto;
@@ -183,7 +184,7 @@ const specYielded = computed(() => specOpen.value && !!spec.value && !roomForSpe
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: $mp-layout-breakpointCompact) {
   .templates-shell__content {
     padding: var(--mp-space-16) var(--mp-layout-shellInsetCompact) var(--mp-layout-shellInsetCompact) var(--mp-layout-shellInsetCompact);
   }

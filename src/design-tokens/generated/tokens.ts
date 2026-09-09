@@ -764,6 +764,7 @@ export const mp_component_card_paddingCompact = `12px`
 export const mp_component_card_paddingSpacious = `32px`
 export const mp_component_card_gap = `16px`
 export const mp_component_card_gapCompact = `8px`
+export const mp_component_card_gridMin = `260px`
 export const mp_component_dialog_radius = `16px`
 export const mp_component_dialog_padding = `20px`
 export const mp_component_dialog_paddingCompact = `16px`

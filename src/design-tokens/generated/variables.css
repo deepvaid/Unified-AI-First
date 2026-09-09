@@ -1339,6 +1339,7 @@
   --mp-component-card-paddingSpacious: var(--mp-space-32);
   --mp-component-card-gap: var(--mp-space-16);
   --mp-component-card-gapCompact: var(--mp-space-8);
+  --mp-component-card-gridMin: 260px;
   --mp-component-dialog-radius: var(--mp-radius-16);
   --mp-component-dialog-padding: var(--mp-space-20);
   --mp-component-dialog-paddingCompact: var(--mp-space-16);

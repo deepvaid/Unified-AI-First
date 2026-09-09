@@ -149,7 +149,6 @@ function flatten(nodes: SpecTreeNode[], depth = 0): { node: SpecTreeNode; depth:
 .tpl-spec__tree-row {
   padding: var(--mp-space-4) 0;
   padding-inline-start: calc(var(--tpl-depth) * var(--mp-space-16));
-  border-inline-start: 1px solid transparent;
 }
 
 /* The global .mp-label-value grid is built for a wide detail column; in a 360px

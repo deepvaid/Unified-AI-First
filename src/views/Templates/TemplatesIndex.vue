@@ -115,7 +115,7 @@ const totalFollowing = computed(() =>
 <style scoped>
 .tpl-gallery {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(var(--mp-component-card-gridMin), 1fr));
   gap: var(--mp-space-20);
 }
 

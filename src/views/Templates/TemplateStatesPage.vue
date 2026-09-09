@@ -171,7 +171,7 @@ const confirmDanger = ref(false)
 }
 
 .tpl-state-pane {
-  flex: 1 1 320px;
+  flex: 1 1 var(--mp-component-state-measure);
   min-width: 0;
 }
 
