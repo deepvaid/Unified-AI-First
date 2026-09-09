@@ -71,7 +71,7 @@ const daVinciCard = computed<DaVinciCardConfig>(() => ({
   <ModuleLandingPage
     eyebrow="Module"
     title="Module name"
-    description="One sentence describing what this module holds and who it is for."
+    description="Sections, recent activity and setup in one place."
     :primary-actions="primaryActions"
     :quick-actions="quickActions"
     :child-pages="childPages"
