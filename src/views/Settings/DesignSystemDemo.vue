@@ -109,6 +109,7 @@ function toggleSelect(id: string) {
       subtitle="One kit of parts behind every screen — explore it, or ask Da Vinci about it"
     >
       <template #actions>
+        <v-btn variant="outlined" prepend-icon="layout-template" :to="{ name: 'TemplatesIndex' }">Page templates</v-btn>
         <v-btn variant="outlined" prepend-icon="sparkles" @click="assistantOpen = true">Ask Da Vinci</v-btn>
         <v-btn color="primary" prepend-icon="file-text" @click="drawerOpen = true">Token Brief</v-btn>
       </template>
