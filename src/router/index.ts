@@ -18,6 +18,8 @@ declare module 'vue-router' {
     requiresAny?: SubscriptionKey[]
     /** Sales Orders rendered as the retail transactions log (POS-only, retail columns). */
     posMode?: boolean
+    /** Templates gallery: the child hosts a standalone wizard/builder shell, so the layout drops its content padding. */
+    templateFill?: boolean
   }
 }
 
@@ -406,6 +408,25 @@ const routes: RouteRecordRaw[] = [
   // socialGradient palette. Production /dashboard is untouched.
   { path: '/accounts/:accountId/dashboard-gradient', name: 'DashboardGradient', component: () => import('@/views/DashboardGradient/DashboardGradientView.vue') },
   { path: '/accounts/:accountId/dashboard-gradient/:dashboardId', name: 'DashboardGradientDetail', component: () => import('@/views/DashboardGradient/DashboardGradientView.vue') },
+
+  // Page-archetype gallery — an engineering reference, not a product surface.
+  // No :accountId (the guard is a no-op without one) and no gating; the parent's
+  // railShell meta is what collapses the global sidebar behind the Templates rail.
+  {
+    path: '/templates',
+    component: () => import('@/views/Templates/TemplatesLayout.vue'),
+    meta: { railShell: true },
+    children: [
+      { path: '', name: 'TemplatesIndex', component: () => import('@/views/Templates/TemplatesIndex.vue') },
+      { path: 'list', name: 'TemplateList', component: () => import('@/views/Templates/TemplateListPage.vue') },
+      { path: 'detail', name: 'TemplateDetail', component: () => import('@/views/Templates/TemplateDetailPage.vue') },
+      { path: 'form-drawer', name: 'TemplateFormDrawer', component: () => import('@/views/Templates/TemplateFormDrawerPage.vue') },
+      { path: 'landing', name: 'TemplateLanding', component: () => import('@/views/Templates/TemplateLandingPage.vue') },
+      { path: 'wizard', name: 'TemplateWizard', component: () => import('@/views/Templates/TemplateWizardPage.vue'), meta: { templateFill: true } },
+      { path: 'builder', name: 'TemplateBuilder', component: () => import('@/views/Templates/TemplateBuilderPage.vue'), meta: { templateFill: true } },
+      { path: 'states', name: 'TemplateStates', component: () => import('@/views/Templates/TemplateStatesPage.vue') },
+    ],
+  },
 
   // Redirect root to dashboard
   { path: '/', redirect: '/accounts/2000290/dashboard' },
