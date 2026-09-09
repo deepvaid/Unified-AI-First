@@ -168,14 +168,15 @@ export const TEMPLATE_SPECS: TemplateSpec[] = [
             children: [
               {
                 name: 'aside (identity column)',
-                note: 'flex: 0 0 var(--mp-layout-detailSidebarWidth)',
+                note: 'flex-basis var(--mp-layout-detailSidebarWidth); wraps to its own row when the body cannot fit',
                 children: [
                   { name: 'v-card → avatar + MpStatusChip + dl.mp-label-value' },
                   { name: 'v-card → MpSectionHeader + tonal chips' },
                 ],
               },
               {
-                name: 'div.flex-grow-1 (body column)',
+                name: 'div (body column)',
+                note: 'flex-grow 999 so it takes every spare pixel while both panes fit',
                 children: [
                   { name: 'v-tabs (density compact) + v-window' },
                   { name: 'Overview → v-row of MpKpiCard + card of MpListRow' },
@@ -195,10 +196,11 @@ export const TEMPLATE_SPECS: TemplateSpec[] = [
       { token: 'gap-5 → --mp-space-20', owns: 'header ↔ body, and sidebar ↔ body columns' },
       { token: '--mp-layout-detailSidebarWidth (340)', owns: 'the identity column width' },
       { token: '--mp-component-card-padding (20)', owns: 'the inset of every card on the page' },
-      { token: '$mp-layout-breakpointSplit (960)', owns: 'where the two columns stack (Sass — media queries cannot read custom properties)' },
+      { token: '--mp-layout-formMaxWidth (760)', owns: "the body column's flex basis — below it the split wraps to one column" },
     ],
     rules: [
       { kind: 'do', text: 'Ship the not-found branch: a bad id must land on MpErrorState, not a blank page.' },
+      { kind: 'do', text: 'Stack the split on the viewport ($mp-layout-breakpointSplit) in the product; this template wraps on its own width because it shares the column with the spec panel.' },
       { kind: 'do', text: 'Use a dl.mp-label-value for label/value pairs so the grid stays consistent.' },
       { kind: 'dont', text: 'Write a calc(100vh - Npx) anywhere — the shell owns the height.' },
       { kind: 'dont', text: 'Open the edit form in a v-dialog; a create/edit form is MpFormDrawer.' },
@@ -414,7 +416,7 @@ export const TEMPLATE_SPECS: TemplateSpec[] = [
           {
             name: 'v-card',
             children: [
-              { name: 'Loading → MpTableSkeleton', note: 'under a real toolbar, so the skeleton is measured against the chrome it replaces' },
+              { name: 'Loading → MpTableSkeleton', note: 'under a real toolbar, so the skeleton is measured against the chrome it replaces; a product page drives it from useInitialLoad()' },
               { name: 'Empty → MpEmptyState', note: 'stack (in a card) beside launcher + prominent (a whole surface)' },
               { name: 'Error → MpErrorState', note: 'role="alert" and the error tone are baked in' },
               { name: 'Coming soon → MpComingSoonTiles', note: 'the surface does not exist yet — not an empty state' },
