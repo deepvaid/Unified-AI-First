@@ -69,7 +69,8 @@ This is NOT a production app — it uses mock data and has no backend API.
 │   │   ├── Marketing/         ← Campaigns, Journeys, JourneyBuilder, Forms, Content, etc.
 │   │   ├── Products/          ← ProductsList, Inventory, Recommendations, TaxCategories
 │   │   ├── Service/           ← Tickets
-│   │   └── Settings/          ← Settings, Billing, Users, Profile
+│   │   ├── Settings/          ← Settings, Billing, Users, Profile
+│   │   └── Templates/         ← /templates page-archetype gallery (engineer reference, placeholder data)
 │   ├── stores/                ← 6 Pinia stores with mock data
 │   ├── plugins/vuetify.ts     ← Vuetify theme (light + dark) + global defaults
 │   ├── router/index.ts        ← All routes (90+)
@@ -211,6 +212,11 @@ Browse icons at [lucide.dev/icons](https://lucide.dev/icons).
 **Do not** use `mdi-*` strings for new code — they are only kept as a temporary fallback in the icon bridge.
 
 ### Data Table Pattern
+
+**Live reference: `/templates/list`** (`src/views/Templates/TemplateListPage.vue`) — the same
+composition running, with placeholder data and a spec panel. Copy the file, swap `placeholder.ts`
+for a store. Every archetype below has one; see **Page templates** in Key References.
+
 Every data table page follows this structure:
 ```
 MpPageHeader (with breadcrumbs + action button)
@@ -409,6 +415,10 @@ Example: `[feat]: add MpDateRangePicker component with story`
 - `maropost-screenshots/` — 50+ screenshots of every real app section
 - `docs/personas/` — Merchant personas for UX decisions
 - `docs/design-system.md` — Living component + token reference
+- **`/templates`** (`src/views/Templates/`) — page-archetype gallery: list, detail, form drawer,
+  module landing, wizard, builder shell, surface states. Each renders in the real app chrome with
+  structural placeholder data and a toggleable spec panel (component tree, source file, the product
+  pages that follow it, which token owns each gap). Reference only — never a product surface.
 
 ---
 

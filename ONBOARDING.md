@@ -169,6 +169,34 @@ MpPageHeader
 
 There's a live version under **Patterns → Data Table** in Storybook.
 
+### Page templates
+
+`/templates` is a gallery of the seven page archetypes, each one a running page built only from the
+`Mp*` components. It is the fastest way to start a new view: open the archetype, read the spec panel,
+copy the file.
+
+| Archetype | Route | File |
+|---|---|---|
+| List page | `/templates/list` | `src/views/Templates/TemplateListPage.vue` |
+| Detail page | `/templates/detail` | `src/views/Templates/TemplateDetailPage.vue` |
+| Form drawer | `/templates/form-drawer` | `src/views/Templates/TemplateFormDrawerPage.vue` |
+| Module landing | `/templates/landing` | `src/views/Templates/TemplateLandingPage.vue` |
+| Wizard | `/templates/wizard` | `src/views/Templates/TemplateWizardPage.vue` |
+| Builder shell | `/templates/builder` | `src/views/Templates/TemplateBuilderPage.vue` |
+| Surface states | `/templates/states` | `src/views/Templates/TemplateStatesPage.vue` |
+
+Three things to know:
+
+- **The data is structural on purpose.** "Record name 01", "Column A", "Status" — never a product
+  noun, so nothing here can be mistaken for a real page. `src/views/Templates/placeholder.ts` is the
+  only data source; no template imports a store. Copy a template, then swap that import for yours.
+- **The spec panel is the documentation.** Toggle it in the left rail. Per archetype it lists the
+  component tree, the file to copy, the product views that already follow it, which token owns each
+  gap, and the do/don't rules. It hides itself on the builder when the window is too narrow to show
+  both, rather than squeeze the canvas.
+- **The wizard and builder pass `standalone`.** They are hosted inside the gallery layout. A product
+  route drops that prop and sets `meta: { builderShell: true }` so the shell fills the app frame.
+
 ### New component checklist
 
 1. `src/components/MpThing.vue` with `<script setup lang="ts">`
@@ -225,7 +253,7 @@ Stated plainly so you find them on your terms rather than by surprise.
 - **Stories are excluded from type-checking.** `tsconfig.app.json` excludes `src/stories/**` and `**/*.stories.ts`, so those 122 files never get checked. `src/` itself is strict (`strict`, `noUnusedLocals`, `noUnusedParameters`, `noFallthroughCasesInSwitch`).
 - **Vercel deploys skip type-checking.** `vercel.json` runs `npx vite build` directly rather than `npm run build`, so `vue-tsc` doesn't gate a deploy. Keeps previews unblocked; means a broken type can ship. Run `npm run build` locally before you rely on a preview.
 - **Known duplication.** [docs/design-system/duplication-report.md](docs/design-system/duplication-report.md) is a full-repo crawl with Resolved and Deferred sections — the right starting point for a views audit. There is real overlap between `Dashboards`, `DashboardGradient`, and `ShadcnDashboard`.
-- **Demo-only routes.** `/showcase`, `/deck`, `/reel`, `/chart-lab`, `/evil-dashboard` were built for presentations, not as product surfaces. `/reel/fly` in particular loads screens from a gitignored directory and will render empty on a fresh clone.
+- **Demo-only routes.** `/showcase`, `/deck`, `/reel`, `/chart-lab`, `/evil-dashboard` were built for presentations, not as product surfaces. `/reel/fly` in particular loads screens from a gitignored directory and will render empty on a fresh clone. `/templates` belongs in the same "not a product surface" bucket, but it is a working engineering reference rather than a demo — see **Page templates** in §5.
 - **`.git` is ~262MB.** Inflated by screenshot churn (one PNG was recommitted 11 times). Clones are slow but correct; history was left intact rather than rewritten so existing clones stay valid.
 - **Nine TODOs**, all in `src/composables/useWidgetData.ts`. The rest of `src/` is clean.
 
