@@ -1407,6 +1407,7 @@
   --mp-layout-inboxListWidth: 380px;
   --mp-layout-inboxRailPanelWidth: 300px;
   --mp-layout-detailSidebarWidth: 340px;
+  --mp-layout-specPanelWidth: 360px;
   --mp-layout-breakpointSplit: 960px;
   --mp-layout-breakpointCompact: 640px;
 }
