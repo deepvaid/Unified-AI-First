@@ -160,8 +160,9 @@ const isFullPage = computed(() => !!route.meta?.fullPage)
 const isFlush = computed(() => !!route.meta?.flush)
 // The AI experience owns the whole screen and hosts its own Da Vinci conversation.
 // Showing the drawer alongside it puts two Da Vinci surfaces on screen at once,
-// each with its own greeting, so it stays closed there.
-const copilotAvailable = computed(() => route.name !== 'DaVinciExperience')
+// each with its own greeting, so it stays closed there. The Trial Lab renders
+// its own shell for a brand-new user, so the drawer stays closed there too.
+const copilotAvailable = computed(() => route.name !== 'DaVinciExperience' && !route.meta?.trialLab)
 const copilotVisible = computed({
   get: () => copilot.isOpen && copilotAvailable.value,
   set: (value: boolean) => {

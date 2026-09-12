@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { useAccountsStore, type SubscriptionKey } from '@/stores/useAccounts'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
+import { trialLabRoutes } from '@/views/TrialLab/trialLabRoutes'
 
 declare module 'vue-router' {
   interface RouteMeta {
@@ -20,6 +21,8 @@ declare module 'vue-router' {
     posMode?: boolean
     /** Templates gallery: the child hosts a standalone wizard/builder shell, so the layout drops its content padding. */
     templateFill?: boolean
+    /** Trial Lab prototype: full-page lab shell that also keeps the copilot drawer closed. */
+    trialLab?: boolean
   }
 }
 
@@ -427,6 +430,9 @@ const routes: RouteRecordRaw[] = [
       { path: 'states', name: 'TemplateStates', component: () => import('@/views/Templates/TemplateStatesPage.vue') },
     ],
   },
+
+  // Trial Lab — four free-trial onboarding prototypes (design research, not a product surface).
+  ...trialLabRoutes,
 
   // Redirect root to dashboard
   { path: '/', redirect: '/accounts/2000290/dashboard' },

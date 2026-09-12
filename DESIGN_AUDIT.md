@@ -1827,3 +1827,26 @@ The morning pass invented a severity classification for notifications; the real 
   the row via `src/components/notifications/NotificationRow.vue` (internal subfolder
   component, not a top-level Mp* — same convention as layout/ and copilot/).
 - Badge caps at **99+** (`max="99"`), matching the real bell.
+
+## Trial Lab changelog — 2026-09-12
+
+Per CLAUDE.md → "Log every rename or breaking change in the session changelog".
+
+- **New reference surface `/trial-lab`** — four free-trial onboarding prototypes (variants A–D on
+  two booleans: verify-before-entry × ask-names-early) for MPUP-8667 / the "Free Trial flow
+  improvement" proposal. Design research, not a product surface; never linked from navigation.
+  Spec: `docs/trial-lab/trial-lab-ux-spec.md`.
+- **New store `useTrialLabStore`** (`src/stores/useTrialLab.ts`, key `mp.trial-lab.v1`) with its
+  own data module `src/stores/trialLabData.ts`. Isolated by design — it never writes to
+  `useAccounts` / `useUserProfile` / `usePlg` / `useOnboarding`, so a prototype signup cannot leak
+  a fake identity into the demo accounts. First store in the repo with cross-tab sync (`storage`
+  event + echo guard) and a non-persisted coarse clock for time-derived UI.
+- **Route meta `trialLab`** added to the `RouteMeta` declaration; `App.vue` `copilotAvailable`
+  now also checks it (the only App.vue change). `fullPage` already hides the AppBar, sidebar and
+  PLG banner on these routes.
+- **New components** `src/components/triallab/` — `TrialLabHeader`, `TrialVerifyForm`,
+  `TrialNameDrawer`, `TrialReviewerPanel`, each with a story under `Product/Trial Lab`.
+  Subfolder convention (not top-level `Mp*`), same as `plg/`, `layout/`, `notifications/`.
+- Vuetify gotcha recorded: a **full `v-otp-input` does not overwrite on typing** — a rejected code
+  must clear the boxes (TrialVerifyForm does). `MpFormDrawer`'s focus trap focuses the panel, so
+  a drawer whose first field should receive typing focuses it explicitly after two ticks.

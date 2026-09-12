@@ -1,0 +1,47 @@
+/* Shared editor | preview geometry for the three sample tasks. */
+.tl-task {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  gap: var(--mp-space-24);
+  align-items: start;
+}
+
+.tl-task__editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-component-field-sectionGap);
+  min-width: 0;
+}
+
+.tl-task__preview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-8);
+  min-width: 0;
+  position: sticky;
+  top: 0;
+}
+
+.tl-task__preview-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-8);
+}
+
+.tl-task__preview-label {
+  font-size: var(--mp-fontSize-11);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+@media (max-width: 960px) {
+  .tl-task {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tl-task__preview {
+    position: static;
+  }
+}

@@ -1,0 +1,77 @@
+/* Shared geometry for the centred onboarding cards (signup, verify, names, goal, preparing). */
+.tl-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--mp-space-24);
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.tl-stage--wide {
+  max-width: var(--mp-component-wizard-measure-md);
+}
+
+.tl-stage__steps {
+  justify-content: center;
+}
+
+.tl-stage__card {
+  width: 100%;
+  padding: var(--mp-component-card-paddingSpacious);
+}
+
+.tl-stage__title {
+  margin: 0 0 var(--mp-space-8);
+  font-size: var(--mp-fontSize-24);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  color: var(--text-primary);
+}
+
+.tl-stage__lede {
+  margin: 0 0 var(--mp-space-24);
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.tl-stage__fine {
+  margin: var(--mp-space-16) 0 0;
+  font-size: var(--mp-fontSize-12);
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.tl-stage__switch {
+  margin: var(--mp-space-24) 0 0;
+  text-align: center;
+  font-size: var(--mp-fontSize-13);
+  color: var(--text-secondary);
+}
+
+.tl-stage__switch a {
+  color: rgb(var(--v-theme-primary));
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.tl-stage__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mp-space-8);
+  margin-top: var(--mp-space-24);
+}
+
+.tl-stage__actions--end {
+  justify-content: flex-end;
+}
+
+@media (max-width: 640px) {
+  .tl-stage__card {
+    padding: var(--mp-component-card-padding);
+  }
+}
