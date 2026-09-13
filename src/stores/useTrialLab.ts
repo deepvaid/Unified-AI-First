@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import type { RouteLocationRaw } from 'vue-router'
+import { PLAN_CATALOG, type BillingCycle, type PlanTier, type PlgCloud } from './usePlg'
 import {
   VARIANTS,
   isTrialVariant,
@@ -69,6 +70,24 @@ export interface SampleDrafts {
   service: { reply: string; savedAt: string | null }
 }
 
+export type UpgradeStepKey = 'plan' | 'details' | 'security' | 'recovery' | 'review'
+
+export interface UpgradeProgress {
+  cloud: PlgCloud
+  tier: PlanTier | null
+  cycle: BillingCycle
+  /** Where the wizard resumes; leaving the flow preserves it. */
+  stepKey: UpgradeStepKey
+  completedAt: string | null
+}
+
+/** Account security lives outside `upgrade` so a completed setup is never repeated. Simulated only. */
+export interface SecurityState {
+  mfaEnabledAt: string | null
+  recoveryCodes: string[] | null
+  recoveryAcknowledgedAt: string | null
+}
+
 export type TrialEventName =
   | 'signup_completed'
   | 'verification_prompted'
@@ -86,7 +105,10 @@ export type TrialEventName =
   | 'upgrade_step_completed'
 
 /** Closed value type: no free strings, so an email, name, code or draft can't land in the log. */
-export type TrialEventValue = TrialVariant | TrialGoal | number | boolean | 'person' | 'workspace' | 'code' | 'link' | 'resend' | 'initial' | 'change-email'
+export type TrialEventValue =
+  | TrialVariant | TrialGoal | number | boolean
+  | 'person' | 'workspace' | 'code' | 'link' | 'resend' | 'initial' | 'change-email'
+  | UpgradeStepKey | PlanTier | BillingCycle | PlgCloud
 
 export interface TrialEvent {
   name: TrialEventName
@@ -123,6 +145,8 @@ export interface TrialRun {
   drafts: SampleDrafts
   events: TrialEvent[]
   scenarios: TrialScenarios
+  upgrade: UpgradeProgress | null
+  security: SecurityState
 }
 
 export type CodeResult = 'ok' | 'wrong' | 'expired' | 'used' | 'none'
@@ -189,6 +213,10 @@ function freshDrafts(): SampleDrafts {
   }
 }
 
+function freshSecurity(): SecurityState {
+  return { mfaEnabledAt: null, recoveryCodes: null, recoveryAcknowledgedAt: null }
+}
+
 function freshRun(variant: TrialVariant): TrialRun {
   const ws = freshWorkspace()
   return {
@@ -204,6 +232,8 @@ function freshRun(variant: TrialVariant): TrialRun {
     drafts: freshDrafts(),
     events: [],
     scenarios: { delayedEmail: false, expireNext: false, existingAccount: false, provisioningFails: false },
+    upgrade: null,
+    security: freshSecurity(),
   }
 }
 
@@ -223,7 +253,10 @@ function parseRuns(raw: string | null): Runs {
     const out: Runs = {}
     for (const v of VARIANTS) {
       const candidate = (parsed as Record<string, unknown>)[v.key]
-      if (isRun(candidate)) out[v.key] = candidate
+      if (isRun(candidate)) {
+        // Runs saved before Slice 2 have no upgrade/security fields — fill the defaults.
+        out[v.key] = { ...candidate, upgrade: candidate.upgrade ?? null, security: candidate.security ?? freshSecurity() }
+      }
     }
     return out
   } catch {
@@ -395,7 +428,18 @@ export const useTrialLabStore = defineStore('trialLab', () => {
     return !!activeWorkspace(variant)?.trialStartedAt
   }
 
+  function isUpgraded(variant: TrialVariant): boolean {
+    return !!run(variant)?.upgrade?.completedAt
+  }
+
+  function planDef(variant: TrialVariant) {
+    const u = run(variant)?.upgrade
+    if (!u?.tier) return null
+    return PLAN_CATALOG.find(c => c.cloud === u.cloud)?.plans.find(p => p.tier === u.tier) ?? null
+  }
+
   function trialLabel(variant: TrialVariant): string {
+    if (isUpgraded(variant)) return `${planDef(variant)?.name ?? 'Paid'} plan`
     if (!trialStarted(variant)) return 'Preview · Trial not started'
     const d = daysLeft(variant)
     return d === 1 ? 'Trial · 1 day left' : `Trial · ${d} days left`
@@ -675,6 +719,61 @@ export const useTrialLabStore = defineStore('trialLab', () => {
     return false
   }
 
+  // ── Upgrade (Slice 2) — all simulated: no payment, no real MFA enrolment ──────
+  const GOAL_CLOUD: Record<TrialGoal, PlgCloud> = { marketing: 'marketing', commerce: 'commerce', service: 'service' }
+
+  function startUpgrade(variant: TrialVariant) {
+    const r = run(variant)
+    if (!r) return
+    // A completed upgrade is final for the prototype — revisiting shows the done state, never a second checkout.
+    if (!r.upgrade) {
+      r.upgrade = { cloud: GOAL_CLOUD[r.goal ?? 'marketing'], tier: null, cycle: 'monthly', stepKey: 'plan', completedAt: null }
+    }
+    if (!r.upgrade.completedAt) r.stage = 'upgrade'
+  }
+
+  function setUpgradePlan(variant: TrialVariant, patch: Partial<Pick<UpgradeProgress, 'cloud' | 'tier' | 'cycle'>>) {
+    const u = run(variant)?.upgrade
+    if (u) Object.assign(u, patch)
+  }
+
+  function setUpgradeStep(variant: TrialVariant, key: UpgradeStepKey) {
+    const u = run(variant)?.upgrade
+    if (!u || u.stepKey === key) return
+    u.stepKey = key
+    recordEvent(variant, 'upgrade_step_viewed', { step: key })
+  }
+
+  function completeUpgradeStep(variant: TrialVariant, key: UpgradeStepKey) {
+    recordEvent(variant, 'upgrade_step_completed', { step: key })
+  }
+
+  function makeRecoveryCodes(): string[] {
+    const alphabet = 'abcdefghjkmnpqrstuvwxyz23456789'
+    const chunk = () => Array.from({ length: 4 }, () => alphabet[Math.floor(Math.random() * alphabet.length)]).join('')
+    return Array.from({ length: 8 }, () => `${chunk()}-${chunk()}`)
+  }
+
+  function enableMfa(variant: TrialVariant) {
+    const r = run(variant)
+    if (!r || r.security.mfaEnabledAt) return
+    r.security.mfaEnabledAt = nowIso()
+    r.security.recoveryCodes = makeRecoveryCodes()
+  }
+
+  function acknowledgeRecovery(variant: TrialVariant) {
+    const r = run(variant)
+    if (r && !r.security.recoveryAcknowledgedAt) r.security.recoveryAcknowledgedAt = nowIso()
+  }
+
+  function completeUpgrade(variant: TrialVariant) {
+    const r = run(variant)
+    if (!r?.upgrade || r.upgrade.completedAt) return
+    r.upgrade.completedAt = nowIso()
+    r.stage = 'home'
+    recordEvent(variant, 'upgrade_step_completed', { step: 'review', tier: r.upgrade.tier ?? 'build', cycle: r.upgrade.cycle })
+  }
+
   function resetRun(variant: TrialVariant) {
     const next = { ...runs.value }
     delete next[variant]
@@ -728,6 +827,15 @@ export const useTrialLabStore = defineStore('trialLab', () => {
     setScenario,
     expireCurrentChallenge,
     requestGated,
+    isUpgraded,
+    planDef,
+    startUpgrade,
+    setUpgradePlan,
+    setUpgradeStep,
+    completeUpgradeStep,
+    enableMfa,
+    acknowledgeRecovery,
+    completeUpgrade,
     resetRun,
     resetAll,
   }

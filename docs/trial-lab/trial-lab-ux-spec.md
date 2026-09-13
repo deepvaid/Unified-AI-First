@@ -4,8 +4,8 @@
 |---|---|
 | **Source** | Confluence [Free Trial flow improvement](https://maropost.atlassian.net/wiki/spaces/PROD/pages/6766919681) (Abhayjit Chauhan) · Jira [MPUP-8667](https://maropost.atlassian.net/browse/MPUP-8667) "Spike: Explore direct Free Trial Login with Email & Password" (epic MPUP-8629 "Improve Free trial conversion") |
 | **Prototype** | `/trial-lab` in this repo — `src/views/TrialLab/`, `src/components/triallab/`, `src/stores/useTrialLab.ts` + `src/stores/trialLabData.ts` |
-| **Status** | Slice 1 built (shell, signup → verify → prepare → names → goal → sample task → home). Slice 2 (upgrade with MFA + recovery codes) and Slice 3 (reviewer scenarios, event log) pending |
-| **Date** | 2026-09-12 |
+| **Status** | Slices 1–2 built (shell, signup → verify → prepare → names → goal → sample task → home; upgrade with MFA + recovery codes). Slice 3 (reviewer scenarios, name presets, event log) pending |
+| **Date** | 2026-09-13 |
 
 The Confluence proposal recommends **Option 2** — email → verify → hosted password → into the product, with profile, MFA and recovery codes deferred. This prototype takes that direction as a *hypothesis* and extends it through the user's **first useful action**, because getting more people through the form is an incomplete measure of success. Four variants isolate two decisions; everything else is deliberately identical.
 
@@ -75,7 +75,24 @@ Sample data is labelled *Sample*; no invented revenue or customers appear as the
 - **The 14-day trial starts only when the email is verified AND the workspace is ready**, exactly once. Before that the header chip reads *Preview · Trial not started*; after, *Trial · N days left*. Resend, refresh, rename and goal changes never restart it.
 
 ### Home
-Greeting (fallback-aware), workspace label (+ ID while unnamed), the three goal cards with draft status, and a *Next steps* list of the gated live actions (lock icon until verified).
+Greeting (fallback-aware), workspace label (+ ID while unnamed), the three goal cards with draft status, and a *Next steps* list of the gated live actions (lock icon until verified). After an upgrade the row reads *Manage your plan* with the plan name.
+
+### Upgrade (all variants converge here)
+`/trial-lab/:variant/upgrade`, an `MpWizardShell` + `useWizardSteps` flow. **The step list is frozen on entry** and omits what is already satisfied, so nothing is asked twice:
+
+| Step | Shown when | Rule |
+|---|---|---|
+| Choose plan | always | Monthly / annual segmented toggle; tiers from the real `PLAN_CATALOG` for the goal's Cloud, priced with `planPrice`. Selection persists immediately. |
+| Your details | a personal name **or** workspace label is missing | Only the missing field(s), both required here — fallback labels never count as supplied. |
+| Secure account | two-step sign-in not yet enabled | Authenticator mock (QR placeholder + manual key + 6-digit confirm). Simulated; any six digits confirm. |
+| Recovery codes | codes not yet acknowledged | Eight one-time codes, Copy, Download `.txt`, and an explicit "I've saved these" checkbox gating Continue. |
+| Review | always | Plan, billing, workspace, account holder, security status → **Confirm upgrade** → simulated success. Nothing is charged. |
+
+- Leaving mid-flow preserves the selected plan and the step; re-entry resumes there.
+- Security state (`mfaEnabledAt`, `recoveryAcknowledgedAt`) lives outside the upgrade record, so a later visit never repeats it.
+- A completed upgrade is final for the prototype: revisiting shows the success state; the header chip reads *{Plan} plan*.
+- Unverified users are routed home with the verify dialog open ("Upgrading starts real billing, so we confirm it's you first.").
+- Events: `upgrade_step_viewed {step}` and `upgrade_step_completed {step}`; the final completion also carries `tier` and `cycle`.
 
 ## 3. Measurement
 
@@ -87,7 +104,7 @@ Report per variant: first-useful-action completion per signup · time from accou
 
 ## 4. Implementation notes
 
-- Routes: `/trial-lab` (index) and `/trial-lab/:variant(a|b|c|d)/{signup|verify|verify-link/:token|preparing|names|goal|task/:goal|home}`, all `meta: { fullPage: true, trialLab: true }`. The variant is in the path so every variant has a direct link and refresh/Back follow the URL. A per-child guard blocks only illegal *forward* states.
+- Routes: `/trial-lab` (index) and `/trial-lab/:variant(a|b|c|d)/{signup|verify|verify-link/:token|preparing|names|goal|task/:goal|home|upgrade}`, all `meta: { fullPage: true, trialLab: true }`. The variant is in the path so every variant has a direct link and refresh/Back follow the URL. A per-child guard blocks only illegal *forward* states.
 - Store `useTrialLabStore` (`mp.trial-lab.v1`): one run per variant; the coarse clock (`tick`) is not persisted; provisioning readiness is committed from elapsed time; persistence is a deep watch with an echo guard, and a single `storage` listener syncs other tabs. It never writes to `useAccounts`, `useUserProfile`, `usePlg` or `useOnboarding`.
 - Outside the new files only two edits: the `trialLab` route-meta flag and the copilot `copilotAvailable` check in `App.vue`.
 - Components: `TrialLabHeader`, `TrialVerifyForm`, `TrialNameDrawer`, `TrialReviewerPanel` (stories under *Product / Trial Lab*). Screens are route views composing `MpWizardSteps`, `MpFormGrid`, `MpFormField` + `v-otp-input`, `MpOptionCard`, `MpWizardShell`, `MpEmptyState`, `MpListRow`, `MpBanner`, `MpDialog`, `MpChatBubble`, `StorefrontPreview`.

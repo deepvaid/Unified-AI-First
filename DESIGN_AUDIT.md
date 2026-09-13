@@ -1850,3 +1850,11 @@ Per CLAUDE.md → "Log every rename or breaking change in the session changelog"
 - Vuetify gotcha recorded: a **full `v-otp-input` does not overwrite on typing** — a rejected code
   must clear the boxes (TrialVerifyForm does). `MpFormDrawer`'s focus trap focuses the panel, so
   a drawer whose first field should receive typing focuses it explicitly after two ticks.
+- **Slice 2 (2026-09-13) — upgrade wizard.** `TrialUpgradeView` composes `MpWizardShell` +
+  `useWizardSteps` with a step list frozen on entry (details / security / recovery steps drop out
+  when already satisfied). Store gains `upgrade` + `security` on each run (older stored runs are
+  back-filled on parse), `startUpgrade` / `setUpgradePlan` / `setUpgradeStep` / `enableMfa` /
+  `acknowledgeRecovery` / `completeUpgrade`, and the header chip reads `{Plan} plan` once done.
+  Read-only import of `PLAN_CATALOG` / `planPrice` from `usePlg` — the PLG store itself is untouched.
+  Gotcha: the bottom-right toast stack sits over a wizard footer's primary button for its lifetime;
+  the click still lands once the toast is dismissed, but automated clicks by coordinate miss.

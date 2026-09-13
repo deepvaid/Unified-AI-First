@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import MpListRow from '@/components/MpListRow.vue'
 import MpOptionCard from '@/components/MpOptionCard.vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
@@ -16,6 +17,7 @@ import { useTrialRun } from './useTrialRun'
  * "Next steps" rows are the live actions that stay gated until verification.
  */
 const toast = useToast()
+const router = useRouter()
 const { store, variant, run, workspace, isVerified, arrive } = useTrialRun()
 
 onMounted(() => arrive('home'))
@@ -32,11 +34,25 @@ const goals = computed(() => GOALS.map(g => ({
   savedAt: run.value?.drafts[g.key].savedAt ?? null,
 })))
 
-function tryAction(label: string) {
-  if (store.requestGated(variant.value, GATE_REASON)) {
-    if (label === 'Upgrade your plan') toast.info('Upgrade flow arrives in the next slice')
-    else toast.success(`Simulated: ${label}`)
+const upgraded = computed(() => store.isUpgraded(variant.value))
+
+const actions = computed(() => GATED_ACTIONS.map(a => (
+  a.key === 'upgrade' && upgraded.value
+    ? { ...a, label: 'Manage your plan', description: `You’re on the ${store.planDef(variant.value)?.name ?? 'paid'} plan.`, icon: 'badge-check' }
+    : a
+)))
+
+function tryAction(key: string, label: string) {
+  if (!store.requestGated(variant.value, GATE_REASON)) return
+  if (key === 'upgrade') {
+    if (upgraded.value) toast.info('Simulated: plan management')
+    else {
+      store.startUpgrade(variant.value)
+      void router.push({ name: 'TrialUpgrade', params: { variant: variant.value } })
+    }
+    return
   }
+  toast.success(`Simulated: ${label}`)
 }
 </script>
 
@@ -76,13 +92,13 @@ function tryAction(label: string) {
       />
       <v-card flat border rounded="lg" class="tl-home__actions">
         <MpListRow
-          v-for="a in GATED_ACTIONS"
+          v-for="a in actions"
           :key="a.key"
           variant="divided"
           :title="a.label"
           :eyebrow="a.description"
           clickable
-          @click="tryAction(a.label)"
+          @click="tryAction(a.key, a.label)"
         >
           <template #lead>
             <v-avatar size="32" color="primary" variant="tonal" rounded="lg">

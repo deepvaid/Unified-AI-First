@@ -22,7 +22,7 @@ const toast = useToast()
 const { store, variant, run, workspace, isVerified, inPreview, trialLabel, trialStarted } = useTrialRun()
 
 const showHeader = computed(() => !!run.value?.account.signedUpAt)
-const fill = computed(() => route.name === 'TrialTask')
+const fill = computed(() => route.name === 'TrialTask' || route.name === 'TrialUpgrade')
 
 const workspaces = computed(() => (run.value?.workspaces ?? []).map(ws => ({
   id: ws.id,
@@ -205,7 +205,7 @@ function openInbox() {
   padding: var(--mp-layout-shellInsetBlock) var(--mp-layout-shellInsetInline);
 }
 
-/* The task screen hosts a standalone MpWizardShell that scrolls its own body. */
+/* The task and upgrade screens host a standalone MpWizardShell that scrolls its own body. */
 .tl-shell__main--fill {
   display: flex;
   flex-direction: column;

@@ -43,6 +43,11 @@ function guardStage(to: RouteLocationNormalized): RouteLocationRaw | true {
   if (to.name === 'TrialPreparing') return true
   if (!store.workspaceReady(variant)) return { name: 'TrialPreparing', params }
   if (to.name === 'TrialNames' && !cfg.askNamesEarly) return { name: 'TrialGoal', params }
+  if (to.name === 'TrialUpgrade' && !verified) {
+    // Upgrading is a live action: send the user home with the verify dialog open.
+    store.requestGated(variant, 'Upgrading starts real billing, so we confirm it’s you first.')
+    return { name: 'TrialHome', params }
+  }
   return true
 }
 
@@ -80,6 +85,7 @@ export const trialLabRoutes: RouteRecordRaw[] = [
       { path: 'goal', name: 'TrialGoal', component: view('TrialGoalView'), beforeEnter: guardStage },
       { path: 'task/:goal(marketing|commerce|service)', name: 'TrialTask', component: view('TrialTaskView'), beforeEnter: guardStage },
       { path: 'home', name: 'TrialHome', component: view('TrialHomeView'), beforeEnter: guardStage },
+      { path: 'upgrade', name: 'TrialUpgrade', component: view('TrialUpgradeView'), beforeEnter: guardStage },
     ],
   },
 ]
