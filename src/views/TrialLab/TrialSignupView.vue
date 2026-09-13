@@ -8,12 +8,19 @@ import { useTrialRun } from './useTrialRun'
 import { stepLabelsFor } from './trialLabSteps'
 
 /**
- * Signup — work email + password only. The password never leaves this
- * component: it lives in a local ref and is cleared after the simulated
- * submit, so it cannot reach the store, the URL or the event log.
+ * Signup. Minimal (A–D): work email + password only. Classic (E, the control):
+ * the conventional one-page form — first/last name, work email, company,
+ * website, password — matching today's public baseline. The password never
+ * leaves this component: it lives in a local ref and is cleared after the
+ * simulated submit, so it cannot reach the store, the URL or the event log.
  */
-const { store, variant, config, arrive, advanceFrom } = useTrialRun()
+const { store, variant, config, workspace, arrive, advanceFrom } = useTrialRun()
 
+const classic = computed(() => config.value.signupForm === 'classic')
+const firstName = ref('')
+const lastName = ref('')
+const company = ref('')
+const website = ref('')
 const email = ref('')
 const password = ref('')
 const showPassword = ref(false)
@@ -23,6 +30,9 @@ const existing = ref(false)
 
 const emailError = computed(() => (submitted.value ? validateWorkEmail(email.value) : ''))
 const passwordError = computed(() => (submitted.value ? validatePassword(password.value) : ''))
+const firstNameError = computed(() => (submitted.value && classic.value && !firstName.value.trim() ? 'First name is required' : ''))
+const lastNameError = computed(() => (submitted.value && classic.value && !lastName.value.trim() ? 'Last name is required' : ''))
+const companyError = computed(() => (submitted.value && classic.value && !company.value.trim() ? 'Company name is required' : ''))
 const steps = computed(() => stepLabelsFor(config.value))
 
 onMounted(() => {
@@ -32,7 +42,7 @@ onMounted(() => {
 
 async function submit() {
   submitted.value = true
-  if (emailError.value || passwordError.value) return
+  if (emailError.value || passwordError.value || firstNameError.value || lastNameError.value || companyError.value) return
   submitting.value = true
   try {
     await new Promise(r => setTimeout(r, 500))
@@ -40,6 +50,11 @@ async function submit() {
     if (result === 'existing') {
       existing.value = true
       return
+    }
+    if (classic.value) {
+      // The classic form collects these up front, so they are real supplied values, not fallbacks.
+      store.setPersonName(variant.value, `${firstName.value.trim()} ${lastName.value.trim()}`)
+      if (workspace.value) store.renameWorkspace(variant.value, workspace.value.id, company.value)
     }
     await advanceFrom('signup', true)
   } finally {
@@ -59,7 +74,7 @@ function resumeExisting() {
   <div class="tl-stage">
     <MpWizardSteps :steps="steps" :current="1" class="tl-stage__steps" />
 
-    <v-card flat border rounded="lg" class="tl-stage__card">
+    <v-card flat border rounded="lg" class="tl-stage__card" :class="{ 'tl-stage__card--wide': classic }">
       <h1 class="tl-stage__title">Start your free trial</h1>
       <p class="tl-stage__lede">14 days · Marketing, Commerce and Service Cloud · no credit card.</p>
 
@@ -72,18 +87,48 @@ function resumeExisting() {
       </MpAlert>
 
       <form novalidate @submit.prevent="submit">
-        <MpFormGrid :cols="1">
+        <MpFormGrid :cols="classic ? 2 : 1">
+          <template v-if="classic">
+            <v-text-field
+              v-model="firstName"
+              label="First name *"
+              autocomplete="given-name"
+              :error-messages="firstNameError ? [firstNameError] : []"
+              autofocus
+            />
+            <v-text-field
+              v-model="lastName"
+              label="Last name *"
+              autocomplete="family-name"
+              :error-messages="lastNameError ? [lastNameError] : []"
+            />
+            <v-text-field
+              v-model="company"
+              label="Company name *"
+              autocomplete="organization"
+              :error-messages="companyError ? [companyError] : []"
+            />
+            <v-text-field
+              v-model="website"
+              label="Website"
+              type="url"
+              autocomplete="url"
+              placeholder="https://"
+            />
+          </template>
           <v-text-field
             v-model="email"
+            :class="{ 'mp-form-grid__full': classic }"
             label="Work email"
             type="email"
             autocomplete="email"
             placeholder="you@company.com"
             :error-messages="emailError ? [emailError] : []"
-            autofocus
+            :autofocus="!classic"
           />
           <v-text-field
             v-model="password"
+            :class="{ 'mp-form-grid__full': classic }"
             label="Password"
             :type="showPassword ? 'text' : 'password'"
             autocomplete="new-password"
@@ -116,3 +161,9 @@ function resumeExisting() {
 </template>
 
 <style scoped src="./trialStage.css"></style>
+<style scoped>
+/* The classic control form is two columns wide; the minimal form keeps the narrow measure. */
+.tl-stage:has(.tl-stage__card--wide) {
+  max-width: 680px;
+}
+</style>

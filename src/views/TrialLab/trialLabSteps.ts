@@ -6,7 +6,7 @@ import type { VariantConfig } from '@/stores/trialLabData'
  * its way, and the steps row says so.
  */
 export function stepLabelsFor(config: VariantConfig): string[] {
-  const steps = ['Create account']
+  const steps = [config.signupForm === 'classic' ? 'Your details' : 'Create account']
   if (config.verifyBeforeEntry) steps.push('Verify email')
   if (config.askNamesEarly) steps.push('About you')
   steps.push('Choose a goal', 'First task')
@@ -15,7 +15,7 @@ export function stepLabelsFor(config: VariantConfig): string[] {
 
 export function stepIndexFor(config: VariantConfig, step: 'signup' | 'verify' | 'names' | 'goal' | 'task'): number {
   const labels = stepLabelsFor(config)
-  const map = { signup: 'Create account', verify: 'Verify email', names: 'About you', goal: 'Choose a goal', task: 'First task' }
+  const map = { signup: config.signupForm === 'classic' ? 'Your details' : 'Create account', verify: 'Verify email', names: 'About you', goal: 'Choose a goal', task: 'First task' }
   const idx = labels.indexOf(map[step])
   return idx === -1 ? 1 : idx + 1
 }

@@ -72,8 +72,9 @@ function resetRun() {
         {{ config.verifyBeforeEntry ? 'Verify first' : 'Preview first' }}
       </v-chip>
       <v-chip size="small" variant="outlined" :prepend-icon="config.askNamesEarly ? 'user-pen' : 'clock'">
-        {{ config.askNamesEarly ? 'Names early' : 'Names later' }}
+        {{ config.signupForm === 'classic' ? 'Names at signup' : config.askNamesEarly ? 'Names early' : 'Names later' }}
       </v-chip>
+      <v-chip v-if="config.signupForm === 'classic'" size="small" variant="outlined" prepend-icon="layout-list">Classic form</v-chip>
     </div>
 
     <section class="tl-reviewer__section">

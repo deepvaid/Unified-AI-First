@@ -55,13 +55,14 @@ const rows = computed(() => VARIANTS.map((v) => {
           :key="v.key"
           :title="`${v.key.toUpperCase()} — ${v.label}`"
           :description="v.hypothesis"
-          :icon="v.verifyBeforeEntry ? 'shield-check' : 'eye'"
+          :icon="v.signupForm === 'classic' ? 'layout-list' : v.verifyBeforeEntry ? 'shield-check' : 'eye'"
           :to="{ name: 'TrialLabEntry', params: { variant: v.key } }"
           :heading-level="2"
         >
           <div class="d-flex flex-wrap ga-1 mt-3">
             <v-chip size="x-small" variant="tonal" label>{{ v.verifyBeforeEntry ? 'Verify first' : 'Preview first' }}</v-chip>
-            <v-chip size="x-small" variant="tonal" label>{{ v.askNamesEarly ? 'Names early' : 'Names later' }}</v-chip>
+            <v-chip size="x-small" variant="tonal" label>{{ v.signupForm === 'classic' ? 'Names at signup' : v.askNamesEarly ? 'Names early' : 'Names later' }}</v-chip>
+            <v-chip v-if="v.signupForm === 'classic'" size="x-small" variant="tonal" label>Classic form</v-chip>
           </div>
           <p class="tl-index__tradeoff">Watch for: {{ v.tradeOff }}</p>
         </MpOptionCard>

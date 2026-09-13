@@ -19,10 +19,11 @@ The Confluence proposal recommends **Option 2** — email → verify → hosted 
 | **B** Verify, then explore *(recommended first release)* | yes | no | signup → verify → goal → task; names via contextual edits |
 | **C** Preview, then personalize | no | yes | signup → verify prompt → *explore while you wait* → about you → goal → task |
 | **D** Preview, then explore | no | no | signup → verify prompt → *explore while you wait* → goal → task |
+| **E** Classic form, then verify *(control)* | yes | at signup | one-page SaaS form (first/last name, work email, company, website, password) → verify → goal → task |
 
-Variant configuration is two booleans (`verifyBeforeEntry`, `askNamesEarly`) in `trialLabData.ts`; the screens read them, so there is one implementation, not four.
+Variant configuration is two booleans (`verifyBeforeEntry`, `askNamesEarly`) plus `signupForm: 'minimal' | 'classic'` in `trialLabData.ts`; the screens read them, so there is one implementation, not five. **E is the control**: today's public form, kept so the minimal variants are measured against the real baseline rather than against each other only. Its name and company fields are real supplied values (they feed the header and the real-app account), so the "About you" screen and the neutral fallbacks never apply to it.
 
-**Hypotheses (to test, not conversion predictions):** B is the shortest verified route; D tests whether earlier access lifts first-task completion enough to justify the preview complexity; A/C test whether early personalisation aids orientation or merely adds a screen.
+**Hypotheses (to test, not conversion predictions):** E shows what the current six-field form costs; B is the shortest verified route; D tests whether earlier access lifts first-task completion enough to justify the preview complexity; A/C test whether early personalisation aids orientation or merely adds a screen.
 
 ## 2. Shared rules (identical across variants)
 

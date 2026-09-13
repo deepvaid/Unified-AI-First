@@ -63,7 +63,7 @@ export const trialLabRoutes: RouteRecordRaw[] = [
     meta: META,
   },
   {
-    path: '/trial-lab/:variant(a|b|c|d)',
+    path: '/trial-lab/:variant(a|b|c|d|e)',
     component: view('TrialLabLayout'),
     meta: META,
     children: [

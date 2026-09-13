@@ -1869,3 +1869,7 @@ Per CLAUDE.md → "Log every rename or breaking change in the session changelog"
   `profile.firstName` into `DvLandingHero` instead of the hard-coded default "Ross". Documented
   exception to the trial-lab store's isolation rule: `linkAccount` / `endSession` / `resetRun` touch
   `useAccounts` + `usePlg` (lazily) to create and clean up the real trial account.
+- **Variant E — classic form control (2026-09-13).** `VariantConfig.signupForm: 'minimal' | 'classic'`;
+  `/trial-lab/e` renders the conventional one-page SaaS form (first/last name, work email, company,
+  website, password) in a two-column `MpFormGrid`, then the same verify → goal → task path. Names
+  and company from the form are stored as supplied values. Route param widened to `(a|b|c|d|e)`.

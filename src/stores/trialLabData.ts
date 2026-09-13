@@ -7,7 +7,7 @@
  * Consumed by `useTrialLab.ts` and `src/views/TrialLab/*`.
  */
 
-export type TrialVariant = 'a' | 'b' | 'c' | 'd'
+export type TrialVariant = 'a' | 'b' | 'c' | 'd' | 'e'
 export type TrialGoal = 'marketing' | 'commerce' | 'service'
 export type TrialStage = 'signup' | 'verify' | 'preparing' | 'names' | 'goal' | 'task' | 'home' | 'upgrade'
 
@@ -22,6 +22,12 @@ export interface VariantConfig {
   verifyBeforeEntry: boolean
   /** A/C show the optional names screen during onboarding; B/D offer names only through contextual edits. */
   askNamesEarly: boolean
+  /**
+   * 'minimal' = work email + password (the Option-2 proposal). 'classic' = the conventional
+   * one-page SaaS form with name, company, website and password — today's public baseline,
+   * kept as the control variant.
+   */
+  signupForm: 'minimal' | 'classic'
 }
 
 export const VARIANTS: VariantConfig[] = [
@@ -32,6 +38,7 @@ export const VARIANTS: VariantConfig[] = [
     tradeOff: 'One more screen before the first useful action.',
     verifyBeforeEntry: true,
     askNamesEarly: true,
+    signupForm: 'minimal',
   },
   {
     key: 'b',
@@ -40,6 +47,7 @@ export const VARIANTS: VariantConfig[] = [
     tradeOff: 'Names stay empty until the user reaches for them.',
     verifyBeforeEntry: true,
     askNamesEarly: false,
+    signupForm: 'minimal',
   },
   {
     key: 'c',
@@ -48,6 +56,7 @@ export const VARIANTS: VariantConfig[] = [
     tradeOff: 'Some users personalise a workspace they never activate.',
     verifyBeforeEntry: false,
     askNamesEarly: true,
+    signupForm: 'minimal',
   },
   {
     key: 'd',
@@ -56,6 +65,16 @@ export const VARIANTS: VariantConfig[] = [
     tradeOff: 'Some users finish exploring without ever verifying.',
     verifyBeforeEntry: false,
     askNamesEarly: false,
+    signupForm: 'minimal',
+  },
+  {
+    key: 'e',
+    label: 'Classic form, then verify',
+    hypothesis: 'The familiar full form (name, company, website, password) is the control — today’s baseline, with verification kept.',
+    tradeOff: 'Six fields before anything happens; names and company are collected whether or not they are needed yet.',
+    verifyBeforeEntry: true,
+    askNamesEarly: false,
+    signupForm: 'classic',
   },
 ]
 
