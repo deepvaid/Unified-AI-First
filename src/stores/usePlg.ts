@@ -56,6 +56,8 @@ export interface TrialSignupPayload {
   email: string
   companyName: string
   companyUrl?: string
+  /** Display name the person supplied (Trial Lab). Falls back to first + last; null keeps the account unnamed. */
+  ownerName?: string | null
 }
 
 export interface PlgEntitlements {
@@ -678,6 +680,8 @@ export const usePlgStore = defineStore('plg', () => {
       .map(w => w[0]!.toUpperCase())
       .slice(0, 2)
       .join('') || 'MP'
+    const fullName = [payload.firstName, payload.lastName].map(s => s.trim()).filter(Boolean).join(' ')
+    const ownerName = payload.ownerName !== undefined ? payload.ownerName : (fullName || null)
     accounts.addAccount({
       id,
       name: payload.companyName,
@@ -685,6 +689,8 @@ export const usePlgStore = defineStore('plg', () => {
       color: ACCOUNT_COLORS[accounts.accounts.length % ACCOUNT_COLORS.length]!,
       // Retail Cloud is excluded: MRC has no free trial, so it is an upgrade path only.
       subscriptions: ['commerce', 'marketing', 'analytics', 'service', 'davinci'],
+      // The AppBar reads this instead of the demo identity, so a fresh trial looks like its owner.
+      owner: { name: ownerName, email: payload.email, role: 'Owner' },
     })
     states.value[id] = {
       mode: 'trial',

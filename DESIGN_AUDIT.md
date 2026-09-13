@@ -1858,3 +1858,14 @@ Per CLAUDE.md → "Log every rename or breaking change in the session changelog"
   Read-only import of `PLAN_CATALOG` / `planPrice` from `usePlg` — the PLG store itself is untouched.
   Gotcha: the bottom-right toast stack sits over a wizard footer's primary button for its lifetime;
   the click still lands once the toast is dismissed, but automated clicks by coordinate miss.
+- **Real-app handoff (2026-09-13, branch `feature/trial-lab`).** `Account.owner?: { name | null,
+  email, role }` added to `useAccounts` (persists in `mp.accounts.v1`) plus `removeAccount(id)`;
+  `usePlg.createTrialAccount` sets `owner` (payload gains `ownerName?`). **AppBar identity is now
+  computed from `activeAccount.owner`**, falling back to the demo values when absent, so the seed
+  accounts are pixel-identical; the avatar falls back to a neutral `user` icon when no name exists
+  (initials are never derived from an email). While `useTrialLabStore.session` is set the switcher
+  lists only that account and the user menu gains a *Trial Lab* group (Back to Trial Lab · Exit
+  trial session). *Start free trial* in the user menu → `/trial-lab/b`. `MpDaVinciBot` now passes
+  `profile.firstName` into `DvLandingHero` instead of the hard-coded default "Ross". Documented
+  exception to the trial-lab store's isolation rule: `linkAccount` / `endSession` / `resetRun` touch
+  `useAccounts` + `usePlg` (lazily) to create and clean up the real trial account.

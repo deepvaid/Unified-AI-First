@@ -3,8 +3,8 @@
 | | |
 |---|---|
 | **Source** | Confluence [Free Trial flow improvement](https://maropost.atlassian.net/wiki/spaces/PROD/pages/6766919681) (Abhayjit Chauhan) · Jira [MPUP-8667](https://maropost.atlassian.net/browse/MPUP-8667) "Spike: Explore direct Free Trial Login with Email & Password" (epic MPUP-8629 "Improve Free trial conversion") |
-| **Prototype** | `/trial-lab` in this repo — `src/views/TrialLab/`, `src/components/triallab/`, `src/stores/useTrialLab.ts` + `src/stores/trialLabData.ts` |
-| **Status** | Slices 1–2 built (shell, signup → verify → prepare → names → goal → sample task → home; upgrade with MFA + recovery codes). Slice 3 (reviewer scenarios, name presets, event log) pending |
+| **Prototype** | `/trial-lab` on branch `feature/trial-lab` — `src/views/TrialLab/`, `src/components/triallab/`, `src/stores/useTrialLab.ts` + `src/stores/trialLabData.ts`; Vercel preview per branch |
+| **Status** | Slices 1–2 built (onboarding variants; upgrade with MFA + recovery codes) **plus the real-app handoff** (the trial user enters the actual app as a real trial account). Slice 3 (reviewer scenarios, name presets, event log) pending |
 | **Date** | 2026-09-13 |
 
 The Confluence proposal recommends **Option 2** — email → verify → hosted password → into the product, with profile, MFA and recovery codes deferred. This prototype takes that direction as a *hypothesis* and extends it through the user's **first useful action**, because getting more people through the form is an incomplete measure of success. Four variants isolate two decisions; everything else is deliberately identical.
@@ -76,6 +76,33 @@ Sample data is labelled *Sample*; no invented revenue or customers appear as the
 
 ### Home
 Greeting (fallback-aware), workspace label (+ ID while unnamed), the three goal cards with draft status, and a *Next steps* list of the gated live actions (lock icon until verified). After an upgrade the row reads *Manage your plan* with the plan name.
+
+### Entering the real app
+The first sample task ends with **Open your workspace**. It performs the same handoff the existing PLG
+signup does (`SignupView.enterMaropost`), in `src/views/TrialLab/useEnterWorkspace.ts`:
+
+1. `plg.createTrialAccount({ email, companyName: <workspace label>, ownerName })` → a real account
+   (`Account.owner = { name | null, email, role: 'Owner' }`) with a 14-day trialing PLG state.
+2. `accounts.switchTo(id)` → `onboarding.reset()` → `onboarding.setGoal(goal)` — in that order, because
+   the onboarding store seeds "lived-in" statuses for any unknown account the moment it becomes active.
+   Lab goal → Get started plan: marketing → marketing, commerce → store, service → service.
+3. Profile first name = the supplied name, else "there" (Da Vinci greets "Hi there," — never a guess from the email).
+4. The run is linked to the account and a **trial session** starts (`mp.trial-lab.v1.session`).
+5. Lands on **Get started** (`/accounts/:id/get-started`) with the real AppBar and sidebar.
+
+While a trial session is active the **AppBar identity follows the account**: name = supplied name or the
+email, neutral avatar (initials only from a supplied name), role *Owner*, and the account switcher lists
+**only** the trial workspace. Seed accounts have no `owner` and fall back to the demo identity unchanged.
+
+- **Only verified users enter.** C/D preview users see *Verify email to open your workspace*, which opens
+  the verify dialog; the label flips once verified. Preview access covers the sample tasks, not the product.
+- **Exit:** profile menu → *Trial Lab* → **Exit trial session** removes the trial account, its PLG state and
+  its onboarding progress, and returns to the demo account. *Reset this run* in the lab does the same for
+  a linked run. Re-entering an already-linked run switches back without creating a second account.
+- **Entry on this branch:** the AppBar's *Start free trial* opens variant B; `/signup` (the orb flow) is
+  untouched and reachable by URL.
+- **Known gap:** the dashboard renders global demo data (revenue, orders) for any account, including a
+  5-second-old trial. Get started is therefore the landing page; a zero-data dashboard is follow-up work.
 
 ### Upgrade (all variants converge here)
 `/trial-lab/:variant/upgrade`, an `MpWizardShell` + `useWizardSteps` flow. **The step list is frozen on entry** and omits what is already satisfied, so nothing is asked twice:

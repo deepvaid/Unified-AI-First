@@ -10,6 +10,7 @@ import { useToast } from '@/composables/useToast'
 import { formatAgo } from '@/composables/useRelativeTime'
 import { GATED_ACTIONS, GATE_REASON, GOALS } from '@/stores/trialLabData'
 import { useTrialRun } from './useTrialRun'
+import { useEnterWorkspace } from './useEnterWorkspace'
 
 /**
  * Home — where every variant converges after the first task. Greeting and
@@ -19,6 +20,7 @@ import { useTrialRun } from './useTrialRun'
 const toast = useToast()
 const router = useRouter()
 const { store, variant, run, workspace, isVerified, arrive } = useTrialRun()
+const { enterWorkspace } = useEnterWorkspace()
 
 onMounted(() => arrive('home'))
 
@@ -62,6 +64,16 @@ function tryAction(key: string, label: string) {
       <template #actions>
         <v-btn v-if="!store.hasPersonName(variant)" variant="text" class="text-none" prepend-icon="user-pen" @click="store.ui.nameDrawer = 'person'">Add your name</v-btn>
         <v-btn v-if="!store.hasWorkspaceName(variant)" variant="outlined" class="text-none" prepend-icon="pencil" @click="store.ui.nameDrawer = 'workspace'">Name this workspace</v-btn>
+        <v-btn
+          v-if="isVerified"
+          color="primary"
+          variant="flat"
+          class="text-none"
+          append-icon="arrow-up-right"
+          @click="enterWorkspace(variant)"
+        >
+          {{ run?.accountId ? 'Back to your workspace' : 'Open your workspace' }}
+        </v-btn>
       </template>
     </MpPageHeader>
 

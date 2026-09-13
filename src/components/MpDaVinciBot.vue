@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useUserProfile } from '@/stores/useUserProfile'
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
@@ -59,6 +60,8 @@ interface MpDaVinciBotProps {
   headerless?: boolean
 }
 
+// Greeting follows the signed-in profile (a trial owner without a name is greeted as "there").
+const profile = useUserProfile()
 const props = withDefaults(defineProps<MpDaVinciBotProps>(), {
   initialChatMode: false,
   initialMessages: () => [],
@@ -1150,6 +1153,7 @@ function onComposerKeydown(event: KeyboardEvent) {
     <div v-if="!isVoiceMode" ref="bodyEl" class="dv-panel__body">
       <!-- Landing state -->
       <DvLandingHero
+        :name="profile.firstName"
         v-if="!chatMode"
         class="dv-landing"
         :suggestions="landingSuggestions"

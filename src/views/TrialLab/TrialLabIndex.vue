@@ -25,6 +25,7 @@ const rows = computed(() => VARIANTS.map((v) => {
     stageLabel,
     status: run?.account.verifiedAt ? 'verified' : run?.account.signedUpAt ? 'unverified' : 'inactive',
     trial: run?.account.signedUpAt ? store.trialLabel(v.key) : '',
+    inApp: run?.accountId ? `In app · account #${run.accountId}` : '',
   }
 }))
 </script>
@@ -43,8 +44,9 @@ const rows = computed(() => VARIANTS.map((v) => {
       </MpPageHeader>
 
       <MpAlert tone="info" title="Reference, not a product surface">
-        Every flow here is simulated — no email is sent, no account is created, and nothing touches the demo accounts.
-        Use the Reviewer controls (flask icon) inside a flow to open the simulated inbox.
+        Every flow here is simulated — no email is sent and nothing is billed. Use the Reviewer controls (flask icon)
+        inside a flow to open the simulated inbox. After the first sample task, <strong>Open your workspace</strong> drops
+        you into the real app as that trial user; use the profile menu → <strong>Exit trial session</strong> to come back.
       </MpAlert>
 
       <div class="tl-index__grid">
@@ -76,6 +78,7 @@ const rows = computed(() => VARIANTS.map((v) => {
         >
           <template #trailing>
             <div class="d-flex align-center ga-2">
+              <span v-if="v.inApp" class="tl-index__meta">{{ v.inApp }}</span>
               <span class="tl-index__meta">{{ v.trial }}</span>
               <MpStatusChip :status="v.status" type="general" size="sm" />
             </div>

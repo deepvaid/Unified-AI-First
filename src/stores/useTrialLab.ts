@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import type { RouteLocationRaw } from 'vue-router'
-import { PLAN_CATALOG, type BillingCycle, type PlanTier, type PlgCloud } from './usePlg'
+import { PLAN_CATALOG, usePlgStore, type BillingCycle, type PlanTier, type PlgCloud } from './usePlg'
+import { useAccountsStore } from './useAccounts'
 import {
   VARIANTS,
   isTrialVariant,
@@ -101,6 +102,7 @@ export type TrialEventName =
   | 'name_prompt_shown'
   | 'name_saved'
   | 'gated_action_blocked'
+  | 'workspace_entered'
   | 'upgrade_step_viewed'
   | 'upgrade_step_completed'
 
@@ -147,6 +149,14 @@ export interface TrialRun {
   scenarios: TrialScenarios
   upgrade: UpgradeProgress | null
   security: SecurityState
+  /** The real app account this run entered (see useEnterWorkspace), or null while still in the lab. */
+  accountId: string | null
+}
+
+/** The trial-lab run currently impersonating a real app account — drives the AppBar identity and switcher. */
+export interface TrialSession {
+  variant: TrialVariant
+  accountId: string
 }
 
 export type CodeResult = 'ok' | 'wrong' | 'expired' | 'used' | 'none'
@@ -158,6 +168,7 @@ export type ChallengeState = 'none' | 'delayed' | 'pending' | 'expired' | 'used'
 // ---------------------------------------------------------------------------
 
 const STORAGE_KEY = 'mp.trial-lab.v1'
+const SESSION_KEY = 'mp.trial-lab.v1.session'
 const TRIAL_DAYS = 14
 const DAY_MS = 86_400_000
 const CODE_TTL_MS = 10 * 60_000
@@ -234,6 +245,7 @@ function freshRun(variant: TrialVariant): TrialRun {
     scenarios: { delayedEmail: false, expireNext: false, existingAccount: false, provisioningFails: false },
     upgrade: null,
     security: freshSecurity(),
+    accountId: null,
   }
 }
 
@@ -255,7 +267,7 @@ function parseRuns(raw: string | null): Runs {
       const candidate = (parsed as Record<string, unknown>)[v.key]
       if (isRun(candidate)) {
         // Runs saved before Slice 2 have no upgrade/security fields — fill the defaults.
-        out[v.key] = { ...candidate, upgrade: candidate.upgrade ?? null, security: candidate.security ?? freshSecurity() }
+        out[v.key] = { ...candidate, upgrade: candidate.upgrade ?? null, security: candidate.security ?? freshSecurity(), accountId: candidate.accountId ?? null }
       }
     }
     return out
@@ -295,6 +307,28 @@ let storageListenerInstalled = false
 
 export const useTrialLabStore = defineStore('trialLab', () => {
   const runs = ref<Runs>(readStored())
+
+  /** Which run (if any) is currently inside the real app as its trial account. */
+  const session = ref<TrialSession | null>(readSession())
+
+  function readSession(): TrialSession | null {
+    if (typeof window === 'undefined') return null
+    try {
+      const parsed = JSON.parse(window.localStorage.getItem(SESSION_KEY) ?? 'null')
+      return parsed && isTrialVariant(parsed.variant) && typeof parsed.accountId === 'string' ? parsed : null
+    } catch {
+      return null
+    }
+  }
+  watch(session, (next) => {
+    if (typeof window === 'undefined') return
+    try {
+      if (next) window.localStorage.setItem(SESSION_KEY, JSON.stringify(next))
+      else window.localStorage.removeItem(SESSION_KEY)
+    } catch {
+      /* ignore storage quota / disabled errors */
+    }
+  })
 
   /** Coarse clock for time-derived UI (provisioning progress, delayed inbox). Never persisted. */
   const tick = ref(Date.now())
@@ -774,13 +808,57 @@ export const useTrialLabStore = defineStore('trialLab', () => {
     recordEvent(variant, 'upgrade_step_completed', { step: 'review', tier: r.upgrade.tier ?? 'build', cycle: r.upgrade.cycle })
   }
 
+  // ── Real-app handoff ─────────────────────────────────────────────────────────
+  // The one deliberate exception to this store's isolation: entering the real
+  // app creates a genuine account (via usePlg.createTrialAccount, in
+  // useEnterWorkspace) and leaving removes it again. Both stores are resolved
+  // lazily here so the lab never instantiates them just by existing.
+
+  function linkAccount(variant: TrialVariant, accountId: string) {
+    const r = run(variant)
+    if (!r) return
+    r.accountId = accountId
+    session.value = { variant, accountId }
+  }
+
+  /** Removes everything a trial account left behind in the real stores. */
+  function cleanupAccount(accountId: string) {
+    useAccountsStore().removeAccount(accountId)
+    usePlgStore().resetAccount(accountId)
+    if (typeof window !== 'undefined') {
+      try {
+        window.localStorage.removeItem(`mp.onboarding.v2:${accountId}`)
+        window.localStorage.removeItem(`mp.davinci.setup-onboarding.v1:${accountId}`)
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+
+  /** Leave the real app: back to the demo identity. Removing the account keeps reviewer runs from piling up. */
+  function endSession(options: { removeAccount?: boolean } = {}) {
+    const s = session.value
+    if (!s) return
+    if (options.removeAccount) {
+      cleanupAccount(s.accountId)
+      const r = run(s.variant)
+      if (r) r.accountId = null
+    }
+    session.value = null
+  }
+
   function resetRun(variant: TrialVariant) {
+    const linked = runs.value[variant]?.accountId
+    if (linked) cleanupAccount(linked)
+    if (session.value?.variant === variant) session.value = null
     const next = { ...runs.value }
     delete next[variant]
     runs.value = next
   }
 
   function resetAll() {
+    for (const r of Object.values(runs.value)) if (r?.accountId) cleanupAccount(r.accountId)
+    session.value = null
     runs.value = {}
   }
 
@@ -788,6 +866,9 @@ export const useTrialLabStore = defineStore('trialLab', () => {
     runs,
     tick,
     ui,
+    session,
+    linkAccount,
+    endSession,
     run,
     config,
     activeWorkspace,

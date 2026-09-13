@@ -7,6 +7,7 @@ import { useToast } from '@/composables/useToast'
 import { formatAgo } from '@/composables/useRelativeTime'
 import { SAMPLE_TICKET, goalDef, isTrialGoal, type TrialGoal } from '@/stores/trialLabData'
 import { useTrialRun } from './useTrialRun'
+import { useEnterWorkspace } from './useEnterWorkspace'
 import MarketingTask, { type MarketingDraft } from './tasks/MarketingTask.vue'
 import CommerceTask, { type CommerceDraft } from './tasks/CommerceTask.vue'
 import ServiceTask, { type ServiceDraft } from './tasks/ServiceTask.vue'
@@ -18,7 +19,15 @@ import ServiceTask, { type ServiceDraft } from './tasks/ServiceTask.vue'
  */
 const route = useRoute()
 const toast = useToast()
-const { store, variant, run, arrive, goTo } = useTrialRun()
+const { store, variant, run, isVerified, arrive, goTo } = useTrialRun()
+const { enterWorkspace } = useEnterWorkspace()
+
+const OPEN_REASON = 'Your workspace holds real settings and data, so we confirm it’s you before opening it. Your sample work is kept either way.'
+
+function openWorkspace() {
+  if (isVerified.value) void enterWorkspace(variant.value)
+  else store.ui.verifyDialog = { reason: OPEN_REASON }
+}
 
 const goal = computed<TrialGoal>(() => {
   const raw = Array.isArray(route.params.goal) ? route.params.goal[0] : route.params.goal
@@ -116,11 +125,13 @@ function save() {
         icon="circle-check"
         emphasis="prominent"
         title="Draft saved"
-        :description="`Your sample ${def.artifact} is saved to this workspace. Keep going, or try another Cloud — your work stays put.`"
-        action-label="Continue"
-        action-icon="arrow-right"
+        :description="isVerified
+          ? `Your sample ${def.artifact} is saved. Open your workspace to keep going in the real product, or try another Cloud first — your work stays put.`
+          : `Your sample ${def.artifact} is saved. Verify your email to open your workspace, or try another Cloud first — your work stays put.`"
+        :action-label="isVerified ? 'Open your workspace' : 'Verify email to open your workspace'"
+        :action-icon="isVerified ? 'arrow-up-right' : 'shield-check'"
         :heading-level="2"
-        @action="goTo('home')"
+        @action="openWorkspace"
       />
       <div class="tl-task-view__success-actions">
         <v-btn variant="text" class="text-none" @click="justSaved = false">Keep editing</v-btn>
