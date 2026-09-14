@@ -11,7 +11,7 @@ import { useTrialRun } from './useTrialRun'
  * the user what happened; the original tab advances on its own.
  */
 const route = useRoute()
-const { store, variant, run } = useTrialRun()
+const { store, variant, base, run } = useTrialRun()
 
 const result = ref<LinkResult | null>(null)
 
@@ -20,7 +20,7 @@ onMounted(() => {
   result.value = store.consumeLink(variant.value, String(raw ?? ''))
 })
 
-const continueTo = computed(() => store.entryRouteFor(variant.value))
+const continueTo = computed(() => store.entryRouteFor(variant.value, base.value))
 
 const state = computed(() => {
   switch (result.value) {
@@ -66,7 +66,7 @@ function act() {
     <v-card v-else flat border rounded="lg" class="tl-stage__card">
       <MpEmptyState icon="mail-question" title="Nothing to verify here" description="Start a trial first, then use the link from the verification email." />
       <div class="tl-link__actions">
-        <v-btn color="primary" variant="flat" class="text-none" :to="{ name: 'TrialLabEntry', params: { variant } }">Go to the trial</v-btn>
+        <v-btn color="primary" variant="flat" class="text-none" :to="base">Go to the trial</v-btn>
       </div>
     </v-card>
   </div>

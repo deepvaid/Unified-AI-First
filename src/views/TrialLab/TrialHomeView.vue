@@ -19,7 +19,7 @@ import { useEnterWorkspace } from './useEnterWorkspace'
  */
 const toast = useToast()
 const router = useRouter()
-const { store, variant, run, workspace, isVerified, arrive } = useTrialRun()
+const { store, variant, base, run, workspace, isVerified, pathFor, arrive } = useTrialRun()
 const { enterWorkspace } = useEnterWorkspace()
 
 onMounted(() => arrive('home'))
@@ -50,7 +50,7 @@ function tryAction(key: string, label: string) {
     if (upgraded.value) toast.info('Simulated: plan management')
     else {
       store.startUpgrade(variant.value)
-      void router.push({ name: 'TrialUpgrade', params: { variant: variant.value } })
+      void router.push(pathFor('upgrade'))
     }
     return
   }
@@ -87,7 +87,7 @@ function tryAction(key: string, label: string) {
           :description="g.description"
           :icon="g.icon"
           :heading-level="3"
-          :to="{ name: 'TrialTask', params: { variant, goal: g.key } }"
+          :to="`${base}/task/${g.key}`"
         >
           <template #title-append>
             <MpStatusChip :status="g.savedAt ? 'draft' : 'pending'" type="general" size="sm" class="ml-auto" />

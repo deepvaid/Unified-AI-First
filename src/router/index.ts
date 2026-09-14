@@ -23,6 +23,11 @@ declare module 'vue-router' {
     templateFill?: boolean
     /** Trial Lab prototype: full-page lab shell that also keeps the copilot drawer closed. */
     trialLab?: boolean
+    /** Trial journey plumbing — see src/views/TrialLab/trialLabRoutes.ts. */
+    trialFamily?: 'lab' | 'signup'
+    trialBase?: string
+    trialVariant?: string
+    trialStage?: string
   }
 }
 
@@ -390,7 +395,8 @@ const routes: RouteRecordRaw[] = [
   { path: '/accounts/:accountId/notifications', name: 'Notifications', component: () => import('@/views/Notifications/NotificationsView.vue') },
 
   // PLG — trial signup, plan selection, mock hosted checkout
-  { path: '/signup', name: 'Signup', component: () => import('@/views/Plg/SignupView.vue'), meta: { fullPage: true } },
+  // The orb / one-question-at-a-time signup, kept for comparison. `/signup` is now the real trial journey (trialLabRoutes).
+  { path: '/signup-legacy', name: 'SignupLegacy', component: () => import('@/views/Plg/SignupView.vue'), meta: { fullPage: true } },
   { path: '/accounts/:accountId/plans', name: 'Plans', component: () => import('@/views/Plg/PlansView.vue') },
   { path: '/accounts/:accountId/checkout', name: 'Checkout', component: () => import('@/views/Plg/CheckoutView.vue'), meta: { fullPage: true } },
 

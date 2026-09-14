@@ -4,17 +4,20 @@ import MpOptionCard from '@/components/MpOptionCard.vue'
 import MpWizardSteps from '@/components/MpWizardSteps.vue'
 import { GOALS, type TrialGoal } from '@/stores/trialLabData'
 import { useTrialRun } from './useTrialRun'
+import { useEnterWorkspace } from './useEnterWorkspace'
 import { stepIndexFor, stepLabelsFor } from './trialLabSteps'
 
 /**
  * Choose a goal — identical in all four variants so the comparison isolates
  * the onboarding decisions. Each goal maps to one clickable sample task.
  */
-const { store, variant, run, config, arrive, advanceFrom } = useTrialRun()
+const { store, variant, run, config, family, arrive, advanceFrom } = useTrialRun()
+const { enterWorkspace } = useEnterWorkspace()
+const realJourney = computed(() => family.value === 'signup')
 
 const selected = ref<TrialGoal | null>(null)
-const steps = computed(() => stepLabelsFor(config.value))
-const current = computed(() => stepIndexFor(config.value, 'goal'))
+const steps = computed(() => stepLabelsFor(config.value, family.value))
+const current = computed(() => stepIndexFor(config.value, 'goal', family.value))
 
 onMounted(() => {
   arrive('goal')
@@ -28,7 +31,9 @@ function savedLabel(goal: TrialGoal): string | null {
 function proceed() {
   if (!selected.value) return
   store.setGoal(variant.value, selected.value)
-  void advanceFrom('goal')
+  // The real journey opens the workspace here; the lab runs the sample task first.
+  if (realJourney.value) void enterWorkspace(variant.value)
+  else void advanceFrom('goal')
 }
 </script>
 
@@ -38,7 +43,7 @@ function proceed() {
 
     <v-card flat border rounded="lg" class="tl-stage__card">
       <h1 class="tl-stage__title">What would you like to try first?</h1>
-      <p class="tl-stage__lede">Each takes a couple of minutes with sample data. You can explore the others afterwards.</p>
+      <p class="tl-stage__lede">{{ realJourney ? 'We’ll shape your Get started plan around it. You can change this later.' : 'Each takes a couple of minutes with sample data. You can explore the others afterwards.' }}</p>
 
       <div class="tl-goal__grid" role="group" aria-label="Goals">
         <MpOptionCard
@@ -46,7 +51,7 @@ function proceed() {
           :key="goal.key"
           :selected="selected === goal.key"
           :title="goal.title"
-          :description="goal.description"
+          :description="realJourney ? goal.cloud : goal.description"
           :icon="goal.icon"
           :heading-level="2"
           class="h-100"
@@ -60,7 +65,7 @@ function proceed() {
       </div>
 
       <div class="tl-stage__actions tl-stage__actions--end">
-        <v-btn color="primary" variant="flat" class="text-none" append-icon="arrow-right" :disabled="!selected" @click="proceed">Continue</v-btn>
+        <v-btn color="primary" variant="flat" class="text-none" :append-icon="realJourney ? 'arrow-up-right' : 'arrow-right'" :disabled="!selected" @click="proceed">{{ realJourney ? 'Open my workspace' : 'Continue' }}</v-btn>
       </div>
     </v-card>
   </div>

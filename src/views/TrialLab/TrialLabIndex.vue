@@ -49,6 +49,13 @@ const rows = computed(() => VARIANTS.map((v) => {
         you into the real app as that trial user; use the profile menu → <strong>Exit trial session</strong> to come back.
       </MpAlert>
 
+      <MpAlert tone="success" title="The actual journey lives at /signup" icon="rocket">
+        <a href="/signup">/signup</a> is the classic one-page form and <a href="/signup/minimal">/signup/minimal</a> the
+        email + password form — both verify, prepare the workspace, ask for a goal and open the real app. The
+        one-question-at-a-time orb flow is kept at <a href="/signup-legacy">/signup-legacy</a>. The cards below are the
+        lab variants, which add the sample-task step.
+      </MpAlert>
+
       <div class="tl-index__grid">
         <MpOptionCard
           v-for="v in rows"

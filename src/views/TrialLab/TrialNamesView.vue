@@ -10,12 +10,12 @@ import { stepIndexFor, stepLabelsFor } from './trialLabSteps'
  * saves whichever are filled, Skip keeps the neutral defaults. Nothing here
  * is required and nothing is inferred from the email address.
  */
-const { store, variant, config, workspace, arrive, advanceFrom } = useTrialRun()
+const { store, variant, config, family, workspace, arrive, advanceFrom } = useTrialRun()
 
 const personName = ref('')
 const workspaceName = ref('')
-const steps = computed(() => stepLabelsFor(config.value))
-const current = computed(() => stepIndexFor(config.value, 'names'))
+const steps = computed(() => stepLabelsFor(config.value, family.value))
+const current = computed(() => stepIndexFor(config.value, 'names', family.value))
 
 onMounted(() => {
   arrive('names')

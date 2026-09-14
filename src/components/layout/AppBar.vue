@@ -652,7 +652,7 @@ function onSearchKeydown(event: KeyboardEvent) {
               <button
                 type="button"
                 class="um-item um-start-trial"
-                @click="$router.push({ name: 'TrialLabEntry', params: { variant: 'b' } }); closeUserMenu()"
+                @click="$router.push('/signup'); closeUserMenu()"
               >
                 <v-avatar size="28" variant="tonal" color="primary" class="flex-shrink-0 um-item__avatar">
                   <v-icon size="15">plus</v-icon>

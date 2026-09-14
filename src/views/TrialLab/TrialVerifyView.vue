@@ -14,12 +14,12 @@ import { stepIndexFor, stepLabelsFor } from './trialLabSteps'
  * advances this one.
  */
 const toast = useToast()
-const { store, variant, run, config, isVerified, arrive, advanceFrom } = useTrialRun()
+const { store, variant, run, config, family, isVerified, arrive, advanceFrom } = useTrialRun()
 
 const lastResult = ref<CodeResult | null>(null)
 const submitting = ref(false)
-const steps = computed(() => stepLabelsFor(config.value))
-const current = computed(() => stepIndexFor(config.value, config.value.verifyBeforeEntry ? 'verify' : 'signup'))
+const steps = computed(() => stepLabelsFor(config.value, family.value))
+const current = computed(() => stepIndexFor(config.value, config.value.verifyBeforeEntry ? 'verify' : 'signup', family.value))
 
 onMounted(() => arrive('verify'))
 

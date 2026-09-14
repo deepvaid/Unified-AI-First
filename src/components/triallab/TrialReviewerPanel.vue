@@ -15,7 +15,13 @@ import type { TrialVariant } from '@/stores/trialLabData'
  * as customer UI, while every child keeps the standard surface colour pair.
  * Slice 1: variant summary, simulated inbox, reset this run.
  */
-const props = defineProps<{ variant: TrialVariant }>()
+const props = withDefaults(defineProps<{
+  variant: TrialVariant
+  /** 'lab' under /trial-lab, 'signup' for the real journey at /signup. */
+  family?: 'lab' | 'signup'
+  /** URL base this run navigates under. */
+  base?: string
+}>(), { family: 'lab', base: undefined })
 const emit = defineEmits<{ close: [] }>()
 
 const store = useTrialLabStore()
@@ -23,6 +29,7 @@ const router = useRouter()
 const toast = useToast()
 
 const config = computed(() => store.config(props.variant))
+const base = computed(() => props.base ?? `/trial-lab/${props.variant}`)
 const run = computed(() => store.run(props.variant))
 const inbox = computed(() => store.visibleInbox(props.variant))
 const pendingCount = computed(() => (run.value?.inbox.length ?? 0) - inbox.value.length)
@@ -39,7 +46,7 @@ function isCurrent(challengeId: string) {
 }
 
 function linkFor(token: string) {
-  return router.resolve({ name: 'TrialVerifyLink', params: { variant: props.variant, token } })
+  return router.resolve({ path: `${base.value}/verify-link/${token}` })
 }
 
 async function copyCode(code: string) {
@@ -53,7 +60,7 @@ async function copyCode(code: string) {
 
 function resetRun() {
   store.resetRun(props.variant)
-  router.replace({ name: 'TrialSignup', params: { variant: props.variant } })
+  router.replace(props.family === 'lab' ? `${base.value}/signup` : base.value)
 }
 </script>
 
@@ -61,8 +68,8 @@ function resetRun() {
   <aside class="tl-reviewer" aria-label="Reviewer controls">
     <div class="tl-reviewer__head">
       <div>
-        <span class="tl-reviewer__eyebrow">Reviewer controls</span>
-        <div class="tl-reviewer__title">Variant {{ variant.toUpperCase() }} — {{ config.label }}</div>
+        <span class="tl-reviewer__eyebrow">{{ family === 'signup' ? 'Prototype controls' : 'Reviewer controls' }}</span>
+        <div class="tl-reviewer__title">{{ family === 'signup' ? config.label : `Variant ${variant.toUpperCase()} — ${config.label}` }}</div>
       </div>
       <v-btn icon="x" variant="text" size="small" aria-label="Close reviewer controls" @click="emit('close')" />
     </div>
@@ -136,7 +143,7 @@ function resetRun() {
     </section>
 
     <div class="tl-reviewer__foot">
-      <v-btn variant="text" class="text-none" prepend-icon="layout-grid" :to="{ name: 'TrialLabIndex' }">All variants</v-btn>
+      <v-btn variant="text" class="text-none" prepend-icon="layout-grid" :to="{ name: 'TrialLabIndex' }">{{ family === 'signup' ? 'Trial Lab' : 'All variants' }}</v-btn>
       <v-btn variant="outlined" class="text-none" prepend-icon="rotate-ccw" @click="confirmReset = true">Reset this run</v-btn>
     </div>
 

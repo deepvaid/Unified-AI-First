@@ -14,7 +14,7 @@ import { stepLabelsFor } from './trialLabSteps'
  * leaves this component: it lives in a local ref and is cleared after the
  * simulated submit, so it cannot reach the store, the URL or the event log.
  */
-const { store, variant, config, workspace, arrive, advanceFrom } = useTrialRun()
+const { store, variant, config, family, workspace, arrive, advanceFrom } = useTrialRun()
 
 const classic = computed(() => config.value.signupForm === 'classic')
 const firstName = ref('')
@@ -33,7 +33,7 @@ const passwordError = computed(() => (submitted.value ? validatePassword(passwor
 const firstNameError = computed(() => (submitted.value && classic.value && !firstName.value.trim() ? 'First name is required' : ''))
 const lastNameError = computed(() => (submitted.value && classic.value && !lastName.value.trim() ? 'Last name is required' : ''))
 const companyError = computed(() => (submitted.value && classic.value && !company.value.trim() ? 'Company name is required' : ''))
-const steps = computed(() => stepLabelsFor(config.value))
+const steps = computed(() => stepLabelsFor(config.value, family.value))
 
 onMounted(() => {
   store.ensureRun(variant.value)

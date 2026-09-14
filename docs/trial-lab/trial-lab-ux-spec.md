@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Source** | Confluence [Free Trial flow improvement](https://maropost.atlassian.net/wiki/spaces/PROD/pages/6766919681) (Abhayjit Chauhan) · Jira [MPUP-8667](https://maropost.atlassian.net/browse/MPUP-8667) "Spike: Explore direct Free Trial Login with Email & Password" (epic MPUP-8629 "Improve Free trial conversion") |
-| **Prototype** | `/trial-lab` on branch `feature/trial-lab` — `src/views/TrialLab/`, `src/components/triallab/`, `src/stores/useTrialLab.ts` + `src/stores/trialLabData.ts`; Vercel preview per branch |
+| **Prototype** | **Real journey at `/signup`** (classic form) and `/signup/minimal` (email + password); comparison lab at `/trial-lab` — branch `feature/trial-lab` — `src/views/TrialLab/`, `src/components/triallab/`, `src/stores/useTrialLab.ts` + `src/stores/trialLabData.ts`; Vercel preview per branch |
 | **Status** | Slices 1–2 built (onboarding variants; upgrade with MFA + recovery codes) **plus the real-app handoff** (the trial user enters the actual app as a real trial account). Slice 3 (reviewer scenarios, name presets, event log) pending |
 | **Date** | 2026-09-13 |
 
@@ -77,6 +77,17 @@ Sample data is labelled *Sample*; no invented revenue or customers appear as the
 
 ### Home
 Greeting (fallback-aware), workspace label (+ ID while unnamed), the three goal cards with draft status, and a *Next steps* list of the gated live actions (lock icon until verified). After an upgrade the row reads *Manage your plan* with the plan name.
+
+### The real journey at `/signup`
+The app's own signup URL now runs the trial journey with real-app URLs and no lab framing:
+`/signup` (classic form, variant E) or `/signup/minimal` (email + password, variant B) → `/signup/verify`
+→ `/signup/preparing` → `/signup/goal` → **Open my workspace** → Get started inside the product. The
+sample task is a lab-only hypothesis and is skipped here; the goal chooser stays because it shapes the
+Get started plan. The one-question-at-a-time orb flow is kept at `/signup-legacy`. Both families share
+one screen set: children navigate by path under `meta.trialBase`, and each child declares its
+`meta.trialStage` so the guard never depends on route names (`src/views/TrialLab/trialLabRoutes.ts`).
+The simulated inbox is still the only source of the code — the verify screen's "open the inbox" link
+and the flask button open it, titled *Prototype controls* on this path.
 
 ### Entering the real app
 The first sample task ends with **Open your workspace**. It performs the same handoff the existing PLG

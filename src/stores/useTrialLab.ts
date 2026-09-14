@@ -285,15 +285,24 @@ function readStored(): Runs {
   }
 }
 
-const STAGE_ROUTE: Record<TrialStage, string> = {
-  signup: 'TrialSignup',
-  verify: 'TrialVerify',
-  preparing: 'TrialPreparing',
-  names: 'TrialNames',
-  goal: 'TrialGoal',
-  task: 'TrialTask',
-  home: 'TrialHome',
-  upgrade: 'TrialUpgrade',
+/**
+ * URL segment per stage. Screens navigate by path under a base — `/trial-lab/:variant`
+ * for the lab, `/signup` or `/signup/minimal` for the real journey — so one screen set
+ * serves both URL families without route-name collisions.
+ */
+const STAGE_SEGMENT: Record<TrialStage, string> = {
+  signup: 'signup',
+  verify: 'verify',
+  preparing: 'preparing',
+  names: 'names',
+  goal: 'goal',
+  task: 'task',
+  home: 'home',
+  upgrade: 'upgrade',
+}
+
+export function labBaseFor(variant: TrialVariant): string {
+  return `/trial-lab/${variant}`
 }
 
 // Module-level so HMR re-running the store setup neither doubles the listener
@@ -530,19 +539,19 @@ export const useTrialLabStore = defineStore('trialLab', () => {
     }
   }
 
-  function routeFor(variant: TrialVariant, stage: TrialStage): RouteLocationRaw {
+  function routeFor(variant: TrialVariant, stage: TrialStage, base: string = labBaseFor(variant)): RouteLocationRaw {
     const r = run(variant)
-    if (stage === 'task') {
-      return { name: 'TrialTask', params: { variant, goal: r?.goal ?? 'marketing' } }
-    }
-    return { name: STAGE_ROUTE[stage], params: { variant } }
+    if (stage === 'task') return { path: `${base}/task/${r?.goal ?? 'marketing'}` }
+    // In the real-journey families the form IS the base path (/signup); in the lab it is a child.
+    if (stage === 'signup' && !base.startsWith('/trial-lab/')) return { path: base }
+    return { path: `${base}/${STAGE_SEGMENT[stage]}` }
   }
 
   /** Where a direct entry to `/trial-lab/:variant` should land. Pure read — never creates a run. */
-  function entryRouteFor(variant: TrialVariant): RouteLocationRaw {
+  function entryRouteFor(variant: TrialVariant, base: string = labBaseFor(variant)): RouteLocationRaw {
     const r = run(variant)
-    if (!r || !r.account.signedUpAt) return { name: 'TrialSignup', params: { variant } }
-    return routeFor(variant, r.stage)
+    if (!r || !r.account.signedUpAt) return routeFor(variant, 'signup', base)
+    return routeFor(variant, r.stage, base)
   }
 
   // ── Writes ─────────────────────────────────────────────────────────────────

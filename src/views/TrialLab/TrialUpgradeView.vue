@@ -23,7 +23,7 @@ import { useTrialRun } from './useTrialRun'
  * rather than repeated, and leaving preserves the selected plan and step.
  */
 const toast = useToast()
-const { store, variant, run, workspace, arrive, goTo: goToStage } = useTrialRun()
+const { store, variant, base, run, workspace, arrive, goTo: goToStage } = useTrialRun()
 
 interface StepDef { key: UpgradeStepKey; label: string }
 
@@ -195,7 +195,7 @@ function leave() {
     :subtitle="done ? 'Simulated — no payment was taken.' : undefined"
     measure="md"
     :hint="done ? undefined : hint"
-    :back-to="{ name: 'TrialHome', params: { variant } }"
+    :back-to="`${base}/home`"
     @select="goTo"
   >
     <template v-if="done">

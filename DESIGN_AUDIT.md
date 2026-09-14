@@ -1873,3 +1873,9 @@ Per CLAUDE.md → "Log every rename or breaking change in the session changelog"
   `/trial-lab/e` renders the conventional one-page SaaS form (first/last name, work email, company,
   website, password) in a two-column `MpFormGrid`, then the same verify → goal → task path. Names
   and company from the form are stored as supplied values. Route param widened to `(a|b|c|d|e)`.
+- **Real journey at `/signup` (2026-09-14).** Route name `Signup` now points at the trial journey
+  (classic form, variant E); `/signup/minimal` runs variant B; the orb flow moved to
+  `/signup-legacy` (`SignupLegacy`). Trial screens navigate by **path under `meta.trialBase`**
+  (`routeFor(variant, stage, base)`), children declare `meta.trialStage`, and the guard switches on
+  stage rather than name — one screen set, three URL families. New `RouteMeta` keys `trialFamily`,
+  `trialBase`, `trialVariant`, `trialStage`. AppBar "Start free trial" → `/signup`.

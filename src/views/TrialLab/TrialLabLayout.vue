@@ -19,7 +19,7 @@ import { useTrialRun } from './useTrialRun'
  */
 const route = useRoute()
 const toast = useToast()
-const { store, variant, run, workspace, isVerified, inPreview, trialLabel, trialStarted } = useTrialRun()
+const { store, variant, family, base, run, workspace, isVerified, inPreview, trialLabel, trialStarted } = useTrialRun()
 
 const showHeader = computed(() => !!run.value?.account.signedUpAt)
 const fill = computed(() => route.name === 'TrialTask' || route.name === 'TrialUpgrade')
@@ -131,6 +131,8 @@ function openInbox() {
       v-if="store.ui.reviewerOpen"
       class="tl-shell__aside"
       :variant="variant"
+      :family="family"
+      :base="base"
       @close="store.ui.reviewerOpen = false"
     />
 

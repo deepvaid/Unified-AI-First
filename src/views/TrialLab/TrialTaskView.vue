@@ -19,7 +19,7 @@ import ServiceTask, { type ServiceDraft } from './tasks/ServiceTask.vue'
  */
 const route = useRoute()
 const toast = useToast()
-const { store, variant, run, isVerified, arrive, goTo } = useTrialRun()
+const { store, variant, base, run, isVerified, arrive, goTo } = useTrialRun()
 const { enterWorkspace } = useEnterWorkspace()
 
 const OPEN_REASON = 'Your workspace holds real settings and data, so we confirm it’s you before opening it. Your sample work is kept either way.'
@@ -112,7 +112,7 @@ function save() {
     :subtitle="`${def.cloud} · sample data — nothing is sent or published`"
     measure="lg"
     :hint="hint"
-    :back-to="{ name: 'TrialGoal', params: { variant } }"
+    :back-to="`${base}/goal`"
   >
     <template #actions>
       <v-chip v-if="saved && !justSaved" size="small" variant="tonal" color="success" prepend-icon="circle-check">
