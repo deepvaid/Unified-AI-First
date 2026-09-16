@@ -18,6 +18,13 @@ if (typeof window !== 'undefined') {
   window.addEventListener('unhandledrejection', (event) => {
     console.error('[Unhandled Promise Rejection]', event.reason)
   })
+  // After a deploy, a tab that still holds the previous index.html asks for route
+  // chunks whose hashed files no longer exist, and the routed view renders blank.
+  // Vite raises this event on that failure; one reload picks up the new manifest.
+  window.addEventListener('vite:preloadError', (event) => {
+    event.preventDefault()
+    window.location.reload()
+  })
 }
 
 registerPlugins(app)

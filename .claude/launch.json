@@ -4,22 +4,44 @@
     {
       "name": "Main App",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
       "port": 5173,
       "autoPort": true
     },
     {
       "name": "Storybook",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "storybook"],
+      "runtimeArgs": [
+        "run",
+        "storybook"
+      ],
       "port": 6006,
       "autoPort": true
     },
     {
       "name": "Design Kit",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "design-kit:dev"],
+      "runtimeArgs": [
+        "run",
+        "design-kit:dev"
+      ],
       "port": 5174
+    },
+    {
+      "name": "Preview build",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "preview",
+        "--",
+        "--port",
+        "4173",
+        "--strictPort"
+      ],
+      "port": 4173
     }
   ]
 }
