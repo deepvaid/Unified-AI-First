@@ -1879,3 +1879,11 @@ Per CLAUDE.md → "Log every rename or breaking change in the session changelog"
   (`routeFor(variant, stage, base)`), children declare `meta.trialStage`, and the guard switches on
   stage rather than name — one screen set, three URL families. New `RouteMeta` keys `trialFamily`,
   `trialBase`, `trialVariant`, `trialStage`. AppBar "Start free trial" → `/signup`.
+- **Production incident + fix (2026-09-16).** `/signup` and `/trial-lab` were blank on the live site
+  and then reloaded endlessly. Cause: the Trial Lab routes loaded views with a *variable* dynamic
+  import (`` import(`./${name}.vue`) ``), which only the dev server can resolve — the build never
+  bundled the views and the browser fetched `/assets/TrialLabIndex.vue` (404). The
+  `vite:preloadError` → `location.reload()` guard added the same day turned that 404 into a loop.
+  Fixed with a static import map in `trialLabRoutes.ts` and a once-per-URL, session-scoped reload
+  guard (`src/main.ts`) that falls back to a toast. **Rule:** no variable dynamic imports; smoke-test
+  lazy routes on `vite preview`, not only `vite dev`.

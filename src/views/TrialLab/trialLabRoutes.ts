@@ -64,11 +64,30 @@ function guardStage(to: RouteLocationNormalized): RouteLocationRaw | true {
   return true
 }
 
-function view(name: string) {
-  return () => import(`./${name}.vue`)
+// Static lazy imports — a variable `import(`./${name}.vue`)` is only resolvable
+// by the dev server; the production build never bundled the views and the
+// browser asked for `/assets/TrialLabIndex.vue` (404). Every view is listed here
+// so Rollup emits a chunk for it and a typo fails type-check.
+const VIEWS = {
+  TrialLabIndex: () => import('./TrialLabIndex.vue'),
+  TrialLabLayout: () => import('./TrialLabLayout.vue'),
+  TrialSignupView: () => import('./TrialSignupView.vue'),
+  TrialVerifyView: () => import('./TrialVerifyView.vue'),
+  TrialVerifyLinkView: () => import('./TrialVerifyLinkView.vue'),
+  TrialPreparingView: () => import('./TrialPreparingView.vue'),
+  TrialNamesView: () => import('./TrialNamesView.vue'),
+  TrialGoalView: () => import('./TrialGoalView.vue'),
+  TrialTaskView: () => import('./TrialTaskView.vue'),
+  TrialHomeView: () => import('./TrialHomeView.vue'),
+  TrialUpgradeView: () => import('./TrialUpgradeView.vue'),
+} as const
+type ViewName = keyof typeof VIEWS
+
+function view(name: ViewName) {
+  return VIEWS[name]
 }
 
-function stageRecord(path: string, stage: GuardStage, component: string, name?: string): RouteRecordRaw {
+function stageRecord(path: string, stage: GuardStage, component: ViewName, name?: string): RouteRecordRaw {
   const rec: RouteRecordRaw = { path, component: view(component), meta: { trialStage: stage } }
   if (name) rec.name = name
   // The second-tab landing consumes the token and reports — it is never guarded.
