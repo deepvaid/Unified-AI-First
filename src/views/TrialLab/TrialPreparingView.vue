@@ -3,6 +3,7 @@ import { computed, onMounted, watch } from 'vue'
 import MpAlert from '@/components/MpAlert.vue'
 import MpListRow from '@/components/MpListRow.vue'
 import { useTrialRun } from './useTrialRun'
+import { useEnterWorkspace } from './useEnterWorkspace'
 
 /**
  * Preparing — the workspace-provisioning state. Progress is derived from the
@@ -11,7 +12,8 @@ import { useTrialRun } from './useTrialRun'
  * header flips to "Trial · 14 days left" the moment the workspace is ready,
  * if the email is already verified.
  */
-const { store, variant, workspace, arrive, advanceFrom } = useTrialRun()
+const { store, variant, family, workspace, arrive, advanceFrom } = useTrialRun()
+const { enterWorkspace } = useEnterWorkspace()
 
 const STEPS = ['Creating your workspace', 'Applying trial limits', 'Loading sample data']
 const STEP_MS = 800
@@ -29,7 +31,11 @@ onMounted(() => {
 })
 
 watch(status, (s) => {
-  if (s === 'ready') void advanceFrom('preparing', true)
+  if (s !== 'ready') return
+  // The real journey ends here: straight into the app, where the welcome dialog
+  // asks for name and workspace. The lab continues to its own next screen.
+  if (family.value === 'signup') void enterWorkspace(variant.value, { landing: 'get-started' })
+  else void advanceFrom('preparing', true)
 }, { immediate: true })
 </script>
 

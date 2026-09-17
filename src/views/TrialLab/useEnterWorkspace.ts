@@ -25,9 +25,15 @@ export function useEnterWorkspace() {
   const onboarding = useOnboardingStore()
   const profile = useUserProfile()
 
-  async function enterWorkspace(variant: TrialVariant): Promise<boolean> {
+  /**
+   * `landing: 'get-started'` (real journey) creates the account without a goal —
+   * the in-app welcome dialog and Get started take it from there. `'lab'` (the
+   * comparison lab) carries the goal chosen in the lab across, as before.
+   */
+  async function enterWorkspace(variant: TrialVariant, options: { landing?: 'lab' | 'get-started' } = {}): Promise<boolean> {
     const run = store.run(variant)
     if (!run?.account.verifiedAt) return false
+    const fromLab = (options.landing ?? 'lab') === 'lab'
 
     let id = run.accountId
     if (!id || !accounts.accounts.some(a => a.id === id)) {
@@ -40,7 +46,7 @@ export function useEnterWorkspace() {
       })
       accounts.switchTo(id)
       onboarding.reset()
-      if (run.goal) onboarding.setGoal(GOAL_MAP[run.goal])
+      if (fromLab && run.goal) onboarding.setGoal(GOAL_MAP[run.goal])
     } else {
       accounts.switchTo(id)
     }

@@ -1887,3 +1887,9 @@ Per CLAUDE.md → "Log every rename or breaking change in the session changelog"
   Fixed with a static import map in `trialLabRoutes.ts` and a once-per-URL, session-scoped reload
   guard (`src/main.ts`) that falls back to a toast. **Rule:** no variable dynamic imports; smoke-test
   lazy routes on `vite preview`, not only `vite dev`.
+- **Welcome dialog in the real app (2026-09-17).** Registration at `/signup` is now form + verify
+  only; the user lands on Get started where `src/components/onboarding/WelcomeDialog.vue` (MpDialog
+  sm, persistent) asks for name and workspace, prefilled from the email domain, and writes to the
+  real account via the new `useAccounts.updateAccount`. `AccountOwner.welcomedAt` records the
+  answer; `TRIAL_WORKSPACE_FALLBACK` exported. Goal chooser and sample task removed from the real
+  journey (lab variants keep them).

@@ -79,15 +79,23 @@ Sample data is labelled *Sample*; no invented revenue or customers appear as the
 Greeting (fallback-aware), workspace label (+ ID while unnamed), the three goal cards with draft status, and a *Next steps* list of the gated live actions (lock icon until verified). After an upgrade the row reads *Manage your plan* with the plan name.
 
 ### The real journey at `/signup`
-The app's own signup URL now runs the trial journey with real-app URLs and no lab framing:
-`/signup` (classic form, variant E) or `/signup/minimal` (email + password, variant B) → `/signup/verify`
-→ `/signup/preparing` → `/signup/goal` → **Open my workspace** → Get started inside the product. The
-sample task is a lab-only hypothesis and is skipped here; the goal chooser stays because it shapes the
-Get started plan. The one-question-at-a-time orb flow is kept at `/signup-legacy`. Both families share
-one screen set: children navigate by path under `meta.trialBase`, and each child declares its
-`meta.trialStage` so the guard never depends on route names (`src/views/TrialLab/trialLabRoutes.ts`).
-The simulated inbox is still the only source of the code — the verify screen's "open the inbox" link
-and the flask button open it, titled *Prototype controls* on this path.
+The app's own signup URL runs the registration with real-app URLs and no lab framing, and it is
+deliberately short: **create account → verify email → into the app.**
+
+- `/signup` (classic one-page form, variant E) or `/signup/minimal` (email + password, variant B)
+  → `/signup/verify` (link or 6-digit code) → workspace preparing → **lands on Get started**
+  (`/accounts/:id/get-started`) with the real AppBar and sidebar. No goal chooser, no sample task.
+- On Get started a **welcome dialog** asks two optional things: *Your name* and *Workspace name*,
+  the latter **suggested from the business email's domain** (`maya@harbour-lights.example` →
+  "Harbour Lights"; the classic form's company name wins when given). Continue writes to the real
+  account — owner name → AppBar identity and Da Vinci greeting, workspace name → account switcher.
+  Skip for now keeps the neutral fallbacks. Either way the dialog never asks again for that account.
+  Seed accounts have no owner and never see it.
+- The domain-based *suggestion* supersedes the lab's "never infer a company from the domain" rule
+  for this one editable prefill (decision 2026-09-17); the person's name is still never inferred.
+- The one-question-at-a-time orb flow is kept at `/signup-legacy`. Both families share one screen
+  set: children navigate by path under `meta.trialBase` (`src/views/TrialLab/trialLabRoutes.ts`).
+  The simulated inbox (flask button, *Prototype controls*) is still the only source of the code.
 
 ### Entering the real app
 The first sample task ends with **Open your workspace**. It performs the same handoff the existing PLG

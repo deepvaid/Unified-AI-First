@@ -51,9 +51,10 @@ const rows = computed(() => VARIANTS.map((v) => {
 
       <MpAlert tone="success" title="The actual journey lives at /signup" icon="rocket">
         <a href="/signup">/signup</a> is the classic one-page form and <a href="/signup/minimal">/signup/minimal</a> the
-        email + password form — both verify, prepare the workspace, ask for a goal and open the real app. The
-        one-question-at-a-time orb flow is kept at <a href="/signup-legacy">/signup-legacy</a>. The cards below are the
-        lab variants, which add the sample-task step.
+        email + password form — both verify, prepare the workspace and land on Get started in the real app, where a
+        welcome dialog asks for your name and workspace (suggested from your email domain). The one-question-at-a-time
+        orb flow is kept at <a href="/signup-legacy">/signup-legacy</a>. The cards below are the lab variants, which keep
+        the About-you, goal and sample-task steps for comparison.
       </MpAlert>
 
       <div class="tl-index__grid">

@@ -15,7 +15,12 @@ export interface AccountOwner {
   name: string | null
   email: string
   role: string
+  /** When the in-app welcome dialog was answered or skipped; null/undefined = still to show. */
+  welcomedAt?: string | null
 }
+
+/** Label a self-created account carries until its owner names the workspace. */
+export const TRIAL_WORKSPACE_FALLBACK = 'Trial workspace'
 
 export interface Account {
   id: string
@@ -201,6 +206,17 @@ export const useAccountsStore = defineStore('accounts', () => {
     persistCustomAccounts()
   }
 
+  /** Edits a self-created account in place (name, initials, owner). Seed accounts are immutable. */
+  function updateAccount(id: string, patch: Partial<Pick<Account, 'name' | 'initials' | 'owner'>>) {
+    if (DEFAULT_ACCOUNTS.some(d => d.id === id)) return
+    const idx = accounts.value.findIndex(a => a.id === id)
+    if (idx === -1) return
+    const next = [...accounts.value]
+    next[idx] = { ...next[idx]!, ...patch }
+    accounts.value = next
+    persistCustomAccounts()
+  }
+
   /** Removes a self-created account (seed accounts are permanent). Falls back to the first seed account if it was active. */
   function removeAccount(id: string) {
     if (DEFAULT_ACCOUNTS.some(d => d.id === id)) return
@@ -219,5 +235,5 @@ export const useAccountsStore = defineStore('accounts', () => {
     }
   })
 
-  return { accounts, activeId, activeAccount, hasSubscription, hasAnySubscription, switchTo, addAccount, removeAccount }
+  return { accounts, activeId, activeAccount, hasSubscription, hasAnySubscription, switchTo, addAccount, updateAccount, removeAccount }
 })

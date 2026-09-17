@@ -5,12 +5,18 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
+import WelcomeDialog from '@/components/onboarding/WelcomeDialog.vue'
+import { useAccountsStore } from '@/stores/useAccounts'
 import { useOnboardingStore, type OnboardingPhase, type SetupGoal } from '@/stores/useOnboarding'
 import { usePlgStore } from '@/stores/usePlg'
 
 const route = useRoute()
 const store = useOnboardingStore()
 const plg = usePlgStore()
+const accounts = useAccountsStore()
+// A freshly self-created trial account gets the welcome dialog here — name and
+// workspace label, acting on the real account. Seed accounts have no owner.
+const welcomeAccount = computed(() => (accounts.activeAccount.owner ? accounts.activeAccount : null))
 const accountId = computed(() => String(route.params.accountId ?? '1'))
 
 // The guide shows the personalized plan (subscribed clouds ∩ chosen goal).
@@ -92,6 +98,7 @@ function doReset() {
 
 <template>
   <div class="gs-page">
+    <WelcomeDialog v-if="welcomeAccount" :account="welcomeAccount" />
     <MpPageHeader
       title="Get started"
       :subtitle="subtitle"
