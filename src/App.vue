@@ -74,7 +74,7 @@ watch(() => route.query.frame, (f) => {
 // Independent of, and composes with, ?nav=. Unknown values fall back to grayBlue
 // (the default — focal blue + gray de-emphasis with a monochrome blue ramp).
 const VALID_CHART_PALETTES: readonly ChartPalette[] = [
-  'grayBlue', 'grayBlueGold', 'social', 'ocean',
+  'grayBlue', 'grayBlueGold', 'social', 'ocean', 'merchant',
   'socialGradient', 'grayBlueGradient', 'grayBlueGoldGradient', 'oceanGradient',
 ]
 const isChartPalette = (v: unknown): v is ChartPalette =>

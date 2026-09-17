@@ -73,6 +73,34 @@ import {
   mp_color_chart_dark_grayBlue_series4,
   mp_color_chart_dark_grayBlue_series5,
   mp_color_chart_dark_grayBlue_series6,
+  mp_color_chart_light_merchant_axis1,
+  mp_color_chart_light_merchant_axis2,
+  mp_color_chart_light_merchant_axis3,
+  mp_color_chart_light_merchant_axis4,
+  mp_color_chart_light_merchant_axis5,
+  mp_color_chart_light_merchant_comparison,
+  mp_color_chart_light_merchant_negative,
+  mp_color_chart_light_merchant_neutral,
+  mp_color_chart_light_merchant_positive,
+  mp_color_chart_light_merchant_series1,
+  mp_color_chart_light_merchant_series2,
+  mp_color_chart_light_merchant_series3,
+  mp_color_chart_light_merchant_series4,
+  mp_color_chart_light_merchant_series5,
+  mp_color_chart_light_merchant_series6,
+  mp_color_chart_light_merchant_warning,
+  mp_color_chart_dark_merchant_axis1,
+  mp_color_chart_dark_merchant_axis2,
+  mp_color_chart_dark_merchant_axis3,
+  mp_color_chart_dark_merchant_axis4,
+  mp_color_chart_dark_merchant_axis5,
+  mp_color_chart_dark_merchant_comparison,
+  mp_color_chart_dark_merchant_series1,
+  mp_color_chart_dark_merchant_series2,
+  mp_color_chart_dark_merchant_series3,
+  mp_color_chart_dark_merchant_series4,
+  mp_color_chart_dark_merchant_series5,
+  mp_color_chart_dark_merchant_series6,
   mp_color_chart_light_grayBlueGold_axis1,
   mp_color_chart_light_grayBlueGold_axis2,
   mp_color_chart_light_grayBlueGold_axis3,
@@ -119,6 +147,9 @@ export type ChartPalette =
   | 'grayBlueGold'
   | 'social'
   | 'ocean'
+  /** The middle tier between flat and gradient — Shopify-style solid marks with a
+      soft same-hue fade, gray secondary, dotted previous period (Ross, Sept 2026). */
+  | 'merchant'
   /** Gradient exploration variants — each base palette with the emboss/duotone
       treatment, shown on /dashboard-gradient (`socialGradient` is its default). */
   | 'socialGradient'
@@ -154,6 +185,8 @@ export interface ChartTreatment {
     companionDash: number
     /** Single-series line strokes run through the axis ramp. */
     gradientLine: boolean
+    /** Apex stroke.lineCap; 'round' turns a short comparison dash into dots. */
+    lineCap?: 'butt' | 'round'
   }
   comparison: { color?: string; dash: number; fillOpacity: number }
   area: { fill: 'gradient' | 'solid'; opacityFrom: number; opacityTo: number }
@@ -161,7 +194,8 @@ export interface ChartTreatment {
     radius: number
     columnWidthSingle: string
     columnWidthGrouped: string
-    fill: 'solid' | 'tint-gradient' | 'axis-gradient'
+    /** 'soft-gradient' = same hue, opacity 1 → 0.72 down the bar; no hue shift, no gloss. */
+    fill: 'solid' | 'tint-gradient' | 'axis-gradient' | 'soft-gradient'
     floatingLabels: boolean
   }
   grid: { show: boolean; dashArray: number; xLines: boolean; yLines: boolean; color?: string }
@@ -316,6 +350,35 @@ const SOCIAL_TREATMENT = oceanLineTreatment(mp_color_chart_light_social_series2)
 const SOCIAL_GRADIENT_TREATMENT = oceanLineTreatment(mp_color_chart_light_social_series2)
 
 /**
+ * The middle tier Ross asked for (Sept 2026): neither flat nor glossy. Solid
+ * marks with a soft same-hue fade down each bar, a light area wash under the
+ * line, a thick solid ring, solid faint y-gridlines and a dotted gray previous
+ * period — the Shopify admin grammar. No duotone companion anywhere.
+ */
+const MERCHANT_TREATMENT = makeTreatment({
+  stroke: { curve: 'smooth', width: 2, companionWidth: 2, companionDash: 0, gradientLine: false, lineCap: 'round' },
+  comparison: { color: mp_color_chart_light_merchant_comparison, dash: 3, fillOpacity: 0 },
+  area: { fill: 'gradient', opacityFrom: 0.28, opacityTo: 0 },
+  bar: { radius: 3, columnWidthSingle: '45%', columnWidthGrouped: '68%', fill: 'soft-gradient', floatingLabels: false },
+  grid: { show: true, dashArray: 0, xLines: false, yLines: true },
+  axes: { yLabelsOnTimeseries: true },
+  crosshair: { show: true, dash: 0 },
+  markers: { hoverSize: 5, lastPoint: false },
+  legend: { markerShape: 'circle', markerSize: 8, hoverHighlight: true },
+  donut: { size: '72%', fill: 'solid', strokeWidth: 0, showDataLabels: false },
+  svg: { shade: 'tint' },
+  kpiSpark: { fillOpacity: 0.14 },
+  effects: { dropShadow: false },
+  states: { hoverFilter: 'none', hoverFilterValue: 0, dimmedOpacity: 0.25 },
+  posNeg: {
+    positive: mp_color_chart_light_merchant_positive,
+    negative: mp_color_chart_light_merchant_negative,
+    warning: mp_color_chart_light_merchant_warning,
+    neutral: mp_color_chart_light_merchant_neutral,
+  },
+})
+
+/**
  * Turn any base treatment into its gradient/emboss variant: bars route into the
  * gloss branch ('solid' early-returns before it in DashboardChartWidget's
  * treatmentFill, so any gradient fill value works), donut slices take the
@@ -430,6 +493,53 @@ export const CHART_THEMES: Record<ChartPalette, Record<ChartMode, ChartTheme>> =
       comparisonColor: mp_color_chart_dark_grayBlue_comparison,
       chrome: cloneChrome(DARK_CHROME),
       treatment: GRAY_BLUE_TREATMENT,
+    },
+  },
+  merchant: {
+    light: {
+      label: 'Merchant Blue',
+      series: [
+        mp_color_chart_light_merchant_series1,
+        mp_color_chart_light_merchant_series2,
+        mp_color_chart_light_merchant_series3,
+        mp_color_chart_light_merchant_series4,
+        mp_color_chart_light_merchant_series5,
+        mp_color_chart_light_merchant_series6,
+      ],
+      axis: [
+        mp_color_chart_light_merchant_axis1,
+        mp_color_chart_light_merchant_axis2,
+        mp_color_chart_light_merchant_axis3,
+        mp_color_chart_light_merchant_axis4,
+        mp_color_chart_light_merchant_axis5,
+      ],
+      gradientMarks: false,
+      comparisonColor: mp_color_chart_light_merchant_comparison,
+      chrome: cloneChrome(LIGHT_CHROME),
+      treatment: MERCHANT_TREATMENT,
+    },
+    // PROVISIONAL — light-only review; dark tuning is follow-up
+    dark: {
+      label: 'Merchant Blue',
+      series: [
+        mp_color_chart_dark_merchant_series1,
+        mp_color_chart_dark_merchant_series2,
+        mp_color_chart_dark_merchant_series3,
+        mp_color_chart_dark_merchant_series4,
+        mp_color_chart_dark_merchant_series5,
+        mp_color_chart_dark_merchant_series6,
+      ],
+      axis: [
+        mp_color_chart_dark_merchant_axis1,
+        mp_color_chart_dark_merchant_axis2,
+        mp_color_chart_dark_merchant_axis3,
+        mp_color_chart_dark_merchant_axis4,
+        mp_color_chart_dark_merchant_axis5,
+      ],
+      gradientMarks: false,
+      comparisonColor: mp_color_chart_dark_merchant_comparison,
+      chrome: cloneChrome(DARK_CHROME),
+      treatment: MERCHANT_TREATMENT,
     },
   },
   // Shares GRAY_BLUE_TREATMENT — comparison/posNeg values are identical; only

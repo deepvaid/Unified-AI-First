@@ -278,6 +278,21 @@ const chartOptions = computed<ApexOptions>(() => {
         return { type: 'gradient', gradient: { type: 'vertical', colorStops: stops } }
       }
       if (tt.bar.fill === 'solid' || divergingBars) return { type: 'solid' }
+      // Soft: the series colour at full strength at the head easing to ~72% at
+      // the base — same hue both ends, so it reads as depth, not as a second
+      // colour (the merchant "middle" between flat and gloss).
+      if (tt.bar.fill === 'soft-gradient') {
+        return {
+          type: 'gradient',
+          gradient: {
+            type: isHorizontalBar.value ? 'horizontal' : 'vertical',
+            shadeIntensity: 0,
+            opacityFrom: 1,
+            opacityTo: 0.72,
+            gradientToColors: resolvedSeriesColors.value,
+          },
+        }
+      }
       // Grouped/horizontal bars: a clean full-height sweep from the series'
       // luminous companion at the head into the base colour — both ends
       // bright, no gloss cap or dark lip (reference style: Stripe/Sea Blizz).
@@ -470,6 +485,7 @@ const chartOptions = computed<ApexOptions>(() => {
     stroke: t
       ? {
           curve: t.stroke.curve,
+          lineCap: t.stroke.lineCap ?? 'butt',
           // Lead series carries the full weight; companions and the previous-period
           // comparison series step back to companionWidth. Stacked bands are
           // peers — every band keeps the full weight and stays solid, so the
