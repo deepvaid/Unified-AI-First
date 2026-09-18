@@ -125,8 +125,8 @@ const options = computed<ApexOptions>(() => {
     plotOptions: {
       pie: {
         // Native rounded-donut geometry (Apex 6): pill slice ends + true gaps.
-        borderRadius: 8,
-        spacing: 4,
+        borderRadius: t?.donut.cornerRadius ?? 8,
+        spacing: t?.donut.spacing ?? 4,
         donut: {
           size: t ? t.donut.size : '68%',
           labels: {

@@ -2,6 +2,7 @@
 import { computed, defineAsyncComponent, inject, onBeforeUnmount, onMounted, ref, unref } from 'vue'
 import { useTheme } from 'vuetify'
 import type { ApexOptions } from 'apexcharts'
+import type ApexCharts from 'apexcharts'
 import type { DashboardChartVariant, DashboardSeriesData, DashboardWidgetType } from '@/stores/dashboards/types'
 import {
   CHART_PALETTE_OVERRIDE,
@@ -204,6 +205,34 @@ function chartTooltip({ dataPointIndex }: { dataPointIndex: number }): string {
     })
     .join('')
   return `<div class="mp-chart-tip"><div class="mp-chart-tip__title">${labels[dataPointIndex] ?? ''}</div>${rows}</div>`
+}
+
+/** Legend preview for the Polaris legend: a 12×2 line, or three dots for the comparison series. */
+function legendMarkerHtml(color: string, isComparison: boolean): string {
+  if (isComparison) {
+    const dot = `<span style="display:inline-block;width:2px;height:2px;border-radius:50%;background:${color}"></span>`
+    return `<span style="display:inline-flex;align-items:center;justify-content:space-between;width:12px;height:12px">${dot}${dot}${dot}</span>`
+  }
+  return `<span style="display:inline-flex;align-items:center;width:12px;height:12px"><span style="display:block;width:12px;height:2px;border-radius:1px;background:${color}"></span></span>`
+}
+
+/**
+ * Apex only takes one dash number per series; Polaris's previous period is a
+ * "0.1 4" dot pattern. After every draw, stamp that pattern onto the comparison
+ * series' stroke paths (the fill path has no stroke and is left alone).
+ */
+function applyComparisonDashPattern(chart: ApexCharts): void {
+  const pattern = treatment.value?.comparison.dashPattern
+  // Apex hands its instance to events; the rendered root is only on the untyped surface.
+  const ctx = chart as unknown as { el?: Element; w?: { globals?: { dom?: { baseEl?: Element } } } }
+  const root = ctx?.el ?? ctx?.w?.globals?.dom?.baseEl
+  if (!pattern || !root) return
+  props.data.series.forEach((series, i) => {
+    if (!series.isComparison) return
+    root.querySelectorAll(`.apexcharts-series[rel="${i + 1}"] path[stroke]:not([stroke="none"])`).forEach((path) => {
+      path.setAttribute('stroke-dasharray', pattern)
+    })
+  })
 }
 
 const chartOptions = computed<ApexOptions>(() => {
@@ -438,6 +467,9 @@ const chartOptions = computed<ApexOptions>(() => {
       zoom: { enabled: false },
       redrawOnParentResize: false,
       ...(isStacked.value ? { stacked: true } : {}),
+      ...(t?.comparison.dashPattern && hasComparisonSeries.value
+        ? { events: { ...base.chart?.events, mounted: applyComparisonDashPattern, updated: applyComparisonDashPattern, animationEnd: applyComparisonDashPattern } }
+        : {}),
       ...(t
         ? (t.effects.dropShadow && isTimeseries
             ? {
@@ -651,7 +683,7 @@ const chartOptions = computed<ApexOptions>(() => {
       : { enabled: false },
     legend: showLegend
       ? {
-          ...chartLegendOptions(resolvedSeriesColors.value, chrome, 'top'),
+          ...chartLegendOptions(resolvedSeriesColors.value, chrome, t?.legend.position ?? 'top', t?.legend.align, t?.legend.fontSize),
           // shadcn legend: small square markers. Dots use the same resolved
           // per-series colours as the marks (incl. the comparison stroke).
           markers: t
@@ -660,6 +692,18 @@ const chartOptions = computed<ApexOptions>(() => {
                 shape: t.legend.markerShape,
                 strokeWidth: 0,
                 fillColors: resolvedSeriesColors.value,
+                // Polaris legend previews: a 12×2 line per series, three dots for
+                // the previous period. Apex has no dotted marker, so we hand it the
+                // HTML per series (fillColors still drives the colour vision dimming).
+                ...(t.legend.comparisonMarker === 'dots'
+                  ? {
+                      // Apex accepts one function per series here; its typings only know the single-function form.
+                      customHTML: props.data.series.map((series, i) => () => legendMarkerHtml(
+                        resolvedSeriesColors.value[i % resolvedSeriesColors.value.length]!,
+                        series.isComparison === true,
+                      )) as unknown as () => string,
+                    }
+                  : {}),
               }
             : { size: 8, shape: 'square', strokeWidth: 0, fillColors: resolvedSeriesColors.value },
           ...(t ? { onItemHover: { highlightDataSeries: t.legend.hoverHighlight } } : {}),
@@ -671,6 +715,9 @@ const chartOptions = computed<ApexOptions>(() => {
       labels: {
         ...base.xaxis?.labels,
         offsetY: 2,
+        ...(t?.axes.labelFontSize
+          ? { style: { ...base.xaxis?.labels?.style, fontSize: `${t.axes.labelFontSize}px`, fontWeight: t.axes.labelFontWeight ?? 500 } }
+          : {}),
       },
       crosshairs: isBar
         ? { show: false }
@@ -690,11 +737,14 @@ const chartOptions = computed<ApexOptions>(() => {
     yaxis: {
       labels: (isStacked.value || props.chartVariant === 'line' || isHorizontalBar.value || (flatMarks.value && props.widgetType === 'timeseries') || (t?.axes.yLabelsOnTimeseries === true && isTimeseries))
         ? {
-            formatter: (value: number) => formatCompactValue(value, props.data.unit),
+            formatter: (value: number) => {
+              const text = formatCompactValue(value, props.data.unit)
+              return t?.axes.compactUnitCase === 'upper' ? text.replace(/([kmb])$/, (m) => m.toUpperCase()) : text
+            },
             style: {
               colors: chrome.axisLabel,
-              fontSize: '12px',
-              fontWeight: 500,
+              fontSize: `${t?.axes.labelFontSize ?? 12}px`,
+              fontWeight: t?.axes.labelFontWeight ?? 500,
             },
           }
         : { show: false },

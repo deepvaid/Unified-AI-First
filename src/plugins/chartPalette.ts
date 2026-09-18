@@ -101,6 +101,40 @@ import {
   mp_color_chart_dark_merchant_series4,
   mp_color_chart_dark_merchant_series5,
   mp_color_chart_dark_merchant_series6,
+  mp_color_chart_light_shopify_axis1,
+  mp_color_chart_light_shopify_axis2,
+  mp_color_chart_light_shopify_axis3,
+  mp_color_chart_light_shopify_axis4,
+  mp_color_chart_light_shopify_axis5,
+  mp_color_chart_light_shopify_axisLabel,
+  mp_color_chart_light_shopify_comparison,
+  mp_color_chart_light_shopify_crosshair,
+  mp_color_chart_light_shopify_grid,
+  mp_color_chart_light_shopify_legendLabel,
+  mp_color_chart_light_shopify_negative,
+  mp_color_chart_light_shopify_neutral,
+  mp_color_chart_light_shopify_positive,
+  mp_color_chart_light_shopify_series1,
+  mp_color_chart_light_shopify_series2,
+  mp_color_chart_light_shopify_series3,
+  mp_color_chart_light_shopify_series4,
+  mp_color_chart_light_shopify_series5,
+  mp_color_chart_light_shopify_series6,
+  mp_color_chart_light_shopify_tooltipBackground,
+  mp_color_chart_light_shopify_tooltipText,
+  mp_color_chart_light_shopify_warning,
+  mp_color_chart_dark_shopify_axis1,
+  mp_color_chart_dark_shopify_axis2,
+  mp_color_chart_dark_shopify_axis3,
+  mp_color_chart_dark_shopify_axis4,
+  mp_color_chart_dark_shopify_axis5,
+  mp_color_chart_dark_shopify_comparison,
+  mp_color_chart_dark_shopify_series1,
+  mp_color_chart_dark_shopify_series2,
+  mp_color_chart_dark_shopify_series3,
+  mp_color_chart_dark_shopify_series4,
+  mp_color_chart_dark_shopify_series5,
+  mp_color_chart_dark_shopify_series6,
   mp_color_chart_light_grayBlueGold_axis1,
   mp_color_chart_light_grayBlueGold_axis2,
   mp_color_chart_light_grayBlueGold_axis3,
@@ -150,6 +184,8 @@ export type ChartPalette =
   /** The middle tier between flat and gradient — Shopify-style solid marks with a
       soft same-hue fade, gray secondary, dotted previous period (Ross, Sept 2026). */
   | 'merchant'
+  /** 1:1 port of the Shopify admin's Polaris Viz Light theme (marks + chrome). */
+  | 'shopify'
   /** Gradient exploration variants — each base palette with the emboss/duotone
       treatment, shown on /dashboard-gradient (`socialGradient` is its default). */
   | 'socialGradient'
@@ -188,7 +224,14 @@ export interface ChartTreatment {
     /** Apex stroke.lineCap; 'round' turns a short comparison dash into dots. */
     lineCap?: 'butt' | 'round'
   }
-  comparison: { color?: string; dash: number; fillOpacity: number }
+  comparison: {
+    color?: string
+    dash: number
+    fillOpacity: number
+    /** Raw SVG stroke-dasharray patched onto the comparison paths after render —
+        Apex accepts one number per series, so a Polaris "0.1 4" dot needs this. */
+    dashPattern?: string
+  }
   area: { fill: 'gradient' | 'solid'; opacityFrom: number; opacityTo: number }
   bar: {
     radius: number
@@ -199,11 +242,34 @@ export interface ChartTreatment {
     floatingLabels: boolean
   }
   grid: { show: boolean; dashArray: number; xLines: boolean; yLines: boolean; color?: string }
-  axes: { yLabelsOnTimeseries: boolean }
+  axes: {
+    yLabelsOnTimeseries: boolean
+    labelFontSize?: number
+    labelFontWeight?: number
+    /** Case of the compact k/m/b suffix on the y-axis ("$3k" vs Polaris's "$3K"). */
+    compactUnitCase?: 'lower' | 'upper'
+  }
   crosshair: { show: boolean; dash: number; color?: string }
   markers: { hoverSize: number; lastPoint: boolean }
-  legend: { markerShape: 'square' | 'circle'; markerSize: number; hoverHighlight: boolean }
-  donut: { size: string; fill: 'solid' | 'gradient'; strokeWidth: number; showDataLabels: boolean }
+  legend: {
+    markerShape: 'square' | 'circle' | 'line'
+    markerSize: number
+    hoverHighlight: boolean
+    position?: 'top' | 'bottom'
+    align?: 'left' | 'center' | 'right'
+    fontSize?: number
+    /** Custom legend markers: a 12×2 line per series, three dots for the comparison series. */
+    comparisonMarker?: 'dots'
+  }
+  donut: {
+    size: string
+    fill: 'solid' | 'gradient'
+    strokeWidth: number
+    showDataLabels: boolean
+    /** Apex plotOptions.pie.donut corner radius / slice gap; widgets default to 8 / 4. */
+    cornerRadius?: number
+    spacing?: number
+  }
   /** Hand-rolled SVG family (DtGauge / DtRingDonut / stacked bar). */
   svg: { shade: 'flat' | 'tint' }
   kpiSpark: { color?: string; fillOpacity: number }
@@ -379,6 +445,49 @@ const MERCHANT_TREATMENT = makeTreatment({
 })
 
 /**
+ * 1:1 port of the Shopify admin's chart look, read from the Polaris Viz source
+ * (LIGHT_THEME + constants): 2px round-capped line, area at ≈0.06 fading to 0,
+ * previous period as a gray "0.1 4" dotted line with no area, hover point r5,
+ * gray-20 horizontal grid, gray-40 crosshair, 11px gray-100 labels, bottom-left
+ * legend with line/dots markers, bars radius 3, donut ring ≈ height/10 with
+ * 2px corners. Only Apex-imposed deviation: 'smooth' stands in for
+ * Polaris's curveStepRounded.
+ */
+const SHOPIFY_TREATMENT = makeTreatment({
+  stroke: { curve: 'smooth', width: 2, companionWidth: 2, companionDash: 0, gradientLine: false, lineCap: 'round' },
+  comparison: { color: mp_color_chart_light_shopify_comparison, dash: 4, dashPattern: '0.1 4', fillOpacity: 0 },
+  area: { fill: 'gradient', opacityFrom: 0.07, opacityTo: 0 },
+  bar: { radius: 3, columnWidthSingle: '60%', columnWidthGrouped: '80%', fill: 'solid', floatingLabels: false },
+  grid: { show: true, dashArray: 0, xLines: false, yLines: true, color: mp_color_chart_light_shopify_grid },
+  axes: { yLabelsOnTimeseries: true, labelFontSize: 11, labelFontWeight: 400, compactUnitCase: 'upper' },
+  crosshair: { show: true, dash: 0, color: mp_color_chart_light_shopify_crosshair },
+  markers: { hoverSize: 5, lastPoint: false },
+  legend: { markerShape: 'line', markerSize: 12, hoverHighlight: true, position: 'bottom', align: 'left', fontSize: 11, comparisonMarker: 'dots' },
+  donut: { size: '77%', fill: 'solid', strokeWidth: 0, showDataLabels: false, cornerRadius: 2, spacing: 4 },
+  svg: { shade: 'flat' },
+  kpiSpark: { fillOpacity: 0.2 },
+  effects: { dropShadow: false },
+  states: { hoverFilter: 'none', hoverFilterValue: 0, dimmedOpacity: 0.3 },
+  posNeg: {
+    positive: mp_color_chart_light_shopify_positive,
+    negative: mp_color_chart_light_shopify_negative,
+    warning: mp_color_chart_light_shopify_warning,
+    neutral: mp_color_chart_light_shopify_neutral,
+  },
+})
+
+/** Polaris Viz Light chrome: gray-100 labels, gray-20 grid, white tooltip with gray-160 text. */
+const SHOPIFY_LIGHT_CHROME: ChartChrome = {
+  axisLabel: mp_color_chart_light_shopify_axisLabel,
+  legendLabel: mp_color_chart_light_shopify_legendLabel,
+  grid: mp_color_chart_light_shopify_grid,
+  tooltipTheme: 'light',
+  tooltipBackground: mp_color_chart_light_shopify_tooltipBackground,
+  tooltipText: mp_color_chart_light_shopify_tooltipText,
+  tooltipBorder: 'transparent',
+}
+
+/**
  * Turn any base treatment into its gradient/emboss variant: bars route into the
  * gloss branch ('solid' early-returns before it in DashboardChartWidget's
  * treatmentFill, so any gradient fill value works), donut slices take the
@@ -540,6 +649,53 @@ export const CHART_THEMES: Record<ChartPalette, Record<ChartMode, ChartTheme>> =
       comparisonColor: mp_color_chart_dark_merchant_comparison,
       chrome: cloneChrome(DARK_CHROME),
       treatment: MERCHANT_TREATMENT,
+    },
+  },
+  shopify: {
+    light: {
+      label: 'Shopify (Polaris Viz)',
+      series: [
+        mp_color_chart_light_shopify_series1,
+        mp_color_chart_light_shopify_series2,
+        mp_color_chart_light_shopify_series3,
+        mp_color_chart_light_shopify_series4,
+        mp_color_chart_light_shopify_series5,
+        mp_color_chart_light_shopify_series6,
+      ],
+      axis: [
+        mp_color_chart_light_shopify_axis1,
+        mp_color_chart_light_shopify_axis2,
+        mp_color_chart_light_shopify_axis3,
+        mp_color_chart_light_shopify_axis4,
+        mp_color_chart_light_shopify_axis5,
+      ],
+      gradientMarks: false,
+      comparisonColor: mp_color_chart_light_shopify_comparison,
+      chrome: cloneChrome(SHOPIFY_LIGHT_CHROME),
+      treatment: SHOPIFY_TREATMENT,
+    },
+    // PROVISIONAL — light-only review; Polaris Viz ships a DARK_THEME if dark tuning is wanted
+    dark: {
+      label: 'Shopify (Polaris Viz)',
+      series: [
+        mp_color_chart_dark_shopify_series1,
+        mp_color_chart_dark_shopify_series2,
+        mp_color_chart_dark_shopify_series3,
+        mp_color_chart_dark_shopify_series4,
+        mp_color_chart_dark_shopify_series5,
+        mp_color_chart_dark_shopify_series6,
+      ],
+      axis: [
+        mp_color_chart_dark_shopify_axis1,
+        mp_color_chart_dark_shopify_axis2,
+        mp_color_chart_dark_shopify_axis3,
+        mp_color_chart_dark_shopify_axis4,
+        mp_color_chart_dark_shopify_axis5,
+      ],
+      gradientMarks: false,
+      comparisonColor: mp_color_chart_dark_shopify_comparison,
+      chrome: cloneChrome(DARK_CHROME),
+      treatment: SHOPIFY_TREATMENT,
     },
   },
   // Shares GRAY_BLUE_TREATMENT — comparison/posNeg values are identical; only
@@ -1100,12 +1256,14 @@ export function chartLegendOptions(
   palette: string[],
   chrome: ChartChrome,
   position: 'top' | 'bottom' = 'top',
+  align?: 'left' | 'center' | 'right',
+  fontSize = 12,
 ): ApexOptions['legend'] {
   return {
     show: true,
     position,
-    horizontalAlign: position === 'top' ? 'right' : 'center',
-    fontSize: '12px',
+    horizontalAlign: align ?? (position === 'top' ? 'right' : 'center'),
+    fontSize: `${fontSize}px`,
     fontWeight: 500,
     labels: { colors: chrome.legendLabel },
     markers: {

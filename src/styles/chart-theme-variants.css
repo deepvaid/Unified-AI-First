@@ -2,16 +2,29 @@
  * Per-theme chart CSS hooks.
  * Loaded via app-styles.ts (never imported directly) so Storybook matches the app.
  *
- * The four shipping themes (grayBlue, grayBlueGold, social, ocean) all keep the
- * dashboard tooltip defaults, so no theme sets `--mp-tip-*` or
- * `--mp-chart-dim-opacity` today — the rules below therefore resolve to their
- * fallbacks. They stay as the documented hook: a theme that wants a custom
- * tooltip skin or dim strength sets those vars under its own `[data-chart]`.
+ * The shipping colour themes (grayBlue, grayBlueGold, social, ocean, merchant)
+ * all keep the dashboard tooltip defaults and resolve every var below to its
+ * fallback. `shopify` is the first theme to use the hook: it sets the Polaris
+ * Viz tooltip skin and the 0.3 colour-vision dim under its own `[data-chart]`.
  *
  * The `--mp-tip-*` set is consumed by the scoped `.mp-chart-tip` skins in
  * DashboardChartWidget / DashboardPieWidget / DashboardDonutWidget /
  * DashboardMetricExplorerWidget, each passing its literal as the var() fallback.
  */
+
+/* Shopify — Polaris Viz TooltipContent + COLOR_VISION_FADED_OPACITY. Hexes are
+   the Polaris Light theme's own (gray-100 / gray-160), not design-system tokens:
+   this block exists to reproduce another product's chrome exactly. */
+[data-chart="shopify"] {
+  --mp-tip-bg: #ffffff;
+  --mp-tip-border: transparent;
+  --mp-tip-radius: 5px;
+  --mp-tip-shadow: 0 0 2px rgba(0, 0, 0, 0.2), 0 2px 10px rgba(0, 0, 0, 0.1);
+  --mp-tip-title-color: #70707b;
+  --mp-tip-muted: #70707b;
+  --mp-tip-text: #1f1f25;
+  --mp-chart-dim-opacity: 0.3;
+}
 
 /* Legend-hover series dimming.
    Apex tags the non-hovered series <g> with `legend-mouseover-inactive` and dims
