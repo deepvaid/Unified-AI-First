@@ -4,7 +4,7 @@
  *
  * The shipping colour themes (grayBlue, grayBlueGold, social, ocean, merchant)
  * all keep the dashboard tooltip defaults and resolve every var below to its
- * fallback. `shopify` is the first theme to use the hook: it sets the Polaris
+ * fallback. `shopify` (and `shopifyAdmin`) is the first theme to use the hook: it sets the Polaris
  * Viz tooltip skin and the 0.3 colour-vision dim under its own `[data-chart]`.
  *
  * The `--mp-tip-*` set is consumed by the scoped `.mp-chart-tip` skins in
@@ -15,7 +15,8 @@
 /* Shopify — Polaris Viz TooltipContent + COLOR_VISION_FADED_OPACITY. Hexes are
    the Polaris Light theme's own (gray-100 / gray-160), not design-system tokens:
    this block exists to reproduce another product's chrome exactly. */
-[data-chart="shopify"] {
+[data-chart="shopify"],
+[data-chart="shopifyAdmin"] {
   --mp-tip-bg: #ffffff;
   --mp-tip-border: transparent;
   --mp-tip-radius: 5px;

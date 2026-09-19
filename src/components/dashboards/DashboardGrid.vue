@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import type { RouteLocationRaw } from 'vue-router'
 import { GridItem, GridLayout } from 'grid-layout-plus'
 import { useDisplay } from 'vuetify'
+import { useChartTheme } from '@/plugins/chartPalette'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import type { DashboardFilterState, DashboardWidget } from '@/stores/dashboards/types'
 import { getDefaultPreset, type WidgetSize } from './widgetSizePresets'
@@ -45,6 +46,10 @@ interface LayoutItem {
 
 const layout = ref<LayoutItem[]>([])
 const { mdAndDown } = useDisplay()
+// The Shopify admin skin lays cards out on Polaris space-400 (16px); every other
+// option keeps the 20px gutter that .dashboard-grid's negative margins assume.
+const { theme: chartTheme } = useChartTheme()
+const gridMargin = computed<[number, number]>(() => (chartTheme.value.skin === 'polaris' ? [16, 16] : [20, 20]))
 
 function normalizeLayout(items: Array<{ i: string; x: number; y: number; w: number; h: number }>): LayoutItem[] {
   return [...items]
@@ -177,7 +182,7 @@ function handleLayoutUpdate(nextLayout: Array<{ i: string; x: number; y: number;
       v-model:layout="layout"
       :col-num="12"
       :row-height="44"
-      :margin="[20, 20]"
+      :margin="gridMargin"
       :is-draggable="true"
       :is-resizable="true"
       :vertical-compact="true"

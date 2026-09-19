@@ -19,3 +19,5 @@ import './retail-widgets.scss'
 import './dv-diffusion.css'
 // Per-theme chart hooks — inert unless a theme sets the [data-chart] vars
 import './chart-theme-variants.css'
+// Shopify admin page + card chrome — only under <html data-chart="shopifyAdmin">
+import './shopify-admin-skin.css'

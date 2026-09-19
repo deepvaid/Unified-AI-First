@@ -64,12 +64,49 @@ onBeforeUnmount(() => {
   globalThis.clearTimeout(deferredRenderHandle)
 })
 
+/**
+ * Shopify admin headline over a timeseries ("$10,317.06 ↗ 31%"): the period
+ * total (mean for percent units) against the same aggregate of the previous
+ * period. Only the polaris skin renders it — every other option keeps the
+ * chart flush with the card header.
+ */
+const headline = computed(() => {
+  if (resolvedTheme.value.skin !== 'polaris' || props.widgetType !== 'timeseries') return null
+  const { series, unit } = props.data
+  const current = series.find((s) => !s.isComparison)
+  if (!current) return null
+  const aggregate = (values: Array<number | null | undefined>) => {
+    const nums = values.filter((v): v is number => typeof v === 'number' && Number.isFinite(v))
+    if (nums.length === 0) return 0
+    const sum = nums.reduce((a, b) => a + b, 0)
+    return unit === 'percent' ? sum / nums.length : sum
+  }
+  const value = aggregate(current.data)
+  const previous = series.find((s) => s.isComparison)
+  const previousValue = previous ? aggregate(previous.data) : null
+  const delta = previousValue && previousValue > 0 ? (value - previousValue) / previousValue : null
+  return {
+    value: formatFullValue(value, unit),
+    delta,
+    deltaText: delta === null ? null : `${Math.round(Math.abs(delta) * 100)}%`,
+  }
+})
+const headlineEl = ref<HTMLElement | null>(null)
+const { size: headlineSize } = useElementSize(headlineEl)
+const headlineColor = computed(() => {
+  const posNeg = treatment.value?.posNeg
+  if (!headline.value || headline.value.delta === null || !posNeg) return undefined
+  return headline.value.delta >= 0 ? posNeg.positive : posNeg.negative
+})
+
 const chartHeight = computed(() => {
   // Readability floors: the main timeseries never renders below 240px, other
   // charts never below 200px, regardless of how small the card body measures.
   const floor = props.widgetType === 'timeseries' ? 240 : 200
   if (!props.height || props.height < 60) return 240
-  return Math.max(floor, props.height - 4)
+  // The polaris headline sits inside the same clipping box, so it comes off the chart.
+  const headlineHeight = headline.value ? (headlineSize.value.height || 28) + 8 : 0
+  return Math.max(floor - headlineHeight, props.height - 4 - headlineHeight)
 })
 
 // Measure `.dashboard-chart-widget` itself (the overflow: hidden clipping
@@ -776,6 +813,13 @@ const chartOptions = computed<ApexOptions>(() => {
 
 <template>
   <div ref="rootEl" class="dashboard-chart-widget" role="img" :aria-label="chartAriaLabel">
+    <div v-if="headline" ref="headlineEl" class="dashboard-chart-widget__headline">
+      <span class="dashboard-chart-widget__headline-value">{{ headline.value }}</span>
+      <span v-if="headline.deltaText" class="dashboard-chart-widget__headline-delta" :style="{ color: headlineColor }">
+        <v-icon size="12">{{ (headline.delta ?? 0) >= 0 ? 'arrow-up-right' : 'arrow-down-right' }}</v-icon>
+        {{ headline.deltaText }}
+      </span>
+    </div>
     <ApexChart
       v-if="chartReady"
       :height="chartHeight"
@@ -798,6 +842,33 @@ const chartOptions = computed<ApexOptions>(() => {
   overflow: hidden;
   padding-top: var(--mp-space-4);
   container-type: inline-size;
+}
+
+/* Polaris-skin headline; the --mp-skin-* vars are set by shopify-admin-skin.css
+   and fall back to the design-system values everywhere else. */
+.dashboard-chart-widget__headline {
+  display: flex;
+  align-items: baseline;
+  gap: var(--mp-space-8);
+  margin-bottom: var(--mp-space-8);
+}
+
+.dashboard-chart-widget__headline-value {
+  font-size: var(--mp-fontSize-20);
+  font-weight: var(--mp-skin-weight-semibold, var(--mp-fontWeight-semibold));
+  line-height: 1.2;
+  letter-spacing: 0;
+  color: var(--mp-skin-text, var(--text-primary));
+  font-variant-numeric: tabular-nums;
+}
+
+.dashboard-chart-widget__headline-delta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mp-space-2);
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-skin-weight-medium, var(--mp-fontWeight-medium));
+  color: var(--muted);
 }
 
 /* Legend items ("Revenue", "Paid Search", …) have no fixed width from Apex —

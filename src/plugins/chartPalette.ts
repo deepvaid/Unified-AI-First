@@ -186,6 +186,8 @@ export type ChartPalette =
   | 'merchant'
   /** 1:1 port of the Shopify admin's Polaris Viz Light theme (marks + chrome). */
   | 'shopify'
+  /** `shopify` marks plus the Shopify admin page + card chrome (`skin: 'polaris'`), dashboards only. */
+  | 'shopifyAdmin'
   /** Gradient exploration variants — each base palette with the emboss/duotone
       treatment, shown on /dashboard-gradient (`socialGradient` is its default). */
   | 'socialGradient'
@@ -304,6 +306,12 @@ export interface ChartTheme {
    * here instead of the legacy `gradientMarks`/`flatMarks` branches.
    */
   treatment?: ChartTreatment
+  /**
+   * The option also restyles the dashboard page and cards. Read by
+   * DashboardChartWidget (headline) and DashboardGrid (gap); the CSS side keys
+   * off the mirrored `<html data-chart>` in shopify-admin-skin.css.
+   */
+  skin?: 'polaris'
 }
 
 /**
@@ -514,6 +522,53 @@ const OCEAN_GRADIENT_TREATMENT = embossTreatment(oceanLineTreatment(mp_color_cha
  * Mode-aware chart themes. Each palette carries light and dark series/axis arrays
  * sourced from generated tokens; chrome (labels, grid, tooltip) is mode-specific.
  */
+/** `shopify` light/dark, hoisted so `shopifyAdmin` can reuse them verbatim. */
+const SHOPIFY_LIGHT: ChartTheme = {
+  label: 'Shopify (Polaris Viz)',
+  series: [
+    mp_color_chart_light_shopify_series1,
+    mp_color_chart_light_shopify_series2,
+    mp_color_chart_light_shopify_series3,
+    mp_color_chart_light_shopify_series4,
+    mp_color_chart_light_shopify_series5,
+    mp_color_chart_light_shopify_series6,
+  ],
+  axis: [
+    mp_color_chart_light_shopify_axis1,
+    mp_color_chart_light_shopify_axis2,
+    mp_color_chart_light_shopify_axis3,
+    mp_color_chart_light_shopify_axis4,
+    mp_color_chart_light_shopify_axis5,
+  ],
+  gradientMarks: false,
+  comparisonColor: mp_color_chart_light_shopify_comparison,
+  chrome: cloneChrome(SHOPIFY_LIGHT_CHROME),
+  treatment: SHOPIFY_TREATMENT,
+}
+// PROVISIONAL — light-only review; Polaris Viz ships a DARK_THEME if dark tuning is wanted
+const SHOPIFY_DARK: ChartTheme = {
+  label: 'Shopify (Polaris Viz)',
+  series: [
+    mp_color_chart_dark_shopify_series1,
+    mp_color_chart_dark_shopify_series2,
+    mp_color_chart_dark_shopify_series3,
+    mp_color_chart_dark_shopify_series4,
+    mp_color_chart_dark_shopify_series5,
+    mp_color_chart_dark_shopify_series6,
+  ],
+  axis: [
+    mp_color_chart_dark_shopify_axis1,
+    mp_color_chart_dark_shopify_axis2,
+    mp_color_chart_dark_shopify_axis3,
+    mp_color_chart_dark_shopify_axis4,
+    mp_color_chart_dark_shopify_axis5,
+  ],
+  gradientMarks: false,
+  comparisonColor: mp_color_chart_dark_shopify_comparison,
+  chrome: cloneChrome(DARK_CHROME),
+  treatment: SHOPIFY_TREATMENT,
+}
+
 export const CHART_THEMES: Record<ChartPalette, Record<ChartMode, ChartTheme>> = {
   ocean: {
     light: {
@@ -651,52 +706,11 @@ export const CHART_THEMES: Record<ChartPalette, Record<ChartMode, ChartTheme>> =
       treatment: MERCHANT_TREATMENT,
     },
   },
-  shopify: {
-    light: {
-      label: 'Shopify (Polaris Viz)',
-      series: [
-        mp_color_chart_light_shopify_series1,
-        mp_color_chart_light_shopify_series2,
-        mp_color_chart_light_shopify_series3,
-        mp_color_chart_light_shopify_series4,
-        mp_color_chart_light_shopify_series5,
-        mp_color_chart_light_shopify_series6,
-      ],
-      axis: [
-        mp_color_chart_light_shopify_axis1,
-        mp_color_chart_light_shopify_axis2,
-        mp_color_chart_light_shopify_axis3,
-        mp_color_chart_light_shopify_axis4,
-        mp_color_chart_light_shopify_axis5,
-      ],
-      gradientMarks: false,
-      comparisonColor: mp_color_chart_light_shopify_comparison,
-      chrome: cloneChrome(SHOPIFY_LIGHT_CHROME),
-      treatment: SHOPIFY_TREATMENT,
-    },
-    // PROVISIONAL — light-only review; Polaris Viz ships a DARK_THEME if dark tuning is wanted
-    dark: {
-      label: 'Shopify (Polaris Viz)',
-      series: [
-        mp_color_chart_dark_shopify_series1,
-        mp_color_chart_dark_shopify_series2,
-        mp_color_chart_dark_shopify_series3,
-        mp_color_chart_dark_shopify_series4,
-        mp_color_chart_dark_shopify_series5,
-        mp_color_chart_dark_shopify_series6,
-      ],
-      axis: [
-        mp_color_chart_dark_shopify_axis1,
-        mp_color_chart_dark_shopify_axis2,
-        mp_color_chart_dark_shopify_axis3,
-        mp_color_chart_dark_shopify_axis4,
-        mp_color_chart_dark_shopify_axis5,
-      ],
-      gradientMarks: false,
-      comparisonColor: mp_color_chart_dark_shopify_comparison,
-      chrome: cloneChrome(DARK_CHROME),
-      treatment: SHOPIFY_TREATMENT,
-    },
+  shopify: { light: SHOPIFY_LIGHT, dark: SHOPIFY_DARK },
+  // Same marks; `skin` adds the Shopify admin page + card chrome on dashboards.
+  shopifyAdmin: {
+    light: { ...SHOPIFY_LIGHT, label: 'Shopify — charts + cards', skin: 'polaris' },
+    dark: { ...SHOPIFY_DARK, label: 'Shopify — charts + cards', skin: 'polaris' },
   },
   // Shares GRAY_BLUE_TREATMENT — comparison/posNeg values are identical; only
   // the series slots differ (subtle gold in the reference's orange position).

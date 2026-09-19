@@ -1,0 +1,173 @@
+/**
+ * Shopify admin chrome for the `shopifyAdmin` chart option — dashboard pages only.
+ * Loaded last via app-styles.ts (never imported directly) so it wins the cascade.
+ *
+ * Every value is Shopify's own, read from @shopify/polaris-tokens 9.4.2
+ * (color-bg #F1F1F1, color-bg-surface #FFF, color-text #303030,
+ * color-text-secondary #616161, border-radius-300 12px, border-radius-200 8px,
+ * shadow-100 + shadow-bevel-100, font-size-325/350/500 = 13/14/20px,
+ * font-weight-semibold/medium/regular = 650/550/450, space-400 16px) and
+ * Polaris Viz's TREND_POSITIVE / TREND_NEGATIVE (#078D4E / #616161).
+ * They are deliberately NOT design-system tokens: this file reproduces another
+ * product's chrome for a side-by-side review and nothing else may consume it.
+ * Scoped to html[data-chart="shopifyAdmin"], mirrored by applyChartPalette().
+ */
+
+html[data-chart="shopifyAdmin"] {
+  --mp-skin-text: #303030;
+  --mp-skin-text-secondary: #616161;
+  --mp-skin-weight-semibold: 650;
+  --mp-skin-weight-medium: 550;
+  --mp-skin-weight-regular: 450;
+  --mp-skin-trend-positive: #078d4e;
+  --mp-skin-trend-negative: #616161;
+}
+
+/* Page ------------------------------------------------------------------ */
+html[data-chart="shopifyAdmin"] body:has(.dashboard-hub) .v-main.bg-background {
+  background: #f1f1f1 !important;
+}
+html[data-chart="shopifyAdmin"] .dashboard-page-header,
+html[data-chart="shopifyAdmin"] .dashboard-page-header__filters {
+  background: #ffffff;
+  border-color: transparent;
+}
+html[data-chart="shopifyAdmin"] .dashboard-page-header__eyebrow {
+  display: none;
+}
+html[data-chart="shopifyAdmin"] .dashboard-page-header__h1 {
+  font-size: 20px;
+  font-weight: var(--mp-skin-weight-semibold);
+  letter-spacing: 0;
+  color: var(--mp-skin-text);
+}
+html[data-chart="shopifyAdmin"] .dashboard-page-header__filters .v-btn {
+  background: #ffffff !important;
+  color: var(--mp-skin-text) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 1px 0 rgba(26, 26, 26, 0.07), 1px 0 0 0 rgba(0, 0, 0, 0.13) inset, -1px 0 0 0 rgba(0, 0, 0, 0.13) inset, 0 -1px 0 0 rgba(0, 0, 0, 0.17) inset, 0 1px 0 0 rgba(204, 204, 204, 0.5) inset;
+  font-size: 12px;
+  font-weight: var(--mp-skin-weight-medium);
+}
+
+/* Grid gutter follows the 16px Polaris gap set in DashboardGrid.vue ----- */
+html[data-chart="shopifyAdmin"] .dashboard-grid {
+  margin-inline: -16px;
+}
+html[data-chart="shopifyAdmin"] .dashboard-hub .dashboard-grid {
+  margin-top: -16px;
+}
+
+/* Card (Polaris Card = ShadowBevel 100, radius 300) ----------------------- */
+html[data-chart="shopifyAdmin"] .dashboard-widget-card,
+html[data-chart="shopifyAdmin"] .dashboard-widget-card:hover {
+  background: #ffffff !important;
+  border: 0 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 1px 0 rgba(26, 26, 26, 0.07), 1px 0 0 0 rgba(0, 0, 0, 0.13) inset, -1px 0 0 0 rgba(0, 0, 0, 0.13) inset, 0 -1px 0 0 rgba(0, 0, 0, 0.17) inset, 0 1px 0 0 rgba(204, 204, 204, 0.5) inset !important;
+}
+html[data-chart="shopifyAdmin"] .dashboard-widget-card__header {
+  padding: 16px 16px 8px;
+  min-height: auto;
+}
+html[data-chart="shopifyAdmin"] .dashboard-widget-card__title {
+  font-size: 13px;
+  font-weight: var(--mp-skin-weight-semibold);
+  line-height: 20px;
+  color: var(--mp-skin-text);
+}
+html[data-chart="shopifyAdmin"] .dashboard-widget-card__subtitle,
+html[data-chart="shopifyAdmin"] .dashboard-widget-card__foot {
+  display: none;
+}
+html[data-chart="shopifyAdmin"] .dashboard-widget-card__body {
+  padding: 0 16px 16px;
+}
+
+/* KPI card: title / value + delta / spark, no stats footer ---------------- */
+html[data-chart="shopifyAdmin"] .dashboard-kpi-widget {
+  padding: 16px;
+}
+html[data-chart="shopifyAdmin"] .dashboard-kpi-widget .dashboard-kpi-widget__title {
+  font-size: 13px;
+  font-weight: var(--mp-skin-weight-semibold);
+  line-height: 20px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--mp-skin-text);
+}
+html[data-chart="shopifyAdmin"] .dashboard-kpi-widget .dashboard-kpi-widget__value {
+  font-size: 14px;
+  font-weight: var(--mp-skin-weight-semibold);
+  letter-spacing: 0;
+  color: var(--mp-skin-text);
+}
+html[data-chart="shopifyAdmin"] .dashboard-kpi-widget .dashboard-kpi-widget__delta {
+  font-size: 13px;
+  font-weight: var(--mp-skin-weight-medium);
+}
+html[data-chart="shopifyAdmin"] .dashboard-kpi-widget .dashboard-kpi-widget__delta--positive {
+  color: var(--mp-skin-trend-positive);
+}
+html[data-chart="shopifyAdmin"] .dashboard-kpi-widget .dashboard-kpi-widget__delta--negative {
+  color: var(--mp-skin-trend-negative);
+}
+html[data-chart="shopifyAdmin"] .dashboard-kpi-widget__stats {
+  display: none;
+}
+
+/* Legend lists, tables, donut footers ------------------------------------ */
+html[data-chart="shopifyAdmin"] .dt-legend__row {
+  font-size: 13px;
+  font-weight: var(--mp-skin-weight-regular);
+}
+html[data-chart="shopifyAdmin"] .dt-legend__label {
+  font-weight: var(--mp-skin-weight-medium);
+  color: var(--mp-skin-text);
+}
+html[data-chart="shopifyAdmin"] .dt-legend__value {
+  color: var(--mp-skin-text-secondary);
+}
+html[data-chart="shopifyAdmin"] .dt-legend__delta {
+  color: var(--mp-skin-trend-positive);
+}
+html[data-chart="shopifyAdmin"] .dt-legend__delta--neg {
+  color: var(--mp-skin-trend-negative);
+}
+html[data-chart="shopifyAdmin"] .dashboard-table-widget .v-table thead > tr > th {
+  text-transform: none;
+  font-size: 13px !important;
+  font-weight: var(--mp-skin-weight-medium) !important;
+  letter-spacing: 0 !important;
+  color: var(--mp-skin-text-secondary) !important;
+}
+html[data-chart="shopifyAdmin"] .dashboard-table-widget .v-table tbody > tr > td {
+  font-size: 13px;
+  font-weight: var(--mp-skin-weight-regular);
+  color: var(--mp-skin-text);
+}
+html[data-chart="shopifyAdmin"] .donut-widget__stat-label {
+  color: var(--mp-skin-text-secondary);
+}
+html[data-chart="shopifyAdmin"] .donut-widget__stat-value {
+  font-weight: var(--mp-skin-weight-semibold);
+  color: var(--mp-skin-text);
+}
+
+/* KPI card stacks title → value row, Shopify-style, instead of pinning the
+   value to the card floor; the tonal underlay would tint the white date chip. */
+html[data-chart="shopifyAdmin"] .dashboard-kpi-widget {
+  justify-content: flex-start;
+  gap: 8px;
+}
+html[data-chart="shopifyAdmin"] .dashboard-kpi-widget__hero {
+  flex: 0 0 auto;
+  align-items: center;
+}
+html[data-chart="shopifyAdmin"] .dashboard-kpi-widget__spark {
+  flex: 0 0 auto;
+  height: 44px;
+}
+html[data-chart="shopifyAdmin"] .dashboard-page-header__filters .v-btn .v-btn__underlay {
+  opacity: 0;
+}
