@@ -99,6 +99,13 @@ const headlineColor = computed(() => {
   return headline.value.delta >= 0 ? posNeg.positive : posNeg.negative
 })
 
+// A one-bucket range ("Yesterday") gives every series a single point, and a
+// line through one point paints nothing. Show the point itself at hover size
+// so the chart still reads; multi-point series keep their hover-only markers.
+const restingMarkerSize = computed(() => (
+  props.data.labels.length <= 1 ? (treatment.value?.markers.hoverSize ?? 5) : 0
+))
+
 const chartHeight = computed(() => {
   // Readability floors: the main timeseries never renders below 240px, other
   // charts never below 200px, regardless of how small the card body measures.
@@ -674,7 +681,7 @@ const chartOptions = computed<ApexOptions>(() => {
           ? {
               markers: t.markers.lastPoint && props.data.series.length === 1
                 ? {
-                    size: 0,
+                    size: restingMarkerSize.value,
                     discrete: [{
                       seriesIndex: 0,
                       dataPointIndex: (props.data.series[0]?.data as number[]).length - 1,
@@ -685,16 +692,16 @@ const chartOptions = computed<ApexOptions>(() => {
                     }],
                     hover: { size: t.markers.hoverSize },
                   }
-                : { size: 0, strokeColors: markerStrokeColor.value, hover: { size: t.markers.hoverSize } },
+                : { size: restingMarkerSize.value, strokeColors: markerStrokeColor.value, hover: { size: t.markers.hoverSize } },
             }
           : {})
       : props.widgetType === 'timeseries' && flatMarks.value
       // Polaris is hover-only: no persistent last-point dot.
-      ? { markers: { size: 0, strokeColors: markerStrokeColor.value, hover: { size: 4 } } }
+      ? { markers: { size: restingMarkerSize.value, strokeColors: markerStrokeColor.value, hover: { size: 4 } } }
       : props.widgetType === 'timeseries' && props.data.series.length === 1
         ? {
             markers: {
-              size: 0,
+              size: restingMarkerSize.value,
               discrete: [{
                 seriesIndex: 0,
                 dataPointIndex: (props.data.series[0]?.data as number[]).length - 1,
