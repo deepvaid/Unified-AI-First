@@ -147,8 +147,8 @@ html[data-chart="bloomreach"] .dashboard-kpi-widget .dashboard-kpi-widget__title
   color: var(--mp-skin-text);
 }
 html[data-chart="bloomreach"] .dashboard-kpi-widget__hero {
-  flex: 0 0 auto;
-  align-items: baseline;
+  flex: 1 1 auto;
+  align-items: center;
 }
 html[data-chart="bloomreach"] .dashboard-kpi-widget__hero-main {
   display: flex;
@@ -213,8 +213,10 @@ html[data-chart="bloomreach"] .dt-legend__value {
   color: var(--mp-skin-text-secondary);
 }
 html[data-chart="bloomreach"] .dashboard-table-widget .v-table thead > tr > th {
+  text-transform: none;
+  letter-spacing: 0 !important;
   font-size: 13px !important;
-  font-weight: var(--mp-skin-weight-semibold) !important;
+  font-weight: var(--mp-skin-weight-medium) !important;
   color: var(--mp-skin-text-secondary) !important;
 }
 html[data-chart="bloomreach"] .dashboard-table-widget .v-table tbody > tr > td {

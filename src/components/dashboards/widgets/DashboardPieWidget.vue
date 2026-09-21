@@ -136,6 +136,8 @@ const options = computed<ApexOptions>(() => {
             fillColors: palette.value,
           },
           onItemHover: { highlightDataSeries: t.legend.hoverHighlight },
+          // Stripe-style treatments hide the legend (values live in the tooltip).
+          ...(t.legend.show === false ? { show: false } : {}),
         }
       : chartLegendOptions(palette.value, chrome, 'bottom'),
     dataLabels: {

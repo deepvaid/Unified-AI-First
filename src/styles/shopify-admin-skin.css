@@ -140,11 +140,43 @@ html[data-chart="shopifyAdmin"] .dashboard-kpi-widget {
   justify-content: flex-start;
   gap: 8px;
 }
+/* The hero fills the tile so the value row sits centred and the sparkline
+   runs the full right half — Shopify's tile proportions, not a top-heavy card. */
 html[data-chart="shopifyAdmin"] .dashboard-kpi-widget__hero {
-  flex: 0 0 auto;
+  flex: 1 1 auto;
   align-items: center;
+  flex-wrap: nowrap;
 }
 html[data-chart="shopifyAdmin"] .dashboard-kpi-widget__spark {
-  flex: 0 0 auto;
-  height: 44px;
+  flex: 1 1 45%;
+  min-width: 96px;
+  height: 100%;
+  max-height: 64px;
+}
+/* Status chips as Polaris Badge: radius-200, tone fills, no Vuetify underlay. */
+html[data-chart="shopifyAdmin"] .dashboard-hub .mp-status-chip.v-chip {
+  border-radius: 8px !important;
+  background: #e3e3e3 !important;
+  color: #303030 !important;
+  font-weight: 550;
+  letter-spacing: 0;
+}
+html[data-chart="shopifyAdmin"] .dashboard-hub .mp-status-chip.v-chip .v-chip__underlay {
+  opacity: 0;
+}
+html[data-chart="shopifyAdmin"] .dashboard-hub .mp-status-chip.v-chip.text-success {
+  background: #cdfed4 !important;
+  color: #0c5132 !important;
+}
+html[data-chart="shopifyAdmin"] .dashboard-hub .mp-status-chip.v-chip.text-error {
+  background: #fedad9 !important;
+  color: #8e1f0b !important;
+}
+html[data-chart="shopifyAdmin"] .dashboard-hub .mp-status-chip.v-chip.text-warning {
+  background: #ffeb78 !important;
+  color: #4f4700 !important;
+}
+html[data-chart="shopifyAdmin"] .dashboard-hub .mp-status-chip.v-chip.text-primary {
+  background: #e0f0ff !important;
+  color: #00527c !important;
 }

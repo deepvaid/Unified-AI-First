@@ -92,7 +92,7 @@ html[data-chart="stripe"] .dashboard-kpi-widget .dashboard-kpi-widget__title {
   color: var(--mp-skin-text);
 }
 html[data-chart="stripe"] .dashboard-kpi-widget__hero {
-  flex: 0 0 auto;
+  flex: 1 1 auto;
   align-items: center;
   flex-wrap: nowrap;
 }
@@ -129,9 +129,13 @@ html[data-chart="stripe"] .dashboard-kpi-widget__spark {
   min-width: 64px;
   height: 40px;
 }
+/* Stripe prints "$19,036 previous period" as a quiet inline line, not a footer. */
 html[data-chart="stripe"] .dashboard-kpi-widget__stats {
-  border-top: 1px solid var(--mp-skin-border);
-  margin-top: auto;
+  border-top: 0;
+  padding-top: 0;
+  margin-top: 0;
+  justify-content: flex-start;
+  gap: 16px;
 }
 html[data-chart="stripe"] .dashboard-kpi-widget__stat-label {
   font-size: 12px;
