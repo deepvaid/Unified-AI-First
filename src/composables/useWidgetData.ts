@@ -199,7 +199,42 @@ function pickPreviousValue(filters: DashboardFilterState, current: number, previ
   return previous
 }
 
-/** Per-day value buckets for the current and previous windows (both `days` long). */
+/**
+ * Intraday shape for one-day windows (Today / Yesterday). The mock orders carry a
+ * calendar date only, so a single day would plot as one point; instead the day's
+ * total is spread across 24 hourly buckets on a retail curve — quiet overnight,
+ * a late-morning peak, an evening peak — the way Shopify's hourly view reads.
+ * Weights sum to 1, so every total is preserved exactly.
+ */
+const INTRADAY_WEIGHTS = [
+  0.6, 0.4, 0.3, 0.25, 0.25, 0.35, 0.6, 1.1, 1.9, 2.8, 3.4, 3.7,
+  3.6, 3.3, 3.1, 3.0, 3.2, 3.6, 4.1, 4.4, 4.0, 3.2, 2.1, 1.2,
+].map((w, _, all) => w / all.reduce((sum, value) => sum + value, 0))
+
+/** Spread a day total over 24 hours; integer totals stay integers (largest remainder). */
+function spreadAcrossHours(total: number): number[] {
+  const raw = INTRADAY_WEIGHTS.map((w) => total * w)
+  if (!Number.isInteger(total)) return raw.map((v) => Math.round(v * 100) / 100)
+  const floors = raw.map((v) => Math.floor(v))
+  let remainder = total - floors.reduce((sum, v) => sum + v, 0)
+  const order = raw.map((v, i) => ({ i, frac: v - Math.floor(v) })).sort((a, b) => b.frac - a.frac)
+  for (const { i } of order) {
+    if (remainder <= 0) break
+    floors[i] = (floors[i] ?? 0) + 1
+    remainder -= 1
+  }
+  return floors
+}
+
+/** True when the window is a single calendar day and series switch to hourly buckets. */
+function isHourlyWindow(window: DateWindow): boolean {
+  return window.days === 1
+}
+
+/**
+ * Value buckets for the current and previous windows: one per day, or 24 hourly
+ * buckets when the window is a single day (see INTRADAY_WEIGHTS).
+ */
 function bucketDaily<T>(
   records: T[],
   dateGetter: (record: T) => Date,
@@ -219,6 +254,9 @@ function bucketDaily<T>(
       if (index >= 0 && index < window.days) prev[index] = (prev[index] ?? 0) + valueGetter(record)
     }
   })
+  if (isHourlyWindow(window)) {
+    return { cur: spreadAcrossHours(cur[0] ?? 0), prev: spreadAcrossHours(prev[0] ?? 0) }
+  }
   return { cur, prev }
 }
 
@@ -254,8 +292,15 @@ function shortDate(date: Date): string {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
-/** Five evenly spaced "Jul 3"-style labels across the current window. */
+/** "12am" … "11pm" — the hourly axis for a one-day window. */
+function hourLabel(hour: number): string {
+  const h12 = hour % 12 === 0 ? 12 : hour % 12
+  return `${h12}${hour < 12 ? 'am' : 'pm'}`
+}
+
+/** Five evenly spaced "Jul 3"-style labels across the current window ("12am" … "11pm" for one day). */
 function windowAxisLabels(window: DateWindow): string[] {
+  if (isHourlyWindow(window)) return [0, 6, 12, 18, 23].map(hourLabel)
   return [0, 0.25, 0.5, 0.75, 1].map((fraction) =>
     shortDate(new Date(window.currentStart.getTime() + fraction * (window.days - 1) * MS_PER_DAY)),
   )
@@ -263,6 +308,7 @@ function windowAxisLabels(window: DateWindow): string[] {
 
 /** One "Jul 3"-style label per day in the current window (hover tooltip). */
 function windowPointLabels(window: DateWindow): string[] {
+  if (isHourlyWindow(window)) return Array.from({ length: 24 }, (_, hour) => hourLabel(hour))
   return Array.from({ length: window.days }, (_, index) =>
     shortDate(new Date(window.currentStart.getTime() + index * MS_PER_DAY)),
   )
