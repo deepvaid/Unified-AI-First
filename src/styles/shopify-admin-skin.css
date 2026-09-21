@@ -27,28 +27,8 @@ html[data-chart="shopifyAdmin"] {
 html[data-chart="shopifyAdmin"] body:has(.dashboard-hub) .v-main.bg-background {
   background: #f1f1f1 !important;
 }
-html[data-chart="shopifyAdmin"] .dashboard-page-header,
-html[data-chart="shopifyAdmin"] .dashboard-page-header__filters {
-  background: #ffffff;
-  border-color: transparent;
-}
-html[data-chart="shopifyAdmin"] .dashboard-page-header__eyebrow {
-  display: none;
-}
-html[data-chart="shopifyAdmin"] .dashboard-page-header__h1 {
-  font-size: 20px;
-  font-weight: var(--mp-skin-weight-semibold);
-  letter-spacing: 0;
-  color: var(--mp-skin-text);
-}
-html[data-chart="shopifyAdmin"] .dashboard-page-header__filters .v-btn {
-  background: #ffffff !important;
-  color: var(--mp-skin-text) !important;
-  border-radius: 8px !important;
-  box-shadow: 0 1px 0 rgba(26, 26, 26, 0.07), 1px 0 0 0 rgba(0, 0, 0, 0.13) inset, -1px 0 0 0 rgba(0, 0, 0, 0.13) inset, 0 -1px 0 0 rgba(0, 0, 0, 0.17) inset, 0 1px 0 0 rgba(204, 204, 204, 0.5) inset;
-  font-size: 12px;
-  font-weight: var(--mp-skin-weight-medium);
-}
+/* The page header (title row, date chip, actions) keeps the app's default
+   chrome by request — the skin restyles the canvas and the cards only. */
 
 /* Grid gutter follows the 16px Polaris gap set in DashboardGrid.vue ----- */
 html[data-chart="shopifyAdmin"] .dashboard-grid {
@@ -155,7 +135,7 @@ html[data-chart="shopifyAdmin"] .donut-widget__stat-value {
 }
 
 /* KPI card stacks title → value row, Shopify-style, instead of pinning the
-   value to the card floor; the tonal underlay would tint the white date chip. */
+   value to the card floor. */
 html[data-chart="shopifyAdmin"] .dashboard-kpi-widget {
   justify-content: flex-start;
   gap: 8px;
@@ -167,7 +147,4 @@ html[data-chart="shopifyAdmin"] .dashboard-kpi-widget__hero {
 html[data-chart="shopifyAdmin"] .dashboard-kpi-widget__spark {
   flex: 0 0 auto;
   height: 44px;
-}
-html[data-chart="shopifyAdmin"] .dashboard-page-header__filters .v-btn .v-btn__underlay {
-  opacity: 0;
 }

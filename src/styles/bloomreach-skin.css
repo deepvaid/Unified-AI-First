@@ -31,39 +31,8 @@ html[data-chart="bloomreach"] {
 html[data-chart="bloomreach"] body:has(.dashboard-hub) .v-main.bg-background {
   background: #ffffff !important;
 }
-html[data-chart="bloomreach"] .dashboard-page-header {
-  background: #ffffff;
-  border-bottom: 1px solid var(--mp-skin-border);
-}
-html[data-chart="bloomreach"] .dashboard-page-header__filters {
-  background: #ffffff;
-  border-top: 0;
-}
-html[data-chart="bloomreach"] .dashboard-page-header__eyebrow {
-  display: none;
-}
-html[data-chart="bloomreach"] .dashboard-page-header__h1 {
-  font-size: 28px;
-  font-weight: var(--mp-skin-weight-semibold);
-  letter-spacing: 0;
-  color: var(--mp-skin-text);
-}
-html[data-chart="bloomreach"] .dashboard-page-header__filters .v-btn {
-  background: #ffffff !important;
-  color: var(--mp-skin-text) !important;
-  border: 1px solid var(--mp-skin-border);
-  border-radius: 4px !important;
-  box-shadow: none;
-  font-size: 14px;
-  font-weight: var(--mp-skin-weight-medium);
-}
-html[data-chart="bloomreach"] .dashboard-page-header__filters .v-btn .v-btn__underlay {
-  opacity: 0;
-}
-html[data-chart="bloomreach"] .dashboard-page-header__actions .v-btn.bg-primary {
-  background: var(--mp-skin-accent) !important;
-  border-radius: 4px !important;
-}
+/* The page header (title row, date chip, actions) keeps the app's default
+   chrome by request — the skin restyles the canvas, cards and sidebar only. */
 
 /* Sidebar — Bloomreach's navy rail, on dashboard pages only ------------- */
 html[data-chart="bloomreach"] body:has(.dashboard-hub) .mp-sidebar,
