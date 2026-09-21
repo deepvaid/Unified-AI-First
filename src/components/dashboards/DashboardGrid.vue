@@ -49,7 +49,9 @@ const { mdAndDown } = useDisplay()
 // The Shopify admin skin lays cards out on Polaris space-400 (16px); every other
 // option keeps the 20px gutter that .dashboard-grid's negative margins assume.
 const { theme: chartTheme } = useChartTheme()
-const gridMargin = computed<[number, number]>(() => (chartTheme.value.skin === 'polaris' ? [16, 16] : [20, 20]))
+const gridMargin = computed<[number, number]>(() => (
+  chartTheme.value.skin === 'polaris' || chartTheme.value.skin === 'stripe' ? [16, 16] : [20, 20]
+))
 
 function normalizeLayout(items: Array<{ i: string; x: number; y: number; w: number; h: number }>): LayoutItem[] {
   return [...items]

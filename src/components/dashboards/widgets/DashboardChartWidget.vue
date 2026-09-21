@@ -725,7 +725,7 @@ const chartOptions = computed<ApexOptions>(() => {
           formatter: (value: number) => formatCompactValue(value, props.data.unit),
         }
       : { enabled: false },
-    legend: showLegend
+    legend: showLegend && t?.legend.show !== false
       ? {
           ...chartLegendOptions(resolvedSeriesColors.value, chrome, t?.legend.position ?? 'top', t?.legend.align, t?.legend.fontSize),
           // shadcn legend: small square markers. Dots use the same resolved
@@ -756,11 +756,23 @@ const chartOptions = computed<ApexOptions>(() => {
     xaxis: {
       ...base.xaxis,
       categories: props.data.labels,
+      // Stripe keeps only the first and last category label ("3 Dec … Today").
+      ...(t?.axes.xLabels === 'ends' ? { tickAmount: Math.max(1, props.data.labels.length - 1) } : {}),
+      axisBorder: { show: t?.axes.baseline === true, color: chrome.grid, height: 1 },
       labels: {
         ...base.xaxis?.labels,
         offsetY: 2,
         ...(t?.axes.labelFontSize
           ? { style: { ...base.xaxis?.labels?.style, fontSize: `${t.axes.labelFontSize}px`, fontWeight: t.axes.labelFontWeight ?? 500 } }
+          : {}),
+        ...(t?.axes.xLabels === 'ends'
+          ? {
+              hideOverlappingLabels: false,
+              formatter: (value: string) => {
+                const labels = props.data.labels
+                return value === labels[0] || value === labels[labels.length - 1] ? value : ''
+              },
+            }
           : {}),
       },
       crosshairs: isBar
@@ -779,6 +791,7 @@ const chartOptions = computed<ApexOptions>(() => {
     // Stacked charts always keep the scale — the cumulative total is the point,
     // and a stack read without a y-axis is just a texture.
     yaxis: {
+      ...(t?.axes.yTickAmount != null ? { tickAmount: t.axes.yTickAmount } : {}),
       labels: (isStacked.value || props.chartVariant === 'line' || isHorizontalBar.value || (flatMarks.value && props.widgetType === 'timeseries') || (t?.axes.yLabelsOnTimeseries === true && isTimeseries))
         ? {
             formatter: (value: number) => {

@@ -169,6 +169,40 @@ import {
   mp_color_chart_dark_bloomreach_series4,
   mp_color_chart_dark_bloomreach_series5,
   mp_color_chart_dark_bloomreach_series6,
+  mp_color_chart_light_stripe_axis1,
+  mp_color_chart_light_stripe_axis2,
+  mp_color_chart_light_stripe_axis3,
+  mp_color_chart_light_stripe_axis4,
+  mp_color_chart_light_stripe_axis5,
+  mp_color_chart_light_stripe_axisLabel,
+  mp_color_chart_light_stripe_comparison,
+  mp_color_chart_light_stripe_crosshair,
+  mp_color_chart_light_stripe_grid,
+  mp_color_chart_light_stripe_legendLabel,
+  mp_color_chart_light_stripe_negative,
+  mp_color_chart_light_stripe_neutral,
+  mp_color_chart_light_stripe_positive,
+  mp_color_chart_light_stripe_series1,
+  mp_color_chart_light_stripe_series2,
+  mp_color_chart_light_stripe_series3,
+  mp_color_chart_light_stripe_series4,
+  mp_color_chart_light_stripe_series5,
+  mp_color_chart_light_stripe_series6,
+  mp_color_chart_light_stripe_tooltipBackground,
+  mp_color_chart_light_stripe_tooltipText,
+  mp_color_chart_light_stripe_warning,
+  mp_color_chart_dark_stripe_axis1,
+  mp_color_chart_dark_stripe_axis2,
+  mp_color_chart_dark_stripe_axis3,
+  mp_color_chart_dark_stripe_axis4,
+  mp_color_chart_dark_stripe_axis5,
+  mp_color_chart_dark_stripe_comparison,
+  mp_color_chart_dark_stripe_series1,
+  mp_color_chart_dark_stripe_series2,
+  mp_color_chart_dark_stripe_series3,
+  mp_color_chart_dark_stripe_series4,
+  mp_color_chart_dark_stripe_series5,
+  mp_color_chart_dark_stripe_series6,
   mp_color_chart_light_grayBlueGold_axis1,
   mp_color_chart_light_grayBlueGold_axis2,
   mp_color_chart_light_grayBlueGold_axis3,
@@ -224,6 +258,8 @@ export type ChartPalette =
   | 'shopifyAdmin'
   /** Bloomreach Engagement look (navy / slate / purple) with Ocean cyan in place of their yellow; chart marks + card chrome. */
   | 'bloomreach'
+  /** Stripe Dashboard look (hairlines, min/max axes, no legend) on Maropost primary; chart marks + card chrome. */
+  | 'stripe'
   /** Gradient exploration variants — each base palette with the emboss/duotone
       treatment, shown on /dashboard-gradient (`socialGradient` is its default). */
   | 'socialGradient'
@@ -286,6 +322,12 @@ export interface ChartTreatment {
     labelFontWeight?: number
     /** Case of the compact k/m/b suffix on the y-axis ("$3k" vs Polaris's "$3K"). */
     compactUnitCase?: 'lower' | 'upper'
+    /** 'ends' keeps only the first and last category label (Stripe's "3 Dec … Today"). */
+    xLabels?: 'all' | 'ends'
+    /** Apex yaxis.tickAmount; 1 = min and max only. */
+    yTickAmount?: number
+    /** Draw the x-axis line (the only rule Stripe keeps when gridlines are off). */
+    baseline?: boolean
   }
   crosshair: { show: boolean; dash: number; color?: string }
   markers: { hoverSize: number; lastPoint: boolean }
@@ -298,6 +340,8 @@ export interface ChartTreatment {
     fontSize?: number
     /** Custom legend markers: a 12×2 line per series, three dots for the comparison series. */
     comparisonMarker?: 'dots'
+    /** false hides the legend entirely (Stripe); default shows it. */
+    show?: boolean
   }
   donut: {
     size: string
@@ -347,7 +391,7 @@ export interface ChartTheme {
    * DashboardChartWidget (headline) and DashboardGrid (gap); the CSS side keys
    * off the mirrored `<html data-chart>` in shopify-admin-skin.css.
    */
-  skin?: 'polaris' | 'bloomreach'
+  skin?: 'polaris' | 'bloomreach' | 'stripe'
 }
 
 /**
@@ -652,6 +696,47 @@ const BLOOMREACH_LIGHT_CHROME: ChartChrome = {
   tooltipBorder: 'transparent',
 }
 
+/**
+ * Stripe Dashboard's chart grammar ("Your overview"): a 1.5px straight line with
+ * no area, a thin lighter previous period, no gridlines but a baseline, y labels
+ * at min and max only, x labels at the ends only, no legend, white tooltip card.
+ * Stripe's indigo becomes Maropost primary; the orange / blue / green status
+ * companions stay.
+ */
+const STRIPE_TREATMENT = makeTreatment({
+  stroke: { curve: 'straight', width: 1.5, companionWidth: 1.5, companionDash: 0, gradientLine: false },
+  comparison: { color: mp_color_chart_light_stripe_comparison, dash: 0, fillOpacity: 0 },
+  area: { fill: 'solid', opacityFrom: 0, opacityTo: 0 },
+  bar: { radius: 2, columnWidthSingle: '55%', columnWidthGrouped: '75%', fill: 'solid', floatingLabels: false },
+  grid: { show: false, dashArray: 0, xLines: false, yLines: false, color: mp_color_chart_light_stripe_grid },
+  axes: { yLabelsOnTimeseries: true, labelFontSize: 11, labelFontWeight: 400, compactUnitCase: 'upper', xLabels: 'ends', yTickAmount: 1, baseline: true },
+  crosshair: { show: true, dash: 0, color: mp_color_chart_light_stripe_crosshair },
+  markers: { hoverSize: 4, lastPoint: false },
+  legend: { markerShape: 'circle', markerSize: 8, hoverHighlight: true, show: false },
+  donut: { size: '70%', fill: 'solid', strokeWidth: 2, showDataLabels: false, cornerRadius: 0, spacing: 2 },
+  svg: { shade: 'flat' },
+  kpiSpark: { fillOpacity: 0 },
+  effects: { dropShadow: false },
+  states: { hoverFilter: 'none', hoverFilterValue: 0, dimmedOpacity: 0.3 },
+  posNeg: {
+    positive: mp_color_chart_light_stripe_positive,
+    negative: mp_color_chart_light_stripe_negative,
+    warning: mp_color_chart_light_stripe_warning,
+    neutral: mp_color_chart_light_stripe_neutral,
+  },
+})
+
+/** Stripe chrome: slate labels, hairline grid colour (used for the baseline), white tooltip. */
+const STRIPE_LIGHT_CHROME: ChartChrome = {
+  axisLabel: mp_color_chart_light_stripe_axisLabel,
+  legendLabel: mp_color_chart_light_stripe_legendLabel,
+  grid: mp_color_chart_light_stripe_grid,
+  tooltipTheme: 'light',
+  tooltipBackground: mp_color_chart_light_stripe_tooltipBackground,
+  tooltipText: mp_color_chart_light_stripe_tooltipText,
+  tooltipBorder: mp_color_chart_light_stripe_grid,
+}
+
 export const CHART_THEMES: Record<ChartPalette, Record<ChartMode, ChartTheme>> = {
   ocean: {
     light: {
@@ -837,6 +922,55 @@ export const CHART_THEMES: Record<ChartPalette, Record<ChartMode, ChartTheme>> =
     chrome: cloneChrome(DARK_CHROME),
     treatment: BLOOMREACH_TREATMENT,
     skin: 'bloomreach',
+  },
+  },
+  stripe: {
+  light: {
+    label: 'Stripe — Maropost blue',
+    series: [
+      mp_color_chart_light_stripe_series1,
+      mp_color_chart_light_stripe_series2,
+      mp_color_chart_light_stripe_series3,
+      mp_color_chart_light_stripe_series4,
+      mp_color_chart_light_stripe_series5,
+      mp_color_chart_light_stripe_series6,
+    ],
+    axis: [
+      mp_color_chart_light_stripe_axis1,
+      mp_color_chart_light_stripe_axis2,
+      mp_color_chart_light_stripe_axis3,
+      mp_color_chart_light_stripe_axis4,
+      mp_color_chart_light_stripe_axis5,
+    ],
+    gradientMarks: false,
+    comparisonColor: mp_color_chart_light_stripe_comparison,
+    chrome: cloneChrome(STRIPE_LIGHT_CHROME),
+    treatment: STRIPE_TREATMENT,
+    skin: 'stripe',
+  },
+  // PROVISIONAL — light-only review
+  dark: {
+    label: 'Stripe — Maropost blue',
+    series: [
+      mp_color_chart_dark_stripe_series1,
+      mp_color_chart_dark_stripe_series2,
+      mp_color_chart_dark_stripe_series3,
+      mp_color_chart_dark_stripe_series4,
+      mp_color_chart_dark_stripe_series5,
+      mp_color_chart_dark_stripe_series6,
+    ],
+    axis: [
+      mp_color_chart_dark_stripe_axis1,
+      mp_color_chart_dark_stripe_axis2,
+      mp_color_chart_dark_stripe_axis3,
+      mp_color_chart_dark_stripe_axis4,
+      mp_color_chart_dark_stripe_axis5,
+    ],
+    gradientMarks: false,
+    comparisonColor: mp_color_chart_dark_stripe_comparison,
+    chrome: cloneChrome(DARK_CHROME),
+    treatment: STRIPE_TREATMENT,
+    skin: 'stripe',
   },
   },
   // Same marks; `skin` adds the Shopify admin page + card chrome on dashboards.

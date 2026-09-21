@@ -39,6 +39,18 @@
   --mp-chart-dim-opacity: 0.25;
 }
 
+/* Stripe — white tooltip card with a hairline and a soft shadow. */
+[data-chart="stripe"] {
+  --mp-tip-bg: #ffffff;
+  --mp-tip-border: #ebeef1;
+  --mp-tip-radius: 8px;
+  --mp-tip-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --mp-tip-title-color: #687385;
+  --mp-tip-muted: #687385;
+  --mp-tip-text: #30313d;
+  --mp-chart-dim-opacity: 0.3;
+}
+
 /* Legend-hover series dimming.
    Apex tags the non-hovered series <g> with `legend-mouseover-inactive` and dims
    its *children* to `opacity: .2` from the stylesheet it injects at runtime (the

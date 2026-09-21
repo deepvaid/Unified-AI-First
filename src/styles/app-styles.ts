@@ -23,3 +23,5 @@ import './chart-theme-variants.css'
 import './shopify-admin-skin.css'
 // Bloomreach Engagement page + card + sidebar chrome — only under <html data-chart="bloomreach">
 import './bloomreach-skin.css'
+// Stripe Dashboard card chrome — only under <html data-chart="stripe">
+import './stripe-skin.css'
