@@ -21,3 +21,5 @@ import './dv-diffusion.css'
 import './chart-theme-variants.css'
 // Shopify admin page + card chrome — only under <html data-chart="shopifyAdmin">
 import './shopify-admin-skin.css'
+// Bloomreach Engagement page + card + sidebar chrome — only under <html data-chart="bloomreach">
+import './bloomreach-skin.css'

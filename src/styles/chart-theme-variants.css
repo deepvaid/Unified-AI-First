@@ -27,6 +27,18 @@
   --mp-chart-dim-opacity: 0.3;
 }
 
+/* Bloomreach — navy tooltip (their hover card is dark on a light chart). */
+[data-chart="bloomreach"] {
+  --mp-tip-bg: #042c44;
+  --mp-tip-border: transparent;
+  --mp-tip-radius: 6px;
+  --mp-tip-shadow: 0 4px 14px rgba(4, 44, 68, 0.25);
+  --mp-tip-title-color: #c7d0dd;
+  --mp-tip-muted: #c7d0dd;
+  --mp-tip-text: #ffffff;
+  --mp-chart-dim-opacity: 0.25;
+}
+
 /* Legend-hover series dimming.
    Apex tags the non-hovered series <g> with `legend-mouseover-inactive` and dims
    its *children* to `opacity: .2` from the stylesheet it injects at runtime (the

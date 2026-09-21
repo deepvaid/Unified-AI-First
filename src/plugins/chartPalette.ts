@@ -135,6 +135,40 @@ import {
   mp_color_chart_dark_shopify_series4,
   mp_color_chart_dark_shopify_series5,
   mp_color_chart_dark_shopify_series6,
+  mp_color_chart_light_bloomreach_axis1,
+  mp_color_chart_light_bloomreach_axis2,
+  mp_color_chart_light_bloomreach_axis3,
+  mp_color_chart_light_bloomreach_axis4,
+  mp_color_chart_light_bloomreach_axis5,
+  mp_color_chart_light_bloomreach_axisLabel,
+  mp_color_chart_light_bloomreach_comparison,
+  mp_color_chart_light_bloomreach_crosshair,
+  mp_color_chart_light_bloomreach_grid,
+  mp_color_chart_light_bloomreach_legendLabel,
+  mp_color_chart_light_bloomreach_negative,
+  mp_color_chart_light_bloomreach_neutral,
+  mp_color_chart_light_bloomreach_positive,
+  mp_color_chart_light_bloomreach_series1,
+  mp_color_chart_light_bloomreach_series2,
+  mp_color_chart_light_bloomreach_series3,
+  mp_color_chart_light_bloomreach_series4,
+  mp_color_chart_light_bloomreach_series5,
+  mp_color_chart_light_bloomreach_series6,
+  mp_color_chart_light_bloomreach_tooltipBackground,
+  mp_color_chart_light_bloomreach_tooltipText,
+  mp_color_chart_light_bloomreach_warning,
+  mp_color_chart_dark_bloomreach_axis1,
+  mp_color_chart_dark_bloomreach_axis2,
+  mp_color_chart_dark_bloomreach_axis3,
+  mp_color_chart_dark_bloomreach_axis4,
+  mp_color_chart_dark_bloomreach_axis5,
+  mp_color_chart_dark_bloomreach_comparison,
+  mp_color_chart_dark_bloomreach_series1,
+  mp_color_chart_dark_bloomreach_series2,
+  mp_color_chart_dark_bloomreach_series3,
+  mp_color_chart_dark_bloomreach_series4,
+  mp_color_chart_dark_bloomreach_series5,
+  mp_color_chart_dark_bloomreach_series6,
   mp_color_chart_light_grayBlueGold_axis1,
   mp_color_chart_light_grayBlueGold_axis2,
   mp_color_chart_light_grayBlueGold_axis3,
@@ -188,6 +222,8 @@ export type ChartPalette =
   | 'shopify'
   /** `shopify` marks plus the Shopify admin page + card chrome (`skin: 'polaris'`), dashboards only. */
   | 'shopifyAdmin'
+  /** Bloomreach Engagement look (navy / slate / purple) with Ocean cyan in place of their yellow; chart marks + card chrome. */
+  | 'bloomreach'
   /** Gradient exploration variants — each base palette with the emboss/duotone
       treatment, shown on /dashboard-gradient (`socialGradient` is its default). */
   | 'socialGradient'
@@ -311,7 +347,7 @@ export interface ChartTheme {
    * DashboardChartWidget (headline) and DashboardGrid (gap); the CSS side keys
    * off the mirrored `<html data-chart>` in shopify-admin-skin.css.
    */
-  skin?: 'polaris'
+  skin?: 'polaris' | 'bloomreach'
 }
 
 /**
@@ -569,6 +605,53 @@ const SHOPIFY_DARK: ChartTheme = {
   treatment: SHOPIFY_TREATMENT,
 }
 
+/**
+ * Bloomreach Engagement's analytics grammar (Project performance / Reports),
+ * read from their public docs: 2px straight-segment lines with no area, flat
+ * bars with value labels, solid light gridlines, bottom-centre legend, navy
+ * tooltip. Their yellow primary becomes Maropost's Ocean cyan; purple stays.
+ */
+const BLOOMREACH_TREATMENT = makeTreatment({
+  stroke: { curve: 'straight', width: 2, companionWidth: 2, companionDash: 0, gradientLine: false },
+  comparison: { color: mp_color_chart_light_bloomreach_comparison, dash: 5, fillOpacity: 0 },
+  area: { fill: 'solid', opacityFrom: 0, opacityTo: 0 },
+  bar: { radius: 2, columnWidthSingle: '55%', columnWidthGrouped: '75%', fill: 'solid', floatingLabels: true },
+  grid: { show: true, dashArray: 0, xLines: false, yLines: true, color: mp_color_chart_light_bloomreach_grid },
+  axes: { yLabelsOnTimeseries: true, labelFontSize: 12, labelFontWeight: 500, compactUnitCase: 'upper' },
+  crosshair: { show: true, dash: 0, color: mp_color_chart_light_bloomreach_crosshair },
+  markers: { hoverSize: 5, lastPoint: false },
+  // Bloomreach legend previews are short lines; the comparison series gets the dotted preview.
+  legend: { markerShape: 'line', markerSize: 12, hoverHighlight: true, position: 'bottom', align: 'center', fontSize: 13, comparisonMarker: 'dots' },
+  donut: { size: '62%', fill: 'solid', strokeWidth: 2, showDataLabels: false, cornerRadius: 0, spacing: 2 },
+  svg: { shade: 'flat' },
+  kpiSpark: { fillOpacity: 0 },
+  effects: { dropShadow: false },
+  states: { hoverFilter: 'none', hoverFilterValue: 0, dimmedOpacity: 0.25 },
+  posNeg: {
+    positive: mp_color_chart_light_bloomreach_positive,
+    negative: mp_color_chart_light_bloomreach_negative,
+    warning: mp_color_chart_light_bloomreach_warning,
+    neutral: mp_color_chart_light_bloomreach_neutral,
+  },
+  ramps: {
+    funnelStops: [
+      { offset: '0%', color: mp_color_chart_light_bloomreach_series1 },
+      { offset: '100%', color: mp_color_chart_light_bloomreach_series4 },
+    ],
+  },
+})
+
+/** Bloomreach chrome: slate labels, light solid grid, navy tooltip with white text. */
+const BLOOMREACH_LIGHT_CHROME: ChartChrome = {
+  axisLabel: mp_color_chart_light_bloomreach_axisLabel,
+  legendLabel: mp_color_chart_light_bloomreach_legendLabel,
+  grid: mp_color_chart_light_bloomreach_grid,
+  tooltipTheme: 'dark',
+  tooltipBackground: mp_color_chart_light_bloomreach_tooltipBackground,
+  tooltipText: mp_color_chart_light_bloomreach_tooltipText,
+  tooltipBorder: 'transparent',
+}
+
 export const CHART_THEMES: Record<ChartPalette, Record<ChartMode, ChartTheme>> = {
   ocean: {
     light: {
@@ -707,6 +790,55 @@ export const CHART_THEMES: Record<ChartPalette, Record<ChartMode, ChartTheme>> =
     },
   },
   shopify: { light: SHOPIFY_LIGHT, dark: SHOPIFY_DARK },
+  bloomreach: {
+  light: {
+    label: 'Bloomreach — cyan',
+    series: [
+      mp_color_chart_light_bloomreach_series1,
+      mp_color_chart_light_bloomreach_series2,
+      mp_color_chart_light_bloomreach_series3,
+      mp_color_chart_light_bloomreach_series4,
+      mp_color_chart_light_bloomreach_series5,
+      mp_color_chart_light_bloomreach_series6,
+    ],
+    axis: [
+      mp_color_chart_light_bloomreach_axis1,
+      mp_color_chart_light_bloomreach_axis2,
+      mp_color_chart_light_bloomreach_axis3,
+      mp_color_chart_light_bloomreach_axis4,
+      mp_color_chart_light_bloomreach_axis5,
+    ],
+    gradientMarks: false,
+    comparisonColor: mp_color_chart_light_bloomreach_comparison,
+    chrome: cloneChrome(BLOOMREACH_LIGHT_CHROME),
+    treatment: BLOOMREACH_TREATMENT,
+    skin: 'bloomreach',
+  },
+  // PROVISIONAL — light-only review
+  dark: {
+    label: 'Bloomreach — cyan',
+    series: [
+      mp_color_chart_dark_bloomreach_series1,
+      mp_color_chart_dark_bloomreach_series2,
+      mp_color_chart_dark_bloomreach_series3,
+      mp_color_chart_dark_bloomreach_series4,
+      mp_color_chart_dark_bloomreach_series5,
+      mp_color_chart_dark_bloomreach_series6,
+    ],
+    axis: [
+      mp_color_chart_dark_bloomreach_axis1,
+      mp_color_chart_dark_bloomreach_axis2,
+      mp_color_chart_dark_bloomreach_axis3,
+      mp_color_chart_dark_bloomreach_axis4,
+      mp_color_chart_dark_bloomreach_axis5,
+    ],
+    gradientMarks: false,
+    comparisonColor: mp_color_chart_dark_bloomreach_comparison,
+    chrome: cloneChrome(DARK_CHROME),
+    treatment: BLOOMREACH_TREATMENT,
+    skin: 'bloomreach',
+  },
+  },
   // Same marks; `skin` adds the Shopify admin page + card chrome on dashboards.
   shopifyAdmin: {
     light: { ...SHOPIFY_LIGHT, label: 'Shopify — charts + cards', skin: 'polaris' },
