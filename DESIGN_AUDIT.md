@@ -1893,3 +1893,65 @@ Per CLAUDE.md → "Log every rename or breaking change in the session changelog"
   real account via the new `useAccounts.updateAccount`. `AccountOwner.welcomedAt` records the
   answer; `TRIAL_WORKSPACE_FALLBACK` exported. Goal chooser and sample task removed from the real
   journey (lab variants keep them).
+
+## Maropay changelog — 2026-09-24
+
+Per CLAUDE.md → "Log every rename or breaking change in the session changelog". Branch
+`claude/maropay-implementation-plan-9d1713`, slices 1 and U1–U7. Screen-by-screen detail lives in
+`CHANGES.md`; decisions, limitations and the implementation report in `docs/maropay/`.
+
+- **New reference surface** — the Maropay payments prototype: a rail workspace at
+  `/accounts/:accountId/maropay/*` (`railShell`), setup at `/maropay/setup` (`builderShell`), and the
+  store-editor child `payments` (`StorePayments`). New sidebar group **Maropay** after Retail
+  (`requires: 'commerce'`). Mock data only; review scenarios load with `?maropay=m01…m15`.
+- **New components** `src/components/maropay/` — 16 `Maropay*` product surfaces, each with a story
+  under `Product/Maropay`. Subfolder convention, not top-level `Mp*`, same as `plg/` and `triallab/`.
+  `CheckoutPreviewFrame` is a bespoke shopper-side simulation (the `StorefrontPreview` exemption,
+  P4-8) with `--cp-*` re-skin props.
+- **New store and modules** — `useMaropayStore` (key `mp.maropay.v1:<accountId>`), pure domain
+  modules in `src/maropay/`, the mock adapter in `src/services/maropay/`, and `npm run test:maropay`
+  (90 `node:test` tests). The pure modules import each other by relative `.ts` path so Node can run
+  them without the Vite alias.
+- **Token added** — `component.preview.viewport.mobile` (390), the phone width of shopper previews.
+- **MpStatusChip** — new `type`s `payout`, `dispute`, `method`, `readiness`. The `payment` map's
+  `partially_refunded` key became `'partially refunded'`, the label Commerce actually writes (the chip
+  rendered grey before), and gained `disputed`, `succeeded`, `processing` and `cancelled`.
+- **MpAlert** — `.mp-alert__actions` wraps, so action buttons no longer run off a phone screen.
+- **MpDialog** — behaviour change: focus returns to whatever opened the dialog once it has closed.
+  `v-dialog` only did this for activator-slot dialogs, and every host here opens it with `v-model`,
+  so focus used to drop to `<body>`. The hand-back is skipped when something else has taken focus
+  meanwhile (a follow-up dialog). `MpConfirmDialog` inherits it; `MpFormDrawer` already did this
+  through `useFocusTrap`.
+- **MpDataTableToolbar** — "1 record", no longer "1 records".
+- **Notifications** — `AppNotification.to?` and `useNotifications.push()`. `NotificationRow` renders a
+  notification that has a route as a link (rows without one stay buttons), and `MpNotificationsMenu`
+  closes when a link row is followed.
+- **StoreEditorSidebar** — new **Selling** group holding **Payments**, between Customize and Store
+  content.
+- **Commerce seam** — `Order.paymentProvider?` / `Order.paymentId?`, plus `applyPaymentSummary`,
+  `clearPaymentSummary` and `createCheckoutOrder`. `refundOrder` hands tracked orders to Maropay.
+- **Copy** — Retail › Payments provider label "Maropost Payments" → "Maropay". Get Started task
+  `payments` → "Set up payments", opening the Maropay overview. Settings › Payment Account is now a
+  signpost into Maropay rather than a second source of truth.
+
+### Accessibility (axe-core 4.12, U7)
+
+Every Maropay page's content scans clean with axe in the light theme, and colour contrast is clean in
+dark. Fixed in U7: a nested `<main>` in `MaropayLayout`, unnamed row-actions column headers on the
+three Maropay lists, a skipped heading level on the checkout preview, and the dialog focus return
+above. Pre-existing findings outside Maropay were raised as separate follow-up tasks rather than
+fixed here:
+
+- The Settings, Retail and store-editor shells nest a second `<main>` inside `v-main`
+  (`landmark-main-is-top-level`, `landmark-no-duplicate-main`).
+- `MpWizardSteps` puts `role="listitem"` on a `<button>`, which hides its button role
+  (`aria-allowed-role`).
+- `MpFormDrawer` sets `role="dialog"` on the `<nav>` that `VNavigationDrawer` renders
+  (`aria-allowed-role`), and `MpDialog`'s `<header>` counts as a second banner landmark.
+
+### Follow-ups this opens
+
+- The three pre-existing accessibility findings above.
+- `MpAlert` default tone icons never render: `icon?: string | false` makes Vue cast an absent prop to
+  `false`. Maropay passes `icon` explicitly where it needs one.
+- `MpSectionRail` doesn't collapse at phone width.

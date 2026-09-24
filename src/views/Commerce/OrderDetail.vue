@@ -10,8 +10,15 @@ import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpErrorState from '@/components/MpErrorState.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpAlert from '@/components/MpAlert.vue'
+import MaropayRefundDrawer from '@/components/maropay/MaropayRefundDrawer.vue'
 import { formatMoneyParts } from '@/utils/formatMoneyParts'
 import { useToast } from '@/composables/useToast'
+import { useMaropayStore } from '@/stores/useMaropay'
+import { formatMoney, isPositive } from '@/maropay/money'
+import { PROVIDER_LABELS } from '@/maropay/model'
+import { formatDay } from '@/maropay/readiness'
+import type { RefundResult } from '@/services/maropay/mockAdapter'
 
 const route = useRoute()
 const router = useRouter()
@@ -39,11 +46,51 @@ function printInvoice() {
   notify(`Invoice for ${order.value?.orderNumber} sent to printer`)
 }
 
-// Refund dialog
+// ── Maropay payment ───────────────────────────────────────────────
+// Orders Maropay tracks carry a payment id; the payment itself (status,
+// refunds, what's left) lives in Maropay, so the order reads it from there.
+const maropay = useMaropayStore()
+const payment = computed(() => (order.value?.paymentId ? maropay.paymentById(order.value.paymentId) ?? null : null))
+const paymentBreakdown = computed(() => (payment.value ? maropay.breakdownFor(payment.value.id) : null))
+const paymentRoute = computed(() => (payment.value ? { name: 'MaropayPaymentDetail', params: { accountId: accountId.value, paymentId: payment.value.id } } : null))
+const paymentProviderLabel = computed(() => {
+  if (!payment.value) return null
+  return payment.value.provider === 'maropay' ? 'Maropay' : `${PROVIDER_LABELS[payment.value.provider]} (original provider)`
+})
+const canCapturePayment = computed(() => payment.value?.status === 'authorised' && maropay.can('capture', payment.value.channelId))
+const canVoidPayment = computed(() => payment.value?.status === 'authorised' && maropay.can('void', payment.value.channelId))
+const captureDialog = ref(false)
+const voidDialog = ref(false)
+const maropayRefundOpen = ref(false)
+
+function capturePayment() {
+  if (!payment.value) return
+  const result = maropay.capture(payment.value.id, `capture_${payment.value.id}`)
+  if (result.ok) notify(`Captured ${formatMoney(payment.value.amount)}`)
+  else toast.error(result.error.message)
+}
+
+function voidPayment() {
+  if (!payment.value) return
+  const result = maropay.voidPayment(payment.value.id)
+  if (result.ok) notify('Authorisation cancelled — the shopper won’t be charged')
+  else toast.error(result.error.message)
+}
+
+function onMaropayRefunded({ refund }: RefundResult) {
+  const via = refund.provider === 'maropay' ? '' : ` through ${PROVIDER_LABELS[refund.provider]}`
+  notify(refund.status === 'pending' ? `Refund of ${formatMoney(refund.amount)} started${via}` : `Refunded ${formatMoney(refund.amount)}${via}`)
+}
+
+// Refund dialog (orders Maropay doesn't track)
 const refundDialog = ref(false)
 const refundAmount = ref('')
 const refundReason = ref('')
 function openRefund() {
+  if (payment.value) {
+    maropayRefundOpen.value = true
+    return
+  }
   refundAmount.value = order.value?.total ?? ''
   refundReason.value = ''
   refundDialog.value = true
@@ -60,7 +107,11 @@ function submitRefund() {
 }
 
 const canCancel = computed(() => order.value && !['Cancelled', 'Refunded'].includes(order.value.status))
-const canRefund = computed(() => order.value?.paymentStatus === 'Paid')
+const canRefund = computed(() => {
+  const p = payment.value
+  if (p) return p.status !== 'disputed' && maropay.can('refund', p.channelId) && isPositive(paymentBreakdown.value?.remainingRefundable ?? { amount: 0, currency: p.amount.currency })
+  return order.value?.paymentStatus === 'Paid'
+})
 
 // ── Info grid (legacy parity) ─────────────────────────────────────
 const infoGrid = computed(() => order.value ? [
@@ -249,8 +300,19 @@ function timelineIcon(entry: { kind: string; text: string }): string {
           <MpSectionHeader icon="credit-card" title="Payment">
             <template #actions>
               <MpStatusChip :status="order.paymentStatus" type="payment" size="sm" />
+              <v-btn v-if="paymentRoute" size="small" variant="text" class="text-none" append-icon="arrow-right" :to="paymentRoute">View in Maropay</v-btn>
             </template>
           </MpSectionHeader>
+          <MpAlert v-if="payment?.status === 'authorised'" tone="warning" live="off" class="mb-4" :title="payment.authorisationExpiresAt ? `Capture by ${formatDay(payment.authorisationExpiresAt)}` : 'Waiting for capture'">
+            The payment is authorised but not taken yet. Capture it before then, or the authorisation lapses.
+            <template v-if="canCapturePayment || canVoidPayment" #actions>
+              <v-btn v-if="canCapturePayment" size="small" variant="outlined" class="text-none" @click="captureDialog = true">Capture {{ formatMoney(payment.amount) }}</v-btn>
+              <v-btn v-if="canVoidPayment" size="small" variant="text" class="text-none" @click="voidDialog = true">Cancel authorisation</v-btn>
+            </template>
+          </MpAlert>
+          <MpAlert v-else-if="payment?.status === 'processing'" tone="info" live="off" class="mb-4" title="Payment processing">
+            {{ payment.methodLabel }} can take a few business days to confirm, so the order stays Pending until the shopper’s bank confirms.
+          </MpAlert>
           <dl class="mp-label-value mt-2">
             <div>
               <dt>Reference</dt>
@@ -260,13 +322,21 @@ function timelineIcon(entry: { kind: string; text: string }): string {
               <dt>Method</dt>
               <dd>{{ order.paymentMethod }}</dd>
             </div>
+            <div v-if="paymentProviderLabel">
+              <dt>Provider</dt>
+              <dd>{{ paymentProviderLabel }}</dd>
+            </div>
             <div>
               <dt>Captured</dt>
               <dd>{{ formatDate(order.paymentCapturedAt) }}</dd>
             </div>
             <div>
               <dt>Amount</dt>
-              <dd class="mp-money">${{ order.total }}</dd>
+              <dd class="mp-money">{{ money(order.total).symbol }}{{ money(order.total).integer }}<span class="mp-money__cents">.{{ money(order.total).cents }}</span></dd>
+            </div>
+            <div v-if="paymentBreakdown && isPositive(paymentBreakdown.refunded)">
+              <dt>Refunded</dt>
+              <dd>{{ formatMoney(paymentBreakdown.refunded) }} · {{ formatMoney(paymentBreakdown.remainingRefundable) }} left to refund</dd>
             </div>
           </dl>
         </v-card>
@@ -374,6 +444,36 @@ function timelineIcon(entry: { kind: string; text: string }): string {
       danger
       @confirm="confirmCancel"
     />
+
+    <!-- ── Maropay: capture, cancel and refund go to the payment's provider ── -->
+    <template v-if="payment">
+      <MpConfirmDialog
+        v-model="captureDialog"
+        :title="`Capture ${formatMoney(payment.amount)}?`"
+        message="The shopper is charged now."
+        :consequences="['The order is marked Paid.', 'The money joins a Maropay payout once it settles.']"
+        confirm-label="Capture"
+        @confirm="capturePayment"
+      />
+      <MpConfirmDialog
+        v-model="voidDialog"
+        title="Cancel this authorisation?"
+        message="The shopper won’t be charged, and the hold on their card is released."
+        :consequences="['You can’t capture this payment afterwards.', 'The order stays open — cancel it separately if you won’t fulfil it.']"
+        confirm-label="Cancel authorisation"
+        danger
+        @confirm="voidPayment"
+      />
+      <MaropayRefundDrawer
+        v-if="paymentBreakdown"
+        v-model="maropayRefundOpen"
+        :payment="payment"
+        :remaining="paymentBreakdown.remainingRefundable"
+        :store-name="maropay.channelName(payment.channelId)"
+        :refund="(amount, reason, key) => maropay.refund(payment!.id, amount, reason, key)"
+        @refunded="onMaropayRefunded"
+      />
+    </template>
 
     <!-- ── Refund dialog ────────────────────────────────────────────── -->
     <MpFormDrawer v-model="refundDialog" :title="`Refund ${order.orderNumber}`" size="sm">

@@ -18,6 +18,8 @@ import {
   type ConnectedCloud,
 } from '@/stores/useSalesChannels'
 import { useCommerceStore } from '@/stores/useCommerce'
+import { useMaropayStore } from '@/stores/useMaropay'
+import { PROVIDER_LABELS, STORE_ACTIVATION_LABELS } from '@/maropay/model'
 import { useRetailStore } from '@/stores/useRetail'
 import { useStoreThemesStore } from '@/stores/useStoreThemes'
 
@@ -35,6 +37,7 @@ type ProductTarget =
   | 'locations'
   | 'navigation'
   | 'pages'
+  | 'payments'
   | 'store_campaigns'
   | 'pos'
   | 'products'
@@ -147,6 +150,20 @@ const channelId = computed(() => {
 
 const channel = computed(() => salesChannelsStore.getChannel(accountId.value, channelId.value))
 const isWebStore = computed(() => channel.value?.type === 'web_store')
+
+const maropay = useMaropayStore()
+const maropayBinding = computed(() => maropay.bindingFor(channelId.value))
+/**
+ * Who takes this store's online payments: Maropay once it's live, otherwise the
+ * provider Maropay recorded for the store. Without any Maropay record the store
+ * keeps its long-standing Stripe connection; null means nothing takes payments yet.
+ */
+const paymentProvider = computed(() => {
+  const binding = maropayBinding.value
+  if (!binding) return 'Stripe'
+  if (binding.activation === 'live') return 'Maropay'
+  return binding.previousProvider ? PROVIDER_LABELS[binding.previousProvider.provider] : null
+})
 
 // Published theme for this channel drives the preview dialog; falls back to the
 // default static storefront mock when no theme exists.
@@ -330,6 +347,20 @@ const quickActions = computed<QuickAction[]>(() => {
   ]
 })
 
+function paymentsSetupItem(): SetupItem {
+  const provider = paymentProvider.value
+  const binding = maropayBinding.value
+  const state = binding && binding.activation !== 'live' ? maropay.storeStateFor(channelId.value) : null
+  const maropayNote = state ? ` · Maropay ${STORE_ACTIVATION_LABELS[state].toLowerCase()}` : ''
+  return {
+    id: 'online_payments',
+    title: 'Online payments',
+    description: provider ? `${provider} takes payments${maropayNote}` : 'Activate Maropay to take payments online',
+    done: provider !== null,
+    target: 'payments',
+  }
+}
+
 const setupChecklist = computed<SetupItem[]>(() => {
   const current = channel.value
   if (!current) return []
@@ -340,7 +371,7 @@ const setupChecklist = computed<SetupItem[]>(() => {
       { id: 'theme', title: 'Theme ready', description: current.webStore?.published ? 'Published theme is live' : 'Publish the draft theme', done: Boolean(current.webStore?.published), target: 'store_builder' },
       { id: 'merchandise', title: 'Merchandising connected', description: 'Search and recommendations are active', done: Boolean(current.webStore?.merchandiseConnected), target: 'merchandise' },
       { id: 'legal', title: 'Legal pages', description: 'Review privacy and returns', done: false, target: 'settings' },
-      { id: 'apps', title: 'Connected apps', description: 'Payments and fulfillment are connected', done: true, target: 'apps' },
+      paymentsSetupItem(),
     ]
   }
 
@@ -386,7 +417,9 @@ const overviewActivityItems = computed(() => activityItems.value.slice(0, 3))
 const connectedApps = computed<ConnectedApp[]>(() => {
   if (isWebStore.value) {
     return [
-      { id: 'stripe', name: 'Stripe', category: 'Payments', initials: 'ST', connected: true },
+      paymentProvider.value
+        ? { id: 'payments', name: paymentProvider.value, category: 'Payments', initials: paymentProvider.value.slice(0, 2).toUpperCase(), connected: true }
+        : { id: 'payments', name: 'Maropay', category: 'Payments · not live yet', initials: 'MA', connected: false },
       { id: 'shipstation', name: 'ShipStation', category: 'Fulfillment', initials: 'SH', connected: true },
       { id: 'meta', name: 'Meta Ads', category: 'Ads', initials: 'ME', connected: true },
       { id: 'google', name: 'Google Ads', category: 'Ads', initials: 'GO', connected: false },
@@ -530,6 +563,7 @@ function isAssistantAdded(id: string) {
 function setupActionLabel(item: SetupItem) {
   if (item.id === 'legal' || item.id === 'receipt') return 'Set up'
   if (item.id === 'payments') return 'Pair'
+  if (item.id === 'online_payments') return 'Set up'
   return 'Review'
 }
 
@@ -638,6 +672,10 @@ function runAction(target: ProductTarget) {
   }
   if (target === 'assets') {
     router.push({ name: 'StoreAssets', params: { accountId: accountId.value, channelId: channelId.value } })
+    return
+  }
+  if (target === 'payments') {
+    router.push({ name: 'StorePayments', params: { accountId: accountId.value, channelId: channelId.value } })
     return
   }
   if (target === 'locations') {

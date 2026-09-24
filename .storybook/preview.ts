@@ -233,7 +233,7 @@ const preview: Preview = {
           'Atoms',
           'Molecules',
           'Patterns', ['Data Table', 'Form Fields', 'Layering', 'Module Landing Page', 'App Shell', 'Builder Shell', 'Settings'],
-          'Product', ['Da Vinci', 'Dashboards', 'Marketing', 'Merchandising', 'PLG', 'RBAC', 'Sales Channels'],
+          'Product', ['Da Vinci', 'Dashboards', 'Maropay', 'Marketing', 'Merchandising', 'PLG', 'RBAC', 'Sales Channels'],
           '*',
         ],
       },

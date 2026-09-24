@@ -258,6 +258,31 @@ const routes: RouteRecordRaw[] = [
       { path: 'blogs/:entryId', name: 'StoreBlogEdit', component: () => import('@/views/SalesChannels/StoreContentEditor.vue'), meta: { contentKind: 'blog' } },
       { path: 'campaigns', name: 'StoreCampaigns', component: () => import('@/views/SalesChannels/StoreCampaigns.vue') },
       { path: 'assets', name: 'StoreAssets', component: () => import('@/views/SalesChannels/StoreAssets.vue') },
+      // Maropay for this store: activation checklist, methods, capture and the switch itself.
+      { path: 'payments', name: 'StorePayments', component: () => import('@/views/Maropay/StorePaymentsPage.vue') },
+    ],
+  },
+
+  // 5.8 Maropay — the account's payments workspace (rail shell), Commerce Cloud
+  // online first. Setup is a standalone builder shell, declared before the
+  // workspace so its static segment wins over the workspace's catch-all child.
+  { path: '/accounts/:accountId/maropay/setup', name: 'MaropaySetup', component: () => import('@/views/Maropay/MaropaySetupWizard.vue'), meta: { ...commerceGate, builderShell: true } },
+  {
+    path: '/accounts/:accountId/maropay',
+    component: () => import('@/views/Maropay/MaropayLayout.vue'),
+    meta: { ...commerceGate, railShell: true },
+    children: [
+      { path: '', name: 'MaropayOverview', component: () => import('@/views/Maropay/MaropayOverview.vue') },
+      { path: 'transactions', name: 'MaropayTransactions', component: () => import('@/views/Maropay/MaropayTransactions.vue') },
+      { path: 'transactions/:paymentId', name: 'MaropayPaymentDetail', component: () => import('@/views/Maropay/MaropayPaymentDetail.vue') },
+      { path: 'payouts', name: 'MaropayPayouts', component: () => import('@/views/Maropay/MaropayPayouts.vue') },
+      { path: 'payouts/:payoutId', name: 'MaropayPayoutDetail', component: () => import('@/views/Maropay/MaropayPayoutDetail.vue') },
+      { path: 'disputes', name: 'MaropayDisputes', component: () => import('@/views/Maropay/MaropayDisputes.vue') },
+      { path: 'disputes/:disputeId', name: 'MaropayDisputeDetail', component: () => import('@/views/Maropay/MaropayDisputeDetail.vue') },
+      { path: 'settings', name: 'MaropaySettings', component: () => import('@/views/Maropay/MaropaySettings.vue') },
+      { path: 'checkout-preview', name: 'MaropayCheckoutPreview', component: () => import('@/views/Maropay/MaropayCheckoutPreview.vue') },
+      // Unknown sub-paths land on the overview (Merchandising precedent).
+      { path: ':pathMatch(.*)*', redirect: (to) => ({ name: 'MaropayOverview', params: { accountId: to.params.accountId } }) },
     ],
   },
 

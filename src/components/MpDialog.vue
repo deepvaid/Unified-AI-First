@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, useId } from 'vue'
+import { ref, useId, watch } from 'vue'
 import { useScrollEdges } from '@/composables/useScrollEdges'
 
 // The one modal shell (P4-6). Before this, eight components built dialogs from a
@@ -75,6 +75,29 @@ const bodyId = useId()
 
 const body = ref<HTMLElement | null>(null)
 const { atTop, atBottom } = useScrollEdges(body)
+
+// v-dialog moves focus in and traps it, but only hands focus back through an
+// activator slot — and every host opens this with v-model. So remember what had
+// focus when it opened and return it once the dialog has left, unless something
+// else (a follow-up dialog) has taken focus meanwhile. MpFormDrawer does the same
+// through useFocusTrap.
+const card = ref<{ $el: HTMLElement } | null>(null)
+let opener: HTMLElement | null = null
+
+watch(model, (open) => {
+  if (open) opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
+}, { immediate: true })
+
+function restoreFocus() {
+  const target = opener
+  opener = null
+  if (!target?.isConnected || target.getClientRects().length === 0) return
+  // Focus may still sit on the overlay's own content wrapper, outside the card.
+  const overlay = card.value?.$el.closest('.v-overlay')
+  const active = document.activeElement
+  if (active && active !== document.body && !overlay?.contains(active)) return
+  target.focus()
+}
 </script>
 
 <template>
@@ -87,8 +110,10 @@ const { atTop, atBottom } = useScrollEdges(body)
     :aria-describedby="bodyId"
     class="mp-dialog"
     @update:model-value="(open: boolean) => (open ? (model = true) : requestClose())"
+    @after-leave="restoreFocus"
   >
     <v-card
+      ref="card"
       flat
       border
       :rounded="fullscreen ? '0' : undefined"

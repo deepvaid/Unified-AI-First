@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { useOnboardingStore } from '@/stores/useOnboarding'
+import { useMaropayStore } from '@/stores/useMaropay'
+import type { MaropayProvider, OrderPaymentStatusLabel } from '@/maropay/model'
 
 const productNames = [
   'Nike Air Max 270 - Black/White', 'Patagonia Better Sweater Fleece Vest', 'Apple iPhone 15 Pro Case - Clear',
@@ -430,6 +432,10 @@ export interface Order {
   paymentMethod: string
   paymentReference: string
   paymentCapturedAt: string | null
+  /** Who processed the payment, when Maropay tracks it. Undefined = untracked (legacy seed data). */
+  paymentProvider?: MaropayProvider
+  /** Maropay payment id; Maropay owns the payment record and this order carries its summary. */
+  paymentId?: string
   trackingNumber: string | null
   courier: string | null
   date: string
@@ -452,6 +458,32 @@ export interface Order {
   /** Set iff channelType === 'offline_store'. */
   pos?: OrderPosMeta
   tenders?: OrderTender[]
+}
+
+/** The payment summary Maropay writes onto an order after every payment change. */
+export interface OrderPaymentSummary {
+  provider: MaropayProvider
+  paymentId: string
+  paymentStatus: OrderPaymentStatusLabel
+  paymentMethod?: string
+  paymentCapturedAt?: string | null
+  /** Appended to the order timeline; omitted when Maropay re-projects state after a reload. */
+  timelineText?: string
+}
+
+/** An order placed through Maropay checkout. Maropay keeps the snapshot and rebuilds it after reloads. */
+export interface CheckoutOrderInput {
+  id: number
+  orderNumber: string
+  date: string
+  channelId: string
+  customer: { name: string; email: string }
+  lineItems: Array<{ product: string; sku: string; qty: number; price: string }>
+  shipping: string
+  total: string
+  currency: string
+  payment: OrderPaymentSummary
+  timeline: Array<{ text: string; date: string }>
 }
 
 export interface DraftLineItem {
@@ -1144,8 +1176,113 @@ export const useCommerceStore = defineStore('commerce', () => {
   function refundOrder(id: number, amount: string, reason: string): void {
     const order = getOrderById(id)
     if (!order) return
+    // Maropay owns tracked payments and routes the refund to the original provider.
+    if (order.paymentId) {
+      useMaropayStore().refundLinkedOrder(order.id, amount, reason)
+      return
+    }
     order.paymentStatus = 'Refunded'
     logOrderEvent(order, `Refund of $${amount} issued${reason ? ` — ${reason}` : ''}`)
+  }
+
+  // ── Maropay seam ─────────────────────────────────────────────────
+  // Maropay owns payment records; an order only carries their summary. The
+  // first time Maropay touches a seeded order its own payment fields are kept,
+  // so a scenario reset hands the order back exactly as seeded.
+  const paymentOriginals = new Map<number, Pick<Order, 'paymentStatus' | 'paymentMethod' | 'paymentCapturedAt'>>()
+  const maropayTimelineIds = new Map<number, Set<number>>()
+  const checkoutOrderIds = new Set<number>()
+
+  function syncFulfillmentPayment(orderId: number, paymentStatus: string): void {
+    for (const item of fulfillments.value) if (item.orderId === orderId) item.paymentStatus = paymentStatus
+  }
+
+  function applyPaymentSummary(orderId: number, summary: OrderPaymentSummary): void {
+    const order = getOrderById(orderId)
+    if (!order) return
+    if (!checkoutOrderIds.has(orderId) && !paymentOriginals.has(orderId)) {
+      paymentOriginals.set(orderId, { paymentStatus: order.paymentStatus, paymentMethod: order.paymentMethod, paymentCapturedAt: order.paymentCapturedAt })
+    }
+    order.paymentProvider = summary.provider
+    order.paymentId = summary.paymentId
+    order.paymentStatus = summary.paymentStatus
+    if (summary.paymentMethod !== undefined) order.paymentMethod = summary.paymentMethod
+    if (summary.paymentCapturedAt !== undefined) order.paymentCapturedAt = summary.paymentCapturedAt
+    syncFulfillmentPayment(orderId, summary.paymentStatus)
+    if (summary.timelineText) {
+      logOrderEvent(order, summary.timelineText)
+      const ids = maropayTimelineIds.get(orderId) ?? new Set<number>()
+      ids.add(order.timeline[order.timeline.length - 1]!.id)
+      maropayTimelineIds.set(orderId, ids)
+    }
+  }
+
+  /** Hands an order back from Maropay: seeded orders get their own payment fields back, checkout orders go away. */
+  function clearPaymentSummary(orderId: number): void {
+    if (checkoutOrderIds.has(orderId)) {
+      orders.value = orders.value.filter((o) => o.id !== orderId)
+      checkoutOrderIds.delete(orderId)
+      return
+    }
+    const order = getOrderById(orderId)
+    const original = paymentOriginals.get(orderId)
+    if (!order || !original) return
+    delete order.paymentProvider
+    delete order.paymentId
+    Object.assign(order, original)
+    const added = maropayTimelineIds.get(orderId)
+    if (added) order.timeline = order.timeline.filter((e) => !added.has(e.id))
+    syncFulfillmentPayment(orderId, original.paymentStatus)
+    paymentOriginals.delete(orderId)
+    maropayTimelineIds.delete(orderId)
+  }
+
+  /** Idempotent by id, so Maropay can rebuild its checkout orders after a reload. */
+  function createCheckoutOrder(input: CheckoutOrderInput): Order {
+    const existing = getOrderById(input.id)
+    if (existing) return existing
+    const city = cities[input.id % cities.length]!
+    const address = buildAddress(input.customer.name, city, input.id)
+    const nameParts = input.customer.name.trim().split(/\s+/)
+    const order: Order = {
+      id: input.id,
+      orderNumber: input.orderNumber,
+      customer: { name: input.customer.name, email: input.customer.email, avatar: `${nameParts[0]?.[0] ?? '?'}${nameParts[1]?.[0] ?? ''}` },
+      city,
+      itemCount: input.lineItems.reduce((n, li) => n + li.qty, 0),
+      subtotal: (parseFloat(input.total) - parseFloat(input.shipping)).toFixed(2),
+      shipping: input.shipping,
+      total: input.total,
+      status: 'Processing',
+      fulfillmentStatus: 'Not Ready',
+      paymentStatus: input.payment.paymentStatus,
+      paymentMethod: input.payment.paymentMethod ?? '—',
+      paymentReference: input.payment.paymentId,
+      paymentCapturedAt: input.payment.paymentCapturedAt ?? null,
+      paymentProvider: input.payment.provider,
+      paymentId: input.payment.paymentId,
+      trackingNumber: null,
+      courier: null,
+      date: input.date,
+      lineItems: input.lineItems.map((li): OrderLineItem => ({ ...li, status: 'Processing', coupon: null, discountPct: 0 })),
+      notes: null,
+      tags: [],
+      salesChannel: 'Online Store',
+      currency: input.currency,
+      region: address.region || '—',
+      country: address.country,
+      phone: '—',
+      shippingAddress: address,
+      billingAddress: { ...address },
+      fulfillmentStage: 'Picked',
+      fulfilledFromLocation: WAREHOUSE_LOCATIONS[input.id % WAREHOUSE_LOCATIONS.length]!,
+      timeline: input.timeline.map((e, i): OrderTimelineEvent => ({ id: i + 1, kind: 'event', text: e.text, date: e.date })),
+      channelType: 'web_store',
+      channelId: input.channelId,
+    }
+    orders.value.unshift(order)
+    checkoutOrderIds.add(order.id)
+    return order
   }
 
   function markOrderFulfilled(id: number): void {
@@ -1598,6 +1735,7 @@ export const useCommerceStore = defineStore('commerce', () => {
     adjustStock, transferStock, inventoryImports,
     priceLists, priceOverrides, priceFor, deletePriceOverride,
     getOrderById, addOrderNote, setOrderTags, updateOrderAddress, cancelOrder, cancelOrders, refundOrder, markOrderFulfilled, markOrdersFulfilled,
+    applyPaymentSummary, clearPaymentSummary, createCheckoutOrder,
     posOrders, addPosOrder, refundPosOrder, voidPosOrder,
     advanceFulfillment, markShipped,
     createDraftOrder, updateDraftOrder, setDraftOrderStatus, deleteDraftOrders, convertDraftToOrder,

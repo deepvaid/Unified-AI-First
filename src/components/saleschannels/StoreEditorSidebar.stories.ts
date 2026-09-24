@@ -17,7 +17,7 @@ const meta = {
 store editor shell. It composes the rail with the store's identity block, a "Switch store"
 selector listing the account's *other* web stores, and the section links from
 \`storeEditorMenu.ts\` — grouped as Overview → Customize (Theme first, since the storefront theme
-is the primary job) → Store content.
+is the primary job) → Selling (the store's Payments page) → Store content.
 
 **Use when:** inside a store-editor route, as the shell's rail. The global AppSidebar
 auto-minimizes behind it via the route's \`railShell\`/\`storeEditor\` meta.

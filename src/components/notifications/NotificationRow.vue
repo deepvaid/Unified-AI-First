@@ -10,7 +10,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  /** Row activated — mark it read (and navigate, if the surface wants to). */
+  /** Row activated — mark it read. A row with a `to` is a link and navigates by itself. */
   select: []
   /** The trailing download action on report/export rows. */
   download: []
@@ -18,7 +18,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <MpListRow variant="divided" clickable @click="emit('select')">
+  <MpListRow variant="divided" :to="props.notification.to" :clickable="!props.notification.to" @click="emit('select')">
     <template #lead>
       <!-- One generic disc — the real notification feed carries no
            classification, so severity iconography would be invented. -->

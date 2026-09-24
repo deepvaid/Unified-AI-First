@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useDisplay } from 'vuetify'
 import AppSidebar from '@/components/layout/AppSidebar.vue'
 import { mp_layout_sidebarWidth, mp_layout_sidebarRailWidth } from '@/design-tokens/generated/tokens'
@@ -23,6 +23,7 @@ import { useCopilotStore } from '@/stores/useCopilot'
 import { useAccountsStore } from '@/stores/useAccounts'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import { usePlgStore, isPlgDemoPreset } from '@/stores/usePlg'
+import { useMaropayStore, isMaropayScenarioKey } from '@/stores/useMaropay'
 import PlgTrialBanner from '@/components/plg/PlgTrialBanner.vue'
 
 // Apply stored accent and theme to Vuetify on initial mount
@@ -32,6 +33,7 @@ setMode(mode.value)
 
 const accountsStore = useAccountsStore()
 const route = useRoute()
+const router = useRouter()
 
 // Sidebar theme: a ?nav=white|gray|dark query param wins over the account's
 // preference (for stakeholder demos). Captured in-memory so it sticks across
@@ -91,6 +93,19 @@ watch(() => chartOverride.value ?? 'grayBlue', applyChartPalette, { immediate: t
 const plgStore = usePlgStore()
 watch(() => route.query.plg, (p) => {
   if (isPlgDemoPreset(p)) plgStore.applyDemoPreset(p)
+}, { immediate: true })
+
+// Maropay owns payment records and projects them onto Commerce orders, so it
+// starts with the app. A ?maropay=m01…m15 query param loads a review scenario
+// for the active account — same idiom as ?plg=, except the param is dropped
+// once applied: a later refresh must keep the reviewer's progress (M02).
+const maropayStore = useMaropayStore()
+watch(() => route.query.maropay, (key) => {
+  if (!isMaropayScenarioKey(key)) return
+  maropayStore.applyScenario(key)
+  const query = { ...route.query }
+  delete query.maropay
+  void router.replace({ query })
 }, { immediate: true })
 
 const drawer = ref(true)

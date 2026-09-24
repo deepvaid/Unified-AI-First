@@ -130,6 +130,7 @@ const ariaLive = computed(() => props.live ?? (props.tone === 'warning' || props
 
 .mp-alert__actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--mp-space-8);
   margin-top: var(--mp-space-8);

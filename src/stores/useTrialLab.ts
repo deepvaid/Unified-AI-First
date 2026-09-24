@@ -838,6 +838,7 @@ export const useTrialLabStore = defineStore('trialLab', () => {
       try {
         window.localStorage.removeItem(`mp.onboarding.v2:${accountId}`)
         window.localStorage.removeItem(`mp.davinci.setup-onboarding.v1:${accountId}`)
+        window.localStorage.removeItem(`mp.maropay.v1:${accountId}`)
       } catch {
         /* ignore */
       }

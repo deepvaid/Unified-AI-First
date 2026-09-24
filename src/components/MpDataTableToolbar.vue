@@ -107,7 +107,7 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
       <div class="mp-toolbar-heading">
         <div v-if="title" class="text-subtitle-1 font-weight-bold">{{ title }}</div>
         <div v-if="totalCount != null" class="mp-meta-label text-medium-emphasis">
-          {{ totalCount }} records
+          {{ totalCount }} {{ totalCount === 1 ? 'record' : 'records' }}
         </div>
         <slot name="title" />
       </div>

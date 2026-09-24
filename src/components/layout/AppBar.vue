@@ -11,6 +11,7 @@ import DvOrbitOrb from '@/components/copilot/voice/DvOrbitOrb.vue'
 import MpNotificationsMenu from '@/components/MpNotificationsMenu.vue'
 import MpSegmentedControl from '@/components/MpSegmentedControl.vue'
 import PlgTrialChip from '@/components/plg/PlgTrialChip.vue'
+import MaropayDemoControls from '@/components/maropay/MaropayDemoControls.vue'
 import { usePlgStore, PLG_DEMO_PRESETS, type PlgDemoPreset } from '@/stores/usePlg'
 import { useTrialLabStore } from '@/stores/useTrialLab'
 
@@ -791,6 +792,16 @@ function onSearchKeydown(event: KeyboardEvent) {
                   >
                     Reset
                   </v-btn>
+                </div>
+                <div class="um-item" role="group" aria-label="Maropay demo state">
+                  <v-icon class="um-item__icon" size="20">flask-conical</v-icon>
+                  <div class="um-item__body">
+                    <div class="um-item__title">Maropay demo state</div>
+                    <div class="um-item__sub">Demo controls — not part of the product</div>
+                  </div>
+                </div>
+                <div class="um-plg-demo">
+                  <MaropayDemoControls class="flex-grow-1" />
                 </div>
                 <template v-if="trialLab.session">
                   <div class="um-divider" />

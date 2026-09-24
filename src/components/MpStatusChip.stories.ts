@@ -51,12 +51,12 @@ The \`MpStatusChip\` displays the current state of an entity. It automatically a
     status: { control: 'text', description: 'Status text, rendered verbatim. Matched case-insensitively against the tone map for the given type.' },
     type: {
       control: 'select',
-      options: ['order', 'fulfillment', 'payment', 'campaign', 'contact', 'ticket', 'coupon', 'priority', 'connection', 'general'],
+      options: ['order', 'fulfillment', 'payment', 'payout', 'dispute', 'method', 'readiness', 'campaign', 'contact', 'ticket', 'coupon', 'priority', 'connection', 'general'],
       description: 'Business domain used to resolve the status → color mapping. Unknown statuses fall back to the general map, then neutral.',
     },
     size: { control: 'select', options: ['sm', 'md', 'lg'], description: 'Chip size on the shared sm|md|lg ramp (P2-1). Heights come from component.chip.height.* — 20 / 24 / 32. Use "sm" inside data tables.' },
     variant: { control: 'select', options: ['flat', 'tonal', 'outlined'], description: 'Chip fill style. Tonal (default) is the platform standard.' },
-    showIcon: { control: 'boolean', description: 'Prepend the mapped status icon (available for fulfillment, campaign, ticket, order, payment, priority, connection).' },
+    showIcon: { control: 'boolean', description: 'Prepend the mapped status icon (available for fulfillment, campaign, ticket, order, payment, payout, dispute, method, readiness, priority, connection).' },
   },
 } satisfies Meta<typeof MpStatusChip>
 
@@ -220,6 +220,39 @@ export const PaymentStatuses: Story = {
     `,
   }),
   args: {} as any,
+}
+
+/**
+ * Maropay's vocabulary. `readiness` is one map for every account and store state
+ * dimension, so Submitted → Verified → Ready to activate → Live read as distinct
+ * steps instead of a single "Connected". Payouts say "Sent to bank" — the confirmed
+ * event — never "Received".
+ */
+export const MaropayStatuses: Story = {
+  render: () => ({
+    components: { MpStatusChip },
+    setup: () => ({
+      rows: [
+        { type: 'readiness', statuses: ['Not started', 'In progress', 'Submitted', 'Under review', 'Action required', 'Verified', 'Rejected'] },
+        { type: 'readiness', statuses: ['Not enabled', 'Enabled', 'Restricted', 'Ready', 'Paused', 'Inactive', 'Ready to activate', 'Live'] },
+        { type: 'payment', statuses: ['Processing', 'Authorised', 'Succeeded', 'Partially refunded', 'Refunded', 'Failed', 'Cancelled', 'Disputed'] },
+        { type: 'payout', statuses: ['Upcoming', 'In transit', 'Sent to bank', 'Failed'] },
+        { type: 'dispute', statuses: ['Needs response', 'Under review', 'Won', 'Lost', 'Accepted'] },
+        { type: 'method', statuses: ['Available', 'Setup required', 'Pending approval', 'Enabled', 'Unavailable'] },
+      ],
+    }),
+    template: `
+      <div class="d-flex flex-column ga-6">
+        <div v-for="(row, i) in rows" :key="i">
+          <div class="text-caption text-medium-emphasis mb-2">{{ row.type }}</div>
+          <div class="d-flex flex-wrap ga-2 align-center">
+            <MpStatusChip v-for="s in row.statuses" :key="s" :status="s" :type="row.type" show-icon />
+          </div>
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
 }
 
 export const CampaignStatuses: Story = {

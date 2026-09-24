@@ -51,8 +51,11 @@ This is NOT a production app — it uses mock data and has no backend API.
 │   │   ├── copilot/           ← 18 Dv* Da Vinci surfaces + voice/ (7 orbit voice components)
 │   │   ├── dashboards/        ← 7 dashboard containers + widgets/ (5) + wizard/ (2)
 │   │   ├── marketing/         ← Journey flow column, mini preview, add-step menu
+│   │   ├── maropay/           ← 16 Maropay* product surfaces (Product/Maropay stories)
 │   │   ├── merchandising/     ← MerchProductCard
 │   │   └── settings/          ← SettingsSection, SettingsPlaceholder, settingsMenu (rail = MpSectionRail)
+│   ├── maropay/               ← Maropay domain logic — pure TS, node:test-importable (see docs/maropay/)
+│   ├── services/maropay/      ← Deterministic mock adapter for the payments partner
 │   ├── design-tokens/
 │   │   ├── tokens.json        ← SOURCE OF TRUTH for all design values
 │   │   ├── build.mjs          ← Generates SCSS/CSS/TS from tokens.json
@@ -66,6 +69,7 @@ This is NOT a production app — it uses mock data and has no backend API.
 │   │   ├── Contacts/          ← AllContacts, Lists, Segments, Fields, Tags, SQL, etc.
 │   │   ├── DaVinci/           ← AI dashboard + studio
 │   │   ├── Integrations/
+│   │   ├── Maropay/           ← Payments prototype: overview, setup, transactions, payouts, disputes, settings
 │   │   ├── Marketing/         ← Campaigns, Journeys, JourneyBuilder, Forms, Content, etc.
 │   │   ├── Products/          ← ProductsList, Inventory, Recommendations, TaxCategories
 │   │   ├── Service/           ← Tickets
@@ -97,7 +101,7 @@ This is NOT a production app — it uses mock data and has no backend API.
 ### Data display
 
 - **MpKpiCard** — `label`, `value`, `icon?`, `color?`, `trend?`, `trendPositive?`, `subStat?`, `period?` · slot `#sparkline`. Dashboard metric cards, 4-column row.
-- **MpStatusChip** — `status`, `type?` ('order'|'fulfillment'|'payment'|'campaign'|'contact'|'ticket'|'coupon'|'general'), `size?` ('sm'|'md'|'lg'), `variant?` ('tonal'|'flat'|'outlined'), `showIcon?`. Workflow states in tables; color maps are automatic per type. Use `size="sm"` in data tables.
+- **MpStatusChip** — `status`, `type?` ('order'|'fulfillment'|'payment'|'payout'|'dispute'|'method'|'readiness'|'campaign'|'contact'|'ticket'|'coupon'|'priority'|'connection'|'stock'|'report'|'general'), `size?` ('sm'|'md'|'lg'), `variant?` ('tonal'|'flat'|'outlined'), `showIcon?`. Workflow states in tables; color maps are automatic per type. Use `size="sm"` in data tables. `readiness` is Maropay's one map for its account/store state dimensions (Submitted ≠ Verified ≠ Ready to activate ≠ Live).
 - **MpSourceCloudChip** — `dataSource`, `size?` ('sm'|'md'|'lg'), `iconOnly?`. Identifies a widget/KPI's source cloud.
 - **MpListRow** — `title?`, `eyebrow?`, `meta?`, `variant?` ('plain'|'divided'|'boxed'), `emphasis?`, `density?`, `to?`/`href?`/`clickable?` · slots `#lead`, default, `#trailing`. The one list-row geometry — activity feeds, checklists, suggestion menus. Resolves its own tag from whichever target prop is set. Never hand-roll a repeating row.
 - **MpDataTableToolbar** — `searchPlaceholder?`, `activeFilters?`, `totalCount?`, `headers?`, `quickFilter?` ({ key, label, icon?, multiple?, options }) · models `v-model:search`, `v-model:quickFilterValue` · slots `#title`, `#actions`, `#filter-content` (filter drawer). Always above `v-data-table`. `quickFilter` promotes one high-traffic filter to a checkbox pill at the **head of the control row, before the Filter button** — the long tail stays in the drawer, and the consumer still owns filtering, its `activeFilters` entry and clearing the model. `multiple: false` makes it an exclusive mode toggle (list panel, no Clear, closes on pick, model holds exactly one value). The Filter button badges `activeFilters` minus the promoted key; when the promoted filter was the table's only one, drop `#filter-content` and the Filter button goes with it. Every control in the row is `component.control.height` (40) — give a new one the token, not a number.
@@ -346,6 +350,8 @@ Reach for a role token when the system has already made the decision, a primitiv
   padding and gap come from `component.listItem.*` — there is no second nav sizing scale
 - **Widget actions** `component.widget.*` → `actionSize` 32 · `actionGap` 2 · `actionInset` 12.
   Widget *insets* come from `component.card.*`; this group is only the floating action overlay
+- **Previews** `component.preview.viewport.mobile` → 390, the phone width for shopper-side
+  simulations (Maropay's `CheckoutPreviewFrame`); desktop previews simply fill their column
 - Colors: light theme primary `#0073AB`, secondary `#1a1814`, background `#f4f6fa` (dark theme
   under `color.dark.*`). **Every surface token has a declared foreground — see below**
 - Shadows: sm (1px), md (4px), lg (8px) — use sparingly, prefer border
@@ -393,6 +399,7 @@ changelog in `DESIGN_AUDIT.md`.
 | `npm run build-storybook` | Build Storybook to dist-storybook/ |
 | `npm run tokens:build` | Generate SCSS/CSS/TS from tokens.json |
 | `npm run contrast:check` | WCAG 2.1 ratios for every declared surface/foreground token pair |
+| `npm run test:maropay` | Maropay domain + adapter tests (`node:test` over `tests/maropay/`) |
 | `npm run tokens:watch` | Watch tokens.json and regenerate on save |
 | `npm run type-check` | Run vue-tsc type checking |
 | `npm run preview` | Preview production build locally |
@@ -419,6 +426,10 @@ Example: `[feat]: add MpDateRangePicker component with story`
   module landing, wizard, builder shell, surface states. Each renders in the real app chrome with
   structural placeholder data and a toggleable spec panel (component tree, source file, the product
   pages that follow it, which token owns each gap). Reference only — never a product surface.
+- **`docs/maropay/`** — Maropay payments prototype: `decisions.md` (locked decisions, limitations,
+  production gaps) and `implementation-report.md` (review entry point, M01–M15 scenarios, results).
+  Pure modules under `src/maropay/` and `src/services/maropay/` import each other by relative
+  `.ts` path so Node can run the tests without the Vite `@/` alias.
 
 ---
 

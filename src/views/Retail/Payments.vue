@@ -9,7 +9,7 @@ const store = useRetailStore()
 const settings = computed(() => store.paymentsSettings)
 
 const PROVIDERS = [
-  { value: 'maropost_payments', title: 'Maropost Payments' },
+  { value: 'maropost_payments', title: 'Maropay' },
   { value: 'stripe', title: 'Stripe Terminal' },
   { value: 'adyen', title: 'Adyen' },
 ]

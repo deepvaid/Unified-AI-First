@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
+import type { RouteLocationRaw } from 'vue-router'
 
 /**
  * Mirrors the real UAT notification centre: plain messages with absolute
@@ -17,6 +18,16 @@ export interface AppNotification {
   read: boolean
   /** Report/export rows carry a download action. */
   downloadable?: boolean
+  /** The authenticated page this notification opens. */
+  to?: RouteLocationRaw
+}
+
+const DATE_LABEL = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+const TIME_LABEL = new Intl.DateTimeFormat('en-US', { hour: '2-digit', minute: '2-digit' })
+
+/** UAT timestamp format: "Aug 26, 2026 at 02:40 AM". */
+export function formatNotificationTime(date: Date): string {
+  return `${DATE_LABEL.format(date)} at ${TIME_LABEL.format(date)}`
 }
 
 const SEED: AppNotification[] = [
@@ -98,5 +109,14 @@ export const useNotifications = defineStore('notifications', () => {
     })
   }
 
-  return { items, unreadCount, markRead, markAllRead }
+  /** Adds a notification to the top of the feed. Pushing an id that already exists is a no-op. */
+  function push(input: { id: string; title: string; to?: RouteLocationRaw; downloadable?: boolean }): AppNotification {
+    const existing = items.value.find((n) => n.id === input.id)
+    if (existing) return existing
+    const item: AppNotification = { ...input, time: formatNotificationTime(new Date()), read: false }
+    items.value = [item, ...items.value]
+    return item
+  }
+
+  return { items, unreadCount, markRead, markAllRead, push }
 })

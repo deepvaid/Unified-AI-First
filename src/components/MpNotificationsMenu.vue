@@ -30,6 +30,12 @@ function seeAll() {
   router.push(allNotificationsRoute.value)
 }
 
+// A row that links somewhere navigates by itself — the panel gets out of the way.
+function select(n: AppNotification) {
+  store.markRead(n.id)
+  if (n.to) open.value = false
+}
+
 // Prototype stub — the mock feed has no real files behind its report rows.
 function download(n: AppNotification) {
   toast.success('Download started.', { title: n.title })
@@ -91,7 +97,7 @@ function download(n: AppNotification) {
           v-for="n in items"
           :key="n.id"
           :notification="n"
-          @select="store.markRead(n.id)"
+          @select="select(n)"
           @download="download(n)"
         />
       </div>

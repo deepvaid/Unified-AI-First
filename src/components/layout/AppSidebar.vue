@@ -207,6 +207,21 @@ function buildNavGroups(accountId: string): NavGroup[] {
       ],
     },
     {
+      // Maropay is the account's payments workspace (rail shell): the global
+      // entry opens the overview; setup, stores and settings live in the rail.
+      title: 'Maropay',
+      icon: 'wallet',
+      requires: 'commerce',
+      singleRoute: `/accounts/${accountId}/maropay`,
+      items: [
+        { title: 'Overview', route: `/accounts/${accountId}/maropay` },
+        { title: 'Transactions', route: `/accounts/${accountId}/maropay/transactions` },
+        { title: 'Payouts', route: `/accounts/${accountId}/maropay/payouts` },
+        { title: 'Disputes', route: `/accounts/${accountId}/maropay/disputes` },
+        { title: 'Settings', route: `/accounts/${accountId}/maropay/settings` },
+      ],
+    },
+    {
       // Merchandising is channel-scoped (like Sales Channels): the global entry
       // opens the channel selector; sections live in the in-workspace rail.
       title: 'Merchandise',

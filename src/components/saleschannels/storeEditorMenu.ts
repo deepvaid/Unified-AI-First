@@ -20,6 +20,7 @@ export const STORE_EDITOR_ITEMS: StoreEditorItem[] = [
   { slug: 'blogs', label: 'Blogs', icon: 'rss', routeName: 'StoreBlogs', match: ['StoreBlogs', 'StoreBlogCreate', 'StoreBlogEdit'] },
   { slug: 'campaigns', label: 'Campaigns', icon: 'megaphone', routeName: 'StoreCampaigns', match: ['StoreCampaigns'] },
   { slug: 'assets', label: 'Assets', icon: 'image', routeName: 'StoreAssets', match: ['StoreAssets'] },
+  { slug: 'payments', label: 'Payments', icon: 'wallet', routeName: 'StorePayments', match: ['StorePayments'] },
 ]
 
 /** Section root for the current route — used by the store switcher to land on the same section. */
