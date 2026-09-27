@@ -40,6 +40,7 @@ import type {
   BusinessChangeField,
   CaptureMode,
   CheckoutSession,
+  RequirementKey,
   DisputeReason,
   EvidenceItem,
   LegalBusiness,
@@ -48,6 +49,7 @@ import type {
   MaropayActingRole,
   MaropayError,
   MaropayScenarioKey,
+  MethodDeclineReason,
   MethodStatus,
   MockDocument,
   OnboardingDraft,
@@ -58,6 +60,9 @@ import type {
 } from '@/maropay/model'
 import {
   activationChecklist,
+  activationTarget as deriveActivationTarget,
+  availablePartnerDecisions,
+  awaitingDecision,
   checkoutMethods,
   closureChecks as deriveClosureChecks,
   deriveBalances,
@@ -75,11 +80,12 @@ import {
   taskTarget,
 } from '@/maropay/readiness'
 import type { ChannelFacts, MaropayTarget, PaymentFilter } from '@/maropay/readiness'
-import type { OnboardingPatch } from '@/maropay/onboarding'
+import type { BankAccountInput, OnboardingPatch } from '@/maropay/onboarding'
+import { deriveRequirements, rulesForState } from '@/maropay/requirements'
 import { MAROPAY_SCENARIOS, buildScenario, eligibleStores, isMaropayScenarioKey, prefillFor } from '@/maropay/scenarios'
 import type { ScenarioChannel, ScenarioContext } from '@/maropay/scenarios'
 import * as adapter from '@/services/maropay/mockAdapter'
-import type { AdapterEnv, CheckoutInput, CheckoutStep, FailurePlan, StepUpChallenge, StepUpToken } from '@/services/maropay/mockAdapter'
+import type { AdapterEnv, CheckoutInput, CheckoutStep, FailurePlan, ReviewOptions, StepUpChallenge, StepUpToken, TaskAnswer } from '@/services/maropay/mockAdapter'
 
 export { MAROPAY_SCENARIOS, isMaropayScenarioKey }
 export type { MaropayActingRole, MaropayScenarioKey }
@@ -210,6 +216,8 @@ export const useMaropayStore = defineStore('maropay', () => {
     const stored = readStored(accountId)
     hasExplicitState.value = stored !== null
     state.value = stored ?? emptyState(accountId, now.value)
+    // Saves verified before approval raised activation tasks get them once, silently (the op is idempotent).
+    if (stored && adapter.ensureActivationTasks(state.value, env()).length) persist()
     project()
   }
 
@@ -219,7 +227,13 @@ export const useMaropayStore = defineStore('maropay', () => {
 
   function env(): AdapterEnv {
     now.value = Date.now()
-    return { now: now.value, actor: { role: state.value.actingRole, assignedChannelIds: state.value.assignedChannelIds }, failures }
+    return {
+      now: now.value,
+      actor: { role: state.value.actingRole, assignedChannelIds: state.value.assignedChannelIds },
+      failures,
+      channelName,
+      channelFacts,
+    }
   }
 
   /** Runs an operation; on success applies side effects and saves, on failure keeps the error for the UI. */
@@ -253,8 +267,8 @@ export const useMaropayStore = defineStore('maropay', () => {
     notify(task.id, `Maropay: ${task.title}`, taskTarget(task))
   }
 
-  function notifyNewTasks(before: Set<string>): void {
-    for (const task of state.value.tasks) if (!before.has(task.id) && task.status !== 'resolved') notifyTask(task)
+  function notifyNewTasks(before: Set<string>, include: (task: ActionTask) => boolean = () => true): void {
+    for (const task of state.value.tasks) if (!before.has(task.id) && task.status !== 'resolved' && include(task)) notifyTask(task)
   }
 
   function taskIds(): Set<string> {
@@ -282,7 +296,14 @@ export const useMaropayStore = defineStore('maropay', () => {
 
   const capabilities = computed(() => deriveCapabilities(state.value, now.value))
   const dimensions = computed(() => readinessDimensions(state.value, now.value))
-  const overview = computed(() => deriveOverviewInstruction(state.value, now.value))
+  const overview = computed(() => deriveOverviewInstruction(state.value, now.value, channelFacts))
+  /** The partner-shaped view: currently due, due later, past due, errors and the deadline. */
+  const requirements = computed(() => deriveRequirements(state.value, now.value))
+  /** What our payments partner asks of this country and business type. */
+  const rules = computed(() => rulesForState(state.value))
+  const partnerDecisions = computed(() => availablePartnerDecisions(state.value))
+  /** The store to activate next, with its checklist — null when nothing is linked. */
+  const activationTarget = computed(() => deriveActivationTarget(state.value, now.value, channelFacts))
   const balances = computed(() => deriveBalances(state.value, now.value))
   const upcomingPayout = computed(() => nextPayout(state.value, now.value))
   const closureChecks = computed(() => deriveClosureChecks(state.value, now.value))
@@ -307,14 +328,15 @@ export const useMaropayStore = defineStore('maropay', () => {
     return state.value.bindings.find((b) => b.channelId === channelId) ?? null
   }
 
-  function storeStateFor(channelId: string) {
-    const binding = bindingFor(channelId)
-    return binding ? storeActivationState(binding, capabilities.value) : null
-  }
-
   function checklistFor(channelId: string) {
     const binding = bindingFor(channelId)
     return binding ? activationChecklist(state.value, binding, channelFacts(channelId), now.value) : null
+  }
+
+  function storeStateFor(channelId: string) {
+    const binding = bindingFor(channelId)
+    const checklist = checklistFor(channelId)
+    return binding && checklist ? storeActivationState(binding, capabilities.value, checklist) : null
   }
 
   function methodsForStore(channelId: string): Array<PaymentMethodCatalogEntry & { status: MethodStatus }> {
@@ -406,25 +428,15 @@ export const useMaropayStore = defineStore('maropay', () => {
     return run((e) => adapter.saveOnboardingStep(state.value, step, patch, options, e))
   }
 
+  /** Records the owner's acceptance on Continue, with the date, mock IP and browser our payments partner requires. */
   function acceptTerms(): Result<null> {
-    if (!can('accept_terms')) return fail('permission_denied', 'Only the business owner or an authorised representative can accept the terms.')
-    const at = new Date().toISOString()
-    state.value.onboarding.termsAcceptedVersion = state.value.terms.version
-    state.value.terms.acceptedAt = at
-    state.value.terms.acceptedBy = state.value.actingRole
-    state.value.history.unshift({ id: nextId(state.value, 'his'), at, actor: state.value.actingRole, kind: 'terms', channelId: null, text: `Accepted Maropay terms ${state.value.terms.version}` })
-    persist()
-    return ok(null)
+    const userAgent = typeof navigator === 'undefined' ? 'unknown' : navigator.userAgent
+    return run((e) => adapter.acceptTerms(state.value, { userAgent }, e))
   }
 
-  /** Stores the payout account for setup. The full number is used once and only its last four digits are kept. */
-  function savePayoutDetails(input: { holderName: string; bankName: string; accountNumber: string }): Result<null> {
-    if (!can('change_bank')) return fail('permission_denied', 'Only the business owner can add payout details.')
-    const digits = input.accountNumber.replace(/\s/g, '')
-    if (!/^\d{4,17}$/.test(digits)) return fail('invalid_input', 'Enter an account number of 4 to 17 digits.')
-    state.value.onboarding.payout = { holderName: input.holderName.trim(), bankName: input.bankName.trim(), last4: digits.slice(-4), currency: state.value.account?.currency ?? 'USD' }
-    persist()
-    return ok(null)
+  /** Stores the payout account for setup. The full number is checked once; only its last four digits and the routing number are kept. */
+  function savePayoutDetails(input: BankAccountInput): Result<null> {
+    return run((e) => adapter.savePayoutDraft(state.value, input, e))
   }
 
   function requestOwnerReview(): Result<ActionTask> {
@@ -456,23 +468,50 @@ export const useMaropayStore = defineStore('maropay', () => {
   }
 
   function submitSetup() {
-    const before = taskIds()
-    return run((e) => adapter.submitOnboarding(state.value, e), ({ outcome }) => {
-      notifyNewTasks(before)
-      if (outcome === 'verified') notify('verified', 'Maropay: your business is verified — you can activate a store', { name: 'MaropayOverview' })
+    return run((e) => adapter.submitOnboarding(state.value, e), () => {
+      notify(`submitted-${state.value.account?.submittedAt ?? now.value}`, 'Maropay: your details were sent for review', { name: 'MaropaySetup' })
     })
   }
 
-  function resolveTask(taskId: string, payload: { document?: MockDocument; confirmed?: boolean }) {
-    return run((e) => adapter.resolveTask(state.value, taskId, payload, e))
+  function resolveTask(taskId: string, payload: TaskAnswer) {
+    return run((e) => adapter.resolveTask(state.value, taskId, payload, e), (task) => {
+      if (task.kind === 'verification') notify(`sent-${task.id}-${now.value}`, `Maropay: sent for review — ${task.title}`, { name: 'MaropayOverview' })
+    })
   }
 
-  function simulateReviewOutcome(decision: 'verified' | 'rejected' | 'more_info') {
+  /** Approval prompts; it never activates. The notification points at the store to activate, not the overview. */
+  function notifyVerified(): void {
+    const target = activationTarget.value
+    const id = `verified-${state.value.account?.verifiedAt ?? now.value}`
+    if (target) {
+      const name = channelName(target.binding.channelId)
+      notify(id, `Maropay: your business is verified — activate it on ${name}`, { name: 'StorePayments', params: { channelId: target.binding.channelId } })
+    } else {
+      notify(id, 'Maropay: your business is verified — link a store to activate it', { name: 'MaropaySettings', query: { tab: 'stores' } })
+    }
+  }
+
+  function simulateReviewOutcome(decision: 'verified' | 'rejected' | 'more_info', options: ReviewOptions = {}) {
     const before = taskIds()
-    return run((e) => adapter.simulateReviewOutcome(state.value, decision, e), () => {
-      notifyNewTasks(before)
-      if (decision === 'verified') notify('verified', 'Maropay: your business is verified — you can activate a store', { name: 'MaropayOverview' })
+    const firstApproval = decision === 'verified' && state.value.account?.verification !== 'verified'
+    const accepting = decision === 'verified' && !firstApproval && state.value.tasks.some(awaitingDecision)
+    return run((e) => adapter.simulateReviewOutcome(state.value, decision, e, options), () => {
+      if (firstApproval) {
+        // One notification for approval: it names the store to activate, so the activation tasks aren't announced twice.
+        notifyNewTasks(before, (task) => task.kind !== 'activate_store')
+        notifyVerified()
+      } else {
+        notifyNewTasks(before)
+      }
+      if (accepting) notify(`accepted-${now.value}`, 'Maropay: our payments partner accepted your information', { name: 'MaropayOverview' })
+      if (decision === 'rejected') notify(`declined-${state.value.account?.declinedAt ?? now.value}`, 'Maropay: our payments partner couldn’t approve your business', { name: 'MaropayOverview' })
     })
+  }
+
+  /** Reviewer control: a later-dated requirement comes due (the partner's payout threshold was reached). */
+  function raiseThresholdRequirement(key: RequirementKey) {
+    const before = taskIds()
+    return run((e) => adapter.raiseThresholdRequirement(state.value, key, e), () => notifyNewTasks(before))
   }
 
   // ── Stores and methods ──────────────────────────────────────────────
@@ -485,8 +524,8 @@ export const useMaropayStore = defineStore('maropay', () => {
     return run((e) => adapter.setMethodEnabled(state.value, channelId, methodId, enabled, e))
   }
 
-  function simulateMethodApproval(methodId: string, approved: boolean) {
-    return run((e) => adapter.simulateMethodApproval(state.value, methodId, approved, e))
+  function simulateMethodApproval(methodId: string, approved: boolean, reason: MethodDeclineReason = 'other') {
+    return run((e) => adapter.simulateMethodApproval(state.value, methodId, approved, e, reason))
   }
 
   function setCaptureMode(channelId: string, mode: CaptureMode) {
@@ -504,7 +543,16 @@ export const useMaropayStore = defineStore('maropay', () => {
   function activateStore(channelId: string) {
     return run((e) => adapter.activateStore(state.value, channelId, channelFacts(channelId), e), () => {
       useOnboardingStore().complete('payments')
+      notify(`live-${channelId}-${now.value}`, `Maropay is live on ${channelName(channelId)}`, { name: 'StorePayments', params: { channelId } })
     })
+  }
+
+  /** The store page's "you're verified — finish the checklist" notice, dismissed per store and remembered. */
+  function dismissActivationNotice(channelId: string): void {
+    const binding = bindingFor(channelId)
+    if (!binding) return
+    binding.activationNoticeDismissedAt = new Date().toISOString()
+    persist()
   }
 
   function deactivateStore(channelId: string) {
@@ -626,7 +674,7 @@ export const useMaropayStore = defineStore('maropay', () => {
     return result
   }
 
-  function updateBankAccount(input: { holderName: string; bankName: string; accountNumber: string }) {
+  function updateBankAccount(input: { holderName: string; bankName: string; accountNumber: string; bankCode?: string; holderType?: 'individual' | 'company' | null }) {
     const result = run((e) => adapter.updateBankAccount(state.value, input, stepUp.value.token, e), (a) => {
       notify(`bank-${a.payoutDestination?.addedAt ?? ''}`, `Security notice: your Maropay payout bank changed to ${a.payoutDestination?.bankName} •••• ${a.payoutDestination?.last4}`,
         { name: 'MaropaySettings', query: { tab: 'bank' } })
@@ -750,15 +798,16 @@ export const useMaropayStore = defineStore('maropay', () => {
     // derived
     account, business, terms, onboarding, bindings, methods, payments, payouts, disputes, tasks, openTasks,
     history, milestones, actingRole, assignedChannelIds, scenarioKey, discoveryDismissedAt,
-    capabilities, dimensions, overview, balances, upcomingPayout, closureChecks, eligibleChannels,
+    capabilities, dimensions, overview, requirements, rules, partnerDecisions, activationTarget, balances, upcomingPayout, closureChecks, eligibleChannels,
     can, filterPayments, bindingFor, storeStateFor, checklistFor, methodsForStore, checkoutMethodsFor, migrationImpactFor,
     paymentById, paymentForOrder, breakdownFor, refundableForOrder, payoutById, movementsForPayout, disputeById, taskById,
     channelName, routeFor, loadRecords,
     // onboarding
     startSetup, saveStep, acceptTerms, savePayoutDetails, requestOwnerReview, submitSetup, resolveTask, simulateReviewOutcome,
+    raiseThresholdRequirement,
     // stores
     linkStore, setMethodEnabled, simulateMethodApproval, setCaptureMode, validateCheckout, markImpactReviewed, activateStore, deactivateStore,
-    deactivateAllStores,
+    deactivateAllStores, dismissActivationNotice,
     // account settings
     requestBusinessChange, simulateBusinessChangeOutcome, updatePublicDetails, closeAccount,
     // checkout and payments

@@ -8,7 +8,7 @@ import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpSectionHeader from '@/components/MpSectionHeader.vue'
 import { useToast } from '@/composables/useToast'
 import { useMaropayStore } from '@/stores/useMaropay'
-import { BUSINESS_CHANGE_LABELS, BUSINESS_TYPE_LABELS } from '@/maropay/model'
+import { BUSINESS_CHANGE_LABELS, BUSINESS_TYPE_LABELS, personName, representativeOf } from '@/maropay/model'
 import type { BusinessChangeField, MaropayError } from '@/maropay/model'
 import { countryLabel, descriptorIssue, isEmail } from '@/maropay/onboarding'
 
@@ -21,6 +21,7 @@ const maropay = useMaropayStore()
 const toast = useToast()
 
 const business = computed(() => maropay.business)
+const representative = computed(() => (business.value ? representativeOf(business.value) : null))
 const closed = computed(() => Boolean(maropay.account?.closedAt))
 const editBlocker = computed(() => {
   if (closed.value) return 'This Maropay account is closed.'
@@ -159,13 +160,13 @@ function savePublic(): void {
         <dt>Legal business name</dt><dd>{{ business.legalName }}</dd>
         <dt>Trading name</dt><dd>{{ orDash(business.tradingName) }}</dd>
         <dt>Business type</dt><dd>{{ BUSINESS_TYPE_LABELS[business.type] }}</dd>
-        <dt>Registration number</dt><dd>{{ orDash(business.registrationNumber) }}</dd>
+        <dt>Tax ID</dt><dd>{{ orDash(business.taxId) }}</dd>
         <dt>Website</dt><dd class="maropay-business__wrap">{{ orDash(business.website) }}</dd>
         <dt>Registered address</dt><dd>{{ address }}</dd>
         <dt>Representative</dt>
         <dd>
-          {{ business.representative.name }}{{ business.representative.title ? ` · ${business.representative.title}` : '' }}
-          <span class="maropay-business__sub">{{ business.representative.email }}</span>
+          {{ representative ? personName(representative) : '—' }}{{ representative?.title ? ` · ${representative.title}` : '' }}
+          <span class="maropay-business__sub">{{ representative?.email }}</span>
         </dd>
       </dl>
 

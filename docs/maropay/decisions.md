@@ -1,6 +1,6 @@
 # Maropay prototype — decisions and production gaps
 
-Companion to the Maropay implementation plan, the internal product brief (not published in this repository). This file records what the prototype decided where the plan was silent or collided with the repository, and what stays out of scope. Updated 24 September 2026.
+Companion to the Maropay implementation plan, the internal product brief (not published in this repository). This file records what the prototype decided where the plan was silent or collided with the repository, and what stays out of scope. Updated 27 September 2026.
 
 ## Decisions made with the product owner
 
@@ -10,6 +10,10 @@ Companion to the Maropay implementation plan, the internal product brief (not pu
 | D2 | Build from the plan and the MaroBase design system, then **reconcile with the Maropay designs in progress later**. | Designs are being produced in parallel. |
 | D3 | **Top-level "Maropay" sidebar group** with a rail workspace at `/accounts/:accountId/maropay/*`, plus a per-store Payments page and order-level actions. | Gives the plan a persistent home while keeping contextual entry points. |
 | D4 | **Cut from the prototype:** the separate Reports page (CSV export on Transactions and Payouts instead), the support case view (a contextual alert with references instead), and cross-tab locks and reminder schedules (documented only). **Kept:** the shopper checkout preview. | Keeps the prototype to surfaces that reuse the design system. |
+| E1 | **Maropost-built onboarding forms via the partner API.** The wizard *is* the onboarding form and mirrors the partner's account / persons / requirements semantics. Copy stays processor-agnostic; the processor is named only on the agreements step. | Product review (26 Sep 2026): the screens should drive onboarding through the API, not hand off to a partner-hosted step. |
+| E2 | **Collect the partner's currently-due set per country** (US / CA / AU / NZ / GB) and business type (company or individual; a non-profit is a company structure), including owners, directors and executives where the country asks. Later-dated (threshold) items are *not* collected up front — they become dated tasks, which is what exercises the deadline states. | Same review, point 1. |
+| E3 | **After approval: prompt and task; the owner decides.** One `activate_store` task per linked store that could go live, a notification and the overview action deep-link to the store's Payments page. Activation is always an explicit confirm — never automatic, no auto-navigation. | Same review, point 3. |
+| E4 | **Checkout customization in scope:** brand from the store's published theme, logo stub, pay-button label, statement descriptor and support contact at checkout; method order, default method, Apple / Google Pay as express buttons; per-method settings; default methods for new stores; editable payout schedule. **Out:** surcharge, tipping. | Same review, point 4. |
 
 ## Defaults taken during the build
 
@@ -28,14 +32,24 @@ Companion to the Maropay implementation plan, the internal product brief (not pu
   - full bank numbers (only the last four digits are kept)
   - document contents (only name and status)
   - the reviewer's failure switches
-- **Scenarios.** `?maropay=m01…m15` loads a review scenario for the active account, using the same idiom as `?plg=`. Fixtures are built by running the mock adapter's own operations at back-dated times, so every payout reconciles to its movements. The tests assert this.
-- **Setup rules live in one place.** `src/maropay/onboarding.ts` defines what each step needs. The wizard uses it to reveal field errors once the merchant tries to move on; the adapter uses it to refuse a submission. Submission checks the draft's content, never the wizard's progress markers, so a step the merchant visited and later emptied can't slip through.
+- **Scenarios.** `?maropay=m01…m17` loads a review scenario for the active account, using the same idiom as `?plg=`. Fixtures are built by running the mock adapter's own operations at back-dated times, so every payout reconciles to its movements. The tests assert this.
+- **Setup rules live in one place.** `src/maropay/requirements.ts` is the one source of what our payments partner asks of each country × business type (currently-due keys, later-dated items, person roles, structures, ID formats, alternatives); `src/maropay/onboarding.ts` turns the keys a draft is missing into field-level issues and adds Maropost's own gates (authority, structure, support email, non-US descriptor, payout currency). The wizard uses it to reveal field errors once the merchant tries to move on; the adapter uses it to refuse a submission. Submission checks the draft's content, never the wizard's progress markers, so a step the merchant visited and later emptied can't slip through.
+- **Vocabulary follows the partner.** Business type is `individual` or `company` (a non-profit is a company *structure*); the tax ID and the AU company number are separate fields with per-country labels and formats; the representative is a `Person` with a date of birth, phone, home address and — US only — the last four digits of the SSN. A full SSN is refused by the adapter and never reaches state. Legacy saves (`sole_trader`, `nonprofit`, a single `registrationNumber`, a one-string representative name) are back-filled on read.
+- **Review by default.** Submitting always puts the account *under review*; nothing verifies instantly, including the reuse path. The partner's decision is the reviewer's control (`simulateReviewOutcome`): approve, ask for one keyed request (identity document, unreadable document, name ↔ tax ID mismatch with a document alternative, unreachable website with a description alternative for US businesses, proof of address, an owner's ID), or decline with one of the partner's five account-level reasons. One outstanding request per decision; partner error codes are kept for support and never shown.
+- **Documents are only ever partner-requested.** The wizard no longer offers an optional photo ID; a request opens the focused "Provide information" view with the form the key needs (front/back documents, a keyed value, or a confirmation). Only a file's name and size are kept.
+- **Declined is its own state.** It is not "unsupported": the overview says our payments partner couldn't approve the business and why, payments read *Not enabled* (a business that never traded simply stays off; one that traded is *Disabled*), no activation is offered anywhere, and the only route is a review through Maropost support. A business with a live store is never declined in the prototype — the partner pauses it with a request instead.
+- **Approval prompts; the owner decides.** Verification raises one `activate_store` task per linked store that could go live (drafts and stores on other platforms get none), a notification that links to the store's Payments page, and an overview headline that says whether the store is *set up* (checklist done) or still *needs setup*. Nothing activates by itself; stopping Maropay on a store never re-raises its task.
+- **Terms are recorded on Continue, with the date, a mock IP address and the browser** — what the partner's ToS acceptance requires. Once per version; a finance user can't accept.
+- **The routing number is kept; the account number never is.** The payout draft and the payout destination hold the bank name, holder name and type, routing number, currency, country and the last four digits. The full number is validated once in the adapter and dropped.
+- **Currency follows the registration country.** Choosing a country sets the account currency, re-seeds the method catalogue and the dispute fee for it (pre-submission only) and clears a payout account entered for another country. Rate labels stay USD-illustrative.
+- **Later-dated requirements are staged.** A threshold item (a US company's EIN, illustratively at about $1,500 of payouts) is raised by the reviewer control as a task due in 14 days; payouts pause at the deadline and payments 7 days after it (`paymentsPauseAt`). The overview headline moves through "provide by <date>" → "payouts are paused" → "payments and payouts are paused". Detection stays a reviewer op — fixture volumes would trip any illustrative threshold.
+- **Decisions and threshold items are separate.** A partner decision acts on its own requests and on threshold items the merchant has answered; an unanswered threshold item keeps its deadline through any approval or new request. An answered item past its deadline reads *paused while our payments partner reviews what you sent* — never "payments are active". A trading business is never offered Decline; the partner pauses it with a request instead. Only threshold items are staged (payouts first, payments a week later); a request on an already-verified business pauses both at its deadline.
+- **A later item already on file is never asked for** (an EIN typed during setup), and each later item has its own form — a phone number, an email, a job title — never a photo ID in their place.
+- **Wallets ride on cards.** Apple Pay and Google Pay can't be turned on without Cards, and turning Cards off takes them too. A declined method carries its capability-level reason.
 - **Owner-only items.** Confirming authority, accepting the terms and adding the payout account are the owner's. They never stop a finance user moving through the steps. Instead the finance user's review step becomes "Ask the owner to submit", which raises an owner-review task that submission resolves.
 - **Terms are accepted on Continue.** Ticking the box isn't acceptance. The acceptance, its version and the accepting role are recorded when the owner leaves the step. After that the box is locked with the date.
-- **Photo ID is optional in the wizard.** Submitting without it leads to the partner's request: an *Action required* verification task, due in 5 days, which opens a focused "Provide information" view rather than reopening the whole wizard. Only the file's name and size are kept.
-- **Reusing verified details** makes the verification fields read-only and skips the ID. The account records `reusedVerifiedDetails`.
-- **Unsupported country.** Choosing an unsupported registration country during setup marks the account `unsupported` at once. Continue is disabled, the overview says Maropay isn't available and links back to setup, and "Keep my current provider" leaves nothing changed. A declined verification is the only state offered a decision review through support.
-- **Payout account entry.** The routing or bank code and the full account number are held only in the form until saved. The store keeps the last four digits, and the bank code is never stored.
+- **Reusing verified details** makes the verification fields read-only. The account records `reusedVerifiedDetails`; the submission still goes to review.
+- **Unsupported country.** Choosing an unsupported registration country during setup marks the account `unsupported` at once. Continue is disabled, the overview says Maropay isn't available and links back to setup, and "Keep my current provider" leaves nothing changed. A *declined* verification is a different state (see above) and the only one offered a decision review through support.
 - **Store activation is a sequence on one page.** The order is check, configure, review, activate. The checklist's fixes point at the page's own sections or at where the fix lives. Changing methods or capture on a store that isn't live resets its test checkout and review, so the owner never activates a configuration they didn't test.
 - **"Waiting" means our payments partner's move.** Under review waits on the partner; action required is *to do* for the merchant. The checklist, task list and overview all make that distinction.
 - **Activation consequences are specific.** A method with no Maropay equivalent (PayPal Checkout) is said to stay connected through the previous provider. Past payments, refunds and payouts always stay with whoever took them. Stopping Maropay changes only where new checkouts go.
@@ -57,6 +71,8 @@ Companion to the Maropay implementation plan, the internal product brief (not pu
 - **Tab counts follow the filters.** Every filter except the tab (store, provider, method, payout, search) applies to the tab counts too, so a filtered list never shows "All 13" above "1 record".
 - **Tests.** `npm run test:maropay` runs `node:test` over `tests/maropay/`. Modules under `src/maropay/` and `src/services/maropay/` import each other by relative `.ts` path, because Node doesn't resolve the Vite `@/` alias.
 
+**Deferred with S3 (paused).** From the S1 review, left for the partner-states slice: reviewer controls to pick a request kind, a decline reason or a later item from the UI (today only the identity request and the default decline are one click away; the rest run from scripts and tests); the requirement page's "answer with the alternative" control (unreachable from the UI until those reviewer controls exist).
+
 ## Build status
 
 | Slice | Surfaces | State |
@@ -69,6 +85,13 @@ Companion to the Maropay implementation plan, the internal product brief (not pu
 | U5 | Payouts, Disputes | Done |
 | U6 | Maropay settings, notification links | Done |
 | U7 | Hardening, M01–M15 sweep, [implementation report](implementation-report.md) | Done |
+| S1 | Partner-aligned model, per-country rules engine, review by default, activation tasks, M16–M17 (engine; UI kept compiling) | Done |
+| S2 | Setup wizard rework (rules-driven per country and business type, people list) | Paused |
+| S3 | Partner states across the product (requirement forms, checklist, decline surfaces, reviewer requests) | Paused |
+| S4 | Activation kick-off after approval (store page notice, chips, sales-channel copy) | Paused |
+| S5 | Store payment configuration (checkout card, method order, per-method settings) | Paused |
+| S6 | Branded checkout preview | Dropped — the store's real checkout replaces the preview |
+| S7 | Account-level payment settings and phase report | Paused |
 
 ## Known limitations (prototype)
 
@@ -83,7 +106,8 @@ Companion to the Maropay implementation plan, the internal product brief (not pu
 
 - Processor choice and configuration, the account model, and any embedded KYC or notification components.
 - Signed commercial terms, including rates, dispute fees, and payout policy per market.
-- The approved launch-country list. `SUPPORTED_COUNTRIES` is illustrative.
+- The approved launch-country list. `SUPPORTED_COUNTRIES` is illustrative, and so are the per-country requirement sets in `requirements.ts` (modelled on the partner's published currently-due lists), the industry (MCC) list, the company-structure lists and the non-profit sets. Production reads the requirements feed from the partner rather than a table.
+- Real ToS capture (the IP address is a documentation-range mock) and a real threshold trigger for later-dated requirements.
 - Server-side authorisation, verified webhooks, idempotency keys on real calls, and reconciliation jobs.
 - Cross-tab consistency, reminder cadences (24 h and 72 h setup reminders, dispute deadline reminders), and the owner emails and security notifications the plan describes. Here these are in-app notifications only.
 - Support tooling: case view, escalation to the processor, masked diagnostics.

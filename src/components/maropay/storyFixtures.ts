@@ -46,8 +46,13 @@ export function storyState(key: MaropayScenarioKey): MaropayAccountState {
   return buildScenario(key, CONTEXT)
 }
 
+function storyFacts(channelId: string) {
+  const c = CONTEXT.channels.find((ch) => ch.id === channelId)
+  return c ? { name: c.name, type: c.type, provider: c.provider, status: c.status } : null
+}
+
 export function storyReadiness(state: MaropayAccountState) {
-  return { instruction: deriveOverviewInstruction(state, NOW), dimensions: readinessDimensions(state, NOW) }
+  return { instruction: deriveOverviewInstruction(state, NOW, storyFacts), dimensions: readinessDimensions(state, NOW) }
 }
 
 export function storyBalance(state: MaropayAccountState) {

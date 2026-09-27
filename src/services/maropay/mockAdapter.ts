@@ -13,16 +13,24 @@
  *
  * Pure module — relative `.ts` imports only (see src/maropay/money.ts).
  */
-import { applyRate, formatMoney, isPositive, negate, subtract, sum, toDecimal, zero } from '../../maropay/money.ts'
+import { applyRate, formatMoney, isPositive, money, negate, subtract, sum, toDecimal, zero } from '../../maropay/money.ts'
 import type { Money } from '../../maropay/money.ts'
 import {
   BUSINESS_CHANGE_LABELS,
-  DEFAULT_METHOD_IDS,
+  DECLINE_REASON_LABELS,
+  DEFAULT_PAYOUT_SCHEDULE,
+  METHOD_DECLINE_COPY,
+  MOCK_CLIENT_IP,
   PAYMENT_STATUS_RANK,
   PROVIDER_LABELS,
+  REPRESENTATIVE_ID,
+  THRESHOLD_ESCALATION_DAYS,
   canForStore,
   canTransition,
+  catalogFor,
+  currencyFor,
   daysFrom,
+  defaultCheckoutSettings,
   fail,
   isoAt,
   localDateKey,
@@ -36,6 +44,7 @@ import type {
   CaptureMode,
   CheckoutOrderSnapshot,
   CheckoutSession,
+  DeclineReason,
   Dispute,
   DisputeReason,
   EvidenceItem,
@@ -45,6 +54,7 @@ import type {
   MaropayAccountState,
   MaropayAction,
   MaropayActingRole,
+  MethodDeclineReason,
   MockDocument,
   OnboardingDraft,
   OnboardingStepKey,
@@ -52,28 +62,36 @@ import type {
   PaymentEventKind,
   PaymentStatus,
   Payout,
+  PayoutDestination,
   Refund,
+  RequirementKey,
   Result,
   ShopperFlow,
   StoreBinding,
 } from '../../maropay/model.ts'
 import {
   activationChecklist,
+  awaitingDecision,
   canAcceptDispute,
   canCapture,
   canRefund,
   canSubmitEvidence,
   canVoid,
+  channelProblem,
   checkoutMethods,
   closureChecks,
   deriveCapabilities,
   formatDay,
   isSupportedCountry,
+  isThresholdTask,
   settledStatus,
 } from '../../maropay/readiness.ts'
 import type { ChannelFacts } from '../../maropay/readiness.ts'
-import { EDITABLE_DRAFT_FIELDS, descriptorIssue, isEmail, submissionIssues } from '../../maropay/onboarding.ts'
-import type { EditableDraftField, OnboardingPatch } from '../../maropay/onboarding.ts'
+import { EDITABLE_DRAFT_FIELDS, bankAccountErrors, descriptorIssue, digitsOnly, isEmail, submissionIssues } from '../../maropay/onboarding.ts'
+import type { BankAccountInput, EditableDraftField, OnboardingPatch } from '../../maropay/onboarding.ts'
+import { MOCK_ERRORS, providedKeys, requestSubject, requestSubjectName, requirementForm, requirementLabel, rulesForState } from '../../maropay/requirements.ts'
+import type { MockErrorKey, SetupField } from '../../maropay/requirements.ts'
+import { normaliseWebsite } from '../../maropay/validation.ts'
 
 // ── Environment ───────────────────────────────────────────────────────────
 
@@ -84,18 +102,19 @@ export interface FailurePlan {
   /** The next financial call times out without applying (retry with the same key succeeds). */
   timeoutNext: boolean
   checkoutValidationFails: boolean
-  /** Submissions go to manual review instead of instant verification. */
-  reviewDelay: boolean
 }
 
 export function defaultFailures(): FailurePlan {
-  return { refundOutcome: 'succeed', timeoutNext: false, checkoutValidationFails: false, reviewDelay: false }
+  return { refundOutcome: 'succeed', timeoutNext: false, checkoutValidationFails: false }
 }
 
 export interface AdapterEnv {
   now: number
   actor: { role: MaropayActingRole; assignedChannelIds: string[] | null }
   failures: FailurePlan
+  /** What the operations know about sales channels — names for task titles, facts for store checks. Pure callers may leave them out. */
+  channelName?: (channelId: string) => string
+  channelFacts?: (channelId: string) => ChannelFacts | null
 }
 
 /** Mock step-up code shown in the prototype's own hint. */
@@ -163,7 +182,7 @@ export function newBinding(state: MaropayAccountState, channelId: string, now: n
     accountId: state.accountId,
     channelId,
     activation: 'inactive',
-    enabledMethodIds: [...DEFAULT_METHOD_IDS],
+    enabledMethodIds: [...state.defaultMethodIds],
     captureMode,
     previousProvider: null,
     checkoutValidation: { status: 'not_run', at: null, failureReason: null },
@@ -171,9 +190,22 @@ export function newBinding(state: MaropayAccountState, channelId: string, now: n
     linkedAt: isoAt(now),
     activatedAt: null,
     deactivatedAt: null,
+    checkout: defaultCheckoutSettings(),
+    methodOrder: [],
+    defaultMethodId: null,
+    methodSettings: {},
+    activationNoticeDismissedAt: null,
   }
   state.bindings.push(binding)
   return binding
+}
+
+/** Settlement currency follows the registration country; the catalogue and dispute fee follow it. Pre-submission only. */
+function setAccountCurrency(state: MaropayAccountState, account: MaropayAccount, currency: string): void {
+  if (account.currency === currency) return
+  account.currency = currency
+  state.methods = catalogFor(currency)
+  state.terms.disputeFee = money(state.terms.disputeFee.amount, currency)
 }
 
 /** Opens a connected account in setup and seeds the wizard (Maropost owns the journey, the processor owns the account). */
@@ -185,25 +217,28 @@ export function startOnboarding(
   if (!allowed(env, 'edit_onboarding')) return denied('Store operations users can’t start Maropay setup.')
   if (state.account) return ok(state.account)
   const at = isoAt(env.now)
+  const country = input.prefill.country ?? state.onboarding.country
   const account: MaropayAccount = {
     id: nextId(state, 'mpa'),
     processorAccountRef: `acct_mp${state.accountId}`,
     businessId: state.business?.id ?? nextId(state, 'bus'),
-    country: input.prefill.country ?? state.onboarding.country,
-    currency: 'USD',
+    country,
+    currency: state.terms.disputeFee.currency,
     setup: 'in_progress',
     verification: 'not_submitted',
     eligibility: 'unknown',
-    rejectedReason: null,
+    declineReason: null,
+    declinedAt: null,
     reusedVerifiedDetails: input.reuseVerifiedDetails,
     payoutDestination: null,
-    payoutSchedule: { interval: 'daily', delayDays: 2 },
+    payoutSchedule: { ...DEFAULT_PAYOUT_SCHEDULE },
     createdAt: at,
     submittedAt: null,
     verifiedAt: null,
     closedAt: null,
   }
   state.account = account
+  setAccountCurrency(state, account, currencyFor(country))
   state.onboarding = {
     ...state.onboarding,
     ...input.prefill,
@@ -214,6 +249,8 @@ export function startOnboarding(
   log(state, env, 'setup', input.reuseVerifiedDetails ? 'Started Maropay setup with verified details from an existing account' : 'Started Maropay setup')
   return ok(account)
 }
+
+const LAST_FOUR = /^\d{0,4}$/
 
 /**
  * Saves the wizard's answers as the merchant goes. `complete` marks the step
@@ -238,21 +275,82 @@ export function saveOnboardingStep(
   if (patch.authorityConfirmed !== undefined && patch.authorityConfirmed !== draft.authorityConfirmed && env.actor.role !== 'owner') {
     return denied('Only the business owner or an authorised representative can confirm authority.')
   }
+  if (patch.attestations && JSON.stringify(patch.attestations) !== JSON.stringify(draft.attestations) && env.actor.role !== 'owner') {
+    return denied('Only the business owner can confirm the people list.')
+  }
+  // The full SSN is never accepted — only its last four digits ever reach state.
+  const people = [...(patch.representative ? [patch.representative] : []), ...(patch.persons ?? [])]
+  if (people.some((p) => p.ssnLast4 && !LAST_FOUR.test(p.ssnLast4.trim()))) {
+    return fail('invalid_input', 'Enter only the last 4 digits of the SSN — never the full number.')
+  }
   Object.assign(draft, JSON.parse(JSON.stringify(patch)) as OnboardingPatch)
-  // The registered address is in the registration country by definition.
+  // An individual has no structure and no people list; the addresses are in the registration country by definition.
+  if (draft.businessType === 'individual') {
+    draft.business.structure = null
+    draft.persons = []
+    draft.attestations = { owners: false, directors: false, executives: false }
+  }
   draft.business.address.country = draft.country
+  draft.representative.address.country = draft.country
+  for (const p of draft.persons) p.address.country = draft.country
   if (patch.country !== undefined) {
     account.country = patch.country
     account.eligibility = isSupportedCountry(patch.country) ? 'eligible' : 'unsupported'
+    setAccountCurrency(state, account, currencyFor(patch.country))
+    if (draft.payout && draft.payout.country !== patch.country) draft.payout = null
   }
   if (options.complete && !draft.completedSteps.includes(step)) draft.completedSteps = [...draft.completedSteps, step]
   draft.lastStep = options.next ?? step
   return ok(draft)
 }
 
+/** Records the owner's acceptance of the current terms with the date, IP and browser our payments partner requires. Once per version. */
+export function acceptTerms(state: MaropayAccountState, input: { userAgent: string }, env: AdapterEnv): Result<null> {
+  if (!allowed(env, 'accept_terms')) return denied('Only the business owner or an authorised representative can accept the terms.')
+  const account = state.account
+  if (!account) return fail('requirement_pending', 'Start Maropay setup first.')
+  if (account.setup === 'submitted') return fail('invalid_input', 'Setup has already been submitted.')
+  const draft = state.onboarding
+  // A first-phase acceptance carries no IP or browser yet, so it is recorded once more.
+  if (draft.termsAcceptedVersion === state.terms.version && state.terms.acceptedAt && state.terms.acceptedIp) return ok(null)
+  draft.termsAcceptedVersion = state.terms.version
+  state.terms.acceptedAt = isoAt(env.now)
+  state.terms.acceptedBy = env.actor.role
+  state.terms.acceptedIp = MOCK_CLIENT_IP
+  state.terms.acceptedUserAgent = input.userAgent.trim().slice(0, 200) || 'unknown'
+  log(state, env, 'terms', `Accepted Maropay terms ${state.terms.version}`)
+  return ok(null)
+}
+
 /**
- * Submits setup for review. Separates submission from approval: the outcome is
- * verified, under review, or action required — never assumed.
+ * Stores the payout account for setup. The full account number is checked
+ * once and only its last four digits are kept; the routing number is kept
+ * because it isn't the account number.
+ */
+export function savePayoutDraft(state: MaropayAccountState, input: BankAccountInput, env: AdapterEnv): Result<null> {
+  if (!allowed(env, 'change_bank')) return denied('Only the business owner can add payout details.')
+  const account = state.account
+  if (!account) return fail('requirement_pending', 'Start Maropay setup first.')
+  if (account.setup === 'submitted') return fail('invalid_input', 'Setup has already been submitted — change the bank account from Settings.')
+  const draft = state.onboarding
+  const issue = Object.values(bankAccountErrors(input, draft.country))[0]
+  if (issue) return fail('invalid_input', issue)
+  draft.payout = {
+    holderName: input.holderName.trim(),
+    bankName: input.bankName.trim(),
+    last4: digitsOnly(input.accountNumber).slice(-4),
+    routingNumber: digitsOnly(input.bankCode),
+    currency: currencyFor(draft.country),
+    country: draft.country,
+    holderType: input.holderType ?? (draft.businessType === 'individual' ? 'individual' : 'company'),
+  }
+  return ok(null)
+}
+
+/**
+ * Submits setup to our payments partner. Submission is never approval: the
+ * account goes under review and the partner's decision arrives later
+ * (simulateReviewOutcome in this prototype).
  */
 export function submitOnboarding(state: MaropayAccountState, env: AdapterEnv): Result<{ outcome: MaropayAccount['verification'] }> {
   if (!allowed(env, 'submit_onboarding')) {
@@ -266,21 +364,18 @@ export function submitOnboarding(state: MaropayAccountState, env: AdapterEnv): R
   }
   if (account.setup === 'submitted') return ok({ outcome: account.verification })
   // Content, not the wizard's progress markers, decides whether setup is complete.
-  const missing = submissionIssues(draft, state.terms.version)
+  const missing = submissionIssues(draft, state.terms.version, env.now)
   const payout = draft.payout
   if (missing.length || !payout) return fail('requirement_pending', missing[0]?.message ?? 'Add a payout bank account before you submit.')
 
   const at = isoAt(env.now)
   state.business = {
+    ...JSON.parse(JSON.stringify(draft.business)),
     id: account.businessId,
-    legalName: draft.business.legalName,
-    tradingName: draft.business.tradingName,
     type: draft.businessType ?? 'company',
     country: draft.country,
-    registrationNumber: draft.business.registrationNumber,
-    address: { ...draft.business.address },
-    website: draft.business.website,
-    representative: { ...draft.representative },
+    persons: JSON.parse(JSON.stringify([{ ...draft.representative, id: REPRESENTATIVE_ID }, ...draft.persons])),
+    representativeId: REPRESENTATIVE_ID,
     publicDetails: { ...draft.publicDetails },
   }
   account.country = draft.country
@@ -289,55 +384,71 @@ export function submitOnboarding(state: MaropayAccountState, env: AdapterEnv): R
   account.submittedAt = at
   account.reusedVerifiedDetails = draft.reuseVerifiedDetails
   account.payoutDestination = { ...payout, addedAt: at }
+  account.verification = 'under_review'
   draft.submittedAt = at
   resolveTasks(state, env, (t) => t.kind === 'owner_review')
-
-  let outcome: MaropayAccount['verification']
-  if (!draft.idDocument && !draft.reuseVerifiedDetails) {
-    outcome = 'action_required'
-    addTask(state, env, {
-      kind: 'verification',
-      title: `Upload a photo ID for ${draft.representative.name || 'your representative'}`,
-      description: 'Our payments partner needs to confirm who represents the business before payments can be enabled.',
-      affects: ['payments', 'payouts'],
-      dueAt: daysFrom(env.now, 5),
-      blocking: true,
-      role: 'owner',
-      step: 'verify',
-      disputeId: null,
-      payoutId: null,
-      methodId: null,
-      channelId: null,
-    })
-  } else if (env.failures.reviewDelay) {
-    outcome = 'under_review'
-  } else {
-    outcome = 'verified'
-    account.verifiedAt = at
-  }
-  account.verification = outcome
   for (const channelId of draft.channelIds) if (!findBinding(state, channelId)) newBinding(state, channelId, env.now)
   log(state, env, 'setup', 'Submitted Maropay setup for review')
-  if (outcome === 'verified') log(state, env, 'verification', 'Business verified by our payments partner')
-  return ok({ outcome })
+  return ok({ outcome: 'under_review' })
 }
 
-/** Supplies the information a verification or bank task asked for. */
-export function resolveTask(
-  state: MaropayAccountState,
-  taskId: string,
-  payload: { document?: MockDocument; confirmed?: boolean },
-  env: AdapterEnv,
-): Result<ActionTask> {
+/** What the merchant sends back for a partner request — one of these per form kind (requirementForm). */
+export interface TaskAnswer {
+  documents?: { front: MockDocument; back?: MockDocument | null }
+  value?: string
+  /** Answer with the request's alternative (a document instead of a keyed value, a description instead of a website). */
+  useAlternative?: boolean
+  confirmed?: boolean
+}
+
+/** A keyed value the partner asked for again lands on the draft and, once submitted, on the legal business. */
+function applyRequirementValue(state: MaropayAccountState, field: SetupField, value: string, asAlternative: boolean): void {
+  if (field === 'supportPhone') {
+    state.onboarding.publicDetails.supportPhone = value
+    if (state.business) state.business.publicDetails.supportPhone = value
+    return
+  }
+  if (field === 'repEmail' || field === 'repTitle') {
+    const business = state.business
+    const people = [state.onboarding.representative, ...(business ? business.persons.filter((p) => p.id === business.representativeId) : [])]
+    for (const person of people) {
+      if (field === 'repEmail') person.email = value
+      else person.title = value
+    }
+    return
+  }
+  for (const b of [state.onboarding.business, ...(state.business ? [state.business] : [])]) {
+    if (field === 'taxId') b.taxId = value
+    else if (field === 'website') { b.website = normaliseWebsite(value); b.noWebsite = false }
+    else if (field === 'productDescription') { b.productDescription = value; if (asAlternative) b.noWebsite = true }
+  }
+}
+
+/** Supplies what a verification or bank task asked for. Verification answers go to the partner for review; they never self-approve. */
+export function resolveTask(state: MaropayAccountState, taskId: string, payload: TaskAnswer, env: AdapterEnv): Result<ActionTask> {
   const task = state.tasks.find((t) => t.id === taskId)
   if (!task) return fail('not_found', 'That task no longer exists.')
   if (task.status === 'resolved') return ok(task)
   if (!allowed(env, 'resolve_task')) return denied('Only the business owner can provide verification or bank information.')
   if (task.kind === 'verification') {
-    if (!payload.document) return fail('invalid_input', 'Attach the requested document.')
-    state.onboarding.idDocument = payload.document
+    const rules = rulesForState(state)
+    const key = payload.useAlternative ? task.alternative?.[0] : task.requirement
+    if (payload.useAlternative && !key) return fail('invalid_input', 'There’s no alternative for this request.')
+    const form = requirementForm(key, rules)
+    if (!form) return fail('invalid_input', 'This request can’t be answered here — contact Maropost support.')
+    if (form.kind === 'documents') {
+      if (!payload.documents?.front) return fail('invalid_input', `Attach the ${form.label.toLowerCase()}.`)
+      task.documents = { front: payload.documents.front, back: payload.documents.back ?? null }
+    } else if (form.kind === 'value') {
+      const value = (payload.value ?? '').trim()
+      const issue = form.validate(value)
+      if (issue) return fail('invalid_input', issue)
+      applyRequirementValue(state, form.field, value, Boolean(payload.useAlternative))
+    } else if (!payload.confirmed) {
+      return fail('invalid_input', 'Confirm the details before sending them.')
+    }
     task.status = 'waiting_review'
-    if (state.account) state.account.verification = 'under_review'
+    if (state.account?.verification === 'action_required') state.account.verification = 'under_review'
     log(state, env, 'verification', `Provided: ${task.title}`)
     return ok(task)
   }
@@ -348,44 +459,161 @@ export function resolveTask(
     log(state, env, task.kind === 'bank' ? 'bank' : 'setup', `Resolved: ${task.title}`)
     return ok(task)
   }
+  if (task.kind === 'activate_store') return fail('invalid_input', 'This task is resolved by activating Maropay on the store.')
   return fail('invalid_input', 'This task is resolved from its own page.')
 }
 
-/** Reviewer control: what our payments partner decides after manual review. */
-export function simulateReviewOutcome(state: MaropayAccountState, decision: 'verified' | 'rejected' | 'more_info', env: AdapterEnv): Result<MaropayAccount> {
+export interface ReviewOptions {
+  /** For a decline: the partner's account-level reason. */
+  reason?: DeclineReason
+  /** For "needs more information": which of the partner's requests to raise. */
+  request?: MockErrorKey
+}
+
+/** Reviewer control: what our payments partner decides after review. Approval raises activation tasks; it never activates a store. */
+export function simulateReviewOutcome(
+  state: MaropayAccountState,
+  decision: 'verified' | 'rejected' | 'more_info',
+  env: AdapterEnv,
+  options: ReviewOptions = {},
+): Result<MaropayAccount> {
   const account = state.account
   if (!account || account.setup !== 'submitted') return fail('requirement_pending', 'Submit setup first.')
+  if (account.closedAt) return fail('requirement_pending', CLOSED)
+  if (account.verification === 'rejected') return fail('stale_state', 'This business was declined — a review of that decision goes through Maropost support.')
   const at = isoAt(env.now)
   if (decision === 'verified') {
+    // On an already-verified business this accepts what is awaiting a decision; unanswered threshold items keep their
+    // deadline. The activation tasks it raises are idempotent.
+    const wasVerified = account.verification === 'verified'
+    if (wasVerified && !state.tasks.some(awaitingDecision)) return ok(account)
     account.verification = 'verified'
-    account.verifiedAt = at
-    resolveTasks(state, env, (t) => t.kind === 'verification')
-    log(state, env, 'verification', 'Business verified by our payments partner')
-  } else if (decision === 'rejected') {
+    if (!wasVerified) account.verifiedAt = at
+    resolveTasks(state, env, awaitingDecision)
+    log(state, env, 'verification', wasVerified ? 'Information accepted by our payments partner' : 'Business verified by our payments partner')
+    ensureActivationTasks(state, env)
+    return ok(account)
+  }
+  if (decision === 'rejected') {
+    if (state.bindings.some((b) => b.activation === 'live')) {
+      return fail('stale_state', 'A business that is taking payments isn’t declined — our payments partner pauses it with a request instead. Stop Maropay on every store first.')
+    }
     account.verification = 'rejected'
-    account.rejectedReason = 'Our payments partner couldn’t verify this business for the products it sells. You can ask for the decision to be reviewed through Maropost support.'
+    account.declineReason = options.reason ?? 'incomplete_verification'
+    account.declinedAt = at
     resolveTasks(state, env, (t) => t.kind === 'verification')
-    log(state, env, 'verification', 'Verification declined by our payments partner')
-  } else {
-    account.verification = 'action_required'
-    resolveTasks(state, env, (t) => t.kind === 'verification')
-    addTask(state, env, {
-      kind: 'verification',
-      title: 'Upload a clearer photo ID — the last one was unreadable',
-      description: 'The document couldn’t be read. Upload a photo where every corner is visible.',
-      affects: ['payments', 'payouts'],
-      dueAt: daysFrom(env.now, 5),
-      blocking: true,
+    retireActivationTasks(state, env)
+    log(state, env, 'verification', `Verification declined by our payments partner — ${DECLINE_REASON_LABELS[account.declineReason].toLowerCase()}`)
+    return ok(account)
+  }
+  const rules = rulesForState(state)
+  const request = MOCK_ERRORS[options.request ?? 'identity_unverified']
+  const refusal = request.allowedWhen(state, rules)
+  if (refusal) return fail('invalid_input', refusal)
+  const key = request.requirement(rules)
+  const alternative = request.alternativeFromRules
+    ? rules.alternatives.find((a) => a.original === key)?.alternative ?? null
+    : request.alternative
+  const subject = requestSubject(state, request)
+  const wasVerified = account.verification === 'verified'
+  // One outstanding request per decision (threshold items aren't requests and keep their own deadline);
+  // a verified business gets a deadline, one still in review doesn't.
+  resolveTasks(state, env, (t) => t.kind === 'verification' && !isThresholdTask(t))
+  retireActivationTasks(state, env)
+  addTask(state, env, {
+    kind: 'verification',
+    title: request.title(requestSubjectName(state, request), rules),
+    description: request.description,
+    affects: ['payments', 'payouts'],
+    dueAt: wasVerified ? daysFrom(env.now, 14) : null,
+    blocking: true,
+    role: 'owner',
+    step: 'verify',
+    disputeId: null,
+    payoutId: null,
+    methodId: null,
+    channelId: null,
+    requirement: key,
+    ...(request.scope === 'owner' && subject ? { personId: subject.id } : {}),
+    errorCode: request.code,
+    errorReason: request.reason,
+    ...(alternative?.length ? { alternative } : {}),
+  })
+  if (!wasVerified) account.verification = 'action_required'
+  log(state, env, 'verification', `More information requested by our payments partner — ${request.reason}`)
+  return ok(account)
+}
+
+/** Reviewer control: a later-dated item comes due (a volume threshold was reached). Payouts pause at the deadline, payments a week later. */
+export function raiseThresholdRequirement(state: MaropayAccountState, key: RequirementKey, env: AdapterEnv): Result<ActionTask> {
+  const account = state.account
+  if (!account || account.verification !== 'verified' || account.closedAt) return fail('stale_state', 'Later requirements are only raised on a verified account.')
+  const rules = rulesForState(state)
+  const item = rules.dueLater.find((d) => d.key === key)
+  if (!item) return fail('invalid_input', 'Our payments partner doesn’t ask for that later for this business.')
+  const existing = state.tasks.find((t) => t.requirement === key && t.status !== 'resolved')
+  if (existing) return ok(existing)
+  const label = requirementLabel(key, rules)
+  if (providedKeys(state.onboarding, state.terms.version, env.now, rules).has(key)) {
+    return fail('invalid_input', `The ${label} is already on file, so our payments partner won’t ask for it.`)
+  }
+  if (!requirementForm(key, rules)) return fail('invalid_input', `The prototype can’t collect the ${label} yet.`)
+  const dueAt = daysFrom(env.now, 14)
+  const paymentsPauseAt = daysFrom(env.now, 14 + THRESHOLD_ESCALATION_DAYS)
+  const task = addTask(state, env, {
+    kind: 'verification',
+    title: `Provide your ${label} by ${formatDay(dueAt)}`,
+    description: `Our payments partner asks for this once your payouts pass its threshold. Payouts pause on ${formatDay(dueAt)} and payments on ${formatDay(paymentsPauseAt)} if it’s still missing.`,
+    affects: ['payouts', 'payments'],
+    dueAt,
+    blocking: false,
+    role: 'owner',
+    step: 'verify',
+    disputeId: null,
+    payoutId: null,
+    methodId: null,
+    channelId: null,
+    requirement: key,
+    paymentsPauseAt,
+  })
+  log(state, env, 'verification', `Our payments partner asked for the ${label}`)
+  return ok(task)
+}
+
+// ── Activation tasks (after approval) ─────────────────────────────────────
+// Approval prompts; the owner decides. One task per store that could go live,
+// deep-linked to its Payments page. Never automatic, never re-raised after
+// the owner stops Maropay on a store.
+
+export function ensureActivationTasks(state: MaropayAccountState, env: AdapterEnv): ActionTask[] {
+  const account = state.account
+  if (!account || account.verification !== 'verified' || account.closedAt) return []
+  const raised: ActionTask[] = []
+  for (const binding of state.bindings) {
+    if (binding.activation === 'live' || binding.deactivatedAt) continue
+    if (channelProblem(env.channelFacts ? env.channelFacts(binding.channelId) : undefined)) continue
+    if (state.tasks.some((t) => t.kind === 'activate_store' && t.channelId === binding.channelId && t.status !== 'resolved')) continue
+    const name = env.channelName?.(binding.channelId) ?? 'your store'
+    raised.push(addTask(state, env, {
+      kind: 'activate_store',
+      title: `Activate Maropay on ${name}`,
+      description: 'Your business is verified. Finish the store’s checklist, then activate Maropay when you’re ready — nothing changes at checkout until you do.',
+      affects: ['store_activation'],
+      dueAt: null,
+      blocking: false,
       role: 'owner',
-      step: 'verify',
+      step: null,
       disputeId: null,
       payoutId: null,
       methodId: null,
-      channelId: null,
-    })
-    log(state, env, 'verification', 'More information requested by our payments partner')
+      channelId: binding.channelId,
+    }))
   }
-  return ok(account)
+  return raised
+}
+
+function retireActivationTasks(state: MaropayAccountState, env: AdapterEnv, channelId?: string): void {
+  resolveTasks(state, env, (t) => t.kind === 'activate_store' && (channelId === undefined || t.channelId === channelId))
 }
 
 // ── Stores and methods ────────────────────────────────────────────────────
@@ -398,8 +626,11 @@ export function linkStore(state: MaropayAccountState, channelId: string, env: Ad
   if (existing) return ok(existing)
   const binding = newBinding(state, channelId, env.now)
   log(state, env, 'store', 'Linked a store to Maropay', channelId)
+  ensureActivationTasks(state, env)
   return ok(binding)
 }
+
+const WALLETS_ON_CARD = ['apple_pay', 'google_pay']
 
 /** Any change to what checkout offers invalidates the last test and the impact review. */
 function resetActivationChecks(binding: StoreBinding): void {
@@ -416,6 +647,10 @@ export function setMethodEnabled(state: MaropayAccountState, channelId: string, 
   if (enabled === has) return ok(binding)
   if (enabled) {
     if (method.availability === 'unavailable') return fail('method_unavailable', method.reviewNote ?? `${method.label} isn’t available for this account.`)
+    // Wallets tokenise a card, so they ride on card payments.
+    if (WALLETS_ON_CARD.includes(methodId) && !binding.enabledMethodIds.includes('card')) {
+      return fail('invalid_input', `${method.label} runs on card payments — turn on ${state.methods.find((m) => m.id === 'card')?.label ?? 'Cards'} first.`)
+    }
     if (method.availability === 'setup_required') {
       method.availability = 'pending_approval'
       method.reviewNote = 'Requested — our payments partner is reviewing it.'
@@ -436,23 +671,26 @@ export function setMethodEnabled(state: MaropayAccountState, channelId: string, 
     }
     binding.enabledMethodIds = [...binding.enabledMethodIds, methodId]
   } else {
-    const remaining = checkoutMethods(state, { ...binding, enabledMethodIds: binding.enabledMethodIds.filter((id) => id !== methodId) })
-    if (binding.activation === 'live' && remaining.length === 0) {
+    // Turning off cards takes the wallets that run on them too.
+    const dropping = methodId === 'card' ? ['card', ...WALLETS_ON_CARD] : [methodId]
+    const kept = binding.enabledMethodIds.filter((id) => !dropping.includes(id))
+    if (binding.activation === 'live' && checkoutMethods(state, { ...binding, enabledMethodIds: kept }).length === 0) {
       return fail('invalid_input', 'A live store needs at least one ready payment method.')
     }
-    binding.enabledMethodIds = binding.enabledMethodIds.filter((id) => id !== methodId)
+    binding.enabledMethodIds = kept
   }
   if (binding.activation !== 'live') resetActivationChecks(binding)
   log(state, env, 'methods', `${enabled ? 'Turned on' : 'Turned off'} ${method.label}`, channelId)
   return ok(binding)
 }
 
-/** Reviewer control: the payments partner's decision on a method that needed approval. */
-export function simulateMethodApproval(state: MaropayAccountState, methodId: string, approved: boolean, env: AdapterEnv): Result<null> {
+/** Reviewer control: the payments partner's decision on a method that needed approval, with its capability-level reason when declined. */
+export function simulateMethodApproval(state: MaropayAccountState, methodId: string, approved: boolean, env: AdapterEnv, reason: MethodDeclineReason = 'other'): Result<null> {
   const method = state.methods.find((m) => m.id === methodId)
   if (!method || method.availability !== 'pending_approval') return fail('stale_state', 'That method isn’t awaiting approval.')
   method.availability = approved ? 'available' : 'unavailable'
-  method.reviewNote = approved ? null : 'Not approved for this business.'
+  method.declineReason = approved ? null : reason
+  method.reviewNote = approved ? null : METHOD_DECLINE_COPY[reason]
   if (!approved) {
     for (const b of state.bindings) b.enabledMethodIds = b.enabledMethodIds.filter((id) => id !== methodId)
   }
@@ -508,6 +746,8 @@ export function activateStore(state: MaropayAccountState, channelId: string, cha
   binding.activation = 'live'
   binding.activatedAt = isoAt(env.now)
   binding.deactivatedAt = null
+  binding.activationNoticeDismissedAt = null
+  retireActivationTasks(state, env, channelId)
   const replaced = binding.previousProvider ? ` — replaces ${PROVIDER_LABELS[binding.previousProvider.provider]} for new checkouts` : ''
   log(state, env, 'store', `Activated Maropay on ${channel?.name ?? 'a store'}${replaced}`, channelId)
   return ok(binding)
@@ -1144,7 +1384,7 @@ export function confirmStepUp(challenge: StepUpChallenge, code: string, env: Ada
 /** Changes where payouts go. Needs a fresh step-up; only the last four digits are kept. */
 export function updateBankAccount(
   state: MaropayAccountState,
-  input: { holderName: string; bankName: string; accountNumber: string },
+  input: { holderName: string; bankName: string; accountNumber: string; bankCode?: string; holderType?: 'individual' | 'company' | null },
   token: StepUpToken | null,
   env: AdapterEnv,
 ): Result<MaropayAccount> {
@@ -1156,15 +1396,19 @@ export function updateBankAccount(
   const digits = input.accountNumber.replace(/\s/g, '')
   if (!/^\d{4,17}$/.test(digits)) return fail('invalid_input', 'Enter an account number of 4 to 17 digits.')
   if (!input.holderName.trim() || !input.bankName.trim()) return fail('invalid_input', 'Enter the account holder and bank name.')
-  account.payoutDestination = {
+  const destination: PayoutDestination = {
     bankName: input.bankName.trim(),
     last4: digits.slice(-4),
     holderName: input.holderName.trim(),
+    routingNumber: (input.bankCode ?? '').replace(/[\s-]/g, ''),
     currency: account.currency,
+    country: account.country,
+    holderType: input.holderType ?? account.payoutDestination?.holderType ?? null,
     addedAt: isoAt(env.now),
   }
+  account.payoutDestination = destination
   resolveTasks(state, env, (t) => t.kind === 'bank')
-  log(state, env, 'bank', `Payout bank changed to ${account.payoutDestination.bankName} •••• ${account.payoutDestination.last4}`)
+  log(state, env, 'bank', `Payout bank changed to ${destination.bankName} •••• ${destination.last4}`)
   return ok(account)
 }
 

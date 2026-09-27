@@ -10,7 +10,7 @@
  */
 import { applyRate, compare, formatMoney, isPositive, subtract, sum, zero } from './money.ts'
 import type { Money } from './money.ts'
-import { ONBOARDING_STEPS, PROVIDER_LABELS, SUPPORTED_COUNTRIES, problem } from './model.ts'
+import { DECLINE_REASON_COPY, LAST_DAY_OF_MONTH, ONBOARDING_STEPS, PROVIDER_LABELS, SUPPORTED_COUNTRIES, WEEKDAY_LABELS, problem } from './model.ts'
 import type {
   ActionTask,
   CaptureMode,
@@ -55,9 +55,14 @@ export const STEP_LABELS: Record<OnboardingStepKey, string> = {
   review: 'Review',
 }
 
-/** "Daily, 2 business days after a payment" */
+/** "Daily, 2 business days after a payment" · "Weekly on Fridays, …" · "Monthly on the last day, …" */
 export function payoutScheduleLabel(schedule: MaropayAccount['payoutSchedule']): string {
-  return `${schedule.interval === 'daily' ? 'Daily' : 'Weekly'}, ${schedule.delayDays} business days after a payment`
+  const when = schedule.interval === 'daily'
+    ? 'Daily'
+    : schedule.interval === 'weekly'
+      ? `Weekly on ${WEEKDAY_LABELS[schedule.weeklyAnchor ?? 'friday']}`
+      : `Monthly on ${schedule.monthlyAnchor === null || schedule.monthlyAnchor >= LAST_DAY_OF_MONTH ? 'the last day' : `day ${schedule.monthlyAnchor}`}`
+  return `${when}, ${schedule.delayDays} business days after a payment`
 }
 
 export function isSupportedCountry(country: string): boolean {
@@ -75,23 +80,39 @@ function openTasks(state: MaropayAccountState): ActionTask[] {
   return state.tasks.filter((t) => t.status !== 'resolved')
 }
 
+/** Threshold items (raised when payouts pass the partner's threshold) carry their own staged deadline; a decision never discharges them unanswered. */
+export function isThresholdTask(task: ActionTask): boolean {
+  return task.kind === 'verification' && task.paymentsPauseAt !== undefined
+}
+
+/** What a partner decision acts on: its own requests in any state, and threshold items the merchant has answered. */
+export function awaitingDecision(task: ActionTask): boolean {
+  if (task.kind !== 'verification' || task.status === 'resolved') return false
+  return !isThresholdTask(task) || task.status === 'waiting_review'
+}
+
 export function deriveCapabilities(state: MaropayAccountState, now: number): Capabilities {
   const account = state.account
   if (!account) return { payments: 'inactive', payouts: 'inactive' }
-  if (account.closedAt || account.verification === 'rejected') return { payments: 'disabled', payouts: 'inactive' }
+  if (account.closedAt) return { payments: 'disabled', payouts: 'inactive' }
+  // A decline switches off a business that was trading; one that never traded simply stays off ("Not enabled").
+  if (account.verification === 'rejected') return { payments: account.verifiedAt ? 'disabled' : 'inactive', payouts: 'inactive' }
   if (account.verification !== 'verified') return { payments: 'inactive', payouts: 'inactive' }
   const open = openTasks(state)
-  const restricted = open.some((t) => t.affects.includes('payments') && t.dueAt !== null && Date.parse(t.dueAt) <= now)
-  const payoutTasks = open.filter((t) => t.affects.includes('payouts'))
+  // Staged enforcement: payouts pause at a task's deadline, payments at its later pause date (or the deadline when it has none).
+  const restricted = open.some((t) => t.affects.includes('payments') && t.dueAt !== null && Date.parse(t.paymentsPauseAt ?? t.dueAt) <= now)
+  const payoutTasks = open.filter((t) => t.affects.includes('payouts') && (t.dueAt === null || Date.parse(t.dueAt) <= now))
   const payouts: PayoutCapability = !account.payoutDestination || payoutTasks.some((t) => t.kind === 'payout_failed')
     ? 'action_required'
     : payoutTasks.length ? 'paused' : 'ready'
   return { payments: restricted ? 'restricted' : 'enabled', payouts }
 }
 
-export function storeActivationState(binding: StoreBinding, capabilities: Capabilities): StoreActivationState {
+/** One answer per store: live, inactive (the account can't take payments yet), needs setup, or ready to activate. */
+export function storeActivationState(binding: StoreBinding, capabilities: Capabilities, checklist: ActivationChecklist): StoreActivationState {
   if (binding.activation === 'live') return 'live'
-  return capabilities.payments === 'enabled' ? 'ready_to_activate' : 'inactive'
+  if (capabilities.payments !== 'enabled') return 'inactive'
+  return checklist.ok ? 'ready_to_activate' : 'needs_setup'
 }
 
 export interface ReadinessDimensions {
@@ -118,8 +139,23 @@ export function readinessDimensions(state: MaropayAccountState, now: number): Re
 // ── Overview headline (plan §4) ───────────────────────────────────────────
 
 export type OverviewKey =
-  | 'not_started' | 'closed' | 'unavailable' | 'finish_setup' | 'provide_info'
-  | 'under_review' | 'ready_to_activate' | 'payouts_attention' | 'active'
+  | 'not_started' | 'closed' | 'declined' | 'unavailable' | 'finish_setup' | 'provide_info'
+  | 'under_review' | 'set_up_store' | 'ready_to_activate' | 'payouts_attention' | 'activate_more' | 'active'
+
+/** Sales-channel facts by id — the overview needs names and store checks; tests may leave it out. */
+export type FactsFor = (channelId: string) => ChannelFacts | null
+
+export type PartnerDecision = 'verified' | 'more_info' | 'rejected'
+
+/** What our payments partner could still decide about this account (the reviewer's choices). */
+export function availablePartnerDecisions(state: MaropayAccountState): PartnerDecision[] {
+  const account = state.account
+  if (!account || account.setup !== 'submitted' || account.closedAt || account.verification === 'rejected') return []
+  // A verified business is "approved" again only when something is awaiting the partner's decision.
+  const decisions: PartnerDecision[] = account.verification === 'verified' && !state.tasks.some(awaitingDecision) ? ['more_info'] : ['verified', 'more_info']
+  // A business with a live store is never declined — the partner pauses it with a request instead.
+  return state.bindings.some((b) => b.activation === 'live') ? decisions : [...decisions, 'rejected']
+}
 
 export interface OverviewInstruction {
   key: OverviewKey
@@ -146,26 +182,29 @@ export function taskTarget(task: ActionTask): MaropayTarget {
       return task.channelId ? { name: 'StorePayments', params: { channelId: task.channelId } } : { name: 'MaropaySettings', query: { tab: 'methods' } }
     case 'business_change':
       return { name: 'MaropaySettings', query: { tab: 'business' } }
+    case 'activate_store':
+      return task.channelId ? { name: 'StorePayments', params: { channelId: task.channelId } } : { name: 'MaropaySettings', query: { tab: 'stores' } }
   }
 }
 
-/** Earliest open task affecting payments that carries a deadline. */
-function deadlineTask(state: MaropayAccountState): ActionTask | null {
-  const dated = openTasks(state)
-    .filter((t) => t.status === 'open' && t.dueAt !== null && t.affects.includes('payments'))
+/** Dated tasks affecting payments in one status, earliest deadline first. Open ones are the merchant's move; waiting ones the partner's. */
+function datedTasks(state: MaropayAccountState, status: ActionTask['status']): ActionTask[] {
+  return state.tasks
+    .filter((t) => t.status === status && t.dueAt !== null && t.affects.includes('payments'))
     .sort((a, b) => Date.parse(a.dueAt!) - Date.parse(b.dueAt!))
-  return dated[0] ?? null
 }
 
 /**
  * Translates the state dimensions into the one instruction the merchant needs
- * (plan §4). Priority: unavailable → finish setup → provide information →
- * under review → ready to activate → payouts need attention → active.
- * Exiting onboarding is never treated as approval.
+ * (plan §4). Priority: closed → declined → unavailable → finish setup →
+ * provide information → under review → set up / ready to activate → payouts
+ * need attention → activate more → active. Exiting onboarding is never
+ * treated as approval, and approval never activates a store by itself.
  */
-export function deriveOverviewInstruction(state: MaropayAccountState, now: number): OverviewInstruction {
+export function deriveOverviewInstruction(state: MaropayAccountState, now: number, factsFor?: FactsFor): OverviewInstruction {
   const account = state.account
   const base = { task: null, deadline: null }
+  const nameOf = (channelId: string) => factsFor?.(channelId)?.name ?? 'your store'
   if (!account) {
     return {
       ...base,
@@ -184,12 +223,21 @@ export function deriveOverviewInstruction(state: MaropayAccountState, now: numbe
       action: null,
     }
   }
-  if (account.verification === 'rejected' || account.eligibility === 'unsupported') {
+  if (account.verification === 'rejected') {
+    return {
+      ...base,
+      key: 'declined',
+      headline: 'Our payments partner couldn’t approve this business',
+      detail: `${DECLINE_REASON_COPY[account.declineReason ?? 'other']} Your stores keep their current payment setup. You can ask for the decision to be reviewed through Maropost support.`,
+      action: null,
+    }
+  }
+  if (account.eligibility === 'unsupported') {
     return {
       ...base,
       key: 'unavailable',
       headline: 'Maropay isn’t available for this business',
-      detail: account.rejectedReason ?? 'Businesses registered in this country aren’t supported yet. Your current payment provider keeps working.',
+      detail: 'Businesses registered in this country aren’t supported yet. Your current payment provider keeps working.',
       // Before submission the country is still the merchant's answer, so it can be corrected.
       action: account.setup === 'submitted' ? null : { label: 'Review setup details', target: { name: 'MaropaySetup' } },
     }
@@ -204,16 +252,36 @@ export function deriveOverviewInstruction(state: MaropayAccountState, now: numbe
       action: { label: 'Continue setup', target: { name: 'MaropaySetup' } },
     }
   }
-  const task = deadlineTask(state)
+  const task = datedTasks(state, 'open')[0]
   if (task) {
-    const overdue = Date.parse(task.dueAt!) <= now
+    // Staged: the deadline pauses payouts, the later pause date (or the deadline itself) pauses payments too.
+    const due = Date.parse(task.dueAt!)
+    const paymentsPause = task.paymentsPauseAt ? Date.parse(task.paymentsPauseAt) : due
     return {
       key: 'provide_info',
-      headline: overdue ? 'Payments are paused until you provide information' : `Provide information by ${formatDay(task.dueAt!)} to avoid an interruption`,
+      headline: now >= paymentsPause
+        ? 'Payments and payouts are paused until you provide information'
+        : now >= due
+          ? 'Payouts are paused until you provide information'
+          : `Provide information by ${formatDay(task.dueAt!)} to avoid an interruption`,
       detail: task.title,
       action: { label: 'Provide information', target: taskTarget(task) },
       task,
       deadline: task.dueAt,
+    }
+  }
+  // Answered but past its deadline: the pause holds until the partner accepts it, and the next move is theirs.
+  const sent = account.verification === 'verified' ? datedTasks(state, 'waiting_review').find((t) => Date.parse(t.dueAt!) <= now) : undefined
+  if (sent) {
+    return {
+      key: 'under_review',
+      headline: deriveCapabilities(state, now).payments === 'restricted'
+        ? 'Payments and payouts are paused while our payments partner reviews what you sent'
+        : 'Payouts are paused while our payments partner reviews what you sent',
+      detail: 'Nothing more is needed from you. Everything resumes once our payments partner accepts it — we’ll let you know.',
+      action: null,
+      task: sent,
+      deadline: sent.dueAt,
     }
   }
   if (account.verification === 'action_required') {
@@ -238,16 +306,35 @@ export function deriveOverviewInstruction(state: MaropayAccountState, now: numbe
   }
   const caps = deriveCapabilities(state, now)
   const live = state.bindings.filter((b) => b.activation === 'live')
+  const target = activationTarget(state, now, factsFor)
   if (!live.length) {
-    const next = state.bindings[0]
+    if (!target) {
+      return {
+        ...base,
+        key: 'ready_to_activate',
+        headline: 'Ready to activate on your store',
+        detail: 'Your business is verified. Link a store, choose payment methods and run a test checkout, then activate Maropay when you’re ready.',
+        action: { label: 'Link a store', target: { name: 'MaropaySettings', query: { tab: 'stores' } } },
+      }
+    }
+    const name = nameOf(target.binding.channelId)
+    const progress = checklistProgress(target.checklist)
+    const storeTarget = { name: 'StorePayments', params: { channelId: target.binding.channelId } }
+    if (target.kind === 'set_up_store') {
+      return {
+        ...base,
+        key: 'set_up_store',
+        headline: `Your business is verified — set up ${name} to activate`,
+        detail: `${progress.done} of ${progress.total} checklist steps done. ${name} keeps its current payment setup until you activate Maropay on it.`,
+        action: { label: `Set up ${name}`, target: storeTarget },
+      }
+    }
     return {
       ...base,
       key: 'ready_to_activate',
-      headline: 'Ready to activate on your store',
-      detail: 'Your account is verified. Choose payment methods, run a test checkout, then activate Maropay on a store when you’re ready.',
-      action: next
-        ? { label: 'Review activation', target: { name: 'StorePayments', params: { channelId: next.channelId } } }
-        : { label: 'Link a store', target: { name: 'MaropaySettings', query: { tab: 'stores' } } },
+      headline: `Ready to activate on ${name}`,
+      detail: `Every checklist step is done. ${name} keeps its current payment setup until you activate Maropay on it.`,
+      action: { label: 'Review activation', target: storeTarget },
     }
   }
   if (caps.payouts !== 'ready') {
@@ -263,13 +350,54 @@ export function deriveOverviewInstruction(state: MaropayAccountState, now: numbe
       deadline: null,
     }
   }
+  const stores = `${live.length} of ${state.bindings.length} linked ${state.bindings.length === 1 ? 'store' : 'stores'}`
+  if (target) {
+    const name = nameOf(target.binding.channelId)
+    return {
+      ...base,
+      key: 'activate_more',
+      headline: `Payments are active — ${name} isn’t on Maropay yet`,
+      detail: `Maropay is live on ${stores}. ${target.kind === 'ready_to_activate' ? `${name} is ready to activate.` : `Finish ${name}’s checklist to activate it.`}`,
+      action: { label: target.kind === 'ready_to_activate' ? `Activate on ${name}` : `Set up ${name}`, target: { name: 'StorePayments', params: { channelId: target.binding.channelId } } },
+    }
+  }
   return {
     ...base,
     key: 'active',
     headline: 'Payments are active',
-    detail: `Maropay is live on ${live.length} of ${state.bindings.length} linked ${state.bindings.length === 1 ? 'store' : 'stores'}.`,
+    detail: `Maropay is live on ${stores}.`,
     action: { label: 'View transactions', target: { name: 'MaropayTransactions' } },
   }
+}
+
+// ── Which store to activate next ──────────────────────────────────────────
+
+export interface ActivationTarget {
+  /** `ready_to_activate` = the checklist is done; `set_up_store` = it isn't. */
+  kind: 'ready_to_activate' | 'set_up_store'
+  binding: StoreBinding
+  checklist: ActivationChecklist
+}
+
+/** Stores that aren't live and whose sales channel isn't the obstacle. */
+export function activatableBindings(state: MaropayAccountState, factsFor?: FactsFor): StoreBinding[] {
+  return state.bindings.filter((b) => b.activation !== 'live' && channelProblem(factsFor ? factsFor(b.channelId) : undefined) === null)
+}
+
+/** The store to activate next: one whose checklist is done, else the first that still needs setting up. Null when nothing is linked. */
+export function activationTarget(state: MaropayAccountState, now: number, factsFor?: FactsFor): ActivationTarget | null {
+  const candidates = activatableBindings(state, factsFor).map((binding) => ({
+    binding,
+    checklist: activationChecklist(state, binding, factsFor ? factsFor(binding.channelId) : undefined, now),
+  }))
+  const ready = candidates.find((c) => c.checklist.ok)
+  if (ready) return { kind: 'ready_to_activate', ...ready }
+  const next = candidates[0]
+  return next ? { kind: 'set_up_store', ...next } : null
+}
+
+export function checklistProgress(checklist: ActivationChecklist): { done: number; total: number } {
+  return { done: checklist.items.filter((i) => i.ok).length, total: checklist.items.length }
 }
 
 // ── Closing the account ───────────────────────────────────────────────────
@@ -373,10 +501,36 @@ function item(key: ActivationCheckKey, label: string, ok: boolean, detail: strin
   return { key, label, ok, state: ok ? 'done' : waiting ? 'waiting' : 'todo', detail }
 }
 
+/**
+ * Why the sales channel itself can't take Maropay payments — null when it can.
+ * `undefined` means the channel isn't known here (pure callers without channel
+ * facts), which is treated as no problem; `null` means it no longer exists.
+ */
+export function channelProblem(channel: ChannelFacts | null | undefined): string | null {
+  if (channel === undefined) return null
+  if (!channel) return 'This sales channel no longer exists.'
+  if (channel.type !== 'web_store') return 'Maropay online payments apply to web stores.'
+  if (channel.provider !== 'maropost_store_builder') return `${channel.name} checks out on another platform, so Maropay can’t take its payments.`
+  if (channel.status === 'draft') return `${channel.name} is still a draft. Finish the store before switching payments on.`
+  return null
+}
+
+/** The channel problem, or a configuration the store can't go live with (capture mode, saved cards). */
+export function storePrerequisiteProblem(state: MaropayAccountState, binding: StoreBinding, channel: ChannelFacts | null | undefined): string | null {
+  const incompatible = captureIncompatibleMethods(checkoutMethods(state, binding), binding.captureMode)
+  const credentials = binding.previousProvider?.savedCredentials
+  return channelProblem(channel)
+    ?? (incompatible.length
+      ? `Manual capture isn’t supported by ${incompatible.map((m) => m.label).join(', ')}. Switch to automatic capture or turn those methods off.`
+      : credentials?.blocking
+        ? `${credentials.count} saved cards back recurring charges with ${PROVIDER_LABELS[binding.previousProvider!.provider]}. They need a supported migration before you switch.`
+        : null)
+}
+
 export function activationChecklist(
   state: MaropayAccountState,
   binding: StoreBinding,
-  channel: ChannelFacts | null,
+  channel: ChannelFacts | null | undefined,
   now: number,
 ): ActivationChecklist {
   const account = state.account
@@ -387,22 +541,7 @@ export function activationChecklist(
   const blockingTasks = openTasks(state).filter((t) => t.blocking)
   const ready = checkoutMethods(state, binding)
   const pending = state.methods.filter((m) => m.availability === 'pending_approval' && binding.enabledMethodIds.includes(m.id))
-  const incompatible = captureIncompatibleMethods(ready, binding.captureMode)
-  const credentials = binding.previousProvider?.savedCredentials
-
-  const storeProblem = !channel
-    ? 'This sales channel no longer exists.'
-    : channel.type !== 'web_store'
-      ? 'Maropay online payments apply to web stores.'
-      : channel.provider !== 'maropost_store_builder'
-        ? `${channel.name} checks out on another platform, so Maropay can’t take its payments.`
-        : channel.status === 'draft'
-          ? `${channel.name} is still a draft. Finish the store before switching payments on.`
-          : incompatible.length
-            ? `Manual capture isn’t supported by ${incompatible.map((m) => m.label).join(', ')}. Switch to automatic capture or turn those methods off.`
-            : credentials?.blocking
-              ? `${credentials.count} saved cards back recurring charges with ${PROVIDER_LABELS[binding.previousProvider!.provider]}. They need a supported migration before you switch.`
-              : null
+  const storeProblem = storePrerequisiteProblem(state, binding, channel)
 
   const items: ActivationCheckItem[] = [
     item('payment_capability', 'Payments are enabled on your account', caps.payments === 'enabled',
@@ -425,7 +564,7 @@ export function activationChecklist(
         : pending.length ? `${pending.map((m) => m.label).join(', ')} ${pending.length === 1 ? 'is' : 'are'} awaiting approval. Turn on another method to go live now.` : 'Turn on at least one payment method.',
       !ready.length && pending.length > 0),
     item('store_prerequisites', 'Store is ready for payments', storeProblem === null,
-      storeProblem ?? `${channel!.name} is ready. Capture: ${binding.captureMode === 'automatic' ? 'automatic' : 'manual'}.`),
+      storeProblem ?? `${channel?.name ?? 'The store'} is ready. Capture: ${binding.captureMode === 'automatic' ? 'automatic' : 'manual'}.`),
     item('checkout_validated', 'Test checkout has passed', binding.checkoutValidation.status === 'passed',
       binding.checkoutValidation.status === 'passed' ? 'A test payment completed end to end.'
         : binding.checkoutValidation.status === 'failed' ? binding.checkoutValidation.failureReason ?? 'The last test checkout failed.'

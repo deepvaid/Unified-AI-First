@@ -14,10 +14,15 @@ function readyState() {
   return state
 }
 
+function stateOf(state: ReturnType<typeof readyState>, channelId: string) {
+  const binding = state.bindings.find((b) => b.channelId === channelId)!
+  return storeActivationState(binding, deriveCapabilities(state, NOW), activationChecklist(state, binding, channelFacts(channelId), NOW))
+}
+
 test('a verified store with passed checks can be activated; activation is a separate decision', () => {
   const state = readyState()
   const binding = state.bindings.find((b) => b.channelId === ATLAS)!
-  assert.equal(storeActivationState(binding, deriveCapabilities(state, NOW)), 'ready_to_activate')
+  assert.equal(stateOf(state, ATLAS), 'ready_to_activate')
   assert.equal(activationChecklist(state, binding, channelFacts(ATLAS), NOW).ok, true)
   const result = activateStore(state, ATLAS, channelFacts(ATLAS), env())
   assert.ok(result.ok)
@@ -95,15 +100,16 @@ test('changing methods resets the test checkout and impact review (M15: a pendin
   assert.ok(state.tasks.every((t) => t.kind !== 'method_review' || t.status === 'resolved'))
 })
 
-test('M03 → resolve the task → review → ready to activate', () => {
+test('M03 → resolve the task → review → the store still needs setting up before activation', () => {
   const state = buildScenario('m03', context())
   assert.equal(deriveOverviewInstruction(state, NOW).key, 'provide_info')
   const task = state.tasks.find((t) => t.kind === 'verification')!
   assert.equal(resolveTask(state, task.id, {}, env()).ok, false)
-  assert.ok(resolveTask(state, task.id, { document: { name: 'id.jpg', sizeLabel: '1 MB', status: 'received' } }, env()).ok)
+  assert.ok(resolveTask(state, task.id, { documents: { front: { name: 'id.jpg', sizeLabel: '1 MB', status: 'received' } } }, env()).ok)
   assert.equal(deriveOverviewInstruction(state, NOW).key, 'under_review')
   simulateReviewOutcome(state, 'verified', env())
-  assert.equal(deriveOverviewInstruction(state, NOW).key, 'ready_to_activate')
+  assert.equal(deriveOverviewInstruction(state, NOW).key, 'set_up_store')
+  assert.equal(stateOf(state, ATLAS), 'needs_setup')
 })
 
 test('a deadline that passes restricts payments', () => {
@@ -115,14 +121,16 @@ test('a deadline that passes restricts payments', () => {
   state.tasks.push({ ...task, id: 'task_late', status: 'open', dueAt: new Date(NOW + DAY).toISOString(), resolvedAt: null })
   assert.equal(deriveCapabilities(state, NOW).payments, 'enabled')
   assert.equal(deriveCapabilities(state, later).payments, 'restricted')
-  assert.equal(deriveOverviewInstruction(state, later).headline, 'Payments are paused until you provide information')
+  assert.equal(deriveOverviewInstruction(state, later).headline, 'Payments and payouts are paused until you provide information')
 })
 
-test('M04: a rejected business can’t activate anywhere', () => {
+test('M04: a declined business can’t activate anywhere, and payments simply stay off', () => {
   const state = buildScenario('m04', context())
-  assert.equal(deriveOverviewInstruction(state, NOW).key, 'unavailable')
-  assert.equal(deriveCapabilities(state, NOW).payments, 'disabled')
+  assert.equal(deriveOverviewInstruction(state, NOW).key, 'declined')
+  assert.equal(state.account?.declineReason, 'terms_of_service')
+  assert.deepEqual(deriveCapabilities(state, NOW), { payments: 'inactive', payouts: 'inactive' })
   assert.equal(activateStore(state, ATLAS, channelFacts(ATLAS), env()).ok, false)
+  assert.equal(state.tasks.some((t) => t.kind === 'activate_store' && t.status !== 'resolved'), false)
 })
 
 test('submission is not approval: an unreadable ID or manual review keeps payments off', () => {
@@ -146,10 +154,12 @@ test('M14: deactivation changes future routing only', () => {
 
 test('M07: the second store activates without repeating setup', () => {
   const state = buildScenario('m07', context())
-  const beta = state.bindings.find((b) => b.channelId === BETA)!
-  assert.equal(storeActivationState(beta, deriveCapabilities(state, NOW)), 'ready_to_activate')
+  assert.equal(stateOf(state, BETA), 'needs_setup')
+  assert.equal(deriveOverviewInstruction(state, NOW).key, 'activate_more')
   validateCheckout(state, BETA, env())
   markImpactReviewed(state, BETA, env())
+  assert.equal(stateOf(state, BETA), 'ready_to_activate')
   assert.ok(activateStore(state, BETA, channelFacts(BETA), env()).ok)
+  assert.equal(deriveOverviewInstruction(state, NOW).key, 'active')
   assert.equal(state.bindings.filter((b) => b.activation === 'live').length, 2)
 })

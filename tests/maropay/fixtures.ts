@@ -55,7 +55,13 @@ export function context(accountId = '2000290', now = NOW): ScenarioContext {
 }
 
 export function env(now = NOW, role: MaropayActingRole = 'owner', assignedChannelIds: string[] | null = null): AdapterEnv {
-  return { now, actor: { role, assignedChannelIds }, failures: defaultFailures() }
+  return {
+    now,
+    actor: { role, assignedChannelIds },
+    failures: defaultFailures(),
+    channelName: (id) => CHANNELS.find((c) => c.id === id)?.name ?? 'this store',
+    channelFacts: (id) => (CHANNELS.some((c) => c.id === id) ? channelFacts(id) : null),
+  }
 }
 
 export function channelFacts(id: string) {

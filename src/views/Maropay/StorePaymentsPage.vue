@@ -73,8 +73,8 @@ const view = computed<View>(() => {
   if (!maropay.can('view_transactions', channelId.value)) return 'restricted'
   const account = maropay.account
   if (!account) return 'no_account'
-  // A closed account reads like an unavailable one here: nothing to activate, the store keeps its setup.
-  const unavailable = maropay.overview.key === 'unavailable' || maropay.overview.key === 'closed'
+  // Declined and closed accounts read like an unavailable one here: nothing to activate, the store keeps its setup.
+  const unavailable = ['unavailable', 'declined', 'closed'].includes(maropay.overview.key)
   if (account.setup !== 'submitted') return unavailable ? 'unavailable' : 'setup'
   if (unavailable) return 'unavailable'
   return binding.value ? 'store' : 'unlinked'

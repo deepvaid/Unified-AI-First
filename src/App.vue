@@ -96,7 +96,7 @@ watch(() => route.query.plg, (p) => {
 }, { immediate: true })
 
 // Maropay owns payment records and projects them onto Commerce orders, so it
-// starts with the app. A ?maropay=m01…m15 query param loads a review scenario
+// starts with the app. A ?maropay=m01…m17 query param loads a review scenario
 // for the active account — same idiom as ?plg=, except the param is dropped
 // once applied: a later refresh must keep the reviewer's progress (M02).
 const maropayStore = useMaropayStore()

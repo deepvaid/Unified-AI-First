@@ -101,7 +101,8 @@ const activity = computed(() => {
   return maropay.history.filter((entry) => !assigned || (entry.channelId !== null && assigned.includes(entry.channelId))).slice(0, 6)
 })
 
-const unavailable = computed(() => maropay.overview.key === 'unavailable')
+/** Declined or unsupported: nothing to activate, and the stores keep their current setup. */
+const unavailable = computed(() => maropay.overview.key === 'unavailable' || maropay.overview.key === 'declined')
 const keptProviders = computed(() => [...new Set(maropay.bindings.flatMap((b) => (b.previousProvider ? [PROVIDER_LABELS[b.previousProvider.provider]] : [])))])
 const supportReferences = computed(() => [
   { label: 'Maropost account', value: accountId.value },

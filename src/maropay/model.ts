@@ -34,13 +34,90 @@ export const ROLE_LABELS: Record<MaropayActingRole, string> = {
   store_ops: 'Store operations',
 }
 
-export type BusinessType = 'sole_trader' | 'company' | 'nonprofit'
+/**
+ * The partner's top-level split. Non-profits are company structures (the
+ * per-country lists in requirements.ts flag them) — see partnerBusinessType().
+ */
+export type BusinessType = 'individual' | 'company'
 
 export const BUSINESS_TYPE_LABELS: Record<BusinessType, string> = {
-  sole_trader: 'Sole trader',
-  company: 'Company',
-  nonprofit: 'Non-profit',
+  individual: 'Individual or sole trader',
+  company: 'Company or organisation',
 }
+
+/** Older saves used a three-way split; parseState maps them onto the partner's. */
+export const LEGACY_BUSINESS_TYPES: Record<string, BusinessType> = {
+  sole_trader: 'individual', nonprofit: 'company', individual: 'individual', company: 'company',
+}
+
+/** How the company is set up — which values apply per country lives in requirements.ts. */
+export type CompanyStructure =
+  | 'sole_proprietorship' | 'single_member_llc' | 'multi_member_llc'
+  | 'private_partnership' | 'public_partnership' | 'private_corporation' | 'public_corporation'
+  | 'incorporated_partnership' | 'unincorporated_partnership' | 'unincorporated_association' | 'trust'
+  | 'incorporated_non_profit' | 'unincorporated_non_profit' | 'registered_charity'
+
+export type SupportedCountry = 'US' | 'CA' | 'AU' | 'NZ' | 'GB'
+
+/** Settlement currency follows the registration country. */
+export const COUNTRY_CURRENCY: Record<SupportedCountry, string> = { US: 'USD', CA: 'CAD', AU: 'AUD', NZ: 'NZD', GB: 'GBP' }
+
+export function currencyFor(country: string): string {
+  return (COUNTRY_CURRENCY as Record<string, string>)[country] ?? 'USD'
+}
+
+/** Why our payments partner declined the business — its account-level reasons (platform-initiated ones are Maropost's, not modelled). */
+export type DeclineReason = 'fraud' | 'incomplete_verification' | 'listed' | 'terms_of_service' | 'other'
+
+export const DECLINE_REASON_LABELS: Record<DeclineReason, string> = {
+  fraud: 'Suspected fraud',
+  incomplete_verification: 'Incomplete verification',
+  listed: 'Listed business',
+  terms_of_service: 'Terms of service',
+  other: 'Other',
+}
+
+export const DECLINE_REASON_COPY: Record<DeclineReason, string> = {
+  fraud: 'They found activity they consider fraudulent.',
+  incomplete_verification: 'They couldn’t verify the business or the people behind it from what was provided.',
+  listed: 'The business appears on a list they can’t onboard from.',
+  terms_of_service: 'The business doesn’t meet the terms of the payments agreement.',
+  other: 'They didn’t give a reason we can show here.',
+}
+
+/** Why a payment method was declined for this business — a capability-level reason. */
+export type MethodDeclineReason = 'unsupported_business' | 'other'
+
+export const METHOD_DECLINE_COPY: Record<MethodDeclineReason, string> = {
+  unsupported_business: 'Not available for this business — our payments partner doesn’t support it for what you sell.',
+  other: 'Not approved for this business.',
+}
+
+export type PersonRole = 'owner' | 'director' | 'executive'
+
+export type PayButtonLabel = 'pay' | 'place_order' | 'complete_purchase'
+
+/** `{amount}` is replaced at checkout. */
+export const PAY_BUTTON_LABELS: Record<PayButtonLabel, string> = {
+  pay: 'Pay {amount}',
+  place_order: 'Place order',
+  complete_purchase: 'Complete purchase',
+}
+
+export type Weekday = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday'
+
+export const WEEKDAY_LABELS: Record<Weekday, string> = {
+  monday: 'Mondays', tuesday: 'Tuesdays', wednesday: 'Wednesdays', thursday: 'Thursdays', friday: 'Fridays',
+}
+
+/** A monthly anchor of 31 means "the last day" — shorter months pay out on their last day, as the partner does. */
+export const LAST_DAY_OF_MONTH = 31
+
+/** Days after a missed partner deadline before payments pause too (payouts pause at the deadline). */
+export const THRESHOLD_ESCALATION_DAYS = 7
+
+/** Recorded with the terms acceptance, as the partner requires — a documentation-range address in this prototype. */
+export const MOCK_CLIENT_IP = '203.0.113.24'
 
 // The six state dimensions (plan §4 "Keep distinct states visible").
 export type SetupState = 'not_started' | 'in_progress' | 'submitted'
@@ -49,7 +126,8 @@ export type EligibilityState = 'unknown' | 'eligible' | 'unsupported'
 /** `inactive` = not switched on yet (pre-verification); `disabled` = switched off (rejected). */
 export type PaymentCapability = 'inactive' | 'enabled' | 'restricted' | 'disabled'
 export type PayoutCapability = 'inactive' | 'ready' | 'action_required' | 'paused'
-export type StoreActivationState = 'inactive' | 'ready_to_activate' | 'live'
+/** `needs_setup` is derived from the store's checklist — never stored. */
+export type StoreActivationState = 'inactive' | 'needs_setup' | 'ready_to_activate' | 'live'
 export type MethodStatus = 'available' | 'setup_required' | 'pending_approval' | 'enabled' | 'unavailable'
 
 export type MethodCategory = 'cards' | 'wallets' | 'bnpl' | 'local'
@@ -69,7 +147,7 @@ export const ONBOARDING_STEPS: OnboardingStepKey[] = ['business', 'terms', 'veri
 
 export type MaropayScenarioKey =
   | 'm01' | 'm02' | 'm03' | 'm04' | 'm05' | 'm06' | 'm07' | 'm08'
-  | 'm09' | 'm10' | 'm11' | 'm12' | 'm13' | 'm14' | 'm15'
+  | 'm09' | 'm10' | 'm11' | 'm12' | 'm13' | 'm14' | 'm15' | 'm16' | 'm17'
 
 // ── Results ───────────────────────────────────────────────────────────────
 
@@ -77,7 +155,7 @@ export type MaropayErrorCode =
   | 'permission_denied' | 'not_found' | 'requirement_pending' | 'unsupported_country'
   | 'store_not_live' | 'method_unavailable' | 'invalid_amount' | 'refund_exceeds_remaining'
   | 'insufficient_balance' | 'stale_state' | 'network_timeout' | 'step_up_required'
-  | 'deadline_passed' | 'nothing_to_pay' | 'invalid_input'
+  | 'deadline_passed' | 'nothing_to_pay' | 'invalid_input' | 'amount_restricted'
 
 export interface MaropayError {
   code: MaropayErrorCode
@@ -117,28 +195,120 @@ export interface PostalAddress {
   country: string
 }
 
-export interface LegalBusiness {
+/**
+ * A person behind the business — the representative, or an owner, director or
+ * executive. Full ID numbers never exist on this type: only the last four
+ * digits of a US SSN, and only when the partner asks for them.
+ */
+export interface Person {
   id: string
+  firstName: string
+  lastName: string
+  email: string
+  phone: string
+  /** Job title (representative and executives). */
+  title: string
+  /** ISO date 'YYYY-MM-DD', or '' when not given. */
+  dob: string
+  address: PostalAddress
+  roles: { owner: boolean; director: boolean; executive: boolean }
+  percentOwnership: number | null
+  ssnLast4: string | null
+}
+
+export function emptyPerson(id: string, country: string): Person {
+  return {
+    id, firstName: '', lastName: '', email: '', phone: '', title: '', dob: '',
+    address: { line1: '', city: '', region: '', postalCode: '', country },
+    roles: { owner: false, director: false, executive: false },
+    percentOwnership: null,
+    ssnLast4: null,
+  }
+}
+
+export function personName(p: Pick<Person, 'firstName' | 'lastName'>): string {
+  return `${p.firstName} ${p.lastName}`.trim()
+}
+
+/** The partner's date-of-birth shape; null when the date is missing or malformed. */
+export function dobParts(iso: string): { day: number; month: number; year: number } | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso)
+  if (!m) return null
+  return { year: Number(m[1]), month: Number(m[2]), day: Number(m[3]) }
+}
+
+/** Older saves kept one `{ name, title, email }`; the name is split on its last space (one word → first name only). */
+export function personFromLegacy(legacy: { name?: string; title?: string; email?: string } | null | undefined, id: string, country: string): Person {
+  const person = emptyPerson(id, country)
+  const name = (legacy?.name ?? '').trim()
+  const cut = name.lastIndexOf(' ')
+  person.firstName = cut === -1 ? name : name.slice(0, cut)
+  person.lastName = cut === -1 ? '' : name.slice(cut + 1)
+  person.title = legacy?.title ?? ''
+  person.email = legacy?.email ?? ''
+  return person
+}
+
+/** The representative's fixed person id in a draft and on the business. */
+export const REPRESENTATIVE_ID = 'per_rep'
+
+export interface BusinessDetails {
   legalName: string
   tradingName: string
+  /** EIN, Business number, ABN, NZBN or Company number — the partner's `tax_id`, labelled per country. */
+  taxId: string
+  /** The AU Company Number (ACN); empty elsewhere. */
+  registrationNumber: string
+  structure: CompanyStructure | null
+  phone: string
+  /** Merchant category code from the illustrative industry list. */
+  mcc: string | null
+  website: string
+  /** US only: no website, describing the products instead. */
+  noWebsite: boolean
+  productDescription: string
+  address: PostalAddress
+}
+
+export interface LegalBusiness extends BusinessDetails {
+  id: string
   type: BusinessType
   /** ISO-2 registration country — where the business is registered, not where it sells. */
   country: string
-  registrationNumber: string
-  address: PostalAddress
-  website: string
-  representative: { name: string; title: string; email: string }
+  /** The representative first, then owners, directors and executives. */
+  persons: Person[]
+  representativeId: string
   publicDetails: { statementDescriptor: string; supportEmail: string; supportPhone: string }
 }
 
-/** Masked payout bank account — only the last four digits ever reach state. */
+export function representativeOf(business: Pick<LegalBusiness, 'persons' | 'representativeId'>): Person | null {
+  return business.persons.find((p) => p.id === business.representativeId) ?? business.persons[0] ?? null
+}
+
+/** Masked payout bank account — only the last four digits of the account number ever reach state. */
 export interface PayoutDestination {
   bankName: string
   last4: string
   holderName: string
+  /** Routing number, sort code or the country's institution number — not the account number, so it is kept. */
+  routingNumber: string
   currency: string
+  country: string
+  holderType: 'individual' | 'company' | null
   addedAt: string
 }
+
+export interface PayoutSchedule {
+  interval: 'daily' | 'weekly' | 'monthly'
+  weeklyAnchor: Weekday | null
+  /** 1–31; 31 stands for the last day of the month. */
+  monthlyAnchor: number | null
+  /** Business days a payment is held before it can be paid out. */
+  delayDays: number
+}
+
+/** The partner's default, and the platform minimum a merchant can't go below. */
+export const DEFAULT_PAYOUT_SCHEDULE: PayoutSchedule = { interval: 'daily', weeklyAnchor: null, monthlyAnchor: null, delayDays: 2 }
 
 export interface MaropayAccount {
   id: string
@@ -151,11 +321,12 @@ export interface MaropayAccount {
   setup: SetupState
   verification: VerificationState
   eligibility: EligibilityState
-  rejectedReason: string | null
-  /** Verified details reused from an existing processor account (M05). */
+  declineReason: DeclineReason | null
+  declinedAt: string | null
+  /** Verified details reused from an existing processor account (M05) — fewer questions, never instant approval. */
   reusedVerifiedDetails: boolean
   payoutDestination: PayoutDestination | null
-  payoutSchedule: { interval: 'daily' | 'weekly'; delayDays: number }
+  payoutSchedule: PayoutSchedule
   createdAt: string
   submittedAt: string | null
   verifiedAt: string | null
@@ -196,6 +367,40 @@ export interface StoreBinding {
   linkedAt: string
   activatedAt: string | null
   deactivatedAt: string | null
+  /** How this store's checkout looks (E4a). */
+  checkout: CheckoutSettings
+  /** Enabled method ids in the order shoppers see them; ids not listed follow the catalogue order. */
+  methodOrder: string[]
+  defaultMethodId: string | null
+  methodSettings: Record<string, MethodSettings>
+  /** The "Maropay is live" notice was dismissed on the store page. */
+  activationNoticeDismissedAt: string | null
+}
+
+export interface CheckoutSettings {
+  useStoreTheme: boolean
+  /** Name and size only — the file itself is never kept. */
+  logo: { name: string; sizeLabel: string } | null
+  payButtonLabel: PayButtonLabel
+  showSupportContact: boolean
+  /** Apple Pay and Google Pay as express buttons above the form. */
+  expressWallets: boolean
+}
+
+export function defaultCheckoutSettings(): CheckoutSettings {
+  return { useStoreTheme: true, logo: null, payButtonLabel: 'pay', showSupportContact: true, expressWallets: true }
+}
+
+export interface MethodSettings {
+  displayName: string | null
+  minOrder: Money | null
+  maxOrder: Money | null
+  /** `automatic_only` captures this method straight away even when the store captures manually. */
+  capture: 'follow_store' | 'automatic_only'
+}
+
+export function defaultMethodSettings(): MethodSettings {
+  return { displayName: null, minOrder: null, maxOrder: null, capture: 'follow_store' }
 }
 
 export interface PaymentMethodCatalogEntry {
@@ -212,6 +417,9 @@ export interface PaymentMethodCatalogEntry {
   delayed: boolean
   availability: MethodAvailability
   reviewNote: string | null
+  /** Maropost's pre-screening answers sent with a review request — kept account-side because approval is account-wide. Not partner data. */
+  requested: { at: string; channelId: string | null; answers: Record<string, string> } | null
+  declineReason: MethodDeclineReason | null
 }
 
 export type PaymentStatus =
@@ -382,19 +590,26 @@ export interface CommercialTerms {
   disputeFee: Money
   acceptedAt: string | null
   acceptedBy: MaropayActingRole | null
+  /** Recorded with the acceptance, as the partner requires (the IP is a mock in this prototype). */
+  acceptedIp: string | null
+  acceptedUserAgent: string | null
 }
 
-export type TaskKind = 'verification' | 'bank' | 'method_review' | 'dispute' | 'payout_failed' | 'owner_review' | 'business_change'
+export type TaskKind = 'verification' | 'bank' | 'method_review' | 'dispute' | 'payout_failed' | 'owner_review' | 'business_change' | 'activate_store'
 
-/** Verified legal details that change only once our payments partner re-checks them. */
-export type BusinessChangeField = 'legalName' | 'tradingName' | 'registrationNumber' | 'website'
+/** Verified legal details that change only once our payments partner re-checks them. `registrationNumber` is the AU ACN. */
+export type BusinessChangeField = 'legalName' | 'tradingName' | 'taxId' | 'registrationNumber' | 'website'
 
 export const BUSINESS_CHANGE_LABELS: Record<BusinessChangeField, string> = {
   legalName: 'Legal business name',
   tradingName: 'Trading name',
-  registrationNumber: 'Registration number',
+  taxId: 'Tax ID',
+  registrationNumber: 'ACN',
   website: 'Website',
 }
+
+/** A dotted partner requirement key, e.g. 'representative.verification.document' or 'company.tax_id'. */
+export type RequirementKey = string
 
 export interface ActionTask {
   id: string
@@ -416,6 +631,19 @@ export interface ActionTask {
   channelId: string | null
   /** The value asked for (business_change tasks); applied only on approval. */
   change?: { field: BusinessChangeField; value: string }
+  /** Partner-keyed requirements (verification tasks): what is asked for, and why the last attempt failed. Written only when set. */
+  requirement?: RequirementKey
+  personId?: string
+  /** The partner's error code — for support, never shown to merchants. */
+  errorCode?: string
+  /** The reason in the merchant's words. */
+  errorReason?: string
+  /** Keys that satisfy the requirement instead (e.g. a document instead of keyed data). */
+  alternative?: RequirementKey[]
+  /** What the merchant sent — name and size only. */
+  documents?: { front: MockDocument; back: MockDocument | null }
+  /** Threshold tasks: when payments pause too (payouts pause at `dueAt`). */
+  paymentsPauseAt?: string
   createdAt: string
   resolvedAt: string | null
 }
@@ -433,17 +661,21 @@ export interface OnboardingDraft {
   businessType: BusinessType | null
   channelIds: string[]
   termsAcceptedVersion: string | null
-  business: {
-    legalName: string
-    tradingName: string
-    registrationNumber: string
-    website: string
-    address: PostalAddress
-  }
-  representative: { name: string; title: string; email: string }
-  /** Photo ID for the representative; null = "upload later" (triggers a verification task). */
-  idDocument: MockDocument | null
-  payout: { holderName: string; bankName: string; last4: string; currency: string } | null
+  business: BusinessDetails
+  representative: Person
+  /** Owners, directors and executives (the representative is not repeated here). */
+  persons: Person[]
+  /** "I have added everyone" — one per role the country asks about; owner-only. */
+  attestations: { owners: boolean; directors: boolean; executives: boolean }
+  payout: {
+    holderName: string
+    bankName: string
+    last4: string
+    routingNumber: string
+    currency: string
+    country: string
+    holderType: 'individual' | 'company' | null
+  } | null
   publicDetails: { statementDescriptor: string; supportEmail: string; supportPhone: string }
   submittedAt: string | null
 }
@@ -507,6 +739,8 @@ export interface MaropayAccountState {
   sessions: CheckoutSession[]
   history: HistoryEntry[]
   milestones: { firstPaymentId: string | null; firstPayoutId: string | null; dismissed: Array<'first_payment' | 'first_payout'> }
+  /** Methods a newly linked store starts with (Settings › Payment methods). */
+  defaultMethodIds: string[]
   /** Persisted id sequences, so ids never collide after a reload. */
   counters: Record<string, number>
 }
@@ -531,7 +765,7 @@ function rate(percentBps: number, fixedMinor: number, label: string, capMinor?: 
  * Sample of the eligible online catalogue across the four categories. The rates
  * and availability are placeholders for the approved launch matrix (plan §5).
  */
-export const METHOD_CATALOG: ReadonlyArray<Omit<PaymentMethodCatalogEntry, 'availability' | 'reviewNote'>> = [
+export const METHOD_CATALOG: ReadonlyArray<Omit<PaymentMethodCatalogEntry, 'availability' | 'reviewNote' | 'requested' | 'declineReason'>> = [
   { id: 'card', label: 'Cards', category: 'cards', currencies: ['USD', 'CAD', 'AUD', 'NZD', 'GBP', 'EUR'], rate: rate(290, 30, '2.9% + 30¢'), requirements: [], supportsManualCapture: true, delayed: false },
   { id: 'apple_pay', label: 'Apple Pay', category: 'wallets', currencies: ['USD', 'CAD', 'AUD', 'NZD', 'GBP', 'EUR'], rate: rate(290, 30, '2.9% + 30¢'), requirements: [], supportsManualCapture: true, delayed: false },
   { id: 'google_pay', label: 'Google Pay', category: 'wallets', currencies: ['USD', 'CAD', 'AUD', 'NZD', 'GBP', 'EUR'], rate: rate(290, 30, '2.9% + 30¢'), requirements: [], supportsManualCapture: true, delayed: false },
@@ -553,11 +787,13 @@ export function catalogFor(currency: string): PaymentMethodCatalogEntry[] {
       ? 'unavailable'
       : entry.requirements.length ? 'setup_required' : 'available',
     reviewNote: entry.currencies.includes(currency) ? null : `Not available for ${currency} accounts`,
+    requested: null,
+    declineReason: null,
   }))
 }
 
-/** Default methods switched on for a newly linked store. */
-export const DEFAULT_METHOD_IDS = ['card', 'apple_pay', 'google_pay']
+/** What `defaultMethodIds` starts as — the methods a newly linked store is switched on with. */
+export const INITIAL_DEFAULT_METHOD_IDS = ['card', 'apple_pay', 'google_pay']
 
 export function illustrativeTerms(currency: string): CommercialTerms {
   return {
@@ -568,6 +804,16 @@ export function illustrativeTerms(currency: string): CommercialTerms {
     disputeFee: money(1500, currency),
     acceptedAt: null,
     acceptedBy: null,
+    acceptedIp: null,
+    acceptedUserAgent: null,
+  }
+}
+
+export function emptyBusinessDetails(country: string): BusinessDetails {
+  return {
+    legalName: '', tradingName: '', taxId: '', registrationNumber: '', structure: null, phone: '', mcc: null,
+    website: '', noWebsite: false, productDescription: '',
+    address: { line1: '', city: '', region: '', postalCode: '', country },
   }
 }
 
@@ -584,15 +830,10 @@ export function emptyOnboarding(): OnboardingDraft {
     businessType: null,
     channelIds: [],
     termsAcceptedVersion: null,
-    business: {
-      legalName: '',
-      tradingName: '',
-      registrationNumber: '',
-      website: '',
-      address: { line1: '', city: '', region: '', postalCode: '', country: 'US' },
-    },
-    representative: { name: '', title: '', email: '' },
-    idDocument: null,
+    business: emptyBusinessDetails('US'),
+    representative: emptyPerson(REPRESENTATIVE_ID, 'US'),
+    persons: [],
+    attestations: { owners: false, directors: false, executives: false },
     payout: null,
     publicDetails: { statementDescriptor: '', supportEmail: '', supportPhone: '' },
     submittedAt: null,
@@ -622,6 +863,7 @@ export function emptyState(accountId: string, now: number, currency = 'USD'): Ma
     sessions: [],
     history: [],
     milestones: { firstPaymentId: null, firstPayoutId: null, dismissed: [] },
+    defaultMethodIds: [...INITIAL_DEFAULT_METHOD_IDS],
     counters: {},
   }
 }
@@ -637,6 +879,123 @@ export function storageKey(accountId: string): string {
 function isMoney(value: unknown): value is Money {
   const m = value as Money | null
   return !!m && typeof m === 'object' && Number.isInteger(m.amount) && typeof m.currency === 'string'
+}
+
+type Raw = Record<string, unknown>
+
+function record(value: unknown): Raw | null {
+  return value && typeof value === 'object' && !Array.isArray(value) ? (value as Raw) : null
+}
+
+/** Business details from any save: the single `registrationNumber` older saves kept was the tax ID. */
+function withBusinessDefaults(raw: unknown, country: string): BusinessDetails {
+  const r = record(raw) ?? {}
+  const base = emptyBusinessDetails(country)
+  const legacy = typeof r.taxId !== 'string'
+  return {
+    ...base,
+    ...r,
+    taxId: typeof r.taxId === 'string' ? r.taxId : typeof r.registrationNumber === 'string' ? r.registrationNumber : '',
+    registrationNumber: legacy ? '' : typeof r.registrationNumber === 'string' ? r.registrationNumber : '',
+    structure: (r.structure as CompanyStructure | null | undefined) ?? null,
+    phone: typeof r.phone === 'string' ? r.phone : '',
+    mcc: typeof r.mcc === 'string' ? r.mcc : null,
+    noWebsite: r.noWebsite === true,
+    productDescription: typeof r.productDescription === 'string' ? r.productDescription : '',
+    address: { ...base.address, ...(record(r.address) ?? {}) },
+  } as BusinessDetails
+}
+
+function withPersonDefaults(raw: unknown, id: string, country: string): Person {
+  const r = record(raw)
+  // An older `{ name, title, email }` object has no firstName.
+  if (!r || typeof r.firstName !== 'string') return personFromLegacy(r as { name?: string } | null, id, country)
+  const base = emptyPerson(typeof r.id === 'string' ? r.id : id, country)
+  return {
+    ...base,
+    ...r,
+    address: { ...base.address, ...(record(r.address) ?? {}) },
+    roles: { ...base.roles, ...(record(r.roles) ?? {}) },
+  } as Person
+}
+
+function withBankDefaults<T extends { country?: unknown; routingNumber?: unknown; holderType?: unknown }>(raw: T, country: string): T & { routingNumber: string; country: string; holderType: 'individual' | 'company' | null } {
+  return {
+    ...raw,
+    routingNumber: typeof raw.routingNumber === 'string' ? raw.routingNumber : '',
+    country: typeof raw.country === 'string' ? raw.country : country,
+    holderType: raw.holderType === 'individual' || raw.holderType === 'company' ? raw.holderType : null,
+  }
+}
+
+function legacyBusinessType(value: unknown): BusinessType | null {
+  return typeof value === 'string' ? LEGACY_BUSINESS_TYPES[value] ?? null : null
+}
+
+function migrateDraft(raw: unknown, base: OnboardingDraft): OnboardingDraft {
+  const r = record(raw) ?? {}
+  const country = typeof r.country === 'string' ? r.country : base.country
+  const businessType = legacyBusinessType(r.businessType)
+  const business = withBusinessDefaults(r.business, country)
+  // A legacy non-profit was a business type; now it is a company structure.
+  if (r.businessType === 'nonprofit' && !business.structure) business.structure = 'incorporated_non_profit'
+  const payoutRaw = record(r.payout)
+  // Documents are only ever partner-requested now, so a first-phase save's optional photo ID has nothing to attach to.
+  const rest = { ...r }
+  delete rest.idDocument
+  return {
+    ...base,
+    ...rest,
+    businessType,
+    business,
+    representative: withPersonDefaults(r.representative, REPRESENTATIVE_ID, country),
+    persons: Array.isArray(r.persons) ? r.persons.map((p, i) => withPersonDefaults(p, `per_${i + 1}`, country)) : [],
+    attestations: { ...base.attestations, ...(record(r.attestations) ?? {}) },
+    payout: payoutRaw ? withBankDefaults(payoutRaw as NonNullable<OnboardingDraft['payout']>, country) : null,
+  } as OnboardingDraft
+}
+
+function migrateBusiness(raw: unknown): LegalBusiness | null {
+  const r = record(raw)
+  if (!r) return null
+  const country = typeof r.country === 'string' ? r.country : 'US'
+  const persons = Array.isArray(r.persons)
+    ? r.persons.map((p, i) => withPersonDefaults(p, i === 0 ? REPRESENTATIVE_ID : `per_${i}`, country))
+    : [withPersonDefaults(r.representative, REPRESENTATIVE_ID, country)]
+  const { representative: _legacy, ...rest } = r
+  return {
+    ...rest,
+    ...withBusinessDefaults(r, country),
+    id: typeof r.id === 'string' ? r.id : '',
+    type: legacyBusinessType(r.type) ?? 'company',
+    country,
+    persons,
+    representativeId: typeof r.representativeId === 'string' ? r.representativeId : REPRESENTATIVE_ID,
+    publicDetails: { statementDescriptor: '', supportEmail: '', supportPhone: '', ...(record(r.publicDetails) ?? {}) },
+  } as LegalBusiness
+}
+
+function migrateAccount(raw: unknown): MaropayAccount | null {
+  const r = record(raw)
+  if (!r) return null
+  const { rejectedReason: _legacy, ...rest } = r
+  const destination = record(r.payoutDestination)
+  return {
+    ...rest,
+    closedAt: (r.closedAt as string | null | undefined) ?? null,
+    declineReason: (r.declineReason as DeclineReason | null | undefined) ?? (r.verification === 'rejected' ? 'other' : null),
+    declinedAt: (r.declinedAt as string | null | undefined) ?? null,
+    payoutDestination: destination ? withBankDefaults(destination as unknown as PayoutDestination, typeof r.country === 'string' ? r.country : 'US') : null,
+    payoutSchedule: { ...DEFAULT_PAYOUT_SCHEDULE, ...(record(r.payoutSchedule) ?? {}) },
+  } as MaropayAccount
+}
+
+/** Older business-change requests for the single "registration number" meant the tax ID. */
+function migrateTask(task: ActionTask): ActionTask {
+  if (task.kind === 'business_change' && task.change?.field === 'registrationNumber') {
+    return { ...task, change: { ...task.change, field: 'taxId' } }
+  }
+  return task
 }
 
 /**
@@ -656,24 +1015,42 @@ export function parseState(raw: string | null, accountId: string, now: number): 
   if (!parsed || typeof parsed !== 'object' || parsed.version !== 1 || parsed.accountId !== accountId) return null
   const base = emptyState(accountId, now, parsed.account?.currency ?? 'USD')
   const list = <T,>(value: T[] | undefined, fallback: T[]): T[] => (Array.isArray(value) ? value : fallback)
+  const account = migrateAccount(parsed.account)
+  const country = account?.country ?? 'US'
+  // Before submission the settlement currency follows the registration country, as setAccountCurrency does;
+  // a first-phase save kept USD whatever the country.
+  const settleIn = account && account.setup !== 'submitted' && account.currency !== currencyFor(account.country) ? currencyFor(account.country) : null
+  if (account && settleIn) account.currency = settleIn
+  const terms = { ...base.terms, ...(parsed.terms ?? {}) }
   return {
     ...base,
     ...parsed,
     version: 1,
     accountId,
-    onboarding: { ...base.onboarding, ...(parsed.onboarding ?? {}) },
-    account: parsed.account ? { ...parsed.account, closedAt: parsed.account.closedAt ?? null } : null,
+    onboarding: migrateDraft(parsed.onboarding, base.onboarding),
+    business: migrateBusiness(parsed.business),
+    account,
     milestones: { ...base.milestones, ...(parsed.milestones ?? {}) },
-    terms: parsed.terms ?? base.terms,
-    bindings: list(parsed.bindings, []),
-    methods: list(parsed.methods, base.methods),
+    terms: settleIn ? { ...terms, disputeFee: money(terms.disputeFee.amount, settleIn) } : terms,
+    bindings: list(parsed.bindings, []).map((b) => ({
+      ...b,
+      checkout: { ...defaultCheckoutSettings(), ...(record(b.checkout) ?? {}) },
+      methodOrder: Array.isArray(b.methodOrder) ? b.methodOrder : [],
+      defaultMethodId: typeof b.defaultMethodId === 'string' ? b.defaultMethodId : null,
+      methodSettings: record(b.methodSettings) ? (b.methodSettings as Record<string, MethodSettings>) : {},
+      activationNoticeDismissedAt: b.activationNoticeDismissedAt ?? null,
+    })),
+    methods: settleIn
+      ? catalogFor(settleIn)
+      : list(parsed.methods, base.methods).map((m) => ({ ...m, requested: m.requested ?? null, declineReason: m.declineReason ?? null })),
     payments: list(parsed.payments, []).filter((p) => isMoney(p.amount)).map((p) => ({ ...p, orderId: typeof p.orderId === 'number' ? p.orderId : null })),
     disputes: list(parsed.disputes, []),
-    payouts: list(parsed.payouts, []),
+    payouts: list(parsed.payouts, []).map((po) => ({ ...po, destination: withBankDefaults(po.destination, country) })),
     movements: list(parsed.movements, []).filter((m) => isMoney(m.net)),
-    tasks: list(parsed.tasks, []),
+    tasks: list(parsed.tasks, []).map(migrateTask),
     sessions: list(parsed.sessions, []),
     history: list(parsed.history, []),
+    defaultMethodIds: list(parsed.defaultMethodIds, base.defaultMethodIds),
     counters: parsed.counters && typeof parsed.counters === 'object' ? parsed.counters : {},
   }
 }
@@ -769,7 +1146,7 @@ export const VERIFICATION_LABELS: Record<VerificationState, string> = {
   under_review: 'Under review',
   action_required: 'Action required',
   verified: 'Verified',
-  rejected: 'Rejected',
+  rejected: 'Declined',
 }
 
 export const PAYMENT_CAPABILITY_LABELS: Record<PaymentCapability, string> = {
@@ -788,6 +1165,7 @@ export const PAYOUT_CAPABILITY_LABELS: Record<PayoutCapability, string> = {
 
 export const STORE_ACTIVATION_LABELS: Record<StoreActivationState, string> = {
   inactive: 'Inactive',
+  needs_setup: 'Needs setup',
   ready_to_activate: 'Ready to activate',
   live: 'Live',
 }

@@ -32,16 +32,19 @@ const TONE: Record<OverviewKey, { color: string; icon: string }> = {
   finish_setup: { color: 'primary', icon: 'list-checks' },
   provide_info: { color: 'warning', icon: 'triangle-alert' },
   under_review: { color: 'primary', icon: 'clock' },
+  set_up_store: { color: 'primary', icon: 'list-checks' },
   ready_to_activate: { color: 'primary', icon: 'rocket' },
   payouts_attention: { color: 'warning', icon: 'triangle-alert' },
+  activate_more: { color: 'success', icon: 'rocket' },
   active: { color: 'success', icon: 'circle-check' },
+  declined: { color: 'error', icon: 'ban' },
   unavailable: { color: 'error', icon: 'ban' },
   closed: { color: 'secondary', icon: 'archive' },
 }
 
 const tone = computed(() => TONE[props.instruction.key])
 /** Routine next steps get a quiet button; anything that unblocks trading gets the primary one. */
-const quietAction = computed(() => props.instruction.key === 'active')
+const quietAction = computed(() => props.instruction.key === 'active' || props.instruction.key === 'activate_more')
 
 const storesLabel = computed(() => {
   const { liveStores, linkedStores } = props.dimensions

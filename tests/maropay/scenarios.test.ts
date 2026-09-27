@@ -6,15 +6,16 @@ import { parseState, storageKey } from '../../src/maropay/model.ts'
 import { ATLAS, NOW, context, orders } from './fixtures.ts'
 
 const EXPECTED_HEADLINE: Record<string, string> = {
-  m01: 'not_started', m02: 'finish_setup', m03: 'provide_info', m04: 'unavailable', m05: 'ready_to_activate',
-  m06: 'ready_to_activate', m07: 'active', m08: 'payouts_attention', m09: 'payouts_attention', m10: 'active',
+  m01: 'not_started', m02: 'finish_setup', m03: 'provide_info', m04: 'declined', m05: 'set_up_store',
+  m06: 'set_up_store', m07: 'activate_more', m08: 'payouts_attention', m09: 'payouts_attention', m10: 'active',
   m11: 'active', m12: 'active', m13: 'active', m14: 'active', m15: 'ready_to_activate',
+  m16: 'provide_info', m17: 'provide_info',
 }
 
-test('all fifteen scenarios are listed and recognised', () => {
-  assert.equal(MAROPAY_SCENARIOS.length, 15)
+test('all seventeen scenarios are listed and recognised', () => {
+  assert.equal(MAROPAY_SCENARIOS.length, 17)
   assert.ok(MAROPAY_SCENARIOS.every((s) => isMaropayScenarioKey(s.key)))
-  assert.equal(isMaropayScenarioKey('m16'), false)
+  assert.equal(isMaropayScenarioKey('m18'), false)
 })
 
 for (const scenario of MAROPAY_SCENARIOS) {

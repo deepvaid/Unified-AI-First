@@ -18,9 +18,10 @@ import { useToast } from '@/composables/useToast'
 import { useWizardSteps } from '@/composables/useWizardSteps'
 import { useMaropayStore } from '@/stores/useMaropay'
 import { formatMoney, money } from '@/maropay/money'
-import { BUSINESS_TYPE_LABELS, COUNTRY_LABELS, ONBOARDING_STEPS, ROLE_LABELS } from '@/maropay/model'
+import { BUSINESS_TYPE_LABELS, COUNTRY_LABELS, DEFAULT_PAYOUT_SCHEDULE, ONBOARDING_STEPS, ROLE_LABELS, localDateKey, personName } from '@/maropay/model'
+import { requirementForm, rulesFor } from '@/maropay/requirements'
 import type { MaropayError, MockDocument, OnboardingDraft, OnboardingStepKey } from '@/maropay/model'
-import { EDITABLE_DRAFT_FIELDS, bankAccountErrors, bankCodeFor, blockingIssues, countryLabel, digitsOnly, submissionIssues } from '@/maropay/onboarding'
+import { EDITABLE_DRAFT_FIELDS, bankAccountErrors, bankCodeFor, blockingIssues, countryLabel, submissionIssues } from '@/maropay/onboarding'
 import type { EditableDraftField, OnboardingPatch, SetupField, SetupIssue } from '@/maropay/onboarding'
 import { STEP_LABELS, formatDay, isSupportedCountry, payoutScheduleLabel } from '@/maropay/readiness'
 
@@ -103,7 +104,10 @@ function save(options?: { complete?: boolean; next?: OnboardingStepKey }, from: 
   if (changed || options) maropay.saveStep(from, patch, options)
 }
 
-watch(() => form.country, (country) => { form.business.address.country = country })
+watch(() => form.country, (country) => {
+  form.business.address.country = country
+  form.representative.address.country = country
+})
 watch(form, () => save(), { deep: true })
 
 const authority = computed({
@@ -166,9 +170,37 @@ const countryItems = Object.entries(COUNTRY_LABELS)
   .sort((a, b) => a.title.localeCompare(b.title))
 const businessTypeItems = Object.entries(BUSINESS_TYPE_LABELS).map(([value, title]) => ({ value, title }))
 
+/** What our payments partner asks of this country and business type — drives the fields on steps 1, 3 and 4. */
+const rules = computed(() => rulesFor(form.country, form.businessType, form.business.structure))
+const isCompany = computed(() => form.businessType === 'company')
+const structureItems = computed(() => rules.value.structures.map((s) => ({ value: s.value, title: s.label })))
+const industryItems = computed(() => rules.value.industries)
+/** US setups may describe their products instead of giving a website. */
+const websiteAlternative = computed(() => rules.value.alternatives.some((a) => a.original === 'business_profile.url'))
+const askDescription = computed(() => rules.value.fields.has('business_profile.product_description') || (websiteAlternative.value && form.business.noWebsite))
+const today = localDateKey(Date.now())
+
+watch(() => form.businessType, (type) => {
+  if (type === 'individual') {
+    form.business.structure = null
+    form.persons = []
+    form.attestations = { owners: false, directors: false, executives: false }
+  }
+})
+watch(() => rules.value.structures, (structures) => {
+  if (form.business.structure && !structures.some((s) => s.value === form.business.structure)) form.business.structure = null
+})
+
 function choose(choice: 'new' | 'existing'): void {
   form.businessChoice = choice
   form.reuseVerifiedDetails = choice === 'existing'
+}
+
+function attestationLabel(role: 'owner' | 'director' | 'executive'): string {
+  const name = form.business.legalName.trim() || 'the business'
+  if (role === 'owner') return `I’ve added everyone who owns 25% or more of ${name}`
+  if (role === 'director') return `I’ve added every director of ${name}`
+  return `I’ve added every executive who runs ${name}`
 }
 
 function keepCurrentProvider(): void {
@@ -182,20 +214,13 @@ const termsAccepted = computed(() => maropay.onboarding.termsAcceptedVersion ===
 /** Ticking is not accepting: acceptance is recorded when the owner continues. */
 const termsChecked = ref(false)
 const currency = computed(() => maropay.account?.currency ?? 'USD')
-const payoutSchedule = computed(() => payoutScheduleLabel(maropay.account?.payoutSchedule ?? { interval: 'daily', delayDays: 2 }))
+const payoutSchedule = computed(() => payoutScheduleLabel(maropay.account?.payoutSchedule ?? DEFAULT_PAYOUT_SCHEDULE))
 const legalName = computed(() => form.business.legalName.trim() || 'the business')
 
 // ── Step 3: verification ───────────────────────────────────────────
 
-const needsRegistration = computed(() => form.businessType !== 'sole_trader')
 /** Reused details come from the verified account — changes go through our payments partner. */
 const lockedAttrs = computed(() => (form.reuseVerifiedDetails ? { readonly: true, class: 'mp-field-readonly' } : {}))
-
-const idFile = ref<File | File[] | null>(null)
-watch(idFile, (value) => {
-  const file = Array.isArray(value) ? value[0] : value
-  if (file) form.idDocument = documentFor(file)
-})
 
 function sizeLabel(bytes: number): string {
   return bytes >= 1_000_000 ? `${(bytes / 1_000_000).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1_000))} KB`
@@ -204,11 +229,6 @@ function sizeLabel(bytes: number): string {
 /** Only the file's name and size are kept — never its contents. */
 function documentFor(file: File): MockDocument {
   return { name: file.name, sizeLabel: sizeLabel(file.size), status: 'received' }
-}
-
-function removeIdDocument(): void {
-  form.idDocument = null
-  idFile.value = null
 }
 
 // ── Step 4: payout account ─────────────────────────────────────────
@@ -238,7 +258,7 @@ function savePayoutForm(): boolean {
     void focusFirstError()
     return false
   }
-  const result = maropay.savePayoutDetails({ holderName: payoutForm.holderName, bankName: payoutForm.bankName, accountNumber: digitsOnly(payoutForm.accountNumber) })
+  const result = maropay.savePayoutDetails({ ...payoutForm })
   if (!result.ok) {
     toast.error(result.error.message)
     return false
@@ -301,8 +321,8 @@ const reviewRows = computed(() => {
       key: 'verify',
       title: draft.business.legalName || 'Legal business name missing',
       detail: [
-        draft.representative.name || 'Representative missing',
-        draft.idDocument ? 'Photo ID attached' : draft.reuseVerifiedDetails ? 'Verified details reused' : 'Photo ID to follow',
+        personName(draft.representative) || 'Representative missing',
+        draft.reuseVerifiedDetails ? 'Verified details reused' : `${draft.persons.length} ${draft.persons.length === 1 ? 'other person' : 'other people'} listed`,
       ].join(' · '),
     },
     {
@@ -361,31 +381,62 @@ function saveAndExit(): void {
 
 // ── Requirement ────────────────────────────────────────────────────
 
+/** What the request needs: a document, a keyed value or a confirmation (requirements.ts decides from the partner key). */
+const requirementSpec = computed(() => (requirement.value ? requirementForm(requirement.value.requirement, maropay.rules) : null))
 const requirementFile = ref<File | File[] | null>(null)
-const requirementDocument = computed(() => {
-  const file = Array.isArray(requirementFile.value) ? requirementFile.value[0] : requirementFile.value
+const requirementBackFile = ref<File | File[] | null>(null)
+function firstFile(value: File | File[] | null): MockDocument | null {
+  const file = Array.isArray(value) ? value[0] : value
   return file ? documentFor(file) : null
+}
+const requirementDocument = computed(() => firstFile(requirementFile.value))
+const requirementBackDocument = computed(() => firstFile(requirementBackFile.value))
+const twoSided = computed(() => requirementSpec.value?.kind === 'documents' && requirementSpec.value.sides === 'front_back')
+/** "Photo ID" → "photo ID" mid-sentence, keeping acronyms. */
+const documentNoun = computed(() => (requirementSpec.value?.kind === 'documents' ? requirementSpec.value.label.charAt(0).toLowerCase() + requirementSpec.value.label.slice(1) : ''))
+const requirementValue = ref('')
+/** What waiting costs, from the request's own dates: before verification nothing is on yet; after it, payouts pause at the deadline and payments at the pause date. */
+const requirementImpact = computed(() => {
+  const task = requirement.value
+  if (!task?.dueAt || maropay.account?.verification !== 'verified') {
+    return 'Payments and payouts stay off until our payments partner has this. Your stores keep their current payment setup meanwhile.'
+  }
+  const pauseAt = task.paymentsPauseAt ?? task.dueAt
+  if (maropay.now >= Date.parse(pauseAt)) {
+    const checkout = maropay.dimensions.liveStores > 0 ? ' Checkout on your live stores refuses new payments meanwhile.' : ''
+    return `Payments and payouts are paused until our payments partner has this.${checkout}`
+  }
+  if (maropay.now >= Date.parse(task.dueAt)) return `Payouts are paused. Provide this by ${formatDay(pauseAt)} or payments pause too.`
+  return pauseAt === task.dueAt
+    ? `Provide this by ${formatDay(task.dueAt)} to keep payments and payouts running.`
+    : `Provide this by ${formatDay(task.dueAt)} to keep payouts running — payments pause on ${formatDay(pauseAt)} if it’s still missing.`
 })
-const requirementImpact = computed(() =>
-  maropay.capabilities.payments === 'enabled'
-    ? 'Provide this before the deadline to keep payments and payouts running.'
-    : 'Payments and payouts stay off until our payments partner has this. Your stores keep their current payment setup meanwhile.',
-)
+const canSendRequirement = computed(() => {
+  const spec = requirementSpec.value
+  if (!spec || !isOwner.value) return false
+  if (spec.kind === 'documents') return requirementDocument.value !== null
+  if (spec.kind === 'value') return requirementValue.value.trim().length > 0
+  return true
+})
 const sending = ref(false)
 
 async function sendRequirement(): Promise<void> {
   const task = requirement.value
-  const document = requirementDocument.value
-  if (!task || !document || sending.value) return
+  const spec = requirementSpec.value
+  if (!task || !spec || !canSendRequirement.value || sending.value) return
   sending.value = true
   await delay()
-  const result = maropay.resolveTask(task.id, { document })
+  const result = maropay.resolveTask(task.id, spec.kind === 'documents'
+    ? { documents: { front: requirementDocument.value!, back: twoSided.value ? requirementBackDocument.value : null } }
+    : spec.kind === 'value' ? { value: requirementValue.value } : { confirmed: true })
   sending.value = false
   if (!result.ok) {
     toast.error(result.error.message)
     return
   }
   requirementFile.value = null
+  requirementBackFile.value = null
+  requirementValue.value = ''
   toast.success('Sent. Our payments partner will review it and we’ll let you know.')
   void router.replace({ query: {} })
   void focusRegion()
@@ -394,7 +445,7 @@ async function sendRequirement(): Promise<void> {
 // ── Outcome ────────────────────────────────────────────────────────
 
 const readinessAction = computed(() => (maropay.overview.action ? maropay.routeFor(maropay.overview.action.target) : null))
-const firstStoreName = computed(() => (maropay.bindings[0] ? maropay.channelName(maropay.bindings[0].channelId) : 'a store'))
+const firstStoreName = computed(() => (maropay.activationTarget ? maropay.channelName(maropay.activationTarget.binding.channelId) : 'a store'))
 
 const nextSteps = computed(() => {
   // A closed account has no next step; the readiness card says so.
@@ -406,7 +457,7 @@ const nextSteps = computed(() => {
       return [
         { title: 'Choose payment methods', desc: 'Cards, Apple Pay and Google Pay are on by default.' },
         { title: 'Run a test checkout', desc: 'See exactly what shoppers see before anything changes.' },
-        { title: `Activate on ${firstStoreName.value}`, desc: 'Your current payment setup keeps working until you do.' },
+        { title: `Activate on ${firstStoreName.value}`, desc: 'Your call, whenever you’re ready — your current payment setup keeps working until you do.' },
       ]
     case 'under_review':
       return [
@@ -430,6 +481,7 @@ const DECISION_TOASTS = {
   more_info: 'Simulated: our payments partner asked for more information.',
   rejected: 'Simulated: verification was declined.',
 } as const
+const DECISION_LABELS = { verified: 'Approve', more_info: 'Needs information', rejected: 'Decline' } as const
 
 function simulate(decision: keyof typeof DECISION_TOASTS): void {
   const result = maropay.simulateReviewOutcome(decision)
@@ -502,8 +554,9 @@ function enter(): void {
   attempted.clear()
   payoutEditing.value = false
   resetPayoutForm()
-  idFile.value = null
   requirementFile.value = null
+  requirementBackFile.value = null
+  requirementValue.value = ''
   submitError.value = null
   if (mode.value === 'wizard') resume()
 }
@@ -544,23 +597,52 @@ watch(() => [maropay.state, maropay.actingRole], enter)
       </v-card>
 
       <!-- ── Requirement ────────────────────────────────────── -->
-      <MpWizardStepCard v-else-if="mode === 'requirement' && requirement" :title="requirement.title" :description="requirement.description">
+      <MpWizardStepCard v-else-if="mode === 'requirement' && requirement && requirementSpec" :title="requirement.title" :description="requirement.description">
         <div class="maropay-setup__form">
           <MpAlert tone="warning" live="off" :title="requirement.dueAt ? `Due ${formatDay(requirement.dueAt)}` : 'Needed to turn on payments'">
-            {{ requirementImpact }}
+            {{ requirement.errorReason ? `${requirement.errorReason} ` : '' }}{{ requirementImpact }}
           </MpAlert>
-          <v-file-input
-            v-if="isOwner"
-            v-model="requirementFile"
-            label="Photo ID *"
-            accept="image/*,application/pdf"
-            prepend-icon=""
-            prepend-inner-icon="id-card"
-            hint="A passport or driving licence with every corner visible. Only the file name is kept in this prototype."
-            persistent-hint
-          />
+          <template v-if="isOwner">
+            <template v-if="requirementSpec.kind === 'documents'">
+              <v-file-input
+                v-model="requirementFile"
+                :label="twoSided ? `Front of ${documentNoun} *` : `${requirementSpec.label} *`"
+                :accept="requirementSpec.accept"
+                prepend-icon=""
+                prepend-inner-icon="id-card"
+                :hint="`${requirementSpec.hint} Only the file name is kept in this prototype.`"
+                persistent-hint
+              />
+              <v-file-input
+                v-if="twoSided"
+                v-model="requirementBackFile"
+                :label="`Back of ${documentNoun}`"
+                :accept="requirementSpec.accept"
+                prepend-icon=""
+                prepend-inner-icon="id-card"
+                hint="Skip this for a passport."
+                persistent-hint
+              />
+            </template>
+            <v-textarea
+              v-else-if="requirementSpec.kind === 'value' && requirementSpec.inputType === 'textarea'"
+              v-model="requirementValue"
+              :label="`${requirementSpec.label} *`"
+              rows="3"
+              :hint="requirementSpec.hint ?? undefined"
+              persistent-hint
+            />
+            <v-text-field
+              v-else-if="requirementSpec.kind === 'value'"
+              v-model="requirementValue"
+              :label="`${requirementSpec.label} *`"
+              :type="requirementSpec.inputType === 'url' ? 'url' : 'text'"
+              :hint="requirementSpec.hint ?? undefined"
+              persistent-hint
+            />
+          </template>
           <MpAlert v-else tone="info" live="off" title="The business owner sends this">
-            Identity documents can only be provided by the business owner.
+            Verification information can only be provided by the business owner.
           </MpAlert>
         </div>
       </MpWizardStepCard>
@@ -585,12 +667,12 @@ watch(() => [maropay.state, maropay.actingRole], enter)
           <MaropaySupportAlert title="Ask for this decision to be reviewed" :references="supportReferences" />
         </template>
 
-        <v-card v-if="maropay.account?.verification === 'under_review'" flat border rounded="lg" class="maropay-setup__card">
-          <MpSectionHeader icon="flask-conical" title="Simulate the decision" description="Demo controls — not part of the product." :heading-level="2" />
+        <v-card v-if="maropay.partnerDecisions.length" flat border rounded="lg" class="maropay-setup__card">
+          <MpSectionHeader icon="flask-conical" title="Simulate our payments partner’s decision" description="Demo controls — not part of the product." :heading-level="2" />
           <div class="d-flex flex-wrap ga-2">
-            <v-btn size="small" variant="outlined" class="text-none" @click="simulate('verified')">Verified</v-btn>
-            <v-btn size="small" variant="outlined" class="text-none" @click="simulate('more_info')">Needs more information</v-btn>
-            <v-btn size="small" variant="outlined" class="text-none" @click="simulate('rejected')">Declined</v-btn>
+            <v-btn v-for="decision in maropay.partnerDecisions" :key="decision" size="small" variant="outlined" class="text-none" @click="simulate(decision)">
+              {{ DECISION_LABELS[decision] }}
+            </v-btn>
           </div>
         </v-card>
       </template>
@@ -647,6 +729,63 @@ watch(() => [maropay.state, maropay.actingRole], enter)
                   label="Business type *"
                   placeholder="Choose one"
                   :error-messages="errorFor('businessType')"
+                />
+                <v-select
+                  v-if="isCompany && structureItems.length"
+                  v-model="form.business.structure"
+                  :items="structureItems"
+                  label="Business structure *"
+                  placeholder="Choose one"
+                  hint="If you’re not sure, check your registration documents."
+                  class="mp-form-grid__full"
+                  :error-messages="errorFor('structure')"
+                />
+              </MpFormGrid>
+            </MpFormSection>
+
+            <MpFormSection v-if="!unsupported" title="What you sell" description="Our payments partner uses this to understand your business.">
+              <MpFormGrid :cols="2">
+                <v-select
+                  v-model="form.business.mcc"
+                  :items="industryItems"
+                  label="Industry *"
+                  placeholder="Choose the closest match"
+                  class="mp-form-grid__full"
+                  :error-messages="errorFor('industry')"
+                />
+                <template v-if="!form.business.noWebsite">
+                  <v-text-field
+                    v-model="form.business.website"
+                    v-bind="lockedAttrs"
+                    label="Website *"
+                    type="url"
+                    hint="The site shoppers buy from."
+                    class="mp-form-grid__full"
+                    :error-messages="errorFor('website')"
+                  />
+                  <div v-if="websiteAlternative" class="mp-form-grid__full">
+                    <v-btn variant="text" size="small" class="text-none" @click="form.business.noWebsite = true">I don’t have a website — describe what you sell instead</v-btn>
+                  </div>
+                </template>
+                <v-textarea
+                  v-if="askDescription"
+                  v-model="form.business.productDescription"
+                  label="What you sell *"
+                  rows="3"
+                  :hint="form.business.noWebsite ? 'At least 10 characters. Our payments partner uses this instead of a website.' : 'At least 10 characters.'"
+                  class="mp-form-grid__full"
+                  :error-messages="errorFor('productDescription') ?? (form.business.noWebsite ? errorFor('website') : undefined)"
+                />
+                <div v-if="form.business.noWebsite" class="mp-form-grid__full">
+                  <v-btn variant="text" size="small" class="text-none" @click="form.business.noWebsite = false">Use a website instead</v-btn>
+                </div>
+                <v-text-field
+                  v-if="isCompany"
+                  v-model="form.business.phone"
+                  label="Business phone *"
+                  type="tel"
+                  autocomplete="tel"
+                  :error-messages="errorFor('phone')"
                 />
               </MpFormGrid>
             </MpFormSection>
@@ -734,58 +873,91 @@ watch(() => [maropay.state, maropay.actingRole], enter)
               We’ve filled in what Maropost already knows. Check each detail against your official records — a mismatch is the most common reason setup is held up.
             </MpAlert>
 
-            <MpFormSection title="Business">
+            <MpFormSection v-if="isCompany" title="Business">
               <MpFormGrid :cols="2">
                 <v-text-field v-model="form.business.legalName" v-bind="lockedAttrs" label="Legal business name *" class="mp-form-grid__full" autocomplete="organization" :error-messages="errorFor('legalName')" />
                 <v-text-field v-model="form.business.tradingName" v-bind="lockedAttrs" label="Trading name" hint="Only if shoppers know you by another name." />
                 <v-text-field
+                  v-model="form.business.taxId"
+                  v-bind="lockedAttrs"
+                  :label="`${rules.labels.taxId.label}${rules.fields.has('company.tax_id') ? ' *' : ''}`"
+                  :hint="rules.fields.has('company.tax_id') ? rules.labels.taxId.hint : `Asked for later — ${rules.labels.taxId.hint.charAt(0).toLowerCase()}${rules.labels.taxId.hint.slice(1)}`"
+                  :error-messages="errorFor('taxId')"
+                />
+                <v-text-field
+                  v-if="rules.labels.registrationNumber"
                   v-model="form.business.registrationNumber"
                   v-bind="lockedAttrs"
-                  :label="needsRegistration ? 'Registration number *' : 'Registration number'"
+                  :label="`${rules.labels.registrationNumber.label} *`"
+                  :hint="rules.labels.registrationNumber.hint"
                   :error-messages="errorFor('registrationNumber')"
                 />
-                <v-text-field v-model="form.business.website" v-bind="lockedAttrs" label="Website" type="url" class="mp-form-grid__full" />
               </MpFormGrid>
             </MpFormSection>
 
-            <MpFormSection title="Registered address">
+            <MpFormSection v-if="isCompany" title="Registered address">
               <MpFormGrid :cols="2">
                 <v-text-field v-model="form.business.address.line1" v-bind="lockedAttrs" label="Street address *" class="mp-form-grid__full" autocomplete="street-address" :error-messages="errorFor('addressLine1')" />
                 <v-text-field v-model="form.business.address.city" v-bind="lockedAttrs" label="City *" autocomplete="address-level2" :error-messages="errorFor('city')" />
-                <v-text-field v-model="form.business.address.region" v-bind="lockedAttrs" label="State or region *" autocomplete="address-level1" :error-messages="errorFor('region')" />
-                <v-text-field v-model="form.business.address.postalCode" v-bind="lockedAttrs" label="Postal code *" autocomplete="postal-code" :error-messages="errorFor('postalCode')" />
+                <v-text-field v-if="rules.usesRegion" v-model="form.business.address.region" v-bind="lockedAttrs" :label="`${rules.labels.region} *`" autocomplete="address-level1" :error-messages="errorFor('region')" />
+                <v-text-field v-model="form.business.address.postalCode" v-bind="lockedAttrs" :label="`${rules.labels.postal} *`" autocomplete="postal-code" :error-messages="errorFor('postalCode')" />
                 <v-text-field :model-value="countryLabel(form.country)" label="Country" readonly class="mp-field-readonly" hint="Set by the registration country." />
               </MpFormGrid>
             </MpFormSection>
 
-            <MpFormSection title="Representative" description="The person who owns or runs the business. Our payments partner may contact them.">
+            <MpFormSection :title="isCompany ? 'Representative' : 'About you'" :description="isCompany ? 'The person who owns or runs the business. Our payments partner may contact them.' : 'Our payments partner checks these details against official records.'">
               <MpFormGrid :cols="2">
-                <v-text-field v-model="form.representative.name" v-bind="lockedAttrs" label="Full name *" autocomplete="name" :error-messages="errorFor('repName')" />
-                <v-text-field v-model="form.representative.title" v-bind="lockedAttrs" label="Job title" autocomplete="organization-title" />
-                <v-text-field v-model="form.representative.email" v-bind="lockedAttrs" label="Email *" type="email" autocomplete="email" class="mp-form-grid__full" :error-messages="errorFor('repEmail')" />
+                <v-text-field v-model="form.representative.firstName" v-bind="lockedAttrs" label="First name *" autocomplete="given-name" :error-messages="errorFor('repFirstName')" />
+                <v-text-field v-model="form.representative.lastName" v-bind="lockedAttrs" label="Last name *" autocomplete="family-name" :error-messages="errorFor('repLastName')" />
+                <v-text-field v-if="isCompany" v-model="form.representative.title" v-bind="lockedAttrs" label="Job title *" autocomplete="organization-title" :error-messages="errorFor('repTitle')" />
+                <v-text-field
+                  v-model="form.representative.dob"
+                  v-bind="lockedAttrs"
+                  label="Date of birth *"
+                  type="date"
+                  :max="today"
+                  autocomplete="bday"
+                  :error-messages="errorFor('repDob')"
+                />
+                <v-text-field v-model="form.representative.email" v-bind="lockedAttrs" label="Email *" type="email" autocomplete="email" :error-messages="errorFor('repEmail')" />
+                <v-text-field v-model="form.representative.phone" v-bind="lockedAttrs" label="Phone *" type="tel" autocomplete="tel" :error-messages="errorFor('repPhone')" />
+                <v-text-field
+                  v-if="rules.fields.has(`${rules.identityPrefix}.ssn_last_4`)"
+                  v-model="form.representative.ssnLast4"
+                  label="Last 4 digits of SSN *"
+                  inputmode="numeric"
+                  maxlength="4"
+                  autocomplete="off"
+                  hint="Used to check identity. The full number is never asked for."
+                  persistent-hint
+                  :error-messages="errorFor('repSsnLast4')"
+                />
               </MpFormGrid>
             </MpFormSection>
 
-            <MpFormSection v-if="!form.reuseVerifiedDetails" title="Photo ID" :description="`A passport or driving licence for ${form.representative.name.trim() || 'the representative'}.`">
-              <MpListRow v-if="form.idDocument" variant="boxed">
-                <template #lead><v-icon size="18" class="maropay-setup__icon">file-check</v-icon></template>
-                <span class="maropay-setup__row-title">{{ form.idDocument.name }}</span>
-                <span class="maropay-setup__row-sub">{{ form.idDocument.sizeLabel }} · Attached</span>
-                <template #trailing>
-                  <v-btn variant="text" size="small" class="text-none" :aria-label="`Remove ${form.idDocument.name}`" @click="removeIdDocument">Remove</v-btn>
-                </template>
-              </MpListRow>
-              <v-file-input
-                v-else
-                v-model="idFile"
-                label="Photo ID"
-                accept="image/*,application/pdf"
-                prepend-icon=""
-                prepend-inner-icon="id-card"
-                hint="Optional now. Without it, our payments partner asks for it after you submit, and payments stay off until you provide it."
+            <MpFormSection :title="isCompany ? 'Representative’s home address' : 'Your address'">
+              <MpFormGrid :cols="2">
+                <v-text-field v-model="form.representative.address.line1" v-bind="lockedAttrs" label="Street address *" class="mp-form-grid__full" autocomplete="section-home street-address" :error-messages="errorFor('repAddressLine1')" />
+                <v-text-field v-model="form.representative.address.city" v-bind="lockedAttrs" label="City *" autocomplete="section-home address-level2" :error-messages="errorFor('repCity')" />
+                <v-text-field v-if="rules.usesRegion" v-model="form.representative.address.region" v-bind="lockedAttrs" :label="`${rules.labels.region} *`" autocomplete="section-home address-level1" :error-messages="errorFor('repRegion')" />
+                <v-text-field v-model="form.representative.address.postalCode" v-bind="lockedAttrs" :label="`${rules.labels.postal} *`" autocomplete="section-home postal-code" :error-messages="errorFor('repPostalCode')" />
+                <v-text-field :model-value="countryLabel(form.country)" label="Country" readonly class="mp-field-readonly" hint="Set by the registration country." />
+              </MpFormGrid>
+            </MpFormSection>
+
+            <MpFormSection v-if="isCompany && rules.personRoles.length" title="Owners, directors and executives" description="Confirm who our payments partner needs to know about. If that’s only you, confirm below.">
+              <v-checkbox
+                v-for="role in rules.personRoles"
+                :key="role.role"
+                v-model="form.attestations[`${role.role}s`]"
+                :disabled="!isOwner"
+                :label="attestationLabel(role.role)"
+                :hint="isOwner ? undefined : 'Only the business owner can confirm this.'"
                 persistent-hint
+                :error-messages="errorFor(`${role.role}sProvided`)"
               />
             </MpFormSection>
+
           </div>
         </MpWizardStepCard>
 
@@ -933,7 +1105,7 @@ watch(() => [maropay.state, maropay.actingRole], enter)
         class="text-none"
         prepend-icon="send"
         :loading="sending"
-        :disabled="!requirementDocument || !isOwner"
+        :disabled="!canSendRequirement"
         @click="sendRequirement"
       >
         Send for review

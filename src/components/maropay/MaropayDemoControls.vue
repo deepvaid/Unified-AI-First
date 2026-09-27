@@ -7,7 +7,7 @@ import { MAROPAY_SCENARIOS, useMaropayStore } from '@/stores/useMaropay'
 import type { MaropayActingRole, MaropayScenarioKey } from '@/stores/useMaropay'
 
 // Reviewer controls for the Maropay prototype (plan §6.5): load one of the
-// M01–M15 scenarios, reset, preview the access model as another role, and make
+// M01–M17 scenarios, reset, preview the access model as another role, and make
 // the next request time out (lists show their error state, actions their retry).
 // Lives in the user menu's demo block — never in merchant-facing screens.
 

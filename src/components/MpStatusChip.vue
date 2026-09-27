@@ -49,9 +49,9 @@ const toneMap: Record<string, Record<string, Tone>> = {
   // "ready to activate" and "live" read as distinct steps rather than one "Connected".
   readiness: {
     'not started': 'neutral', 'in progress': 'brand', submitted: 'brand', 'not submitted': 'neutral',
-    'under review': 'warning', 'action required': 'danger', verified: 'success', rejected: 'danger',
+    'under review': 'warning', 'action required': 'danger', verified: 'success', rejected: 'danger', declined: 'danger',
     'not enabled': 'neutral', enabled: 'success', restricted: 'danger', disabled: 'neutral',
-    ready: 'success', paused: 'warning', inactive: 'neutral', 'ready to activate': 'brand', live: 'success',
+    ready: 'success', paused: 'warning', inactive: 'neutral', 'needs setup': 'warning', 'ready to activate': 'brand', live: 'success',
   },
   campaign: {
     sent: 'success', scheduled: 'brand', draft: 'neutral', sending: 'warning',
@@ -152,9 +152,9 @@ const iconMap: Record<string, Record<string, string>> = {
   },
   readiness: {
     'not started': 'circle-dashed', 'in progress': 'loader', submitted: 'send', 'not submitted': 'circle-dashed',
-    'under review': 'clock', 'action required': 'alert-circle', verified: 'check-circle', rejected: 'x-circle',
+    'under review': 'clock', 'action required': 'alert-circle', verified: 'check-circle', rejected: 'x-circle', declined: 'x-circle',
     'not enabled': 'circle-dashed', enabled: 'check-circle', restricted: 'ban', disabled: 'ban',
-    ready: 'check-circle', paused: 'pause-circle', inactive: 'circle-dashed', 'ready to activate': 'rocket', live: 'check-circle',
+    ready: 'check-circle', paused: 'pause-circle', inactive: 'circle-dashed', 'needs setup': 'list-checks', 'ready to activate': 'rocket', live: 'check-circle',
   },
   priority: {
     critical: 'alert-octagon', urgent: 'alert-octagon', high: 'alert-triangle',

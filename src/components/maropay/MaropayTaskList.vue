@@ -30,6 +30,7 @@ const ICONS: Record<TaskKind, string> = {
   method_review: 'clock',
   owner_review: 'user-check',
   business_change: 'building-2',
+  activate_store: 'rocket',
 }
 
 function dueLabel(task: ActionTask): string | null {

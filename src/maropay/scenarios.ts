@@ -1,5 +1,5 @@
 /**
- * Reviewer scenarios M01–M15 (plan §6.5).
+ * Reviewer scenarios M01–M17 (plan §6.5 plus the partner-alignment phase).
  *
  * Every fixture is built by running the mock adapter's own operations at
  * back-dated times — onboarding, activation, payments, refunds, payouts,
@@ -13,7 +13,7 @@
  * Pure module — relative `.ts` imports only (see money.ts).
  */
 import { fromDecimal, money } from './money.ts'
-import { ONBOARDING_STEPS, emptyState, isoAt } from './model.ts'
+import { ONBOARDING_STEPS, REPRESENTATIVE_ID, emptyPerson, emptyState, isoAt } from './model.ts'
 import type {
   MaropayAccountState,
   MaropayProvider,
@@ -24,6 +24,7 @@ import type {
 } from './model.ts'
 import type { ChannelFacts } from './readiness.ts'
 import {
+  acceptTerms,
   activateStore,
   confirmCheckoutSession,
   createCheckoutSession,
@@ -34,6 +35,7 @@ import {
   markPayoutPaid,
   openDispute,
   raiseBankRequirement,
+  raiseThresholdRequirement,
   recordHistoricalPayment,
   runPayout,
   setMethodEnabled,
@@ -56,11 +58,11 @@ export interface MaropayScenario {
 }
 
 export const MAROPAY_SCENARIOS: MaropayScenario[] = [
-  { key: 'm01', label: 'M01 · New merchant, immediate approval', steps: [
+  { key: 'm01', label: 'M01 · New merchant, approved after review', steps: [
     'Open Maropay and choose Set up Maropay.',
-    'Complete the six setup steps — attach the photo ID for instant approval.',
-    'On the store’s Payments page, run the test checkout, review the impact and activate.',
-    'Take a payment in Checkout preview, then run a payout from the reviewer controls.',
+    'Complete the six setup steps — the account goes under review.',
+    'Approve the review from the reviewer controls, then follow the notification to the store’s Payments page.',
+    'Run the test checkout, review the impact and activate; take a payment in Checkout preview, then run a payout.',
   ] },
   { key: 'm02', label: 'M02 · Setup abandoned midway', steps: [
     'The overview says Finish setting up Maropay.',
@@ -68,13 +70,13 @@ export const MAROPAY_SCENARIOS: MaropayScenario[] = [
     'Refresh mid-step: nothing is lost.',
   ] },
   { key: 'm03', label: 'M03 · Verification needs more information', steps: [
-    'The overview asks for a photo ID by a date.',
-    'Upload it from the task — the account moves to under review.',
-    'Approve the review from the reviewer controls — the store becomes ready to activate.',
+    'Our payments partner couldn’t confirm the representative’s identity and asks for a photo ID.',
+    'Upload it from the task — the account moves back to under review.',
+    'Approve the review from the reviewer controls — an activation task appears for the store.',
   ] },
-  { key: 'm04', label: 'M04 · Business not supported', steps: [
-    'The overview explains that Maropay isn’t available for this business.',
-    'No activation is offered anywhere; the store keeps PayPal.',
+  { key: 'm04', label: 'M04 · Business declined', steps: [
+    'The overview says our payments partner couldn’t approve this business, and why.',
+    'No activation is offered anywhere; the store keeps PayPal and payments read Not enabled.',
     'Use the support route to ask for the decision to be reviewed.',
   ] },
   { key: 'm05', label: 'M05 · Existing Stripe merchant', steps: [
@@ -130,6 +132,16 @@ export const MAROPAY_SCENARIOS: MaropayScenario[] = [
     'Klarna is awaiting approval; cards are ready.',
     'Activate the store — cards go live now.',
     'Approve Klarna from the reviewer controls — it turns on.',
+  ] },
+  { key: 'm16', label: 'M16 · Information needed later', steps: [
+    'Payouts reached the partner’s threshold, so the EIN is now due by a date.',
+    'Payments and payouts keep running until the deadline.',
+    'Provide the EIN from the task — it goes to the partner for review.',
+  ] },
+  { key: 'm17', label: 'M17 · Deadline passed', steps: [
+    'The EIN deadline passed: payouts paused first, payments a week later.',
+    'Checkout refuses new payments until the EIN is provided.',
+    'Provide it — the account is under review again and both resume on approval.',
   ] },
 ]
 
@@ -189,8 +201,17 @@ export function linkedOrderRefs(orders: ScenarioOrderRef[], channelId: string, l
 
 // ── Builders ──────────────────────────────────────────────────────────────
 
-function env(at: number, overrides: Partial<AdapterEnv['failures']> = {}): AdapterEnv {
-  return { now: at, actor: { role: 'owner', assignedChannelIds: null }, failures: { ...defaultFailures(), ...overrides } }
+function env(at: number, ctx: ScenarioContext): AdapterEnv {
+  return {
+    now: at,
+    actor: { role: 'owner', assignedChannelIds: null },
+    failures: defaultFailures(),
+    channelName: (id) => ctx.channels.find((c) => c.id === id)?.name ?? 'this store',
+    channelFacts: (id) => {
+      const channel = ctx.channels.find((c) => c.id === id)
+      return channel ? channelFacts(channel) : null
+    },
+  }
 }
 
 function slug(name: string): string {
@@ -210,11 +231,29 @@ export function prefillFor(ctx: ScenarioContext): Partial<OnboardingDraft> {
     business: {
       legalName: `${trading} LLC`,
       tradingName: trading,
-      registrationNumber: '84-2210931',
+      taxId: '84-2210931',
+      registrationNumber: '',
+      structure: 'private_corporation',
+      phone: '+1 (415) 555-0199',
+      mcc: '5651',
       website: `https://${site}`,
+      noWebsite: false,
+      productDescription: '',
       address: { line1: '1450 Mission Street', city: 'San Francisco', region: 'CA', postalCode: '94103', country: 'US' },
     },
-    representative: { name: 'Jordan Lee', title: 'Founder and owner', email: `jordan@${slug(trading)}.example` },
+    representative: {
+      ...emptyPerson(REPRESENTATIVE_ID, 'US'),
+      firstName: 'Jordan',
+      lastName: 'Lee',
+      title: 'Founder and owner',
+      email: `jordan@${slug(trading)}.example`,
+      phone: '+1 (415) 555-0142',
+      address: { line1: '2210 Harrison Street', city: 'San Francisco', region: 'CA', postalCode: '94110', country: 'US' },
+      roles: { owner: true, director: false, executive: true },
+      percentOwnership: 100,
+    },
+    persons: [],
+    attestations: { owners: false, directors: false, executives: false },
     publicDetails: {
       statementDescriptor: trading.toUpperCase().replace(/[^A-Z0-9 ]/g, '').slice(0, 22),
       supportEmail: `support@${slug(trading)}.example`,
@@ -223,38 +262,52 @@ export function prefillFor(ctx: ScenarioContext): Partial<OnboardingDraft> {
   }
 }
 
-/** A fully completed draft: every step done, terms accepted, ID attached, payout account entered. */
-function completedDraft(state: MaropayAccountState, ctx: ScenarioContext, withDocument = true): void {
+const FIXTURE_USER_AGENT = 'Mozilla/5.0 (Macintosh) Chrome/130 (prototype fixture)'
+
+/** A fully completed draft: every step done, terms accepted, payout account entered. */
+function completedDraft(state: MaropayAccountState, ctx: ScenarioContext, at: number): void {
   const draft = state.onboarding
   draft.authorityConfirmed = true
   draft.completedSteps = ONBOARDING_STEPS.filter((s) => s !== 'review')
   draft.lastStep = 'review'
-  draft.termsAcceptedVersion = state.terms.version
-  draft.idDocument = withDocument ? { name: 'jordan-lee-passport.jpg', sizeLabel: '1.8 MB', status: 'received' } : null
-  draft.payout = { holderName: draft.business.legalName || `${ctx.accountName} LLC`, bankName: 'Mercury Bank', last4: '4417', currency: 'USD' }
+  // What Maropost can't prefill: the representative's date of birth, SSN last 4 and the owners attestation.
+  draft.representative.dob = '1986-04-12'
+  draft.representative.ssnLast4 = '4821'
+  draft.attestations.owners = true
+  draft.payout = {
+    holderName: draft.business.legalName || `${ctx.accountName} LLC`, bankName: 'Mercury Bank', last4: '4417',
+    routingNumber: '021000021', currency: 'USD', country: 'US', holderType: 'company',
+  }
+  acceptTerms(state, { userAgent: FIXTURE_USER_AGENT }, env(at, ctx))
 }
 
-function acceptTerms(state: MaropayAccountState, at: number): void {
-  state.terms.acceptedAt = isoAt(at)
-  state.terms.acceptedBy = 'owner'
+/** Setup submitted for review at `at`; the partner hasn't decided yet. */
+function submitted(state: MaropayAccountState, ctx: ScenarioContext, at: number, reuse = false, prefill = prefillFor(ctx)): void {
+  startOnboarding(state, { businessChoice: reuse ? 'existing' : 'new', reuseVerifiedDetails: reuse, prefill }, env(at, ctx))
+  completedDraft(state, ctx, at)
+  submitOnboarding(state, env(at, ctx))
 }
 
-/** Setup submitted and verified, primary store linked (not yet live). */
-function verified(state: MaropayAccountState, ctx: ScenarioContext, at: number, reuse = false): void {
-  startOnboarding(state, { businessChoice: reuse ? 'existing' : 'new', reuseVerifiedDetails: reuse, prefill: prefillFor(ctx) }, env(at))
-  completedDraft(state, ctx)
-  acceptTerms(state, at)
-  submitOnboarding(state, env(at))
+/** Setup submitted and approved on review, primary store linked (not yet live). Approval raises the store's activation task. */
+function verified(state: MaropayAccountState, ctx: ScenarioContext, at: number, reuse = false, prefill = prefillFor(ctx)): void {
+  submitted(state, ctx, at, reuse, prefill)
+  simulateReviewOutcome(state, 'verified', env(at, ctx))
+}
+
+/** A US company's EIN is only due once payouts pass the partner's threshold — these merchants haven't given it yet. */
+function prefillWithoutEin(ctx: ScenarioContext): Partial<OnboardingDraft> {
+  const prefill = prefillFor(ctx)
+  return { ...prefill, business: { ...prefill.business!, taxId: '' } }
 }
 
 function bindingFor(state: MaropayAccountState, channelId: string): StoreBinding | undefined {
   return state.bindings.find((b) => b.channelId === channelId)
 }
 
-function activate(state: MaropayAccountState, channel: ScenarioChannel, at: number): void {
-  validateCheckout(state, channel.id, env(at))
-  markImpactReviewed(state, channel.id, env(at))
-  activateStore(state, channel.id, channelFacts(channel), env(at))
+function activate(state: MaropayAccountState, ctx: ScenarioContext, channel: ScenarioChannel, at: number): void {
+  validateCheckout(state, channel.id, env(at, ctx))
+  markImpactReviewed(state, channel.id, env(at, ctx))
+  activateStore(state, channel.id, channelFacts(channel), env(at, ctx))
 }
 
 /** Local noon of an order's date, never later than an hour before now. */
@@ -281,17 +334,26 @@ function maropayMethod(seedLabel: string): { id: string; label: string } {
 
 const OUTCOMES: Record<string, 'captured' | 'refunded' | 'voided'> = { Paid: 'captured', Refunded: 'refunded', Voided: 'voided' }
 
+interface HistoryOptions {
+  /** Days ago that payouts run (Maropay only); defaults to one sent to the bank and one in transit. */
+  payoutAges?: number[]
+  /** No payment is recorded after this time — payments were paused. */
+  until?: number
+}
+
 /**
  * Gives the store's recent orders a payment history through `provider`. For
  * Maropay, payouts run at fixed ages so the fixture has one payout sent to the
- * bank, one in transit and a balance still waiting.
+ * bank, one in transit and a balance still waiting. A payout the account
+ * couldn't make at that time (payouts paused) is simply refused.
  */
-function recordHistory(state: MaropayAccountState, ctx: ScenarioContext, channelId: string, provider: MaropayProvider): void {
+function recordHistory(state: MaropayAccountState, ctx: ScenarioContext, channelId: string, provider: MaropayProvider, options: HistoryOptions = {}): void {
   const refs = linkedOrderRefs(ctx.orders, channelId).slice().reverse()
-  const payoutAges = provider === 'maropay' ? [8, 1] : []
+  const payoutAges = provider === 'maropay' ? [...(options.payoutAges ?? [8, 1])] : []
   for (const ref of refs) {
     const age = ageInDays(ref.date, ctx.now)
-    while (payoutAges.length && payoutAges[0]! > age) runPayout(state, env(ctx.now - payoutAges.shift()! * DAY_MS))
+    if (options.until !== undefined && orderTime(ref.date, ctx.now) > options.until) continue
+    while (payoutAges.length && payoutAges[0]! > age) runPayout(state, env(ctx.now - payoutAges.shift()! * DAY_MS, ctx))
     const outcome = OUTCOMES[ref.paymentStatus]
     if (!outcome) continue
     const method = provider === 'maropay' ? maropayMethod(ref.paymentMethod) : { id: ref.paymentMethod === 'PayPal' ? 'paypal_wallet' : 'card', label: ref.paymentMethod }
@@ -306,11 +368,11 @@ function recordHistory(state: MaropayAccountState, ctx: ScenarioContext, channel
       amount: fromDecimal(ref.total, ref.currency),
       outcome,
       customer: ref.customer,
-    }, env(orderTime(ref.date, ctx.now)))
+    }, env(orderTime(ref.date, ctx.now), ctx))
   }
-  while (payoutAges.length) runPayout(state, env(ctx.now - payoutAges.shift()! * DAY_MS))
+  while (payoutAges.length) runPayout(state, env(ctx.now - payoutAges.shift()! * DAY_MS, ctx))
   const oldest = state.payouts[state.payouts.length - 1]
-  if (oldest && state.payouts.length > 1) markPayoutPaid(state, oldest.id, env(ctx.now - 6 * DAY_MS))
+  if (oldest && state.payouts.length > 1) markPayoutPaid(state, oldest.id, env(ctx.now - 6 * DAY_MS, ctx))
 }
 
 const PAYPAL_PREVIOUS = (since: number): PreviousProvider => ({
@@ -336,17 +398,24 @@ const STRIPE_PREVIOUS = (since: number): PreviousProvider => ({
   connectedSince: isoAt(since),
 })
 
+interface LiveOptions {
+  previous?: PreviousProvider | null
+  prefill?: Partial<OnboardingDraft>
+  /** Runs after activation and before the payment history; what it returns can cut the history short. */
+  beforeHistory?: (state: MaropayAccountState) => HistoryOptions
+}
+
 /** Verified, primary store live for two months with a reconciled payment and payout history. */
-function baseLive(ctx: ScenarioContext, previous: PreviousProvider | null = null): MaropayAccountState {
+function baseLive(ctx: ScenarioContext, options: LiveOptions = {}): MaropayAccountState {
   const state = emptyState(ctx.accountId, ctx.now)
   const primary = eligibleStores(ctx.channels)[0]
   const start = ctx.now - 60 * DAY_MS
-  verified(state, ctx, start)
+  verified(state, ctx, start, false, options.prefill)
   if (!primary) return state
   const binding = bindingFor(state, primary.id)!
-  binding.previousProvider = previous
-  activate(state, primary, start)
-  recordHistory(state, ctx, primary.id, 'maropay')
+  binding.previousProvider = options.previous ?? null
+  activate(state, ctx, primary, start)
+  recordHistory(state, ctx, primary.id, 'maropay', options.beforeHistory?.(state))
   // An established merchant has long since seen the first-payment and first-payout moments.
   state.milestones.dismissed = ['first_payment', 'first_payout']
   return state
@@ -367,31 +436,25 @@ export function buildScenario(key: MaropayScenarioKey, ctx: ScenarioContext): Ma
 
     case 'm02': {
       const at = now - 26 * 3_600_000
-      startOnboarding(state, { businessChoice: 'new', reuseVerifiedDetails: false, prefill: prefillFor(ctx) }, env(at))
+      startOnboarding(state, { businessChoice: 'new', reuseVerifiedDetails: false, prefill: prefillFor(ctx) }, env(at, ctx))
       state.onboarding.authorityConfirmed = true
       state.onboarding.completedSteps = ['business', 'terms']
       state.onboarding.lastStep = 'verify'
-      state.onboarding.termsAcceptedVersion = state.terms.version
-      acceptTerms(state, at)
+      acceptTerms(state, { userAgent: FIXTURE_USER_AGENT }, env(at, ctx))
       break
     }
 
     case 'm03': {
+      // Submitted yesterday; the partner couldn't confirm the representative's identity from the keyed details.
       const at = now - DAY_MS
-      startOnboarding(state, { businessChoice: 'new', reuseVerifiedDetails: false, prefill: prefillFor(ctx) }, env(at))
-      completedDraft(state, ctx, false)
-      acceptTerms(state, at)
-      submitOnboarding(state, env(at))
+      submitted(state, ctx, at)
+      simulateReviewOutcome(state, 'more_info', env(at + 3_600_000, ctx), { request: 'identity_unverified' })
       break
     }
 
     case 'm04': {
-      const at = now - 3 * DAY_MS
-      startOnboarding(state, { businessChoice: 'new', reuseVerifiedDetails: false, prefill: prefillFor(ctx) }, env(at))
-      completedDraft(state, ctx)
-      acceptTerms(state, at)
-      submitOnboarding(state, env(at, { reviewDelay: true }))
-      simulateReviewOutcome(state, 'rejected', env(now - DAY_MS))
+      submitted(state, ctx, now - 3 * DAY_MS)
+      simulateReviewOutcome(state, 'rejected', env(now - DAY_MS, ctx), { reason: 'terms_of_service' })
       if (primary) bindingFor(state, primary.id)!.previousProvider = PAYPAL_PREVIOUS(now - 400 * DAY_MS)
       break
     }
@@ -418,18 +481,18 @@ export function buildScenario(key: MaropayScenarioKey, ctx: ScenarioContext): Ma
 
     case 'm07':
       state = baseLive(ctx)
-      if (secondary) linkStore(state, secondary.id, env(now - 5 * DAY_MS))
+      if (secondary) linkStore(state, secondary.id, env(now - 5 * DAY_MS, ctx))
       break
 
     case 'm08':
       state = baseLive(ctx)
-      raiseBankRequirement(state, env(now - DAY_MS))
+      raiseBankRequirement(state, env(now - DAY_MS, ctx))
       break
 
     case 'm09': {
       state = baseLive(ctx)
       const inTransit = state.payouts.find((p) => p.status === 'in_transit')
-      if (inTransit) failPayout(state, inTransit.id, 'account_closed', env(now - 2 * 3_600_000))
+      if (inTransit) failPayout(state, inTransit.id, 'account_closed', env(now - 2 * 3_600_000, ctx))
       break
     }
 
@@ -442,7 +505,7 @@ export function buildScenario(key: MaropayScenarioKey, ctx: ScenarioContext): Ma
       const target = state.payments
         .filter((p) => p.status === 'captured' && now - Date.parse(p.createdAt) >= 10 * DAY_MS)
         .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))[0]
-      if (target) openDispute(state, target.id, 'product_not_received', env(now - DAY_MS))
+      if (target) openDispute(state, target.id, 'product_not_received', env(now - DAY_MS, ctx))
       break
     }
 
@@ -456,7 +519,7 @@ export function buildScenario(key: MaropayScenarioKey, ctx: ScenarioContext): Ma
       state = baseLive(ctx)
       if (primary) {
         const at = now - DAY_MS
-        setMethodEnabled(state, primary.id, 'us_bank_account', true, env(at))
+        setMethodEnabled(state, primary.id, 'us_bank_account', true, env(at, ctx))
         const session = createCheckoutSession(state, {
           channelId: primary.id,
           methodId: 'us_bank_account',
@@ -464,26 +527,44 @@ export function buildScenario(key: MaropayScenarioKey, ctx: ScenarioContext): Ma
           amount: money(18_400, 'USD'),
           customer: { name: 'Harper Clark', email: 'harper.clark@email.com' },
           lineItem: { product: 'Patagonia Better Sweater Fleece Vest', sku: 'SKU-10001', price: '184.00' },
-        }, env(at))
-        if (session.ok) confirmCheckoutSession(state, session.value.id, env(at))
+        }, env(at, ctx))
+        if (session.ok) confirmCheckoutSession(state, session.value.id, env(at, ctx))
       }
       break
     }
 
     case 'm14':
-      state = baseLive(ctx, PAYPAL_PREVIOUS(now - 400 * DAY_MS))
+      state = baseLive(ctx, { previous: PAYPAL_PREVIOUS(now - 400 * DAY_MS) })
       break
 
     case 'm15': {
       const at = now - 2 * DAY_MS
       verified(state, ctx, at)
       if (primary) {
-        setMethodEnabled(state, primary.id, 'klarna', true, env(at))
-        validateCheckout(state, primary.id, env(at))
-        markImpactReviewed(state, primary.id, env(at))
+        setMethodEnabled(state, primary.id, 'klarna', true, env(at, ctx))
+        validateCheckout(state, primary.id, env(at, ctx))
+        markImpactReviewed(state, primary.id, env(at, ctx))
       }
       break
     }
+
+    case 'm16':
+      // Payouts crossed the partner's threshold two days ago: the EIN is due in twelve days; nothing pauses yet.
+      state = baseLive(ctx, { prefill: prefillWithoutEin(ctx) })
+      raiseThresholdRequirement(state, 'company.tax_id', env(now - 2 * DAY_MS, ctx))
+      break
+
+    case 'm17':
+      // The same request 25 days ago, raised before the history it shapes: the deadline passed 11 days ago (payouts
+      // paused — the last payout ran 12 days ago), and payments paused 4 days ago (nothing taken since).
+      state = baseLive(ctx, {
+        prefill: prefillWithoutEin(ctx),
+        beforeHistory: (s) => {
+          const raised = raiseThresholdRequirement(s, 'company.tax_id', env(now - 25 * DAY_MS, ctx))
+          return { payoutAges: [15, 12], until: raised.ok ? Date.parse(raised.value.paymentsPauseAt!) : undefined }
+        },
+      })
+      break
   }
 
   state.scenarioKey = key
