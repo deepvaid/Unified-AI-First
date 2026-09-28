@@ -14,6 +14,8 @@ export interface SalesChannel {
   id: string
   accountId: string
   name: string
+  /** The store's number in the Maropost admin, shown as "#9 Neelam-Store". */
+  storeNumber?: number
   type: SalesChannelType
   provider: SalesChannelProvider
   status: SalesChannelStatus
@@ -165,6 +167,28 @@ const seedChannels: SalesChannel[] = [
       domain: 'max-test.uat.maropost.store',
       storeBuilderEnabled: false,
       published: false,
+      merchandiseConnected: false,
+    },
+  },
+  {
+    // The real UAT store #9 (docs/rebuild/neelam-store/CRAWL-SUMMARY.md). Its creation date isn't known yet:
+    // createdAt is the earliest date seen on the store, updatedAt the latest.
+    id: 'neelam-store',
+    accountId: '2000290',
+    name: 'Neelam-Store',
+    storeNumber: 9,
+    type: 'web_store',
+    provider: 'maropost_store_builder',
+    status: 'connected',
+    health: 'healthy',
+    connectedClouds: ['commerce', 'store_builder'],
+    createdAt: '2026-08-26T04:18:00Z',
+    updatedAt: '2026-09-15T01:23:00Z',
+    lastActivityAt: '2026-09-15T01:23:00Z',
+    webStore: {
+      domain: '2000290-9.uat.maropost.store',
+      storeBuilderEnabled: true,
+      published: true,
       merchandiseConnected: false,
     },
   },

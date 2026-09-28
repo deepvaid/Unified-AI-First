@@ -108,7 +108,66 @@ function seedThemes(): StoreTheme[] {
         ],
       },
     },
+    // Neelam-Store (UAT store #9, docs/rebuild/neelam-store/CRAWL-SUMMARY.md): Aurora is the current theme and
+    // its home page is as crawled; Lumos is installed but its content hasn't been seen. The other Aurora
+    // templates are empty until the builder can be crawled.
+    {
+      id: 'theme-neelam-aurora',
+      channelId: 'neelam-store',
+      name: 'Aurora',
+      status: 'Published',
+      publishedAt: '2026-08-26T04:18:00',
+      updatedAt: '2026-08-26T04:18:00',
+      createdBy: 'Maropost',
+      availableVersion: '1.7.9',
+      styles: AURORA_STYLES,
+      templates: {
+        home: [
+          createSection('header', { menuStyle: 'Centered' }, 'neelam-home-header'),
+          {
+            ...createSection('image-banner', { headline: 'Keep the world adventurous forever', height: 'Medium' }, 'neelam-home-banner'),
+            blocks: [createBlock('button', { label: 'See More', link: '' }, 'neelam-banner-button')],
+          },
+          {
+            ...createSection('collection-grid', { title: 'Featured Collections', columns: 3 }, 'neelam-home-collections'),
+            blocks: [
+              createBlock('collection', { label: '4WD Camping & Adventure', link: '/collections/all' }, 'neelam-collection-camping'),
+              createBlock('collection', { label: 'Auto Parts & Service', link: '/collections/all' }, 'neelam-collection-parts'),
+              createBlock('collection', { label: 'Outdoor Equipment', link: '/collections/all' }, 'neelam-collection-outdoor'),
+              createBlock('collection', { label: 'Power Tools & Accessories', link: '/collections/all' }, 'neelam-collection-tools'),
+            ],
+          },
+          createSection('footer', { showSocial: false, columns: 3 }, 'neelam-home-footer'),
+        ],
+        product: [],
+        collection: [],
+        cart: [],
+      },
+    },
+    {
+      id: 'theme-neelam-lumos',
+      channelId: 'neelam-store',
+      name: 'Lumos',
+      status: 'Draft',
+      updatedAt: '2026-09-15T01:23:00',
+      createdBy: 'Maropost',
+      availableVersion: '1.4.0',
+      styles: defaultThemeStyles(),
+      templates: { home: [], product: [], collection: [], cart: [] },
+    },
   ]
+}
+
+/** Aurora's Default colour scheme, system font stack and 6px buttons, as crawled from Neelam-Store. */
+const AURORA_STYLES: ThemeStyles = {
+  brandColor: '#373842',
+  accentColor: '#121011',
+  background: '#FFFFFF',
+  textColor: '#121011',
+  headingFont: 'system-ui',
+  bodyFont: 'system-ui',
+  cornerRadius: 6,
+  buttonStyle: 'solid',
 }
 
 // ── Store ─────────────────────────────────────────────────────────────────────
@@ -126,8 +185,15 @@ export const useStoreThemesStore = defineStore('storeThemes', () => {
     return themes.value.find((theme) => theme.id === themeId)
   }
 
+  /** Every theme installed on the channel. */
+  function themesForChannel(channelId: string) {
+    return themes.value.filter((theme) => theme.channelId === channelId)
+  }
+
+  /** The channel's current theme: the published one, else the first installed. */
   function themeForChannel(channelId: string) {
-    return themes.value.find((theme) => theme.channelId === channelId)
+    const installed = themesForChannel(channelId)
+    return installed.find((theme) => theme.status === 'Published') ?? installed[0]
   }
 
   function touch(theme: StoreTheme) {
@@ -323,6 +389,8 @@ export const useStoreThemesStore = defineStore('storeThemes', () => {
   function publishTheme(themeId: string) {
     const theme = getTheme(themeId)
     if (!theme) return
+    // A store has one current theme, so publishing one takes the previous one off the storefront.
+    for (const other of themesForChannel(theme.channelId)) if (other.id !== theme.id && other.status === 'Published') other.status = 'Draft'
     theme.status = 'Published'
     theme.publishedAt = nowIso()
     theme.updatedAt = theme.publishedAt
@@ -354,6 +422,7 @@ export const useStoreThemesStore = defineStore('storeThemes', () => {
   return {
     themes,
     getTheme,
+    themesForChannel,
     themeForChannel,
     updateStyles,
     updateSection,

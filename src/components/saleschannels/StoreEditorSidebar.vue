@@ -35,9 +35,9 @@ function toItem(item: (typeof STORE_EDITOR_ITEMS)[number]) {
 // Payments is how the store sells, so it gets its own Selling group.
 const groups = computed<MpSectionRailGroup[]>(() => {
   const overview = STORE_EDITOR_ITEMS.find((i) => i.slug === 'overview')
-  const theme = STORE_EDITOR_ITEMS.find((i) => i.slug === 'theme')
+  const theme = STORE_EDITOR_ITEMS.find((i) => i.slug === 'themes')
   const payments = STORE_EDITOR_ITEMS.find((i) => i.slug === 'payments')
-  const rest = STORE_EDITOR_ITEMS.filter((i) => i.slug !== 'overview' && i.slug !== 'theme' && i.slug !== 'payments')
+  const rest = STORE_EDITOR_ITEMS.filter((i) => i.slug !== 'overview' && i.slug !== 'themes' && i.slug !== 'payments')
   return [
     ...(overview ? [{ items: [toItem(overview)] }] : []),
     ...(theme ? [{ title: 'Customize', items: [toItem(theme)] }] : []),
@@ -46,11 +46,23 @@ const groups = computed<MpSectionRailGroup[]>(() => {
   ]
 })
 
+/** "#9 Neelam-Store" for stores with an admin number, as the store switcher shows them. */
+function storeLabel(channel: SalesChannel): string {
+  return channel.storeNumber ? `#${channel.storeNumber} ${channel.name}` : channel.name
+}
+
 const switcherOptions = computed<MpSectionRailSwitchOption[]>(() =>
   salesChannelsStore
     .webStoreChannels(accountId.value)
     .filter((channel) => channel.id !== props.channel.id)
-    .map((channel) => ({ id: channel.id, label: channel.name, caption: channel.webStore?.domain, icon: 'globe' })),
+    .map((channel) => ({ id: channel.id, label: storeLabel(channel), caption: channel.webStore?.domain, icon: 'globe' })),
+)
+
+// Maropost-built stores have a storefront to open (the admin's eye icon); Shopify stores check out elsewhere.
+const storefrontHref = computed(() =>
+  props.channel.provider === 'maropost_store_builder'
+    ? router.resolve({ name: 'StorefrontHome', params: { accountId: accountId.value, channelId: props.channel.id } }).href
+    : null,
 )
 
 // Switch stores but stay on the same section (editors land on their section root).
@@ -65,10 +77,26 @@ function onSwitch(channelId: string) {
     ariaLabel="Store editor navigation"
     :back-to="{ name: 'SalesChannels', params: { accountId } }"
     back-label="All sales channels"
-    :identity="{ name: channel.name, caption: channel.webStore?.domain || 'Web store', icon: 'globe' }"
+    :identity="{ name: storeLabel(channel), caption: channel.webStore?.domain || 'Web store', icon: 'globe' }"
     :switcher-options="switcherOptions"
     switcher-label="Switch store"
     :groups="groups"
     @switch="onSwitch"
-  />
+  >
+    <template v-if="storefrontHref" #footer>
+      <v-btn
+        variant="outlined"
+        color="primary"
+        size="small"
+        block
+        class="text-none"
+        prepend-icon="eye"
+        :href="storefrontHref"
+        target="_blank"
+        rel="noopener"
+      >
+        View store
+      </v-btn>
+    </template>
+  </MpSectionRail>
 </template>

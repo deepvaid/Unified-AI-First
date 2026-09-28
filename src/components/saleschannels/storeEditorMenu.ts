@@ -14,7 +14,7 @@ export interface StoreEditorItem {
 
 export const STORE_EDITOR_ITEMS: StoreEditorItem[] = [
   { slug: 'overview', label: 'Overview', icon: 'layout-dashboard', routeName: 'SalesChannelDetail', match: ['SalesChannelDetail'] },
-  { slug: 'theme', label: 'Theme', icon: 'palette', routeName: 'StoreThemeBuilder', match: ['StoreThemeBuilder', 'StoreThemeCode'] },
+  { slug: 'themes', label: 'Themes', icon: 'palette', routeName: 'StoreThemes', match: ['StoreThemes'] },
   { slug: 'navigation', label: 'Navigation', icon: 'list-tree', routeName: 'StoreNavigation', match: ['StoreNavigation', 'StoreNavigationMenuCreate', 'StoreNavigationMenuEdit'] },
   { slug: 'pages', label: 'Pages', icon: 'file-text', routeName: 'StorePages', match: ['StorePages', 'StorePageCreate', 'StorePageEdit'] },
   { slug: 'blogs', label: 'Blogs', icon: 'rss', routeName: 'StoreBlogs', match: ['StoreBlogs', 'StoreBlogCreate', 'StoreBlogEdit'] },

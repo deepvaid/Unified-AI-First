@@ -7,7 +7,8 @@ import { defineStore } from 'pinia'
 // with a right rail of Status (default Inactive) / Template (Default) / feature image.
 // Blogs additionally have a list-level SEO Settings modal (title + meta description).
 
-export type ContentKind = 'page' | 'blog'
+/** Policies are served on the storefront at /policies/:handle; the admin's Policies page is still to be crawled. */
+export type ContentKind = 'page' | 'blog' | 'policy'
 export type ContentStatus = 'Active' | 'Inactive'
 
 export interface ContentEntry {
@@ -15,6 +16,8 @@ export interface ContentEntry {
   channelId: string
   kind: ContentKind
   title: string
+  /** The storefront URL handle (/page/:handle, /policies/:handle). */
+  handle?: string
   /** Rich-text body as HTML (prototype mock — edited via the contenteditable surface). */
   body: string
   status: ContentStatus
@@ -126,6 +129,83 @@ function seedEntries(): ContentEntry[] {
       publishedAt: '',
       updatedAt: 'Jul 6, 2026',
     },
+    // Neelam-Store (UAT store #9): the pages and policies its storefront serves, text as crawled
+    // (docs/rebuild/neelam-store/CRAWL-SUMMARY.md). Dates and SEO fields wait for the admin crawl.
+    {
+      id: 'neelam-page-faqs',
+      channelId: 'neelam-store',
+      kind: 'page',
+      title: 'Frequently Asked Questions',
+      handle: 'faqs',
+      body: '<h2>Frequently Asked Questions</h2><p>Last updated: [Date]</p><p>Have a question? We\'ve got answers. Browse the topics below, or reach out to us directly if you don\'t find what you\'re looking for.</p><h3>1. Orders</h3><ul><li><strong>How do I place an order?</strong> Simply browse our store, add items to your cart, and proceed to checkout. You\'ll receive a confirmation email once your order is placed.</li><li><strong>Can I modify or cancel my order?</strong> Orders can be modified or cancelled within [number] hours of placement. Please contact us as soon as possible at [Your Email].</li></ul><h3>2. Shipping</h3><ul><li><strong>How long does shipping take?</strong> Standard shipping typically takes [number] business days. Express options are available at checkout.</li><li><strong>Do you ship internationally?</strong> Yes, we ship to most countries worldwide. Shipping rates and delivery times vary by destination.</li><li><strong>How can I track my order?</strong> Once your order ships, you will receive a confirmation email with a tracking link.</li></ul><h3>3. Returns &amp; Refunds</h3><ul><li><strong>What is your return policy?</strong> Items may be returned within [number] days of delivery in their original, unused condition. Please visit our Refund Policy page for full details.</li><li><strong>How long does a refund take?</strong> Approved refunds are processed within [number] business days to your original payment method.</li></ul><h3>4. Payments</h3><ul><li><strong>What payment methods do you accept?</strong> We accept major credit cards, PayPal, and other payment methods shown at checkout.</li><li><strong>Is my payment information secure?</strong> Yes. All transactions are encrypted and processed through trusted payment providers.</li></ul><h3>5. Contact &amp; Support</h3><p>Still have questions? We\'re happy to help. Reach us via the Contact page or at [Your Email or Contact Form Link]. Our support team typically responds within one business day.</p>',
+      status: 'Active',
+      template: 'Default',
+      seoTitle: '',
+      seoDescription: '',
+      imageName: '',
+      publishedAt: '',
+      updatedAt: '—',
+    },
+    {
+      id: 'neelam-page-about',
+      channelId: 'neelam-store',
+      kind: 'page',
+      title: 'About Us',
+      handle: 'about-us',
+      body: '<h2>About Us</h2><p><strong>Welcome to [Your Store Name]</strong></p><p>We\'re a passionate team dedicated to bringing you quality products and an exceptional shopping experience. Here\'s a little more about who we are and what we stand for.</p><h3>1. Our Story</h3><p>Founded in [Year], [Your Store Name] started with a simple idea: make it easy for people to find products they love at prices they can feel good about. What began as a small operation has grown into a community of happy customers across the globe.</p><h3>2. Our Mission</h3><p>We believe shopping should be simple, enjoyable, and trustworthy. Our mission is to:</p><ul><li>Offer a carefully curated selection of high-quality products.</li><li>Provide a seamless and secure shopping experience.</li><li>Stand behind everything we sell with honest, responsive support.</li></ul><h3>3. What We Offer</h3><p>From [product category] to [product category], our catalog is built around what our customers actually need. We work closely with trusted suppliers to ensure every item meets our quality standards before it reaches you.</p><h3>4. Our Values</h3><ul><li>Transparency — No hidden fees, no surprises.</li><li>Quality — We only sell products we\'d use ourselves.</li><li>Customer First — Your satisfaction drives every decision we make.</li></ul><h3>5. Get in Touch</h3><p>We\'d love to hear from you. Whether you have a question, a suggestion, or just want to say hello, reach out to us at [Your Email or Contact Form Link]. Our team typically responds within one business day.</p>',
+      status: 'Active',
+      template: 'Default',
+      seoTitle: '',
+      seoDescription: '',
+      imageName: '',
+      publishedAt: '',
+      updatedAt: '—',
+    },
+    {
+      id: 'neelam-page-abhi1',
+      channelId: 'neelam-store',
+      kind: 'page',
+      title: 'abhi1',
+      handle: 'abhi1',
+      body: '<p>abhi1</p>',
+      status: 'Active',
+      template: 'Default',
+      seoTitle: '',
+      seoDescription: '',
+      imageName: '',
+      publishedAt: '',
+      updatedAt: '—',
+    },
+    {
+      id: 'neelam-policy-refund',
+      channelId: 'neelam-store',
+      kind: 'policy',
+      title: 'Refund policy',
+      handle: 'refund-policy',
+      body: '<h2>Refund Policy</h2><p>Last updated: [Date]</p><p>We want you to be completely satisfied with your purchase. If you are not happy with your order, we\'re here to help.</p><h3>1. Returns</h3><p>You have [number] days to return an item from the date you received it. To be eligible for a return, your item must be:</p><ul><li>Unused and in the same condition that you received it.</li><li>In the original packaging.</li><li>Accompanied by a receipt or proof of purchase.</li></ul><h3>2. Refunds</h3><p>Once we receive your item, we will inspect it and notify you of the status of your refund. If your return is approved, we will initiate a refund to your original method of payment within [number] business days.</p><h3>3. Exchanges</h3><p>We only replace items if they are defective or damaged. If you need to exchange an item for the same product, please contact us at [Your Email].</p><h3>4. Non-Returnable Items</h3><p>Certain items cannot be returned, including:</p><ul><li>Perishable goods.</li><li>Downloadable software or digital products.</li><li>Items marked as final sale.</li></ul><h3>5. Shipping Costs</h3><p>You are responsible for paying your own shipping costs for returning your item. Shipping costs are non-refundable.</p><h3>6. Contact Us</h3><p>If you have any questions about our Refund Policy, please contact us at [Your Email or Contact Form Link].</p>',
+      status: 'Active',
+      template: 'Default',
+      seoTitle: '',
+      seoDescription: '',
+      imageName: '',
+      publishedAt: '',
+      updatedAt: '—',
+    },
+    {
+      id: 'neelam-policy-privacy',
+      channelId: 'neelam-store',
+      kind: 'policy',
+      title: 'Privacy policy',
+      handle: 'privacy-policy',
+      body: '<h2>Privacy Policy</h2><p>Last updated: [Date]</p><p>We value your privacy and are committed to protecting your personal information. This Privacy Policy explains how we collect, use, and safeguard your data when you use our services.</p><h3>1. Information We Collect</h3><ul><li>Personal details you provide (e.g., name, email address, phone number).</li><li>Usage data, such as pages visited, time spent, and technical details (IP address, browser type).</li></ul><h3>2. How We Use Your Information</h3><p>We use your information to:</p><ul><li>Provide and improve our services.</li><li>Communicate with you (support, updates, marketing if you consent).</li><li>Ensure security and prevent fraud.</li></ul><h3>3. Sharing of Information</h3><p>We do not sell your personal data. We may share it only with:</p><ul><li>Service providers who help us operate (e.g., hosting, analytics).</li><li>Authorities if required by law.</li></ul><h3>4. Cookies</h3><p>We use cookies to enhance your browsing experience. You can instruct your browser to refuse all cookies or to indicate when a cookie is being sent.</p><h3>5. Data Security</h3><p>We take reasonable measures to protect your data. However, no system is completely secure.</p><h3>6. Your Rights</h3><p>You may:</p><ul><li>Request access to your data.</li><li>Ask us to correct or delete your information.</li><li>Withdraw consent to marketing communications.</li></ul><h3>7. Contact Us</h3><p>If you have any questions about this Privacy Policy, please contact us at [Your Email or Contact Form Link].</p>',
+      status: 'Active',
+      template: 'Default',
+      seoTitle: '',
+      seoDescription: '',
+      imageName: '',
+      publishedAt: '',
+      updatedAt: '—',
+    },
   ]
 }
 
@@ -137,6 +217,11 @@ export const useStoreContentStore = defineStore('storeContent', () => {
 
   function entriesForChannel(channelId: string, kind: ContentKind): ContentEntry[] {
     return entries.value.filter((entry) => entry.channelId === channelId && entry.kind === kind)
+  }
+
+  /** The active entry a storefront URL serves, e.g. /page/about-us. */
+  function entryByHandle(channelId: string, kind: ContentKind, handle: string): ContentEntry | undefined {
+    return entries.value.find((entry) => entry.channelId === channelId && entry.kind === kind && entry.handle === handle && entry.status === 'Active')
   }
 
   function getEntry(entryId: string): ContentEntry | undefined {
@@ -178,5 +263,5 @@ export const useStoreContentStore = defineStore('storeContent', () => {
     blogSeoByChannel.value[channelId] = { ...settings }
   }
 
-  return { entries, entriesForChannel, getEntry, saveEntry, setEntryStatus, deleteEntry, blogSeo, saveBlogSeo }
+  return { entries, entriesForChannel, entryByHandle, getEntry, saveEntry, setEntryStatus, deleteEntry, blogSeo, saveBlogSeo }
 })

@@ -258,6 +258,29 @@ Authenticated read-only crawl completed 2026-07-10 in the user-authenticated in-
 - Recommendation creation is page-aware (home, cart, product, category, custom), strategy-aware, and includes presentation, product count, notes, fallbacks, filtering rules, and preview behavior.
 - The documentation also confirms banners, page redirects, stickers, sorting, promo cards, content search, personalized-search analytics, Smart Collections analytics, Recommendations analytics, product sync, and IP controls as broader capability areas. The live crawl above verifies the current dashboard IA; Content BETA remains a redirect rather than a usable workflow in the crawled account.
 
+## A06d — Commerce — Store #9 Neelam-Store (UAT)   [crawl-status: partial]
+
+Crawled 2026-09-27 on the UAT base, account 116000, store #9 (user-directed: "create the actual store, no new features; connect Maropay with the actual checkout"). The UAT accounts service went down mid-crawl (502/503 from ~17:30 UTC; every admin page redirects to `/profile?code=400`) and the product search failed, so most of the admin, the product pages and the checkout are still to crawl. Digest (internal, not published): `docs/rebuild/neelam-store/CRAWL-SUMMARY.md`; what's missing: `docs/rebuild/neelam-store/GAPS.md`.
+
+| # | UAT page/flow | UAT path (after stores/9) | Type | Screenshot | Crawl status |
+|---|---------------|----------|------|------------|--------------|
+| 1 | Store editor shell — 10 sections (adds Policies), "#9 Neelam-Store" switcher + eye icon | /* | page | — | crawled |
+| 2 | Themes — current theme card (Show store, kebab), installed table (Lumos, Aurora; version notes), Upload theme, Themes In Focus | /themes | page | — | crawled (menus, upload, In Focus pending) |
+| 3 | General | /general | page | — | blocked |
+| 4 | Pages | /pages | page | — | blocked (storefront shows FAQs, About Us, abhi1) |
+| 5 | Blogs | /blogs | page | — | blocked |
+| 6 | Policies | /policies | page | — | blocked (storefront shows privacy, refund) |
+| 7 | Navigation | /navigation | page | — | blocked (storefront menus crawled) |
+| 8 | Campaigns | /campaigns | page | — | blocked |
+| 9 | Assets | /assets | page | — | blocked |
+| 10 | Integrations | /integrations | page | — | blocked |
+| 11 | Store Settings (incl. Payments, Checkout Builder) | /settings | page | — | blocked |
+| 12 | Storefront — home, pages, policies, 404 | storefront | page | — | crawled |
+| 13 | Storefront — collections, product, search, login, wishlist | storefront | page | — | blocked (search service down) |
+| 14 | Storefront — cart | /cart-page | page | — | partial (empty state; line-item wording from its templates) |
+| 15 | Checkout — Maropost's hosted checkout at /checkout/ | storefront | flow | — | blocked (needs a cart) |
+| 16 | Theme builder | builder app | page | — | partial (read from code) |
+
 ## A07 — Retail   [crawl-status: pending]
 
 | # | UAT page/flow | UAT path | Type | Screenshot | Crawl status |
@@ -556,6 +579,15 @@ Built 2026-07-07 from Part A (all 11 modules) diffed against `src/router/index.t
 | 25 | Dirty editor protection | — | missing | pending | | Editors compute dirty state but do not guard channel switching, rail/browser navigation, or module exit |
 | 26 | Canonical Products entry points | ProductRecommendations / MerchandisingCollections | missing | pending | | Products recommendations remains a separate static surface and collections/recommendations do not resolve through canonical channel context |
 
+### B-A06d — Commerce — Store #9 Neelam-Store
+| # | UAT page/flow | Prototype route | Verdict | Build | Commit | Notes |
+|---|---|---|---|---|---|---|
+| 1 | Store #9 in the store editor ("#9 Neelam-Store", view store) | StoreEditorLayout | partial→built | done | 0f20cb2 | New channel `neelam-store` beside Atlas (Maropay scenarios stay on Atlas); additive `storeNumber`; rail footer View store |
+| 2 | Themes page | StoreThemes | missing→built | done | 0f20cb2 | Current card + Show store, installed table, pencil → builder `?theme=`. Rail "Theme" → "Themes". Upload / menus / In Focus pending crawl |
+| 3 | Storefront — home, pages, policies, cart, 404 | StorefrontHome · StorefrontPage · StorefrontPolicy · StorefrontCart · StorefrontNotFound | missing→built | done | 0f20cb2 | Aurora as crawled; merchant simulation under the P4-8 exemption |
+| 4 | General, Blogs, Policies admin, Navigation menus, Campaigns, Assets, Integrations, Store Settings | — | — | pending | | Blocked by the UAT outage |
+| 5 | Collections, product, search, cart line items, checkout (Maropay replaces the checkout preview) | — | missing | pending | | Blocked (search service down; no cart) |
+
 ### B-A07 — Retail  _(provisional — deep crawl pending)_
 | # | UAT page/flow | Prototype route | Verdict | Build | Commit | Notes |
 |---|---|---|---|---|---|---|
@@ -703,6 +735,7 @@ Note #2 vs #3 are close on value; reorder if Analytics polish matters more than 
 
 ## Progress log
 
+- 2026-09-28 — **A06d Neelam-Store (UAT store #9) crawled (partial) + built** (user-directed). Crawl on UAT account 116000 cut short by the outage (accounts service 502/503, product search 400). Commit 0f20cb2 adds the store beside Atlas with its real themes, pages and policies, the store Themes page, and the shopper storefront (home, pages, policies, empty cart, 404) — nothing the crawl didn't show. Verified at 1440 and 375, dark mode (admin), axe clean on the storefront (the store shell's nested `<main>` is the known finding). Next when UAT recovers: the admin sections, products, then cart → checkout with Maropay.
 - 2026-07-11 — **CDP + Analytics + Products ACTION-FLOW parity pass** (user-directed; UAT account 116000, multi-agent crawl + build). Crawled the legacy action flows across all three modules (3 parallel haiku crawlers + a self-run Products deep-crawl after the delegate hit a domain gate), then rebuilt the prototype to parity — dead controls wired to real store-persisted flows, no new features. Commits:
   - **Analytics** c76e7b2: every report's dead Export→downloadCsv + date-range preset select + MpEmptyState (8 added); seeded the 3 Math.random() reports; JourneyReports/LogInspector chips→MpStatusChip; CustomReports Edit/Run wired + builder aligned to the crawled wizard (report type / Once-Recurring / delivery); LiveView→MpPageHeader. Bugs fixed: DispatchedOrders dead filter (wrong field → always empty), blank customer/active-contacts cells.
   - **CDP/Contacts** ad763d4: AllContacts raw v-dialog import → 2-step MpFormDrawer (method/delimiter/list → dedup+mapping), Export bug fixed (was opening import); Segments full condition builder (match logic + rules/criteria + Total filters n/100) per legacy category/operator lists; ContactDetail Save persists; SQLQueries dead Run removed (legacy is ETL) → job form; Lists/Fields/Tags/Tables/SecureLists store-backed create drawers; WebTracking Copy Script wired; new useCdpEntities store.

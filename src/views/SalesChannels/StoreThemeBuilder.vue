@@ -21,6 +21,7 @@ import { useToast } from '@/composables/useToast'
 import { useCopilotStore } from '@/stores/useCopilot'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import { useStoreThemesStore } from '@/stores/useStoreThemes'
+import { useStorefrontStore } from '@/stores/useStorefront'
 import {
   blockCatalog,
   getBlockDef,
@@ -52,14 +53,20 @@ const channelId = computed(() => route.params.channelId as string)
 
 const salesChannelsStore = useSalesChannelsStore()
 const themesStore = useStoreThemesStore()
+const storefronts = useStorefrontStore()
 const toast = useToast()
 
 const channel = computed(() => salesChannelsStore.getChannel(accountId.value, channelId.value))
-const theme = computed(() => themesStore.themeForChannel(channelId.value))
+// The theme the Themes page opened (?theme=), else the store's current theme.
+const theme = computed(() => {
+  const requested = typeof route.query.theme === 'string' ? themesStore.getTheme(route.query.theme) : undefined
+  return requested?.channelId === channelId.value ? requested : themesStore.themeForChannel(channelId.value)
+})
+const previewHeader = computed(() => storefronts.previewHeaderFor(channel.value))
 
 const backRoute = computed(() =>
   channel.value
-    ? { name: 'SalesChannelDetail', params: { accountId: accountId.value, channelId: channelId.value } }
+    ? { name: 'StoreThemes', params: { accountId: accountId.value, channelId: channelId.value } }
     : { name: 'SalesChannels', params: { accountId: accountId.value } },
 )
 
@@ -981,6 +988,8 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
             <StorefrontPreview
               :sections="activeSections"
               :styles="theme.styles"
+              :brand="previewHeader.brand"
+              :menu="previewHeader.menu"
               :device="device"
               interactive
               :selected-id="selectedSectionId"

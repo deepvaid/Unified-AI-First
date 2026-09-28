@@ -85,6 +85,10 @@ export interface StoreTheme {
   status: 'Draft' | 'Published'
   publishedAt?: string
   updatedAt: string
+  /** Who made the theme — "Maropost" for library themes. */
+  createdBy?: string
+  /** A newer library version the merchant can update to. */
+  availableVersion?: string
   styles: ThemeStyles
   templates: Record<TemplateType, ThemeSection[]>
 }
@@ -99,7 +103,7 @@ export const TEMPLATE_TYPE_LABELS: Record<TemplateType, string> = {
 }
 
 /** Fonts offered by the theme styles panel. */
-export const themeFonts = ['Inter', 'Georgia', 'Space Grotesk', 'DM Sans']
+export const themeFonts = ['Inter', 'Georgia', 'Space Grotesk', 'DM Sans', 'system-ui']
 
 /** Default global theme styles, sourced from design tokens. */
 export function defaultThemeStyles(): ThemeStyles {
@@ -378,6 +382,16 @@ export const blockCatalog: ThemeBlockDef[] = [
     ],
   },
   {
+    // A collection card (Aurora's Featured Collections): a label over an image, linking to a collection.
+    kind: 'collection',
+    title: 'Collection',
+    icon: 'layout-grid',
+    fields: [
+      { key: 'label', label: 'Label', type: 'text' },
+      { key: 'link', label: 'Link', type: 'text' },
+    ],
+  },
+  {
     kind: 'divider',
     title: 'Divider',
     icon: 'minus',
@@ -397,6 +411,7 @@ const blockDefaults: Record<string, Record<string, string | number | boolean>> =
   paragraph: { body: 'Add supporting copy to describe this section.' },
   button: { label: 'Shop now', link: '#' },
   image: { alt: '', ratio: '4:3' },
+  collection: { label: 'Collection', link: '/collections/all' },
   divider: {},
   spacer: { size: 32 },
 }

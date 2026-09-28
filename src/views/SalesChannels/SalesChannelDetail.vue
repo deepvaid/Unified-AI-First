@@ -22,6 +22,7 @@ import { useMaropayStore } from '@/stores/useMaropay'
 import { PROVIDER_LABELS, STORE_ACTIVATION_LABELS } from '@/maropay/model'
 import { useRetailStore } from '@/stores/useRetail'
 import { useStoreThemesStore } from '@/stores/useStoreThemes'
+import { useStorefrontStore } from '@/stores/useStorefront'
 
 type MetricColor = 'primary' | 'retail' | 'commerce' | 'analytics' | 'contacts' | 'success' | 'warning'
 type DetailTab = 'overview' | 'settings' | 'apps' | 'ai' | 'activity'
@@ -170,6 +171,8 @@ const paymentProvider = computed(() => {
 const channelTheme = computed(() => (channelId.value ? storeThemesStore.themeForChannel(channelId.value) : undefined))
 const previewSections = computed(() => channelTheme.value?.templates.home)
 const previewStyles = computed(() => channelTheme.value?.styles)
+// A crawled store's own wordmark and menu in the preview header (Neelam-Store); others keep the sample header.
+const previewHeader = computed(() => useStorefrontStore().previewHeaderFor(channel.value))
 
 const locations = computed(() => {
   if (!channel.value?.offlineStore) return []
@@ -794,7 +797,7 @@ function locationRoleText(locationId: string) {
             </div>
 
             <div class="retail-widget-body">
-              <StorefrontPreview v-if="isWebStore" :sections="previewSections" :styles="previewStyles" />
+              <StorefrontPreview v-if="isWebStore" :sections="previewSections" :styles="previewStyles" :brand="previewHeader.brand" :menu="previewHeader.menu" />
 
               <div v-else class="sc-retail-preview sc-retail-preview--hero" aria-label="Retail location summary">
                 <button
@@ -1119,7 +1122,7 @@ function locationRoleText(locationId: string) {
         </template>
 
         <div class="sc-preview-dialog__body">
-          <StorefrontPreview :sections="previewSections" :styles="previewStyles" :device="previewDevice" />
+          <StorefrontPreview :sections="previewSections" :styles="previewStyles" :brand="previewHeader.brand" :menu="previewHeader.menu" :device="previewDevice" />
         </div>
       </MpDialog>
     </template>

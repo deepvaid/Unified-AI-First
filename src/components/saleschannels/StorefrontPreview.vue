@@ -19,6 +19,10 @@ const props = withDefaults(defineProps<{
   pendingIds?: string[]
   /** Block ids just added — get a transient "New" cue. */
   pendingBlockIds?: string[]
+  /** The store's wordmark in the header section. */
+  brand?: string
+  /** The store's header menu labels. */
+  menu?: string[]
 }>(), {
   sections: undefined,
   styles: undefined,
@@ -28,6 +32,8 @@ const props = withDefaults(defineProps<{
   selectedBlockId: null,
   pendingIds: () => [],
   pendingBlockIds: () => [],
+  brand: 'ATLAS',
+  menu: () => ['New', 'Women', 'Men', 'Sale'],
 })
 
 const emit = defineEmits<{
@@ -136,12 +142,9 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
           </div>
 
           <div v-else-if="section.kind === 'header'" class="sf-header" :class="`sf-header--${String(section.settings.menuStyle || 'Inline').toLowerCase()}`">
-            <strong>ATLAS</strong>
+            <strong>{{ brand }}</strong>
             <nav class="sf-header__menu">
-              <span>New</span>
-              <span>Women</span>
-              <span>Men</span>
-              <span>Sale</span>
+              <span v-for="item in menu" :key="item">{{ item }}</span>
             </nav>
             <span class="sf-header__cart" />
           </div>
@@ -171,7 +174,8 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
           <div v-else-if="section.kind === 'collection-grid'" class="sf-collections" :style="{ '--sf-cols': num(section, 'columns', 3) }">
             <strong class="sf-heading">{{ text(section, 'title', 'Shop by collection') }}</strong>
             <div class="sf-collections__grid">
-              <div v-for="n in num(section, 'columns', 3) * 2" :key="n" class="sf-collections__tile">
+              <!-- Collection blocks are the cards themselves; without them the grid shows placeholder tiles. -->
+              <div v-for="n in section.blocks?.some((b) => b.kind === 'collection') ? 0 : num(section, 'columns', 3) * 2" :key="n" class="sf-collections__tile">
                 <span />
               </div>
             </div>
@@ -256,7 +260,12 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
           <div v-else class="sf-unknown">{{ section.label }}</div>
 
           <!-- Blocks region: additive, only when the section has blocks -->
-          <div v-if="section.blocks?.length" class="sf-blocks">
+          <div
+            v-if="section.blocks?.length"
+            class="sf-blocks"
+            :class="{ 'sf-blocks--grid': section.kind === 'collection-grid' }"
+            :style="section.kind === 'collection-grid' ? { '--sf-cols': num(section, 'columns', 3) } : undefined"
+          >
             <component
               :is="interactive ? 'button' : 'div'"
               v-for="block in section.blocks"
@@ -287,6 +296,9 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
                 class="sf-block__image"
                 :style="{ aspectRatio: blockText(block, 'ratio', '4:3').replace(':', ' / ') }"
               />
+              <span v-else-if="block.kind === 'collection'" class="sf-block__collection">
+                {{ blockText(block, 'label', 'Collection') }}
+              </span>
               <span v-else-if="block.kind === 'divider'" class="sf-block__divider" />
               <span
                 v-else-if="block.kind === 'spacer'"
@@ -635,6 +647,12 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
   padding: 12px 16px;
 }
 
+/* Collection cards sit in the section's columns, as the storefront lays them out. */
+.sf-blocks--grid {
+  display: grid;
+  grid-template-columns: repeat(var(--sf-cols, 3), minmax(0, 1fr));
+}
+
 .sf-block {
   position: relative;
   display: block;
@@ -692,6 +710,18 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
   max-width: 260px;
   border-radius: var(--sf-radius);
   background: var(--sf-soft-fill);
+}
+
+.sf-block__collection {
+  display: flex;
+  align-items: flex-end;
+  min-height: 72px;
+  padding: 10px;
+  border-radius: 6px;
+  background: linear-gradient(0deg, rgba(18, 16, 17, 0.75), rgba(18, 16, 17, 0.25)), #4a4f57;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .sf-block__divider {

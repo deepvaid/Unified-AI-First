@@ -1955,3 +1955,13 @@ fixed here:
 - `MpAlert` default tone icons never render: `icon?: string | false` makes Vue cast an absent prop to
   `false`. Maropay passes `icon` explicitly where it needs one.
 - `MpSectionRail` doesn't collapse at phone width.
+
+## Storefront (Neelam-Store) — 2026-09-28
+
+- **P4-8 extended to the shopper storefront.** `src/views/Storefront/*` draws a merchant's storefront as its
+  theme renders it (colours, fonts, radius from the store's theme as `--sf-*`; Aurora's measured sizes), so
+  it is deliberately out of system like `StorefrontPreview` and the checkout preview frame, and never follows
+  the app's dark mode. Admin surfaces around it (Store editor ▸ Themes, the missing-store state) stay in system.
+- **Collection card block** (`collection`) added to the theme builder's block catalogue for Aurora's
+  Featured Collections; the builder preview lays collection cards in the section's columns.
+

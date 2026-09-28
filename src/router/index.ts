@@ -258,8 +258,25 @@ const routes: RouteRecordRaw[] = [
       { path: 'blogs/:entryId', name: 'StoreBlogEdit', component: () => import('@/views/SalesChannels/StoreContentEditor.vue'), meta: { contentKind: 'blog' } },
       { path: 'campaigns', name: 'StoreCampaigns', component: () => import('@/views/SalesChannels/StoreCampaigns.vue') },
       { path: 'assets', name: 'StoreAssets', component: () => import('@/views/SalesChannels/StoreAssets.vue') },
+      // Installed themes: the current theme, the library themes on the store, and a way into the builder.
+      { path: 'themes', name: 'StoreThemes', component: () => import('@/views/SalesChannels/StoreThemes.vue') },
       // Maropay for this store: activation checklist, methods, capture and the switch itself.
       { path: 'payments', name: 'StorePayments', component: () => import('@/views/Maropay/StorePaymentsPage.vue') },
+    ],
+  },
+
+  // The shopper-facing storefront of a Maropost web store (UAT parity — Neelam-Store): full page, no admin
+  // chrome, on the store's own paths. Links the real store doesn't serve land on its 404 page.
+  {
+    path: '/accounts/:accountId/sales_channels/:channelId/storefront',
+    component: () => import('@/views/Storefront/StorefrontLayout.vue'),
+    meta: { ...commerceGate, fullPage: true },
+    children: [
+      { path: '', name: 'StorefrontHome', component: () => import('@/views/Storefront/StorefrontHome.vue') },
+      { path: 'page/:handle', name: 'StorefrontPage', component: () => import('@/views/Storefront/StorefrontContent.vue'), meta: { contentKind: 'page' } },
+      { path: 'policies/:handle', name: 'StorefrontPolicy', component: () => import('@/views/Storefront/StorefrontContent.vue'), meta: { contentKind: 'policy' } },
+      { path: 'cart-page', name: 'StorefrontCart', component: () => import('@/views/Storefront/StorefrontCart.vue') },
+      { path: ':pathMatch(.*)*', name: 'StorefrontNotFound', component: () => import('@/views/Storefront/StorefrontNotFound.vue') },
     ],
   },
 
