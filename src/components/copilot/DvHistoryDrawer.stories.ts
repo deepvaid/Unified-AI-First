@@ -92,18 +92,18 @@ transcript comes back on every surface. Per-row and "Delete all" deletions route
 
 ### A11y
 - **Provides:** in \`overlay\` mode the panel has \`role="dialog"\`, \`aria-modal\`,
-  \`aria-labelledby\`, Escape-to-close, focus-in/restore, and a Tab trap; in \`rail\` mode those
-  are deliberately inert since the drawer is inline, not modal.
+  \`aria-labelledby\`, Escape-to-close, focus-in/restore, and a Tab trap — and while it is closed
+  it is \`inert\`, so Tab and assistive tech can't reach it; in \`rail\` mode those are deliberately
+  inert since the drawer is inline, not modal. Each row is a select button with a sibling delete
+  button (no button inside a button), and the search field shows a focus ring.
 - **Consumer must:** keep exactly one modal overlay open at a time.
         `,
       },
+      // The drawer positions absolutely inside its host panel — isolate docs
+      // examples in iframes so each story shows its own singleton state.
+      story: { inline: false, height: '640px' },
     },
-  },
-  parameters: {
     canvas: 'full',
-    // The drawer positions absolutely inside its host panel — isolate docs
-    // examples in iframes so each story shows its own singleton state.
-    docs: { story: { inline: false, height: '640px' } },
   },
   argTypes: {
     open: { control: false, description: 'Slides the drawer in (overlay mode). Ignored in rail mode, which is always visible.' },
