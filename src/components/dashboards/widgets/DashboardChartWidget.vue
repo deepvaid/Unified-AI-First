@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, inject, onBeforeUnmount, onMounted, ref, unref } from 'vue'
+import { computed, defineAsyncComponent, inject, onBeforeUnmount, onMounted, ref, unref, watch } from 'vue'
 import { useTheme } from 'vuetify'
 import type { ApexOptions } from 'apexcharts'
 import type ApexCharts from 'apexcharts'
@@ -15,6 +15,7 @@ import {
 } from '@/plugins/chartPalette'
 import { useAppTheme } from '@/composables/useAppTheme'
 import { useElementSize } from '@/composables/useElementSize'
+import { escapeHtml } from '@/utils/escapeHtml'
 import { formatCompactValue, formatFullValue } from '@/utils/formatNumber'
 
 const props = withDefaults(defineProps<{
@@ -121,6 +122,24 @@ const chartHeight = computed(() => {
 // size and includes padding this element doesn't have.
 const rootEl = ref<HTMLElement | null>(null)
 const { size: rootSize } = useElementSize(rootEl)
+
+// `redrawOnParentResize` stays off (it thrashed the grid while a widget is being dragged), so a
+// chart never learned that its card got narrower or wider — dock the Da Vinci drawer and the SVG kept
+// its old width, clipped at the card edge. Once the width has SETTLED, ask Apex to re-measure: its
+// own resize handler debounces, then skips the redraw when the box did not really change.
+// (`updateOptions({})` cannot do this — Apex skips options equal to the last call.)
+const apexRef = ref<{ chart: { windowResizeHandler?: () => void } | null } | null>(null)
+let reflowTimer: ReturnType<typeof setTimeout> | undefined
+watch(() => rootSize.value.width, (width, previous) => {
+  if (!chartReady.value || !width || width === previous) return
+  clearTimeout(reflowTimer)
+  reflowTimer = setTimeout(() => {
+    reflowTimer = undefined
+    // A null chart means vue3-apexcharts is mid-rebuild; the new instance measures itself.
+    apexRef.value?.chart?.windowResizeHandler?.()
+  }, 200)
+})
+onBeforeUnmount(() => clearTimeout(reflowTimer))
 
 // The Apex tooltip normally follows the cursor, which is the right default —
 // it never covers the axis/legend chrome. It only needs to be pinned when the
@@ -245,10 +264,10 @@ function chartTooltip({ dataPointIndex }: { dataPointIndex: number }): string {
       const color = isDistributedBar.value
         ? colors[dataPointIndex % colors.length]
         : colors[si % colors.length]
-      return `<div class="mp-chart-tip__row"><span class="mp-chart-tip__dot" style="background:${color}"></span><span class="mp-chart-tip__label">${s.name}</span><span class="mp-chart-tip__value">${formatFullValue(s.data[dataPointIndex] ?? 0, unit)}</span></div>`
+      return `<div class="mp-chart-tip__row"><span class="mp-chart-tip__dot" style="background:${color}"></span><span class="mp-chart-tip__label">${escapeHtml(s.name)}</span><span class="mp-chart-tip__value">${formatFullValue(s.data[dataPointIndex] ?? 0, unit)}</span></div>`
     })
     .join('')
-  return `<div class="mp-chart-tip"><div class="mp-chart-tip__title">${labels[dataPointIndex] ?? ''}</div>${rows}</div>`
+  return `<div class="mp-chart-tip"><div class="mp-chart-tip__title">${escapeHtml(labels[dataPointIndex])}</div>${rows}</div>`
 }
 
 /** Legend preview for the Polaris legend: a 12×2 line, or three dots for the comparison series. */
@@ -842,6 +861,7 @@ const chartOptions = computed<ApexOptions>(() => {
     </div>
     <ApexChart
       v-if="chartReady"
+      ref="apexRef"
       :height="chartHeight"
       width="100%"
       :type="apexChartType"

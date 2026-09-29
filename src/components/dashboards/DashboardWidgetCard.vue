@@ -85,7 +85,8 @@ const isKpiWidget = computed(() => data.value.kind === 'kpi')
 // (drag grip + menu) is used instead — same treatment as KPI cards.
 const bespokeHeader = computed(() => ['metric_explorer', 'tabs', 'attention'].includes(props.widget.type))
 const hasFloatingActions = computed(() => !props.preview && props.showActions)
-const metricIcon = computed(() => getMetricDescriptor(props.widget.metricId)?.icon ?? '')
+const metricDescriptor = computed(() => getMetricDescriptor(props.widget.metricId))
+const metricIcon = computed(() => metricDescriptor.value?.icon ?? '')
 const rangeLabels = DASHBOARD_RANGE_LABELS
 const grainLabels: Record<DashboardFilterState['grain'], string> = {
   daily: 'Daily',
@@ -112,28 +113,20 @@ const kpiComparisonLabel = computed(() => {
   if (range === 'year_to_date') return 'vs prev YTD'
   return 'vs previous period'
 })
-const DOTTED_TYPES = ['metric_explorer', 'funnel', 'donut', 'gauge', 'bar_list', 'breakdown', 'tabs']
-
+// What the card claims to span. Widgets whose data ignores the dashboard's date range say what they
+// really cover — "Last 30 days" over an all-time list, or over the last 7 campaign sends, was a lie.
 const widgetSubtitle = computed(() => {
-  if (props.widget.subtitle) return props.widget.subtitle
-  if (isKpiWidget.value) {
-    if (props.widget.metricId === 'contacts_total') return 'All time'
-    return rangeLabels[props.filters.rangePreset]
-  }
+  const widget = props.widget
+  if (widget.subtitle) return widget.subtitle
+  const basis = metricDescriptor.value?.timeBasis
+  if (basis === 'sends' && data.value.kind === 'series') return `Last ${data.value.labels.length} sends`
+  if (basis === 'latest') return 'Most recent'
+  if (basis === 'all_time') return widget.metricId === 'marketing_top_campaigns' ? 'All time · by revenue' : 'All time'
 
-  // The dotted v2 widgets aren't grain-driven — fall back to the range label.
-  if (DOTTED_TYPES.includes(props.widget.type)) {
-    return rangeLabels[props.filters.rangePreset]
-  }
+  // Only a time series is grain-driven; KPIs, bars, tables and the dotted v2 widgets follow the range.
+  if (isKpiWidget.value || widget.type !== 'timeseries') return rangeLabels[props.filters.rangePreset]
 
-  if (props.widget.metricId === 'marketing_top_campaigns') {
-    return `${rangeLabels[props.filters.rangePreset]} - by revenue`
-  }
-
-  if (props.filters.comparison === 'none') {
-    return grainLabels[props.filters.grain]
-  }
-
+  if (props.filters.comparison === 'none') return grainLabels[props.filters.grain]
   return `${grainLabels[props.filters.grain]} - ${comparisonContextLabel.value.toLowerCase()}`
 })
 const isDataEmpty = computed(() => {

@@ -7,6 +7,7 @@ import type { DaVinciToastInput } from '@/composables/useDaVinciToasts'
 import { useCommerceStore } from '@/stores/useCommerce'
 import { useContactsStore } from '@/stores/useContacts'
 import { useCopilotStore } from '@/stores/useCopilot'
+import { parseLocalDateKey } from '@/utils/localDate'
 import { classifyIntent, type DvIntentKind } from '@/davinci/promptRouting'
 import { detectEngineKey, detectEnginePage, detectJourneyGoal, slotVerdict, type PendingSlot } from '@/davinci/pendingSlot'
 import {
@@ -180,7 +181,7 @@ export function useDaVinciIntents() {
     const DAY = 86_400_000
     const now = new Date()
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
-    const orderTime = (order: { date?: string }) => new Date(order.date ?? '').getTime()
+    const orderTime = (order: { date?: string }) => parseLocalDateKey(order.date).getTime()
     const ordersBetween = (from: number, to: number) =>
       commerce.orders.filter((order) => {
         const ts = orderTime(order)

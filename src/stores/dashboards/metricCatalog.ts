@@ -716,7 +716,7 @@ const metricCatalog: Record<DashboardDataSource, DashboardMetricDescriptor[]> = 
       id: 'contacts_growth',
       dataSource: 'contacts',
       label: 'Contact Growth',
-      description: 'Contact creation trend over time.',
+      description: 'Audience size over time — contacts on record at the end of each day.',
       defaultTitle: 'Contact Growth',
       defaultWidgetType: 'timeseries',
       supportedWidgetTypes: ['timeseries'],
