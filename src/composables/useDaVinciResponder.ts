@@ -90,16 +90,15 @@ export function useDaVinciResponder() {
   }))
 
   // ── 1. Guided flows ────────────────────────────────────────────────────────
-  // Setup first, then the campaign wizard — and each only answers for the account it belongs to.
+  // Setup first, then the campaign wizard — and each only answers for the account it belongs to, and only
+  // once the merchant has actually started it (a session opened by merely visiting a screen stays out of the way).
   // Either pauses itself for off-topic questions; the pause notice is acknowledged once, then the
   // normal assistant answers the actual question.
   function flowTurn(text: string, accountId: string | null): DvFlowTurn {
-    const setupActive = !!accountId && setupStore.isActive && setupStore.activeAccountId === accountId
-    const setupResponse = setupActive ? setupOnboarding.handleText(text) : null
+    const setupResponse = setupStore.isEngagedFor(accountId) ? setupOnboarding.handleText(text) : null
     if (setupResponse) return { kind: 'setup', response: setupResponse }
 
-    const campaignActive = !!accountId && onboarding.isActive && onboarding.activeAccountId === accountId
-    const campaignResponse = campaignActive ? campaignOnboarding.handleText(text) : null
+    const campaignResponse = onboarding.isEngagedFor(accountId) ? campaignOnboarding.handleText(text) : null
     if (campaignResponse) return { kind: 'campaign', response: campaignResponse }
 
     const notices = [setupOnboarding.consumePauseNotice(), campaignOnboarding.consumePauseNotice()].filter(

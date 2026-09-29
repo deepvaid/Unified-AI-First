@@ -22,6 +22,11 @@ export type SetupStage =
 
 export type SetupEntry = 'signup' | 'checkout' | 'manual'
 
+/** Past the welcome screen and not finished: the merchant has actually started guided setup. */
+export function isStartedSetupStage(stage: SetupStage): boolean {
+  return stage !== 'welcome' && stage !== 'complete'
+}
+
 export interface DaVinciSetupSession {
   accountId: string
   entry: SetupEntry
@@ -94,6 +99,12 @@ export const useDaVinciSetupStore = defineStore('daVinciSetup', () => {
   /** Existing session for an account (memory or storage) without creating one. */
   function peek(accountId: string): DaVinciSetupSession | null {
     return sessions.value[accountId] ?? readSession(accountId)
+  }
+
+  /** True only for a STARTED, unfinished session that belongs to `accountId` — the only kind that may answer typed text. */
+  function isEngagedFor(accountId?: string | null): boolean {
+    const session = activeSession.value
+    return !!accountId && activeAccountId.value === accountId && !!session && isStartedSetupStage(session.stage)
   }
 
   function begin(accountId: string, options: { restart?: boolean; entry?: SetupEntry } = {}) {
@@ -174,6 +185,7 @@ export const useDaVinciSetupStore = defineStore('daVinciSetup', () => {
     activeAccountId,
     activeSession,
     isActive,
+    isEngagedFor,
     peek,
     begin,
     setStage,

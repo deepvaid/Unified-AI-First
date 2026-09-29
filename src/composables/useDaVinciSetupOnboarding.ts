@@ -9,6 +9,7 @@ import type { DaVinciInputMode } from '@/stores/useDaVinciOnboarding'
 import type { SetupOnboardingProps } from '@/stores/useCopilot'
 import { usePlgStore, PLAN_CATALOG, type PlgCloud, type PlanTier } from '@/stores/usePlg'
 import { trackDaVinciOnboardingEvent } from '@/composables/useDaVinciOnboardingAnalytics'
+import { isFlowExit } from '@/davinci/phrases'
 import type { DvIntentKind, DvQuickReply } from '@/composables/useDaVinciIntents'
 
 // Da Vinci guided setup — the post-signup / post-checkout onboarding
@@ -63,8 +64,9 @@ function asksForMutation(text: string) {
     || /^(do|make|save|publish|send|create|add|connect) (it|this|that)( for me)?[.! ]*$/i.test(text)
 }
 
+/** The same exit vocabulary as the campaign wizard ("never mind", "no thanks, cancel it"…). */
 function isPause(text: string) {
-  return /^(pause|stop|exit|not now|no thanks|(maybe )?later)[.! ]*$/i.test(text.trim())
+  return isFlowExit(text)
 }
 
 /** Questions about anything other than the setup itself pause the flow so the

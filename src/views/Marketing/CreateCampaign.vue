@@ -23,7 +23,7 @@ import { useContactsStore } from '@/stores/useContacts'
 import { useCdpEntitiesStore } from '@/stores/useCdpEntities'
 import { useContentStore } from '@/stores/useContent'
 import { useMarketingAssetsStore } from '@/stores/useMarketingAssets'
-import { useDaVinciOnboardingStore } from '@/stores/useDaVinciOnboarding'
+import { isStartedCampaignStage, useDaVinciOnboardingStore } from '@/stores/useDaVinciOnboarding'
 import { useDaVinciCampaignOnboarding } from '@/composables/useDaVinciCampaignOnboarding'
 import { trackDaVinciOnboardingEvent } from '@/composables/useDaVinciOnboardingAnalytics'
 
@@ -403,7 +403,15 @@ const editingExisting = ref(false)
 
 onMounted(() => {
   let idParam = route.query.id ?? route.params.id
-  if (route.query.source === 'davinci' && (!idParam || !store.getCampaign(Number(idParam)))) {
+  // Resume a Da Vinci draft only for a brief the merchant actually started — a bare `?source=davinci`
+  // link (or a stale id with no stored session) used to mint a session AND a real draft out of nothing.
+  const startedBrief = daVinciOnboarding.peek(accountId.value)
+  if (
+    route.query.source === 'davinci'
+    && (!idParam || !store.getCampaign(Number(idParam)))
+    && startedBrief
+    && isStartedCampaignStage(startedBrief.stage)
+  ) {
     daVinciOnboarding.begin(accountId.value)
     daVinciCampaign.createDraft()
     const restoredId = daVinciOnboarding.activeSession?.draftId

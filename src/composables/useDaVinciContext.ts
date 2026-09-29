@@ -5,7 +5,7 @@ import { useCampaignsStore } from '@/stores/useCampaigns'
 import { useCommerceStore } from '@/stores/useCommerce'
 import { useContactsStore } from '@/stores/useContacts'
 import { useDashboardsStore } from '@/stores/useDashboards'
-import { useDaVinciSetupStore } from '@/stores/useDaVinciSetup'
+import { isStartedSetupStage, useDaVinciSetupStore } from '@/stores/useDaVinciSetup'
 import { useOnboardingStore } from '@/stores/useOnboarding'
 import { usePlgStore } from '@/stores/usePlg'
 import { parseLocalDateKey } from '@/utils/localDate'
@@ -161,7 +161,7 @@ export function useDaVinciContext() {
       const nextPart = next ? `; next task: "${next.title}" (about ${next.minutes} min)` : ''
       lines.push(`Setup guide: ${goalPart}${guide.doneCount} of ${guide.totalCount} tasks done${nextPart}`)
       const session = setup.activeSession
-      if (session && session.stage !== 'complete') {
+      if (session && isStartedSetupStage(session.stage)) {
         const current = guide.taskById(session.currentTaskId)
         lines.push(
           `Da Vinci guided setup session: stage ${session.stage}${current ? `, guiding "${current.title}"` : ''}`,

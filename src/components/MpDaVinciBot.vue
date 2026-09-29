@@ -42,8 +42,8 @@ import { setupHandoffFollowText, useDaVinciSetupOnboarding } from '@/composables
 import { trackDaVinciOnboardingEvent } from '@/composables/useDaVinciOnboardingAnalytics'
 import type { DvCardDescriptor } from '@/composables/useDaVinciIntents'
 import { useDaVinciVoice, VoiceError } from '@/composables/useDaVinciVoice'
-import { useDaVinciOnboardingStore } from '@/stores/useDaVinciOnboarding'
-import { useDaVinciSetupStore } from '@/stores/useDaVinciSetup'
+import { isStartedCampaignStage, useDaVinciOnboardingStore } from '@/stores/useDaVinciOnboarding'
+import { isStartedSetupStage, useDaVinciSetupStore } from '@/stores/useDaVinciSetup'
 import { useOnboardingStore } from '@/stores/useOnboarding'
 
 interface MpDaVinciBotProps {
@@ -111,18 +111,20 @@ const queuedPrompts = ref<Array<{ text: string; turnId: string }>>([])
 // Which account and dashboard this conversation works on (shared with the draft cards).
 const { accountId: targetAccountId, dashboard: targetDashboard } = responder.target
 
+// A hand-off link (`?source=davinci`) restores a session the merchant actually started — and never
+// creates one: it used to `begin()` a campaign session out of nothing, after which every message in
+// the drawer was taken as that campaign's objective.
 if (route.query.source === 'davinci' && targetAccountId.value) {
-  // A live guided-setup session wins the restore; otherwise fall back to the
-  // legacy campaign-wizard checkpoint behaviour.
   const setupSession = setupStore.peek(targetAccountId.value)
-  if (setupSession && setupSession.stage !== 'complete') {
+  const campaignSession = onboarding.peek(targetAccountId.value)
+  if (setupSession && isStartedSetupStage(setupSession.stage)) {
     setupStore.begin(targetAccountId.value)
     copilot.beginOnboarding(targetAccountId.value)
     copilot.open()
     if (!copilot.resumeMessage && messages.value.length === 0) {
       copilot.queueResume(setupHandoffFollowText(setupGuide.taskById(setupSession.currentTaskId)))
     }
-  } else {
+  } else if (campaignSession && isStartedCampaignStage(campaignSession.stage)) {
     onboarding.begin(targetAccountId.value)
     copilot.beginOnboarding(targetAccountId.value)
     copilot.open()
@@ -134,23 +136,21 @@ if (route.query.source === 'davinci' && targetAccountId.value) {
   }
 }
 
-// Cold load / account switch anywhere mid-onboarding: silently adopt a live
-// persisted setup session for the current account so typed messages keep
-// routing through the guided flow (no drawer open, no resume message).
+// Cold load / account switch anywhere mid-onboarding: silently adopt a STARTED persisted setup
+// session for the current account so typed messages keep routing through the guided flow (no
+// drawer open, no resume message). A session that never got past the welcome screen is left alone.
 watch(
   targetAccountId,
   (accountId) => {
     if (!accountId || setupStore.activeAccountId === accountId) return
     const setupSession = setupStore.peek(accountId)
-    if (setupSession && setupSession.stage !== 'complete') setupStore.begin(accountId)
+    if (setupSession && isStartedSetupStage(setupSession.stage)) setupStore.begin(accountId)
   },
   { immediate: true },
 )
 
-/** The guided setup flow only answers for the account it belongs to. */
-const setupFlowActive = computed(
-  () => setupStore.isActive && setupStore.activeAccountId === targetAccountId.value,
-)
+/** The guided setup flow only answers for the account it belongs to, once it has started. */
+const setupFlowActive = computed(() => setupStore.isEngagedFor(targetAccountId.value))
 
 const headerStatus = computed(() => {
   if (!chatMode.value) return props.subtitle

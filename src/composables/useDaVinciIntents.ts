@@ -158,10 +158,7 @@ export function useDaVinciIntents() {
    */
   function startCampaignDiscovery(audienceHint: string): DvIntentResult {
     const accountId = String(router.currentRoute.value.params.accountId ?? '2000290')
-    const active = campaignOnboarding.session.value
-    const response = active && active.accountId === accountId && active.stage !== 'complete'
-      ? (campaignOnboarding.resume() ?? campaignOnboarding.start(accountId, 'text', { audienceHint }))
-      : campaignOnboarding.start(accountId, 'text', { audienceHint })
+    const response = campaignOnboarding.requestCampaign(accountId, audienceHint)
 
     return {
       intent: 'campaign',
