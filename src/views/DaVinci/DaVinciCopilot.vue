@@ -1,49 +1,46 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import MpDaVinciBot from '@/components/MpDaVinciBot.vue'
 import DvHistoryDrawer from '@/components/copilot/DvHistoryDrawer.vue'
-import { useCopilotStore, type ChatMessage } from '@/stores/useCopilot'
+import { useDaVinciToasts } from '@/composables/useDaVinciToasts'
+import { useCopilotStore } from '@/stores/useCopilot'
 
-// The live conversation is shared via the copilot store, so opening this page
-// simply continues the drawer's thread. The localStorage snapshot remains only
-// as a fallback for cold deep links from older sessions.
-const STORAGE_KEY = 'davinci-active-conversation-v1'
-const STALE_MS = 60_000
-
-interface Snapshot {
-  conversationId: string
-  messages: unknown[]
-  accountId: string
-  dashboardId: string | null
-  snapshotAt: number
-}
-
-function readSnapshot(): { messages: unknown[]; conversationId: string | null } {
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY)
-    if (!raw) return { messages: [], conversationId: null }
-    const snap: Snapshot = JSON.parse(raw)
-    window.localStorage.removeItem(STORAGE_KEY)
-    if (Date.now() - snap.snapshotAt > STALE_MS) {
-      return { messages: [], conversationId: null }
-    }
-    const msgs = Array.isArray(snap.messages) ? snap.messages : []
-    return { messages: msgs, conversationId: snap.conversationId }
-  } catch {
-    return { messages: [], conversationId: null }
-  }
-}
-
+// The live conversation is shared via the copilot store, so opening this page simply continues
+// the drawer's thread. The address follows the thread (`/da-vinci/copilot/:conversationId`), and a
+// link — or a reload — restores the conversation it names from the history.
+const route = useRoute()
+const router = useRouter()
 const copilot = useCopilotStore()
+const { pushToast } = useDaVinciToasts()
 
-if (copilot.messages.length === 0) {
-  const hydrated = readSnapshot()
-  if (hydrated.messages.length) {
-    copilot.messages = hydrated.messages as ChatMessage[]
-    copilot.chatMode = true
-    copilot.conversationId = hydrated.conversationId
-  }
+const routeConversationId = computed(() => (route.params.conversationId as string | undefined) || null)
+
+function setAddress(conversationId: string | null) {
+  void router.replace({
+    name: 'DaVinciCopilot',
+    params: { accountId: route.params.accountId, ...(conversationId ? { conversationId } : {}) },
+  })
 }
+
+watch(
+  routeConversationId,
+  (id) => {
+    if (!id || id === copilot.conversationId) return
+    if (copilot.restoreConversation(id)) return
+    pushToast({ title: 'That conversation is no longer available' })
+    setAddress(copilot.conversationId)
+  },
+  { immediate: true },
+)
+
+watch(
+  () => copilot.conversationId,
+  (id) => {
+    if (id !== routeConversationId.value) setAddress(id)
+  },
+  { immediate: true },
+)
 
 const activeConversationId = computed(() => copilot.conversationId)
 const botKey = ref(0)
@@ -51,7 +48,6 @@ const botKey = ref(0)
 function startNewChat() {
   copilot.resetConversation()
   botKey.value += 1
-  window.localStorage.removeItem(STORAGE_KEY)
 }
 </script>
 

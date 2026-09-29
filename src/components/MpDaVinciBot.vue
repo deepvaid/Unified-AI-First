@@ -35,7 +35,6 @@ import {
   type DvFlowResponse,
 } from '@/composables/useDaVinciResponder'
 import type { DashboardWidgetDraft } from '@/stores/dashboards/types'
-import { useDaVinciHistory } from '@/composables/useDaVinciHistory'
 import { useDaVinciToasts } from '@/composables/useDaVinciToasts'
 import { useDaVinciCampaignOnboarding } from '@/composables/useDaVinciCampaignOnboarding'
 import { setupHandoffFollowText, useDaVinciSetupOnboarding } from '@/composables/useDaVinciSetupOnboarding'
@@ -77,7 +76,6 @@ const emit = defineEmits<{
 const route = useRoute()
 const router = useRouter()
 const dashboardsStore = useDashboardsStore()
-const { addItem, incrementAdded, clearAll } = useDaVinciHistory()
 const { pushToast } = useDaVinciToasts()
 // One reply path shared with the full-page experience: flows → lane → reply.
 const responder = useDaVinciResponder()
@@ -305,7 +303,6 @@ function orbitTryAgain() {
 }
 
 function onOrbitWidgetSaved(payload: AddedWidgetRef) {
-  if (currentConversationId.value) incrementAdded(currentConversationId.value)
   // The same draft shows in the transcript when the merchant switches to text mode.
   if (orbitResponse.value?.messageId) copilot.markDraftAdded(orbitResponse.value.messageId, 0, payload)
   orbitAdded.value = payload
@@ -478,10 +475,9 @@ function stopGeneration() {
 }
 
 /** A finished reply lands in the transcript (and on the voice surface), then is spoken. */
-function landTurn(turn: DvAssistantTurn, gen: number, isFirstPrompt: boolean, prompt: string) {
+function landTurn(turn: DvAssistantTurn, gen: number) {
   if (gen !== generationSeq) return
   messages.value.push(turn.message)
-  if (turn.draftedCount && isFirstPrompt) addItem({ title: prompt, draftedCount: turn.draftedCount })
   if (isVoiceMode.value) {
     orbitResponse.value = { draft: turn.draft, caption: turn.caption, note: turn.note, messageId: turn.message.id }
   }
@@ -665,7 +661,6 @@ function runGeneration(text: string, turnId: string) {
   }
   scrollToBottom()
 
-  const isFirstPrompt = !currentConversationId.value
   copilot.ensureConversationId()
 
   // Which lane answers, and what to show while it works — the rules are pure and unit-tested
@@ -688,7 +683,7 @@ function runGeneration(text: string, turnId: string) {
     } finally {
       geminiAbort = null
     }
-    landTurn(turn, gen, isFirstPrompt, text)
+    landTurn(turn, gen)
   }, plan.paceMs))
 }
 
@@ -713,9 +708,19 @@ function newChat() {
   pushToast({ title: 'New chat started' })
 }
 
+// The thread was swapped — New chat, a conversation chosen from History, one deleted. Whatever was
+// still working for the old thread (a reply on its way, an open mic, a half-typed line) lets go, so
+// nothing lands in a conversation it doesn't belong to.
+watch(
+  () => copilot.threadEpoch,
+  () => {
+    stopGeneration()
+    stopVoiceActivity()
+    inputText.value = ''
+  },
+)
+
 function onWidgetSaved(payload: AddedWidgetRef, msg: ChatMessage, index: number) {
-  const comp = msg.componentData?.find((c) => c.type === 'widgetDraftSet')
-  if (comp) incrementAdded((comp.props as DraftSetProps).conversationId)
   // The payload names the dashboard the widget was actually added to — not the live route
   // target, which can differ when the draft was pinned.
   responder.announceDraftAdded(payload, msg.id, index)
@@ -757,7 +762,7 @@ function handleClearAll() {
 }
 
 function confirmClearAll() {
-  clearAll()
+  copilot.deleteAllConversations()
   pushToast({ title: 'All conversations deleted' })
 }
 

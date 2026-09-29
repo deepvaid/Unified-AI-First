@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed, ref, useId, watch } from 'vue'
 import { useFocusTrap } from '@/composables/useFocusTrap'
-import { useDaVinciHistory, type DaVinciHistoryItem, type GroupedHistory } from '@/composables/useDaVinciHistory'
+import { useDaVinciHistory, type GroupedHistory, type HistoryConversation } from '@/composables/useDaVinciHistory'
 import { useDaVinciToasts } from '@/composables/useDaVinciToasts'
+import { useCopilotStore } from '@/stores/useCopilot'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
@@ -19,10 +20,16 @@ const emit = defineEmits<{
   newChat: []
 }>()
 
-const { items, groupedItems, formatAgo, removeItem, clearAll } = useDaVinciHistory()
+const { items, groupedItems, formatAgo, subtitleFor } = useDaVinciHistory()
 const { pushToast } = useDaVinciToasts()
+const copilot = useCopilotStore()
 
 const hasHistory = computed(() => items.value.length > 0)
+
+// Choosing a row makes that conversation the live thread — the transcript comes back, on every surface.
+function select(item: HistoryConversation) {
+  if (copilot.restoreConversation(item.id)) emit('select', item.id)
+}
 
 const clearAllOpen = ref(false)
 
@@ -31,13 +38,31 @@ function handleClearAll() {
 }
 
 function confirmClearAll() {
-  clearAll()
+  copilot.deleteAllConversations()
   pushToast({ title: 'All conversations deleted' })
 }
 
-function handleDelete(id: string, event: MouseEvent) {
+// A row holds a whole transcript now, so deleting one asks first (as Delete all always has).
+const deleteOpen = ref(false)
+// Kept after the dialog closes so its message doesn't blank while it fades.
+const pendingDelete = ref<HistoryConversation | null>(null)
+const deleteMessage = computed(() => {
+  const item = pendingDelete.value
+  if (!item) return ''
+  const onScreen = item.id === copilot.conversationId ? ' It is the conversation on screen, so the screen is cleared too.' : ''
+  return `“${item.title}” is removed from your history.${onScreen}`
+})
+
+function handleDelete(item: HistoryConversation, event: MouseEvent) {
   event.stopPropagation()
-  removeItem(id)
+  pendingDelete.value = item
+  deleteOpen.value = true
+}
+
+function confirmDelete() {
+  if (!pendingDelete.value) return
+  copilot.deleteConversation(pendingDelete.value.id)
+  pushToast({ title: 'Conversation deleted' })
 }
 
 const search = ref('')
@@ -59,7 +84,7 @@ const { onKeydown } = useFocusTrap(panel, () => props.open, {
   enabled: () => isDialog.value,
 })
 
-function filterGroup(items: DaVinciHistoryItem[]): DaVinciHistoryItem[] {
+function filterGroup(items: HistoryConversation[]): HistoryConversation[] {
   const q = search.value.trim().toLowerCase()
   if (!q) return items
   return items.filter((item) => item.title.toLowerCase().includes(q))
@@ -80,8 +105,8 @@ const isEmpty = computed(
     filteredGroups.value.older.length === 0,
 )
 
-function buildSub(item: DaVinciHistoryItem): string {
-  return `${item.subtitle} · ${formatAgo(item.createdAt)}`
+function buildSub(item: HistoryConversation): string {
+  return `${subtitleFor(item)} · ${formatAgo(item.updatedAt)}`
 }
 </script>
 
@@ -126,8 +151,8 @@ function buildSub(item: DaVinciHistoryItem): string {
             class="dv-history__item"
             :class="{ 'is-active': item.id === activeId }"
             :aria-current="item.id === activeId ? 'true' : undefined"
-            @click="emit('select', item.id)"
-            @keydown.enter.space.prevent="emit('select', item.id)"
+            @click="select(item)"
+            @keydown.enter.space.prevent="select(item)"
           >
             <v-icon size="18">{{ item.icon }}</v-icon>
             <div class="dv-history__text">
@@ -138,7 +163,7 @@ function buildSub(item: DaVinciHistoryItem): string {
               type="button"
               class="dv-history__delete"
               :aria-label="`Delete ${item.title}`"
-              @click="handleDelete(item.id, $event)"
+              @click="handleDelete(item, $event)"
             >
               <v-icon size="16">trash-2</v-icon>
             </button>
@@ -156,9 +181,18 @@ function buildSub(item: DaVinciHistoryItem): string {
     </div>
 
     <MpConfirmDialog
+      v-model="deleteOpen"
+      title="Delete this conversation?"
+      :message="deleteMessage"
+      confirm-label="Delete"
+      danger
+      @confirm="confirmDelete"
+    />
+
+    <MpConfirmDialog
       v-model="clearAllOpen"
       title="Delete all Da Vinci conversations?"
-      message="This cannot be undone."
+      message="This cannot be undone. The conversation on screen is cleared too."
       confirm-label="Delete All"
       danger
       @confirm="confirmClearAll"

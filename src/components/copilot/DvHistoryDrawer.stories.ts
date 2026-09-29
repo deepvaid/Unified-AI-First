@@ -2,19 +2,19 @@ import { ref } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 import DvHistoryDrawer from './DvHistoryDrawer.vue'
 import { useDaVinciHistory } from '@/composables/useDaVinciHistory'
+import { inferIcon, type HistoryConversation } from '@/davinci/history'
 
 // Stories drive the useDaVinciHistory() module singleton from setup() — same
-// convention as DvToastStack.stories.ts: clear the list, re-seed it, then
-// re-date the items (through the reactive proxies) so they spread across the
-// Today / Yesterday / Last 7 days / Older groups deterministically. Seeding
-// goes through addItem(), so the seeds also land in localStorage
-// ('davinci-history-v1'), like real conversations would.
+// convention as DvToastStack.stories.ts: clear the list, then re-seed it with
+// conversations dated to spread across the Today / Yesterday / Last 7 days /
+// Older groups deterministically. Seeding goes through save(), so the seeds also
+// land in localStorage ('davinci-history-v2'), like real conversations would.
 
 interface HistorySeed {
   title: string
   draftedCount: number
   addedCount?: number
-  /** Absolute createdAt override applied after seeding. */
+  /** Last activity — what the list sorts and groups by. */
   at: number
 }
 
@@ -38,16 +38,26 @@ function buildSeeds(): HistorySeed[] {
   ]
 }
 
-/** Reset + seed the history singleton; returns the id of the newest item. */
+/** Reset + seed the history singleton; returns the id of the newest conversation. */
 function seedHistory(seeds: HistorySeed[]): string | undefined {
-  const { items, addItem, clearAll } = useDaVinciHistory()
+  const { items, save, clearAll } = useDaVinciHistory()
   clearAll()
-  seeds.forEach((seed) => addItem({ title: seed.title, draftedCount: seed.draftedCount, addedCount: seed.addedCount }))
-  const atByTitle = new Map(seeds.map((seed) => [seed.title, seed.at]))
-  // items exposes reactive proxies — mutating createdAt re-sorts and re-groups.
-  items.value.forEach((item) => {
-    const at = atByTitle.get(item.title)
-    if (at != null) item.createdAt = at
+  seeds.forEach((seed, index) => {
+    const conversation: HistoryConversation = {
+      id: `seed-${index}`,
+      title: seed.title,
+      icon: inferIcon(seed.title),
+      createdAt: seed.at,
+      updatedAt: seed.at,
+      draftedCount: seed.draftedCount,
+      addedCount: seed.addedCount ?? 0,
+      questions: 1,
+      messages: [
+        { id: `seed-${index}-u`, role: 'user', text: seed.title },
+        { id: `seed-${index}-a`, role: 'assistant', text: `Here’s what I found for “${seed.title}”.` },
+      ],
+    }
+    save(conversation)
   })
   return items.value[0]?.id
 }
@@ -62,9 +72,11 @@ const meta = {
         component: `
 ### Overview
 \`DvHistoryDrawer\` lists past Da Vinci conversations from \`useDaVinciHistory()\`, grouped into
-Today / Yesterday / Last 7 days / Older. It renders in two modes: \`overlay\` (a modal panel with
-full dialog semantics) and \`rail\` (inline inside the copilot surface, non-modal). Rows select a
-conversation; per-row and "Clear all" deletions route through \`MpConfirmDialog\`.
+Today / Yesterday / Last 7 days / Older by last activity. It renders in two modes: \`overlay\` (a
+modal panel with full dialog semantics) and \`rail\` (inline inside the copilot surface, non-modal).
+Choosing a row restores that conversation as the live thread (\`copilot.restoreConversation\`) — the
+transcript comes back on every surface. Per-row and "Delete all" deletions route through
+\`MpConfirmDialog\`; deleting the conversation on screen clears the screen too.
 
 **Use when:** offering conversation history inside a copilot surface.
 
@@ -101,7 +113,7 @@ conversation; per-row and "Clear all" deletions route through \`MpConfirmDialog\
       description: '"overlay" (default): slides in over the copilot panel below its 60px header, with a close button. "rail": fills a persistent side rail and swaps the close button for a kebab menu with "Delete all conversations" (gated behind an MpConfirmDialog — replaced window.confirm in the Phase 4 a11y pass, which also gave the search input an aria-label).',
     },
     close: { control: false, description: 'Event — X button clicked (overlay mode only).', table: { category: 'events' } },
-    select: { control: false, description: 'Event — conversation chosen (click or Enter/Space); payload is the item id.', table: { category: 'events' } },
+    select: { control: false, description: 'Event — conversation chosen and restored (click or Enter/Space); payload is the conversation id. The host only closes the overlay — the drawer itself restores the thread.', table: { category: 'events' } },
     newChat: { control: false, description: 'Event — declared for consumers; not fired internally today.', table: { category: 'events' } },
   },
 } satisfies Meta<typeof DvHistoryDrawer>

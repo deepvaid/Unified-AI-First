@@ -1,160 +1,82 @@
 import { computed, ref } from 'vue'
 import { formatAgo } from '@/composables/useRelativeTime'
+import {
+  HISTORY_KEY,
+  HISTORY_LIMITS,
+  LEGACY_HISTORY_KEYS,
+  dropOldest,
+  fitToBudget,
+  groupConversations,
+  parseHistory,
+  subtitleFor,
+  upsert,
+  type GroupedHistory,
+  type HistoryConversation,
+} from '@/davinci/history'
 
-export interface DaVinciHistoryItem {
-  id: string
-  title: string
-  icon: string
-  subtitle: string
-  createdAt: number
-  addedCount: number
-  draftedCount: number
-}
+// The stored list of Da Vinci conversations. What a record holds, its caps and how a stored
+// list is validated live in src/davinci/history.ts (pure, tested); this is the reactive,
+// localStorage-backed singleton around it. The copilot store records the live thread here.
 
-export interface GroupedHistory {
-  today: DaVinciHistoryItem[]
-  yesterday: DaVinciHistoryItem[]
-  lastWeek: DaVinciHistoryItem[]
-  older: DaVinciHistoryItem[]
-}
+export type { GroupedHistory, HistoryConversation }
 
-const LS_HISTORY = 'davinci-history-v1'
-const ICON_BY_KEYWORD: Array<{ match: RegExp; icon: string }> = [
-  { match: /(email|campaign|open|click)/i, icon: 'mail' },
-  { match: /(revenue|order|sale|cart|checkout)/i, icon: 'shopping-cart' },
-  { match: /(contact|audience|segment|customer)/i, icon: 'users' },
-  { match: /(ticket|support)/i, icon: 'message-square' },
-  { match: /(product|inventory|tag)/i, icon: 'tag' },
-  { match: /(channel|trend|over time|line|chart)/i, icon: 'line-chart' },
-  { match: /(funnel|conversion|drop)/i, icon: 'filter' },
-]
-
-function readFromStorage(): DaVinciHistoryItem[] {
+function load(): HistoryConversation[] {
   if (typeof window === 'undefined') return []
   try {
-    const raw = window.localStorage.getItem(LS_HISTORY)
-    if (!raw) return []
-    const parsed = JSON.parse(raw) as DaVinciHistoryItem[]
-    return Array.isArray(parsed) ? parsed : []
+    for (const key of LEGACY_HISTORY_KEYS) window.localStorage.removeItem(key)
+    return parseHistory(window.localStorage.getItem(HISTORY_KEY))
   } catch {
     return []
   }
 }
 
-function writeToStorage(next: DaVinciHistoryItem[]) {
-  if (typeof window === 'undefined') return
-  try {
-    window.localStorage.setItem(LS_HISTORY, JSON.stringify(next))
-  } catch {
-    /* noop */
-  }
-}
+const conversations = ref<HistoryConversation[]>(load())
 
-const items = ref<DaVinciHistoryItem[]>(readFromStorage())
-
-function persist() {
-  writeToStorage(items.value)
-}
-
-function inferIcon(title: string): string {
-  for (const entry of ICON_BY_KEYWORD) {
-    if (entry.match.test(title)) return entry.icon
-  }
-  return 'sparkles'
-}
-
-function makeId() {
-  return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`
-}
-
-function buildSubtitle(item: Pick<DaVinciHistoryItem, 'draftedCount' | 'addedCount'>): string {
-  if (item.addedCount > 0) {
-    return item.addedCount === 1 ? '1 widget added' : `${item.addedCount} widgets added`
-  }
-  if (item.draftedCount === 1) return '1 widget drafted'
-  return `${item.draftedCount} widgets drafted`
-}
-
-const sortedItems = computed(() => [...items.value].sort((a, b) => b.createdAt - a.createdAt))
-
-const groupedItems = computed<GroupedHistory>(() => {
-  const startOfToday = new Date()
-  startOfToday.setHours(0, 0, 0, 0)
-  const startOfYesterday = new Date(startOfToday)
-  startOfYesterday.setDate(startOfYesterday.getDate() - 1)
-  const sevenDaysAgo = new Date(startOfToday)
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-
-  const groups: GroupedHistory = { today: [], yesterday: [], lastWeek: [], older: [] }
-  for (const item of sortedItems.value) {
-    if (item.createdAt >= startOfToday.getTime()) {
-      groups.today.push(item)
-    } else if (item.createdAt >= startOfYesterday.getTime()) {
-      groups.yesterday.push(item)
-    } else if (item.createdAt >= sevenDaysAgo.getTime()) {
-      groups.lastWeek.push(item)
-    } else {
-      groups.older.push(item)
+/**
+ * Writes the list within its size budget. If the browser still refuses (quota shared with the rest of
+ * the app), the oldest conversation goes and the write is retried — the list then shows exactly what a
+ * reload would bring back.
+ */
+function persist(keepId?: string) {
+  let next = fitToBudget(conversations.value, HISTORY_LIMITS.bytes, keepId)
+  if (typeof window !== 'undefined') {
+    for (;;) {
+      try {
+        window.localStorage.setItem(HISTORY_KEY, JSON.stringify(next))
+        break
+      } catch {
+        const dropped = dropOldest(next, keepId)
+        if (!dropped) break
+        next = dropped
+      }
     }
   }
-  return groups
-})
-
-function addItem(payload: {
-  title: string
-  draftedCount: number
-  addedCount?: number
-  icon?: string
-}): DaVinciHistoryItem {
-  const item: DaVinciHistoryItem = {
-    id: makeId(),
-    title: payload.title.trim() || 'Untitled prompt',
-    icon: payload.icon ?? inferIcon(payload.title),
-    createdAt: Date.now(),
-    draftedCount: payload.draftedCount,
-    addedCount: payload.addedCount ?? 0,
-    subtitle: '',
-  }
-  item.subtitle = buildSubtitle(item)
-  items.value = [item, ...items.value]
-  persist()
-  return item
+  conversations.value = next
 }
 
-function incrementAdded(id: string) {
-  const idx = items.value.findIndex((it) => it.id === id)
-  if (idx === -1) return
-  const existing = items.value[idx]
-  if (!existing) return
-  const updated: DaVinciHistoryItem = {
-    ...existing,
-    addedCount: existing.addedCount + 1,
-  }
-  updated.subtitle = buildSubtitle(updated)
-  const next = [...items.value]
-  next[idx] = updated
-  items.value = next
-  persist()
+/** Newest activity first — the order the list, the search and the groups all read. */
+const items = computed(() => [...conversations.value].sort((a, b) => b.updatedAt - a.updatedAt))
+const groupedItems = computed<GroupedHistory>(() => groupConversations(items.value))
+
+function save(record: HistoryConversation) {
+  conversations.value = upsert(conversations.value, record)
+  persist(record.id)
 }
 
-function removeItem(id: string) {
-  items.value = items.value.filter((it) => it.id !== id)
+function get(id: string): HistoryConversation | undefined {
+  return conversations.value.find((conversation) => conversation.id === id)
+}
+
+function remove(id: string) {
+  conversations.value = conversations.value.filter((conversation) => conversation.id !== id)
   persist()
 }
 
 function clearAll() {
-  items.value = []
+  conversations.value = []
   persist()
 }
 
 export function useDaVinciHistory() {
-  return {
-    items: sortedItems,
-    groupedItems,
-    formatAgo,
-    addItem,
-    incrementAdded,
-    removeItem,
-    clearAll,
-  }
+  return { items, groupedItems, formatAgo, subtitleFor, save, get, remove, clearAll }
 }

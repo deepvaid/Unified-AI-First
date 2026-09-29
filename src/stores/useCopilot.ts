@@ -1,8 +1,10 @@
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { useDaVinciHistory } from '@/composables/useDaVinciHistory'
 import type { DashboardWidgetDraft } from '@/stores/dashboards/types'
 import type { DvCardDescriptor, DvQuickReply } from '@/composables/useDaVinciIntents'
 import { makeId } from '@/davinci/conversation'
+import { buildRecord } from '@/davinci/history'
 import type { PendingSlot } from '@/davinci/pendingSlot'
 import type { CampaignReadinessItem } from '@/stores/useDaVinciOnboarding'
 import type { SetupTaskStatus } from '@/stores/useOnboarding'
@@ -112,11 +114,43 @@ export const useCopilotStore = defineStore('copilot', () => {
   const readAloud = ref(false)
   const resumeMessage = ref<string | null>(null)
 
+  /**
+   * Bumped whenever the thread is swapped (New chat, restore, delete). A surface working on the old thread —
+   * a reply on its way, a mic open — watches it and lets go, so nothing lands in a conversation it doesn't belong to.
+   */
+  const threadEpoch = ref(0)
+
   /** The id every message of this conversation shares (widget drafts and history point at it). */
   function ensureConversationId(): string {
     if (!conversationId.value) conversationId.value = makeId('c')
     return conversationId.value
   }
+
+  // ── History ────────────────────────────────────────────────────────────────
+  // The live thread is recorded under its conversationId shortly after it changes, and again as
+  // the page goes away — so every conversation with a question in it can be reopened from the list.
+  const history = useDaVinciHistory()
+  let saveTimer: ReturnType<typeof setTimeout> | null = null
+
+  function saveNow() {
+    if (saveTimer) {
+      clearTimeout(saveTimer)
+      saveTimer = null
+    }
+    if (!messages.value.some((message) => message.role === 'user')) return
+    const id = ensureConversationId()
+    const previous = history.get(id)
+    const record = buildRecord(id, messages.value, previous)
+    if (record && record !== previous) history.save(record) // unchanged comes back as `previous`
+  }
+
+  function scheduleSave() {
+    if (saveTimer) clearTimeout(saveTimer)
+    saveTimer = setTimeout(saveNow, 400)
+  }
+
+  watch(messages, scheduleSave, { deep: true })
+  if (typeof window !== 'undefined') window.addEventListener('pagehide', saveNow)
 
   function open() {
     isOpen.value = true
@@ -183,11 +217,49 @@ export const useCopilotStore = defineStore('copilot', () => {
     if (card.type === 'chart') card.props.savedTo = added
   }
 
-  function resetConversation() {
+  /** Empties the thread. Does not record it first — callers that keep the conversation do that. */
+  function clearThread() {
+    if (saveTimer) {
+      clearTimeout(saveTimer)
+      saveTimer = null
+    }
     messages.value = []
     chatMode.value = false
     conversationId.value = null
     pendingSlot.value = null
+    threadEpoch.value += 1
+  }
+
+  /** New chat: the conversation so far stays in the history. */
+  function resetConversation() {
+    saveNow()
+    clearThread()
+  }
+
+  /** Makes a recorded conversation the live thread. False when it is no longer in the history. */
+  function restoreConversation(id: string): boolean {
+    if (id === conversationId.value) return true
+    const record = history.get(id)
+    if (!record) return false
+    saveNow() // the thread being left
+    // A copy — the live thread mutates its messages in place, and the record must stay as it was recorded.
+    messages.value = JSON.parse(JSON.stringify(record.messages)) as ChatMessage[]
+    conversationId.value = record.id
+    chatMode.value = true
+    pendingSlot.value = null
+    threadEpoch.value += 1
+    return true
+  }
+
+  /** Deleting the conversation on screen clears the screen too — it would otherwise be recorded again. */
+  function deleteConversation(id: string) {
+    history.remove(id)
+    if (id === conversationId.value) clearThread()
+  }
+
+  function deleteAllConversations() {
+    history.clearAll()
+    clearThread()
   }
 
   return {
@@ -198,6 +270,7 @@ export const useCopilotStore = defineStore('copilot', () => {
     messages,
     chatMode,
     conversationId,
+    threadEpoch,
     pendingSlot,
     activeOnboardingAccountId,
     readAloud,
@@ -217,5 +290,8 @@ export const useCopilotStore = defineStore('copilot', () => {
     markDraftAdded,
     markChartSaved,
     resetConversation,
+    restoreConversation,
+    deleteConversation,
+    deleteAllConversations,
   }
 })
