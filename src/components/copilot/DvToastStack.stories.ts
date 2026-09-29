@@ -33,7 +33,8 @@ and the \`DaVinciToastInput\` / \`DaVinciToast\` types in \`src/composables/useD
 documented inline there.
 
 ### A11y
-- **Provides:** a persistent \`aria-live="polite"\` container with \`role="status"\` pills; the
+- **Provides:** a persistent \`aria-live="polite"\` container with \`role="status"\` pills (\`role="alert"\`
+  for the warning and error tones, which are announced at once); the
   auto-dismiss timer pauses on hover and focus and resumes on leave/blur, so a keyboard user
   tabbing to the action button is never cut off (WCAG 2.2.1).
 - **Consumer must:** keep \`title\` meaningful on its own and give \`action\` a verb label.
@@ -92,6 +93,14 @@ export const SingleToast: Story = makeToastStory([
     sub: 'Open Rate Trend · line chart',
     action: 'Undo',
   },
+])
+
+/** One toast per tone — success (the default), info, warning and error each get their own icon and paired colour. */
+export const Tones: Story = makeToastStory([
+  { title: 'Segment "VIP Customers" created', sub: 'It refreshes daily.', action: 'Open segments' },
+  { tone: 'info', title: '"VIP Customers" is already in your segments', sub: 'I didn’t add a second copy.' },
+  { tone: 'warning', title: 'Microphone blocked', sub: 'Allow microphone access in your browser settings' },
+  { tone: 'error', title: 'Couldn’t add the widget', sub: 'Try again from the dashboard’s Add widget menu.' },
 ])
 
 /** Three queued toasts stacking bottom-up, mixing plain and action toasts. */

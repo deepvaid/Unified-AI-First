@@ -374,15 +374,15 @@ function reportVoiceError(err: unknown) {
     trackDaVinciOnboardingEvent('microphone_permission', accountId.value, { outcome: 'denied' })
     trackDaVinciOnboardingEvent('voice_recovery', accountId.value, { reason: 'permission' })
     voiceRecoveryMessage.value = 'Microphone access is blocked. Allow it in browser settings, or continue by typing.'
-    pushToast({ title: 'Microphone blocked', sub: 'Allow microphone access in your browser settings' })
+    pushToast({ tone: 'warning', title: 'Microphone blocked', sub: 'Allow microphone access in your browser settings' })
   } else if (err.code === 'network') {
     trackDaVinciOnboardingEvent('voice_recovery', accountId.value, { reason: 'network' })
     voiceRecoveryMessage.value = 'Voice is unavailable right now. Check your connection, or continue by typing.'
-    pushToast({ title: 'Voice service unavailable', sub: 'Check your connection — you can type instead' })
+    pushToast({ tone: 'warning', title: 'Voice service unavailable', sub: 'Check your connection — you can type instead' })
   } else if (err.code === 'audio') {
     trackDaVinciOnboardingEvent('voice_recovery', accountId.value, { reason: 'no-microphone' })
     voiceRecoveryMessage.value = 'No microphone was found. Connect one, or continue by typing.'
-    pushToast({ title: 'No microphone found' })
+    pushToast({ tone: 'warning', title: 'No microphone found' })
   }
 }
 

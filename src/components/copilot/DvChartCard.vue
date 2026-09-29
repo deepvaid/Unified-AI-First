@@ -85,7 +85,7 @@ function save() {
   if (!draft || !dashboard || !accountId.value || isSaved.value || blocker.value) return
   const widget = dashboardsStore.addWidget(accountId.value, draft)
   if (!widget) {
-    pushToast({ title: 'Couldn’t add the widget', sub: 'Try again from the dashboard’s Add widget menu.' })
+    pushToast({ tone: 'error', title: 'Couldn’t add the widget', sub: 'Try again from the dashboard’s Add widget menu.' })
     return
   }
   const added: AddedWidgetRef = {

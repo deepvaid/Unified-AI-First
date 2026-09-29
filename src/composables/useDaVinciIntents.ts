@@ -627,6 +627,7 @@ export function useDaVinciIntents() {
         if (existing) {
           card.props.savedSegmentId = existing.id
           return {
+            tone: 'info',
             title: `"${existing.name}" is already in your segments`,
             sub: 'I didn’t add a second copy.',
             action: 'Open segments',
@@ -663,7 +664,7 @@ export function useDaVinciIntents() {
       if (action === 'copy') {
         return copied
           ? { title: 'Copied to clipboard' }
-          : { title: 'Couldn’t copy the draft', sub: 'Your browser blocked clipboard access — select the text to copy it yourself.' }
+          : { tone: 'warning', title: 'Couldn’t copy the draft', sub: 'Your browser blocked clipboard access — select the text to copy it yourself.' }
       }
       const isProduct = card.props.type === 'product'
       const where = isProduct ? 'the product editor' : 'email content'
@@ -677,6 +678,7 @@ export function useDaVinciIntents() {
       // Without the clipboard the draft can't travel — stay put and say so, rather than open an empty editor.
       if (!copied) {
         return {
+          tone: 'warning',
           title: 'Couldn’t copy the draft',
           sub: 'Your browser blocked clipboard access. Copy it from the chat, then open the editor.',
           action: `Open ${where}`,

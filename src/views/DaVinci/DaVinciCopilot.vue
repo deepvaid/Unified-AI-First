@@ -28,7 +28,7 @@ watch(
   (id) => {
     if (!id || id === copilot.conversationId) return
     if (copilot.restoreConversation(id)) return
-    pushToast({ title: 'That conversation is no longer available' })
+    pushToast({ tone: 'warning', title: 'That conversation is no longer available' })
     setAddress(copilot.conversationId)
   },
   { immediate: true },
@@ -90,8 +90,11 @@ function startNewChat() {
 .davinci-copilot {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  min-height: calc(100vh - var(--v-layout-top, var(--mp-layout-appbarHeight)));
+  /* Exactly the space under the app bar: the conversation scrolls inside it and the composer stays put.
+     It used to be `height: 100%; min-height: …` — with nothing bounding the parent the page grew with the
+     conversation, the whole document scrolled, and the composer sat thousands of pixels below the fold. */
+  height: calc(100dvh - var(--v-layout-top, var(--mp-layout-appbarHeight)));
+  min-height: 0;
   background: var(--surface-primary);
 }
 

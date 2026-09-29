@@ -110,7 +110,7 @@ transcript comes back on every surface. Per-row and "Delete all" deletions route
     activeId: { control: false, description: 'Id of the currently open conversation — highlights its row.' },
     mode: {
       control: false,
-      description: '"overlay" (default): slides in over the copilot panel below its 60px header, with a close button. "rail": fills a persistent side rail and swaps the close button for a kebab menu with "Delete all conversations" (gated behind an MpConfirmDialog — replaced window.confirm in the Phase 4 a11y pass, which also gave the search input an aria-label).',
+      description: '"overlay" (default): slides in over the copilot panel below its 48px header, with a close button. "rail": fills a persistent side rail and swaps the close button for a kebab menu with "Delete all conversations" (gated behind an MpConfirmDialog — replaced window.confirm in the Phase 4 a11y pass, which also gave the search input an aria-label).',
     },
     close: { control: false, description: 'Event — X button clicked (overlay mode only).', table: { category: 'events' } },
     select: { control: false, description: 'Event — conversation chosen and restored (click or Enter/Space); payload is the conversation id. The host only closes the overlay — the drawer itself restores the thread.', table: { category: 'events' } },
@@ -121,12 +121,12 @@ transcript comes back on every surface. Per-row and "Delete all" deletions route
 export default meta
 type Story = StoryObj<typeof meta>
 
-// 380×560 stage mimicking the copilot panel the drawer overlays; the 60px
-// header matches the inset the drawer leaves for the real panel header.
+// 380×560 stage mimicking the copilot panel the drawer overlays; the header
+// (--mp-space-48) matches the inset the drawer leaves for the real panel header.
 const FRAME_STYLE = 'position:relative; width:380px; height:560px; overflow:hidden;'
   + ' border:1px solid rgb(var(--v-theme-outline-variant)); border-radius:16px;'
   + ' background: rgb(var(--v-theme-surface));'
-const HEAD_STYLE = 'height:60px; display:flex; align-items:center; padding:0 16px;'
+const HEAD_STYLE = 'height:var(--mp-space-48); display:flex; align-items:center; padding:0 16px;'
   + ' border-bottom:1px solid rgb(var(--v-theme-outline-variant));'
   + ' font-weight:600; font-size:13.5px; color: rgb(var(--v-theme-on-surface));'
 

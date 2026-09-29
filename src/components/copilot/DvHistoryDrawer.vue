@@ -116,6 +116,7 @@ function buildSub(item: HistoryConversation): string {
     class="dv-history"
     :class="[{ 'is-open': open }, `dv-history--${mode ?? 'overlay'}`]"
     :aria-hidden="mode !== 'rail' && !open"
+    :inert="mode !== 'rail' && !open"
     :role="isDialog && open ? 'dialog' : undefined"
     :aria-modal="isDialog && open ? 'true' : undefined"
     :aria-labelledby="isDialog ? titleId : undefined"
@@ -146,19 +147,21 @@ function buildSub(item: HistoryConversation): string {
           <div
             v-for="item in group"
             :key="item.id"
-            role="button"
-            tabindex="0"
-            class="dv-history__item"
+            class="dv-history__row"
             :class="{ 'is-active': item.id === activeId }"
-            :aria-current="item.id === activeId ? 'true' : undefined"
-            @click="select(item)"
-            @keydown.enter.space.prevent="select(item)"
           >
-            <v-icon size="18">{{ item.icon }}</v-icon>
-            <div class="dv-history__text">
-              <div class="dv-history__title">{{ item.title }}</div>
-              <div class="dv-history__sub">{{ buildSub(item) }}</div>
-            </div>
+            <button
+              type="button"
+              class="dv-history__item"
+              :aria-current="item.id === activeId ? 'true' : undefined"
+              @click="select(item)"
+            >
+              <v-icon size="18">{{ item.icon }}</v-icon>
+              <span class="dv-history__text">
+                <span class="dv-history__title">{{ item.title }}</span>
+                <span class="dv-history__sub">{{ buildSub(item) }}</span>
+              </span>
+            </button>
             <button
               type="button"
               class="dv-history__delete"
@@ -211,7 +214,8 @@ function buildSub(item: HistoryConversation): string {
 
 .dv-history {
   position: absolute;
-  inset: 56px 0 0 0;
+  /* Under the copilot header (component height --mp-space-48); it used to start 8px lower and leave a strip of the panel showing. */
+  inset: var(--mp-space-48) 0 0 0;
   background: rgb(var(--v-theme-surface));
   border-bottom: 1px solid var(--border-subtle);
   transform: translateX(100%);
@@ -223,7 +227,7 @@ function buildSub(item: HistoryConversation): string {
      (position: absolute within that container), not the app-wide overlay
      ladder in tokens.json's zIndex scale. */
   z-index: 40;
-  height: calc(100% - 56px);
+  height: calc(100% - var(--mp-space-48));
 }
 
 .dv-history.is-open {
@@ -247,6 +251,11 @@ function buildSub(item: HistoryConversation): string {
   height: var(--mp-component-control-height);
   background: rgb(var(--v-theme-surface-variant));
   border-radius: var(--mp-radius-full);
+}
+
+/* The input's own outline is off, so the pill carries the focus ring — the same 2px accent as the composer. */
+.dv-history__search:focus-within {
+  box-shadow: inset 0 0 0 2px var(--dv-accent);
 }
 
 .dv-history__search input {
@@ -281,22 +290,15 @@ function buildSub(item: HistoryConversation): string {
   padding: var(--mp-space-6) var(--mp-space-8) var(--mp-space-8);
 }
 
-.dv-history__item {
+/* A row is two siblings: the select button (fills it) and the delete button. */
+.dv-history__row {
   display: flex;
   align-items: flex-start;
-  gap: var(--mp-space-10);
-  padding: var(--mp-space-10);
   border-radius: var(--mp-radius-10);
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  width: 100%;
-  text-align: left;
-  color: rgb(var(--v-theme-on-surface));
   transition: background 120ms ease;
 }
 
-.dv-history__item:hover {
+.dv-history__row:hover {
   background: rgb(var(--v-theme-surface-variant));
 }
 
@@ -305,11 +307,32 @@ function buildSub(item: HistoryConversation): string {
    paint the container fill with on-primary ink, or vice versa. Both themes
    define primary-container/on-primary-container, so the fallbacks only added
    a way to desync. */
-.dv-history__item.is-active {
+.dv-history__row.is-active {
   background: rgb(var(--v-theme-primary-container));
 }
 
-.dv-history__item.is-active .dv-history__title {
+.dv-history__item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--mp-space-10);
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: var(--mp-space-10);
+  border: none;
+  border-radius: inherit;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.dv-history__item:focus-visible {
+  outline: 2px solid rgb(var(--v-theme-primary));
+  outline-offset: calc(-1 * var(--mp-space-2));
+}
+
+.dv-history__row.is-active .dv-history__title {
   color: rgb(var(--v-theme-on-primary-container));
 }
 
@@ -319,7 +342,7 @@ function buildSub(item: HistoryConversation): string {
   flex-shrink: 0;
 }
 
-.dv-history__item.is-active :deep(.v-icon) {
+.dv-history__row.is-active .dv-history__item :deep(.v-icon) {
   color: rgb(var(--v-theme-primary));
 }
 
@@ -329,6 +352,7 @@ function buildSub(item: HistoryConversation): string {
 }
 
 .dv-history__title {
+  display: block;
   font-size: var(--mp-fontSize-14);
   font-weight: var(--mp-fontWeight-medium);
   line-height: 1.3;
@@ -339,6 +363,7 @@ function buildSub(item: HistoryConversation): string {
 }
 
 .dv-history__sub {
+  display: block;
   font-size: var(--mp-fontSize-12);
   font-weight: var(--mp-fontWeight-regular);
   color: rgb(var(--v-theme-on-surface-variant));
@@ -349,9 +374,10 @@ function buildSub(item: HistoryConversation): string {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  width: var(--mp-space-28);
+  height: var(--mp-space-28);
   flex-shrink: 0;
+  margin: var(--mp-space-8) var(--mp-space-8) 0 0;
   border: none;
   background: transparent;
   border-radius: var(--mp-component-chip-radius);
@@ -361,9 +387,16 @@ function buildSub(item: HistoryConversation): string {
   transition: opacity 120ms ease, background 120ms ease, color 120ms ease;
 }
 
-.dv-history__item:hover .dv-history__delete,
-.dv-history__item:focus-within .dv-history__delete {
+/* Hidden until the row is hovered or anything in it has focus — but always focusable, so a keyboard
+   user reaches it (and it appears the moment it does). */
+.dv-history__row:hover .dv-history__delete,
+.dv-history__row:focus-within .dv-history__delete {
   opacity: 1;
+}
+
+.dv-history__delete:focus-visible {
+  outline: 2px solid rgb(var(--v-theme-primary));
+  outline-offset: calc(-1 * var(--mp-space-2));
 }
 
 .dv-history__delete:hover {

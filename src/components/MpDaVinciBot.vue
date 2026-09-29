@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useUserProfile } from '@/stores/useUserProfile'
-import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 
@@ -176,10 +176,11 @@ const suggestionPills = computed<Suggestion[]>(() => {
 
 const landingSuggestions = computed(() => landingPrompts(routeContext.value))
 
-function scrollToBottom() {
+/** Smooth while a conversation grows; instant when arriving at one (opening, restoring, back from voice). */
+function scrollToBottom(smooth = true) {
   nextTick(() => {
     if (bodyEl.value) {
-      bodyEl.value.scrollTo({ top: bodyEl.value.scrollHeight, behavior: 'smooth' })
+      bodyEl.value.scrollTo({ top: bodyEl.value.scrollHeight, behavior: smooth ? 'smooth' : 'auto' })
     }
   })
 }
@@ -717,8 +718,20 @@ watch(
     stopGeneration()
     stopVoiceActivity()
     inputText.value = ''
+    scrollToBottom(false)
   },
 )
+
+// Arriving at a conversation shows its latest message, not the top of it: on mount (the drawer opens
+// on a live thread), back from voice mode (the body is rebuilt), and when a hidden surface reopens
+// (replies may have landed silently meanwhile).
+onMounted(() => scrollToBottom(false))
+watch(isVoiceMode, (voiceOn) => {
+  if (!voiceOn) scrollToBottom(false)
+})
+watch(surfaceVisible, (visible) => {
+  if (visible) scrollToBottom(false)
+})
 
 function onWidgetSaved(payload: AddedWidgetRef, msg: ChatMessage, index: number) {
   // The payload names the dashboard the widget was actually added to — not the live route
@@ -767,6 +780,8 @@ function confirmClearAll() {
 }
 
 function onComposerKeydown(event: KeyboardEvent) {
+  // Enter that confirms an IME candidate (Japanese, Chinese, Korean…) is not a send.
+  if (event.isComposing || event.keyCode === 229) return
   if (event.key === 'Enter' && !event.shiftKey) {
     event.preventDefault()
     sendQuery()
@@ -845,7 +860,9 @@ function onComposerKeydown(event: KeyboardEvent) {
       </v-btn>
     </header>
 
+    <!-- Headerless hosts have no button that opens it (the full-page copilot has its own rail). -->
     <DvHistoryDrawer
+      v-if="!headerless"
       :open="historyOpen"
       :active-id="currentConversationId ?? undefined"
       @close="historyOpen = false"
@@ -897,7 +914,18 @@ function onComposerKeydown(event: KeyboardEvent) {
     />
 
     <!-- ═══ BODY (text mode) ═══ -->
-    <div v-if="!isVoiceMode" ref="bodyEl" class="dv-panel__body">
+    <!-- The transcript is a live log: a reply that lands is announced (once it is complete — aria-busy
+         holds it back while Da Vinci is still working). -->
+    <div
+      v-if="!isVoiceMode"
+      ref="bodyEl"
+      class="dv-panel__body"
+      role="log"
+      aria-live="polite"
+      aria-relevant="additions"
+      aria-label="Conversation with Da Vinci"
+      :aria-busy="isTyping"
+    >
       <!-- Landing state -->
       <DvLandingHero
         :name="profile.firstName"
@@ -1035,13 +1063,11 @@ function onComposerKeydown(event: KeyboardEvent) {
           v-model="inputText"
           type="text"
           :placeholder="isTyping ? 'Queue a follow-up…' : 'Ask Da Vinci…'"
+          aria-label="Message Da Vinci"
           class="dv-composer__input"
           @keydown="onComposerKeydown"
         />
         <div class="dv-composer__actions">
-          <v-btn icon size="32" variant="text" aria-label="Attach">
-            <v-icon size="16">paperclip</v-icon>
-          </v-btn>
           <v-btn
             v-if="voice.sttSupported"
             icon
@@ -1065,24 +1091,26 @@ function onComposerKeydown(event: KeyboardEvent) {
             <v-icon size="16">audio-lines</v-icon>
             <v-tooltip activator="parent" location="top">Voice mode</v-tooltip>
           </v-btn>
-          <button
-            v-if="isTyping"
-            type="button"
-            class="dv-composer__send dv-composer__stop"
-            aria-label="Stop generating"
-            @click="stopGeneration"
-          >
-            <v-icon size="13" class="dv-composer__stop-icon">square</v-icon>
-          </button>
-          <button
-            type="button"
-            class="dv-composer__send"
-            aria-label="Send"
-            :disabled="!inputText.trim()"
-            @click="sendQuery"
-          >
-            <v-icon size="16" class="dv-on-accent-icon">arrow-up</v-icon>
-          </button>
+          <div class="dv-composer__send-group">
+            <button
+              v-if="isTyping"
+              type="button"
+              class="dv-composer__send dv-composer__stop"
+              aria-label="Stop generating"
+              @click="stopGeneration"
+            >
+              <v-icon size="13" class="dv-composer__stop-icon">square</v-icon>
+            </button>
+            <button
+              type="button"
+              class="dv-composer__send"
+              aria-label="Send"
+              :disabled="!inputText.trim()"
+              @click="sendQuery"
+            >
+              <v-icon size="16" class="dv-on-accent-icon">arrow-up</v-icon>
+            </button>
+          </div>
         </div>
       </div>
       <p class="dv-composer__note">
@@ -1117,7 +1145,9 @@ function onComposerKeydown(event: KeyboardEvent) {
   height: 100%;
   background: rgb(var(--v-theme-surface));
   min-height: 0;
-  overflow: hidden;
+  /* clip, not hidden: `hidden` is still a scroll container, so focusing a control inside the
+     translated-off history panel scrolled the whole copilot sideways (scrollLeft 156). */
+  overflow: clip;
   /* Clip header/composer corners when hosted in the rounded copilot drawer */
   border-radius: inherit;
 }
@@ -1509,7 +1539,11 @@ function onComposerKeydown(event: KeyboardEvent) {
   gap: var(--mp-space-2);
 }
 
-.dv-composer__actions .dv-composer__send {
+/* Stop and Send travel together, at the end of the row (a margin on each split the free space between them). */
+.dv-composer__send-group {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-4);
   margin-left: auto;
 }
 

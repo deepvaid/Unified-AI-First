@@ -54,7 +54,8 @@ surface in an error state). \`MpAlert\`/\`MpBanner\` carry a *feedback-severity*
 
 ### A11y
 - **Provides:** \`role="status"\`+polite (info/success) or \`role="alert"\`+assertive
-  (warning/error), overridable via \`live\`; a \`d-sr-only\` tone prefix ("Warning: …"); the icon
+  (warning/error), overridable via \`live\` (\`live="off"\` is a plain block — no role, no live
+  region — for static furniture, or inside a region that is already live); a \`d-sr-only\` tone prefix ("Warning: …"); the icon
   is \`aria-hidden\` (the prefix already announces severity); a labelled dismiss button; every
   tone pair is contrast-checked (\`npm run contrast:check\`).
 - **Consumer must:** own visibility (\`v-if\` + \`@dismiss\`), keep the body meaningful without
@@ -86,7 +87,7 @@ Emits \`dismiss\`. Slots: default (body), \`#actions\`.
     live: {
       control: 'inline-radio',
       options: ['off', 'polite', 'assertive'],
-      description: "Live-region politeness override. Defaults by tone: info/success 'polite', warning/error 'assertive'.",
+      description: "Live-region politeness override. Defaults by tone: info/success 'polite', warning/error 'assertive'. 'off' drops the role and the live region entirely — a plain block for static furniture or an alert inside an already-live region (a chat transcript).",
     },
     dismissible: {
       control: 'boolean',
