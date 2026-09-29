@@ -628,6 +628,7 @@ export function useDaVinciIntents() {
     pending,
     classify: classifyIntent,
     claimsPendingSlot,
+    offline: () => buildFallback(true),
     handle,
     performCardAction,
     answer,

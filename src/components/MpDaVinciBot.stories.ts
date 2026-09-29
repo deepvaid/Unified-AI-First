@@ -4,16 +4,6 @@ import { routeLocationKey } from 'vue-router'
 import MpDaVinciBot from './MpDaVinciBot.vue'
 import type { ChatMessage } from '@/stores/useCopilot'
 
-type StoryMessage = {
-  id: string
-  role: 'user' | 'assistant'
-  text?: string
-  componentData?: {
-    type: 'chart' | 'kpi' | 'table'
-    props: Record<string, unknown>
-  }[]
-}
-
 const storyRoute = {
   fullPath: '/accounts/2000290/dashboards',
   path: '/accounts/2000290/dashboards',
@@ -26,30 +16,47 @@ const storyRoute = {
   redirectedFrom: undefined,
 }
 
-const conversationMessages: StoryMessage[] = [
+/** The revenue answer as it really renders: an `intentCards` message with a KPI row and the chart. */
+const conversationMessages: ChatMessage[] = [
   {
     id: 'prompt-1',
     role: 'user',
-    text: 'Top 10 products by revenue',
+    text: "How's revenue this week?",
   },
   {
     id: 'response-1',
     role: 'assistant',
-    text: 'Here are the results you requested:',
+    text: 'Revenue is up 61.2% on the week before — $7,222 across 10 orders in the last 7 days.',
+    toolSteps: ['Query revenue · last 7 days', 'Compare vs prior week'],
     componentData: [
       {
-        type: 'kpi',
+        type: 'intentCards',
         props: {
-          kpis: [{ label: 'Total Revenue (Top 10)', value: '$842K', trend: '12%', trendUp: true }],
-        },
-      },
-      {
-        type: 'chart',
-        props: {
-          title: 'Revenue Share (Top 10)',
-          subtitle: 'Last 30 Days',
-          bars: [[400], [350], [300], [250], [200], [150], [100], [80], [60], [40]],
-          labels: ['Prod A', 'Prod B', 'Prod C', 'Prod D', 'Prod E', 'Prod F', 'Prod G', 'Prod H', 'Prod I', 'Prod J'],
+          cards: [
+            {
+              type: 'kpis',
+              props: {
+                kpis: [
+                  { label: 'Revenue', value: '$7,222', trend: '+61.2%', trendUp: true, icon: 'dollar-sign' },
+                  { label: 'Orders', value: '10', trend: '+0.0%', icon: 'shopping-cart' },
+                ],
+              },
+            },
+            {
+              type: 'chart',
+              props: {
+                title: 'Revenue · last 7 days',
+                subtitle: '$7,222 total · +61.2% vs prior week',
+                labels: ['Wed', 'Thu', 'Fri', 'Sat', 'Sun', 'Mon', 'Tue'],
+                series: [
+                  { name: 'Revenue', data: [940, 1129, 760, 890, 1159, 1040, 1304] },
+                  { name: 'Previous 7 days', data: [560, 781, 700, 610, 422, 590, 816], isComparison: true },
+                ],
+                unit: 'currency',
+                saveMetricId: 'commerce_revenue_over_time',
+              },
+            },
+          ],
         },
       },
     ],

@@ -7,7 +7,6 @@ import { storeToRefs } from 'pinia'
 import DvWidgetDraftCard from './copilot/DvWidgetDraftCard.vue'
 import DvHistoryDrawer from './copilot/DvHistoryDrawer.vue'
 import DvToastStack from './copilot/DvToastStack.vue'
-import DvInsightCard from './copilot/DvInsightCard.vue'
 import DvIntentCardList from './copilot/voice/DvIntentCardList.vue'
 import DvCampaignOnboardingCard from './copilot/DvCampaignOnboardingCard.vue'
 import DvSetupOnboardingCard from './copilot/DvSetupOnboardingCard.vue'
@@ -27,31 +26,21 @@ import {
   type SetupOnboardingProps,
 } from '@/stores/useCopilot'
 import { useDashboardsStore } from '@/stores/useDashboards'
-import { getAvailableMetrics } from '@/stores/dashboards/metricCatalog'
-import { routePrompt, type RouteContext } from '@/davinci/promptRouting'
-import { draftFromResolution, rationaleFor, timeBasisLabel } from '@/davinci/widgetRequest'
+import { geminiHistory, makeId } from '@/davinci/conversation'
 import { draftFollowUps, landingPrompts, revenueFollowUps, type Suggestion } from '@/davinci/followUps'
-import { useDaVinciTarget } from '@/composables/useDaVinciTarget'
+import {
+  draftCountLabel,
+  useDaVinciResponder,
+  type DvAssistantTurn,
+  type DvFlowResponse,
+} from '@/composables/useDaVinciResponder'
 import type { DashboardWidgetDraft } from '@/stores/dashboards/types'
 import { useDaVinciHistory } from '@/composables/useDaVinciHistory'
 import { useDaVinciToasts } from '@/composables/useDaVinciToasts'
-import { useDaVinciContext } from '@/composables/useDaVinciContext'
-import {
-  useDaVinciCampaignOnboarding,
-  type CampaignOnboardingResponse,
-} from '@/composables/useDaVinciCampaignOnboarding'
-import {
-  setupHandoffFollowText,
-  useDaVinciSetupOnboarding,
-  type SetupOnboardingResponse,
-} from '@/composables/useDaVinciSetupOnboarding'
+import { useDaVinciCampaignOnboarding } from '@/composables/useDaVinciCampaignOnboarding'
+import { setupHandoffFollowText, useDaVinciSetupOnboarding } from '@/composables/useDaVinciSetupOnboarding'
 import { trackDaVinciOnboardingEvent } from '@/composables/useDaVinciOnboardingAnalytics'
-import {
-  useDaVinciIntents,
-  INTENT_STEPS,
-  type DvCardDescriptor,
-  type DvIntentResult,
-} from '@/composables/useDaVinciIntents'
+import type { DvCardDescriptor } from '@/composables/useDaVinciIntents'
 import { useDaVinciVoice, VoiceError } from '@/composables/useDaVinciVoice'
 import { useDaVinciOnboardingStore } from '@/stores/useDaVinciOnboarding'
 import { useDaVinciSetupStore } from '@/stores/useDaVinciSetup'
@@ -83,7 +72,9 @@ const router = useRouter()
 const dashboardsStore = useDashboardsStore()
 const { addItem, incrementAdded, clearAll } = useDaVinciHistory()
 const { pushToast } = useDaVinciToasts()
-const intents = useDaVinciIntents()
+// One reply path shared with the full-page experience: flows → lane → reply.
+const responder = useDaVinciResponder()
+const { intents, routeContext } = responder
 const campaignOnboarding = useDaVinciCampaignOnboarding()
 const setupOnboarding = useDaVinciSetupOnboarding()
 const voice = useDaVinciVoice()
@@ -91,7 +82,6 @@ const copilot = useCopilotStore()
 const onboarding = useDaVinciOnboardingStore()
 const setupStore = useDaVinciSetupStore()
 const setupGuide = useOnboardingStore()
-const { contextBlock } = useDaVinciContext()
 
 // The conversation lives in the copilot store so it survives navigation, drawer
 // close/reopen, and is shared by the drawer / full-width / full-page surfaces.
@@ -116,10 +106,10 @@ const historyOpen = ref(false)
 let generationSeq = 0
 let geminiAbort: AbortController | null = null
 const liveSteps = ref<DvToolStep[]>([])
-const queuedPrompts = ref<string[]>([])
+const queuedPrompts = ref<Array<{ text: string; turnId: string }>>([])
 
 // Which account and dashboard this conversation works on (shared with the draft cards).
-const { isDashboardRoute, account: activeAccount, accountId: targetAccountId, dashboard: targetDashboard } = useDaVinciTarget()
+const { accountId: targetAccountId, dashboard: targetDashboard } = responder.target
 
 if (route.query.source === 'davinci' && targetAccountId.value) {
   // A live guided-setup session wins the restore; otherwise fall back to the
@@ -168,14 +158,6 @@ const headerStatus = computed(() => {
   return 'Intelligent AI assistant'
 })
 
-/** What the router needs to know about where we are — drives the lane, the chips and the pills. */
-const routeContext = computed<RouteContext>(() => ({
-  onDashboard: isDashboardRoute.value,
-  hasDashboard: !!(targetAccountId.value && targetDashboard.value),
-  metrics: getAvailableMetrics(activeAccount.value),
-  dashboardRange: targetDashboard.value?.filters.rangePreset,
-}))
-
 /** Pills under the composer: follow-ups derived from the last result, each checked against the router. */
 const suggestionPills = computed<Suggestion[]>(() => {
   const last = [...messages.value].reverse().find((m) => m.role === 'assistant')
@@ -189,10 +171,6 @@ const suggestionPills = computed<Suggestion[]>(() => {
 
 const landingSuggestions = computed(() => landingPrompts(routeContext.value))
 
-function makeId(prefix = 'm') {
-  return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`
-}
-
 function scrollToBottom() {
   nextTick(() => {
     if (bodyEl.value) {
@@ -200,16 +178,6 @@ function scrollToBottom() {
     }
   })
 }
-
-/** Plain text — it is also what is spoken and what Gemini sees as history. The drawer bolds the parts itself. */
-function buildIntro(count: number, dashboardName: string): string {
-  return `Here’s ${draftCountLabel(count)} I drafted for ${dashboardName}. Select Add widget to review and confirm.`
-}
-
-function draftCountLabel(count: number): string {
-  return `${count} ${count === 1 ? 'widget' : 'widgets'}`
-}
-
 
 // ─── Voice dictation + TTS + text↔voice mode (drawer surface) ──────────
 const ttsEnabled = ref(typeof window !== 'undefined' && window.localStorage.getItem('davinci-drawer-tts') === '1')
@@ -483,7 +451,7 @@ function finishGeneration(gen: number) {
   generatingStatus.value = ''
   scrollToBottom()
   const next = queuedPrompts.value.shift()
-  if (next) runGeneration(next)
+  if (next) runGeneration(next.text, next.turnId)
 }
 
 /** Composer Stop button — cancels the in-flight reply AND any queued follow-ups. */
@@ -499,74 +467,26 @@ function stopGeneration() {
   generatingStatus.value = ''
 }
 
-/** Shared completion for intent-layer results (canned intents + Gemini). */
-function completeIntentResult(res: DvIntentResult, gen: number) {
+/** A finished reply lands in the transcript (and on the voice surface), then is spoken. */
+function landTurn(turn: DvAssistantTurn, gen: number, isFirstPrompt: boolean, prompt: string) {
   if (gen !== generationSeq) return
-  messages.value.push({
-    id: makeId('a'),
-    role: 'assistant',
-    text: res.reply,
-    toolSteps: res.steps,
-    componentData:
-      res.cards.length || res.quickReplies?.length
-        ? [{ type: 'intentCards', props: { cards: res.cards, quickReplies: res.quickReplies } }]
-        : undefined,
-  })
-  if (isVoiceMode.value) orbitResponse.value = { draft: null, caption: res.reply }
-  maybeSpeak(res.speech ?? res.reply)
+  messages.value.push(turn.message)
+  if (turn.draftedCount && isFirstPrompt) addItem({ title: prompt, draftedCount: turn.draftedCount })
+  if (isVoiceMode.value) {
+    orbitResponse.value = { draft: turn.draft, caption: turn.caption, note: turn.note, messageId: turn.message.id }
+  }
+  maybeSpeak(turn.speech)
   finishGeneration(gen)
 }
 
-function appendCampaignOnboardingResponse(res: CampaignOnboardingResponse) {
-  const componentData: ChatMessage['componentData'] = []
-  if (res.cards?.length || res.quickReplies?.length) {
-    componentData.push({
-      type: 'intentCards',
-      props: { cards: res.cards ?? [], quickReplies: res.quickReplies },
-    })
-  }
-  if (res.onboardingCard) {
-    componentData.push({
-      type: 'campaignOnboarding',
-      props: res.onboardingCard,
-    })
-  }
-  messages.value.push({
-    id: makeId('a'),
-    role: 'assistant',
-    text: res.reply,
-    componentData: componentData.length ? componentData : undefined,
-  })
+/** A guided-flow response (setup or campaign wizard) as a chat message. */
+function appendFlowResponse(res: DvFlowResponse) {
+  messages.value.push(responder.flowMessage(res))
   chatMode.value = true
-  if (res.onboardingCard && targetAccountId.value) {
+  if ('onboardingCard' in res && res.onboardingCard && targetAccountId.value) {
     const blockers = res.onboardingCard.items?.filter((item) => item.status !== 'ready').length ?? 0
     trackDaVinciOnboardingEvent('readiness_shown', targetAccountId.value, { blockers })
   }
-  scrollToBottom()
-  maybeSpeak(res.speech ?? res.reply)
-}
-
-function appendSetupOnboardingResponse(res: SetupOnboardingResponse) {
-  const componentData: ChatMessage['componentData'] = []
-  if (res.quickReplies?.length) {
-    componentData.push({
-      type: 'intentCards',
-      props: { cards: [], quickReplies: res.quickReplies },
-    })
-  }
-  if (res.setupCard) {
-    componentData.push({
-      type: 'setupOnboarding',
-      props: res.setupCard,
-    })
-  }
-  messages.value.push({
-    id: makeId('a'),
-    role: 'assistant',
-    text: res.reply,
-    componentData: componentData.length ? componentData : undefined,
-  })
-  chatMode.value = true
   scrollToBottom()
   maybeSpeak(res.speech ?? res.reply)
 }
@@ -588,18 +508,21 @@ function onSetupOnboardingAction(action: string) {
   }
   const response = setupOnboarding.handleAction(action)
   if (response) {
-    appendSetupOnboardingResponse(response)
+    appendFlowResponse(response)
     if (response.exitToDashboard && accountId) {
       void router.push({ name: 'Dashboard', params: { accountId } })
     }
   }
 }
 
-function pushUserTurn(text: string) {
-  messages.value.push({ id: makeId('u'), role: 'user', text })
+/** Shows the merchant's turn straight away and returns its id (Gemini history is keyed by it). */
+function pushUserTurn(text: string): string {
+  const id = makeId('u')
+  messages.value.push({ id, role: 'user', text })
   chatMode.value = true
   inputText.value = ''
   scrollToBottom()
+  return id
 }
 
 function openCampaignDraft(draftId: number) {
@@ -633,7 +556,7 @@ function openCampaignPrerequisite(action: string) {
 function onCampaignOnboardingAction(action: string) {
   if (action === 'continue-draft') {
     const response = campaignOnboarding.createDraft()
-    appendCampaignOnboardingResponse(response)
+    appendFlowResponse(response)
     const card = response.cards?.find((item) => item.type === 'campaign')
     if (card?.type === 'campaign' && card.props.draftId && targetAccountId.value) {
       trackDaVinciOnboardingEvent('draft_created', targetAccountId.value, { draftId: card.props.draftId })
@@ -642,7 +565,7 @@ function onCampaignOnboardingAction(action: string) {
   }
   if (action === 'change-brief') {
     if (targetAccountId.value) trackDaVinciOnboardingEvent('brief_corrected', targetAccountId.value)
-    appendCampaignOnboardingResponse(campaignOnboarding.changeBrief())
+    appendFlowResponse(campaignOnboarding.changeBrief())
     return
   }
   if (action.startsWith('open-')) openCampaignPrerequisite(action)
@@ -661,12 +584,12 @@ function onIntentCardAction(payload: { card: DvCardDescriptor; action: string })
       const draft = campaignOnboarding.createDraft()
       const draftId = draft.cards?.find((card) => card.type === 'campaign')?.props.draftId
       if (draftId) openCampaignDraft(draftId)
-      else appendCampaignOnboardingResponse(draft)
+      else appendFlowResponse(draft)
       return
     }
     if (payload.action === 'change-brief') {
       if (targetAccountId.value) trackDaVinciOnboardingEvent('brief_corrected', targetAccountId.value)
-      appendCampaignOnboardingResponse(campaignOnboarding.changeBrief())
+      appendFlowResponse(campaignOnboarding.changeBrief())
       return
     }
   }
@@ -677,40 +600,29 @@ function onIntentCardAction(payload: { card: DvCardDescriptor; action: string })
 
 function processQuery(text: string) {
   if (!text) return
-  // Routing precedence (kept identical to the Experience surface): guided
-  // setup → campaign wizard → the normal assistant.
-  const setupResponse = setupFlowActive.value ? setupOnboarding.handleText(text) : null
-  if (setupResponse) {
+  const accountId = targetAccountId.value
+  // Routing precedence is the responder's, shared with the full-page experience:
+  // guided setup → campaign wizard → the normal assistant.
+  const flow = responder.flowTurn(text, accountId)
+  if (flow.kind !== 'pass') {
     pushUserTurn(text)
-    appendSetupOnboardingResponse(setupResponse)
-    if (setupResponse.exitToDashboard && targetAccountId.value) {
-      void router.push({ name: 'Dashboard', params: { accountId: targetAccountId.value } })
+    appendFlowResponse(flow.response)
+    if (flow.kind === 'setup' && flow.response.exitToDashboard && accountId) {
+      void router.push({ name: 'Dashboard', params: { accountId } })
     }
-    return
-  }
-  const onboardingResponse = onboarding.isActive ? campaignOnboarding.handleText(text) : null
-  if (onboardingResponse) {
-    pushUserTurn(text)
-    appendCampaignOnboardingResponse(onboardingResponse)
     return
   }
   // Either flow pauses itself for off-topic questions; acknowledge the switch
   // once, then answer the actual question through the normal path.
-  const setupPauseNotice = setupOnboarding.consumePauseNotice()
-  const pauseNotice = campaignOnboarding.consumePauseNotice()
-  // Text mode mid-generation: show the turn immediately, answer it after the
+  const turnId = pushUserTurn(text)
+  flow.notices.forEach(appendFlowResponse)
+  // Text mode mid-generation: the turn is already on screen; answer it after the
   // current reply lands (queued follow-up).
   if (isTyping.value && !isVoiceMode.value) {
-    pushUserTurn(text)
-    if (setupPauseNotice) appendSetupOnboardingResponse(setupPauseNotice)
-    if (pauseNotice) appendCampaignOnboardingResponse(pauseNotice)
-    queuedPrompts.value.push(text)
+    queuedPrompts.value.push({ text, turnId })
     return
   }
-  pushUserTurn(text)
-  if (setupPauseNotice) appendSetupOnboardingResponse(setupPauseNotice)
-  if (pauseNotice) appendCampaignOnboardingResponse(pauseNotice)
-  runGeneration(text)
+  runGeneration(text, turnId)
 }
 
 // A product hook verified the current setup task while the drawer is visible —
@@ -726,12 +638,12 @@ watch(
     const taskId = setupStore.activeSession?.currentTaskId
     if (!taskId) return
     const response = setupOnboarding.onTaskAutoCompleted(taskId)
-    if (response) appendSetupOnboardingResponse(response)
+    if (response) appendFlowResponse(response)
   },
 )
 
-/** Answer `text` (the user turn is already in the transcript). */
-function runGeneration(text: string) {
+/** Answer `text` (the user turn `turnId` is already in the transcript). */
+function runGeneration(text: string, turnId: string) {
   const gen = ++generationSeq
   isTyping.value = true
   generatingStatus.value = 'Working on it…'
@@ -741,134 +653,31 @@ function runGeneration(text: string) {
   }
   scrollToBottom()
 
-  // A reply that answers an open clarification (engine page, journey goal, yes/no) is a
-  // conversational turn, not tool work — no steps. Anything else releases the slot and
-  // routes like a fresh message.
-  if (intents.claimsPendingSlot(text)) {
-    startStepTicker([], gen, 900)
-    pendingTimers.push(setTimeout(() => completeIntentResult(intents.handle(text), gen), 900))
-    return
-  }
-
-  const conversationId = currentConversationId.value ?? makeId('c')
   const isFirstPrompt = !currentConversationId.value
-  currentConversationId.value = conversationId
+  copilot.ensureConversationId()
 
-  // Route on what the merchant asked for: an explicit chart request → a widget draft (and it
-  // beats keyword intents like the revenue card); a question → the advisor; the rest → the
-  // matching canned intent. The rules are pure and unit-tested — src/davinci/promptRouting.ts.
-  const dashboard = targetDashboard.value
-  const route = routePrompt(text, {
-    onDashboard: isDashboardRoute.value,
-    hasDashboard: !!(targetAccountId.value && dashboard),
-    metrics: getAvailableMetrics(activeAccount.value),
-    dashboardRange: dashboard?.filters.rangePreset,
-  })
+  // Which lane answers, and what to show while it works — the rules are pure and unit-tested
+  // (src/davinci/promptRouting.ts); the responder turns them into a reply.
+  const plan = responder.plan(text)
+  if (plan.lane !== 'slot') generatingStatus.value = plan.status
+  startStepTicker(plan.steps, gen, plan.paceMs)
+  if (plan.lane === 'gemini') geminiAbort = new AbortController()
+  const signal = geminiAbort?.signal
 
-  if (route.lane === 'widget' && dashboard) {
-    const { resolution } = route
-    const base: DashboardWidgetDraft = {
-      ...draftFromResolution(resolution, dashboard.id, text),
-      lastRefreshedAt: new Date().toISOString(),
-    }
-    const drafts = [base]
-    const rationale = rationaleFor(resolution)
-    const intro = buildIntro(drafts.length, dashboard.name)
-    const metricLabel = resolution.metric.label.toLowerCase()
-    const basis = timeBasisLabel(resolution.metric, dashboard.filters.rangePreset).toLowerCase()
-    generatingStatus.value = `Pulling ${metricLabel} · ${basis}`
-    const steps = [`Check ${dashboard.name} widgets`, `Pull ${metricLabel} · ${basis}`, 'Draft widget']
-    startStepTicker(steps, gen, 1200)
-    pendingTimers.push(setTimeout(() => {
-      if (gen !== generationSeq) return
-      const messageId = makeId('a')
-      messages.value.push({
-        id: messageId,
-        role: 'assistant',
-        text: intro,
-        toolSteps: steps,
-        componentData: [
-          {
-            type: 'widgetDraftSet',
-            props: { drafts, rationale, conversationId, dashboardName: dashboard.name, notes: [resolution.note ?? null] },
-          },
-        ],
-      })
-      if (isFirstPrompt) {
-        addItem({ title: text, draftedCount: drafts.length })
-      }
-      if (isVoiceMode.value) {
-        orbitResponse.value = { draft: drafts[0] ?? null, caption: intro, note: resolution.note ?? null, messageId }
-      }
-      maybeSpeak(intro)
-      finishGeneration(gen)
-    }, 1200))
-    return
-  }
-
-  if (route.lane === 'widget-hint') {
-    startStepTicker(INTENT_STEPS.fallback, gen, 1200)
-    pendingTimers.push(setTimeout(() => {
-      if (gen !== generationSeq) return
-      // Asked for a chart we can't map → widget-prompt hint
-      if (isVoiceMode.value) {
-        orbitResponse.value = {
-          draft: null,
-          caption:
-            "I couldn't map that to a widget yet. Try revenue, orders, open rate, campaigns, contact growth, or ticket volume.",
-        }
-      }
-      messages.value.push({
-        id: makeId('a'),
-        role: 'assistant',
-        text: "I couldn't map that to a supported widget yet. Try asking for revenue, orders, open rate, campaigns, contact growth, or ticket volume.",
-        componentData: [
-          {
-            type: 'insight',
-            props: {
-              headline: 'Try a widget-ready prompt',
-              description:
-                'Use prompts like “Create a revenue by channel widget”, “Show open rate trend for last 30 days”, or “Add a recent orders table”.',
-              severity: 'info',
-            },
-          },
-        ],
-      })
-      finishGeneration(gen)
-    }, 1200))
-    return
-  }
-
-  // Intent / Gemini path — preview the routed intent's steps while working; the finished
-  // message carries the result's actual steps.
-  const intentKind = route.lane === 'intent' ? route.intent : 'fallback'
-  startStepTicker(INTENT_STEPS[intentKind], gen, 1200)
   pendingTimers.push(setTimeout(async () => {
     if (gen !== generationSeq) return
-    if (route.lane === 'intent') {
-      completeIntentResult(intents.handle(text), gen)
-      return
-    }
-    // Open-ended question (or analysis of the data on screen) — answer with Gemini Flash
-    // (falls back to a labelled canned reply if Gemini is unavailable), grounded in the
-    // live workspace context block. Dashboard routes included: a merchant asking "what
-    // needs my attention?" from the home page deserves an answer, not a widget hint.
-    const history = messages.value.slice(0, -1).slice(-6).map((m) => ({ role: m.role, text: m.text }))
-    geminiAbort = new AbortController()
-    let smart: DvIntentResult
+    let turn: DvAssistantTurn
     try {
-      smart = await intents.answer(text, {
-        history,
-        context: contextBlock.value,
-        signal: geminiAbort.signal,
-      })
+      turn = await responder.reply(plan, text, { history: geminiHistory(messages.value, turnId), signal })
     } catch {
-      return // aborted via Stop — generationSeq is already stale
+      // Stop aborted it (generationSeq is already stale); anything else must not leave the composer stuck.
+      if (gen !== generationSeq) return
+      turn = responder.offlineTurn()
     } finally {
       geminiAbort = null
     }
-    completeIntentResult(smart, gen)
-  }, 1200))
+    landTurn(turn, gen, isFirstPrompt, text)
+  }, plan.paceMs))
 }
 
 function sendQuery() {
@@ -893,22 +702,11 @@ function newChat() {
 }
 
 function onWidgetSaved(payload: AddedWidgetRef, msg: ChatMessage, index: number) {
-  copilot.markDraftAdded(msg.id, index, payload)
   const comp = msg.componentData?.find((c) => c.type === 'widgetDraftSet')
   if (comp) incrementAdded((comp.props as DraftSetProps).conversationId)
-  // Use the dashboard the widget was actually added to (from the card's payload),
-  // not the live route target — they can differ when the draft was pinned.
-  const { dashboardId, accountId } = payload
-  pushToast({
-    title: `Widget added to ${payload.dashboardName}`,
-    sub: payload.title,
-    action: dashboardId && accountId ? 'View' : undefined,
-    onAction: () => {
-      if (dashboardId && accountId) {
-        router.push({ name: 'DashboardDetail', params: { accountId, dashboardId } })
-      }
-    },
-  })
+  // The payload names the dashboard the widget was actually added to — not the live route
+  // target, which can differ when the draft was pinned.
+  responder.announceDraftAdded(payload, msg.id, index)
 }
 
 function isDraftSetMessage(msg: ChatMessage): msg is ChatMessage & { componentData: [{ type: 'widgetDraftSet'; props: DraftSetProps }] } {
@@ -916,21 +714,10 @@ function isDraftSetMessage(msg: ChatMessage): msg is ChatMessage & { componentDa
   return !!comp && comp.type === 'widgetDraftSet'
 }
 
-function isInsightMessage(msg: ChatMessage): boolean {
-  const comp = msg.componentData?.[0]
-  return !!comp && comp.type === 'insight'
-}
-
 function getDraftSetProps(msg: ChatMessage): DraftSetProps | null {
   const comp = msg.componentData?.[0]
   if (!comp || comp.type !== 'widgetDraftSet') return null
   return comp.props as DraftSetProps
-}
-
-function getInsightProps(msg: ChatMessage): { headline: string; description: string; severity?: string } | null {
-  const comp = msg.componentData?.[0]
-  if (!comp || comp.type !== 'insight') return null
-  return comp.props as { headline: string; description: string; severity?: string }
 }
 
 function getIntentCardsProps(msg: ChatMessage): IntentCardsProps | null {
@@ -1149,33 +936,11 @@ function onComposerKeydown(event: KeyboardEvent) {
               </div>
             </template>
 
-            <DvInsightCard
-              v-if="isInsightMessage(msg)"
-              :headline="getInsightProps(msg)?.headline ?? ''"
-              :description="getInsightProps(msg)?.description ?? ''"
-              :severity="(getInsightProps(msg)?.severity as 'info' | 'success' | 'warning' | 'error' | undefined)"
+            <DvIntentCardList
+              v-if="getIntentCardsProps(msg)?.cards?.length"
+              :cards="getIntentCardsProps(msg)?.cards ?? []"
+              @action="onIntentCardAction"
             />
-
-            <template v-if="getIntentCardsProps(msg)">
-              <DvIntentCardList
-                v-if="getIntentCardsProps(msg)?.cards?.length"
-                :cards="getIntentCardsProps(msg)?.cards ?? []"
-                @action="onIntentCardAction"
-              />
-              <div v-if="getIntentCardsProps(msg)?.quickReplies?.length" class="dv-quick-replies">
-                <button
-                  v-for="reply in getIntentCardsProps(msg)?.quickReplies ?? []"
-                  :key="reply.value"
-                  type="button"
-                  class="dv-landing__pill"
-                  @click="sendSuggestion(reply.value)"
-                >
-                  <v-icon v-if="reply.icon" size="14" color="primary">{{ reply.icon }}</v-icon>
-                  {{ reply.label }}
-                </button>
-              </div>
-            </template>
-
             <DvCampaignOnboardingCard
               v-if="getCampaignOnboardingProps(msg)"
               v-bind="getCampaignOnboardingProps(msg)!"
@@ -1186,6 +951,19 @@ function onComposerKeydown(event: KeyboardEvent) {
               v-bind="getSetupOnboardingProps(msg)!"
               @action="onSetupOnboardingAction"
             />
+            <!-- Quick replies close the message — after every card they belong to. -->
+            <div v-if="getIntentCardsProps(msg)?.quickReplies?.length" class="dv-quick-replies">
+              <button
+                v-for="reply in getIntentCardsProps(msg)?.quickReplies ?? []"
+                :key="reply.value"
+                type="button"
+                class="dv-landing__pill"
+                @click="sendSuggestion(reply.value)"
+              >
+                <v-icon v-if="reply.icon" size="14" color="primary">{{ reply.icon }}</v-icon>
+                {{ reply.label }}
+              </button>
+            </div>
           </div>
         </div>
       </template>

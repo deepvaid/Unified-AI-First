@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import type { DashboardWidgetDraft } from '@/stores/dashboards/types'
 import type { DvCardDescriptor, DvQuickReply } from '@/composables/useDaVinciIntents'
+import { makeId } from '@/davinci/conversation'
 import type { PendingSlot } from '@/davinci/pendingSlot'
 import type { CampaignReadinessItem } from '@/stores/useDaVinciOnboarding'
 import type { SetupTaskStatus } from '@/stores/useOnboarding'
@@ -74,10 +75,9 @@ export interface SetupOnboardingProps {
 }
 
 export interface ChatComponent {
-  type: 'widgetDraftSet' | 'insight' | 'intentCards' | 'campaignOnboarding' | 'setupOnboarding'
+  type: 'widgetDraftSet' | 'intentCards' | 'campaignOnboarding' | 'setupOnboarding'
   props:
     | DraftSetProps
-    | { headline: string; description: string; severity?: string }
     | IntentCardsProps
     | CampaignOnboardingProps
     | SetupOnboardingProps
@@ -111,6 +111,12 @@ export const useCopilotStore = defineStore('copilot', () => {
   const activeOnboardingAccountId = ref<string | null>(null)
   const readAloud = ref(false)
   const resumeMessage = ref<string | null>(null)
+
+  /** The id every message of this conversation shares (widget drafts and history point at it). */
+  function ensureConversationId(): string {
+    if (!conversationId.value) conversationId.value = makeId('c')
+    return conversationId.value
+  }
 
   function open() {
     isOpen.value = true
@@ -199,6 +205,7 @@ export const useCopilotStore = defineStore('copilot', () => {
     open,
     openWithPrompt,
     consumePendingPrompt,
+    ensureConversationId,
     beginOnboarding,
     setReadAloud,
     queueResume,
