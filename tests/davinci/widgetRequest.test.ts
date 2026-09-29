@@ -2,6 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { getMetricDescriptor } from '../../src/stores/dashboards/metricCatalog.ts'
 import {
+  draftForMetric,
   draftFromResolution,
   optionFor,
   optionsForMetric,
@@ -133,4 +134,13 @@ test('time-basis labels say what the widget spans', () => {
   assert.equal(timeBasisLabel(get('commerce_recent_orders'), 'last_30_days'), 'Most recent')
   assert.equal(timeBasisLabel(get('commerce_best_sellers'), 'last_30_days'), 'All time')
   assert.equal(timeBasisLabel(get('commerce_revenue_over_time'), 'last_7_days'), 'Last 7 days')
+})
+
+test('draftForMetric saves what a card shows, in the metric\'s own default look', () => {
+  const draft = draftForMetric(getMetricDescriptor('commerce_revenue_over_time')!, 'dash-1', 'Saved from the revenue card')
+  assert.equal(draft.type, 'timeseries')
+  assert.equal(draft.chartVariant, 'area')
+  assert.equal(draft.metricId, 'commerce_revenue_over_time')
+  assert.equal(draft.title, 'Revenue Over Time')
+  assert.equal(draft.aiProvenance?.summary, 'Saved from the revenue card')
 })

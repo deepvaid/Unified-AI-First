@@ -488,6 +488,25 @@ export function draftFromResolution(
   }
 }
 
+/** A draft for `metric` in its own default look — for cards that offer to save what they show. */
+export function draftForMetric(
+  metric: DashboardMetricDescriptor,
+  dashboardId: string,
+  summary: string,
+): Omit<DashboardWidgetDraft, 'lastRefreshedAt'> {
+  const option = defaultOption(metric)
+  return {
+    dashboardId,
+    type: option.type,
+    ...(option.chartVariant ? { chartVariant: option.chartVariant } : {}),
+    title: metric.defaultTitle,
+    dataSource: metric.dataSource,
+    metricId: metric.id,
+    drilldown: metric.drilldown,
+    aiProvenance: { prompt: '', summary },
+  }
+}
+
 /** One line for the "Why these" block. */
 export function rationaleFor(resolution: WidgetResolution): string {
   const { metric, option } = resolution

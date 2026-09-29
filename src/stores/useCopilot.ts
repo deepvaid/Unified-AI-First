@@ -172,6 +172,11 @@ export const useCopilotStore = defineStore('copilot', () => {
     set.added = next
   }
 
+  /** Records that a chat chart card was saved as a dashboard widget (so a remount can't save twice). */
+  function markChartSaved(card: DvCardDescriptor, added: AddedWidgetRef) {
+    if (card.type === 'chart') card.props.savedTo = added
+  }
+
   function resetConversation() {
     messages.value = []
     chatMode.value = false
@@ -203,6 +208,7 @@ export const useCopilotStore = defineStore('copilot', () => {
     setWidthMode,
     toggleExpanded,
     markDraftAdded,
+    markChartSaved,
     resetConversation,
   }
 })

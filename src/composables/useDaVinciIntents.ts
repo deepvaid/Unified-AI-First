@@ -6,7 +6,10 @@ import { useDaVinciCampaignOnboarding } from '@/composables/useDaVinciCampaignOn
 import type { DaVinciToastInput } from '@/composables/useDaVinciToasts'
 import { useCommerceStore } from '@/stores/useCommerce'
 import { useContactsStore } from '@/stores/useContacts'
-import { useCopilotStore } from '@/stores/useCopilot'
+import { useAccountsStore } from '@/stores/useAccounts'
+import { useCopilotStore, type AddedWidgetRef } from '@/stores/useCopilot'
+import { isDashboardSourceAvailable } from '@/stores/dashboards/metricCatalog'
+import type { DashboardMetricId, DashboardMetricUnit } from '@/stores/dashboards/types'
 import { parseLocalDateKey } from '@/utils/localDate'
 import { classifyIntent, type DvIntentKind } from '@/davinci/promptRouting'
 import { detectEngineKey, detectEnginePage, detectJourneyGoal, slotVerdict, type PendingSlot } from '@/davinci/pendingSlot'
@@ -57,7 +60,17 @@ export type DvCardDescriptor =
     }
   | {
       type: 'chart'
-      props: { title?: string; subtitle?: string; bars: number[][]; labels?: string[]; seriesNames?: string[] }
+      props: {
+        title?: string
+        subtitle?: string
+        labels: string[]
+        series: Array<{ name: string; data: number[]; isComparison?: boolean }>
+        unit?: DashboardMetricUnit
+        /** The dashboard metric the chart can be saved as. */
+        saveMetricId?: DashboardMetricId
+        /** The widget it was saved as (set by DvIntentCardList once saved). */
+        savedTo?: AddedWidgetRef | null
+      }
     }
   | {
       type: 'segment'
@@ -131,6 +144,7 @@ export function useDaVinciIntents() {
   const campaignOnboarding = useDaVinciCampaignOnboarding()
   const commerce = useCommerceStore()
   const contacts = useContactsStore()
+  const accounts = useAccountsStore()
   let seq = 0
 
   function currentAccountId(): string {
@@ -178,9 +192,18 @@ export function useDaVinciIntents() {
    * contradicted the Overview dashboard in the same session.
    */
   function buildRevenue(): DvIntentResult {
-    const DAY = 86_400_000
-    const now = new Date()
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
+    // Revenue is a Commerce number. Without Commerce there is nothing to report — the card used
+    // to show the (global) mock store's revenue to a marketing-only account.
+    const account = accounts.accounts.find((entry) => entry.id === currentAccountId())
+    if (account && !isDashboardSourceAvailable('commerce', account)) {
+      const reply = 'This account doesn’t have Commerce, so there is no revenue to report yet. Once a store is connected I can break it down by day and by channel.'
+      return { intent: 'revenue', reply, speech: reply, cards: [], quickReplies: SUGGESTION_CHIPS, pending: null, steps: INTENT_STEPS.revenue }
+    }
+
+    const today = new Date()
+    // Local midnight N days from today. Built from date parts, not `- N * 86_400_000`, so a DST change
+    // inside the window can't slide an order into its neighbouring day.
+    const dayStart = (offset: number) => new Date(today.getFullYear(), today.getMonth(), today.getDate() + offset).getTime()
     const orderTime = (order: { date?: string }) => parseLocalDateKey(order.date).getTime()
     const ordersBetween = (from: number, to: number) =>
       commerce.orders.filter((order) => {
@@ -189,8 +212,8 @@ export function useDaVinciIntents() {
       })
     const sumTotal = (orders: Array<{ total: string }>) => orders.reduce((sum, order) => sum + parseFloat(order.total), 0)
 
-    const current = ordersBetween(todayStart - 6 * DAY, todayStart + DAY)
-    const previous = ordersBetween(todayStart - 13 * DAY, todayStart - 6 * DAY)
+    const current = ordersBetween(dayStart(-6), dayStart(1))
+    const previous = ordersBetween(dayStart(-13), dayStart(-6))
     const revenue = sumTotal(current)
     const previousRevenue = sumTotal(previous)
     const aov = current.length ? revenue / current.length : 0
@@ -199,18 +222,21 @@ export function useDaVinciIntents() {
     const pct = (value: number, base: number) => (base ? ((value - base) / base) * 100 : 0)
     const trend = (value: number, base: number) => {
       const change = pct(value, base)
-      return { trend: `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`, trendUp: change >= 0 }
+      // Flat is neither good nor bad — leave `trendUp` unset so it reads neutral, not green.
+      return { trend: `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`, trendUp: Math.abs(change) < 0.05 ? undefined : change >= 0 }
     }
     const money = (value: number) =>
       value.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
     const count = (value: number) => value.toLocaleString('en-US')
 
+    // Each day of this week beside the same weekday a week earlier — the chart shows the comparison the subtitle claims.
     const labels: string[] = []
-    const bars: number[][] = []
-    for (let daysAgo = 6; daysAgo >= 0; daysAgo--) {
-      const start = todayStart - daysAgo * DAY
-      labels.push(new Date(start).toLocaleDateString('en-US', { weekday: 'short' }))
-      bars.push([Math.round(sumTotal(ordersBetween(start, start + DAY)))])
+    const thisWeek: number[] = []
+    const lastWeek: number[] = []
+    for (let offset = -6; offset <= 0; offset++) {
+      labels.push(new Date(dayStart(offset)).toLocaleDateString('en-US', { weekday: 'short' }))
+      thisWeek.push(Math.round(sumTotal(ordersBetween(dayStart(offset), dayStart(offset + 1)))))
+      lastWeek.push(Math.round(sumTotal(ordersBetween(dayStart(offset - 7), dayStart(offset - 6)))))
     }
 
     const revenueChange = pct(revenue, previousRevenue)
@@ -237,9 +263,13 @@ export function useDaVinciIntents() {
           props: {
             title: 'Revenue · last 7 days',
             subtitle: `${money(revenue)} total · ${trend(revenue, previousRevenue).trend} vs prior week`,
-            bars,
             labels,
-            seriesNames: ['Revenue ($)'],
+            series: [
+              { name: 'Revenue', data: thisWeek },
+              { name: 'Previous 7 days', data: lastWeek, isComparison: true },
+            ],
+            unit: 'currency',
+            saveMetricId: 'commerce_revenue_over_time',
           },
         },
       ],

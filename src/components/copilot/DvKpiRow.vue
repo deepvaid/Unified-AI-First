@@ -21,9 +21,9 @@ defineProps<{
       <div
         v-if="kpi.trend"
         class="dv-kpi-tile__trend"
-        :class="kpi.trendUp === false ? 'is-down' : 'is-up'"
+        :class="kpi.trendUp === undefined ? 'is-flat' : kpi.trendUp ? 'is-up' : 'is-down'"
       >
-        <v-icon size="13">{{ kpi.trendUp === false ? 'trending-down' : 'trending-up' }}</v-icon>
+        <v-icon size="13">{{ kpi.trendUp === undefined ? 'minus' : kpi.trendUp ? 'trending-up' : 'trending-down' }}</v-icon>
         <span>{{ kpi.trend }}</span>
       </div>
     </div>
@@ -35,6 +35,7 @@ defineProps<{
   display: flex;
   flex-wrap: wrap;
   gap: var(--mp-space-8);
+  container-type: inline-size;
 }
 
 .dv-kpi-tile {
@@ -80,5 +81,34 @@ defineProps<{
 
 .dv-kpi-tile__trend.is-down {
   color: rgb(var(--v-theme-error));
+}
+
+/* Flat is neither good nor bad. */
+.dv-kpi-tile__trend.is-flat {
+  color: rgb(var(--v-theme-on-surface-variant));
+}
+
+/* Three 120px tiles need ~376px. In the 400px drawer (~300px of content) they used to wrap 2+1 and
+   the third stretched full width; instead they stack as rows — label left, value and trend right.
+   (The literal is a container-query breakpoint: custom properties cannot be used inside @container.) */
+@container (max-width: 375px) {
+  .dv-kpi-tile {
+    flex-basis: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: var(--mp-space-12);
+  }
+
+  .dv-kpi-tile__label {
+    grid-row: 1 / span 2;
+  }
+
+  .dv-kpi-tile__value,
+  .dv-kpi-tile__trend {
+    grid-column: 2;
+    margin-top: 0;
+    justify-self: end;
+  }
 }
 </style>

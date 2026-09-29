@@ -24,7 +24,6 @@ function humanizeRouteName(name: unknown): string {
   return name.replace(/([a-z0-9])([A-Z])/g, '$1 $2')
 }
 
-const DAY = 86_400_000
 const LOW_STOCK_THRESHOLD = 20 // mirrors useCommerce's stockStatus() chip rule
 
 const money = (value: number) =>
@@ -49,7 +48,7 @@ export function useDaVinciContext() {
     // Calendar days in local time — the same windows as the revenue card and the dashboard KPIs, so the
     // model and the card can never quote different "last 7 days" figures.
     const today = new Date()
-    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime()
+    const dayStart = (offset: number) => new Date(today.getFullYear(), today.getMonth(), today.getDate() + offset).getTime()
     const orderTime = (order: { date?: string }) => parseLocalDateKey(order.date).getTime()
     const ordersBetween = (from: number, to: number) =>
       commerce.orders.filter((order) => {
@@ -58,9 +57,9 @@ export function useDaVinciContext() {
       })
     const total = (orders: Array<{ total: string }>) => orders.reduce((sum, order) => sum + parseFloat(order.total), 0)
 
-    const last7 = ordersBetween(todayStart - 6 * DAY, todayStart + DAY)
-    const prior7 = ordersBetween(todayStart - 13 * DAY, todayStart - 6 * DAY)
-    const last30 = ordersBetween(todayStart - 29 * DAY, todayStart + DAY)
+    const last7 = ordersBetween(dayStart(-6), dayStart(1))
+    const prior7 = ordersBetween(dayStart(-13), dayStart(-6))
+    const last30 = ordersBetween(dayStart(-29), dayStart(1))
     lines.push(
       `Revenue: last 7 days ${money(total(last7))} across ${count(last7.length)} orders (prior 7 days ${money(total(prior7))}); last 30 days ${money(total(last30))} across ${count(last30.length)} orders`,
     )
