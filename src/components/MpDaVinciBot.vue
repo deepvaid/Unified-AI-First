@@ -51,6 +51,12 @@ interface MpDaVinciBotProps {
   initialMessages?: ChatMessage[]
   subtitle?: string
   headerless?: boolean
+  /**
+   * Whether the surface is on screen. The drawer hides without unmounting, so its host says when.
+   * A hidden surface takes no queued prompts, resume messages or setup congratulations and shows no
+   * toasts — another instance of the same thread (the full-page copilot) owns them.
+   */
+  visible?: boolean
 }
 
 // Greeting follows the signed-in profile (a trial owner without a name is greeted as "there").
@@ -60,6 +66,7 @@ const props = withDefaults(defineProps<MpDaVinciBotProps>(), {
   initialMessages: () => [],
   subtitle: 'Intelligent AI assistant',
   headerless: false,
+  visible: true,
 })
 
 const emit = defineEmits<{
@@ -191,8 +198,8 @@ const isVoiceMode = computed(() => uiMode.value === 'voice')
 const voiceOwner = computed(() => (props.headerless ? 'copilot-page' : 'drawer'))
 
 // The drawer hides without unmounting (v-navigation-drawer just translates it
-// off-canvas) — copilot.isOpen is the visibility signal for pause/cleanup.
-const surfaceVisible = computed(() => props.headerless || copilot.isOpen)
+// off-canvas) — its host passes `visible` as the signal for pause/cleanup.
+const surfaceVisible = computed(() => props.headerless || props.visible)
 
 // Feature surfaces can queue a prompt (copilot.openWithPrompt) — run it as soon
 // as this surface is visible so the panel never opens blank.
@@ -229,9 +236,10 @@ watch(
 // spoken reply even in text mode. Typed queries stay silent unless the
 // persisted "Read replies aloud" toggle is on. Voice mode always speaks.
 const lastInputWasVoice = ref(false)
-const speakReplies = computed(
-  () => isVoiceMode.value || ttsEnabled.value || copilot.readAloud || lastInputWasVoice.value,
-)
+// Read-aloud can be on because of the menu toggle OR because the full-page voice onboarding switched it
+// on (copilot.readAloud) — the menu must show, and be able to turn off, either.
+const readAloudOn = computed(() => ttsEnabled.value || copilot.readAloud)
+const speakReplies = computed(() => isVoiceMode.value || readAloudOn.value || lastInputWasVoice.value)
 
 const isDictating = computed(
   () => voice.state.value === 'listening' && voice.owner.value === voiceOwner.value,
@@ -333,9 +341,11 @@ function setUiMode(mode: 'text' | 'voice') {
 }
 
 function toggleTts() {
-  ttsEnabled.value = !ttsEnabled.value
-  window.localStorage.setItem('davinci-drawer-tts', ttsEnabled.value ? '1' : '0')
-  if (!ttsEnabled.value && !isVoiceMode.value) voice.cancelSpeech()
+  const next = !readAloudOn.value
+  ttsEnabled.value = next
+  window.localStorage.setItem('davinci-drawer-tts', next ? '1' : '0')
+  if (!next) copilot.setReadAloud(false)
+  if (!next && !isVoiceMode.value) voice.cancelSpeech()
 }
 
 // Manual tap-to-talk. Future: auto-relisten loop after TTS ends (deliberate
@@ -394,16 +404,16 @@ watch(voice.interimTranscript, (t) => {
 })
 
 function maybeSpeak(text: string) {
-  if (!speakReplies.value) return
+  if (!surfaceVisible.value || !speakReplies.value) return
   void voice.speak(text)
 }
 
-// Drawer hidden mid-session → cancel pending replies, release the mic, stop
-// speech (so a queued reply can't start talking after you've closed it). The
-// conversation itself lives in the copilot store and survives.
+// Drawer hidden mid-session → release the mic and stop speech (so nothing talks after you've
+// closed it). The reply that is still being worked out is NOT cancelled: it lands silently and
+// is waiting when the drawer reopens — closing used to drop it, leaving the merchant's question
+// unanswered. The conversation itself lives in the copilot store and survives.
 watch(surfaceVisible, (visible) => {
   if (visible) return
-  stopGeneration()
   if (isVoiceMode.value) stopVoiceActivity()
   else voice.cancelSpeech()
 })
@@ -593,9 +603,11 @@ function onIntentCardAction(payload: { card: DvCardDescriptor; action: string })
       return
     }
   }
-  // Shared with the full-page experience: creates the segment / copies the draft
-  // and navigates, then reports what actually happened.
-  pushToast(intents.performCardAction(payload.card, payload.action) ?? { title: 'Done' })
+  // Shared with the full-page experience: creates the segment / copies the draft and navigates,
+  // then reports what actually happened — and stays quiet when nothing did.
+  void intents.performCardAction(payload.card, payload.action).then((toast) => {
+    if (toast) pushToast(toast)
+  })
 }
 
 function processQuery(text: string) {
@@ -812,9 +824,9 @@ function onComposerKeydown(event: KeyboardEvent) {
             <v-list-item-title>Switch to text mode</v-list-item-title>
           </v-list-item>
           <v-list-item v-if="voice.ttsSupported" @click="toggleTts">
-            <template #prepend><v-icon size="18">{{ ttsEnabled ? 'volume-2' : 'volume-x' }}</v-icon></template>
+            <template #prepend><v-icon size="18">{{ readAloudOn ? 'volume-2' : 'volume-x' }}</v-icon></template>
             <v-list-item-title>Read replies aloud</v-list-item-title>
-            <template #append><v-icon v-if="ttsEnabled" size="16" color="primary">check</v-icon></template>
+            <template #append><v-icon v-if="readAloudOn" size="16" color="primary">check</v-icon></template>
           </v-list-item>
           <v-divider class="my-1" />
           <v-list-item class="text-error" @click="handleClearAll">
@@ -857,6 +869,7 @@ function onComposerKeydown(event: KeyboardEvent) {
       :last-request="orbitLastRequest"
       :caption="orbitResponse?.caption ?? ''"
       :speaking="voice.state.value === 'speaking'"
+      :name="profile.firstName"
       :suggestions="landingSuggestions"
       :draft="orbitResponse?.draft ?? null"
       :account-id="targetAccountId ?? ''"
@@ -1086,7 +1099,7 @@ function onComposerKeydown(event: KeyboardEvent) {
       danger
       @confirm="confirmClearAll"
     />
-    <DvToastStack />
+    <DvToastStack v-if="surfaceVisible" />
   </div>
 </template>
 

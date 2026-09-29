@@ -1,7 +1,7 @@
 import { storeToRefs } from 'pinia'
 import router from '@/router'
 import { askGeminiResult, type GeminiFailure, type GeminiTurn } from '@/services/geminiClient'
-import { generateJourneyDraft, goalOptions, type JourneyGoal } from '@/composables/useJourneyGenerator'
+import { goalOptions, type JourneyGoal } from '@/composables/useJourneyGenerator'
 import { useDaVinciCampaignOnboarding } from '@/composables/useDaVinciCampaignOnboarding'
 import type { DaVinciToastInput } from '@/composables/useDaVinciToasts'
 import { useCommerceStore } from '@/stores/useCommerce'
@@ -10,6 +10,8 @@ import { useAccountsStore } from '@/stores/useAccounts'
 import { useCopilotStore, type AddedWidgetRef } from '@/stores/useCopilot'
 import { isDashboardSourceAvailable } from '@/stores/dashboards/metricCatalog'
 import type { DashboardMetricId, DashboardMetricUnit } from '@/stores/dashboards/types'
+import { templateById } from '@/stores/journeyFlowData'
+import { templateSetupById } from '@/stores/journeyTemplateSetup'
 import { parseLocalDateKey } from '@/utils/localDate'
 import { classifyIntent, type DvIntentKind } from '@/davinci/promptRouting'
 import { detectEngineKey, detectEnginePage, detectJourneyGoal, slotVerdict, type PendingSlot } from '@/davinci/pendingSlot'
@@ -74,7 +76,13 @@ export type DvCardDescriptor =
     }
   | {
       type: 'segment'
-      props: { name: string; rules: string[]; estimatedSize: number }
+      props: {
+        name: string
+        rules: string[]
+        estimatedSize: number
+        /** The segment this card was saved as — set on the message so a remount can't save twice. */
+        savedSegmentId?: number
+      }
     }
   | {
       type: 'insight'
@@ -126,7 +134,7 @@ export const INTENT_STEPS: Record<DvIntentKind, string[]> = {
   revenue: ['Query revenue · last 7 days', 'Compare vs prior week'],
   segment: ['Scan contacts', 'Assemble rules'],
   engine: ['Match engine to page'],
-  journey: ['Assemble sequence'],
+  journey: ['Match journey template'],
   fallback: ['Consult Da Vinci brain'],
 }
 
@@ -277,7 +285,9 @@ export function useDaVinciIntents() {
 
   function buildSegment(text: string): DvIntentResult {
     const isVip = /vip|loyal|best/.test(text.toLowerCase())
-    const props = isVip ? segmentVariants.vip : segmentVariants.highIntent
+    const variant = isVip ? segmentVariants.vip : segmentVariants.highIntent
+    // A copy per message: the card records `savedSegmentId` on its props, which must never reach the shared variant.
+    const props = { ...variant, rules: [...variant.rules] }
     return {
       intent: 'segment',
       reply: `Your "${props.name}" segment is ready — about ${props.estimatedSize.toLocaleString()} contacts match right now. It refreshes daily.`,
@@ -417,8 +427,9 @@ export function useDaVinciIntents() {
 
   function buildJourneyDraftIntent(text: string, context: Record<string, string>): DvIntentResult {
     const goal = detectJourneyGoal(text) ?? (context.goal as JourneyGoal | undefined) ?? null
+    const template = goal ? templateById[goal] : undefined
 
-    if (!goal) {
+    if (!goal || !template) {
       pending.value = { intent: 'journey', slot: 'goal', context: {} }
       return {
         intent: 'journey',
@@ -430,22 +441,24 @@ export function useDaVinciIntents() {
       }
     }
 
-    // Summarize the exact draft the wizard will open with (same generator).
-    const draft = generateJourneyDraft({ goal, audience: 'All subscribers' })
-    const emails = draft.sequence.length
+    // Describe the template the wizard really opens (`?goal=` lands on the template of that id) — not a
+    // generated draft the wizard never sees, which is what this used to summarise and then call "pre-filled".
+    // The count the wizard's Setup step asks content for (a template's graph can hold more send nodes than that).
+    const emails = templateSetupById[goal]?.emails.length ?? 0
+    const emailCopy = emails ? ` You choose the content for ${emails} ${emails === 1 ? 'email' : 'emails'} in the wizard.` : ''
     pending.value = { intent: 'journey', slot: 'open', context: { goal } }
 
     return {
       intent: 'journey',
-      reply: `${draft.rationale} I've pre-filled the journey wizard with this brief — nothing is created until you review the draft and accept it.`,
-      speech: `Draft ready: ${emails} emails. Want me to open the journey wizard?`,
+      reply: `The ${template.name} template fits that. I can open it in the journey wizard — you name it and choose the list and content there, and nothing is created until you finish.`,
+      speech: `The ${template.name} journey fits that. Want me to open the journey wizard?`,
       cards: [
         {
           type: 'insight',
           props: {
-            headline: `Draft ready: ${draft.suggestedName}`,
-            description: `${emails} ${emails === 1 ? 'email' : 'emails'}, branching on contact behaviour. Review it in the wizard — add your brand and offer there to personalize every subject line.`,
-            severity: 'success',
+            headline: `${template.name} journey`,
+            description: `${template.description}${emailCopy}`,
+            severity: 'info',
             icon: 'workflow',
           },
         },
@@ -484,10 +497,12 @@ export function useDaVinciIntents() {
     if (slot.intent === 'engine') return buildEngineAdvice(text, slot.context)
     if (slot.intent === 'journey' && slot.slot === 'goal') return buildJourneyDraftIntent(text, {})
     if (slot.intent === 'journey' && slot.slot === 'open') {
-      openJourneyWizard((slot.context.goal as JourneyGoal) ?? 'welcome')
+      const goal = (slot.context.goal as JourneyGoal) ?? 'welcome'
+      const templateName = templateById[goal]?.name
+      openJourneyWizard(goal)
       return {
         intent: 'journey',
-        reply: 'Opening the journey wizard — your brief is pre-filled and the draft is ready to review.',
+        reply: `Opening the journey wizard${templateName ? ` on the ${templateName} template` : ''} — nothing is created until you finish setup.`,
         speech: 'Opening the journey wizard.',
         cards: [],
         pending: null,
@@ -582,21 +597,42 @@ export function useDaVinciIntents() {
     pending.value = null
   }
 
-  function copyText(text: string) {
-    if (typeof navigator === 'undefined' || !navigator.clipboard) return
-    navigator.clipboard.writeText(text).catch(() => {})
+  /** Whether the text really reached the clipboard — browsers refuse it without permission or focus. */
+  async function copyText(text: string): Promise<boolean> {
+    if (typeof navigator === 'undefined' || !navigator.clipboard) return false
+    try {
+      await navigator.clipboard.writeText(text)
+      return true
+    } catch {
+      return false
+    }
   }
 
   /**
-   * Performs a card action for real and returns the toast to show. One shared
-   * implementation for the drawer and the full-page experience — the hosts used to
-   * answer "Save segment" with a "Segment saved" toast and write nothing, while the
-   * disclosure promised Da Vinci "won't change your account on its own".
+   * Performs a card action for real and returns the toast that says what happened — or null when the
+   * action changed nothing worth announcing. One shared implementation for the drawer and the
+   * full-page experience: the hosts used to answer "Save segment" with a "Segment saved" toast and
+   * write nothing, while the disclosure promised Da Vinci "won't change your account on its own".
+   * Saving a segment records `savedSegmentId` on the card, so the message keeps showing "Saved".
    */
-  function performCardAction(card: DvCardDescriptor, action: string): DaVinciToastInput | null {
+  async function performCardAction(card: DvCardDescriptor, action: string): Promise<DaVinciToastInput | null> {
     const accountId = currentAccountId()
     if (card.type === 'segment') {
+      const openSegments = () => {
+        void router.push({ name: 'Segments', params: { accountId } })
+      }
       if (action === 'save') {
+        // Saving the same card twice — or a segment the account already has — must not add a duplicate.
+        const existing = contacts.segments.find((segment) => segment.name.toLowerCase() === card.props.name.toLowerCase())
+        if (existing) {
+          card.props.savedSegmentId = existing.id
+          return {
+            title: `"${existing.name}" is already in your segments`,
+            sub: 'I didn’t add a second copy.',
+            action: 'Open segments',
+            onAction: openSegments,
+          }
+        }
         const segment = contacts.addSegment({
           name: card.props.name,
           description: card.props.rules.join(' · '),
@@ -604,18 +640,17 @@ export function useDaVinciIntents() {
           type: 'Dynamic',
           status: 'Active',
         })
+        card.props.savedSegmentId = segment.id
         return {
           title: `Segment "${segment.name}" created`,
           sub: 'It refreshes daily. Nothing has been sent to it.',
           action: 'Open segments',
-          onAction: () => {
-            void router.push({ name: 'Segments', params: { accountId } })
-          },
+          onAction: openSegments,
         }
       }
-      if (action === 'preview') {
-        void router.push({ name: 'Segments', params: { accountId } })
-        return { title: 'Opening segments', sub: 'Matching contacts are listed on the segment page.' }
+      if (action === 'open') {
+        openSegments()
+        return null
       }
     }
     if (card.type === 'insight' && card.props.routeName) {
@@ -623,22 +658,33 @@ export function useDaVinciIntents() {
       void router.push({ name, params: { accountId } })
       return { title: `Opening ${name.replace(/([a-z0-9])([A-Z])/g, '$1 $2')}` }
     }
-    if (card.type === 'content') {
+    if (card.type === 'content' && (action === 'copy' || action === 'use')) {
+      const copied = await copyText(card.props.content)
       if (action === 'copy') {
-        copyText(card.props.content)
-        return { title: 'Copied to clipboard' }
+        return copied
+          ? { title: 'Copied to clipboard' }
+          : { title: 'Couldn’t copy the draft', sub: 'Your browser blocked clipboard access — select the text to copy it yourself.' }
       }
-      if (action === 'edit' || action === 'use') {
-        copyText(card.props.content)
-        const target = card.props.type === 'product'
-          ? { name: 'ProductNew', params: { accountId }, query: { source: 'davinci' } }
-          : { name: 'EmailContent', params: { accountId }, query: { source: 'davinci' } }
-        void router.push(target)
+      const isProduct = card.props.type === 'product'
+      const where = isProduct ? 'the product editor' : 'email content'
+      const open = () => {
+        void router.push(
+          isProduct
+            ? { name: 'ProductNew', params: { accountId }, query: { source: 'davinci' } }
+            : { name: 'EmailContent', params: { accountId }, query: { source: 'davinci' } },
+        )
+      }
+      // Without the clipboard the draft can't travel — stay put and say so, rather than open an empty editor.
+      if (!copied) {
         return {
-          title: card.props.type === 'product' ? 'Copied — opening the product editor' : 'Copied — opening email content',
-          sub: 'Paste the draft where you want it. Nothing is saved until you do.',
+          title: 'Couldn’t copy the draft',
+          sub: 'Your browser blocked clipboard access. Copy it from the chat, then open the editor.',
+          action: `Open ${where}`,
+          onAction: open,
         }
       }
+      open()
+      return { title: `Copied — opening ${where}`, sub: 'Paste the draft where you want it. Nothing is saved until you do.' }
     }
     return null
   }

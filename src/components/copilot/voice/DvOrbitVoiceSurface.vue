@@ -15,6 +15,8 @@ import type { AddedWidgetRef } from '@/stores/useCopilot'
 const props = withDefaults(
   defineProps<{
     state: OrbitState
+    /** First name shown in the ready hero's greeting ("Hi Ross,"). */
+    name?: string
     /** Live interim transcript (listening) */
     transcript?: string
     /** Echo of the submitted request (thinking) */
@@ -40,6 +42,7 @@ const props = withDefaults(
     errorMessage?: string
   }>(),
   {
+    name: undefined,
     transcript: '',
     lastRequest: '',
     caption: '',
@@ -114,6 +117,7 @@ function onGhost() {
 
         <DvLandingHero
           v-if="state === 'ready'"
+          :name="name"
           :suggestions="suggestions"
           @suggestion="emit('suggestion', $event)"
         />

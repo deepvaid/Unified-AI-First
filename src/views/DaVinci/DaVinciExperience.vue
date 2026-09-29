@@ -716,9 +716,11 @@ function onCardAction(payload: { card: DvCardDescriptor; action: string }) {
       return
     }
   }
-  // Shared with the drawer: creates the segment / copies the draft and navigates,
-  // then reports what actually happened.
-  pushToast(intents.performCardAction(payload.card, payload.action) ?? { title: 'Done' })
+  // Shared with the drawer: creates the segment / copies the draft and navigates, then reports
+  // what actually happened — and stays quiet when nothing did.
+  void intents.performCardAction(payload.card, payload.action).then((toast) => {
+    if (toast) pushToast(toast)
+  })
 }
 
 function newChat() {

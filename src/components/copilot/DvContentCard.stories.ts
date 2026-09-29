@@ -1,87 +1,111 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import DvContentCard from './DvContentCard.vue'
+import { constrain, measure } from '@/stories/decorators'
+import { grid } from '@/stories/storyTemplate'
+
+const EMAIL = {
+  type: 'email' as const,
+  title: 'Welcome email',
+  content:
+    'Subject: Welcome — here’s 15% off your first order\n\nHi there,\n\nThanks for joining. Browse the new arrivals, claim your welcome discount, and explore the style guides.\n\nWelcome aboard!',
+}
+
+const PRODUCT = {
+  type: 'product' as const,
+  title: 'Aurora Trail Jacket',
+  content:
+    'Built for shoulder-season hikes, the Aurora Trail Jacket pairs a windproof ripstop shell with a brushed-mesh lining that breathes when the pace picks up.\n\n• Packs into its own chest pocket\n• Taped seams\n• Reflective trim',
+}
+
+const BLOG = {
+  type: 'blog' as const,
+  title: 'Tips for building your summer wardrobe',
+  content: 'As the weather warms up, it’s the perfect time to refresh your wardrobe.\n\n1. Start with the basics\n2. Add colour and pattern\n3. Don’t forget accessories',
+}
+
+const SMS = {
+  type: 'sms' as const,
+  title: 'Flash sale alert',
+  content: 'Your 24-hour sale starts now. Save 40% with code FLASH40. Offer ends tomorrow.',
+}
 
 const meta = {
   title: 'Product/Da Vinci/DvContentCard',
   component: DvContentCard,
   tags: ['autodocs'],
+  args: PRODUCT,
   argTypes: {
-    type: {
-      control: 'select',
-      options: ['email', 'product', 'blog', 'sms'],
-      description: 'Type of content being displayed'
-    },
-    title: {
-      control: 'text',
-      description: 'Content title or headline'
-    },
-    content: {
-      control: 'textarea',
-      description: 'Main content body'
-    }
+    type: { control: 'select', options: ['email', 'product', 'blog', 'sms'], description: 'What kind of copy this is. Sets the label, the icon, and where the primary button opens the draft.' },
+    title: { control: 'text', description: 'Headline of the draft.' },
+    content: { control: 'textarea', description: 'The draft itself.' },
+    onCopy: { action: 'copy', description: 'Copy the draft to the clipboard. The host reports whether it really was copied.' },
+    onUse: { action: 'use', description: 'Copy the draft and open the page it belongs on — the product editor, or email content. Nothing is saved until the merchant pastes it.' },
   },
   parameters: {
     docs: {
       description: {
         component: `
 ## Overview
-DvContentCard displays different types of content (email, product, blog, SMS) with actions to copy, edit, or use the content. It's used in the AI copilot to preview and interact with generated content.
+A piece of copy Da Vinci drafted — product description, email, blog post or SMS — with two actions:
+**Copy**, and a primary button named for where the draft goes (**Open product editor** / **Open
+email content**). The primary button copies the draft and navigates; nothing is written into the
+account, and if the browser blocks the clipboard the host says so instead of opening an empty editor.
 
 ## Do's
-- Show content in appropriate format (email preview, product card, etc.)
-- Provide quick actions to use or modify content
-- Display content type clearly
-- Keep content preview readable and scannable
-- Use for content suggestions and recommendations
+- Show the full draft in a scrollable preview
+- Name the primary button for its destination
 
 ## Don'ts
-- Don't truncate content without indicating continuation
-- Don't hide edit/use actions
-- Don't mix multiple content types in one card
-- Don't use without a clear content type label
-
-## Best Practices
-- Show realistic content samples from your domain
-- Highlight key sections (subject line, CTA, etc.)
-- Provide context about where content can be used
-- Include previews of how content will appear to users
-        `
-      }
-    }
-  }
+- Don't claim the draft was added to a campaign or saved — it isn't
+`,
+      },
+    },
+  },
+  decorators: [constrain('drawer')],
+  render: (args) => ({
+    components: { DvContentCard },
+    setup: () => ({ args }),
+    template: '<DvContentCard v-bind="args" />',
+  }),
 } satisfies Meta<typeof DvContentCard>
 
 export default meta
 type Story = StoryObj<typeof meta>
 
-export const EmailContent: Story = {
-  args: {
-    type: 'email',
-    title: 'Welcome Email Campaign',
-    content: 'Subject: Welcome to [Brand]! We\'re excited to have you.\n\nHi [First Name],\n\nThank you for joining our community. We\'re thrilled to introduce you to our latest collections and exclusive member benefits.\n\nGet started:\n• Browse our New Arrivals\n• Claim your 15% welcome discount\n• Explore our style guides\n\nWelcome aboard!\n\n[Brand] Team'
-  }
+/** A product description — the drawer's most common draft. */
+export const Default: Story = {}
+
+/** One card per content type: each has its own label, icon and destination. */
+export const Variants: Story = {
+  decorators: [constrain('dialog')],
+  render: grid({ DvContentCard }, [
+    { label: 'Product description', args: PRODUCT },
+    { label: 'Email copy', args: EMAIL },
+    { label: 'Blog post', args: BLOG },
+    { label: 'SMS message', args: SMS },
+  ], { columns: 'repeat(auto-fit, minmax(300px, 1fr))' }),
 }
 
-export const ProductDescription: Story = {
-  args: {
-    type: 'product',
-    title: 'Premium Wireless Headphones',
-    content: 'Experience crystal-clear sound with active noise cancellation technology. These premium headphones feature a 30-hour battery life, premium leather ear cushions, and seamless Bluetooth connectivity.\n\nKey Features:\n• Active Noise Cancellation (ANC)\n• 30-hour battery life\n• Premium comfort fit\n• Foldable design for portability\n• Built-in microphone for calls\n\nPerfect for music lovers and professionals alike.'
-  }
+/** There is no size prop: the card fills its host — the 480px drawer body, or a narrow panel. */
+export const Sizes: Story = {
+  decorators: [constrain('dialog')],
+  render: (args) => ({
+    components: { DvContentCard },
+    setup: () => ({ args, narrow: measure.narrow, drawer: measure.drawer }),
+    template: `
+      <div style="display: flex; gap: var(--mp-space-24); align-items: flex-start; flex-wrap: wrap;">
+        <div :style="{ width: narrow }"><DvContentCard v-bind="args" /></div>
+        <div :style="{ width: drawer }"><DvContentCard v-bind="args" /></div>
+      </div>
+    `,
+  }),
 }
 
-export const BlogPost: Story = {
-  args: {
-    type: 'blog',
-    title: 'Tips for Building Your Summer Wardrobe',
-    content: 'As the weather warms up, it\'s the perfect time to refresh your wardrobe. Here are our top tips for building a summer wardrobe that\'s both stylish and versatile.\n\n1. Start with Basics\nWhite tees, neutral shorts, and lightweight layers form the foundation of any summer look.\n\n2. Add Color and Pattern\nBright colors and fun prints instantly elevate your summer style.\n\n3. Don\'t Forget Accessories\nSunglasses, hats, and scarves can transform any outfit.\n\nShop our summer collection today!'
-  }
-}
-
-export const SMSMessage: Story = {
-  args: {
-    type: 'sms',
-    title: 'Flash Sale Alert SMS',
-    content: '🔥 FLASH SALE ALERT 🔥\n\nHi [Name]! Your exclusive 24-hour sale starts NOW.\n\nSave 40% on ALL items with code: FLASH40\n\nShop now: [link]\n\nOffer expires in 24 hours!'
-  }
+/** A short draft, and one long enough to scroll inside its preview. */
+export const States: Story = {
+  decorators: [constrain('dialog')],
+  render: grid({ DvContentCard }, [
+    { label: 'Short draft', args: SMS },
+    { label: 'Long draft (scrolls)', args: { ...BLOG, content: Array.from({ length: 6 }, () => BLOG.content).join('\n\n') } },
+  ], { columns: 'repeat(auto-fit, minmax(300px, 1fr))' }),
 }

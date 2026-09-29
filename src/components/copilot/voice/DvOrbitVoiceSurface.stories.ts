@@ -42,6 +42,7 @@ const meta = {
     dashboardId: DASHBOARD_ID,
   },
   argTypes: {
+    name: { control: 'text', description: 'First name shown in the ready hero\'s greeting ("Hi Ross,"). Omit for a nameless greeting.' },
     accountId: { control: 'text', description: 'Account the inline draft card would add its widget to.' },
     dashboardId: { control: 'text', description: 'Target dashboard for the inline draft cards add action.' },
     filters: { control: 'object', description: '`DashboardFilterState` passed to the inline draft preview, so it renders under the filters it would actually run under.' },

@@ -7,16 +7,17 @@ defineProps<{
 
 const emit = defineEmits<{
   copy: []
-  edit: []
+  /** Copies the draft and opens the page it belongs on — the product editor, or email content. */
   use: []
 }>()
 
-// Colors use Vuetify semantic names — no hardcoded hex
-const typeConfig: Record<string, { icon: string; color: string; label: string }> = {
-  email: { icon: 'mail', color: 'primary', label: 'Email Copy' },
-  product: { icon: 'package', color: 'success', label: 'Product Description' },
-  blog: { icon: 'file-text', color: 'warning', label: 'Blog Post' },
-  sms: { icon: 'message-circle', color: 'secondary', label: 'SMS Message' },
+// Colors use Vuetify semantic names — no hardcoded hex. `useLabel` names where the draft goes:
+// the button copies it and opens that page (it used to say "Use in Campaign" and drop nothing in a campaign).
+const typeConfig: Record<string, { icon: string; color: string; label: string; useLabel: string }> = {
+  email: { icon: 'mail', color: 'primary', label: 'Email Copy', useLabel: 'Open email content' },
+  product: { icon: 'package', color: 'success', label: 'Product Description', useLabel: 'Open product editor' },
+  blog: { icon: 'file-text', color: 'warning', label: 'Blog Post', useLabel: 'Open email content' },
+  sms: { icon: 'message-circle', color: 'secondary', label: 'SMS Message', useLabel: 'Open email content' },
 }
 </script>
 
@@ -38,8 +39,7 @@ const typeConfig: Record<string, { icon: string; color: string; label: string }>
 
       <div class="d-flex ga-2 mt-3">
         <v-btn variant="flat" size="small" class="text-none" prepend-icon="copy" @click="emit('copy')" color="surface">Copy</v-btn>
-        <v-btn variant="flat" size="small" class="text-none" prepend-icon="pencil" @click="emit('edit')" color="surface">Edit</v-btn>
-        <v-btn color="primary" variant="flat" size="small" class="text-none" prepend-icon="check" @click="emit('use')">Use in Campaign</v-btn>
+        <v-btn color="primary" variant="flat" size="small" class="text-none" prepend-icon="arrow-up-right" @click="emit('use')">{{ typeConfig[type]?.useLabel }}</v-btn>
       </div>
     </v-card-text>
   </v-card>

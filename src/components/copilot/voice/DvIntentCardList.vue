@@ -37,7 +37,6 @@ function onAction(card: DvCardDescriptor, action: string) {
         v-bind="card.props"
         @use="onAction(card, 'use')"
         @copy="onAction(card, 'copy')"
-        @edit="onAction(card, 'edit')"
       />
       <DvKpiRow v-else-if="card.type === 'kpis'" :kpis="card.props.kpis" />
       <DvChartCard
@@ -49,7 +48,7 @@ function onAction(card: DvCardDescriptor, action: string) {
         v-else-if="card.type === 'segment'"
         v-bind="card.props"
         @save="onAction(card, 'save')"
-        @preview="onAction(card, 'preview')"
+        @open="onAction(card, 'open')"
       />
       <DvInsightCard
         v-else-if="card.type === 'insight'"

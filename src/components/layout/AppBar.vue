@@ -162,9 +162,16 @@ function navigateToRoute(routeLocation: object) {
 }
 
 function askDaVinciFromSearch() {
+  // The palette says "Ask Da Vinci about “…”" — so the drawer must open on THAT question, not blank.
+  const prompt = searchQuery.value.trim()
   searchOpen.value = false
   mobileSearchOpen.value = false
-  copilot.open()
+  if (prompt) {
+    copilot.openWithPrompt(prompt)
+    searchQuery.value = ''
+  } else {
+    copilot.open()
+  }
 }
 
 const assistantMenuOpen = ref(false)

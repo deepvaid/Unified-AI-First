@@ -177,6 +177,7 @@ layer directly.
     initialMessages: { control: 'object', description: 'ChatMessage[] seeding the transcript. Assistant turns may carry componentData (chart/kpi/table) or an onboarding card payload. Default [].' },
     subtitle: { control: 'text', description: 'Caption under the "Da Vinci" title in the header. Default "Intelligent AI assistant".' },
     headerless: { control: 'boolean', description: 'Drops the internal header — use when the host surface (drawer, full-page experience) supplies its own chrome. Default false.' },
+    visible: { control: 'boolean', description: 'Whether the host surface is on screen. The drawer stays mounted while closed; when false the bot stops speech and the mic, and holds back its toasts, but a reply still being worked out keeps landing (silently) so it is there when the drawer reopens. Default true.' },
     onClose: { action: 'close', description: 'Emitted from the header close button; the host owns the actual dismissal.' },
     onExpand: { action: 'expand', description: 'Emitted from the header expand control; the host widens or full-screens its container.' },
   },

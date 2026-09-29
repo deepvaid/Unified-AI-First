@@ -43,9 +43,15 @@ function cancel() {
   router.push({ name: 'Journeys', params: { accountId: accountId.value } })
 }
 
-// Da Vinci copilot deep link (`?ai=1`) lands on the Build-with-AI path.
+// Da Vinci copilot deep link (`?ai=1`). When the offer named a goal that is one of the six templates
+// (`&goal=lapsed-buyer`) the wizard opens on that template — the copilot said the brief was pre-filled
+// and this used to drop the goal on the floor. Anything else lands on the Build-with-AI path.
 onMounted(() => {
-  if (route.query.ai) {
+  if (!route.query.ai) return
+  const goal = String(route.query.goal ?? '')
+  if (templates.value.some((template) => template.id === goal)) {
+    router.replace({ name: 'CreateJourneyFromTemplate', params: { accountId: accountId.value }, query: { template: goal } })
+  } else {
     router.replace({ name: 'CreateJourneyScratch', params: { accountId: accountId.value }, query: { buildWithAI: 'true' } })
   }
 })
