@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import type { DashboardWidgetDraft } from '@/stores/dashboards/types'
 import type { DvCardDescriptor, DvQuickReply } from '@/composables/useDaVinciIntents'
+import type { PendingSlot } from '@/davinci/pendingSlot'
 import type { CampaignReadinessItem } from '@/stores/useDaVinciOnboarding'
 import type { SetupTaskStatus } from '@/stores/useOnboarding'
 
@@ -90,6 +91,8 @@ export const useCopilotStore = defineStore('copilot', () => {
   const messages = ref<ChatMessage[]>([])
   const chatMode = ref(false)
   const conversationId = ref<string | null>(null)
+  /** An open clarification ("which engine?") — shared with the thread so New chat clears it and both surfaces agree. */
+  const pendingSlot = ref<PendingSlot | null>(null)
   const activeOnboardingAccountId = ref<string | null>(null)
   const readAloud = ref(false)
   const resumeMessage = ref<string | null>(null)
@@ -148,6 +151,7 @@ export const useCopilotStore = defineStore('copilot', () => {
     messages.value = []
     chatMode.value = false
     conversationId.value = null
+    pendingSlot.value = null
   }
 
   return {
@@ -158,6 +162,7 @@ export const useCopilotStore = defineStore('copilot', () => {
     messages,
     chatMode,
     conversationId,
+    pendingSlot,
     activeOnboardingAccountId,
     readAloud,
     resumeMessage,

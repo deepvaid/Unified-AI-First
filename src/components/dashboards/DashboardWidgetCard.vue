@@ -6,6 +6,7 @@ import { useWidgetData } from '@/composables/useWidgetData'
 import { useElementSize } from '@/composables/useElementSize'
 import { useLiveAgo } from '@/composables/useRelativeTime'
 import { DASHBOARD_SOURCE_META, getMetricDescriptor } from '@/stores/dashboards/metricCatalog'
+import { DASHBOARD_RANGE_LABELS } from '@/stores/dashboards/rangeLabels'
 import type { DashboardAttentionItem, DashboardFilterState, DashboardInsightItem, DashboardWidget } from '@/stores/dashboards/types'
 import MpSourceCloudChip from '@/components/MpSourceCloudChip.vue'
 import DvOrbitOrb from '@/components/copilot/voice/DvOrbitOrb.vue'
@@ -85,18 +86,7 @@ const isKpiWidget = computed(() => data.value.kind === 'kpi')
 const bespokeHeader = computed(() => ['metric_explorer', 'tabs', 'attention'].includes(props.widget.type))
 const hasFloatingActions = computed(() => !props.preview && props.showActions)
 const metricIcon = computed(() => getMetricDescriptor(props.widget.metricId)?.icon ?? '')
-const rangeLabels: Record<DashboardFilterState['rangePreset'], string> = {
-  today: 'Today',
-  yesterday: 'Yesterday',
-  last_7_days: 'Last 7 days',
-  last_30_days: 'Last 30 days',
-  last_90_days: 'Last 90 days',
-  month_to_date: 'This month so far',
-  quarter_to_date: 'This quarter so far',
-  year_to_date: 'This year so far',
-  black_friday_cyber_monday: 'Black Friday Cyber Monday',
-  custom: 'Custom range',
-}
+const rangeLabels = DASHBOARD_RANGE_LABELS
 const grainLabels: Record<DashboardFilterState['grain'], string> = {
   daily: 'Daily',
   weekly: 'Weekly',

@@ -27,7 +27,9 @@ import {
 } from '@/stores/useCopilot'
 import { useAccountsStore } from '@/stores/useAccounts'
 import { useDashboardsStore } from '@/stores/useDashboards'
-import { getMetricDescriptor } from '@/stores/dashboards/metricCatalog'
+import { getAvailableMetrics } from '@/stores/dashboards/metricCatalog'
+import { routePrompt } from '@/davinci/promptRouting'
+import { draftFromResolution, rationaleFor, timeBasisLabel } from '@/davinci/widgetRequest'
 import type { DashboardWidgetDraft } from '@/stores/dashboards/types'
 import { useDaVinciHistory } from '@/composables/useDaVinciHistory'
 import { useDaVinciToasts } from '@/composables/useDaVinciToasts'
@@ -112,13 +114,6 @@ const historyOpen = ref(false)
 /** Bumped on every new generation and on stop — stale callbacks check it and bail. */
 let generationSeq = 0
 let geminiAbort: AbortController | null = null
-/**
- * A prompt that is asking for a dashboard widget. Off a dashboard route this is the
- * only way into the widget-draft lane — everything else routes on merchant intent.
- */
-const WIDGET_GRAMMAR = /\b(widget|chart|graph|table|kpi|tile|visuali[sz]ation|dashboard)\b|\b(show|plot|add)\b[^.]*\b(trend|over time|by channel|by country|by device|by domain)\b/i
-/** A question ("what needs my attention?") wants an answer, not a widget — even on a dashboard. */
-const QUESTION_GRAMMAR = /\?\s*$|^(what|which|why|how|should|is|are|do|does|can|could|would|who|when|where)\b/i
 const liveSteps = ref<DvToolStep[]>([])
 const queuedPrompts = ref<string[]>([])
 
@@ -245,24 +240,12 @@ function scrollToBottom() {
   })
 }
 
-function buildRationale(prompt: string, base: DashboardWidgetDraft): string {
-  const metric = getMetricDescriptor(base.metricId)
-  const metricLabel = metric?.label ?? 'these metrics'
-  const sourceLabel = metric?.dataSource ?? base.dataSource
-  void prompt
-  return `You asked about ${metricLabel.toLowerCase()} · last 30 days. I pulled from ${capitalize(sourceLabel)} and picked the visualisation that best surfaces the headline numbers. Refine it to change the chart type or rename before adding.`
-}
-
 function buildIntro(count: number): string {
   const dashName = targetDashboard.value?.name ?? 'this dashboard'
   const noun = count === 1 ? 'widget' : 'widgets'
   return `Here&rsquo;s <strong>${count} ${noun}</strong> I drafted for <strong>${dashName}</strong>. Click <em>Add widget</em> to review and confirm.`
 }
 
-
-function capitalize(s: string) {
-  return s.charAt(0).toUpperCase() + s.slice(1)
-}
 
 // ─── Voice dictation + TTS + text↔voice mode (drawer surface) ──────────
 const ttsEnabled = ref(typeof window !== 'undefined' && window.localStorage.getItem('davinci-drawer-tts') === '1')
@@ -800,9 +783,10 @@ function runGeneration(text: string) {
   }
   scrollToBottom()
 
-  // Multi-turn intent clarification (e.g. campaign audience slot) — a
-  // conversational turn, not tool work; no steps.
-  if (intents.pending.value) {
+  // A reply that answers an open clarification (engine page, journey goal, yes/no) is a
+  // conversational turn, not tool work — no steps. Anything else releases the slot and
+  // routes like a fresh message.
+  if (intents.claimsPendingSlot(text)) {
     startStepTicker([], gen, 900)
     pendingTimers.push(setTimeout(() => completeIntentResult(intents.handle(text), gen), 900))
     return
@@ -812,113 +796,119 @@ function runGeneration(text: string) {
   const isFirstPrompt = !currentConversationId.value
   currentConversationId.value = conversationId
 
-  // Route on what the merchant asked for first. The widget matcher used to run
-  // before the intent layer whenever a dashboard was resolvable — which is always,
-  // once the home page has been seen — so "win back customers who haven't bought
-  // in 90 days" came back as a Customer Count KPI widget. The widget lane now only
-  // fires for prompts that ask for a widget: on a dashboard route, or with an
-  // explicit widget/chart word anywhere in the app.
-  const intentKind = intents.classify(text)
-  const asksForWidget = WIDGET_GRAMMAR.test(text) || (isDashboardRoute.value && !QUESTION_GRAMMAR.test(text))
-  if (intentKind === 'fallback' && asksForWidget && targetAccountId.value && targetDashboard.value) {
-    const base = dashboardsStore.buildAiWidgetDraft(targetAccountId.value, targetDashboard.value.id, text)
-    if (base) {
-      const drafts = [base]
-      const rationale = buildRationale(text, base)
-      const metricLabel = getMetricDescriptor(base.metricId)?.label ?? base.title ?? 'data'
-      generatingStatus.value = `Pulling ${metricLabel.toLowerCase()} from the last 30 days`
-      const steps = [
-        `Check ${targetDashboard.value.name} widgets`,
-        `Pull ${metricLabel.toLowerCase()} · last 30 days`,
-        'Draft widget',
-      ]
-      startStepTicker(steps, gen, 1200)
-      pendingTimers.push(setTimeout(() => {
-        if (gen !== generationSeq) return
-        messages.value.push({
-          id: makeId('a'),
-          role: 'assistant',
-          text: buildIntro(drafts.length),
-          toolSteps: steps,
-          componentData: [
-            {
-              type: 'widgetDraftSet',
-              props: { drafts, rationale, conversationId },
-            },
-          ],
-        })
-        if (isFirstPrompt) {
-          addItem({ title: text, draftedCount: drafts.length })
-        }
-        if (isVoiceMode.value) {
-          orbitResponse.value = { draft: drafts[0] ?? null, caption: stripHtml(buildIntro(drafts.length)) }
-        }
-        maybeSpeak(buildIntro(drafts.length))
-        finishGeneration(gen)
-      }, 1200))
-      return
+  // Route on what the merchant asked for: an explicit chart request → a widget draft (and it
+  // beats keyword intents like the revenue card); a question → the advisor; the rest → the
+  // matching canned intent. The rules are pure and unit-tested — src/davinci/promptRouting.ts.
+  const dashboard = targetDashboard.value
+  const route = routePrompt(text, {
+    onDashboard: isDashboardRoute.value,
+    hasDashboard: !!(targetAccountId.value && dashboard),
+    metrics: getAvailableMetrics(activeAccount.value),
+    dashboardRange: dashboard?.filters.rangePreset,
+  })
+
+  if (route.lane === 'widget' && dashboard) {
+    const { resolution } = route
+    const base: DashboardWidgetDraft = {
+      ...draftFromResolution(resolution, dashboard.id, text),
+      lastRefreshedAt: new Date().toISOString(),
     }
+    const drafts = [base]
+    // The note (what differs from what was asked for) leads: it is the part a merchant must read.
+    const rationale = [resolution.note, rationaleFor(resolution)].filter(Boolean).join(' ')
+    const metricLabel = resolution.metric.label.toLowerCase()
+    const basis = timeBasisLabel(resolution.metric, dashboard.filters.rangePreset).toLowerCase()
+    generatingStatus.value = `Pulling ${metricLabel} · ${basis}`
+    const steps = [`Check ${dashboard.name} widgets`, `Pull ${metricLabel} · ${basis}`, 'Draft widget']
+    startStepTicker(steps, gen, 1200)
+    pendingTimers.push(setTimeout(() => {
+      if (gen !== generationSeq) return
+      messages.value.push({
+        id: makeId('a'),
+        role: 'assistant',
+        text: buildIntro(drafts.length),
+        toolSteps: steps,
+        componentData: [
+          {
+            type: 'widgetDraftSet',
+            props: { drafts, rationale, conversationId },
+          },
+        ],
+      })
+      if (isFirstPrompt) {
+        addItem({ title: text, draftedCount: drafts.length })
+      }
+      if (isVoiceMode.value) {
+        orbitResponse.value = { draft: drafts[0] ?? null, caption: stripHtml(buildIntro(drafts.length)) }
+      }
+      maybeSpeak(buildIntro(drafts.length))
+      finishGeneration(gen)
+    }, 1200))
+    return
   }
 
-  // Intent / Gemini path — preview the classified intent's steps while working;
-  // the finished message carries the result's actual steps.
+  if (route.lane === 'widget-hint') {
+    startStepTicker(INTENT_STEPS.fallback, gen, 1200)
+    pendingTimers.push(setTimeout(() => {
+      if (gen !== generationSeq) return
+      // Asked for a chart we can't map → widget-prompt hint
+      if (isVoiceMode.value) {
+        orbitResponse.value = {
+          draft: null,
+          caption:
+            "I couldn't map that to a widget yet. Try revenue, orders, open rate, campaigns, contact growth, or ticket volume.",
+        }
+      }
+      messages.value.push({
+        id: makeId('a'),
+        role: 'assistant',
+        text: "I couldn't map that to a supported widget yet. Try asking for revenue, orders, open rate, campaigns, contact growth, or ticket volume.",
+        componentData: [
+          {
+            type: 'insight',
+            props: {
+              headline: 'Try a widget-ready prompt',
+              description:
+                'Use prompts like “Create a revenue by channel widget”, “Show open rate trend for last 30 days”, or “Add a recent orders table”.',
+              severity: 'info',
+            },
+          },
+        ],
+      })
+      finishGeneration(gen)
+    }, 1200))
+    return
+  }
+
+  // Intent / Gemini path — preview the routed intent's steps while working; the finished
+  // message carries the result's actual steps.
+  const intentKind = route.lane === 'intent' ? route.intent : 'fallback'
   startStepTicker(INTENT_STEPS[intentKind], gen, 1200)
   pendingTimers.push(setTimeout(async () => {
     if (gen !== generationSeq) return
-    // No widget mapping — try the unified intent layer (campaigns, products,
-    // revenue, segments) before falling back to the widget-prompt hint.
-    const res = intents.handle(text)
-    if (res.intent !== 'fallback') {
-      completeIntentResult(res, gen)
+    if (route.lane === 'intent') {
+      completeIntentResult(intents.handle(text), gen)
       return
     }
-    if (!WIDGET_GRAMMAR.test(text)) {
-      // Open-ended question — answer with Gemini Flash (falls back to the canned
-      // hint if Gemini is unavailable), grounded in the live workspace context
-      // block. Dashboard routes included: a merchant asking "what needs my
-      // attention?" from the home page deserves an answer, not a widget hint.
-      const history = messages.value.slice(0, -1).slice(-6).map((m) => ({ role: m.role, text: m.text }))
-      geminiAbort = new AbortController()
-      let smart: DvIntentResult
-      try {
-        smart = await intents.answer(text, {
-          history,
-          context: contextBlock.value,
-          signal: geminiAbort.signal,
-        })
-      } catch {
-        return // aborted via Stop — generationSeq is already stale
-      } finally {
-        geminiAbort = null
-      }
-      completeIntentResult(smart, gen)
-      return
+    // Open-ended question (or analysis of the data on screen) — answer with Gemini Flash
+    // (falls back to a labelled canned reply if Gemini is unavailable), grounded in the
+    // live workspace context block. Dashboard routes included: a merchant asking "what
+    // needs my attention?" from the home page deserves an answer, not a widget hint.
+    const history = messages.value.slice(0, -1).slice(-6).map((m) => ({ role: m.role, text: m.text }))
+    geminiAbort = new AbortController()
+    let smart: DvIntentResult
+    try {
+      smart = await intents.answer(text, {
+        history,
+        context: contextBlock.value,
+        signal: geminiAbort.signal,
+      })
+    } catch {
+      return // aborted via Stop — generationSeq is already stale
+    } finally {
+      geminiAbort = null
     }
-    // Asked for a widget we can't map → widget-prompt hint
-    if (isVoiceMode.value) {
-      orbitResponse.value = {
-        draft: null,
-        caption:
-          "I couldn't map that to a widget yet. Try revenue, orders, open rate, campaigns, contact growth, or ticket volume.",
-      }
-    }
-    messages.value.push({
-      id: makeId('a'),
-      role: 'assistant',
-      text: "I couldn't map that to a supported widget yet. Try asking for revenue, orders, open rate, campaigns, contact growth, or ticket volume.",
-      componentData: [
-        {
-          type: 'insight',
-          props: {
-            headline: 'Try a widget-ready prompt',
-            description:
-              'Use prompts like “Create a revenue by channel widget”, “Show open rate trend for last 30 days”, or “Add a recent orders table”.',
-            severity: 'info',
-          },
-        },
-      ],
-    })
-    finishGeneration(gen)
+    completeIntentResult(smart, gen)
   }, 1200))
 }
 

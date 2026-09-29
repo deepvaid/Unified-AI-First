@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { storeToRefs } from 'pinia'
 import router from '@/router'
 import { askGemini, type GeminiTurn } from '@/services/geminiClient'
 import { generateJourneyDraft, goalOptions, type JourneyGoal } from '@/composables/useJourneyGenerator'
@@ -6,6 +6,9 @@ import { useDaVinciCampaignOnboarding } from '@/composables/useDaVinciCampaignOn
 import type { DaVinciToastInput } from '@/composables/useDaVinciToasts'
 import { useCommerceStore } from '@/stores/useCommerce'
 import { useContactsStore } from '@/stores/useContacts'
+import { useCopilotStore } from '@/stores/useCopilot'
+import { classifyIntent, type DvIntentKind } from '@/davinci/promptRouting'
+import { detectEngineKey, detectEnginePage, detectJourneyGoal, slotVerdict, type PendingSlot } from '@/davinci/pendingSlot'
 import {
   fallbackSpeech,
   productDrafts,
@@ -24,7 +27,9 @@ import {
 // multi-turn `pending` clarification state. `handle()` is synchronous — each
 // surface owns its own thinking delay.
 
-export type DvIntentKind = 'campaign' | 'product' | 'revenue' | 'segment' | 'engine' | 'journey' | 'fallback'
+// Classification lives in src/davinci/promptRouting.ts (pure, unit-tested); re-exported for callers.
+export type { DvIntentKind }
+export { classifyIntent, detectJourneyGoal }
 
 export type DvCardDescriptor =
   | {
@@ -76,11 +81,7 @@ export interface DvQuickReply {
   icon?: string
 }
 
-export interface DvPending {
-  intent: DvIntentKind
-  slot: string
-  context: Record<string, string>
-}
+export type DvPending = PendingSlot
 
 export interface DvIntentResult {
   intent: DvIntentKind
@@ -122,63 +123,10 @@ export const SUGGESTION_CHIPS: DvQuickReply[] = [
   { label: 'Build a VIP segment', value: 'Build a VIP customer segment', icon: 'users' },
 ]
 
-/** Maps free text onto a journey goal, if one is recognizable. */
-export function detectJourneyGoal(text: string): JourneyGoal | null {
-  const t = text.toLowerCase()
-  if (/welcome|onboard|new subscriber/.test(t)) return 'welcome'
-  if (/abandon|cart/.test(t)) return 'abandoned-cart'
-  if (/nurture|lead/.test(t)) return 'nurture'
-  if (/advoca|referral|refer a friend|vip perk/.test(t)) return 'advocacy'
-  if (/re-?engage|inactive|quiet|dormant/.test(t)) return 're-engagement'
-  if (/win[- ]?back|lapsed|stopped buying/.test(t)) return 'lapsed-buyer'
-  return null
-}
-
-// ── Classifier (Marojarvis port) ─────────────────────────────────────────────
-export function classifyIntent(text: string): DvIntentKind {
-  const t = text.toLowerCase()
-  // Journey CREATION only — "review my journey…" style asks fall through to
-  // the generic advisor (Gemini/fallback) instead of drafting a new journey.
-  if (
-    /\b(build|create|draft|make|set ?up|start|want|need)\b[^.]*\b(journey|automation|drip|flow|series|sequence)\b/.test(t)
-    || /welcome series|abandoned cart (journey|flow|recovery)|win[- ]?back (journey|flow|series)/.test(t)
-    // Goal language is a journey ask even without the word "journey": "win back
-    // customers who haven't bought in 90 days", "re-engage dormant subscribers",
-    // "recover abandoned carts". The handler maps it onto a goal via detectJourneyGoal.
-    || /\b(win[- ]?back|lapsed|stopped buying|re-?engage|dormant|abandoned carts?|cart abandon)/.test(t)
-  ) {
-    return 'journey'
-  }
-  // "Was my last campaign any good?" is a question for the advisor, not a brief for
-  // the campaign wizard — review/performance phrasing skips the creation intents.
-  const isReviewQuestion = /\b(was|were|did|how (good|well|is|are|many|big)|how's|performance|results|report|doing|any good)\b/.test(t)
-  if (
-    !isReviewQuestion
-    && (/\b(run|send|create|launch|draft|set ?up|start|schedule|build|make|want|need|plan)\b[^.]*\b(campaign|promo|promotion|blast|newsletter)\b/.test(t)
-      || /send .*(email|campaign)|email .*(blast|campaign)/.test(t))
-  ) {
-    return 'campaign'
-  }
-  if (/\brecommendation(s)?\s+(engine|widget|type)\b|which\s+(recommendation|engine)|\bengine\b.*\b(use|pick|choose|recommend)\b|shoppers\s+(should\s+)?see/.test(t)) {
-    return 'engine'
-  }
-  if (!isReviewQuestion && /\b(add|create|new|draft|write)\b.*\b(product|item|sku)\b|\bproduct description\b/.test(t)) {
-    return 'product'
-  }
-  // Revenue needs a revenue word. The old rule also fired on bare "this week" and
-  // "made", so "which products should I put on sale this week?" came back as a
-  // revenue card instead of reaching the advisor.
-  if (/\b(revenue|sales|gmv|aov|average order value|earnings)\b|\bhow much (did|have|do) (we|i)\b/.test(t)) {
-    return 'revenue'
-  }
-  if (!isReviewQuestion && (/\b(segment|audience|vip|cohort)\b|group of/.test(t))) {
-    return 'segment'
-  }
-  return 'fallback'
-}
-
 export function useDaVinciIntents() {
-  const pending = ref<DvPending | null>(null)
+  // The open clarification lives in the copilot store: New chat clears it, and the drawer and the
+  // full-page experience share one thread, so they share one slot.
+  const { pendingSlot: pending } = storeToRefs(useCopilotStore())
   const campaignOnboarding = useDaVinciCampaignOnboarding()
   const commerce = useCommerceStore()
   const contacts = useContactsStore()
@@ -369,27 +317,6 @@ export function useDaVinciIntents() {
     recent: { label: 'Recently Viewed', why: 'it picks shoppers up exactly where they left off', icon: 'history' },
   }
 
-  function detectEngineKey(text: string): string | null {
-    const t = text.toLowerCase()
-    if (/popular|best.?sell|top seller/.test(t)) return 'popular'
-    if (/newest|new arrival|fresh|latest/.test(t)) return 'newest'
-    if (/trend/.test(t)) return 'trending'
-    if (/personal|history|behaviou?r/.test(t)) return 'personalized'
-    if (/frequently|together|basket|bundle/.test(t)) return 'fbt'
-    if (/recently viewed|left off|browsed/.test(t)) return 'recent'
-    return null
-  }
-
-  function detectEnginePage(text: string): string | null {
-    const t = text.toLowerCase()
-    if (/home\s?page|homepage|front page/.test(t)) return 'Home'
-    if (/category|listing|plp/.test(t)) return 'Category'
-    if (/product page|pdp/.test(t)) return 'Product'
-    if (/cart|checkout/.test(t)) return 'Cart'
-    if (/custom page/.test(t)) return 'Custom'
-    return null
-  }
-
   const ENGINE_PAGE_DEFAULTS: Record<string, string> = {
     Home: 'personalized',
     Category: 'trending',
@@ -483,38 +410,60 @@ export function useDaVinciIntents() {
     }
   }
 
-  function handle(text: string): DvIntentResult {
-    const trimmed = text.trim()
+  /** Acknowledge a "no" to an open offer without starting anything. */
+  function acknowledgeDecline(slot: PendingSlot): DvIntentResult {
+    const reply = slot.intent === 'journey' && slot.slot === 'open'
+      ? 'No problem — I won’t open the wizard.'
+      : slot.intent === 'journey'
+        ? 'No problem. Tell me what the journey should do whenever you’re ready.'
+        : 'No problem — ask me about recommendation engines any time.'
+    return { intent: slot.intent, reply, speech: reply, cards: [], quickReplies: SUGGESTION_CHIPS, pending: null }
+  }
 
-    if (pending.value) {
-      const p = pending.value
-      pending.value = null
-      if (p.intent === 'campaign' && p.slot === 'audience') {
-        return startCampaignDiscovery(trimmed)
-      }
-      if (p.intent === 'engine') {
-        return buildEngineAdvice(trimmed, p.context)
-      }
-      if (p.intent === 'journey' && p.slot === 'goal') {
-        return buildJourneyDraftIntent(trimmed, {})
-      }
-      if (p.intent === 'journey' && p.slot === 'open') {
-        if (/\b(open|yes|go|sure|please|wizard|do it)\b/i.test(trimmed)) {
-          openJourneyWizard((p.context.goal as JourneyGoal) ?? 'welcome')
-          return {
-            intent: 'journey',
-            reply: 'Opening the journey wizard — your brief is pre-filled and the draft is ready to review.',
-            speech: 'Opening the journey wizard.',
-            cards: [],
-            pending: null,
-          }
-        }
-        // Anything else falls through to a fresh classification below.
+  /**
+   * A reply that answers (or declines) the open clarification. Anything else releases the
+   * slot and returns null — the old code treated the NEXT message as the answer, so one
+   * engine question turned every later prompt into engine advice.
+   */
+  function resolvePending(text: string): DvIntentResult | null {
+    const slot = pending.value
+    if (!slot) return null
+    const verdict = slotVerdict(slot, text)
+    pending.value = null
+    if (verdict === 'unrelated') return null
+    if (verdict === 'decline') return acknowledgeDecline(slot)
+    if (slot.intent === 'engine') return buildEngineAdvice(text, slot.context)
+    if (slot.intent === 'journey' && slot.slot === 'goal') return buildJourneyDraftIntent(text, {})
+    if (slot.intent === 'journey' && slot.slot === 'open') {
+      openJourneyWizard((slot.context.goal as JourneyGoal) ?? 'welcome')
+      return {
+        intent: 'journey',
+        reply: 'Opening the journey wizard — your brief is pre-filled and the draft is ready to review.',
+        speech: 'Opening the journey wizard.',
+        cards: [],
+        pending: null,
       }
     }
+    return null
+  }
 
-    const intent = classifyIntent(trimmed)
-    switch (intent) {
+  /** True when `text` answers an open clarification; otherwise the slot is released and the message routes normally. */
+  function claimsPendingSlot(text: string): boolean {
+    const slot = pending.value
+    if (!slot) return false
+    if (slotVerdict(slot, text.trim()) === 'unrelated') {
+      pending.value = null
+      return false
+    }
+    return true
+  }
+
+  function handle(text: string): DvIntentResult {
+    const trimmed = text.trim()
+    const answered = resolvePending(trimmed)
+    if (answered) return answered
+
+    switch (classifyIntent(trimmed)) {
       case 'campaign':
         return startCampaignDiscovery(trimmed)
       case 'product':
@@ -547,7 +496,7 @@ export function useDaVinciIntents() {
 
     // Deterministic flows stay byte-for-byte: a pending clarification or any known
     // intent goes straight through the existing synchronous handler.
-    if (pending.value || classifyIntent(trimmed) !== 'fallback') {
+    if (claimsPendingSlot(trimmed) || classifyIntent(trimmed) !== 'fallback') {
       return handle(text)
     }
 
@@ -647,6 +596,7 @@ export function useDaVinciIntents() {
   return {
     pending,
     classify: classifyIntent,
+    claimsPendingSlot,
     handle,
     performCardAction,
     answer,
