@@ -297,6 +297,44 @@ export const AdvisorOffline: Story = {
   },
 }
 
+/** The advisor is rate-limited or slow: labelled "busy" (worth retrying in a moment), distinct from "offline". */
+export const AdvisorBusy: Story = {
+  args: {
+    initialChatMode: true,
+    initialMessages: [
+      { id: 'busy-user', role: 'user', text: 'Which of my products should I put on sale this week and why?' },
+      {
+        id: 'busy-assistant',
+        role: 'assistant',
+        text: "Da Vinci's advisor is busy right now — try that again in a moment. I can still run campaigns, draft product copy, report on revenue, or build audience segments:",
+        toolSteps: ['Consult Da Vinci brain'],
+        componentData: [
+          {
+            type: 'intentCards',
+            props: {
+              cards: [
+                {
+                  type: 'insight',
+                  props: {
+                    headline: 'Advisor busy',
+                    description: 'Too many requests, or the answer took too long. Try again in a moment — the actions below work without it.',
+                    severity: 'warning',
+                    icon: 'hourglass',
+                  },
+                },
+              ],
+              quickReplies: [
+                { label: 'Run a campaign', value: 'Run a campaign', icon: 'megaphone' },
+                { label: "How's revenue this week?", value: "How's revenue this week?", icon: 'trending-up' },
+              ],
+            },
+          },
+        ],
+      },
+    ] satisfies ChatMessage[],
+  },
+}
+
 // ── Template: Variants · Sizes · States ──────────────────────────────────────
 
 /** Two structures: the full copilot surface with its own header, and `headerless` for hosts that supply their own chrome (the docked drawer does). */

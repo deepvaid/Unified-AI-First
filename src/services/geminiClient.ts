@@ -23,33 +23,68 @@ export interface AskGeminiOptions {
   signal?: AbortSignal
   /** Server persona/grounding preset — 'design-system' for the docs assistant. */
   mode?: 'default' | 'design-system'
+  /** How long to wait before giving up as "busy". Defaults to 12s; tests shorten it. */
+  timeoutMs?: number
 }
 
-export async function askGemini(
+/** Why no reply came back: retry-able soon (rate limit, slow answer) vs. simply unreachable. */
+export type GeminiFailure = 'busy' | 'offline'
+export type GeminiResult = { ok: true; reply: GeminiReply } | { ok: false; failure: GeminiFailure }
+
+/** A reply that takes longer than this is abandoned — the merchant should never wait on a dead request. */
+const DEFAULT_TIMEOUT_MS = 12_000
+
+/**
+ * Asks the advisor and says WHY when it can't answer. A user-initiated Stop (via `opts.signal`)
+ * is rethrown as an AbortError so the caller's generation guard can swallow it — a timeout is
+ * NOT a Stop and resolves as `busy`, so the composer can never be left waiting.
+ */
+export async function askGeminiResult(
   text: string,
   history: GeminiTurn[] = [],
   opts: AskGeminiOptions = {},
-): Promise<GeminiReply | null> {
+): Promise<GeminiResult> {
+  const controller = new AbortController()
+  const relayStop = () => controller.abort(opts.signal?.reason)
+  if (opts.signal?.aborted) relayStop()
+  else opts.signal?.addEventListener('abort', relayStop, { once: true })
+  const timer = setTimeout(() => controller.abort(new DOMException('Gemini timed out', 'TimeoutError')), opts.timeoutMs ?? DEFAULT_TIMEOUT_MS)
+
   try {
     const resp = await fetch('/api/gemini', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text, history, context: opts.context, mode: opts.mode }),
-      signal: opts.signal,
+      signal: controller.signal,
     })
-    if (!resp.ok) return null
+    if (!resp.ok) return { ok: false, failure: resp.status === 429 || resp.status === 504 ? 'busy' : 'offline' }
     const data = (await resp.json()) as Partial<GeminiReply>
-    if (!data || typeof data.reply !== 'string' || !data.reply.trim()) return null
+    if (!data || typeof data.reply !== 'string' || !data.reply.trim()) return { ok: false, failure: 'offline' }
     return {
-      reply: data.reply,
-      speech: typeof data.speech === 'string' && data.speech.trim() ? data.speech : data.reply,
-      card: data.card,
-      action: data.card && data.action?.label && data.action?.routeName ? data.action : undefined,
+      ok: true,
+      reply: {
+        reply: data.reply,
+        speech: typeof data.speech === 'string' && data.speech.trim() ? data.speech : data.reply,
+        card: data.card,
+        action: data.card && data.action?.label && data.action?.routeName ? data.action : undefined,
+      },
     }
   } catch (err) {
-    // A user-initiated Stop must not surface the canned fallback — rethrow so the
-    // caller's generation-guard can swallow it.
-    if (err instanceof DOMException && err.name === 'AbortError') throw err
-    return null
+    if (opts.signal?.aborted) throw err // the merchant pressed Stop — not a failure
+    if (err instanceof DOMException && (err.name === 'TimeoutError' || err.name === 'AbortError')) return { ok: false, failure: 'busy' }
+    return { ok: false, failure: 'offline' }
+  } finally {
+    clearTimeout(timer)
+    opts.signal?.removeEventListener('abort', relayStop)
   }
+}
+
+/** Reply or null — for callers (the docs assistant) that only degrade to their own fallback. */
+export async function askGemini(
+  text: string,
+  history: GeminiTurn[] = [],
+  opts: AskGeminiOptions = {},
+): Promise<GeminiReply | null> {
+  const result = await askGeminiResult(text, history, opts)
+  return result.ok ? result.reply : null
 }

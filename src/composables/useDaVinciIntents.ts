@@ -1,6 +1,6 @@
 import { storeToRefs } from 'pinia'
 import router from '@/router'
-import { askGemini, type GeminiTurn } from '@/services/geminiClient'
+import { askGeminiResult, type GeminiFailure, type GeminiTurn } from '@/services/geminiClient'
 import { generateJourneyDraft, goalOptions, type JourneyGoal } from '@/composables/useJourneyGenerator'
 import { useDaVinciCampaignOnboarding } from '@/composables/useDaVinciCampaignOnboarding'
 import type { DaVinciToastInput } from '@/composables/useDaVinciToasts'
@@ -292,11 +292,32 @@ export function useDaVinciIntents() {
   }
 
   /**
-   * `advisorOffline` labels the canned reply when the Gemini advisor could not be
-   * reached — otherwise a merchant cannot tell a real answer from the fallback.
+   * `unavailable` labels the canned reply when the Gemini advisor could not answer — otherwise a
+   * merchant cannot tell a real answer from the fallback. `busy` (rate-limited / too slow) is worth
+   * retrying in a moment; `offline` is not reachable at all.
    */
-  function buildFallback(advisorOffline = false): DvIntentResult {
-    if (advisorOffline) {
+  function buildFallback(unavailable?: GeminiFailure): DvIntentResult {
+    if (unavailable === 'busy') {
+      return {
+        intent: 'fallback',
+        reply: "Da Vinci's advisor is busy right now — try that again in a moment. I can still run campaigns, draft product copy, report on revenue, or build audience segments:",
+        speech: 'The advisor is busy right now. Try again in a moment.',
+        cards: [
+          {
+            type: 'insight',
+            props: {
+              headline: 'Advisor busy',
+              description: 'Too many requests, or the answer took too long. Try again in a moment — the actions below work without it.',
+              severity: 'warning',
+              icon: 'hourglass',
+            },
+          },
+        ],
+        quickReplies: SUGGESTION_CHIPS,
+        pending: null,
+      }
+    }
+    if (unavailable === 'offline') {
       return {
         intent: 'fallback',
         reply: "Da Vinci's advisor is offline right now, so I can't answer that one. I can still run campaigns, draft product copy, report on revenue, or build audience segments:",
@@ -531,8 +552,9 @@ export function useDaVinciIntents() {
       return handle(text)
     }
 
-    const smart = await askGemini(trimmed, opts.history ?? [], { context: opts.context, signal: opts.signal })
-    if (!smart) return buildFallback(true)
+    const result = await askGeminiResult(trimmed, opts.history ?? [], { context: opts.context, signal: opts.signal })
+    if (!result.ok) return buildFallback(result.failure)
+    const smart = result.reply
 
     return {
       intent: 'fallback',
@@ -628,7 +650,7 @@ export function useDaVinciIntents() {
     pending,
     classify: classifyIntent,
     claimsPendingSlot,
-    offline: () => buildFallback(true),
+    offline: () => buildFallback('offline'),
     handle,
     performCardAction,
     answer,
