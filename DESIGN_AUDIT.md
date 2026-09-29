@@ -1965,3 +1965,125 @@ fixed here:
 - **Collection card block** (`collection`) added to the theme builder's block catalogue for Aurora's
   Featured Collections; the builder preview lays collection cards in the section's columns.
 
+
+## Da Vinci flow + graph generation — 2026-09-29
+
+Per CLAUDE.md → "Log every rename or breaking change in the session changelog". Branch
+`claude/davinci-flow-ui-bugs-3ef6c2`, eleven commits. A merchant-facing bug pass on the copilot flow, chiefly
+chart generation: a drafted chart usually could not be added, the requested chart type was ignored, every
+preview was sample art, the in-chat revenue chart had a fake axis and dead buttons, and the full-page
+experience had no chart path. Routing, request resolution, history and conversation rules live in pure
+modules (`src/davinci/`, `npm run test:davinci` — 160 `node:test` tests, also run under
+`TZ=America/Los_Angeles`); the audit that started it is `docs/davinci-copilot-audit-2026-09.md`.
+
+### Fixed
+
+- **Routing** — `src/davinci/promptRouting.ts` picks one of `widget | widget-hint | intent | gemini`. An
+  explicit chart request no longer loses to a keyword intent ("Create a revenue by channel widget" was the
+  canned revenue card); questions ("Which of my products should I put on sale?", "Explain this chart") go to
+  Gemini instead of a canned card; one engine question no longer traps every later prompt (the clarification
+  slot moved into the copilot store, only claims a reply that answers it, and New chat clears it).
+- **Chart requests** — `src/davinci/widgetRequest.ts` resolves a prompt to a metric and a view the catalog can
+  really draw. "Line chart of orders" is a KPI *plus a note saying so*, not a silent KPI; a pie of top products
+  is the ranked list plus a note; variants are always explicit ("Line" no longer renders as an area).
+- **Adding a draft** — Refine offers only the views the metric supports; a full dashboard (24 widgets) or an
+  account without the cloud disables Add with a visible error instead of failing silently; one "Widget added"
+  toast; "Added" persists on the message and clears if the widget is deleted.
+- **Live previews** — draft cards, Refine and Expand render the real `DashboardWidgetCard` on live data
+  (Orders 43, not 14,326). `DvDraftPreview` is deleted.
+- **Data behind the charts** — orders parse as local days (`parseLocalDateKey`; they were a day early west of
+  UTC), contact growth / ticket volume / revenue by channel are real series, per-send widgets say "Last N
+  sends" / "Most recent" / "All time" instead of a range they ignore, and charts re-measure when the docked
+  drawer changes their width.
+- **In-chat revenue chart** — `DvChartCard` composes `DashboardChartWidget` (currency axis, legend, tooltips,
+  dark mode), draws the prior week dashed, and its Save / Download CSV / Enlarge buttons work.
+- **Full-page experience** — the same responder as the drawer (`useDaVinciResponder`): widget drafts, tool
+  steps, Gemini with workspace context and a Stop, a generation token so a reply can't land after New chat or
+  leaving, no listeners or mic after leaving mid-greeting, Esc closes a dialog before it exits.
+- **Gemini reliability** — 9 s upstream timeout, 12 s client timeout, "Advisor busy" vs "Advisor offline",
+  and a truncated model reply is salvaged or rejected, never shown (or read aloud) as raw JSON.
+- **Guided flows** — only a session the merchant *started* answers typed text; visiting a screen or a
+  `?source=davinci` link never creates one; "never mind" pauses the wizard; an explicit campaign ask resumes a
+  paused one. Onboarding stays guide-only (see below).
+- **Drawer lifecycle** — the full-page copilot no longer mounts a second visible drawer; below 960px the
+  drawer no longer closes on every navigation (and drops the reply); hiding keeps a reply in flight; the app
+  bar's "Ask Da Vinci about X" opens on X; the read-aloud menu reflects the voice-onboarding flag.
+- **Honest actions** — Save segment dedupes by name and shows "Saved"; the content card copies then opens the
+  page it names and reports a blocked clipboard; journey offers describe the template the wizard opens;
+  there is no fake "Done" toast.
+- **History** — `davinci-history-v2` records every conversation (was: only widget drafts) with its transcript
+  (40 messages · 30 conversations · ~600 KB, oldest dropped first). Choosing a row restores it on every surface
+  and via `/da-vinci/copilot/:conversationId`; deleting the open conversation clears the screen; Delete all
+  clears the thread.
+- **Accessibility / layout** — transcript is a `role="log"`; closed history overlay is `inert`; history rows
+  are select + sibling delete buttons; Stop sits beside Send; IME Enter no longer sends; the full-page
+  copilot is bounded to the viewport (the composer used to sit thousands of pixels below the fold).
+- **Colour pairing** — `DvInsightCard` is an `MpAlert` (container fill + paired ink, 9.0–11.7:1 in dark);
+  toasts carry a tone with its own icon and pair, so a failure no longer wears the green check.
+
+### API added
+
+- **`src/davinci/`** (pure, relative `.ts` imports, `import type` only): `widgetRequest`, `promptRouting`,
+  `pendingSlot`, `phrases`, `followUps`, `conversation`, `history`. Also `src/utils/localDate.ts`,
+  `src/utils/escapeHtml.ts`, `src/stores/dashboards/rangeLabels.ts`.
+- **Composables** — `useDaVinciResponder` (flows → plan → reply, shared by both surfaces), `useDaVinciTarget`
+  (one account/dashboard resolution); `askGeminiResult` beside `askGemini`; `isEngagedFor` on both onboarding
+  stores.
+- **`useCopilotStore`** — `pendingSlot`, `threadEpoch`, `ensureConversationId`, `markDraftAdded`,
+  `markChartSaved`, `restoreConversation`, `deleteConversation`, `deleteAllConversations`;
+  `DraftSetProps` gained `dashboardName`, `notes`, `added`.
+- **Components** — `MpDaVinciBot` `visible`; `DvOrbitVoiceSurface` `name`, `draftNote`, `draftAdded`;
+  `DvWidgetDraftCard` `note`, `added`, `filters`; `DvRefineDialog` / `DvExpandDialog` `error`;
+  `DvSegmentCard` `savedSegmentId`; `DaVinciToastInput.tone`; `MpAlert` `live="off"` semantics (below).
+- **`useDashboards.addWidgetBlocker`** — why a draft can't be added (missing dashboard, 24-widget cap,
+  unsupported cloud); metric catalog `timeBasis`.
+
+### Renames and breaking changes
+
+- `DvDraftPreview` (+ story) **deleted** — a live `DashboardWidgetCard` replaces it.
+- `DvChartCard` props `bars` / `seriesNames` → `labels`, `series`, `unit`, `saveMetricId`, `savedTo`; it is an
+  Apex chart now, not CSS. The `'insight'` chat-component type is removed (an insight is an `intentCards` card).
+- `DvSegmentCard` emit `preview` → `open` (offered once saved); `DvContentCard` emit `edit` removed and
+  "Use in Campaign" → "Open product editor" / "Open email content".
+- `useDaVinciIntents`: `performCardAction` is async; `pending` lives in the copilot store; `buildAiWidgetDraft`
+  is gone from `useDashboards` (`resolveWidgetRequest` + `addWidgetBlocker`).
+- **`MpAlert live="off"`** now drops the role as well as `aria-live` — `status` / `alert` are live-region
+  roles, so omitting only `aria-live` never turned announcements off. The seven pre-existing call sites
+  (Maropay ×3, Landing block settings, Order detail ×2, DNS setup) are all static blocks, so they now read as
+  plain content; the two new ones are alerts inside the live transcript.
+- `DvInsightCard` composes `MpAlert`; its action button is a flat `surface` button, not a tonal severity one.
+- localStorage: `davinci-history-v1` → `davinci-history-v2` (old title-only history is dropped on load);
+  `davinci-active-conversation-v1` (never written) removed.
+
+### Token added
+
+- `component.preview.widgetHeight.{sm,md,lg}` (200 / 384 / 480) — the definite-height frame a live
+  `DashboardWidgetCard` needs (a chart card is its chrome plus a 240px plot floor).
+
+### Deliberate visual changes
+
+- Seeded dashboards change: contact-growth and ticket-volume charts now vary, revenue by channel splits by
+  real channel, and subtitles say "Last 7 sends" / "Most recent" / "All time" where the widget ignores the range.
+- The revenue chart in chat is the dashboard's chart, with its prior-week comparison.
+- Insight cards recolour to the semantic container pairs; toasts show tone icons; history rows are buttons;
+  the history overlay starts at the 48px header, not 56px.
+
+### Deliberately unchanged
+
+- While an engaged setup / campaign session is active, other requests keep redirecting to the current step
+  (guide-only) — decided with the merchant-facing owner; only account scoping, never-started takeover and
+  wizard exits were fixed.
+- The wizards' use / change / different verbs and setup's "explore" words.
+
+### Follow-ups this opens
+
+- Per-widget date ranges: Da Vinci states the dashboard's range rather than honouring one from the prompt.
+- History and read-aloud keys are global, not account-scoped (restoring a conversation from another demo
+  account shows what was said then). Weekly grain isn't honoured by the widget data.
+- `WidgetWizardDrawer` is silent at the 24-widget cap (the Da Vinci path now says why); marketing KPI deltas
+  are still fabricated.
+- `generateJourneyDraft` (`useJourneyGenerator`) is no longer used by the copilot — the wizard never received
+  its draft. Wire it to Build with AI or delete it.
+- A trial banner above a flush page (`/da-vinci/copilot`) pushes the page ~44px past the viewport.
+- The app-bar Co-pilot entry on the copilot page itself; the header subtitle ellipsis; the px sweep outside
+  touched files; a real-browser check that the mic prompt doesn't appear on a plain dashboard load.

@@ -64,7 +64,7 @@
 | DvContentCard | ✓ | done (standard) |
 | ~~DvDataTable~~ | — | deleted in P2 — unused (`fb9c2b8`) |
 | ~~DvDialogShell~~ | — | deleted in P2 — unused (`28dd311`) |
-| DvDraftPreview | ✓ | done (standard) |
+| ~~DvDraftPreview~~ | — | deleted 2026-09-29 — a live `DashboardWidgetCard` (preview mode) replaced its sample art (`83fc0fd`) |
 | DvExpandDialog | ✓ | done (standard) |
 | DvHistoryDrawer | ✓ | done (standard) |
 | DvInsightCard | ✓ | done (standard) |

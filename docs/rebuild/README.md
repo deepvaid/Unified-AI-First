@@ -93,7 +93,7 @@ design and was replaced.
 | Journey Settings (scratch / Build with AI) | `/journeys/new/scratch` (+ `?buildWithAI=true`) | [`CreateJourneyScratch.vue`](../../src/views/Marketing/CreateJourneyScratch.vue) | same set |
 
 ```
-/accounts/:accountId/journeys/new                          JourneySelection      (route name CreateJourney kept; ?ai=1 → AI path)
+/accounts/:accountId/journeys/new                          JourneySelection      (route name CreateJourney kept; ?ai=1 → AI path, ?ai=1&goal=<template id> → that template's wizard)
 /accounts/:accountId/journeys/new/scratch                  CreateJourneyScratch
 /accounts/:accountId/journeys/new/template?template=<id>   JourneyTemplateWizard
 ```

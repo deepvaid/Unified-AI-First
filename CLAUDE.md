@@ -48,13 +48,14 @@ This is NOT a production app — it uses mock data and has no backend API.
 │   ├── components/            ← 112 components, all with stories (see Component Inventory)
 │   │   ├── Mp*.vue / ModuleLandingPage.vue ← 30 top-level design-system components
 │   │   ├── layout/            ← AppBar (top bar) + AppSidebar (left nav, collapsible rail)
-│   │   ├── copilot/           ← 18 Dv* Da Vinci surfaces + voice/ (7 orbit voice components)
+│   │   ├── copilot/           ← 17 Dv* Da Vinci surfaces + voice/ (7 orbit voice components)
 │   │   ├── dashboards/        ← 7 dashboard containers + widgets/ (5) + wizard/ (2)
 │   │   ├── marketing/         ← Journey flow column, mini preview, add-step menu
 │   │   ├── maropay/           ← 16 Maropay* product surfaces (Product/Maropay stories)
 │   │   ├── merchandising/     ← MerchProductCard
 │   │   └── settings/          ← SettingsSection, SettingsPlaceholder, settingsMenu (rail = MpSectionRail)
 │   ├── maropay/               ← Maropay domain logic — pure TS, node:test-importable (see docs/maropay/)
+│   ├── davinci/               ← Da Vinci rules — pure TS, node:test-importable (prompt routing, chart-request resolution, follow-ups, history; tests/davinci/)
 │   ├── services/maropay/      ← Deterministic mock adapter for the payments partner
 │   ├── design-tokens/
 │   │   ├── tokens.json        ← SOURCE OF TRUTH for all design values
@@ -109,7 +110,7 @@ This is NOT a production app — it uses mock data and has no backend API.
 
 ### Feedback
 
-- **MpAlert** — `tone?` ('info'|'success'|'warning'|'error'), `title?`, `live?` ('off'|'polite'|'assertive', auto by tone), `dismissible?`, `icon?` (string|false) · emits `dismiss` · slots default (body), `#actions`. **The one in-page feedback block** — rounded, borderless soft fill on the semantic container pairs, enforced role/aria-live. **Never a raw `v-alert` in new code.** Transient = `useToast`; frame-wide = `MpBanner`; whole-surface failure = `MpErrorState`.
+- **MpAlert** — `tone?` ('info'|'success'|'warning'|'error'), `title?`, `live?` ('off'|'polite'|'assertive', auto by tone), `dismissible?`, `icon?` (string|false) · emits `dismiss` · slots default (body), `#actions`. **The one in-page feedback block** — rounded, borderless soft fill on the semantic container pairs, enforced role/aria-live (`live="off"` = a plain block: no role, no live region — for static furniture or an alert inside an already-live region such as the Da Vinci transcript). **Never a raw `v-alert` in new code.** Transient = `useToast`; frame-wide = `MpBanner`; whole-surface failure = `MpErrorState`.
 - **MpBanner** — `tone?` (same 4), `message?` (or default slot), `icon?` (string|false), `dismissible?`, `dismissLabel?` · emits `dismiss` · slot `#actions`. **The full-width edge strip** (square, bottom hairline, `component.banner.minHeight` 44) — mounts at the top of `<v-main>` or a page region. PlgTrialBanner composes it. Alert = in-page block · banner = edge strip; don't swap.
 - **MpChatBubble** — `side?` ('start'|'end'), `tone?` ('neutral'|'accent'|'solid'), `author?`, `time?`, `loading?` · slots `#avatar`, default (pre-wrap body), `#footer`. **The one transcript message** on `component.bubble.*`; side and tone are independent axes (the Tickets thread left-aligns both roles, tint carries the role). Re-skin via the `--mp-bubble-*` custom-prop seam, never `:deep`. Merchant-chrome simulations (chatbot widget preview, SMS phone mock) and the flagship Da Vinci bot stay bespoke.
 - **MpEmptyState** — `title`, `icon?`, `description?`, `actionLabel?`, `actionIcon?`, `headingLevel?`, `variant?` ('stack'|'launcher'), `emphasis?` ('default'|'prominent'), `illustration?`, `tone?` ('neutral'|'error') · emits `action`. Every table/list MUST have one (empty = nothing to show).
@@ -146,7 +147,7 @@ This is NOT a production app — it uses mock data and has no backend API.
 
 ### AI
 
-- **MpDaVinciBot** — `initialChatMode?`, `initialMessages?`, `subtitle?`, `headerless?` · emits `close`, `expand`. Da Vinci copilot surface hosting the `copilot/` Dv* components.
+- **MpDaVinciBot** — `initialChatMode?`, `initialMessages?`, `subtitle?`, `headerless?`, `visible?` (default true — the drawer hides without unmounting, so its host says when it is on screen; hidden = no speech, mic or toasts, but a reply in flight still lands) · emits `close`, `expand`. Da Vinci copilot surface hosting the `copilot/` Dv* components. The conversation, its open clarification and its history live in `useCopilotStore`; both surfaces (this and `DaVinciExperience`) answer through `useDaVinciResponder`.
 
 ---
 
@@ -400,6 +401,7 @@ changelog in `DESIGN_AUDIT.md`.
 | `npm run tokens:build` | Generate SCSS/CSS/TS from tokens.json |
 | `npm run contrast:check` | WCAG 2.1 ratios for every declared surface/foreground token pair |
 | `npm run test:maropay` | Maropay domain + adapter tests (`node:test` over `tests/maropay/`) |
+| `npm run test:davinci` | Da Vinci routing, chart-request, history and conversation tests (`node:test` over `tests/davinci/`) |
 | `npm run tokens:watch` | Watch tokens.json and regenerate on save |
 | `npm run type-check` | Run vue-tsc type checking |
 | `npm run preview` | Preview production build locally |
@@ -430,6 +432,11 @@ Example: `[feat]: add MpDateRangePicker component with story`
   production gaps) and `implementation-report.md` (review entry point, M01–M15 scenarios, results).
   Pure modules under `src/maropay/` and `src/services/maropay/` import each other by relative
   `.ts` path so Node can run the tests without the Vite `@/` alias.
+- **`src/davinci/`** — the Da Vinci copilot's rules, in the same pure-module shape: which lane answers a
+  prompt (`promptRouting`), which metric and view a chart request means and what to tell the merchant when
+  it can't be drawn as asked (`widgetRequest`), clarification slots, follow-up chips, conversation history
+  records and their caps (`history`). Add a row to `tests/davinci/` for any misroute. The audit that started
+  it is `docs/davinci-copilot-audit-2026-09.md`; the change log is in `DESIGN_AUDIT.md`.
 
 ---
 
