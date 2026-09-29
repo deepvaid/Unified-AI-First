@@ -270,6 +270,7 @@ function handleAttentionCollapse(collapsed: boolean) {
           {{ widget.title }} has nothing to display for the selected range. Try a different period or refresh.
         </div>
         <v-btn
+          v-if="!preview"
           variant="tonal"
           size="small"
           prepend-icon="refresh-cw"

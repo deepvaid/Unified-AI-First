@@ -11,10 +11,25 @@ import type { SetupTaskStatus } from '@/stores/useOnboarding'
 // changes, drawer close/reopen, and the drawer ↔ full-width ↔ full-page
 // surfaces all render the same live thread.
 
+/** A draft that has been added to a dashboard — persisted on the message so a remount can't offer Add twice. */
+export interface AddedWidgetRef {
+  title: string
+  dashboardName: string
+  widgetId: string
+  dashboardId: string
+  accountId: string
+}
+
 export interface DraftSetProps {
   drafts: DashboardWidgetDraft[]
   rationale: string
   conversationId: string
+  /** The dashboard the drafts were made for — the intro sentence names it. */
+  dashboardName?: string
+  /** Per draft: what differs from what was asked for ("Orders can only be shown as a KPI tile…"). */
+  notes?: Array<string | null>
+  /** Per draft: the widget it became once added. */
+  added?: Array<AddedWidgetRef | null>
 }
 
 export interface IntentCardsProps {
@@ -147,6 +162,16 @@ export const useCopilotStore = defineStore('copilot', () => {
     widthMode.value = widthMode.value === 'panel' ? 'wide' : 'panel'
   }
 
+  /** Records that draft `index` of a widgetDraftSet message became a real widget. */
+  function markDraftAdded(messageId: string, index: number, added: AddedWidgetRef) {
+    const message = messages.value.find((entry) => entry.id === messageId)
+    const set = message?.componentData?.find((entry) => entry.type === 'widgetDraftSet')?.props as DraftSetProps | undefined
+    if (!set) return
+    const next = [...(set.added ?? [])]
+    next[index] = added
+    set.added = next
+  }
+
   function resetConversation() {
     messages.value = []
     chatMode.value = false
@@ -177,6 +202,7 @@ export const useCopilotStore = defineStore('copilot', () => {
     toggle,
     setWidthMode,
     toggleExpanded,
+    markDraftAdded,
     resetConversation,
   }
 })

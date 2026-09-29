@@ -20,16 +20,18 @@ import type { OrbitState } from './copilot/voice/orbit'
 import {
   useCopilotStore,
   type ChatMessage,
+  type AddedWidgetRef,
   type CampaignOnboardingProps,
   type DraftSetProps,
   type IntentCardsProps,
   type SetupOnboardingProps,
 } from '@/stores/useCopilot'
-import { useAccountsStore } from '@/stores/useAccounts'
 import { useDashboardsStore } from '@/stores/useDashboards'
 import { getAvailableMetrics } from '@/stores/dashboards/metricCatalog'
-import { routePrompt } from '@/davinci/promptRouting'
+import { routePrompt, type RouteContext } from '@/davinci/promptRouting'
 import { draftFromResolution, rationaleFor, timeBasisLabel } from '@/davinci/widgetRequest'
+import { draftFollowUps, landingPrompts, revenueFollowUps, type Suggestion } from '@/davinci/followUps'
+import { useDaVinciTarget } from '@/composables/useDaVinciTarget'
 import type { DashboardWidgetDraft } from '@/stores/dashboards/types'
 import { useDaVinciHistory } from '@/composables/useDaVinciHistory'
 import { useDaVinciToasts } from '@/composables/useDaVinciToasts'
@@ -78,7 +80,6 @@ const emit = defineEmits<{
 
 const route = useRoute()
 const router = useRouter()
-const accountsStore = useAccountsStore()
 const dashboardsStore = useDashboardsStore()
 const { addItem, incrementAdded, clearAll } = useDaVinciHistory()
 const { pushToast } = useDaVinciToasts()
@@ -117,29 +118,8 @@ let geminiAbort: AbortController | null = null
 const liveSteps = ref<DvToolStep[]>([])
 const queuedPrompts = ref<string[]>([])
 
-const routeAccountId = computed(() => {
-  const accountId = Array.isArray(route.params.accountId) ? route.params.accountId[0] : route.params.accountId
-  return accountId
-})
-
-const routeDashboardId = computed(() => {
-  const dashboardId = Array.isArray(route.params.dashboardId) ? route.params.dashboardId[0] : route.params.dashboardId
-  return dashboardId
-})
-
-const isDashboardRoute = computed(() => route.name === 'Dashboard' || route.name === 'DashboardDetail')
-
-const activeAccount = computed(() => {
-  if (!routeAccountId.value) return accountsStore.activeAccount
-  return accountsStore.accounts.find((account) => account.id === routeAccountId.value) ?? accountsStore.activeAccount
-})
-
-const activeDashboard = computed(() => {
-  if (!isDashboardRoute.value || !routeAccountId.value) return null
-  return dashboardsStore.getDashboardById(routeAccountId.value, routeDashboardId.value) ?? null
-})
-
-const targetAccountId = computed(() => routeAccountId.value ?? activeAccount.value?.id ?? null)
+// Which account and dashboard this conversation works on (shared with the draft cards).
+const { isDashboardRoute, account: activeAccount, accountId: targetAccountId, dashboard: targetDashboard } = useDaVinciTarget()
 
 if (route.query.source === 'davinci' && targetAccountId.value) {
   // A live guided-setup session wins the restore; otherwise fall back to the
@@ -182,51 +162,32 @@ const setupFlowActive = computed(
   () => setupStore.isActive && setupStore.activeAccountId === targetAccountId.value,
 )
 
-const targetDashboard = computed(() => {
-  if (activeDashboard.value) return activeDashboard.value
-  if (!targetAccountId.value) return null
-  // Off a dashboard route (full-page copilot, drawer over list/other pages),
-  // target the dashboard the user was most recently on — e.g. the one they just
-  // created — rather than blindly the account default.
-  return dashboardsStore.getLastViewedDashboard(targetAccountId.value) ?? null
-})
-
 const headerStatus = computed(() => {
   if (!chatMode.value) return props.subtitle
   if (isTyping.value) return generatingStatus.value || 'Drafting widgets…'
   return 'Intelligent AI assistant'
 })
 
-const suggestionPills = computed(() => {
-  const pills = [
-    { text: 'Try a different angle', icon: 'refresh-cw' },
-    { text: 'Compare to YoY', icon: 'calendar-range' },
-    { text: 'Segment by region', icon: 'align-left' },
-  ]
-  return pills
+/** What the router needs to know about where we are — drives the lane, the chips and the pills. */
+const routeContext = computed<RouteContext>(() => ({
+  onDashboard: isDashboardRoute.value,
+  hasDashboard: !!(targetAccountId.value && targetDashboard.value),
+  metrics: getAvailableMetrics(activeAccount.value),
+  dashboardRange: targetDashboard.value?.filters.rangePreset,
+}))
+
+/** Pills under the composer: follow-ups derived from the last result, each checked against the router. */
+const suggestionPills = computed<Suggestion[]>(() => {
+  const last = [...messages.value].reverse().find((m) => m.role === 'assistant')
+  if (!last) return []
+  const set = last.componentData?.find((c) => c.type === 'widgetDraftSet')?.props as DraftSetProps | undefined
+  if (set?.drafts[0]) return draftFollowUps(set.drafts[0], routeContext.value)
+  const cards = (last.componentData?.find((c) => c.type === 'intentCards')?.props as IntentCardsProps | undefined)?.cards
+  if (cards?.some((card) => card.type === 'chart')) return revenueFollowUps(routeContext.value)
+  return []
 })
 
-const landingSuggestions = computed(() => {
-  const items: string[] = []
-  if (isDashboardRoute.value) {
-    items.push('Show me email campaign performance over the last 30 days')
-    items.push('Revenue by channel for last 90 days')
-    items.push('Top campaigns by conversion')
-  } else {
-    items.push('Show open rate trend for last 30 days')
-    if (activeAccount.value?.subscriptions.includes('commerce')) {
-      items.push('Create a revenue by channel widget')
-      items.push('Add a recent orders table')
-    } else {
-      items.push('Add a top campaigns table')
-      items.push('Show contact growth trend')
-    }
-    if (activeAccount.value?.subscriptions.includes('service')) {
-      items.push('Show ticket volume over time')
-    }
-  }
-  return items.slice(0, 4)
-})
+const landingSuggestions = computed(() => landingPrompts(routeContext.value))
 
 function makeId(prefix = 'm') {
   return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`
@@ -240,10 +201,13 @@ function scrollToBottom() {
   })
 }
 
-function buildIntro(count: number): string {
-  const dashName = targetDashboard.value?.name ?? 'this dashboard'
-  const noun = count === 1 ? 'widget' : 'widgets'
-  return `Here&rsquo;s <strong>${count} ${noun}</strong> I drafted for <strong>${dashName}</strong>. Click <em>Add widget</em> to review and confirm.`
+/** Plain text — it is also what is spoken and what Gemini sees as history. The drawer bolds the parts itself. */
+function buildIntro(count: number, dashboardName: string): string {
+  return `Here’s ${draftCountLabel(count)} I drafted for ${dashboardName}. Select Add widget to review and confirm.`
+}
+
+function draftCountLabel(count: number): string {
+  return `${count} ${count === 1 ? 'widget' : 'widgets'}`
 }
 
 
@@ -320,9 +284,8 @@ const orbitErrorMessage = ref('It was a bit noisy. Try again, or type your reque
 const voiceNotice = ref('')
 const orbitPaused = ref(false) // user stopped the mic without speaking
 const orbitLastRequest = ref('') // echo pill while thinking
-const orbitResponse = ref<{ draft: DashboardWidgetDraft | null; caption: string } | null>(null)
-const orbitAdded = ref<{ title: string; dashboardName: string; widgetId: string; dashboardId: string; accountId: string } | null>(null)
-const orbitDraftKey = ref(0) // bump remounts the draft card after Undo
+const orbitResponse = ref<{ draft: DashboardWidgetDraft | null; caption: string; note?: string | null; messageId?: string } | null>(null)
+const orbitAdded = ref<AddedWidgetRef | null>(null)
 let orbitCancelRequested = false
 
 // Deferred reply timers (the "thinking" delay) — tracked so they're cleared on
@@ -365,8 +328,10 @@ function orbitTryAgain() {
   void toggleMic()
 }
 
-function onOrbitWidgetSaved(payload: { title: string; dashboardName: string; widgetId: string; dashboardId: string; accountId: string }) {
+function onOrbitWidgetSaved(payload: AddedWidgetRef) {
   if (currentConversationId.value) incrementAdded(currentConversationId.value)
+  // The same draft shows in the transcript when the merchant switches to text mode.
+  if (orbitResponse.value?.messageId) copilot.markDraftAdded(orbitResponse.value.messageId, 0, payload)
   orbitAdded.value = payload
 }
 
@@ -375,7 +340,6 @@ function orbitUndo() {
   if (!added) return
   dashboardsStore.removeWidget(added.accountId, added.dashboardId, added.widgetId)
   orbitAdded.value = null
-  orbitDraftKey.value++
   pushToast({ title: 'Widget removed', sub: added.title })
 }
 
@@ -461,15 +425,9 @@ watch(voice.interimTranscript, (t) => {
   if (isDictating.value && !isVoiceMode.value && t) inputText.value = t
 })
 
-function stripHtml(html: string) {
-  const el = document.createElement('div')
-  el.innerHTML = html
-  return el.textContent ?? ''
-}
-
 function maybeSpeak(text: string) {
   if (!speakReplies.value) return
-  void voice.speak(stripHtml(text))
+  void voice.speak(text)
 }
 
 // Drawer hidden mid-session → cancel pending replies, release the mic, stop
@@ -554,7 +512,7 @@ function completeIntentResult(res: DvIntentResult, gen: number) {
         ? [{ type: 'intentCards', props: { cards: res.cards, quickReplies: res.quickReplies } }]
         : undefined,
   })
-  if (isVoiceMode.value) orbitResponse.value = { draft: null, caption: stripHtml(res.reply) }
+  if (isVoiceMode.value) orbitResponse.value = { draft: null, caption: res.reply }
   maybeSpeak(res.speech ?? res.reply)
   finishGeneration(gen)
 }
@@ -814,8 +772,8 @@ function runGeneration(text: string) {
       lastRefreshedAt: new Date().toISOString(),
     }
     const drafts = [base]
-    // The note (what differs from what was asked for) leads: it is the part a merchant must read.
-    const rationale = [resolution.note, rationaleFor(resolution)].filter(Boolean).join(' ')
+    const rationale = rationaleFor(resolution)
+    const intro = buildIntro(drafts.length, dashboard.name)
     const metricLabel = resolution.metric.label.toLowerCase()
     const basis = timeBasisLabel(resolution.metric, dashboard.filters.rangePreset).toLowerCase()
     generatingStatus.value = `Pulling ${metricLabel} · ${basis}`
@@ -823,15 +781,16 @@ function runGeneration(text: string) {
     startStepTicker(steps, gen, 1200)
     pendingTimers.push(setTimeout(() => {
       if (gen !== generationSeq) return
+      const messageId = makeId('a')
       messages.value.push({
-        id: makeId('a'),
+        id: messageId,
         role: 'assistant',
-        text: buildIntro(drafts.length),
+        text: intro,
         toolSteps: steps,
         componentData: [
           {
             type: 'widgetDraftSet',
-            props: { drafts, rationale, conversationId },
+            props: { drafts, rationale, conversationId, dashboardName: dashboard.name, notes: [resolution.note ?? null] },
           },
         ],
       })
@@ -839,9 +798,9 @@ function runGeneration(text: string) {
         addItem({ title: text, draftedCount: drafts.length })
       }
       if (isVoiceMode.value) {
-        orbitResponse.value = { draft: drafts[0] ?? null, caption: stripHtml(buildIntro(drafts.length)) }
+        orbitResponse.value = { draft: drafts[0] ?? null, caption: intro, note: resolution.note ?? null, messageId }
       }
-      maybeSpeak(buildIntro(drafts.length))
+      maybeSpeak(intro)
       finishGeneration(gen)
     }, 1200))
     return
@@ -933,14 +892,10 @@ function newChat() {
   pushToast({ title: 'New chat started' })
 }
 
-function onWidgetSaved(
-  payload: { title: string; dashboardName: string; widgetId: string; dashboardId: string; accountId: string },
-  msg: ChatMessage,
-) {
-  const comp = msg.componentData?.[0]
-  if (comp && comp.type === 'widgetDraftSet') {
-    incrementAdded((comp.props as DraftSetProps).conversationId)
-  }
+function onWidgetSaved(payload: AddedWidgetRef, msg: ChatMessage, index: number) {
+  copilot.markDraftAdded(msg.id, index, payload)
+  const comp = msg.componentData?.find((c) => c.type === 'widgetDraftSet')
+  if (comp) incrementAdded((comp.props as DraftSetProps).conversationId)
   // Use the dashboard the widget was actually added to (from the card's payload),
   // not the live route target — they can differ when the draft was pinned.
   const { dashboardId, accountId } = payload
@@ -954,10 +909,6 @@ function onWidgetSaved(
       }
     },
   })
-}
-
-function onWidgetRefined() {
-  pushToast({ title: 'Draft updated', sub: 'Da Vinci re-rendered with your changes' })
 }
 
 function isDraftSetMessage(msg: ChatMessage): msg is ChatMessage & { componentData: [{ type: 'widgetDraftSet'; props: DraftSetProps }] } {
@@ -1124,7 +1075,9 @@ function onComposerKeydown(event: KeyboardEvent) {
       :account-id="targetAccountId ?? ''"
       :dashboard-id="targetDashboard?.id ?? ''"
       :filters="targetDashboard?.filters"
-      :draft-key="orbitDraftKey"
+      :draft-note="orbitResponse?.note ?? null"
+      :draft-added="orbitAdded"
+      :chips="suggestionPills.map((pill) => pill.text)"
       :added-to="orbitAdded?.dashboardName ?? ''"
       :error-message="orbitErrorMessage"
       @mic="toggleMic"
@@ -1136,7 +1089,6 @@ function onComposerKeydown(event: KeyboardEvent) {
       @open-dashboard="orbitOpenDashboard"
       @add-another="orbitAddAnother"
       @widget-saved="onOrbitWidgetSaved"
-      @widget-refined="onWidgetRefined"
     />
 
     <!-- ═══ BODY (text mode) ═══ -->
@@ -1162,10 +1114,12 @@ function onComposerKeydown(event: KeyboardEvent) {
               v-if="msg.toolSteps?.length"
               :steps="msg.toolSteps.map((label) => ({ label, status: 'done' as const }))"
             />
-            <!-- HTML is allowed ONLY for the developer-authored widget-draft intro (buildIntro).
-                 All other assistant text (canned intents, Gemini replies) is interpolated, never
-                 fed to v-html — prevents XSS from model output. -->
-            <div v-if="msg.text && isDraftSetMessage(msg)" class="dv-msg-bot__intro" v-html="msg.text"></div>
+            <!-- Every assistant message is plain text, interpolated and never fed to v-html: the draft
+                 intro used to be HTML with the dashboard's NAME inside it (a stored-XSS sink). -->
+            <div v-if="msg.text && isDraftSetMessage(msg)" class="dv-msg-bot__intro">
+              Here’s <strong>{{ draftCountLabel(getDraftSetProps(msg)?.drafts.length ?? 0) }}</strong> I drafted for
+              <strong>{{ getDraftSetProps(msg)?.dashboardName ?? 'this dashboard' }}</strong>. Select <em>Add widget</em> to review and confirm.
+            </div>
             <div v-else-if="msg.text" class="dv-msg-bot__intro">{{ msg.text }}</div>
 
             <template v-if="isDraftSetMessage(msg)">
@@ -1188,9 +1142,9 @@ function onComposerKeydown(event: KeyboardEvent) {
                   :account-id="targetAccountId ?? ''"
                   :dashboard-id="targetDashboard?.id ?? ''"
                   :draft="draft"
-                  :filters="targetDashboard?.filters"
-                  @saved="onWidgetSaved($event, msg)"
-                  @refined="onWidgetRefined"
+                  :note="getDraftSetProps(msg)?.notes?.[idx] ?? null"
+                  :added="getDraftSetProps(msg)?.added?.[idx] ?? null"
+                  @saved="onWidgetSaved($event, msg, idx)"
                 />
               </div>
             </template>
@@ -1268,7 +1222,7 @@ function onComposerKeydown(event: KeyboardEvent) {
           <v-icon size="14">x</v-icon>
         </v-btn>
       </div>
-      <div v-if="chatMode" class="dv-composer__pills">
+      <div v-if="chatMode && suggestionPills.length" class="dv-composer__pills">
         <button
           v-for="pill in suggestionPills"
           :key="pill.text"
@@ -1546,7 +1500,7 @@ function onComposerKeydown(event: KeyboardEvent) {
   color: rgb(var(--v-theme-on-surface));
 }
 
-.dv-msg-bot__intro :deep(strong) {
+.dv-msg-bot__intro strong {
   font-weight: var(--mp-fontWeight-semibold);
 }
 
