@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { classifyIntent, isExplainQuestion, routePrompt, wantsVisual } from '../../src/davinci/promptRouting.ts'
+import { classifyIntent, isExplainQuestion, routePrompt, visualAsk, wantsVisual } from '../../src/davinci/promptRouting.ts'
 import { ctx, SERVICE_ONLY_METRICS } from './fixtures.ts'
 
 const lane = (prompt: string, overrides = {}) => routePrompt(prompt, ctx(overrides))
@@ -23,6 +23,14 @@ const widgetPrompts: Array<[string, string]> = [
   ['Show RFM heatmap', 'analytics_rfm_engagement'],
   ['Show ticket volume over time', 'service_ticket_volume'],
   ['Add a top campaigns table', 'marketing_top_campaigns'],
+  // A bare metric phrase may carry filler, a range, a number, or "by <measure>" — nothing else.
+  ['show my open rate', 'marketing_open_rate'],
+  ['top 5 campaigns', 'marketing_top_campaigns'],
+  ['orders last 30 days', 'commerce_orders'],
+  ['Top campaigns by revenue', 'marketing_top_campaigns'],
+  ['top products by revenue', 'commerce_best_sellers'],
+  // A cadence word beside a chart ask is still a chart ask.
+  ['Show sends per month', 'analytics_sends_over_time'],
 ]
 for (const [prompt, metricId] of widgetPrompts) {
   test(`widget lane: "${prompt}"`, () => {
@@ -72,6 +80,36 @@ const advisorPrompts = [
   'I want to review my welcome journey',
   'Review my journey "Abandoned Cart Recovery" and suggest improvements to timing and copy.',
   'Help me build my new journey "Win-back flow" — suggest a trigger, the email sequence and timing.',
+  // Names in quotes are not part of the request: a journey called "Weekly Sales Report" is not a weekly chart.
+  'Review my data journey "Weekly Sales Report" and suggest improvements to timing and copy.',
+  'Review my storefront theme "Black Friday Chart" and suggest improvements to layout and colors.',
+  'Review my journey "Sales by Channel" and suggest improvements.',
+  // A cadence word beside an errand is not a chart.
+  'Send a weekly digest to subscribers',
+  // Questions and asks for ideas are not briefs for the campaign wizard or the product card.
+  'What time should I send my campaign?',
+  'Which day is best to send a newsletter?',
+  "When's a good time to send my newsletter?",
+  'Do I need a campaign for Black Friday?',
+  'I need ideas for a campaign',
+  'need a subject line for my newsletter',
+  "Don't send the newsletter",
+  "Why can't I add a product?",
+  'Where do I add a new product?',
+  "my new product isn't showing",
+  'new product ideas',
+  // A sentence that merely contains a metric is a conversation, not "show me that metric".
+  'boost sales',
+  'grow revenue',
+  'increase orders',
+  'sales strategy',
+  'sales advice',
+  'get more customers',
+  'sales are slow',
+  'sales down',
+  'low sales',
+  'my customers are angry',
+  'thanks for the orders',
 ]
 for (const prompt of advisorPrompts) {
   test(`advisor: "${prompt}"`, () => {
@@ -90,6 +128,17 @@ const intentPrompts: Array<[string, string]> = [
   ['Draft a product description', 'product'],
   ['Which recommendation engine should I use on my home page?', 'engine'],
   ['Create a welcome series', 'journey'],
+  // Cadence and "by <dimension>" words don't turn an action into a chart.
+  ['Send a weekly newsletter to VIP customers', 'campaign'],
+  ['Send a monthly newsletter', 'campaign'],
+  ['Create a weekly email campaign', 'campaign'],
+  ['Send a newsletter by region', 'campaign'],
+  ['Build a segment by country', 'segment'],
+  ['Create a welcome series by segment', 'journey'],
+  // An audience that mentions a negation is still a brief.
+  ["Create a campaign to customers who haven't ordered in 60 days", 'campaign'],
+  ['Make a campaign for lapsed buyers', 'campaign'],
+  ['Add a new product', 'product'],
 ]
 for (const [prompt, intent] of intentPrompts) {
   test(`intent ${intent}: "${prompt}"`, () => {
@@ -130,4 +179,30 @@ test('isExplainQuestion / wantsVisual', () => {
   assert.equal(wantsVisual('Show me revenue over time'), true)
   assert.equal(wantsVisual('Revenue by channel'), true)
   assert.equal(wantsVisual('How do I add a chart?'), false)
+})
+
+test('visualAsk: an explicit chart ask, a breakdown alone, or nothing', () => {
+  assert.equal(visualAsk('Show revenue as a line chart'), 'chart')
+  assert.equal(visualAsk('Add revenue to my dashboard'), 'chart')
+  assert.equal(visualAsk('Show revenue over time'), 'chart')
+  assert.equal(visualAsk('Revenue by channel'), 'breakdown')
+  assert.equal(visualAsk('Show sends per month'), 'breakdown')
+  assert.equal(visualAsk('Send a weekly digest to subscribers'), 'none')
+  assert.equal(visualAsk('Review my data journey "Weekly Sales Report"'), 'none')
+  // A prompt that is little more than a quote keeps it — there is nothing else to route on.
+  assert.equal(visualAsk('Show "revenue by channel"'), 'breakdown')
+})
+
+test('a breakdown ask yields to an action intent, but not to a status ask or a read-only segment ask', () => {
+  assert.deepEqual(lane('Build a segment by country'), { lane: 'intent', intent: 'segment' })
+  assert.equal(lane("What's revenue by channel?").lane, 'widget')
+  assert.equal(lane('Show contacts by segment').lane, 'widget')
+})
+
+test('a generic "chart" of a KPI-only metric says it drafted a tile', () => {
+  for (const prompt of ['Make a chart of orders', 'Show me a graph of my orders over time', 'Plot my orders by week']) {
+    const decision = lane(prompt)
+    assert.equal(decision.lane, 'widget', prompt)
+    if (decision.lane === 'widget') assert.match(decision.resolution.note ?? '', /only be shown as a KPI tile.*instead of a chart/, prompt)
+  }
 })

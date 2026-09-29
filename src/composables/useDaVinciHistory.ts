@@ -4,10 +4,10 @@ import {
   HISTORY_KEY,
   HISTORY_LIMITS,
   LEGACY_HISTORY_KEYS,
-  dropOldest,
   fitToBudget,
   groupConversations,
   parseHistory,
+  persistList,
   subtitleFor,
   upsert,
   type GroupedHistory,
@@ -20,11 +20,21 @@ import {
 
 export type { GroupedHistory, HistoryConversation }
 
-function load(): HistoryConversation[] {
-  if (typeof window === 'undefined') return []
+/** localStorage, or null where the browser won't hand it over (blocked storage throws on access). */
+function storage(): Storage | null {
   try {
-    for (const key of LEGACY_HISTORY_KEYS) window.localStorage.removeItem(key)
-    return parseHistory(window.localStorage.getItem(HISTORY_KEY))
+    return typeof window === 'undefined' ? null : window.localStorage
+  } catch {
+    return null
+  }
+}
+
+function load(): HistoryConversation[] {
+  const store = storage()
+  if (!store) return []
+  try {
+    for (const key of LEGACY_HISTORY_KEYS) store.removeItem(key)
+    return parseHistory(store.getItem(HISTORY_KEY))
   } catch {
     return []
   }
@@ -32,26 +42,19 @@ function load(): HistoryConversation[] {
 
 const conversations = ref<HistoryConversation[]>(load())
 
-/**
- * Writes the list within its size budget. If the browser still refuses (quota shared with the rest of
- * the app), the oldest conversation goes and the write is retried — the list then shows exactly what a
- * reload would bring back.
- */
+// Another tab recorded, deleted or cleared: adopt its list, so this tab's next write builds on it instead
+// of overwriting it with a copy that was current when the page opened.
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (event) => {
+    if (event.key !== null && event.key !== HISTORY_KEY) return
+    conversations.value = parseHistory(event.key === null ? null : event.newValue)
+  })
+}
+
+/** Writes the list within its budget (see `persistList`) and keeps the in-memory list equal to what was kept. */
 function persist(keepId?: string) {
-  let next = fitToBudget(conversations.value, HISTORY_LIMITS.bytes, keepId)
-  if (typeof window !== 'undefined') {
-    for (;;) {
-      try {
-        window.localStorage.setItem(HISTORY_KEY, JSON.stringify(next))
-        break
-      } catch {
-        const dropped = dropOldest(next, keepId)
-        if (!dropped) break
-        next = dropped
-      }
-    }
-  }
-  conversations.value = next
+  const store = storage()
+  conversations.value = store ? persistList(store, conversations.value, keepId) : fitToBudget(conversations.value, HISTORY_LIMITS.bytes, keepId)
 }
 
 /** Newest activity first — the order the list, the search and the groups all read. */

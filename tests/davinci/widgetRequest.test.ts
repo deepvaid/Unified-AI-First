@@ -4,6 +4,7 @@ import { getMetricDescriptor } from '../../src/stores/dashboards/metricCatalog.t
 import {
   draftForMetric,
   draftFromResolution,
+  namesOnlyMetric,
   optionFor,
   optionsForMetric,
   parseWidgetRequest,
@@ -38,6 +39,14 @@ const rows: Row[] = [
   ['Show sessions by country as a pie chart', 'analytics_sessions_by_country', 'bar', 'stacked-column', /instead of a pie chart/],
   ['Revenue by day of week', 'commerce_revenue_heatmap', 'heatmap', undefined, null],
   ['Show retail revenue', 'retail_revenue', 'kpi', undefined, null],
+  // A generic "chart" is only honoured by a chart: a KPI tile is not one, and the merchant is told.
+  ['Make a chart of orders', 'commerce_orders', 'kpi', undefined, /only be shown as a KPI tile.*instead of a chart/],
+  ['Plot my orders by week', 'commerce_orders', 'kpi', undefined, /instead of a chart/],
+  ['Show a chart of my conversion rate', 'commerce_conversion_rate', 'kpi', undefined, /instead of a chart/],
+  // …but a generic "widget" is satisfied by anything.
+  ['Add an orders widget', 'commerce_orders', 'kpi', undefined, null],
+  // The KPI has a trend sparkline — the note must not claim the metric "isn't tracked over time".
+  ['Show orders over time', 'commerce_orders', 'kpi', undefined, /no over-time chart for Orders/],
   ['Show top campaigns as a table', 'marketing_top_campaigns', 'table', undefined, null],
   ['Show campaign revenue by folder', 'marketing_campaign_revenue', 'bar', 'vertical', null],
   ['Show ticket volume over time', 'service_ticket_volume', 'timeseries', 'area', null],
@@ -143,4 +152,18 @@ test('draftForMetric saves what a card shows, in the metric\'s own default look'
   assert.equal(draft.metricId, 'commerce_revenue_over_time')
   assert.equal(draft.title, 'Revenue Over Time')
   assert.equal(draft.aiProvenance?.summary, 'Saved from the revenue card')
+})
+
+test('namesOnlyMetric: the prompt is the metric\'s name and nothing else', () => {
+  const names = (prompt: string) => {
+    const resolution = resolveWidgetRequest(prompt, ALL_METRICS, { dashboardRange: 'last_30_days' })
+    assert.ok(resolution, prompt)
+    return namesOnlyMetric(resolution, ALL_METRICS)
+  }
+  for (const yes of ['orders', 'show my open rate', 'top 5 campaigns', 'orders last 30 days', 'Top campaigns by revenue', 'the ticket volume, please']) {
+    assert.equal(names(yes), true, yes)
+  }
+  for (const no of ['boost sales', 'sales are slow', 'thanks for the orders', 'increase orders', 'get more customers', 'low sales', 'sales by slow']) {
+    assert.equal(names(no), false, no)
+  }
 })

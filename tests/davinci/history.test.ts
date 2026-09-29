@@ -1,11 +1,15 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
+  HISTORY_KEY,
   HISTORY_LIMITS,
+  MESSAGE_TEXT_MAX,
   buildRecord,
   fitToBudget,
   groupConversations,
+  isQuotaError,
   parseHistory,
+  persistList,
   subtitleFor,
   titleFrom,
   upsert,
@@ -192,4 +196,79 @@ test('rows group by the local day of their last activity', () => {
   assert.deepEqual(groups.yesterday.map((c) => c.id), ['yesterday'])
   assert.deepEqual(groups.lastWeek.map((c) => c.id), ['week'])
   assert.deepEqual(groups.older.map((c) => c.id), ['older'])
+})
+
+test('quick-reply chips are not kept: they belong to the live moment, not the transcript', () => {
+  const cards = [{ type: 'insight', props: { headline: 'Lapsed Buyer journey', description: 'x' } }]
+  const chips = [{ label: 'Open in journey wizard', value: 'Open the journey wizard' }]
+  const thread = [
+    user('u1', 'win back customers'),
+    bot('a1', 'That fits', [{ type: 'intentCards', props: { cards, quickReplies: chips } } as never]),
+    bot('a2', 'Which goal?', [{ type: 'intentCards', props: { cards: [], quickReplies: chips } } as never]),
+  ]
+  const built = buildRecord('c1', thread, undefined, NOW)!
+  const kept = built.messages[1]!.componentData![0]!.props as { cards: unknown[]; quickReplies?: unknown }
+  assert.equal(kept.cards.length, 1)
+  assert.equal(kept.quickReplies, undefined)
+  // A message that was nothing but chips keeps its words and loses the empty card list.
+  assert.equal(built.messages[2]!.text, 'Which goal?')
+  assert.equal(built.messages[2]!.componentData, undefined)
+})
+
+test('one huge message cannot crowd out the other conversations', () => {
+  const essay = 'x'.repeat(MESSAGE_TEXT_MAX * 20)
+  const built = buildRecord('c1', [user('u1', essay), bot('a1', 'ok')], undefined, NOW)!
+  assert.ok(built.messages[0]!.text.length <= MESSAGE_TEXT_MAX)
+  assert.ok(built.messages[0]!.text.endsWith('…'))
+  const others = Array.from({ length: 5 }, (_, i) => record({ id: `other-${i}`, updatedAt: NOW - (i + 1) * HOUR }))
+  const fitted = fitToBudget(upsert(others, built), HISTORY_LIMITS.bytes, 'c1')
+  assert.equal(fitted.length, 6, 'every conversation still fits')
+})
+
+const quota = () => Object.assign(new Error('full'), { name: 'QuotaExceededError' })
+
+test('isQuotaError recognises the full-storage errors of each browser, and nothing else', () => {
+  assert.equal(isQuotaError(quota()), true)
+  assert.equal(isQuotaError(Object.assign(new Error('x'), { name: 'NS_ERROR_DOM_QUOTA_REACHED' })), true)
+  assert.equal(isQuotaError(Object.assign(new Error('x'), { code: 22 })), true)
+  assert.equal(isQuotaError(Object.assign(new Error('blocked'), { name: 'SecurityError' })), false)
+  assert.equal(isQuotaError(new Error('boom')), false)
+  assert.equal(isQuotaError(null), false)
+})
+
+test('a full storage drops the oldest conversation and retries — never the live one', () => {
+  const list = [record({ id: 'live', updatedAt: NOW }), record({ id: 'b', updatedAt: NOW - HOUR }), record({ id: 'c', updatedAt: NOW - 2 * HOUR })]
+  const writes: string[][] = []
+  // Storage that only has room for two conversations.
+  const storage = {
+    setItem(_key: string, value: string) {
+      const ids = (JSON.parse(value) as HistoryConversation[]).map((c) => c.id)
+      if (ids.length > 2) throw quota()
+      writes.push(ids)
+    },
+  }
+  const kept = persistList(storage, list, 'live')
+  assert.deepEqual(kept.map((c) => c.id), ['live', 'b'])
+  assert.deepEqual(writes, [['live', 'b']])
+})
+
+test('a blocked storage is not a reason to forget anything', () => {
+  const list = [record({ id: 'live', updatedAt: NOW }), record({ id: 'b', updatedAt: NOW - HOUR })]
+  let attempts = 0
+  const blocked = {
+    setItem() {
+      attempts += 1
+      throw Object.assign(new Error('access denied'), { name: 'SecurityError' })
+    },
+  }
+  assert.deepEqual(persistList(blocked, list, 'live').map((c) => c.id), ['live', 'b'])
+  assert.equal(attempts, 1, 'no retry loop')
+  // No storage at all (SSR, storage access denied): the list is just budget-fitted in memory.
+  assert.deepEqual(persistList(null, list, 'live').map((c) => c.id), ['live', 'b'])
+})
+
+test('persistList writes under the history key', () => {
+  const seen: string[] = []
+  persistList({ setItem: (key) => void seen.push(key) }, [record({ id: 'a' })])
+  assert.deepEqual(seen, [HISTORY_KEY])
 })

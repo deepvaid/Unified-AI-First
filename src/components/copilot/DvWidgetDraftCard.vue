@@ -166,7 +166,7 @@ function handleExpandAdd() {
       </div>
     </div>
 
-    <MpAlert v-if="errorText && !isAdded" tone="error" icon="circle-alert" class="dv-draft__alert">{{ errorText }}</MpAlert>
+    <MpAlert v-if="errorText && !isAdded" tone="error" icon="circle-alert" live="off" class="dv-draft__alert">{{ errorText }}</MpAlert>
 
     <footer class="dv-draft__actions">
       <v-btn

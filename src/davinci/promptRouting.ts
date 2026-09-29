@@ -9,7 +9,7 @@
 
 import type { DashboardMetricDescriptor } from '../stores/dashboards/metricCatalog.ts'
 import type { DashboardDatePreset } from '../stores/dashboards/types.ts'
-import { normalizePrompt, parseWidgetRequest, resolveWidgetRequest, type WidgetResolution } from './widgetRequest.ts'
+import { namesOnlyMetric, normalizePrompt, parseWidgetRequest, resolveWidgetRequest, type WidgetResolution } from './widgetRequest.ts'
 
 export type DvIntentKind = 'campaign' | 'product' | 'revenue' | 'segment' | 'engine' | 'journey' | 'fallback'
 
@@ -33,6 +33,17 @@ export function isExplainQuestion(t: string): boolean {
   return EXPLAIN_LEAD.test(t) || (ASK_LEAD.test(t) && WIDGET_NOUN.test(t) && !MAKE_VERB.test(t))
 }
 
+/**
+ * Text inside quotes is a merchant-authored NAME ("Weekly Sales Report"), not part of the request — the
+ * hand-offs from the journey and theme builders quote them. A prompt that is little more than a quote
+ * (`Show "revenue by channel"`) keeps it: there is nothing left to route on.
+ */
+const QUOTED = /["“”][^"“”]*["“”]/g
+function withoutQuoted(text: string): string {
+  const rest = text.replace(QUOTED, ' ')
+  return rest.trim().split(/\s+/).filter(Boolean).length >= 2 ? rest : text
+}
+
 // ── Intent classification ────────────────────────────────────────────────────
 
 const JOURNEY_MAKE = /\b(?:build|create|draft|make|set ?up|start|want|need)\b[^.]*\b(?:journey|automation|drip|flow|series|sequence)\b/
@@ -46,9 +57,14 @@ const REVIEW_QUESTION = /\b(?:was|were|did|how (?:good|well|is|are|many|big)|how
 const CAMPAIGN_A = /\b(?:run|send|create|launch|draft|set ?up|start|schedule|build|make|want|need|plan)\b[^.]*\b(?:campaign|promo|promotion|blast|newsletter)\b/
 const CAMPAIGN_B = /send .*(?:email|campaign)|email .*(?:blast|campaign)/
 const ENGINE = /\brecommendation(?:s)?\s+(?:engine|widget|type)\b|which\s+(?:recommendation|engine)|\bengine\b.*\b(?:use|pick|choose|recommend)\b|shoppers\s+(?:should\s+)?see/
-const PRODUCT = /\b(?:add|create|new|draft|write)\b.*\b(?:product|item|sku)\b|\bproduct description\b/
+const PRODUCT = /\b(?:add|create|draft|write)\b.*\b(?:product|item|sku)\b|\bproduct description\b/
 // "Draft an email announcing our new product" is email copy, not a product description.
 const NOT_PRODUCT_COPY = /\b(?:email|newsletter|campaign|sms|blog|post|announcement)\b/
+/**
+ * Asking for ideas or a subject line, or telling Da Vinci NOT to do something, is not a brief for the
+ * campaign wizard or the product card ("I need ideas for a campaign", "Don't send the newsletter").
+ */
+const NOT_A_BRIEF = /\b(?:ideas?|tips?|suggestions?|examples?|inspiration|subject lines?)\b|^(?:don'?t|do not|never|stop)\b/
 
 const REVENUE_WORD = /\b(?:revenue|sales|gmv|aov|average order value|earnings|takings)\b/
 const REVENUE_STATUS = /\b(?:how(?:'s| is| are| was| were| did| has| have| does| do)|what(?:'s| is| are| was| were| did)|show me|give me|tell me|report(?: on)?|check|summary of|update on|overview of)\b/
@@ -80,7 +96,7 @@ const SEGMENT_VERB = /\b(?:build|create|make|set ?up|define|save|start|draft|gen
 const isSegmentCreate = (t: string): boolean => SEGMENT_NOUN.test(t) && SEGMENT_VERB.test(t) && !isQuestion(t)
 
 export function classifyIntent(text: string): DvIntentKind {
-  const t = normalizePrompt(text)
+  const t = normalizePrompt(withoutQuoted(text))
   if (isExplainQuestion(t)) return 'fallback'
 
   // Journey CREATION only. Reviews, journeys named in quotes (already being built) and
@@ -90,16 +106,19 @@ export function classifyIntent(text: string): DvIntentKind {
 
   // "Was my last campaign any good?" and "How do I run a campaign?" are questions for the
   // advisor, not briefs for the campaign wizard.
+  // Any question ("What time should I send my campaign?", "Do I need a campaign for Black Friday?")
+  // wants an answer, not a wizard.
   const isReviewQuestion = REVIEW_QUESTION.test(t)
   const howTo = isHowTo(t)
-  if (!isReviewQuestion && !howTo && (CAMPAIGN_A.test(t) || CAMPAIGN_B.test(t))) return 'campaign'
+  const asksForAnswer = isQuestion(t) || NOT_A_BRIEF.test(t)
+  if (!isReviewQuestion && !howTo && !asksForAnswer && (CAMPAIGN_A.test(t) || CAMPAIGN_B.test(t))) return 'campaign'
 
   // Goal language without the word "journey" ("win back customers who haven't bought in 90
   // days") — after the campaign check so "run a campaign to lapsed buyers" stays a campaign.
   if (asksToCreate && JOURNEY_GOAL.test(t)) return 'journey'
 
   if (ENGINE.test(t)) return 'engine'
-  if (!isReviewQuestion && !howTo && PRODUCT.test(t) && !NOT_PRODUCT_COPY.test(t)) return 'product'
+  if (!isReviewQuestion && !howTo && !asksForAnswer && PRODUCT.test(t) && !NOT_PRODUCT_COPY.test(t)) return 'product'
   if (isRevenueStatus(t)) return 'revenue'
   if (!isReviewQuestion && isSegmentCreate(t)) return 'segment'
   return 'fallback'
@@ -107,16 +126,40 @@ export function classifyIntent(text: string): DvIntentKind {
 
 // ── Widget requests ──────────────────────────────────────────────────────────
 
-/** The merchant asked to SEE something: a chart word, a breakdown, a time series. */
-export function wantsVisual(text: string): boolean {
-  const t = normalizePrompt(text)
-  if (isHowTo(t)) return false
+export type VisualAsk = 'chart' | 'breakdown' | 'none'
+
+/** Verbs that DO something in the world. (`\bsend\b` doesn't match "sends" — "Show sends per month" stays a chart.) */
+const DELIVERY_VERB = /\b(?:send|schedule|launch|run)\b/
+
+/**
+ * How strongly the merchant asked to SEE something. 'chart' is an explicit ask — a chart word, "…to my
+ * dashboard", a time-series verb ("show revenue over time"). 'breakdown' is only a "by <dimension>" or a
+ * cadence word ("weekly", "by week"): enough to draw "revenue by channel", NOT enough to override an
+ * action ("Send a weekly newsletter…", "Build a segment by country"). Names in quotes don't count —
+ * `Review my data journey "Weekly Sales Report"` is not a request for a weekly chart.
+ */
+export function visualAsk(text: string): VisualAsk {
+  const t = normalizePrompt(withoutQuoted(text))
+  if (isHowTo(t)) return 'none'
   const req = parseWidgetRequest(t)
-  if (req.family) return true
-  if (/\b(?:add|put|pin)\b.*\b(?:to|on) (?:my|the|this) dashboard\b/.test(t)) return true
-  if (req.dimension || req.grain) return true
-  if (isQuestion(t)) return false
-  return req.timeShape && /\b(?:show|add|plot|make|create|build|draft|give me|put|pin|display|visuali[sz]e|track)\b/.test(t)
+  if (req.family) return 'chart'
+  if (/\b(?:add|put|pin)\b.*\b(?:to|on) (?:my|the|this) dashboard\b/.test(t)) return 'chart'
+  // "Send a weekly digest to subscribers" has a cadence word but is an errand, not a chart.
+  if (req.dimension || req.grain) return DELIVERY_VERB.test(t) ? 'none' : 'breakdown'
+  if (isQuestion(t)) return 'none'
+  return req.timeShape && /\b(?:show|add|plot|make|create|build|draft|give me|put|pin|display|visuali[sz]e|track)\b/.test(t) ? 'chart' : 'none'
+}
+
+/** The merchant asked to SEE something: a chart word, a breakdown, a time series. */
+export const wantsVisual = (text: string): boolean => visualAsk(text) !== 'none'
+
+const CREATE_VERB = /\b(?:build|create|make|set ?up|define|save|start|draft|generate|add|send|run|launch|schedule|plan|write|want|need)\b/
+
+/** Can a breakdown-only ask ("… by country") override this intent? Only when the intent isn't an action. */
+function breakdownBeatsIntent(intent: DvIntentKind, t: string): boolean {
+  if (intent === 'fallback' || intent === 'revenue') return true
+  // "Show contacts by segment" reads data; "Build a segment by country" creates one.
+  return intent === 'segment' && !CREATE_VERB.test(t)
 }
 
 // ── Lane decision ────────────────────────────────────────────────────────────
@@ -136,14 +179,15 @@ export type RouteDecision =
   | { lane: 'gemini' }
 
 export function routePrompt(text: string, ctx: RouteContext): RouteDecision {
-  const t = normalizePrompt(text)
+  const t = normalizePrompt(withoutQuoted(text))
   if (isExplainQuestion(t)) return { lane: 'gemini' }
 
   const intent = classifyIntent(text)
   const resolve = () => resolveWidgetRequest(text, ctx.metrics, { dashboardRange: ctx.dashboardRange })
 
-  // Explicit chart words beat canned cards.
-  if (wantsVisual(t)) {
+  // Explicit chart words beat canned cards; a breakdown or cadence word alone only beats a non-action.
+  const ask = visualAsk(text)
+  if (ask === 'chart' || (ask === 'breakdown' && breakdownBeatsIntent(intent, t))) {
     if (ctx.hasDashboard) {
       const resolution = resolve()
       if (resolution) return { lane: 'widget', resolution }
@@ -153,10 +197,12 @@ export function routePrompt(text: string, ctx: RouteContext): RouteDecision {
 
   if (intent !== 'fallback') return { lane: 'intent', intent }
 
-  // On a dashboard, a bare metric word ("orders") is a request for that metric.
+  // On a dashboard, a bare metric phrase ("orders", "show my open rate") is a request for that metric.
+  // It must be NOTHING but the metric's name: "sales are slow", "boost sales" and "thanks for the orders"
+  // mention a metric without asking to see it, so they go to the advisor.
   if (ctx.hasDashboard && ctx.onDashboard && !isQuestion(t) && !DIAGNOSTIC.test(t) && looksLikeMetricAsk(t)) {
     const resolution = resolve()
-    if (resolution) return { lane: 'widget', resolution }
+    if (resolution && namesOnlyMetric(resolution, ctx.metrics)) return { lane: 'widget', resolution }
   }
   return { lane: 'gemini' }
 }

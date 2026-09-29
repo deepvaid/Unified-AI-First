@@ -13,7 +13,9 @@ const TONE_ICONS: Record<DaVinciToastTone, string> = {
 
 <template>
   <Teleport to="body">
-    <div class="dv-toast-stack" aria-live="polite">
+    <!-- No aria-live here: each toast is its own live region (status or alert), and a polite container around
+         an alert made screen readers announce the same toast twice. -->
+    <div class="dv-toast-stack">
       <div
         v-for="toast in toasts"
         :key="toast.id"

@@ -253,7 +253,8 @@ function buildSub(item: HistoryConversation): string {
   border-radius: var(--mp-radius-full);
 }
 
-/* The input's own outline is off, so the pill carries the focus ring — the same 2px accent as the composer. */
+/* The input's own outline is off, so the pill carries the focus ring — the same 2px accent as the composer.
+   (2px focus rings are geometry, off the spacing scale by decision — DESIGN_AUDIT P4.) */
 .dv-history__search:focus-within {
   box-shadow: inset 0 0 0 2px var(--dv-accent);
 }

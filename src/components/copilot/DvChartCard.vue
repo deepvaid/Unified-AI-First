@@ -10,6 +10,7 @@ import { getMetricDescriptor } from '@/stores/dashboards/metricCatalog'
 import type { DashboardMetricId, DashboardMetricUnit, DashboardSeriesData } from '@/stores/dashboards/types'
 import type { AddedWidgetRef } from '@/stores/useCopilot'
 import { useDashboardsStore } from '@/stores/useDashboards'
+import { mp_component_preview_widgetHeight_lg } from '@/design-tokens/generated/tokens'
 import { downloadCsv } from '@/utils/exportCsv'
 
 // A chart in the conversation, drawn by the SAME chart widget the dashboard uses — theme, axis,
@@ -46,6 +47,8 @@ const { pushToast } = useDaVinciToasts()
 const { accountId, dashboard: target } = useDaVinciTarget()
 
 const enlarged = ref(false)
+/** The enlarged chart's plot height: the token's "Expand dialog" frame, not a number of its own. */
+const enlargedHeight = parseFloat(mp_component_preview_widgetHeight_lg)
 const savedHere = ref<AddedWidgetRef | null>(null)
 
 const data = computed<DashboardSeriesData>(() => ({
@@ -155,7 +158,7 @@ function download() {
     </div>
 
     <MpDialog v-model="enlarged" size="lg" :title="title" :subtitle="subtitle" icon="chart-column">
-      <DashboardChartWidget v-if="hasData" :data="data" widget-type="timeseries" chart-variant="area" :height="420" />
+      <DashboardChartWidget v-if="hasData" :data="data" widget-type="timeseries" chart-variant="area" :height="enlargedHeight" />
       <p v-else class="dv-chart-card__empty">Nothing to chart for this period yet.</p>
     </MpDialog>
   </v-card>

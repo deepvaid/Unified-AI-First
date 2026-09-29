@@ -206,8 +206,9 @@ function setupCardFor(message: ChatMessage): SetupOnboardingProps | null {
   return component ? component.props as SetupOnboardingProps : null
 }
 
-// A reply still being worked out is dropped if the merchant starts a New chat or leaves —
-// it must never land in the fresh thread, or be spoken after they have gone.
+// A reply still being worked out is dropped if the merchant starts a New chat (or opens another
+// conversation) — it must never land in the fresh thread. If they LEAVE instead, it still lands in
+// the thread it was asked in (the drawer shows it), silently: nothing is spoken after they have gone.
 let generation = 0
 let replyAbort: AbortController | null = null
 
@@ -215,6 +216,7 @@ let replyAbort: AbortController | null = null
 async function respond(text: string, { awaitSpeech = false } = {}) {
   if (disposed) return
   const gen = ++generation
+  const epoch = copilot.threadEpoch
   replyAbort?.abort()
   const turnId = makeId('u')
   messages.value.push({ id: turnId, role: 'user', text })
@@ -237,20 +239,30 @@ async function respond(text: string, { awaitSpeech = false } = {}) {
   if (flow.kind === 'pass') {
     notices = flow.notices
     const plan = responder.plan(text)
-    replyAbort = plan.lane === 'gemini' ? new AbortController() : null
+    const controller = plan.lane === 'gemini' ? new AbortController() : null
+    replyAbort = controller
     try {
-      turn = await responder.reply(plan, text, { history: geminiHistory(messages.value, turnId), signal: replyAbort?.signal })
+      turn = await responder.reply(plan, text, { history: geminiHistory(messages.value, turnId), signal: controller?.signal })
     } catch {
-      if (gen !== generation || disposed) return // superseded (New chat / left) — never lands
+      if (gen !== generation || epoch !== copilot.threadEpoch) return // superseded (New chat / another conversation) — never lands
       turn = responder.offlineTurn()
     } finally {
-      replyAbort = null
+      // Only this turn's controller: a stale finally must not null a newer turn's.
+      if (replyAbort === controller) replyAbort = null
     }
   } else {
     flowResponse = flow.response
   }
   await minDelay
-  if (disposed || gen !== generation) return
+  if (gen !== generation || epoch !== copilot.threadEpoch) return
+  if (disposed) {
+    // Left mid-reply: the answer belongs to the thread it was asked in, so it lands — but silently
+    // (no speech, no mic, no navigation).
+    notices.forEach((notice) => appendAssistantResponse(notice))
+    if (flowResponse) appendAssistantResponse(flowResponse)
+    else if (turn) messages.value.push(turn.message)
+    return
+  }
 
   voice.setThinking(false)
   notices.forEach((notice) => appendAssistantResponse(notice))
@@ -851,9 +863,7 @@ watch(
 )
 
 onBeforeUnmount(() => {
-  disposed = true
-  generation++
-  replyAbort?.abort()
+  disposed = true // a reply in flight still lands in the shared thread, silently — see respond()
   document.removeEventListener('keydown', onKeydown)
   if (greetProbe) clearTimeout(greetProbe)
   disarmGestureGreeting()
@@ -1154,6 +1164,8 @@ onBeforeUnmount(() => {
 .dvx {
   /* prototype micro-label character without shipping a new font */
   --dvx-mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, monospace;
+  /* The thread's card measure — a measure sizes a surface to its content, so it stays off the spacing scale. */
+  --dvx-card-measure: 430px;
   position: fixed;
   inset: 0;
   overflow: hidden;
@@ -1308,13 +1320,13 @@ onBeforeUnmount(() => {
 
 .dvx__cards {
   width: 100%;
-  max-width: 430px;
+  max-width: var(--dvx-card-measure);
   margin-top: var(--mp-space-4);
 }
 
 /* Tool steps and widget drafts share the thread's card measure. */
 .dvx__steps {
-  max-width: 430px;
+  max-width: var(--dvx-card-measure);
 }
 
 .dvx__drafts {
@@ -1322,7 +1334,7 @@ onBeforeUnmount(() => {
   flex-direction: column;
   gap: var(--mp-space-10);
   width: 100%;
-  max-width: 430px;
+  max-width: var(--dvx-card-measure);
   margin-top: var(--mp-space-4);
 }
 

@@ -7,7 +7,7 @@
 
 import type { JourneyGoal } from '../composables/useJourneyGenerator.ts'
 import { isAffirmation, isDecline } from './phrases.ts'
-import type { DvIntentKind } from './promptRouting.ts'
+import { isQuestion, type DvIntentKind } from './promptRouting.ts'
 
 export interface PendingSlot {
   intent: DvIntentKind
@@ -22,42 +22,58 @@ export function detectJourneyGoal(text: string): JourneyGoal | null {
   const t = text.toLowerCase()
   if (/welcome|onboard|new subscriber/.test(t)) return 'welcome'
   if (/abandon|cart/.test(t)) return 'abandoned-cart'
-  if (/nurture|lead/.test(t)) return 'nurture'
+  if (/nurture|\bleads?\b/.test(t)) return 'nurture'
   if (/advoca|referral|refer a friend|vip perk/.test(t)) return 'advocacy'
   if (/re-?engage|inactive|quiet|dormant/.test(t)) return 're-engagement'
   if (/win[- ]?back|lapsed|stopped buying/.test(t)) return 'lapsed-buyer'
   return null
 }
 
-export function detectEngineKey(text: string): string | null {
-  const t = text.toLowerCase()
-  if (/popular|best.?sell|top seller/.test(t)) return 'popular'
-  if (/newest|new arrival|fresh|latest/.test(t)) return 'newest'
-  if (/trend/.test(t)) return 'trending'
-  if (/personal|history|behaviou?r/.test(t)) return 'personalized'
-  if (/frequently|together|basket|bundle/.test(t)) return 'fbt'
-  if (/recently viewed|left off|browsed/.test(t)) return 'recent'
-  return null
-}
+const ENGINE_KEYS: Array<[string, RegExp]> = [
+  ['popular', /popular|best.?sell|top seller/],
+  ['newest', /newest|new arrival|fresh|latest/],
+  ['trending', /trend/],
+  ['personalized', /personal|history|behaviou?r/],
+  ['fbt', /frequently|together|basket|bundle/],
+  ['recent', /recently viewed|left off|browsed/],
+]
 
-export function detectEnginePage(text: string): string | null {
-  const t = text.toLowerCase()
-  if (/home\s?page|homepage|front page/.test(t)) return 'Home'
-  if (/category|listing|plp/.test(t)) return 'Category'
-  if (/product page|pdp/.test(t)) return 'Product'
-  if (/cart|checkout/.test(t)) return 'Cart'
-  if (/custom page/.test(t)) return 'Custom'
-  return null
-}
+const ENGINE_PAGES: Array<[string, RegExp]> = [
+  ['Home', /home\s?page|homepage|front page/],
+  ['Category', /category|listing|plp/],
+  ['Product', /product page|pdp/],
+  ['Cart', /cart|checkout/],
+  ['Custom', /custom page/],
+]
+
+const firstMatch = (table: Array<[string, RegExp]>, text: string): string | null =>
+  table.find(([, pattern]) => pattern.test(text.toLowerCase()))?.[0] ?? null
+
+export const detectEngineKey = (text: string): string | null => firstMatch(ENGINE_KEYS, text)
+export const detectEnginePage = (text: string): string | null => firstMatch(ENGINE_PAGES, text)
 
 const ASKS_FOR_WIDGET = /\b(?:widget|chart|graph|table|kpi|tile|dashboard)\b/i
 const FOLLOW_UP = /^(?:what|how) about\b|^and\b|\binstead\b|\brather\b|^(?:use|try|pick|choose|go with)\b/
+const ENGINE_FILLER = /\b(?:the|a|an|my|our|for|on|in|to|of|page|pages|products?|items?|engines?|recommendations?|widgets?|type|please|just|only|ones?|options?|bought)\b/g
+
+/**
+ * The message is nothing BUT an engine or page name ("Trending", "newest products", "the cart page").
+ * One word beyond that — "show revenue trend", "latest orders", "cart abandonment rate" — is another
+ * question that happens to contain one, so the old "any short message with a keyword" rule read it
+ * as an answer and returned engine advice.
+ */
+function isBareEnginePhrase(t: string): boolean {
+  // `\w*` on both sides: the tables match a stem ("trend", "best.?sell"), the merchant wrote the whole word.
+  const rest = [...ENGINE_KEYS, ...ENGINE_PAGES].reduce((left, [, pattern]) => left.replace(new RegExp(`\\w*(?:${pattern.source})\\w*`, 'g'), ' '), t)
+  return rest.replace(ENGINE_FILLER, ' ').replace(/[^a-z]+/g, ' ').trim() === ''
+}
 
 /** "What about Newest Products?", "Trending", "And for the cart page?" — not "Show open rate trend for last 30 days". */
 function answersEngine(text: string): boolean {
-  const t = text.trim().toLowerCase()
+  const t = text.trim().toLowerCase().replace(/[’‘]/g, "'")
   if (!detectEngineKey(t) && !detectEnginePage(t)) return false
-  return FOLLOW_UP.test(t) || t.split(/\s+/).length <= 4
+  if (FOLLOW_UP.test(t)) return t.split(/\s+/).length <= 8
+  return isBareEnginePhrase(t)
 }
 
 /**
@@ -71,7 +87,8 @@ export function slotVerdict(slot: PendingSlot, text: string): SlotVerdict {
     if (isDecline(t)) return 'decline'
   }
   if (slot.intent === 'journey' && slot.slot === 'open') return isAffirmation(t) ? 'answer' : 'unrelated'
-  if (slot.intent === 'journey' && slot.slot === 'goal') return detectJourneyGoal(t) ? 'answer' : 'unrelated'
+  // "How many carts were abandoned?" contains a goal word but asks something else.
+  if (slot.intent === 'journey' && slot.slot === 'goal') return !isQuestion(t) && detectJourneyGoal(t) ? 'answer' : 'unrelated'
   if (slot.intent === 'engine') return answersEngine(t) ? 'answer' : 'unrelated'
   return 'unrelated'
 }

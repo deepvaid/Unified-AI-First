@@ -1,6 +1,6 @@
 // Turns "Show top products as a pie chart" into a supported dashboard widget.
 //
-// Pure (type-only imports plus two data modules) so the resolver is unit-tested under
+// Pure (type-only imports plus three data modules: the metric catalog, range labels and widget library) so the resolver is unit-tested under
 // `node --test` against the real metric catalog — see tests/davinci/widgetRequest.test.ts.
 //
 // The contract: never draft something the dashboard can't draw, never silently swap
@@ -375,9 +375,11 @@ function buildNote(
   const opts = optionsForMetric(metric)
   const family = req.family
 
+  // "widget" is satisfied by anything; a generic "chart" only by an actual chart — a KPI tile is not one.
   const met = !!family && (
-    family === 'chart' || family === 'widget'
-    || (family !== 'scatter' && FAMILY_KEYS[family].includes(chosen.key))
+    family === 'widget'
+    || (family === 'chart' && isChartOption(chosen))
+    || (family !== 'chart' && family !== 'scatter' && FAMILY_KEYS[family].includes(chosen.key))
   )
 
   if (family === 'scatter') {
@@ -388,7 +390,7 @@ function buildNote(
       ? `${metric.label} can only be shown as ${article(chosen.noun)}, so I drafted that instead of ${asked}.`
       : `${metric.label} can be drawn as ${joinOr(opts.map((o) => article(o.noun)))}, so I drafted ${article(chosen.noun)} instead of ${asked}.`)
   } else if (req.timeShape && !family && !isTimeOption(chosen) && !opts.some(isTimeOption)) {
-    parts.push(`${metric.label} isn't tracked over time yet, so I drafted ${article(chosen.noun)}.`)
+    parts.push(`There's no over-time chart for ${metric.label} yet, so I drafted ${article(chosen.noun)}.`)
   }
 
   if (req.dimension && !mentions(metric, req.dimension) && !parts.length) {
@@ -465,6 +467,34 @@ export function resolveWidgetRequest(
     note: buildNote(best.metric, best.option, req, opts.dashboardRange),
     request: req,
   }
+}
+
+/** Every word a merchant might use for `metric`: its label, title and keywords, and the synonyms the matcher folds in. */
+function metricVocabulary(metric: DashboardMetricDescriptor): Set<string> {
+  const vocabulary = new Set(tokenize(`${metric.label} ${metric.defaultTitle} ${metric.aiKeywords.join(' ')}`))
+  for (const [word, canonical] of Object.entries(SYNONYMS)) if (vocabulary.has(canonical)) vocabulary.add(word)
+  return vocabulary
+}
+
+/** Words that can sit around a metric's name without asking for anything else. */
+const NAME_FILLER = new Set(['show', 'me', 'my', 'our', 'the', 'a', 'an', 'of', 'for', 'to', 'please', 'add', 'see', 'view', 'display', 'pull', 'up', 'all', 'and', 'in', 'on'])
+
+/**
+ * The prompt is nothing BUT the metric's name — "orders", "show my open rate", "top campaigns last 30 days".
+ * A sentence that merely contains one ("sales are slow", "boost sales", "thanks for the orders") mentions
+ * a metric without asking to see it: one word outside the metric's vocabulary is enough to say so.
+ */
+export function namesOnlyMetric(resolution: WidgetResolution, metrics: DashboardMetricDescriptor[] = []): boolean {
+  const { request, metric } = resolution
+  const vocabulary = metricVocabulary(metric)
+  const rangeWords = new Set(request.range ? tokenize(request.range.phrase) : [])
+  // "top campaigns by revenue": what follows "by" may be any measure the dashboard knows.
+  const measures = new Set(metrics.flatMap((m) => [...metricVocabulary(m)]))
+  return request.tokens.every((token, index) => {
+    if (vocabulary.has(token) || NAME_FILLER.has(token) || rangeWords.has(token) || /^\d+%?$/.test(token)) return true
+    if (token === 'by') return measures.has(request.tokens[index + 1] ?? '')
+    return request.tokens[index - 1] === 'by' && measures.has(token)
+  })
 }
 
 export function draftFromResolution(

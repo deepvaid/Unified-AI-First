@@ -27,6 +27,23 @@ const table: Array<[PendingSlot, string, 'answer' | 'decline' | 'unrelated']> = 
   [engine, 'Add a line chart of orders', 'unrelated'],
   [engine, "How's revenue this week?", 'unrelated'],
   [engine, 'No thanks', 'decline'],
+  // Only a bare engine/page name (or a short "what about…") answers — not another question that contains one.
+  [engine, 'Trending', 'answer'],
+  [engine, 'newest products for the homepage', 'answer'],
+  [engine, 'the cart page', 'answer'],
+  [engine, 'best sellers', 'answer'],
+  [engine, 'frequently bought together', 'answer'],
+  [engine, 'use popular', 'answer'],
+  [engine, 'show revenue trend', 'unrelated'],
+  [engine, 'latest orders', 'unrelated'],
+  [engine, 'show latest orders', 'unrelated'],
+  [engine, 'order history', 'unrelated'],
+  [engine, 'cart abandonment rate', 'unrelated'],
+  [engine, "How's the cart page doing?", 'unrelated'],
+  [journeyGoal, 'Nurture new leads', 'answer'],
+  [journeyGoal, 'I want to welcome new subscribers', 'answer'],
+  [journeyGoal, 'how many carts were abandoned', 'unrelated'],
+  [journeyGoal, 'who are my leaders', 'unrelated'],
 ]
 for (const [slot, text, expected] of table) {
   test(`${slot.intent}/${slot.slot}: "${text}" → ${expected}`, () => {

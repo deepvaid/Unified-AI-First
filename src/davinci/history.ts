@@ -49,6 +49,9 @@ export const LEGACY_HISTORY_KEYS = ['davinci-history-v1', 'davinci-active-conver
 
 const TITLE_MAX = 60
 
+/** One pasted essay must not evict every other conversation: recorded message text is capped. */
+export const MESSAGE_TEXT_MAX = 8_000
+
 const ICON_BY_KEYWORD: Array<{ match: RegExp; icon: string }> = [
   { match: /(email|campaign|open|click)/i, icon: 'mail' },
   { match: /(revenue|order|sale|cart|checkout)/i, icon: 'shopping-cart' },
@@ -78,12 +81,26 @@ export function titleFrom(messages: ChatMessage[]): string {
   return first.length > TITLE_MAX ? `${first.slice(0, TITLE_MAX - 1).trimEnd()}…` : first
 }
 
+/**
+ * What a restored message keeps. Guided-flow cards go (see SESSION_BOUND), and so do quick-reply chips:
+ * they are "next step" suggestions for the live moment ("Use VIP…", "Open in journey wizard"), tied to
+ * a wizard or a clarification that is gone by the time the conversation is reopened — clicked, they
+ * would be sent as an ordinary prompt and do nothing they promised.
+ */
 function persistable(message: ChatMessage): ChatMessage {
-  if (!message.componentData) return message
-  const componentData = message.componentData.filter((component) => !SESSION_BOUND.has(component.type))
-  if (componentData.length === message.componentData.length) return message
-  const { componentData: _dropped, ...rest } = message
-  return componentData.length ? { ...rest, componentData } : rest
+  const text = message.text.length > MESSAGE_TEXT_MAX ? `${message.text.slice(0, MESSAGE_TEXT_MAX - 1).trimEnd()}…` : message.text
+  const kept: ChatComponent[] = []
+  for (const component of message.componentData ?? []) {
+    if (SESSION_BOUND.has(component.type)) continue
+    if (component.type === 'intentCards') {
+      const { quickReplies: _chips, ...props } = component.props as { cards?: unknown[]; quickReplies?: unknown }
+      if (props.cards?.length) kept.push({ ...component, props: props as never })
+      continue
+    }
+    kept.push(component)
+  }
+  const { componentData: _components, ...rest } = message
+  return kept.length ? { ...rest, text, componentData: kept } : { ...rest, text }
 }
 
 /** What a conversation did: widgets drafted, widgets added (drafts added + charts saved), questions asked. */
@@ -186,6 +203,43 @@ export function fitToBudget(list: HistoryConversation[], bytes: number, keepId?:
     next = [{ ...only, messages: only.messages.slice(Math.ceil(only.messages.length / 2)) }]
   }
   return next
+}
+
+export interface StorageLike {
+  setItem(key: string, value: string): void
+}
+
+/** True for the errors browsers throw when storage is FULL — and only those. */
+export function isQuotaError(error: unknown): boolean {
+  const e = error as { name?: string; code?: number } | null
+  return !!e && (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED' || e.code === 22 || e.code === 1014)
+}
+
+/**
+ * Writes `list` within its size budget and returns what is held afterwards. Only a full storage drops the
+ * oldest conversation (never `keepId`) and retries — the quota is shared with the rest of the app. Any
+ * other failure (storage blocked, private mode) is not a reason to forget anything: the list stays in
+ * memory and the write is given up quietly.
+ */
+export function persistList(
+  storage: StorageLike | null,
+  list: HistoryConversation[],
+  keepId?: string,
+  bytes: number = HISTORY_LIMITS.bytes,
+): HistoryConversation[] {
+  let next = fitToBudget(list, bytes, keepId)
+  if (!storage) return next
+  for (;;) {
+    try {
+      storage.setItem(HISTORY_KEY, JSON.stringify(next))
+      return next
+    } catch (error) {
+      if (!isQuotaError(error)) return next
+      const dropped = dropOldest(next, keepId)
+      if (!dropped) return next
+      next = dropped
+    }
+  }
 }
 
 function isMessage(value: unknown): value is ChatMessage {

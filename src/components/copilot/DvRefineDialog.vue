@@ -190,6 +190,7 @@ function close() {
 }
 
 .dv-refine__tile:focus-visible {
+  /* 2px focus ring: geometry, off the spacing scale by decision (DESIGN_AUDIT P4). */
   outline: 2px solid color-mix(in oklch, var(--dv-accent) 60%, transparent);
   outline-offset: 2px;
 }

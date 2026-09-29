@@ -402,7 +402,7 @@ watch(voice.interimTranscript, (t) => {
 })
 
 function maybeSpeak(text: string) {
-  if (!surfaceVisible.value || !speakReplies.value) return
+  if (unmounted || !surfaceVisible.value || !speakReplies.value) return
   void voice.speak(text)
 }
 
@@ -416,11 +416,14 @@ watch(surfaceVisible, (visible) => {
   else voice.cancelSpeech()
 })
 
-// The component does unmount when a fullPage route replaces the shell — clear
-// deferred replies and stop any speech; owner-guard only the listen-abort so it
-// never kills the AI experience's own mic session.
+// The component does unmount when a fullPage route replaces the shell — stop any speech and let go
+// of the mic; owner-guard only the listen-abort so it never kills the AI experience's own mic
+// session. A reply still being worked out is NOT dropped: the thread it was asked in is shared
+// (the drawer shows it), so it lands there silently — leaving used to strand the merchant's
+// question without an answer.
+let unmounted = false
 onBeforeUnmount(() => {
-  stopGeneration()
+  unmounted = true
   if (isVoiceMode.value) stopVoiceActivity()
   else {
     if (voice.owner.value === voiceOwner.value) voice.abortListening()
@@ -458,8 +461,13 @@ function finishGeneration(gen: number) {
   liveSteps.value = []
   generatingStatus.value = ''
   scrollToBottom()
+  runNextQueued()
+}
+
+/** The next queued follow-up, if any. */
+function runNextQueued() {
   const next = queuedPrompts.value.shift()
-  if (next) runGeneration(next.text, next.turnId)
+  if (next) answerTurn(next.text, next.turnId)
 }
 
 /** Composer Stop button — cancels the in-flight reply AND any queued follow-ups. */
@@ -476,8 +484,9 @@ function stopGeneration() {
 }
 
 /** A finished reply lands in the transcript (and on the voice surface), then is spoken. */
-function landTurn(turn: DvAssistantTurn, gen: number) {
-  if (gen !== generationSeq) return
+function landTurn(turn: DvAssistantTurn, gen: number, epoch: number) {
+  // Superseded (Stop, a newer turn) or asked in a thread that has since been swapped (New chat, History).
+  if (gen !== generationSeq || epoch !== copilot.threadEpoch) return
   messages.value.push(turn.message)
   if (isVoiceMode.value) {
     orbitResponse.value = { draft: turn.draft, caption: turn.caption, note: turn.note, messageId: turn.message.id }
@@ -609,28 +618,32 @@ function onIntentCardAction(payload: { card: DvCardDescriptor; action: string })
 
 function processQuery(text: string) {
   if (!text) return
-  const accountId = targetAccountId.value
-  // Routing precedence is the responder's, shared with the full-page experience:
-  // guided setup → campaign wizard → the normal assistant.
-  const flow = responder.flowTurn(text, accountId)
-  if (flow.kind !== 'pass') {
-    pushUserTurn(text)
-    appendFlowResponse(flow.response)
-    if (flow.kind === 'setup' && flow.response.exitToDashboard && accountId) {
-      void router.push({ name: 'Dashboard', params: { accountId } })
-    }
-    return
-  }
-  // Either flow pauses itself for off-topic questions; acknowledge the switch
-  // once, then answer the actual question through the normal path.
   const turnId = pushUserTurn(text)
-  flow.notices.forEach(appendFlowResponse)
-  // Text mode mid-generation: the turn is already on screen; answer it after the
-  // current reply lands (queued follow-up).
+  // Text mode mid-generation: the turn is already on screen; answer it after the current reply
+  // lands (queued follow-up). It is routed then, not now — the reply ahead of it may start a
+  // guided flow ("Run a campaign"), and this turn is that flow's next answer.
   if (isTyping.value && !isVoiceMode.value) {
     queuedPrompts.value.push({ text, turnId })
     return
   }
+  answerTurn(text, turnId)
+}
+
+/** Route one turn already on screen: guided setup → campaign wizard → the normal assistant (the responder's order, shared with the full-page experience). */
+function answerTurn(text: string, turnId: string) {
+  const accountId = targetAccountId.value
+  const flow = responder.flowTurn(text, accountId)
+  if (flow.kind !== 'pass') {
+    appendFlowResponse(flow.response)
+    if (flow.kind === 'setup' && flow.response.exitToDashboard && accountId && !unmounted) {
+      void router.push({ name: 'Dashboard', params: { accountId } })
+    }
+    runNextQueued() // a flow answers at once; whatever queued behind it runs now
+    return
+  }
+  // Either flow pauses itself for off-topic questions; acknowledge the switch
+  // once, then answer the actual question through the normal path.
+  flow.notices.forEach(appendFlowResponse)
   runGeneration(text, turnId)
 }
 
@@ -663,28 +676,32 @@ function runGeneration(text: string, turnId: string) {
   scrollToBottom()
 
   copilot.ensureConversationId()
+  const epoch = copilot.threadEpoch
 
   // Which lane answers, and what to show while it works — the rules are pure and unit-tested
   // (src/davinci/promptRouting.ts); the responder turns them into a reply.
   const plan = responder.plan(text)
   if (plan.lane !== 'slot') generatingStatus.value = plan.status
   startStepTicker(plan.steps, gen, plan.paceMs)
-  if (plan.lane === 'gemini') geminiAbort = new AbortController()
-  const signal = geminiAbort?.signal
+  // Voice mode has no queue, so generations can overlap: a newer one replaces (and cancels) the older,
+  // and only the controller's own generation clears it — a stale `finally` must not null the newer one.
+  geminiAbort?.abort()
+  const controller = plan.lane === 'gemini' ? new AbortController() : null
+  geminiAbort = controller
 
   pendingTimers.push(setTimeout(async () => {
     if (gen !== generationSeq) return
     let turn: DvAssistantTurn
     try {
-      turn = await responder.reply(plan, text, { history: geminiHistory(messages.value, turnId), signal })
+      turn = await responder.reply(plan, text, { history: geminiHistory(messages.value, turnId), signal: controller?.signal })
     } catch {
       // Stop aborted it (generationSeq is already stale); anything else must not leave the composer stuck.
       if (gen !== generationSeq) return
       turn = responder.offlineTurn()
     } finally {
-      geminiAbort = null
+      if (geminiAbort === controller) geminiAbort = null
     }
-    landTurn(turn, gen)
+    landTurn(turn, gen, epoch)
   }, plan.paceMs))
 }
 

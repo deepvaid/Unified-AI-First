@@ -1973,7 +1973,7 @@ Per CLAUDE.md → "Log every rename or breaking change in the session changelog"
 chart generation: a drafted chart usually could not be added, the requested chart type was ignored, every
 preview was sample art, the in-chat revenue chart had a fake axis and dead buttons, and the full-page
 experience had no chart path. Routing, request resolution, history and conversation rules live in pure
-modules (`src/davinci/`, `npm run test:davinci` — 160 `node:test` tests, also run under
+modules (`src/davinci/`, `npm run test:davinci` — 233 `node:test` tests, also run under
 `TZ=America/Los_Angeles`); the audit that started it is `docs/davinci-copilot-audit-2026-09.md`.
 
 ### Fixed
@@ -2020,6 +2020,43 @@ modules (`src/davinci/`, `npm run test:davinci` — 160 `node:test` tests, also 
   copilot is bounded to the viewport (the composer used to sit thousands of pixels below the fold).
 - **Colour pairing** — `DvInsightCard` is an `MpAlert` (container fill + paired ink, 9.0–11.7:1 in dark);
   toasts carry a tone with its own icon and pair, so a failure no longer wears the green check.
+
+### Review pass (same day)
+
+An independent review of the finished branch — run against ~150 realistic merchant prompts and a 40k-prompt
+fuzz of the pure modules — found regressions in the routing rules themselves. All fixed, each with a row in
+`tests/davinci/` (233 tests now):
+
+- **Cadence and "by X" words no longer steal actions into the widget lane.** "Send a weekly newsletter to VIP
+  customers", "Build a segment by country" and "Send a weekly digest" drafted charts. `visualAsk` now
+  distinguishes an explicit chart ask from a breakdown-only one; the latter yields to an action intent, and to
+  delivery verbs. Text in quotes is a merchant-authored name — `Review my data journey "Weekly Sales Report"`
+  is no longer a request for a weekly chart (the journey and theme builders' hand-offs quote their names).
+- **A bare metric is only its name.** "boost sales", "sales are slow", "thanks for the orders" drafted a
+  Revenue KPI on a dashboard; `namesOnlyMetric` requires every word to belong to the metric's vocabulary (plus
+  filler, a range, a number, or "by <measure>": "Top campaigns by revenue" stays a widget).
+- **Questions and ideas never launch a wizard.** "What time should I send my campaign?", "I need ideas for a
+  campaign", "Where do I add a product?" started the campaign wizard (and engaged a session) or returned the
+  product card; questions, ideas/subject-line asks and leading negations ("Don't send…") now reach the advisor.
+- **A generic "chart" of a KPI-only metric says so** ("Orders can only be shown as a KPI tile…"), and the
+  over-time note no longer claims a metric "isn't tracked over time" (the tile has a sparkline).
+- **Clarification slots** ("which engine?", "what should the journey do?") only take a bare engine/page name or a
+  short "what about…" — "show revenue trend", "latest orders", "who are my leaders" are other questions.
+- **Gemini context** used the setup session of whichever account the store was last pointed at; it now uses
+  `isEngagedFor(account.id)`.
+- **A queued follow-up is routed when its turn comes** (the reply ahead of it may have started a wizard, and it
+  is that wizard's next answer); Gemini history no longer includes turns queued *after* the one being answered;
+  a stale request can no longer null a newer request's abort controller.
+- **Leaving mid-reply** (the full-page copilot or the experience) no longer strands the question: the answer
+  lands in the shared thread, silently. A reply for a thread that was swapped (New chat, History) is still dropped.
+- **History robustness** — only a full storage (quota) drops the oldest conversation (a blocked storage used
+  to empty the list), one huge message can't evict the others (recorded text is capped), other tabs' changes are
+  adopted (`storage` event) instead of overwritten, and quick-reply chips are no longer restored (they belong to
+  the live moment). `persistList` / `isQuotaError` live in `src/davinci/history.ts` and are tested.
+- **Accessibility / rules** — the toast container no longer wraps alert toasts in a second live region, the draft
+  card's blocker alert is `live="off"` inside the transcript, and the literals the review flagged are now a
+  computed container threshold (KPI row), the `widgetHeight.lg` token (enlarged chart) and one declared card
+  measure (experience). 2px focus rings and 1px hairlines stay off the scale by the Phase 4 decision.
 
 ### API added
 

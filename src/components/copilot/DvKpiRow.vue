@@ -30,7 +30,11 @@ defineProps<{
   </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
+// The tile's own minimum measure (a measure, off the spacing scale by decision). Three of them plus the two
+// gaps between them decide when the row stacks — see the @container rule at the end.
+$dv-kpi-tile-min: 120px;
+
 .dv-kpi-row {
   display: flex;
   flex-wrap: wrap;
@@ -39,8 +43,8 @@ defineProps<{
 }
 
 .dv-kpi-tile {
-  flex: 1 1 120px;
-  min-width: 120px;
+  flex: 1 1 $dv-kpi-tile-min;
+  min-width: $dv-kpi-tile-min;
   padding: var(--mp-space-10) var(--mp-space-12);
   border: 1px solid rgb(var(--v-theme-outline-variant));
   border-radius: var(--mp-radius-12);
@@ -88,10 +92,11 @@ defineProps<{
   color: rgb(var(--v-theme-on-surface-variant));
 }
 
-/* Three 120px tiles need ~376px. In the 400px drawer (~300px of content) they used to wrap 2+1 and
+/* Three tiles and their gaps need 376px. In the 400px drawer (~300px of content) they used to wrap 2+1 and
    the third stretched full width; instead they stack as rows — label left, value and trend right.
-   (The literal is a container-query breakpoint: custom properties cannot be used inside @container.) */
-@container (max-width: 375px) {
+   Custom properties can't be used inside @container, so the threshold is computed from the tile measure
+   and the row gap (SCSS) instead of being typed. */
+@container (max-width: #{3 * $dv-kpi-tile-min + 2 * $mp-space-8 - 1px}) {
   .dv-kpi-tile {
     flex-basis: 100%;
     display: grid;
