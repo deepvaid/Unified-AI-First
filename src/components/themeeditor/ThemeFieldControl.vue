@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import MpFormField from '@/components/MpFormField.vue'
+import MpIconButton from '@/components/MpIconButton.vue'
 import MpSegmentedControl from '@/components/MpSegmentedControl.vue'
 import type { ThemeEditorField, ThemeEditorValue } from '@/stores/themeEditorData'
 
@@ -180,11 +181,11 @@ const ALIGN_ITEMS = [
             @update:model-value="exec('formatBlock', $event)"
           />
           <v-divider vertical class="mx-1" />
-          <v-btn icon="bold" variant="text" size="x-small" aria-label="Bold" @click="exec('bold')" />
-          <v-btn icon="italic" variant="text" size="x-small" aria-label="Italic" @click="exec('italic')" />
-          <v-btn icon="underline" variant="text" size="x-small" aria-label="Underline" @click="exec('underline')" />
+          <MpIconButton size="sm" icon="bold" ariaLabel="Bold" @click="exec('bold')" />
+          <MpIconButton size="sm" icon="italic" ariaLabel="Italic" @click="exec('italic')" />
+          <MpIconButton size="sm" icon="underline" ariaLabel="Underline" @click="exec('underline')" />
           <v-divider vertical class="mx-1" />
-          <v-btn icon="code-xml" variant="text" size="x-small" aria-label="Inline code" @click="exec('formatBlock', 'PRE')" />
+          <MpIconButton size="sm" icon="code-xml" ariaLabel="Code block" @click="exec('formatBlock', 'PRE')" />
         </div>
         <div
           ref="richText"

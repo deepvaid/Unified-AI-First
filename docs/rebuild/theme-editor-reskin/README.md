@@ -129,3 +129,22 @@ layersWidth 260, inspectorWidth 320, codeFontSize 13, codeLineHeight 1.6),
 `component.preview.viewport.tablet` 768 / `desktop` 1100, `color.light.code.*` and
 `color.dark.code.*` (seven syntax roles, aliased as `--code-*` in `mp-theme-aliases.css`; all
 pass `npm run contrast:check` at text level).
+
+## Polish pass (2026-09-30)
+
+A principal-design audit of the re-skin, measured in the browser at 1440 / 1024 / 768, found that most of
+the rough edges came from the design system itself, so the fixes landed there first (each its own commit):
+
+| Finding | Evidence | Fix |
+|---|---|---|
+| Layers rows uneven, row actions overflowing | Sections 50px vs blocks 28px; 40px action buttons in a 28px row, their gradient mask cutting the selected outline | `MpIconButton` (square 24/32/40 ramp) — the VBtn default's inline min-height made every x-small icon button a 32×40 capsule |
+| Explorer too loose | File rows 48px vs folder rows 26px — half the files per screen UAT shows | `MpTreeRow` — one 32px tree row for both trees |
+| Rows were buttons holding buttons | Toggle / edit / remove `<button>`s inside a clickable-row `<button>`; `role="tree"` on 294 items with no arrow keys | `MpTreeRow` stretches one main button over the row; honest disclosure-list semantics |
+| No hierarchy under a section | Blocks at the same x as sections; bold centred 40px "Add block" | One indent per level + hairline guides; "Add block" is a quiet accent command row |
+| Drag-only reorder | No keyboard path (WCAG 2.1.1 / 2.5.7) | Alt + ↑ / ↓ moves a row, keeps focus, announces the position |
+| Four heavy boxes across two toolbars | Store, theme, template, variant pickers with the 3:1 form outline | `mp-field-quiet` opt-in class: value + chevron, no resting border, full focus border |
+| Device toggle hard to read | Phone and tablet glyphs ~2px apart; selected thumb 1.18:1 on its track with an 8% blur; md track measured 42 vs its 40 token | Landscape tablet glyph, md size; `shadow.thumb`; inset track hairline so 32/40 are real |
+| Publish clipped at 768px | Canvas 382px at 1024 and 126px at 768 with the inspector open | `layout.breakpointWide` 1200: the inspector overlays the canvas below it |
+
+Deliberately not done (logged in DESIGN_AUDIT.md): the app-wide icon-button reset, which would change
+table-row heights across the whole product (Orders 69 → 61px) and wants its own reviewed pass.

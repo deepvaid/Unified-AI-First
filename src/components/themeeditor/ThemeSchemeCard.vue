@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import MpIconButton from '@/components/MpIconButton.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 
 // A colour or type scheme in Theme Settings (store builder re-skin): name, the "Default" mark,
@@ -26,8 +27,9 @@ defineSlots<{
       <span class="te-scheme__name text-truncate">{{ name }}</span>
       <MpStatusChip v-if="isDefault" status="Default" type="general" size="sm" />
       <span class="te-scheme__actions">
-        <v-btn icon="pencil" variant="text" size="x-small" :aria-label="`Edit ${name}`" @click="emit('edit')" />
-        <v-btn icon="trash-2" variant="text" size="x-small" :aria-label="`Remove ${name}`" :disabled="isDefault" @click="emit('remove')" />
+        <MpIconButton size="sm" icon="pencil" :ariaLabel="`Edit ${name}`" @click="emit('edit')" />
+        <!-- The default scheme can't be removed; the control stays (disabled) so the row keeps its shape. -->
+        <MpIconButton size="sm" icon="trash-2" :ariaLabel="`Remove ${name}`" :disabled="isDefault" @click="emit('remove')" />
       </span>
     </div>
     <div class="te-scheme__preview">
@@ -58,6 +60,7 @@ defineSlots<{
 
 .te-scheme__actions {
   display: inline-flex;
+  gap: var(--mp-space-2);
   margin-left: auto;
 }
 
