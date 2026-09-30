@@ -9,6 +9,8 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpSectionHeader from '@/components/MpSectionHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpMenuItem from '@/components/MpMenuItem.vue'
+import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import StorefrontPreview from '@/components/saleschannels/StorefrontPreview.vue'
 
 // Store editor ▸ Themes (UAT parity — Neelam-Store, docs/rebuild/neelam-store/CRAWL-SUMMARY.md):
@@ -48,6 +50,15 @@ const storefrontHref = computed(() => router.resolve({ name: 'StorefrontHome', p
 
 function builderRoute(theme: StoreTheme) {
   return { name: 'StoreThemeBuilder', params: { accountId: accountId.value, channelId: channelId.value }, query: { theme: theme.id } }
+}
+
+/**
+ * The theme editor re-skin (docs/rebuild/theme-editor-reskin): the current UAT builder and code
+ * editor rebuilt on the design system. The row menu mirrors the admin's "Customize" / "Edit code"
+ * entries; the pencil keeps opening the AI-first builder so both are reachable side by side.
+ */
+function editorRoute(theme: StoreTheme, name: 'ThemeEditorBuilder' | 'ThemeEditorCode') {
+  return { name, params: { accountId: accountId.value, channelId: channelId.value, themeId: theme.id } }
 }
 
 const DAY = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -156,10 +167,16 @@ const headers = [
         </template>
 
         <template v-slot:item.actions="{ item }">
-          <v-btn icon variant="text" size="small" :to="builderRoute(item)" :aria-label="`Edit ${item.name} in the theme builder`">
-            <v-icon size="18">pencil</v-icon>
-            <v-tooltip activator="parent" location="top">Edit theme</v-tooltip>
-          </v-btn>
+          <div class="d-flex align-center justify-end ga-1">
+            <v-btn icon variant="text" size="small" :to="builderRoute(item)" :aria-label="`Edit ${item.name} in the theme builder`">
+              <v-icon size="18">pencil</v-icon>
+              <v-tooltip activator="parent" location="top">Edit theme</v-tooltip>
+            </v-btn>
+            <MpRowActionsMenu ariaLabel="Theme actions" :itemLabel="item.name">
+              <MpMenuItem title="Customize" icon="layout-template" :to="editorRoute(item, 'ThemeEditorBuilder')" />
+              <MpMenuItem title="Edit code" icon="file-code" :to="editorRoute(item, 'ThemeEditorCode')" />
+            </MpRowActionsMenu>
+          </div>
         </template>
 
         <template v-slot:no-data>

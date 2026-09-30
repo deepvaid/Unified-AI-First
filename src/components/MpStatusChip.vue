@@ -92,6 +92,8 @@ const toneMap: Record<string, Record<string, Tone>> = {
   general: {
     active: 'success', inactive: 'neutral', pending: 'warning', error: 'danger',
     published: 'success', draft: 'neutral', archived: 'neutral',
+    // The storefront theme currently serving shoppers (theme editor's theme switcher).
+    'live store': 'success',
     enabled: 'success', disabled: 'neutral', failed: 'danger',
     success: 'success', required: 'brand', optional: 'neutral',
     running: 'brand', paused: 'warning', completed: 'success',

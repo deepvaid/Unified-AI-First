@@ -133,6 +133,16 @@
   --ink-panel-muted-fg: var(--mp-color-light-inkPanel-mutedFg);
   --ink-panel-accent: var(--mp-color-light-inkPanel-accent);
   --ink-panel-border: var(--mp-color-light-inkPanel-border);
+
+  /* Code syntax (MpCodeEditor) — foreground ink on --surface-primary, paired in
+     $contrastPairs. The editor reads only these seven aliases, never a raw hex. */
+  --code-keyword: var(--mp-color-light-code-keyword);
+  --code-string: var(--mp-color-light-code-string);
+  --code-tag: var(--mp-color-light-code-tag);
+  --code-attribute: var(--mp-color-light-code-attribute);
+  --code-number: var(--mp-color-light-code-number);
+  --code-comment: var(--mp-color-light-code-comment);
+  --code-punctuation: var(--mp-color-light-code-punctuation);
 }
 
 /* Bare theme class too: teleported roots (drawers/dialogs/menus) live outside
@@ -246,4 +256,13 @@
   --ink-panel-muted-fg: var(--mp-color-dark-inkPanel-mutedFg);
   --ink-panel-accent: var(--mp-color-dark-inkPanel-accent);
   --ink-panel-border: var(--mp-color-dark-inkPanel-border);
+
+  /* Code syntax (MpCodeEditor) */
+  --code-keyword: var(--mp-color-dark-code-keyword);
+  --code-string: var(--mp-color-dark-code-string);
+  --code-tag: var(--mp-color-dark-code-tag);
+  --code-attribute: var(--mp-color-dark-code-attribute);
+  --code-number: var(--mp-color-dark-code-number);
+  --code-comment: var(--mp-color-dark-code-comment);
+  --code-punctuation: var(--mp-color-dark-code-punctuation);
 }

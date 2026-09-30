@@ -238,6 +238,13 @@ const routes: RouteRecordRaw[] = [
   { path: '/accounts/:accountId/sales_channels/:channelId/locations/:locationId', name: 'SalesChannelLocationDetail', component: () => import('@/views/SalesChannels/SalesChannelLocationDetail.vue'), meta: sharedCommerceGate },
   { path: '/accounts/:accountId/sales_channels/:channelId/theme', name: 'StoreThemeBuilder', component: () => import('@/views/SalesChannels/StoreThemeBuilder.vue'), meta: { ...commerceGate, builderShell: true } },
   { path: '/accounts/:accountId/sales_channels/:channelId/theme/code', name: 'StoreThemeCode', component: () => import('@/views/SalesChannels/StoreThemeCode.vue'), meta: { ...commerceGate, builderShell: true } },
+  // Theme editor re-skin (docs/rebuild/theme-editor-reskin): the current UAT store-builder screens
+  // (…/themes/<id>/builder, /theme-settings, /code) rebuilt 1:1 on the design system. Full page —
+  // the editor brings its own top bar and activity rail, exactly as the product does today. These
+  // sit beside the AI-first StoreThemeBuilder/StoreThemeCode above, so both remain reachable.
+  { path: '/accounts/:accountId/sales_channels/:channelId/themes/:themeId/builder', name: 'ThemeEditorBuilder', component: () => import('@/views/ThemeEditor/ThemeEditorBuilder.vue'), meta: { ...commerceGate, fullPage: true } },
+  { path: '/accounts/:accountId/sales_channels/:channelId/themes/:themeId/theme-settings', name: 'ThemeEditorSettings', component: () => import('@/views/ThemeEditor/ThemeEditorBuilder.vue'), meta: { ...commerceGate, fullPage: true } },
+  { path: '/accounts/:accountId/sales_channels/:channelId/themes/:themeId/code', name: 'ThemeEditorCode', component: () => import('@/views/ThemeEditor/ThemeEditorCode.vue'), meta: { ...commerceGate, fullPage: true } },
   // Store editor shell (UAT parity A06b): StoreEditorLayout adds a per-store section
   // rail around the hub + section pages. URLs/route names unchanged; fullPage theme
   // routes and POS-oriented locations routes stay standalone above.

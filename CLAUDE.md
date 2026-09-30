@@ -53,7 +53,8 @@ This is NOT a production app — it uses mock data and has no backend API.
 │   │   ├── marketing/         ← Journey flow column, mini preview, add-step menu
 │   │   ├── maropay/           ← 16 Maropay* product surfaces (Product/Maropay stories)
 │   │   ├── merchandising/     ← MerchProductCard
-│   │   └── settings/          ← SettingsSection, SettingsPlaceholder, settingsMenu (rail = MpSectionRail)
+│   │   ├── settings/          ← SettingsSection, SettingsPlaceholder, settingsMenu (rail = MpSectionRail)
+│   │   └── themeeditor/       ← Theme editor re-skin (the current UAT store-builder screens on the DS): frame, explorer, layers, inspector, add-section, theme settings
 │   ├── maropay/               ← Maropay domain logic — pure TS, node:test-importable (see docs/maropay/)
 │   ├── services/maropay/      ← Deterministic mock adapter for the payments partner
 │   ├── design-tokens/
@@ -74,7 +75,8 @@ This is NOT a production app — it uses mock data and has no backend API.
 │   │   ├── Products/          ← ProductsList, Inventory, Recommendations, TaxCategories
 │   │   ├── Service/           ← Tickets
 │   │   ├── Settings/          ← Settings, Billing, Users, Profile
-│   │   └── Templates/         ← /templates page-archetype gallery (engineer reference, placeholder data)
+│   │   ├── Templates/         ← /templates page-archetype gallery (engineer reference, placeholder data)
+│   │   └── ThemeEditor/       ← Theme editor re-skin: …/themes/:themeId/builder, /theme-settings, /code (fullPage; docs/rebuild/theme-editor-reskin)
 │   ├── stores/                ← 6 Pinia stores with mock data
 │   ├── plugins/vuetify.ts     ← Vuetify theme (light + dark) + global defaults
 │   ├── router/index.ts        ← All routes (90+)
@@ -129,6 +131,7 @@ This is NOT a production app — it uses mock data and has no backend API.
 - **MpStatusToggle** — `status` ('Active'|'Paused'|'Draft') · emits `toggle`. Status switch + label cell; disabled on Draft.
 - **MpManageFoldersDrawer** — `scope`, `counts?` · emits `deleted`. Folder CRUD drawer (composes MpFormDrawer).
 - **MpMoveToFolderDialog** — `scope`, `currentFolderId`, `itemLabel?` · emits `move`. Move-to-folder form dialog.
+- **MpCodeEditor** — `modelValue` (v-model), `language?` ('html'|'json'|'css'|'javascript'|'text'), `readonly?`, `lineNumbers?`, `ariaLabel` (required) · emits `save` (Cmd/Ctrl+S). **The one code-editing surface** (CodeMirror 6): geometry on `component.editor.*`, syntax colours on the seven `--code-*` aliases, HTML parsed as Liquid-over-HTML so `{{ }}` template tags highlight. Key it per document — the undo history belongs to the file.
 
 ### Navigation
 
@@ -426,6 +429,10 @@ Example: `[feat]: add MpDateRangePicker component with story`
   module landing, wizard, builder shell, surface states. Each renders in the real app chrome with
   structural placeholder data and a toggleable spec panel (component tree, source file, the product
   pages that follow it, which token owns each gap). Reference only — never a product surface.
+- **`docs/rebuild/theme-editor-reskin/`** — the current UAT store-builder screens (theme builder,
+  theme settings, theme code editor) rebuilt 1:1 on the design system for stakeholders: locked
+  decisions, crawl spec, UAT→DS component map. Reached from Themes → row menu; the AI-first
+  `StoreThemeBuilder`/`StoreThemeCode` stay beside it.
 - **`docs/maropay/`** — Maropay payments prototype: `decisions.md` (locked decisions, limitations,
   production gaps) and `implementation-report.md` (review entry point, M01–M15 scenarios, results).
   Pure modules under `src/maropay/` and `src/services/maropay/` import each other by relative
