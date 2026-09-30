@@ -1965,3 +1965,50 @@ fixed here:
 - **Collection card block** (`collection`) added to the theme builder's block catalogue for Aurora's
   Featured Collections; the builder preview lays collection cards in the section's columns.
 
+
+## Theme editor re-skin + polish changelog — 2026-09-30
+
+Per CLAUDE.md → "Log every rename or breaking change in the session changelog". Branch
+`feature/store-builder-reskin`; spec and decisions in `docs/rebuild/theme-editor-reskin/README.md`.
+
+**Re-skin (6321f9e)** — the UAT theme builder, theme settings and theme code editor rebuilt 1:1 on the
+design system (`src/views/ThemeEditor/*`, `src/components/themeeditor/*`).
+- **New Molecule `MpCodeEditor`** (CodeMirror 6) — closes the "No SQL / code editor" gap in
+  `docs/rebuild/GAPS.md`. Syntax colours are seven new foreground tokens, `color.{light,dark}.code.*`,
+  aliased as `--code-*` and declared in `$contrastPairs` (all pass at text level).
+- **Tokens:** `component.editor.*` (the editor's own frame: topBarHeight 56, railWidth 56, toolWidth 48,
+  explorer 300, layers 260, inspector 320, code font 13 / 1.6), `component.preview.viewport.tablet` 768 and
+  `.desktop` 1100.
+- **MpStatusChip:** `general` map gains `live store` → success.
+
+**Polish — design-system changes**
+- **New Atom `MpIconButton`** + `component.iconButton.*` (sm 24 / md 32 / lg 40, icon 16 / 18 / 20). Why: the
+  audit measured the theme editor's Layers rows at 50px (sections) vs 28px (blocks) and file rows at 48px vs
+  folder rows at 26px. Root cause is `maropostDefaults.VBtn`, which writes text-button geometry (min-height
+  40, padding-inline 14) INLINE on every `v-btn`, so `<v-btn icon size="x-small">` paints a 32×40 capsule and
+  inflates any row it sits in; its hover actions also overflowed their 28px row by 6px each side. The atom
+  restates those two properties in its own `style` (Vuetify merges it after the default) — no `!important`.
+  Tooltip-by-default enforces recipe D2 at the component instead of at every call site.
+- **New Molecule `MpTreeRow`** + `component.tree.*` (row 32, indent 16, gap 8, icon 16, radius 8). Why: the
+  two trees in the editor were each hand-rolled on `MpListRow clickable` — a `<button>` holding the toggle,
+  edit and remove `<button>`s (nested interactive content: invalid HTML, garbled accessible names) — and the
+  explorer declared `role="tree"` on 294 items with no arrow-key contract. The row is now a container whose
+  label is the one stretched main button; semantics are an honest disclosure list.
+- **`MpRowActionsMenu` gains `size?: 'sm' | 'md'`** (composes `MpIconButton`). Omitted = the legacy table
+  trigger, byte-for-byte unchanged. Its "paints ~28px" comment was wrong (it paints 32×40); corrected.
+- **Deleted `.mp-btn--icon`** (global.scss) — zero consumers; it also never reset the inline min-height, so it
+  would have painted 32×40 too. Superseded by `MpIconButton`.
+
+### Follow-ups this opens
+- [ ] **App-wide icon-button geometry — needs a decision, measured and deliberately not shipped.** A global
+  `.v-btn.v-btn--icon { min-height: 0 !important; padding-inline: 0 !important }` fixes every raw icon button,
+  but in-page probing showed it re-lays-out most of the app: Orders table rows 69 → 61px (38 of 47 icon
+  buttons shrink), table pagination buttons 40 → 36, dashboard widget action rows 40 → 32, the AI-first
+  StoreThemeBuilder's rows 40 → 28. Those are the DS-intended heights (`table.rowMinHeight` 48 + a 32px kebab
+  = 61), but the change is a global density shift, so it wants its own reviewed pass. Once it lands,
+  `MpRowActionsMenu` can drop the legacy branch and default `size` to `md`. The durable root-cause fix is still
+  the P1-8 / 2026-08-31 follow-up (move the VBtn inline defaults to a class rule).
+- [ ] **No reusable picker primitive.** Six bespoke "button that opens a select-like menu" activators exist
+  (MpFolderSelect, MpSectionRail switcher, AppBar account cascade, Tickets views trigger, MpDateRangeSelect,
+  the MpDataTableToolbar quick filter) with three activator mechanisms, four chevrons and three selected-state
+  semantics.

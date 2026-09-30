@@ -208,16 +208,13 @@ a {
 /* Tabular nums for numeric values */
 .num { font-variant-numeric: tabular-nums; }
 
-/* Icon-only button — compact 32×32 ghost circle.
-   !important: VBtn's global default writes border-radius as an inline style
-   (maropostTheme.ts), and inline styles outrank any class (P1-8). */
-.mp-btn--icon {
-  width: 32px !important;
-  height: 32px !important;
-  min-width: 32px !important;
-  padding: 0 !important;
-  border-radius: var(--r-pill) !important;
-}
+/* Icon-only buttons: use MpIconButton (component.iconButton.* — sm 24 / md 32 /
+   lg 40). The unused `.mp-btn--icon` helper that stood here was deleted
+   2026-09-30. Raw `<v-btn icon>` still inherits maropostDefaults.VBtn's inline
+   text-button geometry (min-height 40, padding-inline 14), so an x-small icon
+   button paints a 32×40 capsule; the app-wide reset is deliberately NOT applied
+   here — measured blast radius and the decision it needs are in DESIGN_AUDIT.md
+   (theme editor polish, 2026-09-30). */
 
 /* Filter/count badge inside buttons */
 .mp-btn-count {

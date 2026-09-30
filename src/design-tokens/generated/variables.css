@@ -1677,6 +1677,12 @@
   --mp-component-button-typography-letterSpacing: 0;
   --mp-component-button-radius: var(--mp-radius-full);
   --mp-component-button-paddingInline: var(--mp-space-14);
+  --mp-component-iconButton-size-sm: var(--mp-space-24);
+  --mp-component-iconButton-size-md: var(--mp-space-32);
+  --mp-component-iconButton-size-lg: var(--mp-component-control-height);
+  --mp-component-iconButton-iconSize-sm: var(--mp-fontSize-16);
+  --mp-component-iconButton-iconSize-md: var(--mp-fontSize-18);
+  --mp-component-iconButton-iconSize-lg: var(--mp-fontSize-20);
   --mp-component-chip-radius: var(--mp-radius-8);
   --mp-component-chip-height-sm: var(--mp-space-20);
   --mp-component-chip-height-md: var(--mp-space-24);
@@ -1728,6 +1734,12 @@
   --mp-component-listItem-paddingBlock: var(--mp-space-8);
   --mp-component-listItem-paddingInline: var(--mp-space-12);
   --mp-component-listItem-gap: var(--mp-space-12);
+  --mp-component-tree-rowHeight: var(--mp-component-field-height-sm);
+  --mp-component-tree-paddingInline: var(--mp-space-4);
+  --mp-component-tree-indent: var(--mp-space-16);
+  --mp-component-tree-gap: var(--mp-space-8);
+  --mp-component-tree-iconSize: var(--mp-fontSize-16);
+  --mp-component-tree-radius: var(--mp-component-nav-itemRadius);
   --mp-component-field-labelGap: var(--mp-space-6);
   --mp-component-field-groupGap: var(--mp-space-16);
   --mp-component-field-sectionGap: var(--mp-space-24);

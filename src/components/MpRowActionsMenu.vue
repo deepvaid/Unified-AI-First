@@ -1,11 +1,19 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import MpIconButton from './MpIconButton.vue'
 
 const props = defineProps<{
   /** Accessible name for the kebab trigger, e.g. "Journey actions". */
   ariaLabel: string
   /** Optional row identity (name/title/number) appended to `ariaLabel` for a per-row accessible name, e.g. "Contact actions for James Anderson". */
   itemLabel?: string
+  /**
+   * Trigger size on `component.iconButton.*` — `sm` (24) inside a 32px tree row
+   * (MpTreeRow), `md` (32) in panel chrome. Omit for table rows: the table trigger
+   * keeps its legacy x-small geometry so every table keeps its current row height
+   * until the app-wide icon-button decision in DESIGN_AUDIT.md (2026-09-30) lands.
+   */
+  size?: 'sm' | 'md'
 }>()
 
 defineSlots<{
@@ -26,7 +34,18 @@ const computedAriaLabel = computed(() =>
     <template #activator="{ props: menu }">
       <!-- The trigger always swallows its click: a kebab press must never also
            activate a clickable host row/card. -->
+      <MpIconButton
+        v-if="size"
+        v-bind="menu"
+        icon="more-vertical"
+        :size="size"
+        :ariaLabel="computedAriaLabel"
+        :tooltip="false"
+        aria-haspopup="menu"
+        @click.stop
+      />
       <v-btn
+        v-else
         v-bind="menu"
         icon="more-vertical"
         variant="text"
@@ -44,9 +63,11 @@ const computedAriaLabel = computed(() =>
 </template>
 
 <style scoped>
-/* The glyph stays compact but the target does not: an x-small icon button paints
-   ~28px, under the 40px baseline for icon buttons — extend the hit area to
-   control.height without moving any pixels. */
+/* Legacy table trigger. The VBtn default's inline min-height makes this x-small
+   icon button paint a 32×40 capsule (not the ~28px circle Vuetify intends); the
+   ::after below guarantees a 40×40 hit area either way. Sized triggers are
+   MpIconButton and meet the 24px target floor on their own. See DESIGN_AUDIT.md
+   (theme editor polish, 2026-09-30) for the app-wide decision. */
 .mp-row-actions__trigger {
   position: relative;
 }

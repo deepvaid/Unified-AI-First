@@ -91,7 +91,7 @@ This is NOT a production app — it uses mock data and has no backend API.
 
 ## Component Inventory
 
-35 top-level components (counts refreshed 2026-08-31). **Full reference:**
+45 top-level `Mp*` components (counts refreshed 2026-09-30). **Full reference:**
 `docs/design-system/` (structure, Vuetify mapping, token plan, handoff) + Storybook autodocs (`npm run storybook`).
 
 ### Layout & structure
@@ -105,7 +105,8 @@ This is NOT a production app — it uses mock data and has no backend API.
 - **MpKpiCard** — `label`, `value`, `icon?`, `color?`, `trend?`, `trendPositive?`, `subStat?`, `period?` · slot `#sparkline`. Dashboard metric cards, 4-column row.
 - **MpStatusChip** — `status`, `type?` ('order'|'fulfillment'|'payment'|'payout'|'dispute'|'method'|'readiness'|'campaign'|'contact'|'ticket'|'coupon'|'priority'|'connection'|'stock'|'report'|'general'), `size?` ('sm'|'md'|'lg'), `variant?` ('tonal'|'flat'|'outlined'), `showIcon?`. Workflow states in tables; color maps are automatic per type. Use `size="sm"` in data tables. `readiness` is Maropay's one map for its account/store state dimensions (Submitted ≠ Verified ≠ Ready to activate ≠ Live).
 - **MpSourceCloudChip** — `dataSource`, `size?` ('sm'|'md'|'lg'), `iconOnly?`. Identifies a widget/KPI's source cloud.
-- **MpListRow** — `title?`, `eyebrow?`, `meta?`, `variant?` ('plain'|'divided'|'boxed'), `emphasis?`, `density?`, `to?`/`href?`/`clickable?` · slots `#lead`, default, `#trailing`. The one list-row geometry — activity feeds, checklists, suggestion menus. Resolves its own tag from whichever target prop is set. Never hand-roll a repeating row.
+- **MpListRow** — `title?`, `eyebrow?`, `meta?`, `variant?` ('plain'|'divided'|'boxed'), `emphasis?`, `density?`, `to?`/`href?`/`clickable?` · slots `#lead`, default, `#trailing`. The one list-row geometry — activity feeds, checklists, suggestion menus. Resolves its own tag from whichever target prop is set. Never hand-roll a repeating row. A `clickable` row is a `<button>` — never put buttons in its slots; a row with actions is `MpTreeRow`.
+- **MpTreeRow** — `label`, `icon?`, `depth?` (0-based), `expandable?`, `expanded?`, `selected?`, `variant?` ('item'|'action'), `emphasis?` · emits `select`, `toggle` · slots `#lead`, `#meta`, `#actions` · exposes `focus()`. **The one tree row** (layers, file explorers) on `component.tree.*`: 32px rows, one `indent` per level with a hairline guide through the parent's toggle, `MpIconButton size="sm"` actions revealed on hover / focus-within / selection. The row is NOT a button — the label is the one main `<button>`, stretched over the row, with toggle/meta/actions as siblings above it. Host wraps rows as `role="listitem"` and nests child `role="list"`s; `variant="action"` is the "Add …" command closing a group.
 - **MpDataTableToolbar** — `searchPlaceholder?`, `activeFilters?`, `totalCount?`, `headers?`, `quickFilter?` ({ key, label, icon?, multiple?, options }) · models `v-model:search`, `v-model:quickFilterValue` · slots `#title`, `#actions`, `#filter-content` (filter drawer). Always above `v-data-table`. `quickFilter` promotes one high-traffic filter to a checkbox pill at the **head of the control row, before the Filter button** — the long tail stays in the drawer, and the consumer still owns filtering, its `activeFilters` entry and clearing the model. `multiple: false` makes it an exclusive mode toggle (list panel, no Clear, closes on pick, model holds exactly one value). The Filter button badges `activeFilters` minus the promoted key; when the promoted filter was the table's only one, drop `#filter-content` and the Filter button goes with it. Every control in the row is `component.control.height` (40) — give a new one the token, not a number.
 - **MpFolderSelect** — `folders`, `counts?`, `totalCount?`, `label?` · emits `manage`. Folder filter menu above foldered lists.
 
@@ -143,7 +144,8 @@ This is NOT a production app — it uses mock data and has no backend API.
 
 - **MpDialog** — `title`, `subtitle?`, `eyebrow?`, `icon?`, `tone?` ('neutral'|'error'), `size?` ('sm'|'md'|'lg'), `fullscreen?`, `persistent?`, `flush?`, `guarded?` · model `v-model` · emits `close` · slots default, `#lead`, `#headerActions`, `#footer`, `#footerStart`. **The one modal shell.** Header / body / footer all on `component.dialog.padding`; the body is a flex column on `component.dialog.gap`, so form fields are spaced by the shell. This is what "never raw `v-dialog`" means — compose this. The header has a `headerMinHeight` floor so the band does not jump when the subtitle is absent, and it is a grid so the close button sits on the *title's* optical centre. `flush` is the supported way to drop the body inset — never `:deep(.mp-dialog__body)`.
 - **MpConfirmDialog** — model `v-model`, `title`, `message`, `confirmLabel?`, `danger?`, `consequences?` · emits `confirm`. Composes `MpDialog` at `size="sm"`. All confirm prompts (destructive → `danger`).
-- **MpRowActionsMenu** — `ariaLabel` (required), `itemLabel?` · default slot (`MpMenuItem`s). Kebab row-actions menu for list views: `role="menu"` panel opening `bottom end`, 40px trigger hit-area, click-swallowing trigger.
+- **MpRowActionsMenu** — `ariaLabel` (required), `itemLabel?`, `size?` ('sm'|'md') · default slot (`MpMenuItem`s). Kebab row-actions menu for list views: `role="menu"` panel opening `bottom end`, 40px trigger hit-area, click-swallowing trigger. `size` composes `MpIconButton` (sm inside an `MpTreeRow`, md in panel chrome); omit it in tables, which keep the legacy x-small trigger and their row heights.
+- **MpIconButton** — `icon`, `ariaLabel` (required), `size?` ('sm'|'md'|'lg' → 24/32/40), `tooltip?` (string | false, defaults to `ariaLabel`), `active?`, `tooltipLocation?` · attrs/events fall through to the `v-btn`. **The one icon-only button**, square on `component.iconButton.*`, tooltip on by default (recipe D2), `active` = tonal pressed/current look (host sets `aria-pressed`/`aria-selected`). Never a raw `<v-btn icon size="x-small">` in new code — it paints a 32×40 capsule (the VBtn default's inline min-height).
 - **MpMenuItem** — `title`, `icon?`, `danger?`. The one action-menu item (`v-list-item` with `role="menuitem"` baked in; attrs/slots pass through). Destructive = `danger`, last, behind `<v-divider class="my-1" />`. Never a raw `v-list-item` in an action menu.
 - **MpNotificationsMenu** — no props, store-driven (`useNotifications`): bell trigger whose unread badge **wraps** the button (the app's v-badge convention, capped 99+), `aria-haspopup="dialog"` panel of notification rows mirroring the real UAT centre — **one generic icon** (the real feed has no classification; never invent severity here), absolute timestamps, a download action on report/export rows, See all (→ the `/accounts/:id/notifications` page) + Mark-all-read, `MpEmptyState` when caught up. The row is the shared `notifications/NotificationRow` (panel + page). One per app frame; attrs fall through to the bell (`class="appbar-action-btn"`). Transient confirmations stay `useToast`'s job.
 
@@ -336,6 +338,12 @@ Reach for a role token when the system has already made the decision, a primitiv
 - **States** `component.state.*` → `padding` 32 · `paddingProminent` 48 · `gap` 8 ·
   `minHeight` 240 · `minHeightProminent` 320 · `measure` 420 · `measureWide` 480 · `iconDisc` 80
 - **Chips** `component.chip.height.{sm,md,lg}` → 20 / 24 / 32 · `paddingInline` 8
+- **Icon buttons** `component.iconButton.size.{sm,md,lg}` → 24 / 32 / 40 (lg = `control.height`) ·
+  `iconSize` 16 / 18 / 20 (the v-icon size; the Lucide set draws the glyph at 0.875 of it). Consumed by
+  `MpIconButton` only
+- **Trees** `component.tree.*` → `rowHeight` 32 (= `field.height.sm`) · `paddingInline` 4 · `indent` 16 ·
+  `gap` 8 · `iconSize` 16 · `radius` = `nav.itemRadius`. Denser than `listItem.minHeight` 40 on purpose — a
+  tree is dense persistent chrome. Consumed by `MpTreeRow`
 - **Tables** `component.table.*` → `rowMinHeight` 48 · `headerMinHeight` = `control.height` (40) ·
   `cellPaddingBlock` 14 · `cellPaddingInline` 16 · `cellPaddingInlineCompact` 8 ·
   `headerPaddingBlock` 8. The two heights are **floors, not caps** — a row holding a real control

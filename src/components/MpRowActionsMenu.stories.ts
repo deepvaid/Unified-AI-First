@@ -241,12 +241,28 @@ export const Sizes: Story = {
   render: () => ({
     components: { MpMenuItem, MpRowActionsMenu },
     template: `
-      <div class="d-flex align-center ga-4">
-        <MpRowActionsMenu ariaLabel="Row actions">
-          <MpMenuItem title="View" icon="eye" />
-          <MpMenuItem title="Duplicate" icon="copy" />
-        </MpRowActionsMenu>
-        <div class="text-body-2 text-medium-emphasis">Open the menu — its rows sit on the 36px menu floor, denser than in-page rows.</div>
+      <div class="d-flex flex-column ga-4">
+        <div class="d-flex align-center ga-4">
+          <MpRowActionsMenu ariaLabel="Row actions">
+            <MpMenuItem title="View" icon="eye" />
+            <MpMenuItem title="Duplicate" icon="copy" />
+          </MpRowActionsMenu>
+          <div class="text-body-2 text-medium-emphasis">Table trigger (no size) — the legacy x-small button, kept so table rows keep their height.</div>
+        </div>
+        <div class="d-flex align-center ga-4">
+          <MpRowActionsMenu ariaLabel="Row actions" size="md">
+            <MpMenuItem title="View" icon="eye" />
+            <MpMenuItem title="Duplicate" icon="copy" />
+          </MpRowActionsMenu>
+          <div class="text-body-2 text-medium-emphasis">size="md" — a 32px MpIconButton, for panel chrome.</div>
+        </div>
+        <div class="d-flex align-center ga-4">
+          <MpRowActionsMenu ariaLabel="Row actions" size="sm">
+            <MpMenuItem title="View" icon="eye" />
+            <MpMenuItem title="Duplicate" icon="copy" />
+          </MpRowActionsMenu>
+          <div class="text-body-2 text-medium-emphasis">size="sm" — a 24px MpIconButton, inside a 32px MpTreeRow. Open any: rows sit on the 36px menu floor.</div>
+        </div>
       </div>
     `,
   }),
