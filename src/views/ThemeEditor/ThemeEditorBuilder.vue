@@ -247,14 +247,15 @@ const { confirmLeave, discardAndLeave, leaveTitle, leaveMessage, leaveConfirmLab
 
     <div class="te-canvas">
       <div class="te-canvas__bar">
-        <!-- Toolbar pickers: placeholder + aria-label, no static label or details row. -->
+        <!-- Toolbar pickers: placeholder + aria-label, no static label or details row, and the
+             quiet field treatment (value + chevron, no resting border) shared with the top bar. -->
         <v-autocomplete
           :model-value="template.type"
           :items="templateOptions"
           aria-label="Template"
           placeholder="Search templates"
           hide-details
-          class="te-canvas__select"
+          class="te-canvas__select mp-field-quiet"
           @update:model-value="setTemplate"
         />
         <v-select
@@ -262,7 +263,7 @@ const { confirmLeave, discardAndLeave, leaveTitle, leaveMessage, leaveConfirmLab
           :items="[{ title: 'Default', value: 'default' }]"
           aria-label="Template variant"
           hide-details
-          class="te-canvas__select te-canvas__select--variant"
+          class="te-canvas__select te-canvas__select--variant mp-field-quiet"
         />
         <div class="flex-grow-1" />
         <MpSegmentedControl v-model="device" :items="DEVICE_ITEMS" size="sm" ariaLabel="Preview device" />
@@ -382,14 +383,16 @@ const { confirmLeave, discardAndLeave, leaveTitle, leaveMessage, leaveConfirmLab
   overflow: hidden;
 }
 
-/* The pickers give way before the device toggle does on a narrow canvas. */
+/* Pickers size to their value on the toolbar ramp and give way before the device
+   toggle does on a narrow canvas. */
 .te-canvas__select {
-  flex: 0 1 220px;
-  min-width: 0;
-}
-
-.te-canvas__select--variant {
-  flex-basis: 160px;
+  flex: 0 1 auto;
+  width: fit-content;
+  /* The floor is half the search width (the Tickets composer-select stop): an
+     autocomplete's fit-content under-measures its selection by a couple of pixels,
+     which clipped "Home" to "Ho…". */
+  min-width: calc(var(--mp-component-toolbar-searchMinWidth) / 2);
+  max-width: var(--mp-component-toolbar-searchMinWidth);
 }
 
 .te-canvas__scroll {

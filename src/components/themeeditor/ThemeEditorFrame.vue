@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import MpMenuItem from '@/components/MpMenuItem.vue'
-import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
+import MpIconButton from '@/components/MpIconButton.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import { useStoreThemesStore } from '@/stores/useStoreThemes'
@@ -74,10 +74,11 @@ function switchTheme(themeId: string | null) {
 <template>
   <div class="te-frame">
     <header class="te-top" role="banner">
-      <v-btn variant="text" icon="chevron-left" size="small" :to="themesRoute" aria-label="Back to themes" />
+      <MpIconButton icon="chevron-left" size="lg" ariaLabel="Back to themes" tooltipLocation="bottom" :to="themesRoute" />
 
-      <!-- Toolbar controls: placeholder + aria-label, no static label, no details row (the
-           chrome exemption in CLAUDE.md → Form Pattern). -->
+      <!-- Toolbar pickers: placeholder + aria-label, no static label, no details row (the
+           chrome exemption in CLAUDE.md → Form Pattern), and the quiet field treatment —
+           value + chevron, no resting border — so the bar reads as chrome, not a form. -->
       <v-select
         :model-value="channelId"
         :items="stores"
@@ -85,17 +86,19 @@ function switchTheme(themeId: string | null) {
         item-value="value"
         aria-label="Store"
         hide-details
-        class="te-top__select te-top__select--store"
+        class="te-top__select te-top__select--store mp-field-quiet"
         @update:model-value="switchStore"
       >
         <template #selection="{ item }">
-          <span class="te-top__number">#{{ item.raw.number }}</span>
+          <span v-if="item.raw.number" class="te-top__number">#{{ item.raw.number }}</span>
           <span class="text-truncate">{{ item.raw.name }}</span>
         </template>
         <template #item="{ props: itemProps, item }">
           <v-list-item v-bind="itemProps" title="">
-            <span class="te-top__number">#{{ item.raw.number }}</span>
-            <span>{{ item.raw.name }}</span>
+            <span class="te-top__option">
+              <span v-if="item.raw.number" class="te-top__number">#{{ item.raw.number }}</span>
+              <span>{{ item.raw.name }}</span>
+            </span>
           </v-list-item>
         </template>
       </v-select>
@@ -107,7 +110,7 @@ function switchTheme(themeId: string | null) {
         item-value="value"
         aria-label="Theme"
         hide-details
-        class="te-top__select te-top__select--theme"
+        class="te-top__select te-top__select--theme mp-field-quiet"
         @update:model-value="switchTheme"
       >
         <template #selection="{ item }">
@@ -124,10 +127,15 @@ function switchTheme(themeId: string | null) {
         </template>
       </v-select>
 
-      <MpRowActionsMenu ariaLabel="Theme actions">
-        <MpMenuItem title="Edit code" icon="file-code" :to="codeRoute" />
-        <MpMenuItem title="View live store" icon="globe" :href="storefrontHref" target="_blank" rel="noopener" />
-      </MpRowActionsMenu>
+      <v-menu location="bottom start">
+        <template #activator="{ props: menu }">
+          <MpIconButton v-bind="menu" icon="more-vertical" size="lg" ariaLabel="Theme actions" tooltipLocation="bottom" aria-haspopup="menu" />
+        </template>
+        <v-list density="compact" role="menu" aria-label="Theme actions" class="te-top__menu">
+          <MpMenuItem title="Edit code" icon="file-code" :to="codeRoute" />
+          <MpMenuItem title="View live store" icon="globe" :href="storefrontHref" target="_blank" rel="noopener" />
+        </v-list>
+      </v-menu>
 
       <div class="flex-grow-1" />
 
@@ -197,16 +205,13 @@ function switchTheme(themeId: string | null) {
   background: var(--surface-primary);
 }
 
+/* Pickers size to their value, capped on the toolbar ramp, and give way first
+   when the bar is narrow — the actions on the right never do. */
 .te-top__select {
-  flex: 0 0 auto;
-}
-
-.te-top__select--store {
-  width: 220px;
-}
-
-.te-top__select--theme {
-  width: 200px;
+  flex: 0 1 auto;
+  width: fit-content;
+  min-width: 0;
+  max-width: var(--mp-component-toolbar-searchMinWidth);
 }
 
 .te-top__select :deep(.v-select__selection) {
@@ -214,12 +219,18 @@ function switchTheme(themeId: string | null) {
   align-items: center;
   gap: var(--mp-space-6);
   min-width: 0;
-  font-weight: var(--mp-fontWeight-medium);
 }
 
+.te-top__option {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mp-space-6);
+}
+
+/* The store number is metadata, not a link: muted and tabular, not accent. */
 .te-top__number {
-  color: var(--accent-default);
-  font-weight: var(--mp-fontWeight-semibold);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
 }
 
 .te-top__prefix {
@@ -231,6 +242,11 @@ function switchTheme(themeId: string | null) {
   align-items: center;
   gap: var(--mp-space-8);
   flex-shrink: 0;
+}
+
+.te-top__menu {
+  border-radius: var(--mp-component-menu-radius);
+  min-width: var(--mp-component-menu-minWidth);
 }
 
 .te-body {

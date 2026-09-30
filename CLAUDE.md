@@ -273,7 +273,7 @@ stays primary — distinct from disabled), and `class="mp-field-success"` for va
 fields (2px success border + green message; pair with `append-inner-icon="circle-check"`;
 error always wins). A `counter="N"` is always paired with a max-length rule — the counter only
 reddens when a rule invalidates the field. Prefix/suffix affixes render muted; there is
-deliberately no boxed-addon segment style.
+deliberately no boxed-addon segment style. **Quiet is the third opt-in class, for pickers in chrome only:** `class="mp-field-quiet"` on a `v-select`/`v-autocomplete` that always shows a value + chevron (store/theme switchers, template pickers) — no resting border or fill, the system hover fill, and the full 2px focus border. Never on a `v-text-field`/`v-textarea`: a free-text field's border is its only cue (WCAG 1.4.11).
 
 **Field sizes are the `density` prop.** One ramp, `component.field.height`:
 `density="compact"` → sm 32 · the default (`comfortable`) → md 40, equal to `control.height` so

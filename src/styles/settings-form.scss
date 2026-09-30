@@ -33,6 +33,9 @@
      .mp-field-success   — 2px success border + green message; error always
                            wins; add append-inner-icon="circle-check" at the
                            call site for the trailing check.
+     .mp-field-quiet     — (2026-09-30) toolbar PICKERS only (v-select /
+                           v-autocomplete with a value + chevron): no resting
+                           border or fill, hover fill, full focus border.
    Ordering contract: these blocks sit AFTER the hover/focus/error blocks and
    rely on the extra class + source order to win — rules added below them can
    silently flip the states, so append with care.
@@ -228,6 +231,48 @@
 
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .mp-field-success:not(.v-input--error) .v-field--variant-outlined .v-icon {
   color: rgb(var(--v-theme-success));
+}
+
+/* ── Quiet — opt-in class for PICKERS IN CHROME (2026-09-30) ───────────────
+   `class="mp-field-quiet"` on a v-select / v-autocomplete that sits in a
+   toolbar and always shows a value + chevron (a store or theme switcher, a
+   template picker). At rest there is no border and no fill; hover takes the
+   system hover fill; focus (menu open, or typing in an autocomplete) brings
+   back the full 2px primary border, so keyboard users lose nothing.
+   Why the 3:1 resting hairline may go here but nowhere else: WCAG 1.4.11 asks
+   that a control be identifiable, and for a picker the chevron (--icon-secondary,
+   5.9:1 on surface) and the always-visible value do that. A free-text field has
+   neither — its border is the only cue — so NEVER put this class on a
+   v-text-field or v-textarea. It carries no label: chrome pickers use
+   placeholder + aria-label (CLAUDE.md → Form Pattern). This is the house
+   toolbar-picker look (the Tickets views trigger) expressed on the field itself.
+   Placed after focus/error/readonly/success; the :not() chain keeps those
+   states in charge. */
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .mp-field-quiet .v-field--variant-outlined {
+  --v-field-padding-start: var(--mp-space-10);
+  --v-field-padding-end: var(--mp-space-6);
+  transition: background var(--dur-fast) var(--ease);
+}
+
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .mp-field-quiet .v-field--variant-outlined:not(.v-field--focused):not(.v-field--error) .v-field__outline__start,
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .mp-field-quiet .v-field--variant-outlined:not(.v-field--focused):not(.v-field--error) .v-field__outline__end,
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .mp-field-quiet .v-field--variant-outlined:not(.v-field--focused):not(.v-field--error) .v-field__outline__notch::before,
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .mp-field-quiet .v-field--variant-outlined:not(.v-field--focused):not(.v-field--error) .v-field__outline__notch::after {
+  border-color: transparent !important;
+}
+
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .mp-field-quiet .v-field--variant-outlined:hover:not(.v-field--focused) {
+  background: var(--surface-secondary);
+}
+
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .mp-field-quiet .v-field--variant-outlined .v-field__input,
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .mp-field-quiet .v-field--variant-outlined .v-select__selection-text {
+  font-weight: var(--mp-fontWeight-medium);
+}
+
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .mp-field-quiet .v-field--variant-outlined .v-field__append-inner .v-icon {
+  color: var(--icon-secondary);
+  opacity: 1;
 }
 
 /* ── Details / helper / error text ─────────────────────────── */

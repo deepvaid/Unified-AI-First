@@ -2012,3 +2012,9 @@ design system (`src/views/ThemeEditor/*`, `src/components/themeeditor/*`).
   (MpFolderSelect, MpSectionRail switcher, AppBar account cascade, Tickets views trigger, MpDateRangeSelect,
   the MpDataTableToolbar quick filter) with three activator mechanisms, four chevrons and three selected-state
   semantics.
+- **New opt-in field class `mp-field-quiet`** (settings-form.scss, after readonly/success) — for toolbar PICKERS
+  only (`v-select`/`v-autocomplete` with a value + chevron): no resting border or fill, `surface-secondary`
+  hover, the full 2px primary border on focus. The theme editor's four pickers (store, theme, template,
+  variant) were four 3:1-outlined form boxes stacked across two toolbars. The 1.4.11 reasoning is recorded in
+  the rule: a picker is identified by its chevron (5.9:1) and visible value; a free-text field is not, so the
+  class never goes on `v-text-field`/`v-textarea`.
