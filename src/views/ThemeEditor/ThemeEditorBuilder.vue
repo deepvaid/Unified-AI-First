@@ -371,6 +371,9 @@ const { confirmLeave, discardAndLeave, leaveTitle, leaveMessage, leaveConfirmLab
   min-width: 0;
   min-height: 0;
   background: var(--surface-canvas);
+  /* Own stacking context: the preview's positioned selection labels stay under the
+     inspector when it overlays the canvas (below breakpointWide). */
+  isolation: isolate;
 }
 
 /* Canvas header — template pickers and the device toggle, on the toolbar height. */

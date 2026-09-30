@@ -368,6 +368,8 @@ Reach for a role token when the system has already made the decision, a primitiv
   under `color.dark.*`). **Every surface token has a declared foreground — see below**
 - Shadows: sm (1px), md (4px), lg (8px) — use sparingly, prefer border
 - Layout: sidebar 248px, rail 72px, section rail 260px, appbar 60px, drawer 480px, content max 1280px
+- Breakpoints (Sass-only, `$mp-layout-*`): `breakpointWide` 1200 (a three-panel builder's inspector overlays
+  the canvas below it) · `breakpointSplit` 960 (master-detail shows one pane) · `breakpointCompact` 640
 
 ### Colour pairing (non-negotiable)
 

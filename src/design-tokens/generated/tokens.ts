@@ -1044,5 +1044,6 @@ export const mp_layout_inboxRailPanelWidth = `300px`
 export const mp_layout_detailSidebarWidth = `340px`
 export const mp_layout_specPanelWidth = `360px`
 export const mp_layout_specPanelYieldWidth = `880px`
+export const mp_layout_breakpointWide = `1200px`
 export const mp_layout_breakpointSplit = `960px`
 export const mp_layout_breakpointCompact = `640px`

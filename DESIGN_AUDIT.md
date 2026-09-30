@@ -2028,3 +2028,7 @@ design system (`src/views/ThemeEditor/*`, `src/components/themeeditor/*`).
 - **Theme editor device toggle:** md size (aligns with the 40px pickers beside it) and a landscape
   `rectangle-horizontal` tablet glyph — Lucide's portrait `tablet` differs from `smartphone` by ~2px at
   toolbar size. The AI-first StoreThemeBuilder's toggle keeps the ambiguous trio (not touched).
+- **New `layout.breakpointWide` (1200, Sass-only).** Below it a three-panel builder's inspector overlays the
+  canvas instead of taking layout width (recipe F6). Measured before: with the inspector open the theme
+  builder's canvas was 382px at 1024 and 126px at 768, where the top bar also overflowed and clipped Publish.
+  After: 702px at 1024 and 446px at 768, both toolbars fit, Publish fully visible.

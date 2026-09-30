@@ -298,7 +298,10 @@ function switchTheme(themeId: string | null) {
   background: color-mix(in oklch, var(--ink-panel-accent) 18%, transparent);
 }
 
+/* The positioning context for the inspector when it overlays the canvas below
+   breakpointWide (ThemeInspectorPanel). */
 .te-content {
+  position: relative;
   display: flex;
   flex: 1 1 auto;
   min-width: 0;

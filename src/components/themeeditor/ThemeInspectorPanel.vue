@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import MpIconButton from '@/components/MpIconButton.vue'
+
 // The builder's right-hand inspector shell (store builder re-skin): a titled panel with a close
 // control and a scrolling body spaced on the form-group rhythm. Section, block and theme-settings
 // inspectors all render inside it; only the host decides when it is on screen.
@@ -18,7 +20,7 @@ defineSlots<{
   <aside class="te-inspector" :aria-label="`${title} settings`">
     <header class="te-inspector__head">
       <h2 class="te-inspector__title text-truncate">{{ title }}</h2>
-      <v-btn icon="x" variant="text" size="small" aria-label="Close settings" @click="emit('close')" />
+      <MpIconButton icon="x" ariaLabel="Close settings" @click="emit('close')" />
     </header>
     <div class="te-inspector__body">
       <slot />
@@ -26,7 +28,7 @@ defineSlots<{
   </aside>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .te-inspector {
   display: flex;
   flex-direction: column;
@@ -71,5 +73,20 @@ defineSlots<{
    fill the panel, so every direct child keeps its natural height. */
 .te-inspector__body > * {
   flex: 0 0 auto;
+}
+
+/* Below breakpointWide the three panels would squeeze the canvas to a strip, so the
+   inspector stops taking layout width and floats over the canvas's right edge
+   (recipe F6: side panels overlay the content). The host's content row is the
+   positioning context; the canvas isolates its own stacking so the preview's
+   selection labels can't paint through. Closing it is the existing × — no new
+   control. */
+@media (max-width: ($mp-layout-breakpointWide - 0.02px)) {
+  .te-inspector {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-end: 0;
+    box-shadow: var(--elevation-overlay);
+  }
 }
 </style>
