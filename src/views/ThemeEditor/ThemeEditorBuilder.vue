@@ -179,9 +179,12 @@ function confirmRemove() {
 // ── Preview ───────────────────────────────────────────────────────────────────
 type Device = 'desktop' | 'tablet' | 'mobile'
 const device = ref<Device>('desktop')
+// Three silhouettes that can't be confused at toolbar size: a portrait phone, a
+// landscape tablet (as UAT draws it) and a monitor. Lucide's portrait `tablet`
+// differs from `smartphone` by two pixels of width at this size.
 const DEVICE_ITEMS = [
   { value: 'mobile', label: 'Mobile (390px)', icon: 'smartphone', tooltip: 'Mobile (390px)' },
-  { value: 'tablet', label: 'Tablet (768px)', icon: 'tablet', tooltip: 'Tablet (768px)' },
+  { value: 'tablet', label: 'Tablet (768px)', icon: 'rectangle-horizontal', tooltip: 'Tablet (768px)' },
   { value: 'desktop', label: 'Desktop (1100px)', icon: 'monitor', tooltip: 'Desktop (1100px)' },
 ]
 const STAGE_WIDTH: Record<Device, string> = {
@@ -266,7 +269,7 @@ const { confirmLeave, discardAndLeave, leaveTitle, leaveMessage, leaveConfirmLab
           class="te-canvas__select te-canvas__select--variant mp-field-quiet"
         />
         <div class="flex-grow-1" />
-        <MpSegmentedControl v-model="device" :items="DEVICE_ITEMS" size="sm" ariaLabel="Preview device" />
+        <MpSegmentedControl v-model="device" :items="DEVICE_ITEMS" ariaLabel="Preview device" />
       </div>
 
       <div class="te-canvas__scroll">

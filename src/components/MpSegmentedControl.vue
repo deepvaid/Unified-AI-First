@@ -95,7 +95,11 @@ function onUpdate(value: unknown) {
      scoped class rules. Same story for VBtnGroup's own fixed height. */
   height: auto !important;
   padding: var(--mp-component-segmented-padding);
-  border: 1px solid var(--border-subtle);
+  /* The track's hairline is an INSET shadow, not a border: a 1px border added
+     2px to the track, so md measured 42 against its 40 token and sat off the
+     baseline it exists to share with 40px buttons and fields (sm: 34 vs 32). */
+  border: 0;
+  box-shadow: inset 0 0 0 1px var(--border-subtle);
   border-radius: var(--mp-component-segmented-radius);
   background: var(--surface-secondary);
   overflow: visible;
@@ -108,7 +112,6 @@ function onUpdate(value: unknown) {
   padding-inline: var(--mp-space-12) !important;
   border-radius: var(--mp-radius-full) !important;
   font-size: var(--mp-fontSize-13) !important;
-  font-weight: var(--mp-fontWeight-medium);
   color: var(--muted);
 }
 
@@ -125,10 +128,14 @@ function onUpdate(value: unknown) {
   inline-size: 1em;
 }
 
+/* The selected segment is a raised thumb: the surface fill on the track plus
+   --elevation-thumb. The thumb and track differ by only ~1.2:1, so the shadow is
+   what draws the selected edge — the old 8% ink blur left it nearly invisible.
+   Its ink is the group's `color` (primary, the VBtnToggle default), which
+   Vuetify applies as !important `text-primary` — so no colour is declared here. */
 .mp-segmented :deep(.v-btn--active) {
   background: var(--surface-primary);
-  color: var(--text-primary);
-  box-shadow: 0 1px 3px color-mix(in oklch, var(--text-primary) 8%, transparent);
+  box-shadow: var(--elevation-thumb);
 }
 
 /* Vuetify paints selection through the overlay too — the pill fill above is
@@ -137,13 +144,11 @@ function onUpdate(value: unknown) {
   opacity: 0;
 }
 
-/* Dark mode: --surface-primary matches the track and the ink-derived shadow
-   inverts to a glow, so the active pill would read as inset rather than
-   raised. --surface-overlay is lighter than the track's --surface-secondary
-   in dark, which keeps the raised look. */
+/* Dark mode: --surface-primary matches the track, so the thumb takes
+   --surface-overlay (lighter than the dark track); --elevation-thumb already
+   resolves to its dark twin. */
 .v-theme--maropostDark .mp-segmented :deep(.v-btn--active) {
   background: var(--surface-overlay);
-  box-shadow: var(--elevation-raised);
 }
 
 .mp-segmented--sm {

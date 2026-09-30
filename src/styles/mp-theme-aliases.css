@@ -102,6 +102,8 @@
   --elevation-raised: var(--mp-shadow-sm);
   --elevation-overlay: var(--mp-shadow-md);
   --elevation-modal: var(--mp-shadow-lg);
+  /* The raised thumb of a segmented control (MpSegmentedControl's selected segment). */
+  --elevation-thumb: var(--mp-shadow-thumb);
   /* Filled buttons carry a top-edge sheen plus a tinted lift on light surfaces.
      The lift's geometry stays inline: its colour is the live accent preset
      (a runtime CSS var), which tokens.json cannot express as one shadow value. */
@@ -247,6 +249,7 @@
   --elevation-raised: var(--mp-shadow-dark-sm);
   --elevation-overlay: var(--mp-shadow-dark-md);
   --elevation-modal: var(--mp-shadow-dark-lg);
+  --elevation-thumb: var(--mp-shadow-dark-thumb);
   /* No white sheen on dark: a light inset reads as a glow, not elevation. */
   --btn-flat-shadow: var(--elevation-raised);
 

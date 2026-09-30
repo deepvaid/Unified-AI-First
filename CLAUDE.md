@@ -319,7 +319,8 @@ Reach for a role token when the system has already made the decision, a primitiv
   chrome, not content; decided 2026-08-31). The global popover rule applies it to every v-menu
   overlay including select/autocomplete option lists; heights are floors, two-line rows grow.
   Don't "unify" this back to 40 — the split is the design
-- **Segmented** `component.segmented.*` → `height` sm 32 / md 40 (= `control.height`) ·
+- **Segmented** `component.segmented.*` → `height` sm 32 / md 40 (= `control.height`; the track hairline is an
+  inset shadow so the box really measures 32/40) · selected thumb = `--elevation-thumb` (`shadow.thumb`) ·
   `itemHeight` sm 24 / md 32 · `padding` 4 · `radius` full. Consumed by `MpSegmentedControl` only
 - **Banners** `component.banner.minHeight` → 44 (between `control.height` 40 and the 48 table
   row floor). Consumed by `MpBanner`

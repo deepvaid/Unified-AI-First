@@ -25,10 +25,12 @@
   --mp-radius-20: 20px;
   --mp-radius-full: 9999px;
   --mp-shadow-sm: 0 1px 2px 0 rgba(11, 53, 88, 0.04);
+  --mp-shadow-thumb: 0 1px 3px 0 rgba(11, 53, 88, 0.14), 0 0 0 1px rgba(11, 53, 88, 0.06);
   --mp-shadow-md: 0 2px 16px -8px rgba(11, 53, 88, 0.08);
   --mp-shadow-lg: 0 8px 32px -12px rgba(11, 53, 88, 0.1);
   --mp-shadow-scrollUp: 0 -1px 2px 0 rgba(11, 53, 88, 0.04);
   --mp-shadow-dark-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.32);
+  --mp-shadow-dark-thumb: 0 1px 2px 0 rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.06);
   --mp-shadow-dark-scrollUp: 0 -1px 2px 0 rgba(0, 0, 0, 0.32);
   --mp-shadow-dark-md: 0 8px 24px -6px rgba(0, 0, 0, 0.55);
   --mp-shadow-dark-lg: 0 18px 48px -12px rgba(0, 0, 0, 0.6);

@@ -2018,3 +2018,13 @@ design system (`src/views/ThemeEditor/*`, `src/components/themeeditor/*`).
   variant) were four 3:1-outlined form boxes stacked across two toolbars. The 1.4.11 reasoning is recorded in
   the rule: a picker is identified by its chevron (5.9:1) and visible value; a free-text field is not, so the
   class never goes on `v-text-field`/`v-textarea`.
+- **`MpSegmentedControl` — measured size now matches its tokens, and the selected thumb reads.** The track
+  hairline moved from a 1px border to an inset shadow: the border had made md measure 42 against its 40 token
+  (sm 34 vs 32), so the control sat 2px off the baseline it exists to share with 40px buttons and fields. The
+  selected thumb uses the new `shadow.thumb` / `shadow.dark.thumb` (`--elevation-thumb`) instead of an 8% ink
+  blur: thumb and track differ by ~1.2:1, so the shadow is what draws the selected edge. Dead declarations
+  deleted (a `color` that `text-primary` !important always overrode, a `font-weight` the inline 600 always
+  beat). Every consumer (42 sites) gets 2px shorter and a stronger selected state; nothing else moves.
+- **Theme editor device toggle:** md size (aligns with the 40px pickers beside it) and a landscape
+  `rectangle-horizontal` tablet glyph — Lucide's portrait `tablet` differs from `smartphone` by ~2px at
+  toolbar size. The AI-first StoreThemeBuilder's toggle keeps the ambiguous trio (not touched).
