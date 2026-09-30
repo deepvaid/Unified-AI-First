@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed, ref, useId, watch } from 'vue'
 import { useFocusTrap } from '@/composables/useFocusTrap'
-import { useDaVinciHistory, type DaVinciHistoryItem, type GroupedHistory } from '@/composables/useDaVinciHistory'
+import { useDaVinciHistory, type GroupedHistory, type HistoryConversation } from '@/composables/useDaVinciHistory'
 import { useDaVinciToasts } from '@/composables/useDaVinciToasts'
+import { useCopilotStore } from '@/stores/useCopilot'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
@@ -19,10 +20,16 @@ const emit = defineEmits<{
   newChat: []
 }>()
 
-const { items, groupedItems, formatAgo, removeItem, clearAll } = useDaVinciHistory()
+const { items, groupedItems, formatAgo, subtitleFor } = useDaVinciHistory()
 const { pushToast } = useDaVinciToasts()
+const copilot = useCopilotStore()
 
 const hasHistory = computed(() => items.value.length > 0)
+
+// Choosing a row makes that conversation the live thread — the transcript comes back, on every surface.
+function select(item: HistoryConversation) {
+  if (copilot.restoreConversation(item.id)) emit('select', item.id)
+}
 
 const clearAllOpen = ref(false)
 
@@ -31,13 +38,31 @@ function handleClearAll() {
 }
 
 function confirmClearAll() {
-  clearAll()
+  copilot.deleteAllConversations()
   pushToast({ title: 'All conversations deleted' })
 }
 
-function handleDelete(id: string, event: MouseEvent) {
+// A row holds a whole transcript now, so deleting one asks first (as Delete all always has).
+const deleteOpen = ref(false)
+// Kept after the dialog closes so its message doesn't blank while it fades.
+const pendingDelete = ref<HistoryConversation | null>(null)
+const deleteMessage = computed(() => {
+  const item = pendingDelete.value
+  if (!item) return ''
+  const onScreen = item.id === copilot.conversationId ? ' It is the conversation on screen, so the screen is cleared too.' : ''
+  return `“${item.title}” is removed from your history.${onScreen}`
+})
+
+function handleDelete(item: HistoryConversation, event: MouseEvent) {
   event.stopPropagation()
-  removeItem(id)
+  pendingDelete.value = item
+  deleteOpen.value = true
+}
+
+function confirmDelete() {
+  if (!pendingDelete.value) return
+  copilot.deleteConversation(pendingDelete.value.id)
+  pushToast({ title: 'Conversation deleted' })
 }
 
 const search = ref('')
@@ -59,7 +84,7 @@ const { onKeydown } = useFocusTrap(panel, () => props.open, {
   enabled: () => isDialog.value,
 })
 
-function filterGroup(items: DaVinciHistoryItem[]): DaVinciHistoryItem[] {
+function filterGroup(items: HistoryConversation[]): HistoryConversation[] {
   const q = search.value.trim().toLowerCase()
   if (!q) return items
   return items.filter((item) => item.title.toLowerCase().includes(q))
@@ -80,8 +105,8 @@ const isEmpty = computed(
     filteredGroups.value.older.length === 0,
 )
 
-function buildSub(item: DaVinciHistoryItem): string {
-  return `${item.subtitle} · ${formatAgo(item.createdAt)}`
+function buildSub(item: HistoryConversation): string {
+  return `${subtitleFor(item)} · ${formatAgo(item.updatedAt)}`
 }
 </script>
 
@@ -91,6 +116,7 @@ function buildSub(item: DaVinciHistoryItem): string {
     class="dv-history"
     :class="[{ 'is-open': open }, `dv-history--${mode ?? 'overlay'}`]"
     :aria-hidden="mode !== 'rail' && !open"
+    :inert="mode !== 'rail' && !open"
     :role="isDialog && open ? 'dialog' : undefined"
     :aria-modal="isDialog && open ? 'true' : undefined"
     :aria-labelledby="isDialog ? titleId : undefined"
@@ -121,24 +147,26 @@ function buildSub(item: DaVinciHistoryItem): string {
           <div
             v-for="item in group"
             :key="item.id"
-            role="button"
-            tabindex="0"
-            class="dv-history__item"
+            class="dv-history__row"
             :class="{ 'is-active': item.id === activeId }"
-            :aria-current="item.id === activeId ? 'true' : undefined"
-            @click="emit('select', item.id)"
-            @keydown.enter.space.prevent="emit('select', item.id)"
           >
-            <v-icon size="18">{{ item.icon }}</v-icon>
-            <div class="dv-history__text">
-              <div class="dv-history__title">{{ item.title }}</div>
-              <div class="dv-history__sub">{{ buildSub(item) }}</div>
-            </div>
+            <button
+              type="button"
+              class="dv-history__item"
+              :aria-current="item.id === activeId ? 'true' : undefined"
+              @click="select(item)"
+            >
+              <v-icon size="18">{{ item.icon }}</v-icon>
+              <span class="dv-history__text">
+                <span class="dv-history__title">{{ item.title }}</span>
+                <span class="dv-history__sub">{{ buildSub(item) }}</span>
+              </span>
+            </button>
             <button
               type="button"
               class="dv-history__delete"
               :aria-label="`Delete ${item.title}`"
-              @click="handleDelete(item.id, $event)"
+              @click="handleDelete(item, $event)"
             >
               <v-icon size="16">trash-2</v-icon>
             </button>
@@ -156,9 +184,18 @@ function buildSub(item: DaVinciHistoryItem): string {
     </div>
 
     <MpConfirmDialog
+      v-model="deleteOpen"
+      title="Delete this conversation?"
+      :message="deleteMessage"
+      confirm-label="Delete"
+      danger
+      @confirm="confirmDelete"
+    />
+
+    <MpConfirmDialog
       v-model="clearAllOpen"
       title="Delete all Da Vinci conversations?"
-      message="This cannot be undone."
+      message="This cannot be undone. The conversation on screen is cleared too."
       confirm-label="Delete All"
       danger
       @confirm="confirmClearAll"
@@ -177,7 +214,8 @@ function buildSub(item: DaVinciHistoryItem): string {
 
 .dv-history {
   position: absolute;
-  inset: 56px 0 0 0;
+  /* Under the copilot header (component height --mp-space-48); it used to start 8px lower and leave a strip of the panel showing. */
+  inset: var(--mp-space-48) 0 0 0;
   background: rgb(var(--v-theme-surface));
   border-bottom: 1px solid var(--border-subtle);
   transform: translateX(100%);
@@ -189,7 +227,7 @@ function buildSub(item: DaVinciHistoryItem): string {
      (position: absolute within that container), not the app-wide overlay
      ladder in tokens.json's zIndex scale. */
   z-index: 40;
-  height: calc(100% - 56px);
+  height: calc(100% - var(--mp-space-48));
 }
 
 .dv-history.is-open {
@@ -213,6 +251,12 @@ function buildSub(item: DaVinciHistoryItem): string {
   height: var(--mp-component-control-height);
   background: rgb(var(--v-theme-surface-variant));
   border-radius: var(--mp-radius-full);
+}
+
+/* The input's own outline is off, so the pill carries the focus ring — the same 2px accent as the composer.
+   (2px focus rings are geometry, off the spacing scale by decision — DESIGN_AUDIT P4.) */
+.dv-history__search:focus-within {
+  box-shadow: inset 0 0 0 2px var(--dv-accent);
 }
 
 .dv-history__search input {
@@ -247,22 +291,15 @@ function buildSub(item: DaVinciHistoryItem): string {
   padding: var(--mp-space-6) var(--mp-space-8) var(--mp-space-8);
 }
 
-.dv-history__item {
+/* A row is two siblings: the select button (fills it) and the delete button. */
+.dv-history__row {
   display: flex;
   align-items: flex-start;
-  gap: var(--mp-space-10);
-  padding: var(--mp-space-10);
   border-radius: var(--mp-radius-10);
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  width: 100%;
-  text-align: left;
-  color: rgb(var(--v-theme-on-surface));
   transition: background 120ms ease;
 }
 
-.dv-history__item:hover {
+.dv-history__row:hover {
   background: rgb(var(--v-theme-surface-variant));
 }
 
@@ -271,11 +308,32 @@ function buildSub(item: DaVinciHistoryItem): string {
    paint the container fill with on-primary ink, or vice versa. Both themes
    define primary-container/on-primary-container, so the fallbacks only added
    a way to desync. */
-.dv-history__item.is-active {
+.dv-history__row.is-active {
   background: rgb(var(--v-theme-primary-container));
 }
 
-.dv-history__item.is-active .dv-history__title {
+.dv-history__item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--mp-space-10);
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: var(--mp-space-10);
+  border: none;
+  border-radius: inherit;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.dv-history__item:focus-visible {
+  outline: 2px solid rgb(var(--v-theme-primary));
+  outline-offset: calc(-1 * var(--mp-space-2));
+}
+
+.dv-history__row.is-active .dv-history__title {
   color: rgb(var(--v-theme-on-primary-container));
 }
 
@@ -285,7 +343,7 @@ function buildSub(item: DaVinciHistoryItem): string {
   flex-shrink: 0;
 }
 
-.dv-history__item.is-active :deep(.v-icon) {
+.dv-history__row.is-active .dv-history__item :deep(.v-icon) {
   color: rgb(var(--v-theme-primary));
 }
 
@@ -295,6 +353,7 @@ function buildSub(item: DaVinciHistoryItem): string {
 }
 
 .dv-history__title {
+  display: block;
   font-size: var(--mp-fontSize-14);
   font-weight: var(--mp-fontWeight-medium);
   line-height: 1.3;
@@ -305,6 +364,7 @@ function buildSub(item: DaVinciHistoryItem): string {
 }
 
 .dv-history__sub {
+  display: block;
   font-size: var(--mp-fontSize-12);
   font-weight: var(--mp-fontWeight-regular);
   color: rgb(var(--v-theme-on-surface-variant));
@@ -315,9 +375,10 @@ function buildSub(item: DaVinciHistoryItem): string {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  width: var(--mp-space-28);
+  height: var(--mp-space-28);
   flex-shrink: 0;
+  margin: var(--mp-space-8) var(--mp-space-8) 0 0;
   border: none;
   background: transparent;
   border-radius: var(--mp-component-chip-radius);
@@ -327,9 +388,16 @@ function buildSub(item: DaVinciHistoryItem): string {
   transition: opacity 120ms ease, background 120ms ease, color 120ms ease;
 }
 
-.dv-history__item:hover .dv-history__delete,
-.dv-history__item:focus-within .dv-history__delete {
+/* Hidden until the row is hovered or anything in it has focus — but always focusable, so a keyboard
+   user reaches it (and it appears the moment it does). */
+.dv-history__row:hover .dv-history__delete,
+.dv-history__row:focus-within .dv-history__delete {
   opacity: 1;
+}
+
+.dv-history__delete:focus-visible {
+  outline: 2px solid rgb(var(--v-theme-primary));
+  outline-offset: calc(-1 * var(--mp-space-2));
 }
 
 .dv-history__delete:hover {

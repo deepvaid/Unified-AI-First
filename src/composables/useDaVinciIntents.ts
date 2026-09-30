@@ -1,11 +1,20 @@
-import { ref } from 'vue'
+import { storeToRefs } from 'pinia'
 import router from '@/router'
-import { askGemini, type GeminiTurn } from '@/services/geminiClient'
-import { generateJourneyDraft, goalOptions, type JourneyGoal } from '@/composables/useJourneyGenerator'
+import { askGeminiResult, type GeminiFailure, type GeminiTurn } from '@/services/geminiClient'
+import { goalOptions, type JourneyGoal } from '@/composables/useJourneyGenerator'
 import { useDaVinciCampaignOnboarding } from '@/composables/useDaVinciCampaignOnboarding'
 import type { DaVinciToastInput } from '@/composables/useDaVinciToasts'
 import { useCommerceStore } from '@/stores/useCommerce'
 import { useContactsStore } from '@/stores/useContacts'
+import { useAccountsStore } from '@/stores/useAccounts'
+import { useCopilotStore, type AddedWidgetRef } from '@/stores/useCopilot'
+import { isDashboardSourceAvailable } from '@/stores/dashboards/metricCatalog'
+import type { DashboardMetricId, DashboardMetricUnit } from '@/stores/dashboards/types'
+import { templateById } from '@/stores/journeyFlowData'
+import { templateSetupById } from '@/stores/journeyTemplateSetup'
+import { parseLocalDateKey } from '@/utils/localDate'
+import { classifyIntent, type DvIntentKind } from '@/davinci/promptRouting'
+import { detectEngineKey, detectEnginePage, detectJourneyGoal, slotVerdict, type PendingSlot } from '@/davinci/pendingSlot'
 import {
   fallbackSpeech,
   productDrafts,
@@ -24,7 +33,9 @@ import {
 // multi-turn `pending` clarification state. `handle()` is synchronous — each
 // surface owns its own thinking delay.
 
-export type DvIntentKind = 'campaign' | 'product' | 'revenue' | 'segment' | 'engine' | 'journey' | 'fallback'
+// Classification lives in src/davinci/promptRouting.ts (pure, unit-tested); re-exported for callers.
+export type { DvIntentKind }
+export { classifyIntent, detectJourneyGoal }
 
 export type DvCardDescriptor =
   | {
@@ -51,11 +62,27 @@ export type DvCardDescriptor =
     }
   | {
       type: 'chart'
-      props: { title?: string; subtitle?: string; bars: number[][]; labels?: string[]; seriesNames?: string[] }
+      props: {
+        title?: string
+        subtitle?: string
+        labels: string[]
+        series: Array<{ name: string; data: number[]; isComparison?: boolean }>
+        unit?: DashboardMetricUnit
+        /** The dashboard metric the chart can be saved as. */
+        saveMetricId?: DashboardMetricId
+        /** The widget it was saved as (set by DvIntentCardList once saved). */
+        savedTo?: AddedWidgetRef | null
+      }
     }
   | {
       type: 'segment'
-      props: { name: string; rules: string[]; estimatedSize: number }
+      props: {
+        name: string
+        rules: string[]
+        estimatedSize: number
+        /** The segment this card was saved as — set on the message so a remount can't save twice. */
+        savedSegmentId?: number
+      }
     }
   | {
       type: 'insight'
@@ -76,11 +103,7 @@ export interface DvQuickReply {
   icon?: string
 }
 
-export interface DvPending {
-  intent: DvIntentKind
-  slot: string
-  context: Record<string, string>
-}
+export type DvPending = PendingSlot
 
 export interface DvIntentResult {
   intent: DvIntentKind
@@ -111,7 +134,7 @@ export const INTENT_STEPS: Record<DvIntentKind, string[]> = {
   revenue: ['Query revenue · last 7 days', 'Compare vs prior week'],
   segment: ['Scan contacts', 'Assemble rules'],
   engine: ['Match engine to page'],
-  journey: ['Assemble sequence'],
+  journey: ['Match journey template'],
   fallback: ['Consult Da Vinci brain'],
 }
 
@@ -122,66 +145,14 @@ export const SUGGESTION_CHIPS: DvQuickReply[] = [
   { label: 'Build a VIP segment', value: 'Build a VIP customer segment', icon: 'users' },
 ]
 
-/** Maps free text onto a journey goal, if one is recognizable. */
-export function detectJourneyGoal(text: string): JourneyGoal | null {
-  const t = text.toLowerCase()
-  if (/welcome|onboard|new subscriber/.test(t)) return 'welcome'
-  if (/abandon|cart/.test(t)) return 'abandoned-cart'
-  if (/nurture|lead/.test(t)) return 'nurture'
-  if (/advoca|referral|refer a friend|vip perk/.test(t)) return 'advocacy'
-  if (/re-?engage|inactive|quiet|dormant/.test(t)) return 're-engagement'
-  if (/win[- ]?back|lapsed|stopped buying/.test(t)) return 'lapsed-buyer'
-  return null
-}
-
-// ── Classifier (Marojarvis port) ─────────────────────────────────────────────
-export function classifyIntent(text: string): DvIntentKind {
-  const t = text.toLowerCase()
-  // Journey CREATION only — "review my journey…" style asks fall through to
-  // the generic advisor (Gemini/fallback) instead of drafting a new journey.
-  if (
-    /\b(build|create|draft|make|set ?up|start|want|need)\b[^.]*\b(journey|automation|drip|flow|series|sequence)\b/.test(t)
-    || /welcome series|abandoned cart (journey|flow|recovery)|win[- ]?back (journey|flow|series)/.test(t)
-    // Goal language is a journey ask even without the word "journey": "win back
-    // customers who haven't bought in 90 days", "re-engage dormant subscribers",
-    // "recover abandoned carts". The handler maps it onto a goal via detectJourneyGoal.
-    || /\b(win[- ]?back|lapsed|stopped buying|re-?engage|dormant|abandoned carts?|cart abandon)/.test(t)
-  ) {
-    return 'journey'
-  }
-  // "Was my last campaign any good?" is a question for the advisor, not a brief for
-  // the campaign wizard — review/performance phrasing skips the creation intents.
-  const isReviewQuestion = /\b(was|were|did|how (good|well|is|are|many|big)|how's|performance|results|report|doing|any good)\b/.test(t)
-  if (
-    !isReviewQuestion
-    && (/\b(run|send|create|launch|draft|set ?up|start|schedule|build|make|want|need|plan)\b[^.]*\b(campaign|promo|promotion|blast|newsletter)\b/.test(t)
-      || /send .*(email|campaign)|email .*(blast|campaign)/.test(t))
-  ) {
-    return 'campaign'
-  }
-  if (/\brecommendation(s)?\s+(engine|widget|type)\b|which\s+(recommendation|engine)|\bengine\b.*\b(use|pick|choose|recommend)\b|shoppers\s+(should\s+)?see/.test(t)) {
-    return 'engine'
-  }
-  if (!isReviewQuestion && /\b(add|create|new|draft|write)\b.*\b(product|item|sku)\b|\bproduct description\b/.test(t)) {
-    return 'product'
-  }
-  // Revenue needs a revenue word. The old rule also fired on bare "this week" and
-  // "made", so "which products should I put on sale this week?" came back as a
-  // revenue card instead of reaching the advisor.
-  if (/\b(revenue|sales|gmv|aov|average order value|earnings)\b|\bhow much (did|have|do) (we|i)\b/.test(t)) {
-    return 'revenue'
-  }
-  if (!isReviewQuestion && (/\b(segment|audience|vip|cohort)\b|group of/.test(t))) {
-    return 'segment'
-  }
-  return 'fallback'
-}
-
 export function useDaVinciIntents() {
-  const pending = ref<DvPending | null>(null)
+  // The open clarification lives in the copilot store: New chat clears it, and the drawer and the
+  // full-page experience share one thread, so they share one slot.
+  const { pendingSlot: pending } = storeToRefs(useCopilotStore())
   const campaignOnboarding = useDaVinciCampaignOnboarding()
   const commerce = useCommerceStore()
   const contacts = useContactsStore()
+  const accounts = useAccountsStore()
   let seq = 0
 
   function currentAccountId(): string {
@@ -195,10 +166,7 @@ export function useDaVinciIntents() {
    */
   function startCampaignDiscovery(audienceHint: string): DvIntentResult {
     const accountId = String(router.currentRoute.value.params.accountId ?? '2000290')
-    const active = campaignOnboarding.session.value
-    const response = active && active.accountId === accountId && active.stage !== 'complete'
-      ? (campaignOnboarding.resume() ?? campaignOnboarding.start(accountId, 'text', { audienceHint }))
-      : campaignOnboarding.start(accountId, 'text', { audienceHint })
+    const response = campaignOnboarding.requestCampaign(accountId, audienceHint)
 
     return {
       intent: 'campaign',
@@ -229,10 +197,19 @@ export function useDaVinciIntents() {
    * contradicted the Overview dashboard in the same session.
    */
   function buildRevenue(): DvIntentResult {
-    const DAY = 86_400_000
-    const now = new Date()
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
-    const orderTime = (order: { date?: string }) => new Date(order.date ?? '').getTime()
+    // Revenue is a Commerce number. Without Commerce there is nothing to report — the card used
+    // to show the (global) mock store's revenue to a marketing-only account.
+    const account = accounts.accounts.find((entry) => entry.id === currentAccountId())
+    if (account && !isDashboardSourceAvailable('commerce', account)) {
+      const reply = 'This account doesn’t have Commerce, so there is no revenue to report yet. Once a store is connected I can break it down by day and by channel.'
+      return { intent: 'revenue', reply, speech: reply, cards: [], quickReplies: SUGGESTION_CHIPS, pending: null, steps: INTENT_STEPS.revenue }
+    }
+
+    const today = new Date()
+    // Local midnight N days from today. Built from date parts, not `- N * 86_400_000`, so a DST change
+    // inside the window can't slide an order into its neighbouring day.
+    const dayStart = (offset: number) => new Date(today.getFullYear(), today.getMonth(), today.getDate() + offset).getTime()
+    const orderTime = (order: { date?: string }) => parseLocalDateKey(order.date).getTime()
     const ordersBetween = (from: number, to: number) =>
       commerce.orders.filter((order) => {
         const ts = orderTime(order)
@@ -240,8 +217,8 @@ export function useDaVinciIntents() {
       })
     const sumTotal = (orders: Array<{ total: string }>) => orders.reduce((sum, order) => sum + parseFloat(order.total), 0)
 
-    const current = ordersBetween(todayStart - 6 * DAY, todayStart + DAY)
-    const previous = ordersBetween(todayStart - 13 * DAY, todayStart - 6 * DAY)
+    const current = ordersBetween(dayStart(-6), dayStart(1))
+    const previous = ordersBetween(dayStart(-13), dayStart(-6))
     const revenue = sumTotal(current)
     const previousRevenue = sumTotal(previous)
     const aov = current.length ? revenue / current.length : 0
@@ -250,18 +227,21 @@ export function useDaVinciIntents() {
     const pct = (value: number, base: number) => (base ? ((value - base) / base) * 100 : 0)
     const trend = (value: number, base: number) => {
       const change = pct(value, base)
-      return { trend: `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`, trendUp: change >= 0 }
+      // Flat is neither good nor bad — leave `trendUp` unset so it reads neutral, not green.
+      return { trend: `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`, trendUp: Math.abs(change) < 0.05 ? undefined : change >= 0 }
     }
     const money = (value: number) =>
       value.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
     const count = (value: number) => value.toLocaleString('en-US')
 
+    // Each day of this week beside the same weekday a week earlier — the chart shows the comparison the subtitle claims.
     const labels: string[] = []
-    const bars: number[][] = []
-    for (let daysAgo = 6; daysAgo >= 0; daysAgo--) {
-      const start = todayStart - daysAgo * DAY
-      labels.push(new Date(start).toLocaleDateString('en-US', { weekday: 'short' }))
-      bars.push([Math.round(sumTotal(ordersBetween(start, start + DAY)))])
+    const thisWeek: number[] = []
+    const lastWeek: number[] = []
+    for (let offset = -6; offset <= 0; offset++) {
+      labels.push(new Date(dayStart(offset)).toLocaleDateString('en-US', { weekday: 'short' }))
+      thisWeek.push(Math.round(sumTotal(ordersBetween(dayStart(offset), dayStart(offset + 1)))))
+      lastWeek.push(Math.round(sumTotal(ordersBetween(dayStart(offset - 7), dayStart(offset - 6)))))
     }
 
     const revenueChange = pct(revenue, previousRevenue)
@@ -288,9 +268,13 @@ export function useDaVinciIntents() {
           props: {
             title: 'Revenue · last 7 days',
             subtitle: `${money(revenue)} total · ${trend(revenue, previousRevenue).trend} vs prior week`,
-            bars,
             labels,
-            seriesNames: ['Revenue ($)'],
+            series: [
+              { name: 'Revenue', data: thisWeek },
+              { name: 'Previous 7 days', data: lastWeek, isComparison: true },
+            ],
+            unit: 'currency',
+            saveMetricId: 'commerce_revenue_over_time',
           },
         },
       ],
@@ -301,7 +285,9 @@ export function useDaVinciIntents() {
 
   function buildSegment(text: string): DvIntentResult {
     const isVip = /vip|loyal|best/.test(text.toLowerCase())
-    const props = isVip ? segmentVariants.vip : segmentVariants.highIntent
+    const variant = isVip ? segmentVariants.vip : segmentVariants.highIntent
+    // A copy per message: the card records `savedSegmentId` on its props, which must never reach the shared variant.
+    const props = { ...variant, rules: [...variant.rules] }
     return {
       intent: 'segment',
       reply: `Your "${props.name}" segment is ready — about ${props.estimatedSize.toLocaleString()} contacts match right now. It refreshes daily.`,
@@ -313,11 +299,32 @@ export function useDaVinciIntents() {
   }
 
   /**
-   * `advisorOffline` labels the canned reply when the Gemini advisor could not be
-   * reached — otherwise a merchant cannot tell a real answer from the fallback.
+   * `unavailable` labels the canned reply when the Gemini advisor could not answer — otherwise a
+   * merchant cannot tell a real answer from the fallback. `busy` (rate-limited / too slow) is worth
+   * retrying in a moment; `offline` is not reachable at all.
    */
-  function buildFallback(advisorOffline = false): DvIntentResult {
-    if (advisorOffline) {
+  function buildFallback(unavailable?: GeminiFailure): DvIntentResult {
+    if (unavailable === 'busy') {
+      return {
+        intent: 'fallback',
+        reply: "Da Vinci's advisor is busy right now — try that again in a moment. I can still run campaigns, draft product copy, report on revenue, or build audience segments:",
+        speech: 'The advisor is busy right now. Try again in a moment.',
+        cards: [
+          {
+            type: 'insight',
+            props: {
+              headline: 'Advisor busy',
+              description: 'Too many requests, or the answer took too long. Try again in a moment — the actions below work without it.',
+              severity: 'warning',
+              icon: 'hourglass',
+            },
+          },
+        ],
+        quickReplies: SUGGESTION_CHIPS,
+        pending: null,
+      }
+    }
+    if (unavailable === 'offline') {
       return {
         intent: 'fallback',
         reply: "Da Vinci's advisor is offline right now, so I can't answer that one. I can still run campaigns, draft product copy, report on revenue, or build audience segments:",
@@ -367,27 +374,6 @@ export function useDaVinciIntents() {
     personalized: { label: 'Personalized', why: 'it adapts to each shopper’s browsing and purchase history', icon: 'sparkles' },
     fbt: { label: 'Frequently Purchased Together', why: 'it lifts basket size right where purchase intent is highest', icon: 'shopping-basket' },
     recent: { label: 'Recently Viewed', why: 'it picks shoppers up exactly where they left off', icon: 'history' },
-  }
-
-  function detectEngineKey(text: string): string | null {
-    const t = text.toLowerCase()
-    if (/popular|best.?sell|top seller/.test(t)) return 'popular'
-    if (/newest|new arrival|fresh|latest/.test(t)) return 'newest'
-    if (/trend/.test(t)) return 'trending'
-    if (/personal|history|behaviou?r/.test(t)) return 'personalized'
-    if (/frequently|together|basket|bundle/.test(t)) return 'fbt'
-    if (/recently viewed|left off|browsed/.test(t)) return 'recent'
-    return null
-  }
-
-  function detectEnginePage(text: string): string | null {
-    const t = text.toLowerCase()
-    if (/home\s?page|homepage|front page/.test(t)) return 'Home'
-    if (/category|listing|plp/.test(t)) return 'Category'
-    if (/product page|pdp/.test(t)) return 'Product'
-    if (/cart|checkout/.test(t)) return 'Cart'
-    if (/custom page/.test(t)) return 'Custom'
-    return null
   }
 
   const ENGINE_PAGE_DEFAULTS: Record<string, string> = {
@@ -441,8 +427,9 @@ export function useDaVinciIntents() {
 
   function buildJourneyDraftIntent(text: string, context: Record<string, string>): DvIntentResult {
     const goal = detectJourneyGoal(text) ?? (context.goal as JourneyGoal | undefined) ?? null
+    const template = goal ? templateById[goal] : undefined
 
-    if (!goal) {
+    if (!goal || !template) {
       pending.value = { intent: 'journey', slot: 'goal', context: {} }
       return {
         intent: 'journey',
@@ -454,22 +441,24 @@ export function useDaVinciIntents() {
       }
     }
 
-    // Summarize the exact draft the wizard will open with (same generator).
-    const draft = generateJourneyDraft({ goal, audience: 'All subscribers' })
-    const emails = draft.sequence.length
+    // Describe the template the wizard really opens (`?goal=` lands on the template of that id) — not a
+    // generated draft the wizard never sees, which is what this used to summarise and then call "pre-filled".
+    // The count the wizard's Setup step asks content for (a template's graph can hold more send nodes than that).
+    const emails = templateSetupById[goal]?.emails.length ?? 0
+    const emailCopy = emails ? ` You choose the content for ${emails} ${emails === 1 ? 'email' : 'emails'} in the wizard.` : ''
     pending.value = { intent: 'journey', slot: 'open', context: { goal } }
 
     return {
       intent: 'journey',
-      reply: `${draft.rationale} I've pre-filled the journey wizard with this brief — nothing is created until you review the draft and accept it.`,
-      speech: `Draft ready: ${emails} emails. Want me to open the journey wizard?`,
+      reply: `The ${template.name} template fits that. I can open it in the journey wizard — you name it and choose the list and content there, and nothing is created until you finish.`,
+      speech: `The ${template.name} journey fits that. Want me to open the journey wizard?`,
       cards: [
         {
           type: 'insight',
           props: {
-            headline: `Draft ready: ${draft.suggestedName}`,
-            description: `${emails} ${emails === 1 ? 'email' : 'emails'}, branching on contact behaviour. Review it in the wizard — add your brand and offer there to personalize every subject line.`,
-            severity: 'success',
+            headline: `${template.name} journey`,
+            description: `${template.description}${emailCopy}`,
+            severity: 'info',
             icon: 'workflow',
           },
         },
@@ -483,38 +472,62 @@ export function useDaVinciIntents() {
     }
   }
 
-  function handle(text: string): DvIntentResult {
-    const trimmed = text.trim()
+  /** Acknowledge a "no" to an open offer without starting anything. */
+  function acknowledgeDecline(slot: PendingSlot): DvIntentResult {
+    const reply = slot.intent === 'journey' && slot.slot === 'open'
+      ? 'No problem — I won’t open the wizard.'
+      : slot.intent === 'journey'
+        ? 'No problem. Tell me what the journey should do whenever you’re ready.'
+        : 'No problem — ask me about recommendation engines any time.'
+    return { intent: slot.intent, reply, speech: reply, cards: [], quickReplies: SUGGESTION_CHIPS, pending: null }
+  }
 
-    if (pending.value) {
-      const p = pending.value
-      pending.value = null
-      if (p.intent === 'campaign' && p.slot === 'audience') {
-        return startCampaignDiscovery(trimmed)
-      }
-      if (p.intent === 'engine') {
-        return buildEngineAdvice(trimmed, p.context)
-      }
-      if (p.intent === 'journey' && p.slot === 'goal') {
-        return buildJourneyDraftIntent(trimmed, {})
-      }
-      if (p.intent === 'journey' && p.slot === 'open') {
-        if (/\b(open|yes|go|sure|please|wizard|do it)\b/i.test(trimmed)) {
-          openJourneyWizard((p.context.goal as JourneyGoal) ?? 'welcome')
-          return {
-            intent: 'journey',
-            reply: 'Opening the journey wizard — your brief is pre-filled and the draft is ready to review.',
-            speech: 'Opening the journey wizard.',
-            cards: [],
-            pending: null,
-          }
-        }
-        // Anything else falls through to a fresh classification below.
+  /**
+   * A reply that answers (or declines) the open clarification. Anything else releases the
+   * slot and returns null — the old code treated the NEXT message as the answer, so one
+   * engine question turned every later prompt into engine advice.
+   */
+  function resolvePending(text: string): DvIntentResult | null {
+    const slot = pending.value
+    if (!slot) return null
+    const verdict = slotVerdict(slot, text)
+    pending.value = null
+    if (verdict === 'unrelated') return null
+    if (verdict === 'decline') return acknowledgeDecline(slot)
+    if (slot.intent === 'engine') return buildEngineAdvice(text, slot.context)
+    if (slot.intent === 'journey' && slot.slot === 'goal') return buildJourneyDraftIntent(text, {})
+    if (slot.intent === 'journey' && slot.slot === 'open') {
+      const goal = (slot.context.goal as JourneyGoal) ?? 'welcome'
+      const templateName = templateById[goal]?.name
+      openJourneyWizard(goal)
+      return {
+        intent: 'journey',
+        reply: `Opening the journey wizard${templateName ? ` on the ${templateName} template` : ''} — nothing is created until you finish setup.`,
+        speech: 'Opening the journey wizard.',
+        cards: [],
+        pending: null,
       }
     }
+    return null
+  }
 
-    const intent = classifyIntent(trimmed)
-    switch (intent) {
+  /** True when `text` answers an open clarification; otherwise the slot is released and the message routes normally. */
+  function claimsPendingSlot(text: string): boolean {
+    const slot = pending.value
+    if (!slot) return false
+    if (slotVerdict(slot, text.trim()) === 'unrelated') {
+      pending.value = null
+      return false
+    }
+    return true
+  }
+
+  function handle(text: string): DvIntentResult {
+    const trimmed = text.trim()
+    const answered = resolvePending(trimmed)
+    if (answered) return answered
+
+    switch (classifyIntent(trimmed)) {
       case 'campaign':
         return startCampaignDiscovery(trimmed)
       case 'product':
@@ -547,12 +560,13 @@ export function useDaVinciIntents() {
 
     // Deterministic flows stay byte-for-byte: a pending clarification or any known
     // intent goes straight through the existing synchronous handler.
-    if (pending.value || classifyIntent(trimmed) !== 'fallback') {
+    if (claimsPendingSlot(trimmed) || classifyIntent(trimmed) !== 'fallback') {
       return handle(text)
     }
 
-    const smart = await askGemini(trimmed, opts.history ?? [], { context: opts.context, signal: opts.signal })
-    if (!smart) return buildFallback(true)
+    const result = await askGeminiResult(trimmed, opts.history ?? [], { context: opts.context, signal: opts.signal })
+    if (!result.ok) return buildFallback(result.failure)
+    const smart = result.reply
 
     return {
       intent: 'fallback',
@@ -583,21 +597,43 @@ export function useDaVinciIntents() {
     pending.value = null
   }
 
-  function copyText(text: string) {
-    if (typeof navigator === 'undefined' || !navigator.clipboard) return
-    navigator.clipboard.writeText(text).catch(() => {})
+  /** Whether the text really reached the clipboard — browsers refuse it without permission or focus. */
+  async function copyText(text: string): Promise<boolean> {
+    if (typeof navigator === 'undefined' || !navigator.clipboard) return false
+    try {
+      await navigator.clipboard.writeText(text)
+      return true
+    } catch {
+      return false
+    }
   }
 
   /**
-   * Performs a card action for real and returns the toast to show. One shared
-   * implementation for the drawer and the full-page experience — the hosts used to
-   * answer "Save segment" with a "Segment saved" toast and write nothing, while the
-   * disclosure promised Da Vinci "won't change your account on its own".
+   * Performs a card action for real and returns the toast that says what happened — or null when the
+   * action changed nothing worth announcing. One shared implementation for the drawer and the
+   * full-page experience: the hosts used to answer "Save segment" with a "Segment saved" toast and
+   * write nothing, while the disclosure promised Da Vinci "won't change your account on its own".
+   * Saving a segment records `savedSegmentId` on the card, so the message keeps showing "Saved".
    */
-  function performCardAction(card: DvCardDescriptor, action: string): DaVinciToastInput | null {
+  async function performCardAction(card: DvCardDescriptor, action: string): Promise<DaVinciToastInput | null> {
     const accountId = currentAccountId()
     if (card.type === 'segment') {
+      const openSegments = () => {
+        void router.push({ name: 'Segments', params: { accountId } })
+      }
       if (action === 'save') {
+        // Saving the same card twice — or a segment the account already has — must not add a duplicate.
+        const existing = contacts.segments.find((segment) => segment.name.toLowerCase() === card.props.name.toLowerCase())
+        if (existing) {
+          card.props.savedSegmentId = existing.id
+          return {
+            tone: 'info',
+            title: `"${existing.name}" is already in your segments`,
+            sub: 'I didn’t add a second copy.',
+            action: 'Open segments',
+            onAction: openSegments,
+          }
+        }
         const segment = contacts.addSegment({
           name: card.props.name,
           description: card.props.rules.join(' · '),
@@ -605,18 +641,17 @@ export function useDaVinciIntents() {
           type: 'Dynamic',
           status: 'Active',
         })
+        card.props.savedSegmentId = segment.id
         return {
           title: `Segment "${segment.name}" created`,
           sub: 'It refreshes daily. Nothing has been sent to it.',
           action: 'Open segments',
-          onAction: () => {
-            void router.push({ name: 'Segments', params: { accountId } })
-          },
+          onAction: openSegments,
         }
       }
-      if (action === 'preview') {
-        void router.push({ name: 'Segments', params: { accountId } })
-        return { title: 'Opening segments', sub: 'Matching contacts are listed on the segment page.' }
+      if (action === 'open') {
+        openSegments()
+        return null
       }
     }
     if (card.type === 'insight' && card.props.routeName) {
@@ -624,22 +659,34 @@ export function useDaVinciIntents() {
       void router.push({ name, params: { accountId } })
       return { title: `Opening ${name.replace(/([a-z0-9])([A-Z])/g, '$1 $2')}` }
     }
-    if (card.type === 'content') {
+    if (card.type === 'content' && (action === 'copy' || action === 'use')) {
+      const copied = await copyText(card.props.content)
       if (action === 'copy') {
-        copyText(card.props.content)
-        return { title: 'Copied to clipboard' }
+        return copied
+          ? { title: 'Copied to clipboard' }
+          : { tone: 'warning', title: 'Couldn’t copy the draft', sub: 'Your browser blocked clipboard access — select the text to copy it yourself.' }
       }
-      if (action === 'edit' || action === 'use') {
-        copyText(card.props.content)
-        const target = card.props.type === 'product'
-          ? { name: 'ProductNew', params: { accountId }, query: { source: 'davinci' } }
-          : { name: 'EmailContent', params: { accountId }, query: { source: 'davinci' } }
-        void router.push(target)
+      const isProduct = card.props.type === 'product'
+      const where = isProduct ? 'the product editor' : 'email content'
+      const open = () => {
+        void router.push(
+          isProduct
+            ? { name: 'ProductNew', params: { accountId }, query: { source: 'davinci' } }
+            : { name: 'EmailContent', params: { accountId }, query: { source: 'davinci' } },
+        )
+      }
+      // Without the clipboard the draft can't travel — stay put and say so, rather than open an empty editor.
+      if (!copied) {
         return {
-          title: card.props.type === 'product' ? 'Copied — opening the product editor' : 'Copied — opening email content',
-          sub: 'Paste the draft where you want it. Nothing is saved until you do.',
+          tone: 'warning',
+          title: 'Couldn’t copy the draft',
+          sub: 'Your browser blocked clipboard access. Copy it from the chat, then open the editor.',
+          action: `Open ${where}`,
+          onAction: open,
         }
       }
+      open()
+      return { title: `Copied — opening ${where}`, sub: 'Paste the draft where you want it. Nothing is saved until you do.' }
     }
     return null
   }
@@ -647,6 +694,8 @@ export function useDaVinciIntents() {
   return {
     pending,
     classify: classifyIntent,
+    claimsPendingSlot,
+    offline: () => buildFallback('offline'),
     handle,
     performCardAction,
     answer,

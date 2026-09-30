@@ -23,6 +23,7 @@ import type {
   DashboardTableColumn,
 } from '@/stores/dashboards/types'
 import { formatCurrency, formatCurrencyCents } from '@/utils/formatCurrency'
+import { parseLocalDateKey } from '@/utils/localDate'
 import { formatCompactValue, formatNumber as formatGroupedNumber, formatPercent } from '@/utils/formatNumber'
 
 function formatNumber(value: number, unit: DashboardMetricUnit): string {
@@ -48,6 +49,9 @@ interface DateWindow {
 }
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000
+
+/** Order dates are date-only local keys ("2026-09-29") — see parseLocalDateKey. */
+const orderDate = (order: { date?: string }): Date => parseLocalDateKey(order.date)
 
 function startOfDay(date: Date): Date {
   const next = new Date(date)
@@ -292,6 +296,12 @@ function shortDate(date: Date): string {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
+/** "Jul 28" for a campaign's send date ("07-28" read like an ID, with no year). */
+function sendLabel(sentDate: string | null | undefined): string {
+  const date = parseLocalDateKey(sentDate)
+  return Number.isNaN(date.getTime()) ? '--' : shortDate(date)
+}
+
 /** "12am" … "11pm" — the hourly axis for a one-day window. */
 function hourLabel(hour: number): string {
   const h12 = hour % 12 === 0 ? 12 : hour % 12
@@ -337,7 +347,7 @@ export function useWidgetData(
       // Revenue matrix: weekday rows × week columns, reshaped from the same
       // daily buckets the revenue KPI sparkline uses.
       case 'commerce_revenue_heatmap': {
-        const { cur } = bucketDaily(commerce.orders, (order) => new Date(order.date ?? ''), (order) => parseFloat(order.total), dateWindow)
+        const { cur } = bucketDaily(commerce.orders, orderDate, (order) => parseFloat(order.total), dateWindow)
         const weekCount = Math.max(1, Math.ceil(days / 7))
         const rows = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
         const cells = rows.map(() => new Array<number>(weekCount).fill(0))
@@ -387,21 +397,21 @@ export function useWidgetData(
         } as DashboardWidgetData
       }
       case 'commerce_revenue': {
-        const ranges = sliceRecordsByWindow(commerce.orders, (order) => new Date(order.date ?? ''), dateWindow)
+        const ranges = sliceRecordsByWindow(commerce.orders, orderDate, dateWindow)
         const currentRevenue = ranges.current.reduce((total, order) => total + parseFloat(order.total), 0)
         const previousRevenue = ranges.previous.reduce((total, order) => total + parseFloat(order.total), 0)
         const kpi = buildKpiData(currentRevenue, pickPreviousValue(filters, currentRevenue, previousRevenue), 'currency', 'Gross revenue in the selected period')
-        const { cur } = bucketDaily(commerce.orders, (order) => new Date(order.date ?? ''), (order) => parseFloat(order.total), dateWindow)
+        const { cur } = bucketDaily(commerce.orders, orderDate, (order) => parseFloat(order.total), dateWindow)
         return { ...kpi, sparkline: cur } as DashboardWidgetData
       }
       case 'commerce_orders': {
-        const ranges = sliceRecordsByWindow(commerce.orders, (order) => new Date(order.date ?? ''), dateWindow)
+        const ranges = sliceRecordsByWindow(commerce.orders, orderDate, dateWindow)
         const kpi = buildKpiData(ranges.current.length, pickPreviousValue(filters, ranges.current.length, ranges.previous.length), 'count', 'Orders placed in the selected period')
-        const { cur } = bucketDaily(commerce.orders, (order) => new Date(order.date ?? ''), () => 1, dateWindow)
+        const { cur } = bucketDaily(commerce.orders, orderDate, () => 1, dateWindow)
         return { ...kpi, sparkline: cur } as DashboardWidgetData
       }
       case 'commerce_aov': {
-        const ranges = sliceRecordsByWindow(commerce.orders, (order) => new Date(order.date ?? ''), dateWindow)
+        const ranges = sliceRecordsByWindow(commerce.orders, orderDate, dateWindow)
         const current = ranges.current.length
           ? ranges.current.reduce((total, order) => total + parseFloat(order.total), 0) / ranges.current.length
           : 0
@@ -409,7 +419,6 @@ export function useWidgetData(
           ? ranges.previous.reduce((total, order) => total + parseFloat(order.total), 0) / ranges.previous.length
           : 0
         const kpi = buildKpiData(current, pickPreviousValue(filters, current, previous), 'currency', 'Average order value for the current period')
-        const orderDate = (order: (typeof commerce.orders)[number]) => new Date(order.date ?? '')
         const revenueByDay = bucketDaily(commerce.orders, orderDate, (order) => parseFloat(order.total), dateWindow).cur
         const ordersByDay = bucketDaily(commerce.orders, orderDate, () => 1, dateWindow).cur
         return {
@@ -423,7 +432,6 @@ export function useWidgetData(
       }
       case 'commerce_revenue_over_time': {
         // One point per calendar day (the old per-order points made the x-axis lie).
-        const orderDate = (order: (typeof commerce.orders)[number]) => new Date(order.date ?? '')
         const { cur, prev } = bucketDaily(commerce.orders, orderDate, (order) => parseFloat(order.total), dateWindow)
         const revenueSeries: DashboardWidgetData = {
           kind: 'series',
@@ -438,10 +446,12 @@ export function useWidgetData(
         return revenueSeries
       }
       case 'commerce_revenue_by_channel': {
+        // The order's real sales channel inside the dashboard's window — `id % channels.length`
+        // invented an even split and ignored the date range. Amazon / eBay read as "Marketplace".
         const channels = ['Online Store', 'Instagram Shop', 'Marketplace', 'POS']
         const totals = new Map<string, number>(channels.map((channel) => [channel, 0]))
-        commerce.orders.forEach((order) => {
-          const channel = channels[order.id % channels.length] ?? 'Online Store'
+        sliceRecordsByWindow(commerce.orders, orderDate, dateWindow).current.forEach((order) => {
+          const channel = channels.includes(order.salesChannel) ? order.salesChannel : 'Marketplace'
           totals.set(channel, (totals.get(channel) ?? 0) + parseFloat(order.total))
         })
         return buildSeriesData(channels, channels.map((channel) => totals.get(channel) ?? 0), 'currency', 'Revenue')
@@ -494,7 +504,7 @@ export function useWidgetData(
           .filter((campaign) => campaign.status === 'Sent')
           .sort((left, right) => (left.sentDate ?? '').localeCompare(right.sentDate ?? ''))
           .slice(-7)
-        const labels = sentCampaigns.map((campaign) => campaign.sentDate?.slice(5) ?? '--')
+        const labels = sentCampaigns.map((campaign) => sendLabel(campaign.sentDate))
         const values = sentCampaigns.map((campaign) => (campaign.metrics.opens / Math.max(campaign.metrics.sent, 1)) * 100)
         return buildSeriesData(labels, values, 'percent', 'Open Rate')
       }
@@ -561,13 +571,18 @@ export function useWidgetData(
         return buildKpiData(subscribed, subscribed * 0.93, 'count', 'Subscribed contacts in the audience')
       }
       case 'contacts_growth': {
-        const sorted = [...contacts.contacts].sort((left, right) => (left.createdAt ?? '').localeCompare(right.createdAt ?? ''))
-        const recent = sorted.slice(-7)
+        // Audience size at the end of each day: everyone signed up before the window plus the
+        // running total inside it. This used to plot the index 1…7 — a straight line whatever
+        // the data said.
+        const signedUp = (contact: { createdAt?: string }) => parseLocalDateKey(contact.createdAt)
+        const before = contacts.contacts.filter((contact) => signedUp(contact) < dateWindow.currentStart).length
+        const { cur } = bucketDaily(contacts.contacts, signedUp, () => 1, dateWindow)
+        let running = before
         return buildSeriesData(
-          recent.map((contact) => (contact.createdAt ?? '').slice(5) || '--'),
-          recent.map((_contact, index) => index + 1),
+          windowPointLabels(dateWindow),
+          cur.map((added) => (running += added)),
           'count',
-          'Contacts',
+          'Total contacts',
         )
       }
       case 'contacts_top_segments': {
@@ -600,13 +615,10 @@ export function useWidgetData(
         return buildKpiData(rate, rate - 2.5, 'percent', 'Closed tickets as a share of total tickets')
       }
       case 'service_ticket_volume': {
-        const sorted = [...tickets.tickets].sort((left, right) => (left.createdAt ?? '').localeCompare(right.createdAt ?? '')).slice(-7)
-        return buildSeriesData(
-          sorted.map((ticket) => new Date(ticket.createdAt ?? '').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })),
-          sorted.map((_ticket, index) => index + 1),
-          'count',
-          'Tickets',
-        )
+        // Tickets created per day inside the window (was the index 1…7, unrelated to the data).
+        const created = (ticket: { createdAt?: string }) => new Date(ticket.createdAt ?? '')
+        const { cur } = bucketDaily(tickets.tickets, created, () => 1, dateWindow)
+        return buildSeriesData(windowPointLabels(dateWindow), cur, 'count', 'Tickets created')
       }
       case 'service_recent_tickets': {
         const rows = [...tickets.tickets]
@@ -653,12 +665,14 @@ export function useWidgetData(
         } as DashboardWidgetData
       }
       case 'service_tickets_by_channel': {
-        const channels = ['Email', 'Inbound call', 'Walk in']
-        const counts = channels.map((_channel, i) => {
-          const base = tickets.tickets.length
-          return Math.round(base * ([0.55, 0.3, 0.15][i] ?? 0))
+        // Tally the tickets' real channel — this used to split the ticket count 55/30/15.
+        const channelCounts = new Map<string, number>()
+        tickets.tickets.forEach((t) => {
+          const channel = t.channel || 'Unspecified'
+          channelCounts.set(channel, (channelCounts.get(channel) ?? 0) + 1)
         })
-        return buildSeriesData(channels, counts, 'count', 'Tickets')
+        const labels = Array.from(channelCounts.keys())
+        return buildSeriesData(labels, labels.map((label) => channelCounts.get(label) ?? 0), 'count', 'Tickets')
       }
       case 'service_tickets_by_type': {
         const typeCounts = new Map<string, number>()
@@ -679,7 +693,7 @@ export function useWidgetData(
         return {
           kind: 'series',
           unit: 'count',
-          labels: sentCampaigns.map((c) => c.sentDate?.slice(5) ?? '--'),
+          labels: sentCampaigns.map((c) => sendLabel(c.sentDate)),
           series: [
             { name: 'Sent', data: sentCampaigns.map((c) => c.metrics.sent) },
             { name: 'Delivered', data: sentCampaigns.map((c) => Math.round(c.metrics.sent * 0.97)) },
@@ -718,7 +732,7 @@ export function useWidgetData(
           .filter((c) => c.status === 'Sent')
           .sort((a, b) => (a.sentDate ?? '').localeCompare(b.sentDate ?? ''))
           .slice(-7)
-        const labels = sentCampaigns.map((c) => c.sentDate?.slice(5) ?? '--')
+        const labels = sentCampaigns.map((c) => sendLabel(c.sentDate))
         const values = sentCampaigns.map((c) => c.metrics.revenue)
         return buildSeriesData(labels, values, 'currency', 'Revenue')
       }
@@ -814,21 +828,21 @@ export function useWidgetData(
         }
       }
       case 'retail_revenue': {
-        const ranges = sliceRecordsByWindow(commerce.orders, (o) => new Date(o.date ?? ''), dateWindow)
+        const ranges = sliceRecordsByWindow(commerce.orders, orderDate, dateWindow)
         const current = ranges.current.reduce((t, o) => t + parseFloat(o.total), 0) * 0.42
         const previous = ranges.previous.reduce((t, o) => t + parseFloat(o.total), 0) * 0.42
         const kpi = buildKpiData(current, pickPreviousValue(filters, current, previous), 'currency', 'Retail revenue from POS')
         return { ...kpi, location: 'Newmarket, AKL' } as DashboardWidgetData
       }
       case 'retail_sale_count': {
-        const ranges = sliceRecordsByWindow(commerce.orders, (o) => new Date(o.date ?? ''), dateWindow)
+        const ranges = sliceRecordsByWindow(commerce.orders, orderDate, dateWindow)
         const current = Math.round(ranges.current.length * 1.6)
         const previous = Math.round(ranges.previous.length * 1.6)
         const kpi = buildKpiData(current, pickPreviousValue(filters, current, previous), 'count', 'Completed POS sales')
         return { ...kpi, location: 'Newmarket, AKL' } as DashboardWidgetData
       }
       case 'retail_customer_count': {
-        const ranges = sliceRecordsByWindow(commerce.orders, (o) => new Date(o.date ?? ''), dateWindow)
+        const ranges = sliceRecordsByWindow(commerce.orders, orderDate, dateWindow)
         const uniqueCustomers = new Set(ranges.current.map((o) => o.customer.name)).size
         const previousUnique = new Set(ranges.previous.map((o) => o.customer.name)).size
         const current = Math.max(uniqueCustomers, 1) * 2
@@ -837,14 +851,14 @@ export function useWidgetData(
         return { ...kpi, location: 'Newmarket, AKL' } as DashboardWidgetData
       }
       case 'retail_gross_profit': {
-        const ranges = sliceRecordsByWindow(commerce.orders, (o) => new Date(o.date ?? ''), dateWindow)
+        const ranges = sliceRecordsByWindow(commerce.orders, orderDate, dateWindow)
         const current = ranges.current.reduce((t, o) => t + parseFloat(o.total), 0) * 0.36 * 0.42
         const previous = ranges.previous.reduce((t, o) => t + parseFloat(o.total), 0) * 0.36 * 0.42
         const kpi = buildKpiData(current, pickPreviousValue(filters, current, previous), 'currency', 'Revenue minus COGS')
         return { ...kpi, location: 'Newmarket, AKL' } as DashboardWidgetData
       }
       case 'retail_discounted': {
-        const ranges = sliceRecordsByWindow(commerce.orders, (o) => new Date(o.date ?? ''), dateWindow)
+        const ranges = sliceRecordsByWindow(commerce.orders, orderDate, dateWindow)
         const current = ranges.current.reduce((t, o) => t + parseFloat(o.total), 0) * 0.034
         const previous = ranges.previous.reduce((t, o) => t + parseFloat(o.total), 0) * 0.034
         const kpi = buildKpiData(current, pickPreviousValue(filters, current, previous), 'currency', 'Discount value applied')
@@ -857,7 +871,7 @@ export function useWidgetData(
         return { ...kpi, location: 'Newmarket, AKL' } as DashboardWidgetData
       }
       case 'retail_avg_sale_value': {
-        const ranges = sliceRecordsByWindow(commerce.orders, (o) => new Date(o.date ?? ''), dateWindow)
+        const ranges = sliceRecordsByWindow(commerce.orders, orderDate, dateWindow)
         const totalCurrent = ranges.current.reduce((t, o) => t + parseFloat(o.total), 0) * 0.42
         const saleCountCurrent = Math.max(Math.round(ranges.current.length * 1.6), 1)
         const totalPrevious = ranges.previous.reduce((t, o) => t + parseFloat(o.total), 0) * 0.42
@@ -1039,7 +1053,6 @@ export function useWidgetData(
       case 'overview_metric_explorer': {
         // Composite KPI-strip + chart payload. Always daily buckets (grain is
         // intentionally ignored, like the standalone KPI widgets).
-        const orderDate = (order: (typeof commerce.orders)[number]) => new Date(order.date ?? '')
         const revenue = bucketDaily(commerce.orders, orderDate, (order) => parseFloat(order.total), dateWindow)
         const orderCounts = bucketDaily(commerce.orders, orderDate, () => 1, dateWindow)
         const compareOff = filters.comparison === 'none'
@@ -1126,7 +1139,7 @@ export function useWidgetData(
         }
       }
       case 'commerce_revenue_attribution': {
-        const ranges = sliceRecordsByWindow(commerce.orders, (order) => new Date(order.date ?? ''), dateWindow)
+        const ranges = sliceRecordsByWindow(commerce.orders, orderDate, dateWindow)
         const total = ranges.current.reduce((sum, order) => sum + parseFloat(order.total), 0)
         // TODO(mock): fixed channel ratios until attribution data exists (demo_channel_mix precedent).
         const channels: Array<[string, number]> = [
@@ -1154,7 +1167,7 @@ export function useWidgetData(
         }
       }
       case 'commerce_orders_by_channel': {
-        const ranges = sliceRecordsByWindow(commerce.orders, (order) => new Date(order.date ?? ''), dateWindow)
+        const ranges = sliceRecordsByWindow(commerce.orders, orderDate, dateWindow)
         const channels = ['Online store', 'POS retail', 'Marketplace', 'Social shop']
         const counts = channels.map(() => 0)
         // Bucket by the order's actual sales channel — `id % channels.length`
@@ -1186,7 +1199,7 @@ export function useWidgetData(
         }
       }
       case 'commerce_new_vs_returning': {
-        const ranges = sliceRecordsByWindow(commerce.orders, (order) => new Date(order.date ?? ''), dateWindow)
+        const ranges = sliceRecordsByWindow(commerce.orders, orderDate, dateWindow)
         // "Returning" = repeat buyer (more than one order on record) — the mock
         // orders all sit inside one window, so a strictly-before-window check
         // would always yield zero.
@@ -1215,7 +1228,6 @@ export function useWidgetData(
         // deterministic series Revenue over time draws) converted to a buyer
         // count, with the recurring share ramping across the window the way a
         // maturing store's does. Same window ⇒ same chart, no randomness.
-        const orderDate = (order: (typeof commerce.orders)[number]) => new Date(order.date ?? '')
         const { cur } = bucketDaily(commerce.orders, orderDate, (order) => parseFloat(order.total), dateWindow)
         const REVENUE_PER_CUSTOMER = 24
         const firstTime: number[] = []
@@ -1239,7 +1251,7 @@ export function useWidgetData(
         }
       }
       case 'commerce_sales_by_product': {
-        const ranges = sliceRecordsByWindow(commerce.orders, (order) => new Date(order.date ?? ''), dateWindow)
+        const ranges = sliceRecordsByWindow(commerce.orders, orderDate, dateWindow)
         const revenue = ranges.current.reduce((sum, order) => sum + parseFloat(order.total), 0)
         // TODO(mock): fixed product mix. The generated line items cycle evenly
         // through 40 SKUs, so a real top-5 tally would leave "Other" at ~80% of
@@ -1274,7 +1286,7 @@ export function useWidgetData(
         }
       }
       case 'commerce_revenue_goal': {
-        const ranges = sliceRecordsByWindow(commerce.orders, (order) => new Date(order.date ?? ''), dateWindow)
+        const ranges = sliceRecordsByWindow(commerce.orders, orderDate, dateWindow)
         const revenue = ranges.current.reduce((sum, order) => sum + parseFloat(order.total), 0)
         // TODO(mock): $1,000/day goal until goals are configurable.
         const goal = days * 1000
@@ -1469,7 +1481,7 @@ export function useWidgetData(
           totals: SERIES.map(() => 0),
         }))
         commerce.orders.forEach((order) => {
-          const time = new Date(order.date ?? '').getTime()
+          const time = orderDate(order).getTime()
           if (Number.isNaN(time)) return
           const weekIndex = Math.floor((todayStart - time) / (7 * dayMs))
           if (weekIndex < 0 || weekIndex >= WEEKS) return

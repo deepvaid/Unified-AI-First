@@ -6,6 +6,7 @@ import DvChartCard from '../DvChartCard.vue'
 import DvSegmentCard from '../DvSegmentCard.vue'
 import DvInsightCard from '../DvInsightCard.vue'
 import type { DvCardDescriptor } from '@/composables/useDaVinciIntents'
+import { useCopilotStore } from '@/stores/useCopilot'
 
 defineProps<{
   cards: DvCardDescriptor[]
@@ -14,6 +15,8 @@ defineProps<{
 const emit = defineEmits<{
   action: [payload: { card: DvCardDescriptor; action: string }]
 }>()
+
+const copilot = useCopilotStore()
 
 function onAction(card: DvCardDescriptor, action: string) {
   emit('action', { card, action })
@@ -34,15 +37,18 @@ function onAction(card: DvCardDescriptor, action: string) {
         v-bind="card.props"
         @use="onAction(card, 'use')"
         @copy="onAction(card, 'copy')"
-        @edit="onAction(card, 'edit')"
       />
       <DvKpiRow v-else-if="card.type === 'kpis'" :kpis="card.props.kpis" />
-      <DvChartCard v-else-if="card.type === 'chart'" v-bind="card.props" />
+      <DvChartCard
+        v-else-if="card.type === 'chart'"
+        v-bind="card.props"
+        @saved="copilot.markChartSaved(card, $event)"
+      />
       <DvSegmentCard
         v-else-if="card.type === 'segment'"
         v-bind="card.props"
         @save="onAction(card, 'save')"
-        @preview="onAction(card, 'preview')"
+        @open="onAction(card, 'open')"
       />
       <DvInsightCard
         v-else-if="card.type === 'insight'"

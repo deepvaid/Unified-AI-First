@@ -11,6 +11,15 @@ export type DaVinciOnboardingStage =
   | 'handoff'
   | 'complete'
 
+/**
+ * The wizard is past its welcome / consent screens and not finished: the merchant has actually
+ * started a campaign brief. A session created merely by opening a screen (or a hand-off link)
+ * sits at `welcome` and must not swallow what they type later.
+ */
+export function isStartedCampaignStage(stage: DaVinciOnboardingStage): boolean {
+  return stage !== 'welcome' && stage !== 'consent' && stage !== 'complete'
+}
+
 export type DaVinciInputMode = 'voice' | 'text'
 export type CampaignReadinessStatus = 'ready' | 'needs-setup' | 'unknown'
 
@@ -109,6 +118,17 @@ export const useDaVinciOnboardingStore = defineStore('daVinciOnboarding', () => 
     } catch {
       /* Private mode and storage quotas should not block onboarding. */
     }
+  }
+
+  /** Existing session for an account (memory or storage) without creating one. */
+  function peek(accountId: string): DaVinciOnboardingSession | null {
+    return sessions.value[accountId] ?? readSession(accountId)
+  }
+
+  /** True only for a STARTED, unfinished session that belongs to `accountId` — the only kind that may answer typed text. */
+  function isEngagedFor(accountId?: string | null): boolean {
+    const session = activeSession.value
+    return !!accountId && activeAccountId.value === accountId && !!session && isStartedCampaignStage(session.stage)
   }
 
   function begin(accountId: string, options: { restart?: boolean; freshAccount?: boolean } = {}) {
@@ -214,6 +234,8 @@ export const useDaVinciOnboardingStore = defineStore('daVinciOnboarding', () => 
     activeAccountId,
     activeSession,
     isActive,
+    isEngagedFor,
+    peek,
     begin,
     setStage,
     setInputMode,

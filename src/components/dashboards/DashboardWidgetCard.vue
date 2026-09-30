@@ -6,6 +6,7 @@ import { useWidgetData } from '@/composables/useWidgetData'
 import { useElementSize } from '@/composables/useElementSize'
 import { useLiveAgo } from '@/composables/useRelativeTime'
 import { DASHBOARD_SOURCE_META, getMetricDescriptor } from '@/stores/dashboards/metricCatalog'
+import { DASHBOARD_RANGE_LABELS } from '@/stores/dashboards/rangeLabels'
 import type { DashboardAttentionItem, DashboardFilterState, DashboardInsightItem, DashboardWidget } from '@/stores/dashboards/types'
 import MpSourceCloudChip from '@/components/MpSourceCloudChip.vue'
 import DvOrbitOrb from '@/components/copilot/voice/DvOrbitOrb.vue'
@@ -84,19 +85,9 @@ const isKpiWidget = computed(() => data.value.kind === 'kpi')
 // (drag grip + menu) is used instead — same treatment as KPI cards.
 const bespokeHeader = computed(() => ['metric_explorer', 'tabs', 'attention'].includes(props.widget.type))
 const hasFloatingActions = computed(() => !props.preview && props.showActions)
-const metricIcon = computed(() => getMetricDescriptor(props.widget.metricId)?.icon ?? '')
-const rangeLabels: Record<DashboardFilterState['rangePreset'], string> = {
-  today: 'Today',
-  yesterday: 'Yesterday',
-  last_7_days: 'Last 7 days',
-  last_30_days: 'Last 30 days',
-  last_90_days: 'Last 90 days',
-  month_to_date: 'This month so far',
-  quarter_to_date: 'This quarter so far',
-  year_to_date: 'This year so far',
-  black_friday_cyber_monday: 'Black Friday Cyber Monday',
-  custom: 'Custom range',
-}
+const metricDescriptor = computed(() => getMetricDescriptor(props.widget.metricId))
+const metricIcon = computed(() => metricDescriptor.value?.icon ?? '')
+const rangeLabels = DASHBOARD_RANGE_LABELS
 const grainLabels: Record<DashboardFilterState['grain'], string> = {
   daily: 'Daily',
   weekly: 'Weekly',
@@ -122,28 +113,20 @@ const kpiComparisonLabel = computed(() => {
   if (range === 'year_to_date') return 'vs prev YTD'
   return 'vs previous period'
 })
-const DOTTED_TYPES = ['metric_explorer', 'funnel', 'donut', 'gauge', 'bar_list', 'breakdown', 'tabs']
-
+// What the card claims to span. Widgets whose data ignores the dashboard's date range say what they
+// really cover — "Last 30 days" over an all-time list, or over the last 7 campaign sends, was a lie.
 const widgetSubtitle = computed(() => {
-  if (props.widget.subtitle) return props.widget.subtitle
-  if (isKpiWidget.value) {
-    if (props.widget.metricId === 'contacts_total') return 'All time'
-    return rangeLabels[props.filters.rangePreset]
-  }
+  const widget = props.widget
+  if (widget.subtitle) return widget.subtitle
+  const basis = metricDescriptor.value?.timeBasis
+  if (basis === 'sends' && data.value.kind === 'series') return `Last ${data.value.labels.length} sends`
+  if (basis === 'latest') return 'Most recent'
+  if (basis === 'all_time') return widget.metricId === 'marketing_top_campaigns' ? 'All time · by revenue' : 'All time'
 
-  // The dotted v2 widgets aren't grain-driven — fall back to the range label.
-  if (DOTTED_TYPES.includes(props.widget.type)) {
-    return rangeLabels[props.filters.rangePreset]
-  }
+  // Only a time series is grain-driven; KPIs, bars, tables and the dotted v2 widgets follow the range.
+  if (isKpiWidget.value || widget.type !== 'timeseries') return rangeLabels[props.filters.rangePreset]
 
-  if (props.widget.metricId === 'marketing_top_campaigns') {
-    return `${rangeLabels[props.filters.rangePreset]} - by revenue`
-  }
-
-  if (props.filters.comparison === 'none') {
-    return grainLabels[props.filters.grain]
-  }
-
+  if (props.filters.comparison === 'none') return grainLabels[props.filters.grain]
   return `${grainLabels[props.filters.grain]} - ${comparisonContextLabel.value.toLowerCase()}`
 })
 const isDataEmpty = computed(() => {
@@ -287,6 +270,7 @@ function handleAttentionCollapse(collapsed: boolean) {
           {{ widget.title }} has nothing to display for the selected range. Try a different period or refresh.
         </div>
         <v-btn
+          v-if="!preview"
           variant="tonal"
           size="small"
           prepend-icon="refresh-cw"

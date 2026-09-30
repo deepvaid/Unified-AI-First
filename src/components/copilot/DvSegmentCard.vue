@@ -1,16 +1,28 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import MpFormSection from '@/components/MpFormSection.vue'
+import { useContactsStore } from '@/stores/useContacts'
 
-defineProps<{
+const props = defineProps<{
   name: string
   rules: string[]
   estimatedSize: number
+  /** The segment this card was saved as — recorded on the chat message, so a remount can't save twice. */
+  savedSegmentId?: number
 }>()
 
 const emit = defineEmits<{
   save: []
-  preview: []
+  /** Opens the segments list (offered once there is a saved segment in it). */
+  open: []
 }>()
+
+const contacts = useContactsStore()
+
+/** Saved — and the segment is still there (delete it from the Segments page and Save is offered again). */
+const isSaved = computed(
+  () => props.savedSegmentId != null && contacts.segments.some((segment) => segment.id === props.savedSegmentId),
+)
 </script>
 
 <template>
@@ -43,11 +55,19 @@ const emit = defineEmits<{
       </div>
 
       <div class="d-flex ga-2">
-        <v-btn color="primary" variant="flat" size="small" class="text-none flex-grow-1" prepend-icon="save" @click="emit('save')">
-          Save Segment
+        <v-btn
+          color="primary"
+          variant="flat"
+          size="small"
+          class="text-none flex-grow-1"
+          :prepend-icon="isSaved ? 'check' : 'save'"
+          :disabled="isSaved"
+          @click="emit('save')"
+        >
+          {{ isSaved ? 'Saved' : 'Save Segment' }}
         </v-btn>
-        <v-btn variant="flat" size="small" class="text-none" @click="emit('preview')" color="surface">
-          Preview
+        <v-btn v-if="isSaved" variant="flat" size="small" class="text-none" color="surface" @click="emit('open')">
+          Open segments
         </v-btn>
       </div>
     </v-card-text>

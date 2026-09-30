@@ -41,7 +41,7 @@ stops** (preferred) or add stops. Note `semantic.body` (13.5px) and `semantic.se
 Priority order (px literals per file, re-measured 2026-07-06 — worst first):
 
 1. `layout/AppBar.vue` (27) 2. `dashboards/widgets/DashboardKpiWidget.vue` (14)
-3. `ModuleLandingPage.vue` (14) 4. `copilot/DvDraftPreview.vue` (13)
+3. `ModuleLandingPage.vue` (14) 4. ~~`copilot/DvDraftPreview.vue` (13)~~ (deleted 2026-09-29)
 5. `MpDaVinciBot.vue` (8) 6. `copilot/DvHistoryDrawer.vue` (8)
 7. `copilot/voice/DvOrbitVoiceSurface.vue` (8) 8. `layout/AppSidebar.vue` (8)
 9. `dashboards/DashboardWidgetCard.vue` (7) 10. `dashboards/widgets/DashboardTableWidget.vue` (6)

@@ -1,25 +1,35 @@
 <script setup lang="ts">
-import { useDaVinciToasts } from '@/composables/useDaVinciToasts'
+import { useDaVinciToasts, type DaVinciToastTone } from '@/composables/useDaVinciToasts'
 
 const { toasts, triggerAction, pause, resume } = useDaVinciToasts()
+
+const TONE_ICONS: Record<DaVinciToastTone, string> = {
+  success: 'check',
+  info: 'info',
+  warning: 'triangle-alert',
+  error: 'circle-alert',
+}
 </script>
 
 <template>
   <Teleport to="body">
+    <!-- Always mounted — only the toasts inside come and go. A screen reader needs the live region itself to
+         persist in the DOM for a toast to be announced reliably (docs/ui-system-audit/03-accessibility-audit.md §3),
+         which is how MpToastStack does it too; an error additionally says role="alert". -->
     <div class="dv-toast-stack" aria-live="polite">
       <div
         v-for="toast in toasts"
         :key="toast.id"
         class="dv-toast"
         :class="{ 'is-leaving': toast.leaving }"
-        role="status"
+        :role="toast.tone === 'error' ? 'alert' : 'status'"
         @mouseenter="pause(toast.id)"
         @mouseleave="resume(toast.id)"
         @focusin="pause(toast.id)"
         @focusout="resume(toast.id)"
       >
-        <div class="dv-toast__icon">
-          <v-icon size="14">check</v-icon>
+        <div class="dv-toast__icon" :class="`dv-toast__icon--${toast.tone}`" aria-hidden="true">
+          <v-icon size="14">{{ TONE_ICONS[toast.tone] }}</v-icon>
         </div>
         <div class="dv-toast__body">
           <div class="dv-toast__title">{{ toast.title }}</div>
@@ -95,6 +105,8 @@ const { toasts, triggerAction, pause, resume } = useDaVinciToasts()
   }
 }
 
+/* The icon disc is a painted surface, so it states its ink: each tone is a declared pair
+   (success/warning/error on their `on-*`; info on the accent pair). */
 .dv-toast__icon {
   width: 22px;
   height: 22px;
@@ -104,6 +116,21 @@ const { toasts, triggerAction, pause, resume } = useDaVinciToasts()
   display: grid;
   place-items: center;
   flex-shrink: 0;
+}
+
+.dv-toast__icon--info {
+  background: var(--accent-default);
+  color: var(--accent-on);
+}
+
+.dv-toast__icon--warning {
+  background: rgb(var(--v-theme-warning));
+  color: rgb(var(--v-theme-on-warning));
+}
+
+.dv-toast__icon--error {
+  background: rgb(var(--v-theme-error));
+  color: rgb(var(--v-theme-on-error));
 }
 
 .dv-toast__body {

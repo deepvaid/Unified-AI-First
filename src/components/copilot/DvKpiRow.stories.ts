@@ -89,7 +89,7 @@ export const Variants: Story = {
   args: {} as never,
 }
 
-/** Rising, falling, and no-trend cells side by side. */
+/** Rising, falling, flat (neutral — neither good nor bad) and no-trend cells side by side. */
 export const States: Story = {
   render: () => ({
     components: { DvKpiRow },
@@ -97,6 +97,7 @@ export const States: Story = {
       kpis: [
         { label: 'Revenue', value: '$287,450', trend: '+18% vs Last Month', trendUp: true, icon: 'banknote' },
         { label: 'Refunds', value: '$4,120', trend: '-8% vs Last Month', trendUp: false, icon: 'corner-down-left' },
+        { label: 'Orders', value: '10', trend: '+0.0%', icon: 'shopping-cart' },
         { label: 'Sessions', value: '48,120', icon: 'activity' },
       ],
     }),

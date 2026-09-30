@@ -62,6 +62,7 @@ export const GEMINI_ACTION_ROUTES = [
 export type GeminiActionRoute = (typeof GEMINI_ACTION_ROUTES)[number]
 
 const API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models'
+const UPSTREAM_TIMEOUT_MS = 9_000
 
 const SYSTEM_INSTRUCTION = `You are Da Vinci, the AI assistant inside Maropost — a commerce + marketing platform for online merchants (think Shopify meets Mailchimp).
 
@@ -103,6 +104,33 @@ const CONTEXT_CAPS: Record<GeminiMode, number> = {
 const CONTEXT_LABELS: Record<GeminiMode, string> = {
   default: 'Live workspace context (trusted, provided by the app — these facts are real):',
   'design-system': 'Documentation excerpts (trusted, from the design-system repo docs — cite them freely):',
+}
+
+type ParsedModelOutput = Partial<Omit<GeminiReply, 'card'>> & {
+  card?: Partial<GeminiReply['card'] & { routeName?: string; actionLabel?: string }>
+}
+
+/**
+ * Reads the model's answer. JSON as asked → parsed. Plain prose (the model ignored the MIME type)
+ * → the prose is the reply. Truncated JSON → one complete `"reply"` string salvaged, else null.
+ */
+export function parseModelOutput(raw: string): ParsedModelOutput | null {
+  const text = raw.trim()
+  try {
+    const parsed: unknown = JSON.parse(text)
+    if (typeof parsed === 'string') return { reply: parsed }
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? (parsed as ParsedModelOutput) : null
+  } catch {
+    // fall through
+  }
+  if (!/^[[{]/.test(text)) return { reply: text }
+  const salvaged = text.match(/"reply"\s*:\s*"((?:[^"\\]|\\.)*)"/)
+  if (!salvaged) return null
+  try {
+    return { reply: JSON.parse(`"${salvaged[1]}"`) as string }
+  } catch {
+    return null
+  }
 }
 
 /** Generate a smart open-ended reply via Gemini Flash. Throws GeminiError with an HTTP status. */
@@ -170,14 +198,19 @@ export async function generateReply(text: string, opts: GenerateOptions): Promis
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),
+      // Under the 10s serverless limit, so the client hears "busy" instead of a dead function.
+      signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
     })
   } catch (err) {
+    if (err instanceof Error && err.name === 'TimeoutError') throw new GeminiError(504, 'Gemini upstream timed out')
     throw new GeminiError(502, `Gemini upstream unreachable: ${err instanceof Error ? err.message : 'fetch failed'}`)
   }
 
   if (!resp.ok) {
     const detail = await resp.text().catch(() => '')
-    throw new GeminiError(502, `Gemini provider error ${resp.status}: ${detail.slice(0, 300)}`)
+    // Rate-limited / overloaded is worth retrying in a moment — say so (429), rather than "offline".
+    const busy = resp.status === 429 || resp.status === 503
+    throw new GeminiError(busy ? 429 : 502, `Gemini provider error ${resp.status}: ${detail.slice(0, 300)}`)
   }
 
   const data = (await resp.json().catch(() => null)) as {
@@ -186,18 +219,14 @@ export async function generateReply(text: string, opts: GenerateOptions): Promis
   const raw = data?.candidates?.[0]?.content?.parts?.map((p) => p.text ?? '').join('') ?? ''
   if (!raw.trim()) throw new GeminiError(502, 'Gemini returned no content')
 
-  // responseMimeType is JSON, so the text should parse — but degrade gracefully
-  // to treating the whole string as the reply if the model ever returns prose.
-  let parsed: Partial<Omit<GeminiReply, 'card'>> & {
-    card?: Partial<GeminiReply['card'] & { routeName?: string; actionLabel?: string }>
-  }
-  try {
-    parsed = JSON.parse(raw)
-  } catch {
-    parsed = { reply: raw.trim() }
-  }
+  // responseMimeType is JSON, so the text should parse. A truncated or malformed response is
+  // salvaged when a whole reply string is recoverable and REJECTED otherwise — it used to fall
+  // back to the raw string, so a merchant could be shown (and read aloud) `{"reply":"Focus on`.
+  const parsed = parseModelOutput(raw)
+  if (!parsed) throw new GeminiError(502, 'Gemini returned malformed output')
 
-  const reply = (parsed.reply ?? '').trim() || raw.trim()
+  const reply = (parsed.reply ?? '').trim()
+  if (!reply) throw new GeminiError(502, 'Gemini returned no reply')
   const speech = (parsed.speech ?? '').trim() || reply
   const card =
     parsed.card && parsed.card.headline && parsed.card.description

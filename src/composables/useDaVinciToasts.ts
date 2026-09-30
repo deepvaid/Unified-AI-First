@@ -1,10 +1,15 @@
 import { ref } from 'vue'
 import { useToastStackTimers } from './useToastStackTimers'
 
+/** What kind of thing the toast reports — sets its icon and colour, and how urgently it is announced. */
+export type DaVinciToastTone = 'success' | 'info' | 'warning' | 'error'
+
 /** Payload accepted by `pushToast()`. */
 export interface DaVinciToastInput {
   /** Bold first line — the required part of every Da Vinci toast. */
   title: string
+  /** Defaults to 'success'. A failure or a "nothing was done" must not wear the green check. */
+  tone?: DaVinciToastTone
   /** Optional supporting line under the title. */
   sub?: string
   /** Optional action label; rendered as a plain button at the end of the pill. */
@@ -16,7 +21,7 @@ export interface DaVinciToastInput {
 }
 
 /** A live Da Vinci toast, as rendered by `DvToastStack`. */
-export interface DaVinciToast extends Required<Pick<DaVinciToastInput, 'title' | 'durationMs'>> {
+export interface DaVinciToast extends Required<Pick<DaVinciToastInput, 'title' | 'durationMs' | 'tone'>> {
   /** Stable id used for dismissal and timer bookkeeping. */
   id: string
   /** Optional supporting line under the title. */
@@ -59,6 +64,7 @@ function pushToast(input: DaVinciToastInput): string {
   const toast: DaVinciToast = {
     id,
     title: input.title,
+    tone: input.tone ?? 'success',
     sub: input.sub,
     action: input.action,
     onAction: input.onAction,

@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import { useUserProfile } from '@/stores/useUserProfile'
-import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 
 import DvWidgetDraftCard from './copilot/DvWidgetDraftCard.vue'
 import DvHistoryDrawer from './copilot/DvHistoryDrawer.vue'
 import DvToastStack from './copilot/DvToastStack.vue'
-import DvInsightCard from './copilot/DvInsightCard.vue'
 import DvIntentCardList from './copilot/voice/DvIntentCardList.vue'
 import DvCampaignOnboardingCard from './copilot/DvCampaignOnboardingCard.vue'
 import DvSetupOnboardingCard from './copilot/DvSetupOnboardingCard.vue'
@@ -20,37 +19,30 @@ import type { OrbitState } from './copilot/voice/orbit'
 import {
   useCopilotStore,
   type ChatMessage,
+  type AddedWidgetRef,
   type CampaignOnboardingProps,
   type DraftSetProps,
   type IntentCardsProps,
   type SetupOnboardingProps,
 } from '@/stores/useCopilot'
-import { useAccountsStore } from '@/stores/useAccounts'
 import { useDashboardsStore } from '@/stores/useDashboards'
-import { getMetricDescriptor } from '@/stores/dashboards/metricCatalog'
+import { geminiHistory, makeId } from '@/davinci/conversation'
+import { draftFollowUps, landingPrompts, revenueFollowUps, type Suggestion } from '@/davinci/followUps'
+import {
+  draftCountLabel,
+  useDaVinciResponder,
+  type DvAssistantTurn,
+  type DvFlowResponse,
+} from '@/composables/useDaVinciResponder'
 import type { DashboardWidgetDraft } from '@/stores/dashboards/types'
-import { useDaVinciHistory } from '@/composables/useDaVinciHistory'
 import { useDaVinciToasts } from '@/composables/useDaVinciToasts'
-import { useDaVinciContext } from '@/composables/useDaVinciContext'
-import {
-  useDaVinciCampaignOnboarding,
-  type CampaignOnboardingResponse,
-} from '@/composables/useDaVinciCampaignOnboarding'
-import {
-  setupHandoffFollowText,
-  useDaVinciSetupOnboarding,
-  type SetupOnboardingResponse,
-} from '@/composables/useDaVinciSetupOnboarding'
+import { useDaVinciCampaignOnboarding } from '@/composables/useDaVinciCampaignOnboarding'
+import { setupHandoffFollowText, useDaVinciSetupOnboarding } from '@/composables/useDaVinciSetupOnboarding'
 import { trackDaVinciOnboardingEvent } from '@/composables/useDaVinciOnboardingAnalytics'
-import {
-  useDaVinciIntents,
-  INTENT_STEPS,
-  type DvCardDescriptor,
-  type DvIntentResult,
-} from '@/composables/useDaVinciIntents'
+import type { DvCardDescriptor } from '@/composables/useDaVinciIntents'
 import { useDaVinciVoice, VoiceError } from '@/composables/useDaVinciVoice'
-import { useDaVinciOnboardingStore } from '@/stores/useDaVinciOnboarding'
-import { useDaVinciSetupStore } from '@/stores/useDaVinciSetup'
+import { isStartedCampaignStage, useDaVinciOnboardingStore } from '@/stores/useDaVinciOnboarding'
+import { isStartedSetupStage, useDaVinciSetupStore } from '@/stores/useDaVinciSetup'
 import { useOnboardingStore } from '@/stores/useOnboarding'
 
 interface MpDaVinciBotProps {
@@ -58,6 +50,12 @@ interface MpDaVinciBotProps {
   initialMessages?: ChatMessage[]
   subtitle?: string
   headerless?: boolean
+  /**
+   * Whether the surface is on screen. The drawer hides without unmounting, so its host says when.
+   * A hidden surface takes no queued prompts, resume messages or setup congratulations and shows no
+   * toasts — another instance of the same thread (the full-page copilot) owns them.
+   */
+  visible?: boolean
 }
 
 // Greeting follows the signed-in profile (a trial owner without a name is greeted as "there").
@@ -67,6 +65,7 @@ const props = withDefaults(defineProps<MpDaVinciBotProps>(), {
   initialMessages: () => [],
   subtitle: 'Intelligent AI assistant',
   headerless: false,
+  visible: true,
 })
 
 const emit = defineEmits<{
@@ -76,11 +75,11 @@ const emit = defineEmits<{
 
 const route = useRoute()
 const router = useRouter()
-const accountsStore = useAccountsStore()
 const dashboardsStore = useDashboardsStore()
-const { addItem, incrementAdded, clearAll } = useDaVinciHistory()
 const { pushToast } = useDaVinciToasts()
-const intents = useDaVinciIntents()
+// One reply path shared with the full-page experience: flows → lane → reply.
+const responder = useDaVinciResponder()
+const { intents, routeContext } = responder
 const campaignOnboarding = useDaVinciCampaignOnboarding()
 const setupOnboarding = useDaVinciSetupOnboarding()
 const voice = useDaVinciVoice()
@@ -88,7 +87,6 @@ const copilot = useCopilotStore()
 const onboarding = useDaVinciOnboardingStore()
 const setupStore = useDaVinciSetupStore()
 const setupGuide = useOnboardingStore()
-const { contextBlock } = useDaVinciContext()
 
 // The conversation lives in the copilot store so it survives navigation, drawer
 // close/reopen, and is shared by the drawer / full-width / full-page surfaces.
@@ -112,52 +110,26 @@ const historyOpen = ref(false)
 /** Bumped on every new generation and on stop — stale callbacks check it and bail. */
 let generationSeq = 0
 let geminiAbort: AbortController | null = null
-/**
- * A prompt that is asking for a dashboard widget. Off a dashboard route this is the
- * only way into the widget-draft lane — everything else routes on merchant intent.
- */
-const WIDGET_GRAMMAR = /\b(widget|chart|graph|table|kpi|tile|visuali[sz]ation|dashboard)\b|\b(show|plot|add)\b[^.]*\b(trend|over time|by channel|by country|by device|by domain)\b/i
-/** A question ("what needs my attention?") wants an answer, not a widget — even on a dashboard. */
-const QUESTION_GRAMMAR = /\?\s*$|^(what|which|why|how|should|is|are|do|does|can|could|would|who|when|where)\b/i
 const liveSteps = ref<DvToolStep[]>([])
-const queuedPrompts = ref<string[]>([])
+const queuedPrompts = ref<Array<{ text: string; turnId: string }>>([])
 
-const routeAccountId = computed(() => {
-  const accountId = Array.isArray(route.params.accountId) ? route.params.accountId[0] : route.params.accountId
-  return accountId
-})
+// Which account and dashboard this conversation works on (shared with the draft cards).
+const { accountId: targetAccountId, dashboard: targetDashboard } = responder.target
 
-const routeDashboardId = computed(() => {
-  const dashboardId = Array.isArray(route.params.dashboardId) ? route.params.dashboardId[0] : route.params.dashboardId
-  return dashboardId
-})
-
-const isDashboardRoute = computed(() => route.name === 'Dashboard' || route.name === 'DashboardDetail')
-
-const activeAccount = computed(() => {
-  if (!routeAccountId.value) return accountsStore.activeAccount
-  return accountsStore.accounts.find((account) => account.id === routeAccountId.value) ?? accountsStore.activeAccount
-})
-
-const activeDashboard = computed(() => {
-  if (!isDashboardRoute.value || !routeAccountId.value) return null
-  return dashboardsStore.getDashboardById(routeAccountId.value, routeDashboardId.value) ?? null
-})
-
-const targetAccountId = computed(() => routeAccountId.value ?? activeAccount.value?.id ?? null)
-
+// A hand-off link (`?source=davinci`) restores a session the merchant actually started — and never
+// creates one: it used to `begin()` a campaign session out of nothing, after which every message in
+// the drawer was taken as that campaign's objective.
 if (route.query.source === 'davinci' && targetAccountId.value) {
-  // A live guided-setup session wins the restore; otherwise fall back to the
-  // legacy campaign-wizard checkpoint behaviour.
   const setupSession = setupStore.peek(targetAccountId.value)
-  if (setupSession && setupSession.stage !== 'complete') {
+  const campaignSession = onboarding.peek(targetAccountId.value)
+  if (setupSession && isStartedSetupStage(setupSession.stage)) {
     setupStore.begin(targetAccountId.value)
     copilot.beginOnboarding(targetAccountId.value)
     copilot.open()
     if (!copilot.resumeMessage && messages.value.length === 0) {
       copilot.queueResume(setupHandoffFollowText(setupGuide.taskById(setupSession.currentTaskId)))
     }
-  } else {
+  } else if (campaignSession && isStartedCampaignStage(campaignSession.stage)) {
     onboarding.begin(targetAccountId.value)
     copilot.beginOnboarding(targetAccountId.value)
     copilot.open()
@@ -169,32 +141,21 @@ if (route.query.source === 'davinci' && targetAccountId.value) {
   }
 }
 
-// Cold load / account switch anywhere mid-onboarding: silently adopt a live
-// persisted setup session for the current account so typed messages keep
-// routing through the guided flow (no drawer open, no resume message).
+// Cold load / account switch anywhere mid-onboarding: silently adopt a STARTED persisted setup
+// session for the current account so typed messages keep routing through the guided flow (no
+// drawer open, no resume message). A session that never got past the welcome screen is left alone.
 watch(
   targetAccountId,
   (accountId) => {
     if (!accountId || setupStore.activeAccountId === accountId) return
     const setupSession = setupStore.peek(accountId)
-    if (setupSession && setupSession.stage !== 'complete') setupStore.begin(accountId)
+    if (setupSession && isStartedSetupStage(setupSession.stage)) setupStore.begin(accountId)
   },
   { immediate: true },
 )
 
-/** The guided setup flow only answers for the account it belongs to. */
-const setupFlowActive = computed(
-  () => setupStore.isActive && setupStore.activeAccountId === targetAccountId.value,
-)
-
-const targetDashboard = computed(() => {
-  if (activeDashboard.value) return activeDashboard.value
-  if (!targetAccountId.value) return null
-  // Off a dashboard route (full-page copilot, drawer over list/other pages),
-  // target the dashboard the user was most recently on — e.g. the one they just
-  // created — rather than blindly the account default.
-  return dashboardsStore.getLastViewedDashboard(targetAccountId.value) ?? null
-})
+/** The guided setup flow only answers for the account it belongs to, once it has started. */
+const setupFlowActive = computed(() => setupStore.isEngagedFor(targetAccountId.value))
 
 const headerStatus = computed(() => {
   if (!chatMode.value) return props.subtitle
@@ -202,66 +163,26 @@ const headerStatus = computed(() => {
   return 'Intelligent AI assistant'
 })
 
-const suggestionPills = computed(() => {
-  const pills = [
-    { text: 'Try a different angle', icon: 'refresh-cw' },
-    { text: 'Compare to YoY', icon: 'calendar-range' },
-    { text: 'Segment by region', icon: 'align-left' },
-  ]
-  return pills
+/** Pills under the composer: follow-ups derived from the last result, each checked against the router. */
+const suggestionPills = computed<Suggestion[]>(() => {
+  const last = [...messages.value].reverse().find((m) => m.role === 'assistant')
+  if (!last) return []
+  const set = last.componentData?.find((c) => c.type === 'widgetDraftSet')?.props as DraftSetProps | undefined
+  if (set?.drafts[0]) return draftFollowUps(set.drafts[0], routeContext.value)
+  const cards = (last.componentData?.find((c) => c.type === 'intentCards')?.props as IntentCardsProps | undefined)?.cards
+  if (cards?.some((card) => card.type === 'chart')) return revenueFollowUps(routeContext.value)
+  return []
 })
 
-const landingSuggestions = computed(() => {
-  const items: string[] = []
-  if (isDashboardRoute.value) {
-    items.push('Show me email campaign performance over the last 30 days')
-    items.push('Revenue by channel for last 90 days')
-    items.push('Top campaigns by conversion')
-  } else {
-    items.push('Show open rate trend for last 30 days')
-    if (activeAccount.value?.subscriptions.includes('commerce')) {
-      items.push('Create a revenue by channel widget')
-      items.push('Add a recent orders table')
-    } else {
-      items.push('Add a top campaigns table')
-      items.push('Show contact growth trend')
-    }
-    if (activeAccount.value?.subscriptions.includes('service')) {
-      items.push('Show ticket volume over time')
-    }
-  }
-  return items.slice(0, 4)
-})
+const landingSuggestions = computed(() => landingPrompts(routeContext.value))
 
-function makeId(prefix = 'm') {
-  return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`
-}
-
-function scrollToBottom() {
+/** Smooth while a conversation grows; instant when arriving at one (opening, restoring, back from voice). */
+function scrollToBottom(smooth = true) {
   nextTick(() => {
     if (bodyEl.value) {
-      bodyEl.value.scrollTo({ top: bodyEl.value.scrollHeight, behavior: 'smooth' })
+      bodyEl.value.scrollTo({ top: bodyEl.value.scrollHeight, behavior: smooth ? 'smooth' : 'auto' })
     }
   })
-}
-
-function buildRationale(prompt: string, base: DashboardWidgetDraft): string {
-  const metric = getMetricDescriptor(base.metricId)
-  const metricLabel = metric?.label ?? 'these metrics'
-  const sourceLabel = metric?.dataSource ?? base.dataSource
-  void prompt
-  return `You asked about ${metricLabel.toLowerCase()} · last 30 days. I pulled from ${capitalize(sourceLabel)} and picked the visualisation that best surfaces the headline numbers. Refine it to change the chart type or rename before adding.`
-}
-
-function buildIntro(count: number): string {
-  const dashName = targetDashboard.value?.name ?? 'this dashboard'
-  const noun = count === 1 ? 'widget' : 'widgets'
-  return `Here&rsquo;s <strong>${count} ${noun}</strong> I drafted for <strong>${dashName}</strong>. Click <em>Add widget</em> to review and confirm.`
-}
-
-
-function capitalize(s: string) {
-  return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
 // ─── Voice dictation + TTS + text↔voice mode (drawer surface) ──────────
@@ -276,8 +197,8 @@ const isVoiceMode = computed(() => uiMode.value === 'voice')
 const voiceOwner = computed(() => (props.headerless ? 'copilot-page' : 'drawer'))
 
 // The drawer hides without unmounting (v-navigation-drawer just translates it
-// off-canvas) — copilot.isOpen is the visibility signal for pause/cleanup.
-const surfaceVisible = computed(() => props.headerless || copilot.isOpen)
+// off-canvas) — its host passes `visible` as the signal for pause/cleanup.
+const surfaceVisible = computed(() => props.headerless || props.visible)
 
 // Feature surfaces can queue a prompt (copilot.openWithPrompt) — run it as soon
 // as this surface is visible so the panel never opens blank.
@@ -314,9 +235,10 @@ watch(
 // spoken reply even in text mode. Typed queries stay silent unless the
 // persisted "Read replies aloud" toggle is on. Voice mode always speaks.
 const lastInputWasVoice = ref(false)
-const speakReplies = computed(
-  () => isVoiceMode.value || ttsEnabled.value || copilot.readAloud || lastInputWasVoice.value,
-)
+// Read-aloud can be on because of the menu toggle OR because the full-page voice onboarding switched it
+// on (copilot.readAloud) — the menu must show, and be able to turn off, either.
+const readAloudOn = computed(() => ttsEnabled.value || copilot.readAloud)
+const speakReplies = computed(() => isVoiceMode.value || readAloudOn.value || lastInputWasVoice.value)
 
 const isDictating = computed(
   () => voice.state.value === 'listening' && voice.owner.value === voiceOwner.value,
@@ -337,9 +259,8 @@ const orbitErrorMessage = ref('It was a bit noisy. Try again, or type your reque
 const voiceNotice = ref('')
 const orbitPaused = ref(false) // user stopped the mic without speaking
 const orbitLastRequest = ref('') // echo pill while thinking
-const orbitResponse = ref<{ draft: DashboardWidgetDraft | null; caption: string } | null>(null)
-const orbitAdded = ref<{ title: string; dashboardName: string; widgetId: string; dashboardId: string; accountId: string } | null>(null)
-const orbitDraftKey = ref(0) // bump remounts the draft card after Undo
+const orbitResponse = ref<{ draft: DashboardWidgetDraft | null; caption: string; note?: string | null; messageId?: string } | null>(null)
+const orbitAdded = ref<AddedWidgetRef | null>(null)
 let orbitCancelRequested = false
 
 // Deferred reply timers (the "thinking" delay) — tracked so they're cleared on
@@ -382,8 +303,9 @@ function orbitTryAgain() {
   void toggleMic()
 }
 
-function onOrbitWidgetSaved(payload: { title: string; dashboardName: string; widgetId: string; dashboardId: string; accountId: string }) {
-  if (currentConversationId.value) incrementAdded(currentConversationId.value)
+function onOrbitWidgetSaved(payload: AddedWidgetRef) {
+  // The same draft shows in the transcript when the merchant switches to text mode.
+  if (orbitResponse.value?.messageId) copilot.markDraftAdded(orbitResponse.value.messageId, 0, payload)
   orbitAdded.value = payload
 }
 
@@ -392,7 +314,6 @@ function orbitUndo() {
   if (!added) return
   dashboardsStore.removeWidget(added.accountId, added.dashboardId, added.widgetId)
   orbitAdded.value = null
-  orbitDraftKey.value++
   pushToast({ title: 'Widget removed', sub: added.title })
 }
 
@@ -418,9 +339,11 @@ function setUiMode(mode: 'text' | 'voice') {
 }
 
 function toggleTts() {
-  ttsEnabled.value = !ttsEnabled.value
-  window.localStorage.setItem('davinci-drawer-tts', ttsEnabled.value ? '1' : '0')
-  if (!ttsEnabled.value && !isVoiceMode.value) voice.cancelSpeech()
+  const next = !readAloudOn.value
+  ttsEnabled.value = next
+  window.localStorage.setItem('davinci-drawer-tts', next ? '1' : '0')
+  if (!next) copilot.setReadAloud(false)
+  if (!next && !isVoiceMode.value) voice.cancelSpeech()
 }
 
 // Manual tap-to-talk. Future: auto-relisten loop after TTS ends (deliberate
@@ -478,32 +401,29 @@ watch(voice.interimTranscript, (t) => {
   if (isDictating.value && !isVoiceMode.value && t) inputText.value = t
 })
 
-function stripHtml(html: string) {
-  const el = document.createElement('div')
-  el.innerHTML = html
-  return el.textContent ?? ''
-}
-
 function maybeSpeak(text: string) {
-  if (!speakReplies.value) return
-  void voice.speak(stripHtml(text))
+  if (unmounted || !surfaceVisible.value || !speakReplies.value) return
+  void voice.speak(text)
 }
 
-// Drawer hidden mid-session → cancel pending replies, release the mic, stop
-// speech (so a queued reply can't start talking after you've closed it). The
-// conversation itself lives in the copilot store and survives.
+// Drawer hidden mid-session → release the mic and stop speech (so nothing talks after you've
+// closed it). The reply that is still being worked out is NOT cancelled: it lands silently and
+// is waiting when the drawer reopens — closing used to drop it, leaving the merchant's question
+// unanswered. The conversation itself lives in the copilot store and survives.
 watch(surfaceVisible, (visible) => {
   if (visible) return
-  stopGeneration()
   if (isVoiceMode.value) stopVoiceActivity()
   else voice.cancelSpeech()
 })
 
-// The component does unmount when a fullPage route replaces the shell — clear
-// deferred replies and stop any speech; owner-guard only the listen-abort so it
-// never kills the AI experience's own mic session.
+// The component does unmount when a fullPage route replaces the shell — stop any speech and let go
+// of the mic; owner-guard only the listen-abort so it never kills the AI experience's own mic
+// session. A reply still being worked out is NOT dropped: the thread it was asked in is shared
+// (the drawer shows it), so it lands there silently — leaving used to strand the merchant's
+// question without an answer.
+let unmounted = false
 onBeforeUnmount(() => {
-  stopGeneration()
+  unmounted = true
   if (isVoiceMode.value) stopVoiceActivity()
   else {
     if (voice.owner.value === voiceOwner.value) voice.abortListening()
@@ -541,8 +461,13 @@ function finishGeneration(gen: number) {
   liveSteps.value = []
   generatingStatus.value = ''
   scrollToBottom()
+  runNextQueued()
+}
+
+/** The next queued follow-up, if any. */
+function runNextQueued() {
   const next = queuedPrompts.value.shift()
-  if (next) runGeneration(next)
+  if (next) answerTurn(next.text, next.turnId)
 }
 
 /** Composer Stop button — cancels the in-flight reply AND any queued follow-ups. */
@@ -558,74 +483,26 @@ function stopGeneration() {
   generatingStatus.value = ''
 }
 
-/** Shared completion for intent-layer results (canned intents + Gemini). */
-function completeIntentResult(res: DvIntentResult, gen: number) {
-  if (gen !== generationSeq) return
-  messages.value.push({
-    id: makeId('a'),
-    role: 'assistant',
-    text: res.reply,
-    toolSteps: res.steps,
-    componentData:
-      res.cards.length || res.quickReplies?.length
-        ? [{ type: 'intentCards', props: { cards: res.cards, quickReplies: res.quickReplies } }]
-        : undefined,
-  })
-  if (isVoiceMode.value) orbitResponse.value = { draft: null, caption: stripHtml(res.reply) }
-  maybeSpeak(res.speech ?? res.reply)
+/** A finished reply lands in the transcript (and on the voice surface), then is spoken. */
+function landTurn(turn: DvAssistantTurn, gen: number, epoch: number) {
+  // Superseded (Stop, a newer turn) or asked in a thread that has since been swapped (New chat, History).
+  if (gen !== generationSeq || epoch !== copilot.threadEpoch) return
+  messages.value.push(turn.message)
+  if (isVoiceMode.value) {
+    orbitResponse.value = { draft: turn.draft, caption: turn.caption, note: turn.note, messageId: turn.message.id }
+  }
+  maybeSpeak(turn.speech)
   finishGeneration(gen)
 }
 
-function appendCampaignOnboardingResponse(res: CampaignOnboardingResponse) {
-  const componentData: ChatMessage['componentData'] = []
-  if (res.cards?.length || res.quickReplies?.length) {
-    componentData.push({
-      type: 'intentCards',
-      props: { cards: res.cards ?? [], quickReplies: res.quickReplies },
-    })
-  }
-  if (res.onboardingCard) {
-    componentData.push({
-      type: 'campaignOnboarding',
-      props: res.onboardingCard,
-    })
-  }
-  messages.value.push({
-    id: makeId('a'),
-    role: 'assistant',
-    text: res.reply,
-    componentData: componentData.length ? componentData : undefined,
-  })
+/** A guided-flow response (setup or campaign wizard) as a chat message. */
+function appendFlowResponse(res: DvFlowResponse) {
+  messages.value.push(responder.flowMessage(res))
   chatMode.value = true
-  if (res.onboardingCard && targetAccountId.value) {
+  if ('onboardingCard' in res && res.onboardingCard && targetAccountId.value) {
     const blockers = res.onboardingCard.items?.filter((item) => item.status !== 'ready').length ?? 0
     trackDaVinciOnboardingEvent('readiness_shown', targetAccountId.value, { blockers })
   }
-  scrollToBottom()
-  maybeSpeak(res.speech ?? res.reply)
-}
-
-function appendSetupOnboardingResponse(res: SetupOnboardingResponse) {
-  const componentData: ChatMessage['componentData'] = []
-  if (res.quickReplies?.length) {
-    componentData.push({
-      type: 'intentCards',
-      props: { cards: [], quickReplies: res.quickReplies },
-    })
-  }
-  if (res.setupCard) {
-    componentData.push({
-      type: 'setupOnboarding',
-      props: res.setupCard,
-    })
-  }
-  messages.value.push({
-    id: makeId('a'),
-    role: 'assistant',
-    text: res.reply,
-    componentData: componentData.length ? componentData : undefined,
-  })
-  chatMode.value = true
   scrollToBottom()
   maybeSpeak(res.speech ?? res.reply)
 }
@@ -647,18 +524,21 @@ function onSetupOnboardingAction(action: string) {
   }
   const response = setupOnboarding.handleAction(action)
   if (response) {
-    appendSetupOnboardingResponse(response)
+    appendFlowResponse(response)
     if (response.exitToDashboard && accountId) {
       void router.push({ name: 'Dashboard', params: { accountId } })
     }
   }
 }
 
-function pushUserTurn(text: string) {
-  messages.value.push({ id: makeId('u'), role: 'user', text })
+/** Shows the merchant's turn straight away and returns its id (Gemini history is keyed by it). */
+function pushUserTurn(text: string): string {
+  const id = makeId('u')
+  messages.value.push({ id, role: 'user', text })
   chatMode.value = true
   inputText.value = ''
   scrollToBottom()
+  return id
 }
 
 function openCampaignDraft(draftId: number) {
@@ -692,7 +572,7 @@ function openCampaignPrerequisite(action: string) {
 function onCampaignOnboardingAction(action: string) {
   if (action === 'continue-draft') {
     const response = campaignOnboarding.createDraft()
-    appendCampaignOnboardingResponse(response)
+    appendFlowResponse(response)
     const card = response.cards?.find((item) => item.type === 'campaign')
     if (card?.type === 'campaign' && card.props.draftId && targetAccountId.value) {
       trackDaVinciOnboardingEvent('draft_created', targetAccountId.value, { draftId: card.props.draftId })
@@ -701,7 +581,7 @@ function onCampaignOnboardingAction(action: string) {
   }
   if (action === 'change-brief') {
     if (targetAccountId.value) trackDaVinciOnboardingEvent('brief_corrected', targetAccountId.value)
-    appendCampaignOnboardingResponse(campaignOnboarding.changeBrief())
+    appendFlowResponse(campaignOnboarding.changeBrief())
     return
   }
   if (action.startsWith('open-')) openCampaignPrerequisite(action)
@@ -720,56 +600,51 @@ function onIntentCardAction(payload: { card: DvCardDescriptor; action: string })
       const draft = campaignOnboarding.createDraft()
       const draftId = draft.cards?.find((card) => card.type === 'campaign')?.props.draftId
       if (draftId) openCampaignDraft(draftId)
-      else appendCampaignOnboardingResponse(draft)
+      else appendFlowResponse(draft)
       return
     }
     if (payload.action === 'change-brief') {
       if (targetAccountId.value) trackDaVinciOnboardingEvent('brief_corrected', targetAccountId.value)
-      appendCampaignOnboardingResponse(campaignOnboarding.changeBrief())
+      appendFlowResponse(campaignOnboarding.changeBrief())
       return
     }
   }
-  // Shared with the full-page experience: creates the segment / copies the draft
-  // and navigates, then reports what actually happened.
-  pushToast(intents.performCardAction(payload.card, payload.action) ?? { title: 'Done' })
+  // Shared with the full-page experience: creates the segment / copies the draft and navigates,
+  // then reports what actually happened — and stays quiet when nothing did.
+  void intents.performCardAction(payload.card, payload.action).then((toast) => {
+    if (toast) pushToast(toast)
+  })
 }
 
 function processQuery(text: string) {
   if (!text) return
-  // Routing precedence (kept identical to the Experience surface): guided
-  // setup → campaign wizard → the normal assistant.
-  const setupResponse = setupFlowActive.value ? setupOnboarding.handleText(text) : null
-  if (setupResponse) {
-    pushUserTurn(text)
-    appendSetupOnboardingResponse(setupResponse)
-    if (setupResponse.exitToDashboard && targetAccountId.value) {
-      void router.push({ name: 'Dashboard', params: { accountId: targetAccountId.value } })
-    }
+  const turnId = pushUserTurn(text)
+  // Text mode mid-generation: the turn is already on screen; answer it after the current reply
+  // lands (queued follow-up). It is routed then, not now — the reply ahead of it may start a
+  // guided flow ("Run a campaign"), and this turn is that flow's next answer.
+  if (isTyping.value && !isVoiceMode.value) {
+    queuedPrompts.value.push({ text, turnId })
     return
   }
-  const onboardingResponse = onboarding.isActive ? campaignOnboarding.handleText(text) : null
-  if (onboardingResponse) {
-    pushUserTurn(text)
-    appendCampaignOnboardingResponse(onboardingResponse)
+  answerTurn(text, turnId)
+}
+
+/** Route one turn already on screen: guided setup → campaign wizard → the normal assistant (the responder's order, shared with the full-page experience). */
+function answerTurn(text: string, turnId: string) {
+  const accountId = targetAccountId.value
+  const flow = responder.flowTurn(text, accountId)
+  if (flow.kind !== 'pass') {
+    appendFlowResponse(flow.response)
+    if (flow.kind === 'setup' && flow.response.exitToDashboard && accountId && !unmounted) {
+      void router.push({ name: 'Dashboard', params: { accountId } })
+    }
+    runNextQueued() // a flow answers at once; whatever queued behind it runs now
     return
   }
   // Either flow pauses itself for off-topic questions; acknowledge the switch
   // once, then answer the actual question through the normal path.
-  const setupPauseNotice = setupOnboarding.consumePauseNotice()
-  const pauseNotice = campaignOnboarding.consumePauseNotice()
-  // Text mode mid-generation: show the turn immediately, answer it after the
-  // current reply lands (queued follow-up).
-  if (isTyping.value && !isVoiceMode.value) {
-    pushUserTurn(text)
-    if (setupPauseNotice) appendSetupOnboardingResponse(setupPauseNotice)
-    if (pauseNotice) appendCampaignOnboardingResponse(pauseNotice)
-    queuedPrompts.value.push(text)
-    return
-  }
-  pushUserTurn(text)
-  if (setupPauseNotice) appendSetupOnboardingResponse(setupPauseNotice)
-  if (pauseNotice) appendCampaignOnboardingResponse(pauseNotice)
-  runGeneration(text)
+  flow.notices.forEach(appendFlowResponse)
+  runGeneration(text, turnId)
 }
 
 // A product hook verified the current setup task while the drawer is visible —
@@ -785,12 +660,12 @@ watch(
     const taskId = setupStore.activeSession?.currentTaskId
     if (!taskId) return
     const response = setupOnboarding.onTaskAutoCompleted(taskId)
-    if (response) appendSetupOnboardingResponse(response)
+    if (response) appendFlowResponse(response)
   },
 )
 
-/** Answer `text` (the user turn is already in the transcript). */
-function runGeneration(text: string) {
+/** Answer `text` (the user turn `turnId` is already in the transcript). */
+function runGeneration(text: string, turnId: string) {
   const gen = ++generationSeq
   isTyping.value = true
   generatingStatus.value = 'Working on it…'
@@ -800,126 +675,34 @@ function runGeneration(text: string) {
   }
   scrollToBottom()
 
-  // Multi-turn intent clarification (e.g. campaign audience slot) — a
-  // conversational turn, not tool work; no steps.
-  if (intents.pending.value) {
-    startStepTicker([], gen, 900)
-    pendingTimers.push(setTimeout(() => completeIntentResult(intents.handle(text), gen), 900))
-    return
-  }
+  copilot.ensureConversationId()
+  const epoch = copilot.threadEpoch
 
-  const conversationId = currentConversationId.value ?? makeId('c')
-  const isFirstPrompt = !currentConversationId.value
-  currentConversationId.value = conversationId
+  // Which lane answers, and what to show while it works — the rules are pure and unit-tested
+  // (src/davinci/promptRouting.ts); the responder turns them into a reply.
+  const plan = responder.plan(text)
+  if (plan.lane !== 'slot') generatingStatus.value = plan.status
+  startStepTicker(plan.steps, gen, plan.paceMs)
+  // Voice mode has no queue, so generations can overlap: a newer one replaces (and cancels) the older,
+  // and only the controller's own generation clears it — a stale `finally` must not null the newer one.
+  geminiAbort?.abort()
+  const controller = plan.lane === 'gemini' ? new AbortController() : null
+  geminiAbort = controller
 
-  // Route on what the merchant asked for first. The widget matcher used to run
-  // before the intent layer whenever a dashboard was resolvable — which is always,
-  // once the home page has been seen — so "win back customers who haven't bought
-  // in 90 days" came back as a Customer Count KPI widget. The widget lane now only
-  // fires for prompts that ask for a widget: on a dashboard route, or with an
-  // explicit widget/chart word anywhere in the app.
-  const intentKind = intents.classify(text)
-  const asksForWidget = WIDGET_GRAMMAR.test(text) || (isDashboardRoute.value && !QUESTION_GRAMMAR.test(text))
-  if (intentKind === 'fallback' && asksForWidget && targetAccountId.value && targetDashboard.value) {
-    const base = dashboardsStore.buildAiWidgetDraft(targetAccountId.value, targetDashboard.value.id, text)
-    if (base) {
-      const drafts = [base]
-      const rationale = buildRationale(text, base)
-      const metricLabel = getMetricDescriptor(base.metricId)?.label ?? base.title ?? 'data'
-      generatingStatus.value = `Pulling ${metricLabel.toLowerCase()} from the last 30 days`
-      const steps = [
-        `Check ${targetDashboard.value.name} widgets`,
-        `Pull ${metricLabel.toLowerCase()} · last 30 days`,
-        'Draft widget',
-      ]
-      startStepTicker(steps, gen, 1200)
-      pendingTimers.push(setTimeout(() => {
-        if (gen !== generationSeq) return
-        messages.value.push({
-          id: makeId('a'),
-          role: 'assistant',
-          text: buildIntro(drafts.length),
-          toolSteps: steps,
-          componentData: [
-            {
-              type: 'widgetDraftSet',
-              props: { drafts, rationale, conversationId },
-            },
-          ],
-        })
-        if (isFirstPrompt) {
-          addItem({ title: text, draftedCount: drafts.length })
-        }
-        if (isVoiceMode.value) {
-          orbitResponse.value = { draft: drafts[0] ?? null, caption: stripHtml(buildIntro(drafts.length)) }
-        }
-        maybeSpeak(buildIntro(drafts.length))
-        finishGeneration(gen)
-      }, 1200))
-      return
-    }
-  }
-
-  // Intent / Gemini path — preview the classified intent's steps while working;
-  // the finished message carries the result's actual steps.
-  startStepTicker(INTENT_STEPS[intentKind], gen, 1200)
   pendingTimers.push(setTimeout(async () => {
     if (gen !== generationSeq) return
-    // No widget mapping — try the unified intent layer (campaigns, products,
-    // revenue, segments) before falling back to the widget-prompt hint.
-    const res = intents.handle(text)
-    if (res.intent !== 'fallback') {
-      completeIntentResult(res, gen)
-      return
+    let turn: DvAssistantTurn
+    try {
+      turn = await responder.reply(plan, text, { history: geminiHistory(messages.value, turnId), signal: controller?.signal })
+    } catch {
+      // Stop aborted it (generationSeq is already stale); anything else must not leave the composer stuck.
+      if (gen !== generationSeq) return
+      turn = responder.offlineTurn()
+    } finally {
+      if (geminiAbort === controller) geminiAbort = null
     }
-    if (!WIDGET_GRAMMAR.test(text)) {
-      // Open-ended question — answer with Gemini Flash (falls back to the canned
-      // hint if Gemini is unavailable), grounded in the live workspace context
-      // block. Dashboard routes included: a merchant asking "what needs my
-      // attention?" from the home page deserves an answer, not a widget hint.
-      const history = messages.value.slice(0, -1).slice(-6).map((m) => ({ role: m.role, text: m.text }))
-      geminiAbort = new AbortController()
-      let smart: DvIntentResult
-      try {
-        smart = await intents.answer(text, {
-          history,
-          context: contextBlock.value,
-          signal: geminiAbort.signal,
-        })
-      } catch {
-        return // aborted via Stop — generationSeq is already stale
-      } finally {
-        geminiAbort = null
-      }
-      completeIntentResult(smart, gen)
-      return
-    }
-    // Asked for a widget we can't map → widget-prompt hint
-    if (isVoiceMode.value) {
-      orbitResponse.value = {
-        draft: null,
-        caption:
-          "I couldn't map that to a widget yet. Try revenue, orders, open rate, campaigns, contact growth, or ticket volume.",
-      }
-    }
-    messages.value.push({
-      id: makeId('a'),
-      role: 'assistant',
-      text: "I couldn't map that to a supported widget yet. Try asking for revenue, orders, open rate, campaigns, contact growth, or ticket volume.",
-      componentData: [
-        {
-          type: 'insight',
-          props: {
-            headline: 'Try a widget-ready prompt',
-            description:
-              'Use prompts like “Create a revenue by channel widget”, “Show open rate trend for last 30 days”, or “Add a recent orders table”.',
-            severity: 'info',
-          },
-        },
-      ],
-    })
-    finishGeneration(gen)
-  }, 1200))
+    landTurn(turn, gen, epoch)
+  }, plan.paceMs))
 }
 
 function sendQuery() {
@@ -943,31 +726,34 @@ function newChat() {
   pushToast({ title: 'New chat started' })
 }
 
-function onWidgetSaved(
-  payload: { title: string; dashboardName: string; widgetId: string; dashboardId: string; accountId: string },
-  msg: ChatMessage,
-) {
-  const comp = msg.componentData?.[0]
-  if (comp && comp.type === 'widgetDraftSet') {
-    incrementAdded((comp.props as DraftSetProps).conversationId)
-  }
-  // Use the dashboard the widget was actually added to (from the card's payload),
-  // not the live route target — they can differ when the draft was pinned.
-  const { dashboardId, accountId } = payload
-  pushToast({
-    title: `Widget added to ${payload.dashboardName}`,
-    sub: payload.title,
-    action: dashboardId && accountId ? 'View' : undefined,
-    onAction: () => {
-      if (dashboardId && accountId) {
-        router.push({ name: 'DashboardDetail', params: { accountId, dashboardId } })
-      }
-    },
-  })
-}
+// The thread was swapped — New chat, a conversation chosen from History, one deleted. Whatever was
+// still working for the old thread (a reply on its way, an open mic, a half-typed line) lets go, so
+// nothing lands in a conversation it doesn't belong to.
+watch(
+  () => copilot.threadEpoch,
+  () => {
+    stopGeneration()
+    stopVoiceActivity()
+    inputText.value = ''
+    scrollToBottom(false)
+  },
+)
 
-function onWidgetRefined() {
-  pushToast({ title: 'Draft updated', sub: 'Da Vinci re-rendered with your changes' })
+// Arriving at a conversation shows its latest message, not the top of it: on mount (the drawer opens
+// on a live thread), back from voice mode (the body is rebuilt), and when a hidden surface reopens
+// (replies may have landed silently meanwhile).
+onMounted(() => scrollToBottom(false))
+watch(isVoiceMode, (voiceOn) => {
+  if (!voiceOn) scrollToBottom(false)
+})
+watch(surfaceVisible, (visible) => {
+  if (visible) scrollToBottom(false)
+})
+
+function onWidgetSaved(payload: AddedWidgetRef, msg: ChatMessage, index: number) {
+  // The payload names the dashboard the widget was actually added to — not the live route
+  // target, which can differ when the draft was pinned.
+  responder.announceDraftAdded(payload, msg.id, index)
 }
 
 function isDraftSetMessage(msg: ChatMessage): msg is ChatMessage & { componentData: [{ type: 'widgetDraftSet'; props: DraftSetProps }] } {
@@ -975,21 +761,10 @@ function isDraftSetMessage(msg: ChatMessage): msg is ChatMessage & { componentDa
   return !!comp && comp.type === 'widgetDraftSet'
 }
 
-function isInsightMessage(msg: ChatMessage): boolean {
-  const comp = msg.componentData?.[0]
-  return !!comp && comp.type === 'insight'
-}
-
 function getDraftSetProps(msg: ChatMessage): DraftSetProps | null {
   const comp = msg.componentData?.[0]
   if (!comp || comp.type !== 'widgetDraftSet') return null
   return comp.props as DraftSetProps
-}
-
-function getInsightProps(msg: ChatMessage): { headline: string; description: string; severity?: string } | null {
-  const comp = msg.componentData?.[0]
-  if (!comp || comp.type !== 'insight') return null
-  return comp.props as { headline: string; description: string; severity?: string }
 }
 
 function getIntentCardsProps(msg: ChatMessage): IntentCardsProps | null {
@@ -1017,11 +792,13 @@ function handleClearAll() {
 }
 
 function confirmClearAll() {
-  clearAll()
+  copilot.deleteAllConversations()
   pushToast({ title: 'All conversations deleted' })
 }
 
 function onComposerKeydown(event: KeyboardEvent) {
+  // Enter that confirms an IME candidate (Japanese, Chinese, Korean…) is not a send.
+  if (event.isComposing || event.keyCode === 229) return
   if (event.key === 'Enter' && !event.shiftKey) {
     event.preventDefault()
     sendQuery()
@@ -1084,9 +861,9 @@ function onComposerKeydown(event: KeyboardEvent) {
             <v-list-item-title>Switch to text mode</v-list-item-title>
           </v-list-item>
           <v-list-item v-if="voice.ttsSupported" @click="toggleTts">
-            <template #prepend><v-icon size="18">{{ ttsEnabled ? 'volume-2' : 'volume-x' }}</v-icon></template>
+            <template #prepend><v-icon size="18">{{ readAloudOn ? 'volume-2' : 'volume-x' }}</v-icon></template>
             <v-list-item-title>Read replies aloud</v-list-item-title>
-            <template #append><v-icon v-if="ttsEnabled" size="16" color="primary">check</v-icon></template>
+            <template #append><v-icon v-if="readAloudOn" size="16" color="primary">check</v-icon></template>
           </v-list-item>
           <v-divider class="my-1" />
           <v-list-item class="text-error" @click="handleClearAll">
@@ -1100,7 +877,9 @@ function onComposerKeydown(event: KeyboardEvent) {
       </v-btn>
     </header>
 
+    <!-- Headerless hosts have no button that opens it (the full-page copilot has its own rail). -->
     <DvHistoryDrawer
+      v-if="!headerless"
       :open="historyOpen"
       :active-id="currentConversationId ?? undefined"
       @close="historyOpen = false"
@@ -1129,12 +908,15 @@ function onComposerKeydown(event: KeyboardEvent) {
       :last-request="orbitLastRequest"
       :caption="orbitResponse?.caption ?? ''"
       :speaking="voice.state.value === 'speaking'"
+      :name="profile.firstName"
       :suggestions="landingSuggestions"
       :draft="orbitResponse?.draft ?? null"
       :account-id="targetAccountId ?? ''"
       :dashboard-id="targetDashboard?.id ?? ''"
       :filters="targetDashboard?.filters"
-      :draft-key="orbitDraftKey"
+      :draft-note="orbitResponse?.note ?? null"
+      :draft-added="orbitAdded"
+      :chips="suggestionPills.map((pill) => pill.text)"
       :added-to="orbitAdded?.dashboardName ?? ''"
       :error-message="orbitErrorMessage"
       @mic="toggleMic"
@@ -1146,11 +928,21 @@ function onComposerKeydown(event: KeyboardEvent) {
       @open-dashboard="orbitOpenDashboard"
       @add-another="orbitAddAnother"
       @widget-saved="onOrbitWidgetSaved"
-      @widget-refined="onWidgetRefined"
     />
 
     <!-- ═══ BODY (text mode) ═══ -->
-    <div v-if="!isVoiceMode" ref="bodyEl" class="dv-panel__body">
+    <!-- The transcript is a live log: a reply that lands is announced (once it is complete — aria-busy
+         holds it back while Da Vinci is still working). -->
+    <div
+      v-if="!isVoiceMode"
+      ref="bodyEl"
+      class="dv-panel__body"
+      role="log"
+      aria-live="polite"
+      aria-relevant="additions"
+      aria-label="Conversation with Da Vinci"
+      :aria-busy="isTyping"
+    >
       <!-- Landing state -->
       <DvLandingHero
         :name="profile.firstName"
@@ -1172,10 +964,12 @@ function onComposerKeydown(event: KeyboardEvent) {
               v-if="msg.toolSteps?.length"
               :steps="msg.toolSteps.map((label) => ({ label, status: 'done' as const }))"
             />
-            <!-- HTML is allowed ONLY for the developer-authored widget-draft intro (buildIntro).
-                 All other assistant text (canned intents, Gemini replies) is interpolated, never
-                 fed to v-html — prevents XSS from model output. -->
-            <div v-if="msg.text && isDraftSetMessage(msg)" class="dv-msg-bot__intro" v-html="msg.text"></div>
+            <!-- Every assistant message is plain text, interpolated and never fed to v-html: the draft
+                 intro used to be HTML with the dashboard's NAME inside it (a stored-XSS sink). -->
+            <div v-if="msg.text && isDraftSetMessage(msg)" class="dv-msg-bot__intro">
+              Here’s <strong>{{ draftCountLabel(getDraftSetProps(msg)?.drafts.length ?? 0) }}</strong> I drafted for
+              <strong>{{ getDraftSetProps(msg)?.dashboardName ?? 'this dashboard' }}</strong>. Select <em>Add widget</em> to review and confirm.
+            </div>
             <div v-else-if="msg.text" class="dv-msg-bot__intro">{{ msg.text }}</div>
 
             <template v-if="isDraftSetMessage(msg)">
@@ -1198,40 +992,18 @@ function onComposerKeydown(event: KeyboardEvent) {
                   :account-id="targetAccountId ?? ''"
                   :dashboard-id="targetDashboard?.id ?? ''"
                   :draft="draft"
-                  :filters="targetDashboard?.filters"
-                  @saved="onWidgetSaved($event, msg)"
-                  @refined="onWidgetRefined"
+                  :note="getDraftSetProps(msg)?.notes?.[idx] ?? null"
+                  :added="getDraftSetProps(msg)?.added?.[idx] ?? null"
+                  @saved="onWidgetSaved($event, msg, idx)"
                 />
               </div>
             </template>
 
-            <DvInsightCard
-              v-if="isInsightMessage(msg)"
-              :headline="getInsightProps(msg)?.headline ?? ''"
-              :description="getInsightProps(msg)?.description ?? ''"
-              :severity="(getInsightProps(msg)?.severity as 'info' | 'success' | 'warning' | 'error' | undefined)"
+            <DvIntentCardList
+              v-if="getIntentCardsProps(msg)?.cards?.length"
+              :cards="getIntentCardsProps(msg)?.cards ?? []"
+              @action="onIntentCardAction"
             />
-
-            <template v-if="getIntentCardsProps(msg)">
-              <DvIntentCardList
-                v-if="getIntentCardsProps(msg)?.cards?.length"
-                :cards="getIntentCardsProps(msg)?.cards ?? []"
-                @action="onIntentCardAction"
-              />
-              <div v-if="getIntentCardsProps(msg)?.quickReplies?.length" class="dv-quick-replies">
-                <button
-                  v-for="reply in getIntentCardsProps(msg)?.quickReplies ?? []"
-                  :key="reply.value"
-                  type="button"
-                  class="dv-landing__pill"
-                  @click="sendSuggestion(reply.value)"
-                >
-                  <v-icon v-if="reply.icon" size="14" color="primary">{{ reply.icon }}</v-icon>
-                  {{ reply.label }}
-                </button>
-              </div>
-            </template>
-
             <DvCampaignOnboardingCard
               v-if="getCampaignOnboardingProps(msg)"
               v-bind="getCampaignOnboardingProps(msg)!"
@@ -1242,6 +1014,19 @@ function onComposerKeydown(event: KeyboardEvent) {
               v-bind="getSetupOnboardingProps(msg)!"
               @action="onSetupOnboardingAction"
             />
+            <!-- Quick replies close the message — after every card they belong to. -->
+            <div v-if="getIntentCardsProps(msg)?.quickReplies?.length" class="dv-quick-replies">
+              <button
+                v-for="reply in getIntentCardsProps(msg)?.quickReplies ?? []"
+                :key="reply.value"
+                type="button"
+                class="dv-landing__pill"
+                @click="sendSuggestion(reply.value)"
+              >
+                <v-icon v-if="reply.icon" size="14" color="primary">{{ reply.icon }}</v-icon>
+                {{ reply.label }}
+              </button>
+            </div>
           </div>
         </div>
       </template>
@@ -1278,7 +1063,7 @@ function onComposerKeydown(event: KeyboardEvent) {
           <v-icon size="14">x</v-icon>
         </v-btn>
       </div>
-      <div v-if="chatMode" class="dv-composer__pills">
+      <div v-if="chatMode && suggestionPills.length" class="dv-composer__pills">
         <button
           v-for="pill in suggestionPills"
           :key="pill.text"
@@ -1295,13 +1080,11 @@ function onComposerKeydown(event: KeyboardEvent) {
           v-model="inputText"
           type="text"
           :placeholder="isTyping ? 'Queue a follow-up…' : 'Ask Da Vinci…'"
+          aria-label="Message Da Vinci"
           class="dv-composer__input"
           @keydown="onComposerKeydown"
         />
         <div class="dv-composer__actions">
-          <v-btn icon size="32" variant="text" aria-label="Attach">
-            <v-icon size="16">paperclip</v-icon>
-          </v-btn>
           <v-btn
             v-if="voice.sttSupported"
             icon
@@ -1325,24 +1108,26 @@ function onComposerKeydown(event: KeyboardEvent) {
             <v-icon size="16">audio-lines</v-icon>
             <v-tooltip activator="parent" location="top">Voice mode</v-tooltip>
           </v-btn>
-          <button
-            v-if="isTyping"
-            type="button"
-            class="dv-composer__send dv-composer__stop"
-            aria-label="Stop generating"
-            @click="stopGeneration"
-          >
-            <v-icon size="13" class="dv-composer__stop-icon">square</v-icon>
-          </button>
-          <button
-            type="button"
-            class="dv-composer__send"
-            aria-label="Send"
-            :disabled="!inputText.trim()"
-            @click="sendQuery"
-          >
-            <v-icon size="16" class="dv-on-accent-icon">arrow-up</v-icon>
-          </button>
+          <div class="dv-composer__send-group">
+            <button
+              v-if="isTyping"
+              type="button"
+              class="dv-composer__send dv-composer__stop"
+              aria-label="Stop generating"
+              @click="stopGeneration"
+            >
+              <v-icon size="13" class="dv-composer__stop-icon">square</v-icon>
+            </button>
+            <button
+              type="button"
+              class="dv-composer__send"
+              aria-label="Send"
+              :disabled="!inputText.trim()"
+              @click="sendQuery"
+            >
+              <v-icon size="16" class="dv-on-accent-icon">arrow-up</v-icon>
+            </button>
+          </div>
         </div>
       </div>
       <p class="dv-composer__note">
@@ -1364,7 +1149,7 @@ function onComposerKeydown(event: KeyboardEvent) {
       danger
       @confirm="confirmClearAll"
     />
-    <DvToastStack />
+    <DvToastStack v-if="surfaceVisible" />
   </div>
 </template>
 
@@ -1377,7 +1162,9 @@ function onComposerKeydown(event: KeyboardEvent) {
   height: 100%;
   background: rgb(var(--v-theme-surface));
   min-height: 0;
-  overflow: hidden;
+  /* clip, not hidden: `hidden` is still a scroll container, so focusing a control inside the
+     translated-off history panel scrolled the whole copilot sideways (scrollLeft 156). */
+  overflow: clip;
   /* Clip header/composer corners when hosted in the rounded copilot drawer */
   border-radius: inherit;
 }
@@ -1556,7 +1343,7 @@ function onComposerKeydown(event: KeyboardEvent) {
   color: rgb(var(--v-theme-on-surface));
 }
 
-.dv-msg-bot__intro :deep(strong) {
+.dv-msg-bot__intro strong {
   font-weight: var(--mp-fontWeight-semibold);
 }
 
@@ -1769,7 +1556,11 @@ function onComposerKeydown(event: KeyboardEvent) {
   gap: var(--mp-space-2);
 }
 
-.dv-composer__actions .dv-composer__send {
+/* Stop and Send travel together, at the end of the row (a margin on each split the free space between them). */
+.dv-composer__send-group {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-4);
   margin-left: auto;
 }
 

@@ -5,6 +5,7 @@ import { useContactsStore } from '@/stores/useContacts'
 import { useContentStore } from '@/stores/useContent'
 import { useOnboardingStore } from '@/stores/useOnboarding'
 import {
+  isStartedCampaignStage,
   useDaVinciOnboardingStore,
   type CampaignAudienceSelection,
   type CampaignReadinessItem,
@@ -12,6 +13,7 @@ import {
 } from '@/stores/useDaVinciOnboarding'
 import type { CampaignOnboardingProps } from '@/stores/useCopilot'
 import { trackDaVinciOnboardingEvent } from '@/composables/useDaVinciOnboardingAnalytics'
+import { isFlowExit } from '@/davinci/phrases'
 import type {
   DvCardDescriptor,
   DvIntentKind,
@@ -204,6 +206,15 @@ export function useDaVinciCampaignOnboarding() {
     }
   }
 
+  /**
+   * "the goal is to promote an offer" reads for the quick replies; a merchant's own words don't fit that
+   * frame ("to VIP customers" became "the goal is to to vip customers"), so they are quoted instead.
+   */
+  function goalPhrase(objective: string): string {
+    const known = CAMPAIGN_OBJECTIVES.some((reply) => reply.value.toLowerCase() === objective.toLowerCase())
+    return known ? `to ${objective.toLowerCase()}` : `“${objective}”`
+  }
+
   function audiencePrompt(objective: string): CampaignOnboardingResponse {
     onboarding.setObjective(objective)
 
@@ -217,7 +228,7 @@ export function useDaVinciCampaignOnboarding() {
 
     return {
       intent: 'campaign',
-      reply: `Got it — the goal is to ${objective.toLowerCase()}. Who should receive it? I’ll use a real audience from this account.`,
+      reply: `Got it — the goal is ${goalPhrase(objective)}. Who should receive it? I’ll use a real audience from this account.`,
       speech: 'Who should receive it?',
       quickReplies: [...audienceReplies(), SKIP_REPLY],
     }
@@ -379,6 +390,32 @@ export function useDaVinciCampaignOnboarding() {
     }
   }
 
+  /**
+   * An explicit "run a campaign" request. The merchant just asked for a campaign, so a paused wizard
+   * resumes (it used to answer "campaign setup is paused" — to the request to run it), and a finished
+   * or drafted brief starts over instead of showing the old draft again.
+   */
+  function requestCampaign(accountId: string, audienceHint: string): CampaignOnboardingResponse {
+    const active = session.value
+    if (!active || active.accountId !== accountId || active.stage === 'complete') {
+      return start(accountId, 'text', { audienceHint })
+    }
+    if (active.paused) {
+      onboarding.setPaused(false)
+      trackDaVinciOnboardingEvent('onboarding_resumed', accountId, { from: 'request' })
+    }
+    // A finished brief is a different campaign: begin a fresh one.
+    if (active.stage === 'draft' || active.stage === 'handoff') {
+      onboarding.reset(accountId)
+      return start(accountId, 'text', { audienceHint })
+    }
+    // Still on the first question (or before it): ask it again, now knowing the audience.
+    if (!isStartedCampaignStage(active.stage) || active.stage === 'objective') {
+      return start(accountId, active.inputMode ?? 'text', { audienceHint })
+    }
+    return resume() ?? start(accountId, 'text', { audienceHint })
+  }
+
   /** Skip the current question with a sensible default instead of blocking on an answer. */
   function skipStage(): CampaignOnboardingResponse | null {
     const active = session.value
@@ -422,9 +459,10 @@ export function useDaVinciCampaignOnboarding() {
       return null
     }
 
-    // Explicit exit — only when the message IS the exit phrase, so words like
-    // "later" inside a campaign brief don't eject the user.
-    if (/^(cancel|stop|exit|quit|pause|not now|no thanks|(maybe )?later)[.! ]*$/i.test(trimmed)) {
+    // Explicit exit — only when the message IS an exit ("never mind", "No thanks, cancel it"), so words
+    // like "later" or "stop" inside a campaign brief don't eject the user — and "never mind" is no longer
+    // taken as the campaign's objective.
+    if (isFlowExit(trimmed)) {
       onboarding.setPaused(true)
       trackDaVinciOnboardingEvent('onboarding_skipped', active.accountId, { stage: active.stage, kind: 'paused' })
       return pausedResponse()
@@ -495,7 +533,7 @@ export function useDaVinciCampaignOnboarding() {
       }
     }
     if (active.stage === 'audience') {
-      const goalLine = active.brief.objective ? `The goal is to ${active.brief.objective.toLowerCase()}. ` : ''
+      const goalLine = active.brief.objective ? `The goal is ${goalPhrase(active.brief.objective)}. ` : ''
       return {
         intent: 'campaign',
         reply: `Welcome back. ${goalLine}Who should receive it?`,
@@ -526,6 +564,7 @@ export function useDaVinciCampaignOnboarding() {
     start,
     handleText,
     consumePauseNotice,
+    requestCampaign,
     createDraft,
     changeBrief,
     routeForAction,

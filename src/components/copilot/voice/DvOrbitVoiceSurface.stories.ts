@@ -19,6 +19,7 @@ const SUGGESTIONS = [
 const BAR_DRAFT: DashboardWidgetDraft = {
   dashboardId: DASHBOARD_ID,
   type: 'bar',
+  chartVariant: 'vertical',
   title: 'Revenue by Channel',
   dataSource: 'commerce',
   metricId: 'commerce_revenue_by_channel',
@@ -26,7 +27,7 @@ const BAR_DRAFT: DashboardWidgetDraft = {
   drilldown: { routeName: 'SalesSummary', label: 'Open sales summary' },
   aiProvenance: {
     prompt: 'create a revenue by channel widget',
-    summary: 'Da Vinci mapped your prompt to Revenue by Channel as a bar widget.',
+    summary: 'Da Vinci mapped your prompt to Revenue by Channel as a column chart.',
   },
 }
 
@@ -41,10 +42,12 @@ const meta = {
     dashboardId: DASHBOARD_ID,
   },
   argTypes: {
+    name: { control: 'text', description: 'First name shown in the ready hero\'s greeting ("Hi Ross,"). Omit for a nameless greeting.' },
     accountId: { control: 'text', description: 'Account the inline draft card would add its widget to.' },
     dashboardId: { control: 'text', description: 'Target dashboard for the inline draft cards add action.' },
     filters: { control: 'object', description: '`DashboardFilterState` passed to the inline draft preview, so it renders under the filters it would actually run under.' },
-    draftKey: { control: 'number', description: 'Remount key for the draft card. Bump it to force a fresh render \u2014 what Undo does.' },
+    draftNote: { control: 'text', description: 'What differs from what was asked for; shown above the draft card\'s preview.' },
+    draftAdded: { control: 'object', description: 'The widget the draft became. The card derives its "Added" state from it (and re-enables Add when the widget is removed — what Undo does).' },
     state: {
       control: 'select',
       options: ['ready', 'listening', 'thinking', 'responding', 'added', 'error', 'paused'],
@@ -72,7 +75,7 @@ const meta = {
     },
     chips: {
       control: 'object',
-      description: 'Follow-up ghost chips offered after a response, distinct from `suggestions` (which are the cold-start prompts).',
+      description: 'Follow-up ghost chips offered after a response, distinct from `suggestions` (which are the cold-start prompts). The host derives them from the last result; none by default.',
     },
     draft: {
       control: 'object',
@@ -143,9 +146,10 @@ export const Thinking: Story = {
 export const Responding: Story = {
   args: {
     state: 'responding',
-    caption: 'Here’s a bar chart of revenue by channel for the last 30 days. Want me to add it?',
+    caption: 'Here’s a column chart of revenue by channel for the last 30 days. Want me to add it?',
     speaking: true,
     draft: BAR_DRAFT,
+    chips: ['Show revenue by channel as a bar chart', 'Show revenue over time'],
   },
 }
 

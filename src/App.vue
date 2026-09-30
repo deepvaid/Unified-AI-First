@@ -173,11 +173,14 @@ watch(inRailShell, (now, was) => {
 
 const isFullPage = computed(() => !!route.meta?.fullPage)
 const isFlush = computed(() => !!route.meta?.flush)
-// The AI experience owns the whole screen and hosts its own Da Vinci conversation.
-// Showing the drawer alongside it puts two Da Vinci surfaces on screen at once,
-// each with its own greeting, so it stays closed there. The Trial Lab renders
-// its own shell for a brand-new user, so the drawer stays closed there too.
-const copilotAvailable = computed(() => route.name !== 'DaVinciExperience' && !route.meta?.trialLab)
+// The AI experience and the full-page copilot each own the whole screen and host their own
+// Da Vinci conversation. Showing the drawer alongside them puts two Da Vinci surfaces on
+// screen at once (two bots on one thread, two toast stacks, doubled setup watchers), so it
+// stays closed there. The Trial Lab renders its own shell for a brand-new user, so the
+// drawer stays closed there too.
+const copilotAvailable = computed(
+  () => route.name !== 'DaVinciExperience' && route.name !== 'DaVinciCopilot' && !route.meta?.trialLab,
+)
 const copilotVisible = computed({
   get: () => copilot.isOpen && copilotAvailable.value,
   set: (value: boolean) => {
@@ -241,10 +244,14 @@ const copilotDrawerWidth = computed(() => {
          temporary overlay) from 960px up: Vuetify's default `lg` breakpoint made
          every 13" laptop a scrim-and-dismiss overlay, so a click on the page the
          copilot was helping with closed the copilot. -->
+    <!-- disable-route-watcher: below 960px Vuetify closed the overlay on EVERY navigation — including
+         Da Vinci's own hand-offs (open the drawer, then push a route) — and the reply that was
+         still being worked out went with it. The copilot store alone decides when it is open. -->
     <v-navigation-drawer
       v-model="copilotVisible"
       location="right"
       mobile-breakpoint="md"
+      disable-route-watcher
       :width="copilotDrawerWidth + 12"
       :aria-hidden="copilotVisible ? undefined : 'true'"
       :inert="!copilotVisible"
@@ -255,6 +262,7 @@ const copilotDrawerWidth = computed(() => {
       }"
     >
       <MpDaVinciBot
+        :visible="copilotVisible"
         @close="copilot.close()"
         @expand="copilot.toggleExpanded()"
       />

@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { useOnboardingStore } from '@/stores/useOnboarding'
 import { useMaropayStore } from '@/stores/useMaropay'
 import type { MaropayProvider, OrderPaymentStatusLabel } from '@/maropay/model'
+import { localDateKey } from '@/utils/localDate'
 
 const productNames = [
   'Nike Air Max 270 - Black/White', 'Patagonia Better Sweater Fleece Vest', 'Apple iPhone 15 Pro Case - Clear',
@@ -319,16 +320,6 @@ export const SALES_CHANNELS = ['Online Store', 'POS', 'Amazon', 'eBay', 'Instagr
  * location and staff context.
  */
 const WEB_SEED_CHANNELS = SALES_CHANNELS.filter((c) => c !== 'POS')
-
-/**
- * Local calendar date key. The dashboards bucket days in local time
- * (`startOfDay`/`endOfDay` in useWidgetData), so seeding with `toISOString()`
- * — which is UTC — left today's bucket empty for anyone ahead of UTC and the
- * trend chart dropped to zero on its last point.
- */
-function localDateKey(date: Date): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-}
 
 /**
  * Channel per web order, weighted so the mix reads like a real storefront
