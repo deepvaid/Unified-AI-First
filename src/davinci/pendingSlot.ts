@@ -53,8 +53,10 @@ export const detectEngineKey = (text: string): string | null => firstMatch(ENGIN
 export const detectEnginePage = (text: string): string | null => firstMatch(ENGINE_PAGES, text)
 
 const ASKS_FOR_WIDGET = /\b(?:widget|chart|graph|table|kpi|tile|dashboard)\b/i
-const FOLLOW_UP = /^(?:what|how) about\b|^and\b|\binstead\b|\brather\b|^(?:use|try|pick|choose|go with)\b/
-const ENGINE_FILLER = /\b(?:the|a|an|my|our|for|on|in|to|of|page|pages|products?|items?|engines?|recommendations?|widgets?|type|please|just|only|ones?|options?|bought)\b/g
+/** How an answer is put: "What about…", "And…", "Use…", "Let's go with…", "Yes, …" — followed by the engine or page. */
+const FOLLOW_UP_LEAD = /^(?:(?:ok(?:ay)?|yes|yeah|sure|and|then|now)\b[,.!]?\s+)*(?:(?:what|how) about\b|(?:let'?s\s+)?(?:go with|use|try|pick|choose)\b|i(?:'d| would)? (?:like|prefer|want)\b)?\s*/
+const FOLLOW_UP_TAIL = /\b(?:instead|rather(?: than)?)\b.*$/
+const ENGINE_FILLER = /\b(?:the|a|an|my|our|for|on|in|to|of|page|pages|products?|items?|engines?|recommendations?|widgets?|type|please|just|only|ones?|options?|bought|purchased|now)\b/g
 
 /**
  * The message is nothing BUT an engine or page name ("Trending", "newest products", "the cart page").
@@ -68,12 +70,15 @@ function isBareEnginePhrase(t: string): boolean {
   return rest.replace(ENGINE_FILLER, ' ').replace(/[^a-z]+/g, ' ').trim() === ''
 }
 
-/** "What about Newest Products?", "Trending", "And for the cart page?" — not "Show open rate trend for last 30 days". */
+/**
+ * "What about Newest Products?", "Trending", "And for the cart page?", "Let's go with trending" — not "Show open
+ * rate trend for last 30 days", and not "What about cart abandonment rate?" either: the lead-in ("what about",
+ * "and", "use", "yes") is taken off first, and what is left must still be only an engine or page name.
+ */
 function answersEngine(text: string): boolean {
   const t = text.trim().toLowerCase().replace(/[’‘]/g, "'")
   if (!detectEngineKey(t) && !detectEnginePage(t)) return false
-  if (FOLLOW_UP.test(t)) return t.split(/\s+/).length <= 8
-  return isBareEnginePhrase(t)
+  return isBareEnginePhrase(t.replace(FOLLOW_UP_LEAD, '').replace(FOLLOW_UP_TAIL, ''))
 }
 
 /**

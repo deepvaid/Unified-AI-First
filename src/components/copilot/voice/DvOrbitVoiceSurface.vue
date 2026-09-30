@@ -192,6 +192,7 @@ function onGhost() {
             :filters="filters"
             :note="draftNote"
             :added="draftAdded"
+            :host-announces="false"
             @saved="emit('widget-saved', $event)"
           />
         </div>

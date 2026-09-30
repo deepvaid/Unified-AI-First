@@ -82,10 +82,11 @@ export function titleFrom(messages: ChatMessage[]): string {
 }
 
 /**
- * What a restored message keeps. Guided-flow cards go (see SESSION_BOUND), and so do quick-reply chips:
- * they are "next step" suggestions for the live moment ("Use VIP…", "Open in journey wizard"), tied to
- * a wizard or a clarification that is gone by the time the conversation is reopened — clicked, they
- * would be sent as an ordinary prompt and do nothing they promised.
+ * What a restored message keeps. Guided-flow cards go (see SESSION_BOUND), and so do the quick-reply chips
+ * that are bound to a wizard or an open clarification ("Use VIP…", "Open in journey wizard"): that session is
+ * gone by the time the conversation is reopened, so clicked they would be sent as an ordinary prompt and do
+ * nothing they promised. Chips that are just prompts to send ("Try one of these:") stay — the message text
+ * points at them.
  */
 function persistable(message: ChatMessage): ChatMessage {
   const text = message.text.length > MESSAGE_TEXT_MAX ? `${message.text.slice(0, MESSAGE_TEXT_MAX - 1).trimEnd()}…` : message.text
@@ -93,8 +94,13 @@ function persistable(message: ChatMessage): ChatMessage {
   for (const component of message.componentData ?? []) {
     if (SESSION_BOUND.has(component.type)) continue
     if (component.type === 'intentCards') {
-      const { quickReplies: _chips, ...props } = component.props as { cards?: unknown[]; quickReplies?: unknown }
-      if (props.cards?.length) kept.push({ ...component, props: props as never })
+      const props = component.props as { cards?: unknown[]; quickReplies?: unknown[]; bound?: boolean }
+      if (!props.bound) {
+        kept.push(component)
+        continue
+      }
+      const { quickReplies: _chips, ...rest } = props
+      if (rest.cards?.length) kept.push({ ...component, props: rest as never })
       continue
     }
     kept.push(component)
@@ -217,9 +223,10 @@ export function isQuotaError(error: unknown): boolean {
 
 /**
  * Writes `list` within its size budget and returns what is held afterwards. Only a full storage drops the
- * oldest conversation (never `keepId`) and retries — the quota is shared with the rest of the app. Any
- * other failure (storage blocked, private mode) is not a reason to forget anything: the list stays in
- * memory and the write is given up quietly.
+ * oldest conversation (never `keepId`) and retries — the quota is shared with the rest of the app — and only
+ * a write that succeeds adopts the shorter list. Any other failure (storage blocked, private mode), or a
+ * storage too full for even the live conversation, forgets nothing: the list stays in memory and the write
+ * is given up quietly.
  */
 export function persistList(
   storage: StorageLike | null,
@@ -227,17 +234,20 @@ export function persistList(
   keepId?: string,
   bytes: number = HISTORY_LIMITS.bytes,
 ): HistoryConversation[] {
-  let next = fitToBudget(list, bytes, keepId)
-  if (!storage) return next
+  const fitted = fitToBudget(list, bytes, keepId)
+  if (!storage) return fitted
+  let attempt = fitted
   for (;;) {
     try {
-      storage.setItem(HISTORY_KEY, JSON.stringify(next))
-      return next
+      storage.setItem(HISTORY_KEY, JSON.stringify(attempt))
+      return attempt
     } catch (error) {
-      if (!isQuotaError(error)) return next
-      const dropped = dropOldest(next, keepId)
-      if (!dropped) return next
-      next = dropped
+      if (!isQuotaError(error)) return fitted
+      const dropped = dropOldest(attempt, keepId)
+      // Nothing fits even alone: the write never happened, so nothing is forgotten — the next write that
+      // does succeed must not erase conversations that were only evicted from an attempt.
+      if (!dropped) return fitted
+      attempt = dropped
     }
   }
 }

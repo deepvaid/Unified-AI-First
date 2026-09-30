@@ -533,7 +533,7 @@ export function useDaVinciCampaignOnboarding() {
       }
     }
     if (active.stage === 'audience') {
-      const goalLine = active.brief.objective ? `The goal is to ${active.brief.objective.toLowerCase()}. ` : ''
+      const goalLine = active.brief.objective ? `The goal is ${goalPhrase(active.brief.objective)}. ` : ''
       return {
         intent: 'campaign',
         reply: `Welcome back. ${goalLine}Who should receive it?`,

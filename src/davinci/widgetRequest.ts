@@ -476,25 +476,74 @@ function metricVocabulary(metric: DashboardMetricDescriptor): Set<string> {
   return vocabulary
 }
 
-/** Words that can sit around a metric's name without asking for anything else. */
+/** Words that can sit around a metric's name, before or after it, without asking for anything else. */
 const NAME_FILLER = new Set(['show', 'me', 'my', 'our', 'the', 'a', 'an', 'of', 'for', 'to', 'please', 'add', 'see', 'view', 'display', 'pull', 'up', 'all', 'and', 'in', 'on'])
 
+/** …only BEFORE it: how the request is put ("can you show me…", "now show…", "let me see…", "give me…"). */
+const LEAD_ONLY = new Set([
+  'can', 'could', 'would', 'will', 'you', 'u', 'pls', 'kindly', 'hey', 'hi', 'hello', 'ok', 'okay', 'yes', 'yeah', 'sure', 'great',
+  'now', 'also', 'then', 'just', 'actually', 'so', 'well', 'um',
+  'give', 'get', 'bring', 'fetch', 'load', 'open', 'look', 'at', 'let', "let's", "let'", 'lets', 'us', 'track', 'monitor', 'watch',
+  'create', 'build', 'make', 'draft', 'put', 'pin', 'plot',
+])
+
+/** …only AFTER it: a modifier, a date qualifier, or what kind of figure ("orders since Monday", "orders total", "open rate pls"). */
+const TRAIL_ONLY = new Set([
+  'pls', 'now', 'too', 'again', 'as', 'well', 'instead', 'so', 'far', 'date', 'over', 'time', 'last', 'past', 'previous', 'this',
+  'from', 'since', 'during', 'until', 'through', 'by',
+  'hour', 'day', 'week', 'month', 'quarter', 'year', 'minute',
+  'january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'sept', 'october', 'november', 'december',
+  'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
+])
+
+/** …on either side: what kind of figure it is ("total orders", "orders summary"). */
+const FIGURE_WORDS = new Set(['total', 'number', 'count', 'stat', 'statistic', 'data', 'report', 'summary', 'overview', 'figure', 'metric', 'trend', 'growth'])
+
+/** A token as `tokenize` leaves it, minus a possessive ("today's" → "today'") and any stray apostrophe. */
+const bare = (token: string): string => token.replace(/'s?$/, '')
+
 /**
- * The prompt is nothing BUT the metric's name — "orders", "show my open rate", "top campaigns last 30 days".
- * A sentence that merely contains one ("sales are slow", "boost sales", "thanks for the orders") mentions
- * a metric without asking to see it: one word outside the metric's vocabulary is enough to say so.
+ * The prompt is nothing BUT the metric's name — "orders", "show my open rate", "can you show me orders since
+ * Monday", "top campaigns by open rate". A sentence that merely contains one ("sales are slow", "boost sales",
+ * "thanks for the orders") mentions a metric without asking to see it: one word that is neither the metric's
+ * vocabulary, nor a way of putting the request, nor a date qualifier is enough to say so. (Forecasts —
+ * "orders next year" — stay out too: "next" is in neither list.)
  */
 export function namesOnlyMetric(resolution: WidgetResolution, metrics: DashboardMetricDescriptor[] = []): boolean {
   const { request, metric } = resolution
   const vocabulary = metricVocabulary(metric)
-  const rangeWords = new Set(request.range ? tokenize(request.range.phrase) : [])
-  // "top campaigns by revenue": what follows "by" may be any measure the dashboard knows.
+  const rangeWords = new Set(request.range ? tokenize(request.range.phrase).map(bare) : [])
+  // "top campaigns by revenue" / "… by open rate": what follows "by" may be any run of measures the dashboard knows.
   const measures = new Set(metrics.flatMap((m) => [...metricVocabulary(m)]))
-  return request.tokens.every((token, index) => {
-    if (vocabulary.has(token) || NAME_FILLER.has(token) || rangeWords.has(token) || /^\d+%?$/.test(token)) return true
-    if (token === 'by') return measures.has(request.tokens[index + 1] ?? '')
-    return request.tokens[index - 1] === 'by' && measures.has(token)
-  })
+  const tokens = request.tokens.map(bare)
+
+  const isName = (token: string) => vocabulary.has(token) || NAME_FILLER.has(token) || FIGURE_WORDS.has(token) || rangeWords.has(token) || /^\d+%?$/.test(token)
+
+  let index = 0
+  while (index < tokens.length && LEAD_ONLY.has(tokens[index]!) && !vocabulary.has(tokens[index]!)) index += 1
+
+  let inTail = false
+  let afterBy = false
+  for (; index < tokens.length; index += 1) {
+    const token = tokens[index]!
+    if (afterBy && measures.has(token)) continue
+    afterBy = false
+    if (token === 'by' && measures.has(tokens[index + 1] ?? '')) {
+      afterBy = true
+      continue
+    }
+    if (inTail) {
+      if (TRAIL_ONLY.has(token) || isName(token)) continue
+      return false
+    }
+    if (isName(token)) continue
+    if (TRAIL_ONLY.has(token)) {
+      inTail = true
+      continue
+    }
+    return false
+  }
+  return true
 }
 
 export function draftFromResolution(

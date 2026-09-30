@@ -17,8 +17,16 @@ export type DvIntentKind = 'campaign' | 'product' | 'revenue' | 'segment' | 'eng
 
 const QUESTION_LEAD = /^(?:what|what's|whats|which|why|how|how's|hows|who|when|where|is|are|do|does|did|can|could|should|would|will|was|were)\b/
 const POLITE_REQUEST = /^(?:can|could|would|will) (?:you|u)\b|^please\b/
-/** "What needs my attention?", "How do I…?" — wants an answer, not an action. */
-export const isQuestion = (t: string): boolean => (/\?\s*$/.test(t) || QUESTION_LEAD.test(t)) && !POLITE_REQUEST.test(t)
+/** "Hey Da Vinci, can you create a campaign?" — the greeting and the name are not part of the request. */
+const GREETING = /^(?:(?:hey|hi|hello|ok|okay|um|so|well)\b[,.!]?\s+)*(?:da ?vinci\b[,:!]?\s+)?/
+/**
+ * "What needs my attention?", "How do I…?" — wants an answer, not an action. Any casing ("How many carts were
+ * abandoned" typed or dictated has no "?" and a capital), and a greeting in front doesn't hide a polite request.
+ */
+export const isQuestion = (text: string): boolean => {
+  const t = normalizePrompt(text).replace(GREETING, '')
+  return (/\?\s*$/.test(t) || QUESTION_LEAD.test(t)) && !POLITE_REQUEST.test(t)
+}
 
 const HOW_TO = /^(?:how (?:do|can|should|would|could|to)\b|what(?:'s| is| are) (?:the )?(?:best|right|ideal|good|recommended)\b|when (?:should|is the best)\b|is it (?:ok|okay|good|worth|possible)\b|should (?:i|we)\b|can i\b|could i\b)/
 const isHowTo = (t: string): boolean => HOW_TO.test(t)
@@ -34,15 +42,18 @@ export function isExplainQuestion(t: string): boolean {
 }
 
 /**
- * Text inside quotes is a merchant-authored NAME ("Weekly Sales Report"), not part of the request — the
- * hand-offs from the journey and theme builders quote them. A prompt that is little more than a quote
- * (`Show "revenue by channel"`) keeps it: there is nothing left to route on.
+ * A quoted span that a cue marks as a merchant-authored NAME — `journey "Weekly Sales Report"`, `theme "Black
+ * Friday Chart"`, `called "Win-back"`, `"Weekly Deals" journey` — is not part of the request: the journey and
+ * theme builders' hand-offs quote theirs. Any other quote stays: `Send "Summer Newsletter" to VIP customers`
+ * is a brief, and the newsletter in it is the thing to send.
  */
-const QUOTED = /["“”][^"“”]*["“”]/g
-function withoutQuoted(text: string): string {
-  const rest = text.replace(QUOTED, ' ')
-  return rest.trim().split(/\s+/).filter(Boolean).length >= 2 ? rest : text
-}
+const NAME_CUE = '(?:journeys?|themes?|segments?|lists?|flows?|series|sequences?|templates?|dashboards?|widgets?|stores?|storefronts?|automations?|campaigns?|called|named|titled)'
+const NAMED_AFTER_CUE = new RegExp(`\\b${NAME_CUE}\\s+["“][^"“”]*["”]`, 'gi')
+const NAMED_BEFORE_CUE = new RegExp(`["“][^"“”]*["”]\\s+${NAME_CUE}\\b`, 'gi')
+const withoutQuoted = (text: string): string => text.replace(NAMED_AFTER_CUE, ' ').replace(NAMED_BEFORE_CUE, ' ')
+
+/** The routable text of a prompt: lower-cased, merchant-authored names and a leading greeting removed. */
+const prepare = (text: string): string => normalizePrompt(withoutQuoted(text)).replace(GREETING, '')
 
 // ── Intent classification ────────────────────────────────────────────────────
 
@@ -56,15 +67,31 @@ const REVIEW_VERB = /\b(?:review|analy[sz]e|check|audit|improve|optimi[sz]e|edit
 const REVIEW_QUESTION = /\b(?:was|were|did|how (?:good|well|is|are|many|big)|how's|performance|results|report|doing|any good)\b/
 const CAMPAIGN_A = /\b(?:run|send|create|launch|draft|set ?up|start|schedule|build|make|want|need|plan)\b[^.]*\b(?:campaign|promo|promotion|blast|newsletter)\b/
 const CAMPAIGN_B = /send .*(?:email|campaign)|email .*(?:blast|campaign)/
+// "campaign revenue", "campaign performance" — here "campaign" is part of a METRIC's name, not the thing to create.
+const CAMPAIGN_METRIC = /\bcampaigns?\s+(?:revenue|sales|performance|sends?|opens?|clicks?|results?|stats?|analytics|report|metrics?|roi|conversions?|orders?)\b/g
 const ENGINE = /\brecommendation(?:s)?\s+(?:engine|widget|type)\b|which\s+(?:recommendation|engine)|\bengine\b.*\b(?:use|pick|choose|recommend)\b|shoppers\s+(?:should\s+)?see/
 const PRODUCT = /\b(?:add|create|draft|write)\b.*\b(?:product|item|sku)\b|\bproduct description\b/
 // "Draft an email announcing our new product" is email copy, not a product description.
 const NOT_PRODUCT_COPY = /\b(?:email|newsletter|campaign|sms|blog|post|announcement)\b/
 /**
- * Asking for ideas or a subject line, or telling Da Vinci NOT to do something, is not a brief for the
- * campaign wizard or the product card ("I need ideas for a campaign", "Don't send the newsletter").
+ * Asking FOR ideas or a subject line, or telling Da Vinci NOT to do something, is not a brief for the campaign
+ * wizard or the product card ("I need ideas for a campaign", "Draft a subject line for my newsletter", "Don't
+ * send the newsletter"). A brief that merely CONTAINS them is still a brief: "Send a newsletter with holiday
+ * gift ideas", `Create a campaign with the subject line "Summer sale"`, "Don't forget to send a newsletter".
  */
-const NOT_A_BRIEF = /\b(?:ideas?|tips?|suggestions?|examples?|inspiration|subject lines?)\b|^(?:don'?t|do not|never|stop)\b/
+const ASKS_FOR_CONTENT = /\b(?:ideas?|tips?|suggestions?|examples?|inspiration)\b|\b(?:draft|write|need|want|give me|get me|suggest|generate|come up with|brainstorm)\b[^.]*\bsubject lines?\b/
+// ("Send me some newsletter tips" is not a send: `send me` names the recipient, and what follows is the content asked for.)
+const LEADS_WITH_MAKE = /^(?:(?:please|kindly)\s+)?(?:(?:can|could|would|will) (?:you|u)\s+)?(?:(?:i(?:'d| would)? (?:want|need|like) to|let'?s|lets)\s+)?(?:run|send(?!\s+(?:me|us)\b)|create|launch|schedule|set ?up|start|build|make|plan)\b/
+const NEGATED_LEAD = /^(?:don'?t|do not|never|stop)\b(?!\s+(?:forget|wait|hesitate|let))/
+const isNotABrief = (t: string): boolean => NEGATED_LEAD.test(t) || (ASKS_FOR_CONTENT.test(t) && !LEADS_WITH_MAKE.test(t))
+
+/**
+ * Something is to be MADE: a real creating verb, or "I want / I need …" that isn't about looking at something
+ * ("I want to see campaign revenue by folder" is a chart, "I want a campaign for lapsed buyers" is a brief).
+ */
+const READ_CUE = /\b(?:see|view|check|compare|look at|display|track|monitor|show|list)\b/
+const REAL_CREATE = /\b(?:build|create|make|set ?up|define|save|start|draft|generate|add|send|run|launch|schedule|plan|write)\b/
+const asksToMake = (t: string): boolean => REAL_CREATE.test(t) || (/\b(?:want|need)\b/.test(t) && !READ_CUE.test(t))
 
 const REVENUE_WORD = /\b(?:revenue|sales|gmv|aov|average order value|earnings|takings)\b/
 const REVENUE_STATUS = /\b(?:how(?:'s| is| are| was| were| did| has| have| does| do)|what(?:'s| is| are| was| were| did)|show me|give me|tell me|report(?: on)?|check|summary of|update on|overview of)\b/
@@ -96,7 +123,7 @@ const SEGMENT_VERB = /\b(?:build|create|make|set ?up|define|save|start|draft|gen
 const isSegmentCreate = (t: string): boolean => SEGMENT_NOUN.test(t) && SEGMENT_VERB.test(t) && !isQuestion(t)
 
 export function classifyIntent(text: string): DvIntentKind {
-  const t = normalizePrompt(withoutQuoted(text))
+  const t = prepare(text)
   if (isExplainQuestion(t)) return 'fallback'
 
   // Journey CREATION only. Reviews, journeys named in quotes (already being built) and
@@ -110,8 +137,9 @@ export function classifyIntent(text: string): DvIntentKind {
   // wants an answer, not a wizard.
   const isReviewQuestion = REVIEW_QUESTION.test(t)
   const howTo = isHowTo(t)
-  const asksForAnswer = isQuestion(t) || NOT_A_BRIEF.test(t)
-  if (!isReviewQuestion && !howTo && !asksForAnswer && (CAMPAIGN_A.test(t) || CAMPAIGN_B.test(t))) return 'campaign'
+  const asksForAnswer = isQuestion(t) || isNotABrief(t)
+  const forCampaign = t.replace(CAMPAIGN_METRIC, ' ')
+  if (!isReviewQuestion && !howTo && !asksForAnswer && asksToMake(t) && (CAMPAIGN_A.test(forCampaign) || CAMPAIGN_B.test(forCampaign))) return 'campaign'
 
   // Goal language without the word "journey" ("win back customers who haven't bought in 90
   // days") — after the campaign check so "run a campaign to lapsed buyers" stays a campaign.
@@ -128,8 +156,11 @@ export function classifyIntent(text: string): DvIntentKind {
 
 export type VisualAsk = 'chart' | 'breakdown' | 'none'
 
-/** Verbs that DO something in the world. (`\bsend\b` doesn't match "sends" — "Show sends per month" stays a chart.) */
-const DELIVERY_VERB = /\b(?:send|schedule|launch|run)\b/
+/**
+ * An errand: a delivery verb followed by something deliverable ("Send a weekly digest to subscribers"). "Run a
+ * report on revenue by channel", "Show revenue by day since launch" and "Show sends per month" are not errands.
+ */
+const DELIVERY = /\b(?:send|schedule|launch|run)\b[^.]*\b(?:newsletters?|e-?mails?|campaigns?|promos?|promotions?|digests?|blasts?|messages?|sms|texts?)\b/
 
 /**
  * How strongly the merchant asked to SEE something. 'chart' is an explicit ask — a chart word, "…to my
@@ -139,13 +170,13 @@ const DELIVERY_VERB = /\b(?:send|schedule|launch|run)\b/
  * `Review my data journey "Weekly Sales Report"` is not a request for a weekly chart.
  */
 export function visualAsk(text: string): VisualAsk {
-  const t = normalizePrompt(withoutQuoted(text))
+  const t = prepare(text)
   if (isHowTo(t)) return 'none'
   const req = parseWidgetRequest(t)
   if (req.family) return 'chart'
   if (/\b(?:add|put|pin)\b.*\b(?:to|on) (?:my|the|this) dashboard\b/.test(t)) return 'chart'
   // "Send a weekly digest to subscribers" has a cadence word but is an errand, not a chart.
-  if (req.dimension || req.grain) return DELIVERY_VERB.test(t) ? 'none' : 'breakdown'
+  if (req.dimension || req.grain) return DELIVERY.test(t) ? 'none' : 'breakdown'
   if (isQuestion(t)) return 'none'
   return req.timeShape && /\b(?:show|add|plot|make|create|build|draft|give me|put|pin|display|visuali[sz]e|track)\b/.test(t) ? 'chart' : 'none'
 }
@@ -153,13 +184,11 @@ export function visualAsk(text: string): VisualAsk {
 /** The merchant asked to SEE something: a chart word, a breakdown, a time series. */
 export const wantsVisual = (text: string): boolean => visualAsk(text) !== 'none'
 
-const CREATE_VERB = /\b(?:build|create|make|set ?up|define|save|start|draft|generate|add|send|run|launch|schedule|plan|write|want|need)\b/
-
 /** Can a breakdown-only ask ("… by country") override this intent? Only when the intent isn't an action. */
 function breakdownBeatsIntent(intent: DvIntentKind, t: string): boolean {
   if (intent === 'fallback' || intent === 'revenue') return true
   // "Show contacts by segment" reads data; "Build a segment by country" creates one.
-  return intent === 'segment' && !CREATE_VERB.test(t)
+  return intent === 'segment' && !asksToMake(t)
 }
 
 // ── Lane decision ────────────────────────────────────────────────────────────
@@ -179,7 +208,7 @@ export type RouteDecision =
   | { lane: 'gemini' }
 
 export function routePrompt(text: string, ctx: RouteContext): RouteDecision {
-  const t = normalizePrompt(withoutQuoted(text))
+  const t = prepare(text)
   if (isExplainQuestion(t)) return { lane: 'gemini' }
 
   const intent = classifyIntent(text)

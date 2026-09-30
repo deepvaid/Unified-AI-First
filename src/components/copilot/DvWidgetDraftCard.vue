@@ -32,11 +32,17 @@ const props = withDefaults(defineProps<{
   /** Set once this draft became a widget; persisted on the message so a remount can't offer Add twice. */
   added?: AddedWidgetRef | null
   selected?: boolean
+  /**
+   * The host is already a live region (the chat transcript, a `role="log"`), so this card's alerts stay quiet
+   * rather than be read twice. A host that isn't (the voice surface) passes `false` and they announce themselves.
+   */
+  hostAnnounces?: boolean
 }>(), {
   filters: undefined,
   note: null,
   added: null,
   selected: false,
+  hostAnnounces: true,
 })
 
 const emit = defineEmits<{
@@ -150,7 +156,7 @@ function handleExpandAdd() {
       </span>
     </header>
 
-    <MpAlert v-if="note && !isAdded" tone="info" icon="info" live="off" class="dv-draft__alert">{{ note }}</MpAlert>
+    <MpAlert v-if="note && !isAdded" tone="info" icon="info" :live="hostAnnounces ? 'off' : undefined" class="dv-draft__alert">{{ note }}</MpAlert>
 
     <div class="dv-draft__preview">
       <div class="dv-draft__frame" :class="{ 'dv-draft__frame--kpi': isKpiPreview }">
@@ -166,7 +172,7 @@ function handleExpandAdd() {
       </div>
     </div>
 
-    <MpAlert v-if="errorText && !isAdded" tone="error" icon="circle-alert" live="off" class="dv-draft__alert">{{ errorText }}</MpAlert>
+    <MpAlert v-if="errorText && !isAdded" tone="error" icon="circle-alert" :live="hostAnnounces ? 'off' : undefined" class="dv-draft__alert">{{ errorText }}</MpAlert>
 
     <footer class="dv-draft__actions">
       <v-btn

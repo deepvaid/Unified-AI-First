@@ -112,7 +112,9 @@ export function useDaVinciResponder() {
     const components: ChatComponent[] = []
     const cards = 'cards' in response ? response.cards ?? [] : []
     if (cards.length || response.quickReplies?.length) {
-      components.push({ type: 'intentCards', props: { cards, quickReplies: response.quickReplies } })
+      // A wizard's own replies are always bound to it; a plain intent's only while it holds a clarification open.
+      const bound = !('pending' in response) || !!response.pending
+      components.push({ type: 'intentCards', props: { cards, quickReplies: response.quickReplies, bound } })
     }
     if ('onboardingCard' in response && response.onboardingCard) {
       components.push({ type: 'campaignOnboarding', props: response.onboardingCard })
@@ -169,7 +171,7 @@ export function useDaVinciResponder() {
         toolSteps: res.steps,
         componentData:
           res.cards.length || res.quickReplies?.length
-            ? [{ type: 'intentCards', props: { cards: res.cards, quickReplies: res.quickReplies } }]
+            ? [{ type: 'intentCards', props: { cards: res.cards, quickReplies: res.quickReplies, bound: !!res.pending } }]
             : undefined,
       },
       speech: res.speech ?? res.reply,

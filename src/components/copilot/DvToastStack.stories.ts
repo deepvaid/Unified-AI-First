@@ -33,9 +33,9 @@ and the \`DaVinciToastInput\` / \`DaVinciToast\` types in \`src/composables/useD
 documented inline there.
 
 ### A11y
-- **Provides:** each toast is its own live region — \`role="status"\` (polite) for success and info,
-  \`role="alert"\` for the warning and error tones, which are announced at once. The container carries no
-  \`aria-live\` of its own, so nothing is announced twice; the
+- **Provides:** a persistent \`aria-live="polite"\` container (the region must exist before a toast is
+  inserted, or screen readers may not announce it) with \`role="status"\` toasts — \`role="alert"\` for the
+  error tone, as \`MpToastStack\` does; the
   auto-dismiss timer pauses on hover and focus and resumes on leave/blur, so a keyboard user
   tabbing to the action button is never cut off (WCAG 2.2.1).
 - **Consumer must:** keep \`title\` meaningful on its own and give \`action\` a verb label.

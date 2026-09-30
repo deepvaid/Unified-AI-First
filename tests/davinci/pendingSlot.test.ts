@@ -44,6 +44,20 @@ const table: Array<[PendingSlot, string, 'answer' | 'decline' | 'unrelated']> = 
   [journeyGoal, 'I want to welcome new subscribers', 'answer'],
   [journeyGoal, 'how many carts were abandoned', 'unrelated'],
   [journeyGoal, 'who are my leaders', 'unrelated'],
+  // Typed and dictated questions are capitalised and often have no "?".
+  [journeyGoal, 'How many carts were abandoned', 'unrelated'],
+  [journeyGoal, 'What is my abandoned cart rate', 'unrelated'],
+  [journeyGoal, 'Can you recover abandoned carts?', 'answer'],
+  // A "what about" wrapper doesn't reopen the door; the label the advisor itself names still answers.
+  [engine, 'What about cart abandonment rate?', 'unrelated'],
+  [engine, 'And how are sales trending?', 'unrelated'],
+  [engine, 'What about open rate trend?', 'unrelated'],
+  [engine, 'Frequently Purchased Together', 'answer'],
+  [engine, 'Trending now', 'answer'],
+  [engine, "Let's go with trending", 'answer'],
+  [engine, 'yes trending', 'answer'],
+  [engine, 'New Arrivals', 'answer'],
+  [engine, 'popular instead', 'answer'],
 ]
 for (const [slot, text, expected] of table) {
   test(`${slot.intent}/${slot.slot}: "${text}" → ${expected}`, () => {

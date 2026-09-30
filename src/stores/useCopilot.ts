@@ -38,6 +38,12 @@ export interface DraftSetProps {
 export interface IntentCardsProps {
   cards: DvCardDescriptor[]
   quickReplies?: DvQuickReply[]
+  /**
+   * The quick replies belong to a live guided flow or an open clarification ("Use VIP…", "Open in journey
+   * wizard") — they mean nothing once that is gone, so a restored conversation does not bring them back. Chips
+   * that are just prompts to send ("Try one of these:") are not bound and are kept.
+   */
+  bound?: boolean
 }
 
 export interface CampaignOnboardingAction {

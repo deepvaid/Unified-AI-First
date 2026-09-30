@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { classifyIntent, isExplainQuestion, routePrompt, visualAsk, wantsVisual } from '../../src/davinci/promptRouting.ts'
+import { classifyIntent, isExplainQuestion, isQuestion, routePrompt, visualAsk, wantsVisual } from '../../src/davinci/promptRouting.ts'
 import { ctx, SERVICE_ONLY_METRICS } from './fixtures.ts'
 
 const lane = (prompt: string, overrides = {}) => routePrompt(prompt, ctx(overrides))
@@ -29,6 +29,29 @@ const widgetPrompts: Array<[string, string]> = [
   ['orders last 30 days', 'commerce_orders'],
   ['Top campaigns by revenue', 'marketing_top_campaigns'],
   ['top products by revenue', 'commerce_best_sellers'],
+  ['top campaigns by open rate', 'marketing_top_campaigns'],
+  // …and the ways a request is put around the name: polite frames, discourse words, date qualifiers.
+  ['Can you show me my open rate', 'marketing_open_rate'],
+  ['Now show conversion rate', 'commerce_conversion_rate'],
+  ['Give me orders', 'commerce_orders'],
+  ['Let me see orders over time', 'commerce_orders'],
+  ["today's orders", 'commerce_orders'],
+  ['orders from last month', 'commerce_orders'],
+  ['orders since Monday', 'commerce_orders'],
+  ['show me orders now', 'commerce_orders'],
+  ['orders summary', 'commerce_orders'],
+  ['orders so far', 'commerce_orders'],
+  ['open rate pls', 'marketing_open_rate'],
+  // A read ask that names a campaign or segment is a chart, not a wizard or a card.
+  ['I want to see campaign revenue by folder', 'marketing_campaign_revenue'],
+  ['I need to see revenue by campaign', 'marketing_campaign_revenue'],
+  ['I want to see contacts by segment', 'contacts_top_segments'],
+  // "run" / "send" / "launch" without anything deliverable is not an errand.
+  ['Run a report on revenue by channel', 'commerce_revenue_by_channel'],
+  ['Can you run a report on revenue by channel?', 'commerce_revenue_by_channel'],
+  ['Show revenue by day since launch', 'commerce_revenue_over_time'],
+  ['Show me how many emails we send per day', 'marketing_email_volume'],
+  ['Show revenue by channel during the campaign run', 'commerce_revenue_by_channel'],
   // A cadence word beside a chart ask is still a chart ask.
   ['Show sends per month', 'analytics_sends_over_time'],
 ]
@@ -110,6 +133,19 @@ const advisorPrompts = [
   'low sales',
   'my customers are angry',
   'thanks for the orders',
+  // Forecasts and complaints around a metric name are still conversations.
+  'orders next year',
+  'forecast orders',
+  'improve open rate',
+  'orders are terrible',
+  // Errands and asks FOR content: the advisor, not a chart.
+  'Schedule a weekly email',
+  'Draft a subject line for my newsletter',
+  'Give me campaign ideas',
+  'Send me some newsletter tips',
+  'Send me campaign ideas',
+  // A question stays a question with a greeting in front.
+  'Hey Da Vinci, what time should I send a campaign?',
 ]
 for (const prompt of advisorPrompts) {
   test(`advisor: "${prompt}"`, () => {
@@ -139,6 +175,20 @@ const intentPrompts: Array<[string, string]> = [
   ["Create a campaign to customers who haven't ordered in 60 days", 'campaign'],
   ['Make a campaign for lapsed buyers', 'campaign'],
   ['Add a new product', 'product'],
+  // A brief that merely CONTAINS ideas, a subject line, a negation or a quoted name is still a brief.
+  ['Send a newsletter with holiday gift ideas', 'campaign'],
+  ['Create a campaign with the subject line "Summer sale"', 'campaign'],
+  ["Don't forget to send a newsletter to VIPs", 'campaign'],
+  ['Send "Summer Newsletter" to VIP customers', 'campaign'],
+  ['Launch "Cyber Monday Blast" to all subscribers', 'campaign'],
+  ['I want to send a campaign', 'campaign'],
+  ['I need a campaign for Black Friday', 'campaign'],
+  ['I want a campaign for lapsed buyers', 'campaign'],
+  ['I want a segment by country', 'segment'],
+  // A greeting or the assistant's name in front doesn't turn a polite request into a question.
+  ['Hey Da Vinci, can you create a campaign?', 'campaign'],
+  ['Da Vinci, can you send a newsletter to VIP customers?', 'campaign'],
+  ['Hi, could you write a product description?', 'product'],
 ]
 for (const [prompt, intent] of intentPrompts) {
   test(`intent ${intent}: "${prompt}"`, () => {
@@ -205,4 +255,22 @@ test('a generic "chart" of a KPI-only metric says it drafted a tile', () => {
     assert.equal(decision.lane, 'widget', prompt)
     if (decision.lane === 'widget') assert.match(decision.resolution.note ?? '', /only be shown as a KPI tile.*instead of a chart/, prompt)
   }
+})
+
+test('isQuestion ignores casing, and a greeting or the assistant\'s name in front', () => {
+  assert.equal(isQuestion('How many carts were abandoned'), true)
+  assert.equal(isQuestion('What is my abandoned cart rate'), true)
+  assert.equal(isQuestion('Hey Da Vinci, what time should I send a campaign?'), true)
+  assert.equal(isQuestion('Hey Da Vinci, can you create a campaign?'), false)
+  assert.equal(isQuestion('Da Vinci, can you send a newsletter?'), false)
+  assert.equal(isQuestion('Recover abandoned carts'), false)
+})
+
+test('a quoted name is ignored only where a cue says it is a name', () => {
+  // The journey/theme hand-offs quote a merchant-authored name after a cue word…
+  assert.equal(visualAsk('Review my data journey "Weekly Sales Report" and suggest improvements'), 'none')
+  assert.equal(visualAsk('Review "Weekly Deals" journey'), 'none')
+  assert.equal(visualAsk('Review my storefront theme "Black Friday Chart"'), 'none')
+  // …but a quote that is the thing to send stays part of the request.
+  assert.deepEqual(lane('Send "Summer Newsletter" to VIP customers'), { lane: 'intent', intent: 'campaign' })
 })

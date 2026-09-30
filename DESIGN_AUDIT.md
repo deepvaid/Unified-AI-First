@@ -1973,7 +1973,7 @@ Per CLAUDE.md → "Log every rename or breaking change in the session changelog"
 chart generation: a drafted chart usually could not be added, the requested chart type was ignored, every
 preview was sample art, the in-chat revenue chart had a fake axis and dead buttons, and the full-page
 experience had no chart path. Routing, request resolution, history and conversation rules live in pure
-modules (`src/davinci/`, `npm run test:davinci` — 233 `node:test` tests, also run under
+modules (`src/davinci/`, `npm run test:davinci` — 290 `node:test` tests, also run under
 `TZ=America/Los_Angeles`); the audit that started it is `docs/davinci-copilot-audit-2026-09.md`.
 
 ### Fixed
@@ -2025,7 +2025,7 @@ modules (`src/davinci/`, `npm run test:davinci` — 233 `node:test` tests, also 
 
 An independent review of the finished branch — run against ~150 realistic merchant prompts and a 40k-prompt
 fuzz of the pure modules — found regressions in the routing rules themselves. All fixed, each with a row in
-`tests/davinci/` (233 tests now):
+`tests/davinci/`:
 
 - **Cadence and "by X" words no longer steal actions into the widget lane.** "Send a weekly newsletter to VIP
   customers", "Build a segment by country" and "Send a weekly digest" drafted charts. `visualAsk` now
@@ -2059,10 +2059,42 @@ fuzz of the pure modules — found regressions in the routing rules themselves. 
   gone) and the page subtracts it.
 - **Wizard goal sentence** — "to VIP customers" typed as the objective read "the goal is to to vip customers";
   a merchant's own words are quoted, the quick replies read as before ("the goal is to promote an offer").
-- **Accessibility / rules** — the toast container no longer wraps alert toasts in a second live region, the draft
-  card's blocker alert is `live="off"` inside the transcript, and the literals the review flagged are now a
-  computed container threshold (KPI row), the `widgetHeight.lg` token (enlarged chart) and one declared card
-  measure (experience). 2px focus rings and 1px hairlines stay off the scale by the Phase 4 decision.
+- **Accessibility / rules** — the draft card's alerts stay quiet inside the transcript (a live log; refined
+  below), and the literals the review flagged are now a computed container threshold (KPI row), the
+  `widgetHeight.lg` token (enlarged chart) and one declared card measure (experience). 2px focus rings and 1px
+  hairlines stay off the scale by the Phase 4 decision.
+
+A second independent review of those fixes (about a thousand prompts, old and new sources side by side) found
+that several of them were too broad. Corrected, with rows in `tests/davinci/` (290 tests now) and a
+~13,000-prompt metric × lead-in × tail differential against the pre-review code — every remaining lane change
+is intended:
+
+- **A bare metric may be put politely.** "Can you show me my open rate", "Give me orders", "today's orders",
+  "orders since Monday", "top campaigns by open rate" went to the advisor; lead-in words (polite frames,
+  discourse words, request verbs incl. create/build/make), trailing date qualifiers and figure words, and a run of
+  measures after "by" are now allowed. "boost sales", "thanks for the orders" and forecasts still are not.
+- **Read asks and metric names are not wizards.** "I want to see campaign revenue by folder" started the campaign
+  wizard; `want`/`need` only count as making something when nothing is being looked at, and "campaign revenue" /
+  "campaign performance" are metric names, not the thing to create.
+- **An errand needs a deliverable.** "Run a report on revenue by channel" and "Show revenue by day since launch"
+  were downgraded because they contain `run` / `launch`; only send/schedule/launch/run + a newsletter, email,
+  campaign, digest… is an errand.
+- **A brief may contain ideas, a subject line or a quoted name.** "Send a newsletter with holiday gift ideas",
+  `Create a campaign with the subject line "Summer sale"`, "Don't forget to send a newsletter", `Send "Summer
+  Newsletter" to VIP customers` went to the advisor; only a request FOR ideas or a subject line does. Quoted
+  spans are ignored only after a naming cue (journey, theme, segment, called…), not everywhere.
+- **`isQuestion` ignores casing and a greeting.** "How many carts were abandoned" (typed or dictated: capital,
+  no "?") was taken as a journey goal, and "Hey Da Vinci, can you create a campaign?" as a question.
+- **Engine follow-ups strip their lead-in first** ("What about", "and", "let's go with", "yes"), then must still be
+  only an engine or page name — "What about cart abandonment rate?" is not one, "Frequently Purchased Together"
+  is.
+- **Restored conversations** keep the chips that are just prompts ("Try one of these:") and drop only the ones
+  bound to a live wizard or clarification (`IntentCardsProps.bound`); a storage too full for even the live
+  conversation no longer evicts the others from memory.
+- **Accessibility** — the toast stack is back to a persistent polite live region with per-toast roles, the
+  repo's own standard (`MpToastStack`); removing it risked silent toasts. The draft card's alerts are quiet only
+  where the host is a live log (`hostAnnounces`), and announce themselves in the voice surface.
+- **Wizard** — the "welcome back" sentence uses the same goal phrase as the acknowledgement.
 
 ### API added
 
@@ -2127,5 +2159,7 @@ fuzz of the pure modules — found regressions in the routing rules themselves. 
   are still fabricated.
 - `generateJourneyDraft` (`useJourneyGenerator`) is no longer used by the copilot — the wizard never received
   its draft. Wire it to Build with AI or delete it.
+- Other viewport-height shells (store editor, retail) still ignore the expiring-trial banner; they can subtract
+  `--mp-banner-offset` the way the copilot page now does.
 - The app-bar Co-pilot entry on the copilot page itself; the header subtitle ellipsis; the px sweep outside
   touched files; a real-browser check that the mic prompt doesn't appear on a plain dashboard load.

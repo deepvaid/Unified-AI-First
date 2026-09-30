@@ -198,21 +198,25 @@ test('rows group by the local day of their last activity', () => {
   assert.deepEqual(groups.older.map((c) => c.id), ['older'])
 })
 
-test('quick-reply chips are not kept: they belong to the live moment, not the transcript', () => {
+test('quick replies bound to a live flow or clarification are not kept; plain prompt chips are', () => {
   const cards = [{ type: 'insight', props: { headline: 'Lapsed Buyer journey', description: 'x' } }]
   const chips = [{ label: 'Open in journey wizard', value: 'Open the journey wizard' }]
   const thread = [
     user('u1', 'win back customers'),
-    bot('a1', 'That fits', [{ type: 'intentCards', props: { cards, quickReplies: chips } } as never]),
-    bot('a2', 'Which goal?', [{ type: 'intentCards', props: { cards: [], quickReplies: chips } } as never]),
+    bot('a1', 'That fits', [{ type: 'intentCards', props: { cards, quickReplies: chips, bound: true } } as never]),
+    bot('a2', 'Which goal?', [{ type: 'intentCards', props: { cards: [], quickReplies: chips, bound: true } } as never]),
+    // "Try one of these:" points at its chips — they are just prompts to send, and stay.
+    bot('a3', 'Try one of these:', [{ type: 'intentCards', props: { cards: [], quickReplies: chips } } as never]),
   ]
   const built = buildRecord('c1', thread, undefined, NOW)!
   const kept = built.messages[1]!.componentData![0]!.props as { cards: unknown[]; quickReplies?: unknown }
   assert.equal(kept.cards.length, 1)
   assert.equal(kept.quickReplies, undefined)
-  // A message that was nothing but chips keeps its words and loses the empty card list.
+  // A message that was nothing but bound chips keeps its words and loses the empty card list.
   assert.equal(built.messages[2]!.text, 'Which goal?')
   assert.equal(built.messages[2]!.componentData, undefined)
+  // Unbound chips survive, so the text that points at them still makes sense.
+  assert.deepEqual((built.messages[3]!.componentData![0]!.props as { quickReplies: unknown[] }).quickReplies, chips)
 })
 
 test('one huge message cannot crowd out the other conversations', () => {
@@ -271,4 +275,12 @@ test('persistList writes under the history key', () => {
   const seen: string[] = []
   persistList({ setItem: (key) => void seen.push(key) }, [record({ id: 'a' })])
   assert.deepEqual(seen, [HISTORY_KEY])
+})
+
+test('a storage too full for even the live conversation forgets nothing', () => {
+  const list = [record({ id: 'live', updatedAt: NOW }), record({ id: 'b', updatedAt: NOW - HOUR }), record({ id: 'c', updatedAt: NOW - 2 * HOUR })]
+  const full = { setItem() { throw quota() } }
+  // Nothing could be written, so nothing may be evicted from memory: the next write that does succeed
+  // would otherwise erase conversations that were only dropped from an attempt.
+  assert.deepEqual(persistList(full, list, 'live').map((c) => c.id), ['live', 'b', 'c'])
 })

@@ -13,15 +13,16 @@ const TONE_ICONS: Record<DaVinciToastTone, string> = {
 
 <template>
   <Teleport to="body">
-    <!-- No aria-live here: each toast is its own live region (status or alert), and a polite container around
-         an alert made screen readers announce the same toast twice. -->
-    <div class="dv-toast-stack">
+    <!-- Always mounted — only the toasts inside come and go. A screen reader needs the live region itself to
+         persist in the DOM for a toast to be announced reliably (docs/ui-system-audit/03-accessibility-audit.md §3),
+         which is how MpToastStack does it too; an error additionally says role="alert". -->
+    <div class="dv-toast-stack" aria-live="polite">
       <div
         v-for="toast in toasts"
         :key="toast.id"
         class="dv-toast"
         :class="{ 'is-leaving': toast.leaving }"
-        :role="toast.tone === 'warning' || toast.tone === 'error' ? 'alert' : 'status'"
+        :role="toast.tone === 'error' ? 'alert' : 'status'"
         @mouseenter="pause(toast.id)"
         @mouseleave="resume(toast.id)"
         @focusin="pause(toast.id)"

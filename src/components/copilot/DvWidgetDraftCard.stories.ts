@@ -50,6 +50,7 @@ const meta = {
     note: { control: 'text', description: 'What differs from what was asked for ("Orders can only be shown as a KPI tile…"). Shown above the preview until the widget is added.' },
     added: { control: 'object', description: 'The widget this draft became. Lives on the chat message, so a remount can\'t offer Add twice; the card still re-enables Add if that widget is deleted.' },
     selected: { control: 'boolean', description: 'Marks this card as the chosen draft in a multi-draft set. Presentational; the host owns which id is selected.' },
+    hostAnnounces: { control: 'boolean', description: 'True (default) when the host is already a live region — the chat transcript — so the card\'s note and blocker alerts stay quiet instead of being read twice. The voice surface passes false and they announce themselves.' },
   },
   parameters: {
     docs: {
