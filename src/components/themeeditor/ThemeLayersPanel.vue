@@ -1,13 +1,21 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import MpListRow from '@/components/MpListRow.vue'
+import { nextTick, reactive, ref } from 'vue'
+import MpIconButton from '@/components/MpIconButton.vue'
 import MpMenuItem from '@/components/MpMenuItem.vue'
-import { addableBlockKinds, getBlockDef, type ThemeEditorBlock, type ThemeEditorSection } from '@/stores/themeEditorData'
+import MpTreeRow from '@/components/MpTreeRow.vue'
+import {
+  addableBlockKinds,
+  getBlockDef,
+  getSectionDef,
+  type ThemeEditorBlock,
+  type ThemeEditorSection,
+} from '@/stores/themeEditorData'
 
-// The builder's Layers panel (store builder re-skin): the template's sections as boxed rows, each
-// expanding to its blocks (and a block's nested blocks — Trust Stats Bar → Stat: …), with
-// "Add section" above and "Add block" under each open section. Rows drag to reorder by their grip,
-// as in UAT; the trash on a row removes it. Selection is the host's — the panel only reports it.
+// The builder's Layers panel (store builder re-skin): the template's sections as a
+// tree of MpTreeRows — section → blocks → a block's nested blocks (Trust Stats Bar →
+// Stat: …) — with "Add section" above and an "Add block" command row closing each
+// open group. Rows drag to reorder, as in UAT; Alt + ↑ / ↓ does the same from the
+// keyboard (drag alone would fail WCAG 2.5.7 / 2.1.1). Selection is the host's.
 
 const props = defineProps<{
   sections: ThemeEditorSection[]
@@ -40,17 +48,63 @@ function selectSection(section: ThemeEditorSection) {
   if (!expanded.value.has(section.id)) expanded.value = new Set([...expanded.value, section.id])
 }
 
-function blockIcon(block: ThemeEditorBlock): string {
-  return getBlockDef(block.kind)?.icon ?? 'box'
+const sectionIcon = (section: ThemeEditorSection) => getSectionDef(section.kind)?.icon ?? 'layout-template'
+const blockIcon = (block: ThemeEditorBlock) => getBlockDef(block.kind)?.icon ?? 'box'
+const blockKindTitle = (kind: string) => getBlockDef(kind)?.title ?? kind
+
+// ── "Add block" — one menu, anchored to whichever command row opened it ──────
+const addMenu = reactive<{ open: boolean; target: Element | undefined; sectionId: string; parentBlockId?: string; kinds: string[] }>({
+  open: false,
+  target: undefined,
+  sectionId: '',
+  parentBlockId: undefined,
+  kinds: [],
+})
+
+function openAddMenu(event: MouseEvent, section: ThemeEditorSection, parent?: ThemeEditorBlock) {
+  addMenu.target = (event.currentTarget as Element | null) ?? undefined
+  addMenu.sectionId = section.id
+  addMenu.parentBlockId = parent?.id
+  addMenu.kinds = addableBlockKinds(section, parent)
+  addMenu.open = true
 }
 
-function blockKindTitle(kind: string): string {
-  return getBlockDef(kind)?.title ?? kind
+function pickBlockKind(kind: string) {
+  emit('addBlock', addMenu.sectionId, kind, addMenu.parentBlockId)
+  addMenu.open = false
 }
 
-// ── Drag to reorder (native HTML5, one list at a time) ───────────────────────
-const SECTION_MIME = 'application/x-theme-section-index'
-const BLOCK_MIME = 'application/x-theme-block-index'
+// ── Reorder: drag (pointer) and Alt + ↑ / ↓ (keyboard) ────────────────────────
+const rowRefs = new Map<string, { focus: () => void }>()
+const bindRow = (id: string) => (el: unknown) => {
+  if (el) rowRefs.set(id, el as { focus: () => void })
+  else rowRefs.delete(id)
+}
+
+const announcement = ref('')
+
+async function keyboardMove(id: string, label: string, to: number, count: number, move: () => void) {
+  if (to < 0 || to >= count) return
+  move()
+  announcement.value = `${label} moved to position ${to + 1} of ${count}`
+  await nextTick()
+  rowRefs.get(id)?.focus()
+}
+
+function onSectionKeydown(event: KeyboardEvent, section: ThemeEditorSection, index: number) {
+  if (!event.altKey || (event.key !== 'ArrowUp' && event.key !== 'ArrowDown')) return
+  event.preventDefault()
+  const to = index + (event.key === 'ArrowUp' ? -1 : 1)
+  void keyboardMove(section.id, section.label, to, props.sections.length, () => emit('reorderSection', index, to))
+}
+
+function onBlockKeydown(event: KeyboardEvent, section: ThemeEditorSection, block: ThemeEditorBlock, index: number) {
+  if (!event.altKey || (event.key !== 'ArrowUp' && event.key !== 'ArrowDown')) return
+  event.preventDefault()
+  event.stopPropagation()
+  const to = index + (event.key === 'ArrowUp' ? -1 : 1)
+  void keyboardMove(block.id, block.label, to, section.blocks.length, () => emit('reorderBlock', section.id, index, to))
+}
 
 const dragSection = ref<number | null>(null)
 const dragBlock = ref<{ sectionId: string; index: number } | null>(null)
@@ -58,21 +112,20 @@ const dropTarget = ref<string | null>(null)
 
 function onSectionDragStart(event: DragEvent, index: number) {
   dragSection.value = index
-  event.dataTransfer?.setData(SECTION_MIME, String(index))
+  event.dataTransfer?.setData('application/x-theme-section-index', String(index))
   if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move'
 }
 
-function onSectionDrop(index: number, sectionId: string) {
+function onSectionDrop(index: number) {
   dropTarget.value = null
   if (dragSection.value === null) return
   emit('reorderSection', dragSection.value, index)
   dragSection.value = null
-  void sectionId
 }
 
 function onBlockDragStart(event: DragEvent, sectionId: string, index: number) {
   dragBlock.value = { sectionId, index }
-  event.dataTransfer?.setData(BLOCK_MIME, String(index))
+  event.dataTransfer?.setData('application/x-theme-block-index', String(index))
   if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move'
   event.stopPropagation()
 }
@@ -89,8 +142,6 @@ function onDragEnd() {
   dragBlock.value = null
   dropTarget.value = null
 }
-
-void props
 </script>
 
 <template>
@@ -100,183 +151,121 @@ void props
       <v-btn variant="outlined" block prepend-icon="plus" class="text-none" @click="emit('addSection')">Add section</v-btn>
     </div>
 
-    <div class="te-layers__scroll" role="list" aria-label="Sections">
-      <template v-for="(section, index) in sections" :key="section.id">
-        <MpListRow
-          variant="boxed"
-          density="compact"
-          clickable
-          class="te-layer"
-          :class="{
-            'te-layer--selected': section.id === selectedSectionId && !selectedBlockId,
-            'te-layer--drop': dropTarget === section.id,
-          }"
+    <div class="te-layers__scroll">
+      <p id="te-layers-hint" class="d-sr-only">Drag a row, or press Alt with the up or down arrow, to reorder.</p>
+      <div class="d-sr-only" aria-live="polite">{{ announcement }}</div>
+
+      <div role="list" aria-label="Sections" aria-describedby="te-layers-hint">
+        <div
+          v-for="(section, index) in sections"
+          :key="section.id"
           role="listitem"
+          class="te-layers__item"
+          :class="{ 'te-layers__item--drop': dropTarget === section.id }"
           draggable="true"
-          :aria-current="section.id === selectedSectionId && !selectedBlockId ? 'true' : undefined"
-          @click="selectSection(section)"
           @dragstart="onSectionDragStart($event, index)"
           @dragover.prevent="dropTarget = section.id"
           @dragleave="dropTarget = null"
-          @drop.prevent="onSectionDrop(index, section.id)"
+          @drop.prevent="onSectionDrop(index)"
           @dragend="onDragEnd"
         >
-          <template #lead>
-            <v-btn
-              :icon="expanded.has(section.id) ? 'chevron-down' : 'chevron-right'"
-              variant="text"
-              size="x-small"
-              class="te-layer__toggle"
-              :aria-label="`${expanded.has(section.id) ? 'Collapse' : 'Expand'} ${section.label}`"
-              :aria-expanded="expanded.has(section.id)"
-              @click.stop="toggle(section.id)"
-            />
-            <v-icon size="15" class="te-layer__icon">layout-template</v-icon>
-          </template>
-          <span class="te-layer__label">{{ section.label }}</span>
-          <template #trailing>
-            <span class="te-layer__actions">
-              <v-icon size="14" class="te-layer__grip" aria-hidden="true">grip-vertical</v-icon>
-              <v-btn
-                icon="trash-2"
-                variant="text"
-                size="x-small"
-                :aria-label="`Remove ${section.label}`"
-                @click.stop="emit('removeSection', section.id)"
-              />
-            </span>
-          </template>
-        </MpListRow>
+          <MpTreeRow
+            :ref="bindRow(section.id)"
+            :label="section.label"
+            emphasis="prominent"
+            expandable
+            :expanded="expanded.has(section.id)"
+            :selected="section.id === selectedSectionId && !selectedBlockId"
+            class="te-layers__row"
+            @select="selectSection(section)"
+            @toggle="toggle(section.id)"
+            @keydown="onSectionKeydown($event, section, index)"
+          >
+            <template #lead>
+              <v-icon class="te-lead te-lead__type">{{ sectionIcon(section) }}</v-icon>
+              <v-icon class="te-lead te-lead__grip" aria-hidden="true">grip-vertical</v-icon>
+            </template>
+            <template #actions>
+              <MpIconButton size="sm" icon="trash-2" :ariaLabel="`Remove ${section.label}`" @click.stop="emit('removeSection', section.id)" />
+            </template>
+          </MpTreeRow>
 
-        <div v-if="expanded.has(section.id)" class="te-blocks" role="list" :aria-label="`${section.label} blocks`">
-          <template v-for="(block, blockIndex) in section.blocks" :key="block.id">
-            <MpListRow
-              variant="boxed"
-              density="compact"
-              clickable
-              class="te-layer te-layer--block"
-              :class="{ 'te-layer--selected': block.id === selectedBlockId, 'te-layer--drop': dropTarget === block.id }"
+          <div v-if="expanded.has(section.id)" role="list" :aria-label="`${section.label} blocks`">
+            <div
+              v-for="(block, blockIndex) in section.blocks"
+              :key="block.id"
               role="listitem"
+              class="te-layers__item"
+              :class="{ 'te-layers__item--drop': dropTarget === block.id }"
               draggable="true"
-              :aria-current="block.id === selectedBlockId ? 'true' : undefined"
-              @click.stop="emit('selectBlock', section.id, block.id)"
               @dragstart="onBlockDragStart($event, section.id, blockIndex)"
               @dragover.prevent.stop="dropTarget = block.id"
               @dragleave="dropTarget = null"
               @drop.prevent.stop="onBlockDrop(section.id, blockIndex)"
               @dragend="onDragEnd"
             >
-              <template #lead>
-                <v-btn
-                  v-if="block.blocks"
-                  :icon="expanded.has(block.id) ? 'chevron-down' : 'chevron-right'"
-                  variant="text"
-                  size="x-small"
-                  class="te-layer__toggle"
-                  :aria-label="`${expanded.has(block.id) ? 'Collapse' : 'Expand'} ${block.label}`"
-                  :aria-expanded="expanded.has(block.id)"
-                  @click.stop="toggle(block.id)"
-                />
-                <v-icon size="15" class="te-layer__icon">{{ blockIcon(block) }}</v-icon>
-              </template>
-              <span class="te-layer__label">{{ block.label }}</span>
-              <template #trailing>
-                <span class="te-layer__actions">
-                  <v-icon size="14" class="te-layer__grip" aria-hidden="true">grip-vertical</v-icon>
-                  <v-btn
-                    icon="pencil"
-                    variant="text"
-                    size="x-small"
-                    :aria-label="`Edit ${block.label}`"
-                    @click.stop="emit('selectBlock', section.id, block.id)"
-                  />
-                  <v-btn
-                    icon="trash-2"
-                    variant="text"
-                    size="x-small"
-                    :aria-label="`Remove ${block.label}`"
-                    @click.stop="emit('removeBlock', section.id, block.id)"
-                  />
-                </span>
-              </template>
-            </MpListRow>
-
-            <div v-if="block.blocks && expanded.has(block.id)" class="te-blocks te-blocks--nested" role="list" :aria-label="`${block.label} blocks`">
-              <MpListRow
-                v-for="child in block.blocks"
-                :key="child.id"
-                variant="boxed"
-                density="compact"
-                clickable
-                class="te-layer te-layer--block"
-                :class="{ 'te-layer--selected': child.id === selectedBlockId }"
-                role="listitem"
-                :aria-current="child.id === selectedBlockId ? 'true' : undefined"
-                @click.stop="emit('selectBlock', section.id, child.id)"
+              <MpTreeRow
+                :ref="bindRow(block.id)"
+                :label="block.label"
+                :depth="1"
+                :expandable="!!block.blocks"
+                :expanded="expanded.has(block.id)"
+                :selected="block.id === selectedBlockId"
+                class="te-layers__row"
+                @select="emit('selectBlock', section.id, block.id)"
+                @toggle="toggle(block.id)"
+                @keydown="onBlockKeydown($event, section, block, blockIndex)"
               >
                 <template #lead>
-                  <v-icon size="15" class="te-layer__icon">{{ blockIcon(child) }}</v-icon>
+                  <v-icon class="te-lead te-lead__type">{{ blockIcon(block) }}</v-icon>
+                  <v-icon class="te-lead te-lead__grip" aria-hidden="true">grip-vertical</v-icon>
                 </template>
-                <span class="te-layer__label">{{ child.label }}</span>
-                <template #trailing>
-                  <span class="te-layer__actions">
-                    <v-btn
-                      icon="pencil"
-                      variant="text"
-                      size="x-small"
-                      :aria-label="`Edit ${child.label}`"
-                      @click.stop="emit('selectBlock', section.id, child.id)"
-                    />
-                    <v-btn
-                      icon="trash-2"
-                      variant="text"
-                      size="x-small"
-                      :aria-label="`Remove ${child.label}`"
-                      @click.stop="emit('removeBlock', section.id, child.id)"
-                    />
-                  </span>
+                <template #actions>
+                  <MpIconButton size="sm" icon="pencil" :ariaLabel="`Edit ${block.label}`" @click.stop="emit('selectBlock', section.id, block.id)" />
+                  <MpIconButton size="sm" icon="trash-2" :ariaLabel="`Remove ${block.label}`" @click.stop="emit('removeBlock', section.id, block.id)" />
                 </template>
-              </MpListRow>
-              <v-menu v-if="addableBlockKinds(section, block).length" location="bottom">
-                <template #activator="{ props: menu }">
-                  <v-btn v-bind="menu" variant="text" size="small" prepend-icon="plus" class="text-none te-layers__add-block" aria-haspopup="menu">
-                    Add block
-                  </v-btn>
-                </template>
-                <v-list density="compact" role="menu" :aria-label="`Add block to ${block.label}`">
-                  <MpMenuItem
-                    v-for="kind in addableBlockKinds(section, block)"
-                    :key="kind"
-                    :title="blockKindTitle(kind)"
-                    :icon="getBlockDef(kind)?.icon"
-                    @click="emit('addBlock', section.id, kind, block.id)"
-                  />
-                </v-list>
-              </v-menu>
-            </div>
-          </template>
+              </MpTreeRow>
 
-          <v-menu location="bottom">
-            <template #activator="{ props: menu }">
-              <v-btn v-bind="menu" variant="text" size="small" prepend-icon="plus" class="text-none te-layers__add-block" aria-haspopup="menu">
-                Add block
-              </v-btn>
-            </template>
-            <v-list density="compact" role="menu" :aria-label="`Add block to ${section.label}`">
-              <MpMenuItem
-                v-for="kind in addableBlockKinds(section)"
-                :key="kind"
-                :title="blockKindTitle(kind)"
-                :icon="getBlockDef(kind)?.icon"
-                @click="emit('addBlock', section.id, kind)"
-              />
-            </v-list>
-          </v-menu>
+              <div v-if="block.blocks && expanded.has(block.id)" role="list" :aria-label="`${block.label} blocks`">
+                <div v-for="child in block.blocks" :key="child.id" role="listitem">
+                  <MpTreeRow
+                    :label="child.label"
+                    :icon="blockIcon(child)"
+                    :depth="2"
+                    :selected="child.id === selectedBlockId"
+                    @select="emit('selectBlock', section.id, child.id)"
+                  >
+                    <template #actions>
+                      <MpIconButton size="sm" icon="pencil" :ariaLabel="`Edit ${child.label}`" @click.stop="emit('selectBlock', section.id, child.id)" />
+                      <MpIconButton size="sm" icon="trash-2" :ariaLabel="`Remove ${child.label}`" @click.stop="emit('removeBlock', section.id, child.id)" />
+                    </template>
+                  </MpTreeRow>
+                </div>
+                <MpTreeRow
+                  v-if="addableBlockKinds(section, block).length"
+                  variant="action"
+                  icon="plus"
+                  label="Add block"
+                  :depth="2"
+                  aria-haspopup="menu"
+                  @select="openAddMenu($event, section, block)"
+                />
+              </div>
+            </div>
+
+            <MpTreeRow variant="action" icon="plus" label="Add block" :depth="1" @select="openAddMenu($event, section)" />
+          </div>
         </div>
-      </template>
+      </div>
 
       <div v-if="!sections.length" class="te-layers__empty">No sections on this template yet.</div>
     </div>
+
+    <v-menu v-model="addMenu.open" :activator="addMenu.target" location="bottom start">
+      <v-list density="compact" role="menu" aria-label="Add block">
+        <MpMenuItem v-for="kind in addMenu.kinds" :key="kind" :title="blockKindTitle(kind)" :icon="getBlockDef(kind)?.icon" @click="pickBlockKind(kind)" />
+      </v-list>
+    </v-menu>
   </div>
 </template>
 
@@ -297,121 +286,56 @@ void props
   flex-direction: column;
   gap: var(--mp-space-12);
   flex-shrink: 0;
-  padding: var(--mp-space-12) var(--mp-space-12) var(--mp-space-8);
+  padding: var(--mp-space-16) var(--mp-space-12) var(--mp-space-12);
 }
 
 .te-layers__title {
   margin: 0;
+  padding-inline: var(--mp-space-4);
   font-size: var(--mp-fontSize-14);
   font-weight: var(--mp-fontWeight-semibold);
   line-height: 1.3;
 }
 
 .te-layers__scroll {
-  display: flex;
-  flex-direction: column;
-  gap: var(--mp-space-4);
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
-  padding: var(--mp-space-4) var(--mp-space-12) var(--mp-space-16);
+  padding: 0 var(--mp-space-8) var(--mp-space-16);
 }
 
 .te-layers__empty {
-  padding: var(--mp-space-16) var(--mp-space-4);
+  padding: var(--mp-space-16) var(--mp-space-8);
   font-size: var(--mp-fontSize-12);
   color: var(--text-muted);
 }
 
-/* Boxed rows on the tinted secondary surface — the row primitive owns height/gap/hover; the
-   panel adds only selection and drop cues. */
-.te-layer {
-  --te-row-bg: var(--surface-secondary);
-  position: relative;
-  gap: var(--mp-space-8);
-  background: var(--te-row-bg);
-  border-color: transparent;
-  padding-inline: var(--mp-space-6) var(--mp-space-4);
-  font-size: var(--mp-fontSize-13);
+/* Rows stack without gaps so the indent guides read as one continuous line. */
+.te-layers__item--drop > .te-layers__row {
+  box-shadow: inset 0 2px 0 var(--accent-default);
 }
 
-.te-layer--selected,
-.te-layer--selected:hover {
-  --te-row-bg: var(--accent-selected-bg);
-  background: var(--te-row-bg);
-  border-color: color-mix(in oklch, var(--accent-default) 40%, transparent);
-  color: var(--accent-on-container);
-}
-
-.te-layer--drop {
-  border-color: var(--accent-default);
-}
-
-/* Dense chrome, like the explorer rows: 12px keeps "Featured Recommendations" on one line. */
-.te-layer__label {
-  font-size: var(--mp-fontSize-12);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.te-layer__toggle {
-  margin-inline-start: calc(-1 * var(--mp-space-2));
-}
-
-.te-layer__icon {
+/* The lead swaps the type icon for a drag grip on hover — the row IS the drag
+   handle; the grip only says so, without spending a column on it. */
+.te-lead {
+  font-size: var(--mp-component-tree-iconSize);
   color: var(--icon-secondary);
 }
 
-.te-layer--selected .te-layer__icon {
-  color: currentColor;
-}
-
-/* Hover-revealed row controls overlay the row's end instead of reserving width, so a long
-   section name keeps the whole row; they stay in the DOM for keyboard users. */
-.te-layer__actions {
-  position: absolute;
-  top: 50%;
-  right: var(--mp-space-4);
-  display: inline-flex;
-  align-items: center;
-  gap: var(--mp-space-2);
-  padding-left: var(--mp-space-12);
-  transform: translateY(-50%);
-  background: linear-gradient(to right, transparent, var(--te-row-bg) var(--mp-space-12));
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity var(--dur-fast) var(--ease);
-}
-
-.te-layer:hover .te-layer__actions,
-.te-layer:focus-within .te-layer__actions,
-.te-layer--selected .te-layer__actions {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.te-layer__grip {
-  color: var(--icon-secondary);
+.te-lead__grip {
+  display: none;
   cursor: grab;
 }
 
-.te-blocks {
-  display: flex;
-  flex-direction: column;
-  gap: var(--mp-space-4);
+.te-layers__row:hover .te-lead__type {
+  display: none;
 }
 
-.te-blocks--nested {
-  padding-left: var(--mp-space-16);
+.te-layers__row:hover .te-lead__grip {
+  display: inline-flex;
 }
 
-.te-layer--block .te-layer__toggle + .te-layer__icon,
-.te-layer--block .te-layer__icon:first-child {
-  margin-inline-start: var(--mp-space-4);
-}
-
-.te-layers__add-block {
-  align-self: center;
+.mp-tree-row--selected .te-lead {
+  color: currentColor;
 }
 </style>

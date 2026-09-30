@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import MpCodeEditor, { type MpCodeLanguage } from '@/components/MpCodeEditor.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpIconButton from '@/components/MpIconButton.vue'
 import ThemeCodeExplorer from '@/components/themeeditor/ThemeCodeExplorer.vue'
 import ThemeEditorFrame from '@/components/themeeditor/ThemeEditorFrame.vue'
 import { languageIcon } from '@/components/themeeditor/themeEditorIcons'
@@ -120,38 +121,24 @@ const { confirmLeave, discardAndLeave, leaveTitle, leaveMessage, leaveConfirmLab
 
     <div class="te-code">
       <div class="te-code__tools" role="tablist" aria-label="Side panel" aria-orientation="vertical">
-        <v-tooltip text="Explorer" location="right">
-          <template #activator="{ props: tip }">
-            <v-btn
-              v-bind="tip"
-              icon="files"
-              variant="text"
-              size="small"
-              class="te-code__tool"
-              :class="{ 'te-code__tool--active': panel === 'explorer' }"
-              role="tab"
-              :aria-selected="panel === 'explorer'"
-              aria-label="Explorer"
-              @click="panel = 'explorer'"
-            />
-          </template>
-        </v-tooltip>
-        <v-tooltip text="Search" location="right">
-          <template #activator="{ props: tip }">
-            <v-btn
-              v-bind="tip"
-              icon="search"
-              variant="text"
-              size="small"
-              class="te-code__tool"
-              :class="{ 'te-code__tool--active': panel === 'search' }"
-              role="tab"
-              :aria-selected="panel === 'search'"
-              aria-label="Search"
-              @click="panel = 'search'"
-            />
-          </template>
-        </v-tooltip>
+        <MpIconButton
+          icon="files"
+          ariaLabel="Explorer"
+          tooltipLocation="end"
+          role="tab"
+          :active="panel === 'explorer'"
+          :aria-selected="panel === 'explorer'"
+          @click="panel = 'explorer'"
+        />
+        <MpIconButton
+          icon="search"
+          ariaLabel="Search"
+          tooltipLocation="end"
+          role="tab"
+          :active="panel === 'search'"
+          :aria-selected="panel === 'search'"
+          @click="panel = 'search'"
+        />
       </div>
 
       <ThemeCodeExplorer
@@ -182,10 +169,10 @@ const { confirmLeave, discardAndLeave, leaveTitle, leaveMessage, leaveConfirmLab
             @keydown.enter.prevent="activePath = path"
             @keydown.space.prevent="activePath = path"
           >
-            <v-icon size="14" class="te-tab__icon">{{ languageIcon(codeStore.getFile(path)?.language ?? 'text') }}</v-icon>
+            <v-icon class="te-tab__icon">{{ languageIcon(codeStore.getFile(path)?.language ?? 'text') }}</v-icon>
             <span class="te-tab__label">{{ fileLabel(path) }}</span>
             <span v-if="codeStore.isDirty(path)" class="te-tab__dot" role="img" aria-label="Unsaved changes" />
-            <v-btn v-else icon="x" variant="text" size="x-small" class="te-tab__close" :aria-label="`Close ${fileLabel(path)}`" @click.stop="closeTab(path)" />
+            <MpIconButton v-else size="sm" icon="x" class="te-tab__close" :ariaLabel="`Close ${fileLabel(path)}`" :tooltip="false" @click.stop="closeTab(path)" />
           </div>
         </div>
 
@@ -252,15 +239,6 @@ const { confirmLeave, discardAndLeave, leaveTitle, leaveMessage, leaveConfirmLab
   background: var(--surface-secondary);
 }
 
-.te-code__tool {
-  color: var(--icon-secondary);
-}
-
-.te-code__tool--active {
-  color: var(--accent-on-container);
-  background: var(--accent-selected-bg);
-}
-
 .te-code__main {
   display: flex;
   flex-direction: column;
@@ -286,7 +264,7 @@ const { confirmLeave, discardAndLeave, leaveTitle, leaveMessage, leaveConfirmLab
   align-items: center;
   gap: var(--mp-space-6);
   flex-shrink: 0;
-  max-width: 220px;
+  max-width: var(--mp-component-toolbar-searchMinWidth);
   padding-inline: var(--mp-space-12) var(--mp-space-4);
   border-right: 1px solid var(--border-subtle);
   border-bottom: 2px solid transparent;
@@ -308,6 +286,7 @@ const { confirmLeave, discardAndLeave, leaveTitle, leaveMessage, leaveConfirmLab
 }
 
 .te-tab__icon {
+  font-size: var(--mp-component-tree-iconSize);
   color: var(--icon-secondary);
 }
 

@@ -50,11 +50,12 @@ const emit = defineEmits<{ select: [id: ThemeSettingsItemId] }>()
 
 .te-settings__head {
   flex-shrink: 0;
-  padding: var(--mp-space-12) var(--mp-space-12) var(--mp-space-8);
+  padding: var(--mp-space-16) var(--mp-space-12) var(--mp-space-12);
 }
 
 .te-settings__title {
   margin: 0;
+  padding-inline: var(--mp-space-4);
   font-size: var(--mp-fontSize-14);
   font-weight: var(--mp-fontWeight-semibold);
   line-height: 1.3;
@@ -79,9 +80,10 @@ const emit = defineEmits<{ select: [id: ThemeSettingsItemId] }>()
   border-radius: var(--mp-component-nav-itemRadius);
 }
 
+/* Selected — the recipe's primary tint (E1/E5), the same as a selected Layers row. */
 .te-settings__item--active,
 .te-settings__item--active:hover {
-  background: var(--accent-selected-bg);
+  background: var(--accent-soft);
   color: var(--accent-on-container);
 }
 </style>
