@@ -206,6 +206,15 @@ export function useDaVinciCampaignOnboarding() {
     }
   }
 
+  /**
+   * "the goal is to promote an offer" reads for the quick replies; a merchant's own words don't fit that
+   * frame ("to VIP customers" became "the goal is to to vip customers"), so they are quoted instead.
+   */
+  function goalPhrase(objective: string): string {
+    const known = CAMPAIGN_OBJECTIVES.some((reply) => reply.value.toLowerCase() === objective.toLowerCase())
+    return known ? `to ${objective.toLowerCase()}` : `“${objective}”`
+  }
+
   function audiencePrompt(objective: string): CampaignOnboardingResponse {
     onboarding.setObjective(objective)
 
@@ -219,7 +228,7 @@ export function useDaVinciCampaignOnboarding() {
 
     return {
       intent: 'campaign',
-      reply: `Got it — the goal is to ${objective.toLowerCase()}. Who should receive it? I’ll use a real audience from this account.`,
+      reply: `Got it — the goal is ${goalPhrase(objective)}. Who should receive it? I’ll use a real audience from this account.`,
       speech: 'Who should receive it?',
       quickReplies: [...audienceReplies(), SKIP_REPLY],
     }

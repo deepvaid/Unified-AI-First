@@ -2053,6 +2053,12 @@ fuzz of the pure modules — found regressions in the routing rules themselves. 
   to empty the list), one huge message can't evict the others (recorded text is capped), other tabs' changes are
   adopted (`storage` event) instead of overwritten, and quick-reply chips are no longer restored (they belong to
   the live moment). `persistList` / `isQuotaError` live in `src/davinci/history.ts` and are tested.
+- **Trial banner vs the full-page copilot** — the expiring-trial banner (53px) sits above the page in the flow, so
+  the bounded copilot page ended 53px past the viewport and its composer was cut off. `PlgTrialBanner` now
+  publishes its height as `--mp-banner-offset` on `<html>` (`useBannerOffset`, released when it is dismissed or
+  gone) and the page subtracts it.
+- **Wizard goal sentence** — "to VIP customers" typed as the objective read "the goal is to to vip customers";
+  a merchant's own words are quoted, the quick replies read as before ("the goal is to promote an offer").
 - **Accessibility / rules** — the toast container no longer wraps alert toasts in a second live region, the draft
   card's blocker alert is `live="off"` inside the transcript, and the literals the review flagged are now a
   computed container threshold (KPI row), the `widgetHeight.lg` token (enlarged chart) and one declared card
@@ -2121,6 +2127,5 @@ fuzz of the pure modules — found regressions in the routing rules themselves. 
   are still fabricated.
 - `generateJourneyDraft` (`useJourneyGenerator`) is no longer used by the copilot — the wizard never received
   its draft. Wire it to Build with AI or delete it.
-- A trial banner above a flush page (`/da-vinci/copilot`) pushes the page ~44px past the viewport.
 - The app-bar Co-pilot entry on the copilot page itself; the header subtitle ellipsis; the px sweep outside
   touched files; a real-browser check that the mic prompt doesn't appear on a plain dashboard load.
