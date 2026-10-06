@@ -722,7 +722,8 @@ function buildPosOrders(): Order[] {
 export const useCommerceStore = defineStore('commerce', () => {
   const products = ref<Product[]>(productNames.map((name, i) => {
     const inv = i < 3 ? 0 : Math.floor(Math.random() * 500) + 5
-    const price = (Math.random() * 450 + 15).toFixed(2)
+    // Deterministic, so the storefront's product pages, cart and orders agree across reloads.
+    const price = (15 + ((i * 7919) % 45000) / 100).toFixed(2)
     return {
       id: 1000 + i,
       name,

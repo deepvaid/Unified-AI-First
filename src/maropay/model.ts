@@ -383,7 +383,7 @@ export interface CheckoutSettings {
   logo: { name: string; sizeLabel: string } | null
   payButtonLabel: PayButtonLabel
   showSupportContact: boolean
-  /** Apple Pay and Google Pay as express buttons above the form. */
+  /** Apple Pay, Google Pay and PayPal as one-tap express buttons above the checkout form. */
   expressWallets: boolean
 }
 
@@ -415,6 +415,8 @@ export interface PaymentMethodCatalogEntry {
   supportsManualCapture: boolean
   /** Confirmation can take days (bank debits). */
   delayed: boolean
+  /** The shopper approves on the provider's own page (PayPal, buy now pay later). */
+  redirects: boolean
   availability: MethodAvailability
   reviewNote: string | null
   /** Maropost's pre-screening answers sent with a review request — kept account-side because approval is account-wide. Not partner data. */
@@ -680,13 +682,21 @@ export interface OnboardingDraft {
   submittedAt: string | null
 }
 
+/** One cart line at checkout; `price` is the unit price as a decimal string. */
+export interface CheckoutLineItem {
+  product: string
+  sku: string
+  qty: number
+  price: string
+}
+
 /** Enough of a checkout-created order to rebuild it after reload (Commerce is not persisted). */
 export interface CheckoutOrderSnapshot {
   id: number
   orderNumber: string
   date: string
   customer: { name: string; email: string }
-  lineItems: Array<{ product: string; sku: string; qty: number; price: string }>
+  lineItems: CheckoutLineItem[]
   shipping: string
   total: string
 }
@@ -701,7 +711,7 @@ export interface CheckoutSession {
   paymentId: string | null
   order: CheckoutOrderSnapshot | null
   customer: { name: string; email: string }
-  lineItem: { product: string; sku: string; price: string }
+  lineItems: CheckoutLineItem[]
   createdAt: string
 }
 
@@ -714,6 +724,21 @@ export interface HistoryEntry {
   kind: HistoryKind
   channelId: string | null
   text: string
+}
+
+/** A quiet glyph per history kind (Lucide names), for activity rows. */
+export const HISTORY_KIND_ICONS: Record<HistoryKind, string> = {
+  setup: 'list-checks',
+  terms: 'file-text',
+  verification: 'shield-check',
+  business: 'building-2',
+  store: 'store',
+  account: 'wallet',
+  methods: 'credit-card',
+  bank: 'landmark',
+  payout: 'banknote',
+  refund: 'undo-2',
+  dispute: 'shield-alert',
 }
 
 export interface MaropayAccountState {
@@ -766,15 +791,16 @@ function rate(percentBps: number, fixedMinor: number, label: string, capMinor?: 
  * and availability are placeholders for the approved launch matrix (plan §5).
  */
 export const METHOD_CATALOG: ReadonlyArray<Omit<PaymentMethodCatalogEntry, 'availability' | 'reviewNote' | 'requested' | 'declineReason'>> = [
-  { id: 'card', label: 'Cards', category: 'cards', currencies: ['USD', 'CAD', 'AUD', 'NZD', 'GBP', 'EUR'], rate: rate(290, 30, '2.9% + 30¢'), requirements: [], supportsManualCapture: true, delayed: false },
-  { id: 'apple_pay', label: 'Apple Pay', category: 'wallets', currencies: ['USD', 'CAD', 'AUD', 'NZD', 'GBP', 'EUR'], rate: rate(290, 30, '2.9% + 30¢'), requirements: [], supportsManualCapture: true, delayed: false },
-  { id: 'google_pay', label: 'Google Pay', category: 'wallets', currencies: ['USD', 'CAD', 'AUD', 'NZD', 'GBP', 'EUR'], rate: rate(290, 30, '2.9% + 30¢'), requirements: [], supportsManualCapture: true, delayed: false },
-  { id: 'klarna', label: 'Klarna', category: 'bnpl', currencies: ['USD', 'AUD', 'NZD', 'GBP', 'EUR'], rate: rate(599, 30, '5.99% + 30¢'), requirements: ['Refund and returns policy URL', 'Typical order value range'], supportsManualCapture: true, delayed: false },
-  { id: 'afterpay_clearpay', label: 'Afterpay', category: 'bnpl', currencies: ['USD', 'CAD', 'AUD', 'NZD', 'GBP'], rate: rate(600, 30, '6% + 30¢'), requirements: [], supportsManualCapture: true, delayed: false },
-  { id: 'affirm', label: 'Affirm', category: 'bnpl', currencies: ['USD', 'CAD'], rate: rate(599, 0, '5.99%'), requirements: [], supportsManualCapture: false, delayed: false },
-  { id: 'us_bank_account', label: 'ACH Direct Debit', category: 'local', currencies: ['USD'], rate: rate(80, 0, '0.8%, max $5.00', 500), requirements: [], supportsManualCapture: false, delayed: true },
-  { id: 'ideal', label: 'iDEAL', category: 'local', currencies: ['EUR'], rate: rate(0, 29, '€0.29'), requirements: [], supportsManualCapture: false, delayed: false },
-  { id: 'sepa_debit', label: 'SEPA Direct Debit', category: 'local', currencies: ['EUR'], rate: rate(80, 0, '0.8%, max €5.00', 500), requirements: [], supportsManualCapture: false, delayed: true },
+  { id: 'card', label: 'Cards', category: 'cards', currencies: ['USD', 'CAD', 'AUD', 'NZD', 'GBP', 'EUR'], rate: rate(290, 30, '2.9% + 30¢'), requirements: [], supportsManualCapture: true, delayed: false, redirects: false },
+  { id: 'apple_pay', label: 'Apple Pay', category: 'wallets', currencies: ['USD', 'CAD', 'AUD', 'NZD', 'GBP', 'EUR'], rate: rate(290, 30, '2.9% + 30¢'), requirements: [], supportsManualCapture: true, delayed: false, redirects: false },
+  { id: 'google_pay', label: 'Google Pay', category: 'wallets', currencies: ['USD', 'CAD', 'AUD', 'NZD', 'GBP', 'EUR'], rate: rate(290, 30, '2.9% + 30¢'), requirements: [], supportsManualCapture: true, delayed: false, redirects: false },
+  { id: 'paypal', label: 'PayPal', category: 'wallets', currencies: ['USD', 'CAD', 'AUD', 'NZD', 'GBP', 'EUR'], rate: rate(349, 49, '3.49% + 49¢'), requirements: [], supportsManualCapture: true, delayed: false, redirects: true },
+  { id: 'klarna', label: 'Klarna', category: 'bnpl', currencies: ['USD', 'AUD', 'NZD', 'GBP', 'EUR'], rate: rate(599, 30, '5.99% + 30¢'), requirements: ['Refund and returns policy URL', 'Typical order value range'], supportsManualCapture: true, delayed: false, redirects: true },
+  { id: 'afterpay_clearpay', label: 'Afterpay', category: 'bnpl', currencies: ['USD', 'CAD', 'AUD', 'NZD', 'GBP'], rate: rate(600, 30, '6% + 30¢'), requirements: [], supportsManualCapture: true, delayed: false, redirects: true },
+  { id: 'affirm', label: 'Affirm', category: 'bnpl', currencies: ['USD', 'CAD'], rate: rate(599, 0, '5.99%'), requirements: [], supportsManualCapture: false, delayed: false, redirects: true },
+  { id: 'us_bank_account', label: 'ACH Direct Debit', category: 'local', currencies: ['USD'], rate: rate(80, 0, '0.8%, max $5.00', 500), requirements: [], supportsManualCapture: false, delayed: true, redirects: false },
+  { id: 'ideal', label: 'iDEAL', category: 'local', currencies: ['EUR'], rate: rate(0, 29, '€0.29'), requirements: [], supportsManualCapture: false, delayed: false, redirects: false },
+  { id: 'sepa_debit', label: 'SEPA Direct Debit', category: 'local', currencies: ['EUR'], rate: rate(80, 0, '0.8%, max €5.00', 500), requirements: [], supportsManualCapture: false, delayed: true, redirects: false },
 ]
 
 /** Account-scoped copy of the catalogue: methods the settlement currency can't present are unavailable. */
@@ -998,6 +1024,24 @@ function migrateTask(task: ActionTask): ActionTask {
   return task
 }
 
+/** A first-phase session held one product as `lineItem`. */
+function migrateSession(session: CheckoutSession & { lineItem?: Omit<CheckoutLineItem, 'qty'> }): CheckoutSession {
+  if (Array.isArray(session.lineItems)) return session
+  const { lineItem, ...rest } = session
+  return { ...rest, lineItems: lineItem ? [{ ...lineItem, qty: 1 }] : [] }
+}
+
+/** Saved methods in catalogue order; methods added to the catalogue since the save (PayPal) join with their fresh availability. */
+function migrateMethods(saved: PaymentMethodCatalogEntry[], fresh: PaymentMethodCatalogEntry[]): PaymentMethodCatalogEntry[] {
+  const known = new Set(fresh.map((m) => m.id))
+  const restore = (m: PaymentMethodCatalogEntry, f?: PaymentMethodCatalogEntry): PaymentMethodCatalogEntry =>
+    ({ ...m, redirects: m.redirects ?? f?.redirects ?? false, requested: m.requested ?? null, declineReason: m.declineReason ?? null })
+  return [
+    ...fresh.map((f) => { const m = saved.find((s) => s.id === f.id); return m ? restore(m, f) : f }),
+    ...saved.filter((m) => !known.has(m.id)).map((m) => restore(m)),
+  ]
+}
+
 /**
  * Reads a persisted state back, or null when it is missing, from another
  * account, from a different version, or malformed. Arrays missing from older
@@ -1042,13 +1086,13 @@ export function parseState(raw: string | null, accountId: string, now: number): 
     })),
     methods: settleIn
       ? catalogFor(settleIn)
-      : list(parsed.methods, base.methods).map((m) => ({ ...m, requested: m.requested ?? null, declineReason: m.declineReason ?? null })),
+      : migrateMethods(list(parsed.methods, base.methods), base.methods),
     payments: list(parsed.payments, []).filter((p) => isMoney(p.amount)).map((p) => ({ ...p, orderId: typeof p.orderId === 'number' ? p.orderId : null })),
     disputes: list(parsed.disputes, []),
     payouts: list(parsed.payouts, []).map((po) => ({ ...po, destination: withBankDefaults(po.destination, country) })),
     movements: list(parsed.movements, []).filter((m) => isMoney(m.net)),
     tasks: list(parsed.tasks, []).map(migrateTask),
-    sessions: list(parsed.sessions, []),
+    sessions: list(parsed.sessions, []).map(migrateSession),
     history: list(parsed.history, []),
     defaultMethodIds: list(parsed.defaultMethodIds, base.defaultMethodIds),
     counters: parsed.counters && typeof parsed.counters === 'object' ? parsed.counters : {},

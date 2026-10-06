@@ -540,11 +540,6 @@ function timelineIcon(entry: { kind: string; text: string }): string {
   }
 }
 
-/* Label-over-value grids — muted uppercase label above value */
-.mp-label-value dt {
-  color: rgb(var(--v-theme-on-surface-variant));
-  margin-bottom: 2px;
-}
 .od-address-grid {
   grid-template-columns: 1fr;
   gap: 14px;

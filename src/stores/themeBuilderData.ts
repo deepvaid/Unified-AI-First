@@ -119,6 +119,23 @@ export function defaultThemeStyles(): ThemeStyles {
   }
 }
 
+/**
+ * A theme's styles as the storefront's CSS custom properties (--sf-*). Missing
+ * values are left out, so the storefront's own fallbacks apply.
+ */
+export function storefrontThemeVars(styles?: Partial<ThemeStyles> | null): Record<string, string> {
+  if (!styles) return {}
+  const vars: Record<string, string> = {}
+  if (styles.brandColor) vars['--sf-brand'] = styles.brandColor
+  if (styles.accentColor) vars['--sf-accent'] = styles.accentColor
+  if (styles.background) vars['--sf-bg'] = styles.background
+  if (styles.textColor) vars['--sf-text'] = styles.textColor
+  if (styles.cornerRadius !== undefined) vars['--sf-radius'] = `${styles.cornerRadius}px`
+  if (styles.headingFont) vars['--sf-heading-font'] = styles.headingFont
+  if (styles.bodyFont) vars['--sf-body-font'] = styles.bodyFont
+  return vars
+}
+
 // ── Section catalog ──────────────────────────────────────────────────────────
 
 export const sectionCatalog: ThemeSectionDef[] = [

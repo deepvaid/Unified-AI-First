@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, useSlots } from 'vue'
 import { RouterLink } from 'vue-router'
 import type { RouteLocationRaw } from 'vue-router'
 
@@ -8,6 +8,12 @@ const props = withDefaults(defineProps<{
   title?: string
   /** Muted line above the title. */
   eyebrow?: string
+  /**
+   * Muted second line under the title — a two-line row. The title then wraps
+   * instead of truncating (it's copy, not a label). `#title` / `#subtitle` slots
+   * replace the text but keep the styling.
+   */
+  subtitle?: string
   /** Trailing muted value (timestamp, count). Rendered right-aligned, tabular. */
   meta?: string
   /**
@@ -40,6 +46,9 @@ const tag = computed(() => {
 })
 
 const isInteractive = computed(() => !!props.to || !!props.href || props.clickable)
+
+const slots = useSlots()
+const twoLine = computed(() => !!props.subtitle || !!slots.subtitle)
 </script>
 
 <template>
@@ -53,7 +62,7 @@ const isInteractive = computed(() => !!props.to || !!props.href || props.clickab
       `mp-list-row--${variant}`,
       `mp-list-row--${emphasis}`,
       `mp-list-row--${density}`,
-      { 'mp-list-row--interactive': isInteractive },
+      { 'mp-list-row--interactive': isInteractive, 'mp-list-row--two-line': twoLine },
     ]"
   >
     <span v-if="$slots.lead" class="mp-list-row__lead">
@@ -63,7 +72,8 @@ const isInteractive = computed(() => !!props.to || !!props.href || props.clickab
     <span class="mp-list-row__body">
       <slot>
         <span v-if="eyebrow" class="mp-list-row__eyebrow">{{ eyebrow }}</span>
-        <span v-if="title" class="mp-list-row__title">{{ title }}</span>
+        <span v-if="title || $slots.title" class="mp-list-row__title"><slot name="title">{{ title }}</slot></span>
+        <span v-if="twoLine" class="mp-list-row__subtitle"><slot name="subtitle">{{ subtitle }}</slot></span>
       </slot>
     </span>
 
@@ -160,10 +170,25 @@ const isInteractive = computed(() => !!props.to || !!props.href || props.clickab
   font-size: var(--mp-fontSize-13);
   font-weight: var(--mp-fontWeight-medium);
   color: inherit;
-  line-height: 1.35;
+  line-height: var(--mp-lineHeight-snug);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Two-line rows: body-size title that wraps, and a muted subtitle under it. */
+.mp-list-row--two-line .mp-list-row__title {
+  font-size: var(--mp-text-body-fontSize);
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.mp-list-row__subtitle {
+  margin-top: var(--mp-space-2);
+  font-size: var(--mp-fontSize-13);
+  line-height: var(--mp-lineHeight-compact);
+  color: var(--on-surface-muted);
+  overflow-wrap: anywhere;
 }
 
 .mp-list-row--prominent .mp-list-row__title {

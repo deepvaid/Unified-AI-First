@@ -706,15 +706,15 @@ function restore(template: FeedTemplate) {
         <MpFormSection title="Summary" />
         <dl class="mp-label-value rec-dl">
           <div>
-            <dt class="mp-meta-label text-medium-emphasis">File</dt>
+            <dt>File</dt>
             <dd class="text-body-2">{{ importFileName }}</dd>
           </div>
           <div>
-            <dt class="mp-meta-label text-medium-emphasis">Delimiter</dt>
+            <dt>Delimiter</dt>
             <dd class="text-body-2">{{ importDelimiter === 'Comma' ? 'Comma' : 'Semi-colon' }}</dd>
           </div>
           <div>
-            <dt class="mp-meta-label text-medium-emphasis">Mode</dt>
+            <dt>Mode</dt>
             <dd class="text-body-2">Create or update by Item ID</dd>
           </div>
         </dl>

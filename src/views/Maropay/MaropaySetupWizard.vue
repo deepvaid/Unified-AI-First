@@ -664,7 +664,7 @@ watch(() => [maropay.state, maropay.actingRole], enter)
           <MpAlert tone="info" live="off" title="Nothing changed at checkout">
             Your stores keep their current payment setup.
           </MpAlert>
-          <MaropaySupportAlert title="Ask for this decision to be reviewed" :references="supportReferences" />
+          <MaropaySupportAlert title="Ask for this decision to be reviewed" emphasis="prominent" :references="supportReferences" />
         </template>
 
         <v-card v-if="maropay.partnerDecisions.length" flat border rounded="lg" class="maropay-setup__card">

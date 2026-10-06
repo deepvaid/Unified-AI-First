@@ -218,6 +218,37 @@
 | 15 | Settings/pages/ServicePage.vue | /accounts/2000290/settings/service | standard | done | ff8feba | Add Template → outlined in #actions (Save sole primary); template rows → MpListRow divided; tooltips; 420px → state.measure; tokens |
 | 16 | Settings/pages/AiSettingsPage.vue | /accounts/2000290/settings/ai-settings | standard | done | 6b9927c | bordered+tinted rows → MpListRow divided with chip in #trailing; literals → tokens |
 
+## Wave 5
+
+<!-- Added 2026-10-05: Maropay arrived after waves 1–4 (2026-09-24). Owner-run pass in four sub-waves
+     (W1 shared blocks · W2 money pages · W3 store Payments, Settings, wizard, related admin · W4 storefront);
+     owner-gated plan. Scenarios via ?maropay=m01…m17. -->
+
+### Module 15 — Maropay   [module-status: pending]
+
+| # | View file | URL(s) | Profile | Status | Commit | Notes |
+|---|-----------|--------|---------|--------|--------|-------|
+| 1 | Maropay/MaropayOverview.vue | /accounts/2000290/maropay | standard | done | 4b36178 | W2: 30-day gross volume card (volumeSeries, 2b13cc3) beside MaropayBalanceSummary (balance leads on phones); compact readiness strip once live with the checkout note in its footer; first-payment + first-payout alerts merged into one; stores/activity/discovery → subtitle rows + MpEmptyState; "How verification works" alert → quiet card |
+| 2 | Maropay/MaropayTransactions.vue | /accounts/2000290/maropay/transactions | standard | done | 93ed0a1 | W2: 9 → 6 columns, fits at 1440/1280 (Status was clipped): amount + inline chip + refunded line, method mark + caption + before-Maropay sub-line, order .mp-link + store sub-line when multi-store; store/provider stay in filters + CSV; customer email moved off the table (on the payment page) |
+| 3 | Maropay/MaropayPaymentDetail.vue | /accounts/2000290/maropay/transactions/pay_910000 | standard | done | 3d1c884 · 93ed0a1 | W1: header chip via #title-append, dl --inline + method mark, .mp-link, subtitle refund rows, MaropayDemoPanel. W2: provider alert → "Taken by … before Maropay" row, quiet support card, page-state pattern for no-access / not-found |
+| 4 | Maropay/MaropayPayouts.vue | /accounts/2000290/maropay/payouts | standard | done | c3e1c75 | W2: MaropayBalanceSummary replaces the four-KPI row; MpFilterTabs moved from header #tabs onto the table; amount + inline status; bank → sub-line; tiered columns fit at 375; demo panel |
+| 5 | Maropay/MaropayPayoutDetail.vue | /accounts/2000290/maropay/payouts/po_1002 · /payouts/upcoming | standard | done | c3e1c75 | W2: chip in #title-append, status line in the subtitle; estimate alert → ledger caption; in-transit/paid info alerts removed (copy → History description); retryOf → History row; "No payout coming up" is an empty state, not an error; demo panel |
+| 6 | Maropay/MaropayDisputes.vue | /accounts/2000290/maropay/disputes | standard | done | a5adb12 | W2 (m11): amount + chip + reason sub-line, order + customer sub-line, tiered columns fit at 375, .mp-link |
+| 7 | Maropay/MaropayDisputeDetail.vue | /accounts/2000290/maropay/disputes/:id | standard | done | a5adb12 | W2 (m11): chip in #title-append; deadline stated once (alert), not in subtitle too; inline details, .mp-link, subtitle evidence rows, demo panel, page states |
+| 8 | Maropay/StorePaymentsPage.vue (+ store/*Card.vue, StorePaymentsPreview) | /accounts/2000290/maropay/stores/retest-sales-notification · /sales_channels/retest-sales-notification/payments | standard | done | 1b0519a · ba00504 | W3a: opens inside Maropay (MaropayStorePayments, frame prop); header chip + routing subtitle replace the provider card; settings beside a sticky live preview (container query, 840); method marks, card icons, sentence-case subheads, activity icons + empty state, demo panel; comparison table → list on a narrow card |
+| 9 | Maropay/MaropaySettings.vue (+ settings/*Tab.vue) | /accounts/2000290/maropay/settings?tab=business·bank·methods·stores·permissions·close | standard | pending | | W3: MpFilterTabs; rates table already has marks (W1) |
+| 10 | Maropay/MaropaySetupWizard.vue | /accounts/2000290/maropay/setup | builder | pending | | W3 (builder: C/D/E/G) |
+| 11 | Commerce/OrderDetail.vue | /commerce/2000290/orders/1 | standard | pending | | W3: whole page (owner decision A8); W1 removed its local dt override |
+| 12 | SalesChannels/SalesChannelDetail.vue | /accounts/2000290/sales_channels/retest-sales-notification | standard | done | 3c40af9 | W3a: MpPageHeader (chip, meta subtitle, back only for POS), MpFilterTabs + tabpanels, payments row always first with its mark, business info as .mp-label-value, apps as boxed rows with marks + connection chips |
+| 15 | SalesChannels/StoreEditorLayout.vue | /accounts/2000290/sales_channels/retest-sales-notification/* | standard | done | 55cbda3 | W3a: .mp-frame-fill + shellInset tokens (identical values), content pane is a div |
+| 16 | SalesChannels/StoreThemes.vue | /accounts/2000290/sales_channels/retest-sales-notification/themes | standard | pending | | W3b |
+| 17 | SalesChannels/StoreNavigation.vue + StoreNavigationMenuEditor.vue | …/navigation · …/navigation/:menuId | standard | pending | | W3b |
+| 18 | SalesChannels/StoreContentList.vue + StoreContentEditor.vue | …/pages · …/blogs · …/pages/:entryId | standard | pending | | W3b |
+| 19 | SalesChannels/StoreCampaigns.vue | …/campaigns | standard | pending | | W3b |
+| 20 | SalesChannels/StoreAssets.vue | …/assets | standard | pending | | W3b |
+| 13 | Settings/pages/PaymentAccountPage.vue | /accounts/2000290/settings/payment-account | standard | pending | | W3 (Module 13 row 14 is stale: the page now renders MaropayReadinessCard + links) |
+| 14 | Storefront/* | /accounts/2000290/sales_channels/retest-sales-notification/storefront | storefront | pending | | W4 — out of system by design (P4-8): method marks, in-field card brands |
+
 ## Progress log
 
 - 2026-09-02 — Tracker generated from page-tracker.md (14 modules, all rows pending, grouped into waves W1–W4).
@@ -235,3 +266,7 @@
   - Plus SalesChannelDetail's icon-only preview segments gained tooltips, UsersPermissionsPage's bulk menu fixed an invalid `role=list` → `role=menuitem` ARIA pairing, and retail-widgets' progress bar joined the 20px card inset.
   - **Lesson for future waves:** two of these were introduced *by* a rule the recipe encourages (remove `!important`, tier columns). Removing an `!important` that beats an inline style, and hiding a column that a table also searches, both need a behavioural check rather than a static one.
 - 2026-09-05 — All four previously-pending rows are now done (ChatbotList f74014e, PriceLists 68874e3, PurchasableGiftCards 4911c38, CustomGiftCards c23c000). No pending rows remain.
+- 2026-10-05 — **Open decision closed (owner): `.mp-label-value dt` is sentence-case muted 12px app-wide** (recipe C2/F5 amended). global.scss splits the shared rule: `.mp-meta-label` stays the uppercase eyebrow, `.mp-label-value dt` becomes caption 12/500 in `--on-surface-muted`. Explicit `mp-meta-label` removed from dt in TicketWorkspace, Reservations, ProductRecommendations, TemplateDetailPage, TemplateWizardPage; ContactDetail eRFM labels sentence case; OrderDetail's local dt override deleted. TemplateSpecPanel keeps its own (non-`.mp-label-value`) spec list.
+- 2026-10-05 — **Wave 5 / Module 15 — Maropay added** (Maropay landed 2026-09-24, after waves 1–4). Sub-wave W1 shared blocks: `MaropayMethodMark` (+ `color.methodMark.*` / `component.methodMark.*` tokens, 14 contrast pairs), `MaropayDemoPanel`, `MpListRow` `subtitle` + `#title`/`#subtitle` slots (the wave-1 rejected proposal, now owner-approved), `MpPageHeader` `#title-append`, global `.mp-label-value--inline` / `.mp-link` / `.mp-card-inset` (+ 8 `.mp-link` contrast pairs). Demo pages: rates table marks, PaymentDetail.
+- 2026-10-06 — **Module 15 sub-wave W2 (money pages) done**: rows 1–7. Shared blocks 2bde560 — `MaropayBalanceSummary` replaces `MaropayBalanceCards` (deleted), `MaropayReadinessCard` `density` compact, `MaropaySupportAlert` `emphasis` (default = quiet help card), Timeline/TaskList/LedgerBreakdown on MpListRow subtitle rows. New pure `src/maropay/volume.ts` (2b13cc3, 5 tests). Verified 1440/1280/375 (table-level overflow, all fit), dark, axe clean on 10 page states. Rows 8–14 wait for the owner's W2 check-in.
+- 2026-10-06 — **Module 15 sub-wave W3a done** (owner re-scoped W3 at the W2 check-in: stores open inside Maropay, all store pages in two check-ins, marks + quiet icons). Rows 8, 12, 15. Storefront payment parts extracted pixel-identical (md5) and shared with the preview. Rows 16–20 (W3b: the store content pages) are next, then W3c (Maropay Settings, setup wizard, OrderDetail, PaymentAccountPage), then W4 (storefront).

@@ -37,15 +37,14 @@ const summary = computed(() => {
 </script>
 
 <template>
-  <v-card flat border rounded="lg" class="maropay-checklist">
-    <MpSectionHeader :title="title" :heading-level="headingLevel" :description="summary" />
+  <v-card flat border rounded="lg" class="mp-card-inset">
+    <MpSectionHeader icon="list-checks" :title="title" :heading-level="headingLevel" :description="summary" />
     <div role="list">
-      <MpListRow v-for="item in checklist.items" :key="item.key" variant="divided" role="listitem">
+      <MpListRow v-for="item in checklist.items" :key="item.key" variant="divided" role="listitem" :subtitle="item.detail">
         <template #lead>
-          <v-icon size="18" class="maropay-checklist__icon" :class="`maropay-checklist__icon--${item.state}`">{{ STATES[item.state].icon }}</v-icon>
+          <v-icon size="16" class="maropay-checklist__icon" :class="`maropay-checklist__icon--${item.state}`">{{ STATES[item.state].icon }}</v-icon>
         </template>
-        <span class="maropay-checklist__title"><span class="d-sr-only">{{ STATES[item.state].label }}: </span>{{ item.label }}</span>
-        <span class="maropay-checklist__detail">{{ item.detail }}</span>
+        <template #title><span class="d-sr-only">{{ STATES[item.state].label }}: </span>{{ item.label }}</template>
         <template v-if="!item.ok && $slots.action" #trailing>
           <slot name="action" :item="item" />
         </template>
@@ -55,33 +54,15 @@ const summary = computed(() => {
 </template>
 
 <style scoped>
-.maropay-checklist {
-  padding: var(--mp-component-card-padding);
-}
-
 .maropay-checklist__icon--done {
   color: var(--pos-ink);
 }
 
 .maropay-checklist__icon--waiting {
-  color: var(--text-secondary);
+  color: var(--on-surface-muted);
 }
 
 .maropay-checklist__icon--todo {
   color: var(--icon-secondary);
-}
-
-.maropay-checklist__title {
-  font-size: var(--mp-fontSize-14);
-  font-weight: var(--mp-fontWeight-medium);
-  line-height: var(--mp-lineHeight-snug);
-  color: var(--text-primary);
-}
-
-.maropay-checklist__detail {
-  margin-top: var(--mp-space-2);
-  font-size: var(--mp-fontSize-13);
-  line-height: var(--mp-lineHeight-normal);
-  color: var(--text-secondary);
 }
 </style>

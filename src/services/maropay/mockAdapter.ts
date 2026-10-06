@@ -22,6 +22,7 @@ import {
   METHOD_DECLINE_COPY,
   MOCK_CLIENT_IP,
   PAYMENT_STATUS_RANK,
+  PAY_BUTTON_LABELS,
   PROVIDER_LABELS,
   REPRESENTATIVE_ID,
   THRESHOLD_ESCALATION_DAYS,
@@ -42,6 +43,7 @@ import type {
   ActionTask,
   BusinessChangeField,
   CaptureMode,
+  CheckoutLineItem,
   CheckoutOrderSnapshot,
   CheckoutSession,
   DeclineReason,
@@ -58,6 +60,7 @@ import type {
   MockDocument,
   OnboardingDraft,
   OnboardingStepKey,
+  PayButtonLabel,
   Payment,
   PaymentEventKind,
   PaymentStatus,
@@ -710,6 +713,56 @@ export function setCaptureMode(state: MaropayAccountState, channelId: string, mo
   return ok(binding)
 }
 
+/** How the store's checkout presents its methods. Every field is optional; only what's passed changes. */
+export interface CheckoutOptionsPatch {
+  expressWallets?: boolean
+  payButtonLabel?: PayButtonLabel
+  /** Enabled method ids in the order shoppers see them. */
+  methodOrder?: string[]
+  /** Pre-selected at checkout; null = the first method in order. */
+  defaultMethodId?: string | null
+}
+
+/**
+ * Presentation only: what checkout offers stays the same, so — unlike methods and
+ * capture — it keeps the store's test checkout and impact review.
+ */
+export function updateCheckoutOptions(state: MaropayAccountState, channelId: string, patch: CheckoutOptionsPatch, env: AdapterEnv): Result<StoreBinding> {
+  if (!allowed(env, 'manage_methods', channelId)) return denied('Only the business owner can change checkout options.')
+  const binding = findBinding(state, channelId)
+  if (!binding) return fail('not_found', 'That store isn’t linked to Maropay.')
+  const label = (id: string) => state.methods.find((m) => m.id === id)?.label ?? id
+  if (patch.payButtonLabel !== undefined && !(patch.payButtonLabel in PAY_BUTTON_LABELS)) return fail('invalid_input', 'Choose one of the pay button labels.')
+  if (patch.methodOrder !== undefined) {
+    const order = patch.methodOrder
+    if (new Set(order).size !== order.length || order.some((id) => !binding.enabledMethodIds.includes(id))) {
+      return fail('invalid_input', 'The method order can only list methods that are on for this store, once each.')
+    }
+  }
+  if (patch.defaultMethodId != null && !binding.enabledMethodIds.includes(patch.defaultMethodId)) {
+    return fail('invalid_input', `${label(patch.defaultMethodId)} isn’t on for this store, so it can’t be the default.`)
+  }
+  const changes: string[] = []
+  if (patch.expressWallets !== undefined && patch.expressWallets !== binding.checkout.expressWallets) {
+    binding.checkout = { ...binding.checkout, expressWallets: patch.expressWallets }
+    changes.push(`express buttons ${patch.expressWallets ? 'on' : 'off'}`)
+  }
+  if (patch.payButtonLabel !== undefined && patch.payButtonLabel !== binding.checkout.payButtonLabel) {
+    binding.checkout = { ...binding.checkout, payButtonLabel: patch.payButtonLabel }
+    changes.push(`pay button reads “${PAY_BUTTON_LABELS[patch.payButtonLabel].replace(' {amount}', '')}”`)
+  }
+  if (patch.methodOrder !== undefined && patch.methodOrder.join() !== binding.methodOrder.join()) {
+    binding.methodOrder = [...patch.methodOrder]
+    changes.push(`method order ${patch.methodOrder.map(label).join(', ')}`)
+  }
+  if (patch.defaultMethodId !== undefined && patch.defaultMethodId !== binding.defaultMethodId) {
+    binding.defaultMethodId = patch.defaultMethodId
+    changes.push(patch.defaultMethodId ? `${label(patch.defaultMethodId)} selected by default` : 'no default method')
+  }
+  if (changes.length) log(state, env, 'methods', `Checkout options: ${changes.join('; ')}`, channelId)
+  return ok(binding)
+}
+
 /** Runs a synthetic payment through the store's checkout configuration. */
 export function validateCheckout(state: MaropayAccountState, channelId: string, env: AdapterEnv): Result<StoreBinding> {
   if (!allowed(env, 'validate_checkout', channelId)) return denied('Only the business owner can run the activation test.')
@@ -783,7 +836,7 @@ export interface CheckoutInput {
   flow: ShopperFlow
   amount: Money
   customer: { name: string; email: string }
-  lineItem: { product: string; sku: string; price: string }
+  lineItems: CheckoutLineItem[]
 }
 
 export interface CheckoutStep {
@@ -808,6 +861,7 @@ export function createCheckoutSession(state: MaropayAccountState, input: Checkou
     return fail('method_unavailable', 'That payment method isn’t offered at checkout on this store.')
   }
   if (!isPositive(input.amount)) return fail('invalid_amount', 'Checkout needs an amount greater than zero.')
+  if (!input.lineItems.length || input.lineItems.some((l) => l.qty < 1)) return fail('invalid_input', 'Checkout needs at least one item.')
   const session: CheckoutSession = {
     id: nextId(state, 'cs'),
     channelId: input.channelId,
@@ -818,7 +872,7 @@ export function createCheckoutSession(state: MaropayAccountState, input: Checkou
     paymentId: null,
     order: null,
     customer: { ...input.customer },
-    lineItem: { ...input.lineItem },
+    lineItems: input.lineItems.map((l) => ({ ...l })),
     createdAt: isoAt(env.now),
   }
   state.sessions.unshift(session)
@@ -915,7 +969,7 @@ function orderFor(state: MaropayAccountState, session: CheckoutSession, payment:
     orderNumber: `#${MAROPAY_ORDER_NUMBER_BASE + n}`,
     date: localDateKey(env.now),
     customer: { ...session.customer },
-    lineItems: [{ ...session.lineItem, qty: 1 }],
+    lineItems: session.lineItems.map((l) => ({ ...l })),
     shipping: '0.00',
     total: toDecimal(session.amount),
   }

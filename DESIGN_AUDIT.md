@@ -1965,3 +1965,125 @@ fixed here:
 - **Collection card block** (`collection`) added to the theme builder's block catalogue for Aurora's
   Featured Collections; the builder preview lays collection cards in the section's columns.
 
+
+## Storefront checkout — 2026-10-05
+
+The merchant's checkout choices (Store › Payments) now show on the store itself. Decisions F1–F4 in
+`docs/maropay/decisions.md`.
+
+- **New storefront pages** (P4-8, out of system like the rest of `src/views/Storefront/`):
+  `StorefrontCollection` (`/collections/:handle`), `StorefrontProduct` (`/products/:handle`), a real
+  `StorefrontCart`, and `StorefrontCheckout` (`/checkout`, distraction-free header via route meta
+  `minimalChrome`). Shared bits: `StorefrontProductCard`, `StorefrontPayMark` (text marks — no brand
+  artwork), `StorefrontExpressButtons`, `StorefrontCheckoutSheet` (wallet sheet, 3-D Secure, provider
+  page). Their controls share `storefront-controls.css`, loaded scoped per page (TrialLab precedent).
+- **One shopper derivation:** `src/maropay/storefront.ts` (`storefrontOffer`, `payButtonText`,
+  `flowForMethod`, `TEST_CARDS`, `cardErrors`, `orderedCheckoutMethods`), unit-tested.
+- **Breaking (zero consumers):** `CheckoutSession.lineItem` → `lineItems: CheckoutLineItem[]` and
+  `CheckoutInput` likewise; old saves migrate in `parseState`. `PaymentMethodCatalogEntry.redirects` added.
+- **Added:** `paypal` method; `updateCheckoutOptions` adapter op + store action; Store › Payments
+  "Checkout options" card (design-system components only); `useStorefrontCart` (sessionStorage).
+- **Removed:** the Maropay Checkout preview — `MaropayCheckoutPreview` view and route, the rail item,
+  `CheckoutPreviewFrame` + its story, `CHECKOUT_FLOWS` / `methodsForFlow` / `flowUnavailableReason` and
+  their test; token `component.preview.viewport.mobile`, whose only consumer was the frame. Links that
+  opened the preview now open the store.
+- **Seed:** Commerce product prices are deterministic (were random per load), so the product page, cart
+  and order agree across reloads.
+- **Accessibility:** axe-core clean inside `.storefront` on home, collection, product, cart and checkout,
+  including the error state and an open payment sheet. Errors move focus to the first invalid field;
+  sheets take focus, close on Escape and hand focus back to Pay.
+
+## Maropay aesthetic pass — 2026-10
+
+Maropay landed after the app-wide aesthetic waves, so it gets its own pass (tracker Wave 5 / Module 15),
+in four sub-waves with an owner check-in after each. References: Stripe Home, Balances, payment
+methods and payment-link pages; Stripe hosted checkout; Shopify settings (Mobbin).
+
+### W1 — shared building blocks (2026-10-05)
+
+- **New tokens:** `color.methodMark.<id>.{tile,onTile}` for 14 methods (theme-independent brand
+  colours; every pair in `$contrastPairs`, lowest Mastercard 4.62:1) and `component.methodMark.*`
+  (height / minWidth / paddingInline / radius / fontSize / glyphSize × sm·md·lg). Eight more contrast
+  pairs check `.mp-link` (each accent preset on the light and dark surface).
+- **New components:** `MaropayMethodMark` (brand tile; `markFor()` / `methodCaption()` in the pure
+  `src/maropay/methodMarks.ts`, tested) and `MaropayDemoPanel` (one quiet dashed `<details>` for
+  reviewer controls, last on the page).
+- **API additions (no breaking change):** `MpListRow` `subtitle` prop + `#title` / `#subtitle` slots
+  (two-line rows: 14 title that wraps, muted 13 subtitle); the single-line title's literal
+  `line-height: 1.35` → `--mp-lineHeight-snug`. `MpPageHeader` `#title-append` (status chip beside the
+  title).
+- **Global (`src/styles/global.scss`):**
+  - **Breaking, app-wide:** `.mp-label-value dt` is sentence case, caption 12/500, `--on-surface-muted`
+    (was the uppercase 11/600 metaLabel). The shared selector with `.mp-meta-label` is split; the
+    eyebrow is unchanged. Closes the tracker's open decision (recipe C2/F5 amended).
+  - `.mp-label-value--inline` (label | value rows, label column `fit-content(45%)`), `.mp-link`,
+    `.mp-card-inset` (+ `--compact`, `--spacious`). The base 640px query uses the Sass breakpoint.
+- **Follow-on edits:** explicit `mp-meta-label` removed from dt in TicketWorkspace, Reservations,
+  ProductRecommendations, TemplateDetailPage, TemplateWizardPage; ContactDetail eRFM labels sentence
+  case; OrderDetail's local dt override removed.
+- **Demo pages:** `MaropayRatesTable` shows a mark per method (Overview discovery, Settings › Payment
+  methods, setup wizard). `MaropayPaymentDetail`: amount + status chip inline, subtitle customer ·
+  store · date, primary action last, Details on `.mp-label-value--inline` with a method mark and the
+  payment id, `.mp-link`, two-line refund rows, Simulate card → `MaropayDemoPanel`.
+- **Bug caught in review:** Vue scoped CSS compiles `:global(.a) .b` to `.a` alone, which put an inset
+  ring on every dark-theme element; the rule now wraps the whole selector in `:global()`.
+
+### W2 — money pages (2026-10-06)
+
+- **Breaking (removed):** `MaropayBalanceCards` (+ story) is deleted. **Replacement:**
+  `MaropayBalanceSummary` (`balance`, `upcoming`, `destination?`, `title?`, `description?`,
+  `upcomingTo?`, `headingLevel?`, `#actions`): next payout leads (≈ amount, estimate and bank, "See
+  what's in it"), then Available / Pending / In transit as subtitle rows; a container query on the card
+  sets them side by side above 560px.
+- **API additions:** `MaropayReadinessCard` `density` (`'default' | 'compact'`; compact is one row once
+  live) and a `#footer` slot; `MaropaySupportAlert` `emphasis` (`'default'` is now a quiet "Need help
+  with this?" card; `'prominent'` is the previous alert, kept for the declined review on Overview and
+  the setup wizard). **Visual default change:** every other support block is now the quiet card.
+- **New pure module:** `src/maropay/volume.ts` (`volumeSeries`, `dayLabel`; 5 tests). Gross volume is
+  Maropay captures by capture day, account currency only, DST-safe day keys. `storeCheckoutNote()` in
+  `readiness.ts` derives a store row's checkout line.
+- **Shared rows:** Timeline, TaskList and LedgerBreakdown use `MpListRow` subtitle rows, 16px icons,
+  `--on-surface-muted`, `.mp-link`, `.mp-card-inset`; the timeline's bare "nothing yet" is an
+  `MpEmptyState`.
+- **Pages:** Overview (gross volume card beside the balance summary, compact readiness, one merged
+  milestone alert), Transactions (9 → 6 columns, method marks; fits at 1440 and 1280, where Status
+  used to clip), Payouts (balance summary replaces the KPI row; filter tabs on the table), payout
+  detail (chip beside the title, estimate → ledger caption, retry → History row, no upcoming payout
+  is an empty state), Disputes and dispute detail (sub-lines, tiered columns, deadline stated once).
+- **One page-state pattern** on every Maropay page: header (with back link) → card → `MpEmptyState`
+  (no access, nothing yet) or `MpErrorState` (not found).
+- **Verification:** every table measured at the table (`scrollWidth === clientWidth`), not the
+  document: all fit at 375 after tiering Payouts and Disputes. axe clean on 10 page states (m03, m04,
+  m10, m11). Muted text moved to `--on-surface-muted`, which reads slightly dimmer in dark mode.
+
+### W3a — stores inside Maropay, store Payments, store shell and Overview (2026-10-06)
+
+- **New route `MaropayStorePayments`** (`/maropay/stores/:channelId`) renders `StorePaymentsPage`
+  with `frame="maropay"`; the store editor's `StorePayments` passes nothing (`frame="store"`).
+  `readiness.ts` adds `MAROPAY_STORE_ROUTE`, `storePaymentsTarget()` and `joinList()`; every Maropay
+  link to a store moved to it. Maropay's rail highlights the active store by giving only it `match`
+  (no MpSectionRail change).
+- **`StorePaymentsPage` split** (973 → 600 lines) into `views/Maropay/store/`:
+  `StorePaymentMethodsCard`, `StoreCheckoutOptionsCard`, `StoreActivationImpactCard`,
+  `StorePaymentsPreview`. The "Checkout provider" card is gone (header chip + routing subtitle).
+- **New tokens:** `layout.previewPanelWidth` (360), `layout.previewSplitWidth` (840, Sass-only,
+  a container query). `.mp-frame-fill` exposes `--mp-frame-height` for sticky panels.
+- **Storefront (out of system):** `StorefrontPaymentOptions`, `StorefrontCardFields`,
+  `StorefrontPayButton` extracted from the checkout (md5-identical captures before/after),
+  `StorefrontPaymentPreview`, `storefront-surface.css` (`.sf-surface`), `storefrontThemeVars()` in
+  `themeBuilderData.ts` (replaces two copies). `storefrontOffer(..., { asIfLive })`. Checkout options
+  now lead with `MaropayMethodMark`s.
+- **API change:** `MaropayMethodRow` renders `MpListRow :title :subtitle` with a md mark in `#lead`
+  (hand-rolled spans and CSS deleted). `MaropayActivationChecklist` uses `.mp-card-inset`, 16px
+  icons and subtitle rows. `methodMarks` maps a "PayPal …" label to the PayPal mark.
+  `model.ts` adds `HISTORY_KIND_ICONS`; `MigrationRow` carries `methodId`.
+- **Store shell:** `StoreEditorLayout` on `.mp-frame-fill` + shell-inset tokens (raw px gone).
+- **SalesChannelDetail:** MpPageHeader + MpFilterTabs (tabpanels), payments setup row always first
+  with its mark, business info `.mp-label-value`, apps as boxed `MpListRow`s with marks and
+  connection chips (colour-only dot gone). A `.sc-setup-row span` rule was restyling the mark's root
+  span; it now targets the text block. The page's column children no longer shrink (the tabs
+  collapsed to 0 height in the `h-100` column).
+- **Verification:** axe clean on both store-payments frames (m06, m10, m15) and every
+  SalesChannelDetail tab; 375 has no overflow (the comparison table becomes a list below 640);
+  sticky preview capped and internally scrolling at 1440×900; live preview follows methods,
+  approvals, express, order, default and pay label.

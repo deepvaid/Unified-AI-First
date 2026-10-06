@@ -10,13 +10,16 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpSectionHeader from '@/components/MpSectionHeader.vue'
 import MpSegmentedControl from '@/components/MpSegmentedControl.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
+import MaropayDemoPanel from '@/components/maropay/MaropayDemoPanel.vue'
 import MaropayLedgerBreakdown from '@/components/maropay/MaropayLedgerBreakdown.vue'
+import MaropayMethodMark from '@/components/maropay/MaropayMethodMark.vue'
 import MaropayMoney from '@/components/maropay/MaropayMoney.vue'
 import MaropayRefundDrawer from '@/components/maropay/MaropayRefundDrawer.vue'
 import MaropaySupportAlert from '@/components/maropay/MaropaySupportAlert.vue'
 import MaropayTimeline from '@/components/maropay/MaropayTimeline.vue'
 import { useToast } from '@/composables/useToast'
 import { useMaropayStore } from '@/stores/useMaropay'
+import { markFor, methodCaption } from '@/maropay/methodMarks'
 import { formatMoney, isPositive, negate } from '@/maropay/money'
 import { PAYMENT_STATUS_LABELS, PROVIDER_LABELS } from '@/maropay/model'
 import type { Refund } from '@/maropay/model'
@@ -178,19 +181,16 @@ function setRefundOutcome(value: string | null): void {
     <MpPageHeader
       eyebrow="Payment"
       :title="formatMoney(payment.amount)"
-      :subtitle="`${payment.customer.name} · ${payment.id} · ${formatDay(payment.createdAt)}`"
+      :subtitle="`${payment.customer.name} · ${storeName} · ${formatDay(payment.createdAt)}`"
       :back-to="transactionsRoute"
     >
+      <template #title-append>
+        <MpStatusChip :status="statusLabel" type="payment" show-icon />
+      </template>
       <template #actions>
         <v-btn v-if="canVoid" variant="text" class="text-none" prepend-icon="ban" @click="voidOpen = true">Cancel authorisation</v-btn>
-        <v-btn v-if="canCapture" color="primary" variant="flat" class="text-none" prepend-icon="circle-check" @click="captureOpen = true">Capture {{ formatMoney(payment.amount) }}</v-btn>
         <v-btn v-if="canRefund" variant="outlined" class="text-none" prepend-icon="undo-2" @click="refundOpen = true">Refund</v-btn>
-      </template>
-      <template #tabs>
-        <div class="d-flex align-center flex-wrap ga-2 mt-1">
-          <MpStatusChip :status="statusLabel" type="payment" size="sm" show-icon />
-          <span class="text-caption text-medium-emphasis">{{ ours ? 'Taken by Maropay' : `Taken by ${providerName} (original provider)` }} · {{ storeName }}</span>
-        </div>
+        <v-btn v-if="canCapture" color="primary" variant="flat" class="text-none" prepend-icon="circle-check" @click="captureOpen = true">Capture {{ formatMoney(payment.amount) }}</v-btn>
       </template>
     </MpPageHeader>
 
@@ -213,35 +213,48 @@ function setRefundOutcome(value: string | null): void {
         <v-btn size="small" variant="outlined" class="text-none" :to="{ name: 'MaropayDisputeDetail', params: { accountId, disputeId: dispute.id } }">Respond to dispute</v-btn>
       </template>
     </MpAlert>
-    <MpAlert v-if="!ours" tone="info" live="off" :title="`Taken by ${providerName}`">
-      {{ providerName }} took this payment before {{ storeName }} switched to Maropay. Refunds go back through {{ providerName }}, and the payment isn’t part of your Maropay balance or payouts.
-    </MpAlert>
 
     <div class="maropay-payment">
       <div class="maropay-payment__side">
-        <v-card flat border rounded="lg" class="maropay-payment__card">
+        <v-card flat border rounded="lg" class="mp-card-inset">
           <MpSectionHeader title="Details" :heading-level="2" />
-          <dl class="maropay-payment__details">
+          <dl class="mp-label-value mp-label-value--inline">
             <div>
               <dt>Order</dt>
               <dd>
-                <router-link v-if="orderRoute" :to="orderRoute" class="maropay-payment__link">{{ payment.orderNumber }}</router-link>
+                <router-link v-if="orderRoute" :to="orderRoute" class="mp-link">{{ payment.orderNumber }}</router-link>
                 <template v-else>—</template>
               </dd>
             </div>
-            <div><dt>Customer</dt><dd>{{ payment.customer.name }}<span class="maropay-payment__sub">{{ payment.customer.email }}</span></dd></div>
-            <div><dt>Store</dt><dd>{{ storeName }}</dd></div>
-            <div><dt>Method</dt><dd>{{ payment.methodLabel }}</dd></div>
-            <div><dt>Amount</dt><dd><span><MaropayMoney :amount="payment.amount" /> {{ payment.amount.currency }}</span></dd></div>
+            <div>
+              <dt>Customer</dt>
+              <dd class="maropay-payment__stack">{{ payment.customer.name }}<span class="maropay-payment__sub">{{ payment.customer.email }}</span></dd>
+            </div>
+            <div>
+              <dt>Method</dt>
+              <dd class="maropay-payment__method">
+                <MaropayMethodMark :mark="markFor(payment.methodId, payment.methodLabel)" size="sm" decorative />
+                {{ methodCaption(payment.methodId, payment.methodLabel) }}
+              </dd>
+            </div>
+            <div><dt>Amount</dt><dd><MaropayMoney :amount="payment.amount" /> {{ payment.amount.currency }}</dd></div>
+            <div>
+              <dt>Taken by</dt>
+              <dd class="maropay-payment__stack">
+                {{ ours ? 'Maropay' : `${providerName}, before Maropay` }}
+                <span v-if="!ours" class="maropay-payment__sub">Refunds go back through {{ providerName }}; it isn’t part of your Maropay balance or payouts.</span>
+              </dd>
+            </div>
             <div><dt>Captured</dt><dd>{{ payment.capturedAt ? formatDay(payment.capturedAt) : 'Not captured' }}</dd></div>
             <div><dt>Capture</dt><dd>{{ payment.captureMode === 'manual' ? 'Manual' : 'Automatic' }}</dd></div>
             <div>
               <dt>Payout</dt>
               <dd>
-                <router-link v-if="payoutId" :to="{ name: 'MaropayPayoutDetail', params: { accountId, payoutId } }" class="maropay-payment__link">{{ payoutId }}</router-link>
+                <router-link v-if="payoutId" :to="{ name: 'MaropayPayoutDetail', params: { accountId, payoutId } }" class="mp-link">{{ payoutId }}</router-link>
                 <template v-else>{{ ours ? (payment.capturedAt ? 'Not paid out yet' : '—') : `Paid out by ${providerName}` }}</template>
               </dd>
             </div>
+            <div><dt>Payment ID</dt><dd class="maropay-payment__mono">{{ payment.id }}</dd></div>
             <div><dt>Reference</dt><dd class="maropay-payment__mono">{{ payment.processorRef }}</dd></div>
           </dl>
         </v-card>
@@ -252,13 +265,15 @@ function setRefundOutcome(value: string | null): void {
       </div>
 
       <div class="maropay-payment__body">
-        <v-card v-if="refundRows.length" flat border rounded="lg" class="maropay-payment__card">
+        <v-card v-if="refundRows.length" flat border rounded="lg" class="mp-card-inset">
           <MpSectionHeader title="Refunds" :heading-level="2" />
-          <MpListRow v-for="refund in refundRows" :key="refund.id" variant="divided">
-            <span class="maropay-payment__row-title"><MaropayMoney :amount="refund.amount" /> · {{ formatDay(refund.at) }}</span>
-            <span class="maropay-payment__sub">
-              {{ refund.provider === 'maropay' ? 'Via Maropay' : `Through ${PROVIDER_LABELS[refund.provider]}` }}{{ refund.reason ? ` · ${refund.reason}` : '' }}{{ refund.failureReason ? ` · ${refund.failureReason}` : '' }}
-            </span>
+          <MpListRow
+            v-for="refund in refundRows"
+            :key="refund.id"
+            variant="divided"
+            :subtitle="[formatDay(refund.at), refund.provider === 'maropay' ? 'Via Maropay' : `Through ${PROVIDER_LABELS[refund.provider]}`, refund.reason, refund.failureReason].filter(Boolean).join(' · ')"
+          >
+            <template #title><MaropayMoney :amount="refund.amount" /> refunded</template>
             <template #trailing>
               <MpStatusChip :status="REFUND_STATUS[refund.status]" type="general" size="sm" />
             </template>
@@ -266,43 +281,48 @@ function setRefundOutcome(value: string | null): void {
         </v-card>
 
         <MaropayTimeline :events="payment.timeline" />
-
-        <v-card v-if="showDemo" flat border rounded="lg" class="maropay-payment__card">
-          <MpSectionHeader icon="flask-conical" title="Simulate events" description="Demo controls — not part of the product." :heading-level="2" />
-          <div class="maropay-payment__demo">
-            <div v-if="wentThroughProcessing" class="maropay-payment__demo-row">
-              <span>The shopper’s bank</span>
-              <span class="d-flex flex-wrap ga-2">
-                <v-btn size="small" variant="outlined" class="text-none" @click="deliver('captured')">Deliver confirmation</v-btn>
-                <v-btn size="small" variant="outlined" class="text-none" @click="deliver('failed')">Deliver failure</v-btn>
-              </span>
-            </div>
-            <div v-if="canRefund" class="maropay-payment__demo-row">
-              <span>Next refund</span>
-              <div class="maropay-payment__demo-scroll">
-                <MpSegmentedControl :model-value="maropay.failures.refundOutcome" :items="REFUND_OUTCOMES" size="sm" ariaLabel="Next refund outcome" @update:model-value="setRefundOutcome" />
-              </div>
-            </div>
-            <div v-for="refund in pendingRefunds" :key="refund.id" class="maropay-payment__demo-row">
-              <span>Pending refund of {{ formatMoney(refund.amount) }}</span>
-              <span class="d-flex flex-wrap ga-2">
-                <v-btn size="small" variant="outlined" class="text-none" @click="settle(refund, 'succeeded')">Complete</v-btn>
-                <v-btn size="small" variant="text" class="text-none" @click="settle(refund, 'failed')">Bounce back</v-btn>
-              </span>
-            </div>
-            <div v-if="ours && (payment.status === 'captured' || payment.status === 'partially_refunded')" class="maropay-payment__demo-row">
-              <span>The shopper’s bank</span>
-              <v-btn size="small" variant="outlined" class="text-none" @click="openDispute">Open a dispute</v-btn>
-            </div>
-            <v-checkbox
-              :model-value="maropay.failures.timeoutNext"
-              label="Next request times out (retrying is safe)"
-              @update:model-value="maropay.setFailure('timeoutNext', Boolean($event))"
-            />
-          </div>
-        </v-card>
       </div>
     </div>
+
+    <MaropayDemoPanel v-if="showDemo">
+      <MpListRow v-if="wentThroughProcessing" variant="divided" title="The shopper’s bank" subtitle="Confirm or fail the delayed debit">
+        <template #trailing>
+          <span class="d-flex flex-wrap ga-2">
+            <v-btn size="small" variant="outlined" class="text-none" @click="deliver('captured')">Deliver confirmation</v-btn>
+            <v-btn size="small" variant="outlined" class="text-none" @click="deliver('failed')">Deliver failure</v-btn>
+          </span>
+        </template>
+      </MpListRow>
+      <MpListRow v-if="canRefund" variant="divided" title="Next refund" subtitle="What happens when you refund this payment">
+        <template #trailing>
+          <div class="maropay-payment__demo-scroll">
+            <MpSegmentedControl :model-value="maropay.failures.refundOutcome" :items="REFUND_OUTCOMES" size="sm" ariaLabel="Next refund outcome" @update:model-value="setRefundOutcome" />
+          </div>
+        </template>
+      </MpListRow>
+      <MpListRow v-for="refund in pendingRefunds" :key="refund.id" variant="divided" :title="`Pending refund of ${formatMoney(refund.amount)}`" subtitle="Settle it as the shopper’s bank would">
+        <template #trailing>
+          <span class="d-flex flex-wrap ga-2">
+            <v-btn size="small" variant="outlined" class="text-none" @click="settle(refund, 'succeeded')">Complete</v-btn>
+            <v-btn size="small" variant="text" class="text-none" @click="settle(refund, 'failed')">Bounce back</v-btn>
+          </span>
+        </template>
+      </MpListRow>
+      <MpListRow v-if="ours && (payment.status === 'captured' || payment.status === 'partially_refunded')" variant="divided" title="The shopper’s bank" subtitle="Open a dispute against this payment">
+        <template #trailing>
+          <v-btn size="small" variant="outlined" class="text-none" @click="openDispute">Open a dispute</v-btn>
+        </template>
+      </MpListRow>
+      <MpListRow variant="divided" title="Next request times out" subtitle="One-shot — retrying is safe">
+        <template #trailing>
+          <v-checkbox-btn
+            :model-value="maropay.failures.timeoutNext"
+            aria-label="Next request times out"
+            @update:model-value="maropay.setFailure('timeoutNext', Boolean($event))"
+          />
+        </template>
+      </MpListRow>
+    </MaropayDemoPanel>
 
     <MpConfirmDialog
       v-model="captureOpen"
@@ -332,24 +352,28 @@ function setRefundOutcome(value: string | null): void {
     />
   </div>
 
-  <v-card v-else-if="payment" flat border rounded="lg">
-    <MpEmptyState
-      icon="lock"
-      title="You don’t have access to this payment"
-      description="Store operations users see payments for the stores they’re assigned to."
-      :heading-level="2"
-    />
-  </v-card>
-
-  <MpErrorState
-    v-else
-    icon="file-x"
-    title="Payment not found"
-    description="This payment may belong to another account, or the link is incorrect."
-    action-label="Back to transactions"
-    action-icon="arrow-left"
-    @action="router.push(transactionsRoute)"
-  />
+  <!-- No access or not found: the page keeps its header and back link. -->
+  <div v-else class="d-flex flex-column gap-5">
+    <MpPageHeader eyebrow="Payment" :title="payment ? 'Payment' : 'Payment not found'" :back-to="transactionsRoute" />
+    <v-card flat border rounded="lg">
+      <MpEmptyState
+        v-if="payment"
+        icon="lock"
+        title="You don’t have access to this payment"
+        description="Store operations users see payments for the stores they’re assigned to."
+        :heading-level="2"
+      />
+      <MpErrorState
+        v-else
+        icon="file-x"
+        title="We couldn’t find this payment"
+        description="It may belong to another account, or the link is incorrect."
+        action-label="Back to transactions"
+        action-icon="arrow-left"
+        @action="router.push(transactionsRoute)"
+      />
+    </v-card>
+  </div>
 </template>
 
 <style scoped lang="scss">
@@ -374,76 +398,25 @@ function setRefundOutcome(value: string | null): void {
   min-width: 0;
 }
 
-.maropay-payment__card {
-  padding: var(--mp-component-card-padding);
-}
-
-.maropay-payment__details {
-  display: grid;
-  gap: var(--mp-space-12);
-  margin: 0;
-}
-
-.maropay-payment__details > div {
-  display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
-  gap: var(--mp-space-12);
-  font-size: var(--mp-fontSize-14);
-}
-
-.maropay-payment__details dt {
-  color: var(--text-secondary);
-}
-
-.maropay-payment__details dd {
+.maropay-payment__stack {
   display: flex;
   flex-direction: column;
-  margin: 0;
-  min-width: 0;
-  overflow-wrap: anywhere;
-  color: var(--text-primary);
+}
+
+.maropay-payment__method {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mp-space-8);
 }
 
 .maropay-payment__sub {
-  font-size: var(--mp-fontSize-12);
-  color: var(--text-secondary);
+  font-size: var(--mp-fontSize-13);
+  color: var(--on-surface-muted);
 }
 
 .maropay-payment__mono {
   font-family: var(--mp-fontFamily-mono);
   font-size: var(--mp-fontSize-12);
-}
-
-.maropay-payment__link {
-  color: rgb(var(--v-theme-primary));
-  font-weight: var(--mp-fontWeight-semibold);
-  text-decoration: none;
-}
-
-.maropay-payment__link:hover {
-  text-decoration: underline;
-}
-
-.maropay-payment__row-title {
-  font-size: var(--mp-fontSize-14);
-  font-weight: var(--mp-fontWeight-medium);
-  color: var(--text-primary);
-}
-
-.maropay-payment__demo {
-  display: flex;
-  flex-direction: column;
-  gap: var(--mp-space-12);
-}
-
-.maropay-payment__demo-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--mp-space-8) var(--mp-space-16);
-  font-size: var(--mp-fontSize-14);
-  color: var(--text-primary);
 }
 
 /* Four outcomes outgrow a phone-width card, so the control scrolls inside its row. */

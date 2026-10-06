@@ -39,6 +39,22 @@ export interface MaropayTarget {
   query?: Record<string, string>
 }
 
+/**
+ * One store's payments inside Maropay's own frame (its rail and way back stay on screen).
+ * The store editor shows the same page as `StorePayments`, for people who come from Sales channels.
+ */
+export const MAROPAY_STORE_ROUTE = 'MaropayStorePayments'
+
+/** Where a store's payments open: Maropay's frame by default, the store editor's on request. */
+export function storePaymentsTarget(channelId: string, frame: 'maropay' | 'store' = 'maropay'): MaropayTarget {
+  return { name: frame === 'maropay' ? MAROPAY_STORE_ROUTE : 'StorePayments', params: { channelId } }
+}
+
+/** English list: "Cards, Apple Pay and Google Pay". */
+export function joinList(items: readonly string[]): string {
+  return items.length <= 1 ? items.join('') : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`
+}
+
 const DATE_FORMAT = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 
 export function formatDay(iso: string): string {
@@ -115,6 +131,12 @@ export function storeActivationState(binding: StoreBinding, capabilities: Capabi
   return checklist.ok ? 'ready_to_activate' : 'needs_setup'
 }
 
+/** A store's line in a list (Overview, Settings › Stores): who takes its checkout's payments today. */
+export function storeCheckoutNote(binding: StoreBinding, state: StoreActivationState): string {
+  if (state === 'live') return 'Checkout uses Maropay'
+  return binding.previousProvider ? `Checkout uses ${PROVIDER_LABELS[binding.previousProvider.provider]}` : 'Keeps its current payment setup'
+}
+
 export interface ReadinessDimensions {
   setup: SetupState
   verification: VerificationState
@@ -179,11 +201,11 @@ export function taskTarget(task: ActionTask): MaropayTarget {
     case 'dispute':
       return task.disputeId ? { name: 'MaropayDisputeDetail', params: { disputeId: task.disputeId } } : { name: 'MaropayDisputes' }
     case 'method_review':
-      return task.channelId ? { name: 'StorePayments', params: { channelId: task.channelId } } : { name: 'MaropaySettings', query: { tab: 'methods' } }
+      return task.channelId ? storePaymentsTarget(task.channelId) : { name: 'MaropaySettings', query: { tab: 'methods' } }
     case 'business_change':
       return { name: 'MaropaySettings', query: { tab: 'business' } }
     case 'activate_store':
-      return task.channelId ? { name: 'StorePayments', params: { channelId: task.channelId } } : { name: 'MaropaySettings', query: { tab: 'stores' } }
+      return task.channelId ? storePaymentsTarget(task.channelId) : { name: 'MaropaySettings', query: { tab: 'stores' } }
   }
 }
 
@@ -319,7 +341,7 @@ export function deriveOverviewInstruction(state: MaropayAccountState, now: numbe
     }
     const name = nameOf(target.binding.channelId)
     const progress = checklistProgress(target.checklist)
-    const storeTarget = { name: 'StorePayments', params: { channelId: target.binding.channelId } }
+    const storeTarget = storePaymentsTarget(target.binding.channelId)
     if (target.kind === 'set_up_store') {
       return {
         ...base,
@@ -358,7 +380,7 @@ export function deriveOverviewInstruction(state: MaropayAccountState, now: numbe
       key: 'activate_more',
       headline: `Payments are active — ${name} isn’t on Maropay yet`,
       detail: `Maropay is live on ${stores}. ${target.kind === 'ready_to_activate' ? `${name} is ready to activate.` : `Finish ${name}’s checklist to activate it.`}`,
-      action: { label: target.kind === 'ready_to_activate' ? `Activate on ${name}` : `Set up ${name}`, target: { name: 'StorePayments', params: { channelId: target.binding.channelId } } },
+      action: { label: target.kind === 'ready_to_activate' ? `Activate on ${name}` : `Set up ${name}`, target: storePaymentsTarget(target.binding.channelId) },
     }
   }
   return {
@@ -735,6 +757,8 @@ export function nextPayout(state: MaropayAccountState, now: number): UpcomingPay
 
 export interface MigrationRow {
   label: string
+  /** The Maropay catalogue method it maps to, when there is one — for its mark. */
+  methodId: string | null
   currentRate: string
   maropayLabel: string | null
   maropayRate: string | null
@@ -760,11 +784,12 @@ export function migrationImpact(state: MaropayAccountState, binding: StoreBindin
   const rows: MigrationRow[] = previous.methods.map((method) => {
     const target = method.maropayMethodId ? byId.get(method.maropayMethodId) ?? null : null
     if (!target || method.keepSeparately) {
-      return { label: method.label, currentRate: method.rate.label, maropayLabel: null, maropayRate: null, change: 'stays' }
+      return { label: method.label, methodId: method.maropayMethodId, currentRate: method.rate.label, maropayLabel: null, maropayRate: null, change: 'stays' }
     }
     const diff = compare(applyRate(REFERENCE_ORDER, target.rate), applyRate(REFERENCE_ORDER, method.rate))
     return {
       label: method.label,
+      methodId: method.maropayMethodId,
       currentRate: method.rate.label,
       maropayLabel: target.label,
       maropayRate: target.rate.label,

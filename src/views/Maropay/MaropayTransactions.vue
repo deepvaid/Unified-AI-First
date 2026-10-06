@@ -11,6 +11,7 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
+import MaropayMethodMark from '@/components/maropay/MaropayMethodMark.vue'
 import MaropayMoney from '@/components/maropay/MaropayMoney.vue'
 import MaropayRefundDrawer from '@/components/maropay/MaropayRefundDrawer.vue'
 import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
@@ -19,6 +20,7 @@ import { useToast } from '@/composables/useToast'
 import { useMaropayStore } from '@/stores/useMaropay'
 import { useMaropayListLoad } from './useMaropayListLoad'
 import { downloadCsv } from '@/utils/exportCsv'
+import { markFor, methodCaption } from '@/maropay/methodMarks'
 import { formatMoney, isPositive, sum } from '@/maropay/money'
 import type { Money } from '@/maropay/money'
 import { PAYMENT_STATUS_LABELS, PROVIDER_LABELS, localDateKey } from '@/maropay/model'
@@ -170,17 +172,18 @@ const summary = computed(() => {
 
 // ── Columns ────────────────────────────────────────────────────────
 
+// Six columns so the table fits beside the Maropay rail (Stripe's payments list):
+// the status rides with the amount, and the store and an earlier provider are
+// sub-lines. Both stay in the quick filter, the filter drawer and the CSV.
 const HEADERS: (ResponsiveHeader & { title: string; key: string })[] = [
-  { title: 'Date', key: 'date', sortable: true },
-  { title: 'Customer', key: 'customer', sortable: true },
+  { title: 'Amount', key: 'amountSort', sortable: true },
+  { title: 'Method', key: 'method', hideBelow: 'md' },
   { title: 'Order', key: 'orderNumber', sortable: true },
-  { title: 'Store', key: 'store', hideBelow: 'md' },
-  { title: 'Method', key: 'method', hideBelow: 'lg' },
-  { title: 'Provider', key: 'providerLabel', hideBelow: 'lg' },
-  { title: 'Amount', key: 'amountSort', sortable: true, align: 'end' },
-  { title: 'Status', key: 'status' },
+  { title: 'Customer', key: 'customer', sortable: true, hideBelow: 'md' },
+  { title: 'Date', key: 'date', sortable: true, hideBelow: 'sm' },
   { title: '', key: 'actions', sortable: false, align: 'end' },
 ]
+const multiStore = computed(() => storeOptions.value.length > 1)
 const hiddenColumns = ref<string[]>([])
 const { visibleHeaders } = useResponsiveTableHeaders(HEADERS, hiddenColumns)
 
@@ -224,6 +227,13 @@ function exportCsv(): void {
 }
 
 const hasLiveStore = computed(() => maropay.bindings.some((b) => b.activation === 'live'))
+
+/** No payments yet: the first live store's storefront is where one can be made. */
+function openLiveStore(): void {
+  const live = maropay.bindings.find((b) => b.activation === 'live')
+  if (!live) return
+  window.open(router.resolve({ name: 'StorefrontHome', params: { accountId: accountId.value, channelId: live.channelId } }).href, '_blank', 'noopener')
+}
 </script>
 
 <template>
@@ -238,7 +248,7 @@ const hasLiveStore = computed(() => maropay.bindings.some((b) => b.activation ==
       </template>
     </MpPageHeader>
 
-    <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
+    <v-card flat border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
         v-model:search="search"
         v-model:hidden-columns="hiddenColumns"
@@ -285,43 +295,40 @@ const hasLiveStore = computed(() => maropay.bindings.some((b) => b.activation ==
         class="flex-grow-1 maropay-tx__table"
         @click:row="openRow"
       >
-        <template #item.date="{ item }">
-          <span class="text-no-wrap">{{ formatDay(item.date) }}</span>
-        </template>
-
-        <template #item.customer="{ item }">
-          <div class="maropay-tx__customer">
-            <span class="maropay-tx__name">{{ item.customer }}</span>
-            <span class="maropay-tx__sub">{{ item.email }}</span>
-          </div>
-        </template>
-
-        <template #item.orderNumber="{ item }">
-          <router-link v-if="item.orderId" :to="orderRoute(item.orderId)" class="maropay-tx__link" @click.stop>{{ item.orderNumber }}</router-link>
-          <span v-else class="text-medium-emphasis">—</span>
-        </template>
-
-        <template #item.store="{ item }">
-          <span class="text-body-2 text-no-wrap">{{ item.store }}</span>
-        </template>
-
-        <template #item.method="{ item }">
-          <span class="text-body-2 text-medium-emphasis text-no-wrap">{{ item.method }}</span>
-        </template>
-
-        <template #item.providerLabel="{ item }">
-          <span class="text-body-2 text-no-wrap" :class="{ 'text-medium-emphasis': item.provider !== 'maropay' }">{{ item.providerLabel }}</span>
-        </template>
-
         <template #item.amountSort="{ item }">
-          <div class="maropay-tx__amount">
-            <MaropayMoney :amount="item.amount" />
+          <div class="maropay-tx__stack">
+            <span class="maropay-tx__amount">
+              <MaropayMoney :amount="item.amount" class="maropay-tx__strong" />
+              <MpStatusChip :status="PAYMENT_STATUS_LABELS[item.status]" type="payment" size="sm" />
+            </span>
             <span v-if="isPositive(item.refunded)" class="maropay-tx__sub">{{ formatMoney(item.refunded) }} refunded</span>
           </div>
         </template>
 
-        <template #item.status="{ item }">
-          <MpStatusChip :status="PAYMENT_STATUS_LABELS[item.status]" type="payment" size="sm" />
+        <template #item.method="{ item }">
+          <div class="maropay-tx__stack">
+            <span class="maropay-tx__method">
+              <MaropayMethodMark :mark="markFor(item.methodId, item.method)" size="sm" decorative />
+              {{ methodCaption(item.methodId, item.method) }}
+            </span>
+            <span v-if="item.provider !== 'maropay'" class="maropay-tx__sub">{{ item.providerLabel }} · before Maropay</span>
+          </div>
+        </template>
+
+        <template #item.orderNumber="{ item }">
+          <div class="maropay-tx__stack">
+            <router-link v-if="item.orderId" :to="orderRoute(item.orderId)" class="mp-link" @click.stop>{{ item.orderNumber }}</router-link>
+            <span v-else class="maropay-tx__sub">—</span>
+            <span v-if="multiStore" class="maropay-tx__sub">{{ item.store }}</span>
+          </div>
+        </template>
+
+        <template #item.customer="{ item }">
+          <span class="text-no-wrap">{{ item.customer }}</span>
+        </template>
+
+        <template #item.date="{ item }">
+          <span class="maropay-tx__sub maropay-tx__date">{{ formatDay(item.date) }}</span>
         </template>
 
         <template #header.actions>
@@ -365,11 +372,11 @@ const hasLiveStore = computed(() => maropay.bindings.some((b) => b.activation ==
             emphasis="prominent"
             icon="receipt"
             title="No payments yet"
-            :description="hasLiveStore ? 'Payments appear here as soon as a shopper pays. Try a checkout to see one arrive.' : 'Payments appear here once a store is live on Maropay.'"
-            :action-label="hasLiveStore ? 'Open checkout preview' : 'Go to overview'"
-            action-icon="arrow-right"
+            :description="hasLiveStore ? 'Payments appear here as soon as a shopper pays. Buy something on your store to see one arrive.' : 'Payments appear here once a store is live on Maropay.'"
+            :action-label="hasLiveStore ? 'Open your store' : 'Go to overview'"
+            :action-icon="hasLiveStore ? 'external-link' : 'arrow-right'"
             :heading-level="2"
-            @action="router.push({ name: hasLiveStore ? 'MaropayCheckoutPreview' : 'MaropayOverview', params: { accountId } })"
+            @action="hasLiveStore ? openLiveStore() : router.push({ name: 'MaropayOverview', params: { accountId } })"
           />
         </template>
       </v-data-table>
@@ -392,7 +399,7 @@ const hasLiveStore = computed(() => maropay.bindings.some((b) => b.activation ==
   margin: 0;
   padding: 0 var(--mp-component-table-cellPaddingInline) var(--mp-space-8);
   font-size: var(--mp-fontSize-13);
-  color: var(--text-secondary);
+  color: var(--on-surface-muted);
   font-variant-numeric: tabular-nums;
 }
 
@@ -400,34 +407,32 @@ const hasLiveStore = computed(() => maropay.bindings.some((b) => b.activation ==
   cursor: pointer;
 }
 
-.maropay-tx__customer,
-.maropay-tx__amount {
+.maropay-tx__stack {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
 }
 
-.maropay-tx__amount {
-  align-items: flex-end;
-}
-
-.maropay-tx__name {
-  font-weight: var(--mp-fontWeight-medium);
+.maropay-tx__amount,
+.maropay-tx__method {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--mp-space-4) var(--mp-space-8);
   white-space: nowrap;
+}
+
+.maropay-tx__strong {
+  font-weight: var(--mp-fontWeight-semibold);
 }
 
 .maropay-tx__sub {
-  font-size: var(--mp-fontSize-12);
-  color: var(--text-secondary);
+  font-size: var(--mp-fontSize-13);
+  color: var(--on-surface-muted);
   white-space: nowrap;
 }
 
-.maropay-tx__link {
-  color: rgb(var(--v-theme-primary));
-  font-weight: var(--mp-fontWeight-semibold);
-  text-decoration: none;
-}
-
-.maropay-tx__link:hover {
-  text-decoration: underline;
+.maropay-tx__date {
+  font-size: var(--mp-text-body-fontSize);
 }
 </style>

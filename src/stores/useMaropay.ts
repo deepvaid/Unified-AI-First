@@ -78,6 +78,7 @@ import {
   refundableRemaining,
   storeActivationState,
   taskTarget,
+  storePaymentsTarget,
 } from '@/maropay/readiness'
 import type { ChannelFacts, MaropayTarget, PaymentFilter } from '@/maropay/readiness'
 import type { BankAccountInput, OnboardingPatch } from '@/maropay/onboarding'
@@ -85,7 +86,7 @@ import { deriveRequirements, rulesForState } from '@/maropay/requirements'
 import { MAROPAY_SCENARIOS, buildScenario, eligibleStores, isMaropayScenarioKey, prefillFor } from '@/maropay/scenarios'
 import type { ScenarioChannel, ScenarioContext } from '@/maropay/scenarios'
 import * as adapter from '@/services/maropay/mockAdapter'
-import type { AdapterEnv, CheckoutInput, CheckoutStep, FailurePlan, ReviewOptions, StepUpChallenge, StepUpToken, TaskAnswer } from '@/services/maropay/mockAdapter'
+import type { AdapterEnv, CheckoutInput, CheckoutOptionsPatch, CheckoutStep, FailurePlan, ReviewOptions, StepUpChallenge, StepUpToken, TaskAnswer } from '@/services/maropay/mockAdapter'
 
 export { MAROPAY_SCENARIOS, isMaropayScenarioKey }
 export type { MaropayActingRole, MaropayScenarioKey }
@@ -485,7 +486,7 @@ export const useMaropayStore = defineStore('maropay', () => {
     const id = `verified-${state.value.account?.verifiedAt ?? now.value}`
     if (target) {
       const name = channelName(target.binding.channelId)
-      notify(id, `Maropay: your business is verified — activate it on ${name}`, { name: 'StorePayments', params: { channelId: target.binding.channelId } })
+      notify(id, `Maropay: your business is verified — activate it on ${name}`, storePaymentsTarget(target.binding.channelId))
     } else {
       notify(id, 'Maropay: your business is verified — link a store to activate it', { name: 'MaropaySettings', query: { tab: 'stores' } })
     }
@@ -532,6 +533,10 @@ export const useMaropayStore = defineStore('maropay', () => {
     return run((e) => adapter.setCaptureMode(state.value, channelId, mode, e))
   }
 
+  function updateCheckoutOptions(channelId: string, patch: CheckoutOptionsPatch) {
+    return run((e) => adapter.updateCheckoutOptions(state.value, channelId, patch, e))
+  }
+
   function validateCheckout(channelId: string) {
     return run((e) => adapter.validateCheckout(state.value, channelId, e))
   }
@@ -543,7 +548,7 @@ export const useMaropayStore = defineStore('maropay', () => {
   function activateStore(channelId: string) {
     return run((e) => adapter.activateStore(state.value, channelId, channelFacts(channelId), e), () => {
       useOnboardingStore().complete('payments')
-      notify(`live-${channelId}-${now.value}`, `Maropay is live on ${channelName(channelId)}`, { name: 'StorePayments', params: { channelId } })
+      notify(`live-${channelId}-${now.value}`, `Maropay is live on ${channelName(channelId)}`, storePaymentsTarget(channelId))
     })
   }
 
@@ -806,7 +811,7 @@ export const useMaropayStore = defineStore('maropay', () => {
     startSetup, saveStep, acceptTerms, savePayoutDetails, requestOwnerReview, submitSetup, resolveTask, simulateReviewOutcome,
     raiseThresholdRequirement,
     // stores
-    linkStore, setMethodEnabled, simulateMethodApproval, setCaptureMode, validateCheckout, markImpactReviewed, activateStore, deactivateStore,
+    linkStore, setMethodEnabled, simulateMethodApproval, setCaptureMode, updateCheckoutOptions, validateCheckout, markImpactReviewed, activateStore, deactivateStore,
     deactivateAllStores, dismissActivationNotice,
     // account settings
     requestBusinessChange, simulateBusinessChangeOutcome, updatePublicDetails, closeAccount,

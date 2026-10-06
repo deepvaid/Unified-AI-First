@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { getBlockDef, type ThemeBlock, type ThemeSection, type ThemeStyles } from '@/stores/themeBuilderData'
+import { getBlockDef, storefrontThemeVars, type ThemeBlock, type ThemeSection, type ThemeStyles } from '@/stores/themeBuilderData'
 
 const props = withDefaults(defineProps<{
   /** Ordered sections of the active template. Omit for the static default storefront mock. */
@@ -47,19 +47,7 @@ const visibleSections = computed(() => props.sections?.filter((section) => !sect
 const pendingSet = computed(() => new Set(props.pendingIds))
 const pendingBlockSet = computed(() => new Set(props.pendingBlockIds))
 
-const styleVars = computed(() => {
-  const s = props.styles
-  if (!s) return {}
-  const vars: Record<string, string> = {}
-  if (s.brandColor) vars['--sf-brand'] = s.brandColor
-  if (s.accentColor) vars['--sf-accent'] = s.accentColor
-  if (s.background) vars['--sf-bg'] = s.background
-  if (s.textColor) vars['--sf-text'] = s.textColor
-  if (s.cornerRadius !== undefined) vars['--sf-radius'] = `${s.cornerRadius}px`
-  if (s.headingFont) vars['--sf-heading-font'] = s.headingFont
-  if (s.bodyFont) vars['--sf-body-font'] = s.bodyFont
-  return vars
-})
+const styleVars = computed(() => storefrontThemeVars(props.styles))
 
 const rootClasses = computed(() => [
   `sf-preview--${props.device}`,

@@ -275,7 +275,11 @@ const routes: RouteRecordRaw[] = [
       { path: '', name: 'StorefrontHome', component: () => import('@/views/Storefront/StorefrontHome.vue') },
       { path: 'page/:handle', name: 'StorefrontPage', component: () => import('@/views/Storefront/StorefrontContent.vue'), meta: { contentKind: 'page' } },
       { path: 'policies/:handle', name: 'StorefrontPolicy', component: () => import('@/views/Storefront/StorefrontContent.vue'), meta: { contentKind: 'policy' } },
+      { path: 'collections/:handle', name: 'StorefrontCollection', component: () => import('@/views/Storefront/StorefrontCollection.vue') },
+      { path: 'products/:handle', name: 'StorefrontProduct', component: () => import('@/views/Storefront/StorefrontProduct.vue') },
       { path: 'cart-page', name: 'StorefrontCart', component: () => import('@/views/Storefront/StorefrontCart.vue') },
+      // Takes the payment through the store's Maropay setup; query: buy/qty (express buy-now), express, session.
+      { path: 'checkout', name: 'StorefrontCheckout', component: () => import('@/views/Storefront/StorefrontCheckout.vue'), meta: { minimalChrome: true } },
       { path: ':pathMatch(.*)*', name: 'StorefrontNotFound', component: () => import('@/views/Storefront/StorefrontNotFound.vue') },
     ],
   },
@@ -297,7 +301,8 @@ const routes: RouteRecordRaw[] = [
       { path: 'disputes', name: 'MaropayDisputes', component: () => import('@/views/Maropay/MaropayDisputes.vue') },
       { path: 'disputes/:disputeId', name: 'MaropayDisputeDetail', component: () => import('@/views/Maropay/MaropayDisputeDetail.vue') },
       { path: 'settings', name: 'MaropaySettings', component: () => import('@/views/Maropay/MaropaySettings.vue') },
-      { path: 'checkout-preview', name: 'MaropayCheckoutPreview', component: () => import('@/views/Maropay/MaropayCheckoutPreview.vue') },
+      // One store's payments inside Maropay's frame — the same page the store editor shows as StorePayments.
+      { path: 'stores/:channelId', name: 'MaropayStorePayments', component: () => import('@/views/Maropay/StorePaymentsPage.vue'), props: { frame: 'maropay' } },
       // Unknown sub-paths land on the overview (Merchandising precedent).
       { path: ':pathMatch(.*)*', redirect: (to) => ({ name: 'MaropayOverview', params: { accountId: to.params.accountId } }) },
     ],

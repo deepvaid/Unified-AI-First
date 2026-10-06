@@ -162,7 +162,7 @@ const reviewFields = computed(() => [
     <MpWizardStepCard v-else title="Review" description="Confirm before anything is created.">
       <dl class="mp-label-value">
         <template v-for="field in reviewFields" :key="field.label">
-          <dt class="mp-meta-label">{{ field.label }}</dt>
+          <dt>{{ field.label }}</dt>
           <dd class="mp-meta-value">{{ field.value }}</dd>
         </template>
       </dl>

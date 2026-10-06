@@ -11,7 +11,7 @@ import { useMaropayStore } from '@/stores/useMaropay'
 import { PROVIDER_LABELS } from '@/maropay/model'
 import type { StoreBinding } from '@/maropay/model'
 import type { ClosureCheck } from '@/maropay/readiness'
-import { formatDay } from '@/maropay/readiness'
+import { formatDay, storePaymentsTarget } from '@/maropay/readiness'
 
 // Settings → Stop or close. Stopping changes where new checkouts go and
 // nothing else (M14). Closing ends the account once nothing is left in
@@ -111,7 +111,7 @@ function onVerified(): void {
         v-for="binding in live"
         :key="binding.id"
         variant="divided"
-        :to="maropay.routeFor({ name: 'StorePayments', params: { channelId: binding.channelId } })"
+        :to="maropay.routeFor(storePaymentsTarget(binding.channelId))"
       >
         <template #lead><v-icon size="18" class="maropay-close__muted">globe</v-icon></template>
         <span class="maropay-close__title">{{ maropay.channelName(binding.channelId) }}</span>

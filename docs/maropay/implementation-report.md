@@ -6,6 +6,10 @@ squashed into one commit. Decisions, defaults and the full list of launch
 dependencies are in [`decisions.md`](decisions.md). The product brief is an internal plan that
 isn't published in this repository.
 
+> **5 October 2026:** the Checkout preview page is retired. Rows below that mention it now run through
+> the store's own storefront checkout (Store › Payments › "See it in your store", or Maropay › "View
+> your store"), which takes the same sample payments. See F1–F4 in [`decisions.md`](decisions.md).
+
 ## Review entry point
 
 1. `npm install`, then `npm run dev`.
@@ -21,7 +25,9 @@ isn't published in this repository.
 
 Maropay can be reached from:
 - the **Maropay** sidebar group;
-- the store editor, under **Selling › Payments**;
+- **Stores** in Maropay's own rail, which open a store's payments inside Maropay
+  (`/accounts/2000290/maropay/stores/retest-sales-notification`);
+- the store editor, under **Selling › Payments** (the same page, with "Open in Maropay");
 - **View in Maropay** on an order's Payment card;
 - **Settings › Payment account**;
 - the **Set up payments** task on Get started;

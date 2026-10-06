@@ -62,7 +62,7 @@ export const MAROPAY_SCENARIOS: MaropayScenario[] = [
     'Open Maropay and choose Set up Maropay.',
     'Complete the six setup steps — the account goes under review.',
     'Approve the review from the reviewer controls, then follow the notification to the store’s Payments page.',
-    'Run the test checkout, review the impact and activate; take a payment in Checkout preview, then run a payout.',
+    'Run the test checkout, review the impact and activate; buy something on the store’s storefront, then run a payout.',
   ] },
   { key: 'm02', label: 'M02 · Setup abandoned midway', steps: [
     'The overview says Finish setting up Maropay.',
@@ -526,7 +526,7 @@ export function buildScenario(key: MaropayScenarioKey, ctx: ScenarioContext): Ma
           flow: 'delayed',
           amount: money(18_400, 'USD'),
           customer: { name: 'Harper Clark', email: 'harper.clark@email.com' },
-          lineItem: { product: 'Patagonia Better Sweater Fleece Vest', sku: 'SKU-10001', price: '184.00' },
+          lineItems: [{ product: 'Patagonia Better Sweater Fleece Vest', sku: 'SKU-10001', qty: 1, price: '184.00' }],
         }, env(at, ctx))
         if (session.ok) confirmCheckoutSession(state, session.value.id, env(at, ctx))
       }

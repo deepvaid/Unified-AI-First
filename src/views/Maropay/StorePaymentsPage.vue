@@ -4,8 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import MpAlert from '@/components/MpAlert.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
-import MpFormDrawer from '@/components/MpFormDrawer.vue'
-import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpErrorState from '@/components/MpErrorState.vue'
 import MpListRow from '@/components/MpListRow.vue'
 import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
@@ -15,25 +14,43 @@ import MpSegmentedControl from '@/components/MpSegmentedControl.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MaropayActingRoleBanner from '@/components/maropay/MaropayActingRoleBanner.vue'
 import MaropayActivationChecklist from '@/components/maropay/MaropayActivationChecklist.vue'
-import MaropayMethodRow from '@/components/maropay/MaropayMethodRow.vue'
+import MaropayDemoPanel from '@/components/maropay/MaropayDemoPanel.vue'
 import { useToast } from '@/composables/useToast'
+import { useCommerceStore } from '@/stores/useCommerce'
 import { useMaropayStore } from '@/stores/useMaropay'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
-import { METHOD_CATEGORY_LABELS, PROVIDER_LABELS, STORE_ACTIVATION_LABELS } from '@/maropay/model'
-import type { CaptureMode, MethodCategory, MethodStatus, PaymentMethodCatalogEntry } from '@/maropay/model'
-import { formatDay, payoutScheduleLabel, taskTarget } from '@/maropay/readiness'
-import type { ActivationCheckItem, MigrationRow } from '@/maropay/readiness'
+import { HISTORY_KIND_ICONS, PROVIDER_LABELS, STORE_ACTIVATION_LABELS } from '@/maropay/model'
+import type { CaptureMode, MethodStatus, PaymentMethodCatalogEntry } from '@/maropay/model'
+import { formatDay, joinList, payoutScheduleLabel, storePaymentsTarget, taskTarget } from '@/maropay/readiness'
+import type { ActivationCheckItem } from '@/maropay/readiness'
+import { inStock, productHandle, storefrontProducts } from '@/views/Storefront/storefrontCatalog'
+import StoreActivationImpactCard from './store/StoreActivationImpactCard.vue'
+import StoreCheckoutOptionsCard from './store/StoreCheckoutOptionsCard.vue'
+import StorePaymentMethodsCard from './store/StorePaymentMethodsCard.vue'
+import StorePaymentsPreview from './store/StorePaymentsPreview.vue'
 
-// Store editor → Payments: how one store takes money online, and the switch to
-// Maropay (plan §3D–3E). The business is verified once; each store activates on
-// its own — after its checklist, its methods, a test checkout and the owner's
-// review of what changes. Activation and deactivation only change where new
-// checkouts go: payments already taken stay with the provider that took them.
+// One store's payments: how it takes money online, and the switch to Maropay
+// (plan §3D–3E). The business is verified once; each store activates on its own —
+// after its checklist, its methods, a test checkout and the owner's review of what
+// changes. Activation and deactivation only change where new checkouts go: payments
+// already taken stay with the provider that took them.
+//
+// Two frames show this page. From anywhere in Maropay it opens inside Maropay's
+// rail (`MaropayStorePayments`), so the way back is on screen; from Sales channels
+// it's the store editor's Payments section (`StorePayments`). The settings sit
+// beside a live "What shoppers see" preview once the page is wide enough.
+
+const props = withDefaults(defineProps<{
+  frame?: 'maropay' | 'store'
+}>(), {
+  frame: 'store',
+})
 
 const route = useRoute()
 const router = useRouter()
 const maropay = useMaropayStore()
 const salesChannels = useSalesChannelsStore()
+const commerce = useCommerceStore()
 const toast = useToast()
 
 function param(name: string): string {
@@ -47,28 +64,38 @@ const channel = computed(() => salesChannels.getChannel(accountId.value, channel
 const storeName = computed(() => channel.value?.name ?? 'this store')
 const overviewRoute = computed(() => ({ name: 'MaropayOverview', params: { accountId: accountId.value } }))
 
+const inMaropay = computed(() => props.frame === 'maropay')
+const maropayStoreRoute = computed(() => maropay.routeFor(storePaymentsTarget(channelId.value)))
+const storeEditorRoute = computed(() => ({ name: 'SalesChannelDetail', params: { accountId: accountId.value, channelId: channelId.value } }))
+const isMaropostStore = computed(() => channel.value?.type === 'web_store' && channel.value.provider === 'maropost_store_builder')
+const storeHomeHref = computed(() => router.resolve({ name: 'StorefrontHome', params: { accountId: accountId.value, channelId: channelId.value } }).href)
+/** A product page of this store (one in stock, so its buy buttons show), where the methods first show up for a shopper. */
+const storefrontHref = computed(() => {
+  const product = storefrontProducts(commerce.products).find(inStock)
+  const params = { accountId: accountId.value, channelId: channelId.value }
+  return router.resolve(product
+    ? { name: 'StorefrontProduct', params: { ...params, handle: productHandle(product) } }
+    : { name: 'StorefrontHome', params }).href
+})
+
 const binding = computed(() => maropay.bindingFor(channelId.value))
 const live = computed(() => binding.value?.activation === 'live')
 const previousName = computed(() => (binding.value?.previousProvider ? PROVIDER_LABELS[binding.value.previousProvider.provider] : null))
 
 const canManage = computed(() => maropay.can('manage_methods', channelId.value))
 const canActivate = computed(() => maropay.can('activate_store', channelId.value))
-const ownerOnly = 'Only the business owner can change this.'
 
 const assignedStoreNames = computed(() => (maropay.assignedChannelIds ?? []).map((id) => maropay.channelName(id)))
 
-/** English list: "Cards, Apple Pay and Google Pay". */
-function list(items: string[]): string {
-  return items.length <= 1 ? items.join('') : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`
-}
-
 // ── Which page this is ─────────────────────────────────────────────
 
-type View = 'pos' | 'other_platform' | 'restricted' | 'no_account' | 'setup' | 'unavailable' | 'unlinked' | 'store'
+type View = 'not_found' | 'pos' | 'other_platform' | 'restricted' | 'no_account' | 'setup' | 'unavailable' | 'unlinked' | 'store'
 
 const view = computed<View>(() => {
   const c = channel.value
-  if (c?.type !== 'web_store') return 'pos'
+  // The store editor catches a missing store before this page; Maropay's frame doesn't.
+  if (!c) return 'not_found'
+  if (c.type !== 'web_store') return 'pos'
   if (c.provider !== 'maropost_store_builder') return 'other_platform'
   if (!maropay.can('view_transactions', channelId.value)) return 'restricted'
   const account = maropay.account
@@ -93,17 +120,18 @@ function linkStore(): void {
 
 const storeState = computed(() => maropay.storeStateFor(channelId.value) ?? 'inactive')
 
+/** Who takes this store's checkouts, in one line under the title. */
 const routing = computed(() => {
   const b = binding.value
   if (b?.activation === 'live') {
     const since = b.activatedAt ? ` since ${formatDay(b.activatedAt)}` : ''
-    return `New checkouts on ${storeName.value} have used Maropay${since}.${previousName.value ? ` Payments taken before then stay with ${previousName.value}.` : ''}`
+    return `Checkout uses Maropay${since}${previousName.value ? ` · earlier payments stay with ${previousName.value}` : ''}`
   }
-  if (previousName.value) {
-    return `New checkouts on ${storeName.value} use ${previousName.value} until you activate Maropay. Payments already taken stay with the provider that took them.`
-  }
-  return `${storeName.value} keeps its current payment setup until you activate Maropay.`
+  if (previousName.value) return `Checkout uses ${previousName.value} until you activate Maropay`
+  return 'Keeps its current payment setup until you activate Maropay'
 })
+
+const headerSubtitle = computed(() => (view.value === 'store' ? routing.value : `How ${storeName.value} takes payments at checkout`))
 
 const deactivatedAt = computed(() => (binding.value && !live.value ? binding.value.deactivatedAt : null))
 
@@ -135,9 +163,7 @@ async function runTestCheckout(): Promise<void> {
 /** Where an item gets fixed, when that isn't on this page. */
 function fixRoute(item: ActivationCheckItem) {
   if (item.key === 'payment_capability' && openVerificationTask.value) return maropay.routeFor(taskTarget(openVerificationTask.value))
-  if (item.key === 'store_prerequisites' && channel.value?.status === 'draft') {
-    return { name: 'SalesChannelDetail', params: { accountId: accountId.value, channelId: channelId.value } }
-  }
+  if (item.key === 'store_prerequisites' && channel.value?.status === 'draft') return storeEditorRoute.value
   if (item.key === 'payment_capability' || item.key === 'payout_ready' || item.key === 'account_tasks') return overviewRoute.value
   return null
 }
@@ -154,58 +180,12 @@ function scrollToSection(id: string): void {
   el?.focus({ preventScroll: true })
 }
 
-// ── Methods ────────────────────────────────────────────────────────
+// ── Methods (what activating offers) ───────────────────────────────
 
 type StoreMethod = PaymentMethodCatalogEntry & { status: MethodStatus }
 
-const CATEGORY_ORDER: MethodCategory[] = ['cards', 'wallets', 'bnpl', 'local']
-const storeMethods = computed(() => maropay.methodsForStore(channelId.value))
-const methodGroups = computed(() =>
-  CATEGORY_ORDER
-    .map((category) => ({ category, label: METHOD_CATEGORY_LABELS[category], methods: storeMethods.value.filter((m) => m.category === category && m.status !== 'unavailable') }))
-    .filter((group) => group.methods.length),
-)
-const unavailableCount = computed(() => storeMethods.value.filter((m) => m.status === 'unavailable').length)
 const checkoutMethods = computed(() => maropay.checkoutMethodsFor(channelId.value))
-const pendingMethods = computed(() => storeMethods.value.filter((m) => m.status === 'pending_approval'))
-
-function methodDisabledReason(method: StoreMethod): string | null {
-  if (!canManage.value) return ownerOnly
-  const lastReady = live.value && checkoutMethods.value.length === 1 && checkoutMethods.value[0]!.id === method.id
-  return lastReady ? 'A live store needs at least one payment method.' : null
-}
-
-function toggleMethod(method: StoreMethod, enabled: boolean): void {
-  const result = maropay.setMethodEnabled(channelId.value, method.id, enabled)
-  if (!result.ok) toast.error(result.error.message)
-}
-
-const setupOpen = ref(false)
-const setupMethod = ref<StoreMethod | null>(null)
-/** Answers go to our payments partner's review; the prototype doesn't keep them. */
-const setupAnswers = ref<string[]>([])
-const setupAttempted = ref(false)
-
-function openMethodSetup(method: StoreMethod): void {
-  setupMethod.value = method
-  setupAnswers.value = method.requirements.map(() => '')
-  setupAttempted.value = false
-  setupOpen.value = true
-}
-
-function submitMethodSetup(): void {
-  const method = setupMethod.value
-  if (!method) return
-  setupAttempted.value = true
-  if (setupAnswers.value.some((answer) => !answer.trim())) return
-  const result = maropay.setMethodEnabled(channelId.value, method.id, true)
-  if (!result.ok) {
-    toast.error(result.error.message)
-    return
-  }
-  setupOpen.value = false
-  toast.success(`${method.label} requested. It turns on at checkout once our payments partner approves it.`)
-}
+const pendingMethods = computed<StoreMethod[]>(() => maropay.methodsForStore(channelId.value).filter((m) => m.status === 'pending_approval'))
 
 // ── Capture ────────────────────────────────────────────────────────
 
@@ -218,30 +198,6 @@ const captureConflicts = computed(() => (binding.value?.captureMode === 'manual'
 function setCapture(mode: string | null): void {
   if (!mode || mode === binding.value?.captureMode) return
   const result = maropay.setCaptureMode(channelId.value, mode as CaptureMode)
-  if (!result.ok) toast.error(result.error.message)
-}
-
-// ── What changes ───────────────────────────────────────────────────
-
-const impact = computed(() => maropay.migrationImpactFor(channelId.value))
-const payoutDestination = computed(() => maropay.account?.payoutDestination ?? null)
-const payoutSchedule = computed(() => (maropay.account ? payoutScheduleLabel(maropay.account.payoutSchedule) : null))
-
-const feeSummary = computed(() => {
-  const byRate = new Map<string, string[]>()
-  for (const m of checkoutMethods.value) byRate.set(m.rate.label, [...(byRate.get(m.rate.label) ?? []), m.label])
-  return [...byRate].map(([rate, labels]) => `${rate} for ${list(labels)}`).join(' · ')
-})
-
-const CHANGE: Record<MigrationRow['change'], { label: string; icon: string }> = {
-  lower: { label: 'Lower fee', icon: 'arrow-down' },
-  higher: { label: 'Higher fee', icon: 'arrow-up' },
-  same: { label: 'Same fee', icon: 'equal' },
-  stays: { label: 'Not moving', icon: 'minus' },
-}
-
-function markReviewed(): void {
-  const result = maropay.markImpactReviewed(channelId.value)
   if (!result.ok) toast.error(result.error.message)
 }
 
@@ -264,13 +220,14 @@ const activateConsequences = computed(() => {
   // Methods with no Maropay equivalent (PayPal Checkout) stay connected through the previous provider.
   const staying = (binding.value?.previousProvider?.methods ?? []).filter((m) => m.keepSeparately || !m.maropayMethodId).map((m) => m.label)
   const lines = [
-    `Shoppers can pay with ${list(ready)}.${pending.length ? ` ${list(pending)} turns on once it’s approved.` : ''}`,
+    `Shoppers can pay with ${joinList(ready)}.${pending.length ? ` ${joinList(pending)} turns on once it’s approved.` : ''}`,
     previousName.value
-      ? `New checkouts on ${storeName.value} go through Maropay instead of ${previousName.value}${staying.length ? ` — ${list(staying)} stays connected through ${previousName.value}` : ''}. Earlier payments, refunds and payouts stay with ${previousName.value}.`
+      ? `New checkouts on ${storeName.value} go through Maropay instead of ${previousName.value}${staying.length ? ` — ${joinList(staying)} stays connected through ${previousName.value}` : ''}. Earlier payments, refunds and payouts stay with ${previousName.value}.`
       : `The current payment setup on ${storeName.value} stops taking new checkouts.`,
   ]
-  if (payoutDestination.value && payoutSchedule.value) {
-    lines.push(`Money is paid out to ${payoutDestination.value.bankName} •••• ${payoutDestination.value.last4} — ${payoutSchedule.value.toLowerCase()}.`)
+  const destination = maropay.account?.payoutDestination
+  if (destination && maropay.account) {
+    lines.push(`Money is paid out to ${destination.bankName} •••• ${destination.last4} — ${payoutScheduleLabel(maropay.account.payoutSchedule).toLowerCase()}.`)
   }
   if (binding.value?.captureMode === 'manual') lines.push('Payments are authorised at checkout — capture each one from its order.')
   return lines
@@ -319,15 +276,27 @@ function decideMethod(method: StoreMethod, approved: boolean): void {
 </script>
 
 <template>
-  <div class="d-flex flex-column gap-5">
-    <MaropayActingRoleBanner :role="maropay.actingRole" :store-names="assignedStoreNames" @reset="maropay.setActingRole('owner')" />
+  <div class="store-payments d-flex flex-column gap-5">
+    <!-- Maropay's frame shows the acting-role banner already. -->
+    <MaropayActingRoleBanner v-if="!inMaropay" :role="maropay.actingRole" :store-names="assignedStoreNames" @reset="maropay.setActingRole('owner')" />
 
-    <MpPageHeader title="Payments" :subtitle="`How ${storeName} takes payments at checkout`">
-      <template v-if="view === 'store'" #actions>
-        <MpRowActionsMenu v-if="live && canActivate" ariaLabel="More payment actions">
-          <MpMenuItem icon="power" title="Stop using Maropay on this store" danger @click="deactivateOpen = true" />
-        </MpRowActionsMenu>
-        <v-tooltip v-else-if="!live" :disabled="!activateHint" :text="activateHint" location="bottom">
+    <MpPageHeader
+      :eyebrow="inMaropay ? 'Store' : undefined"
+      :title="view === 'not_found' ? 'Store not found' : inMaropay ? storeName : 'Payments'"
+      :subtitle="view === 'not_found' ? undefined : headerSubtitle"
+      :back-to="inMaropay ? overviewRoute : undefined"
+    >
+      <template v-if="view === 'store'" #title-append>
+        <MpStatusChip :status="STORE_ACTIVATION_LABELS[storeState]" type="readiness" show-icon />
+      </template>
+      <template v-if="view !== 'not_found'" #actions>
+        <v-btn v-if="inMaropay && isMaropostStore" variant="text" class="text-none" append-icon="external-link" :href="storeHomeHref" target="_blank" rel="noopener">
+          View store
+        </v-btn>
+        <v-btn v-else-if="!inMaropay && binding" variant="text" class="text-none" prepend-icon="wallet" :to="maropayStoreRoute">
+          Open in Maropay
+        </v-btn>
+        <v-tooltip v-if="view === 'store' && !live" :disabled="!activateHint" :text="activateHint" location="bottom">
           <template #activator="{ props: tip }">
             <span v-bind="tip">
               <v-btn color="primary" variant="flat" class="text-none" prepend-icon="rocket" :disabled="!!activateHint" @click="activateOpen = true">
@@ -336,11 +305,29 @@ function decideMethod(method: StoreMethod, approved: boolean): void {
             </span>
           </template>
         </v-tooltip>
+        <MpRowActionsMenu v-if="inMaropay || (view === 'store' && live && canActivate)" ariaLabel="More store actions">
+          <MpMenuItem v-if="inMaropay" icon="store" title="Open store editor" :to="storeEditorRoute" />
+          <template v-if="view === 'store' && live && canActivate">
+            <v-divider v-if="inMaropay" class="my-1" />
+            <MpMenuItem icon="power" title="Stop using Maropay on this store" danger @click="deactivateOpen = true" />
+          </template>
+        </MpRowActionsMenu>
       </template>
     </MpPageHeader>
 
+    <v-card v-if="view === 'not_found'" flat border rounded="lg">
+      <MpErrorState
+        icon="store"
+        title="We couldn’t find this store"
+        description="It may have been removed, or the link is incorrect."
+        action-label="Back to overview"
+        action-icon="arrow-left"
+        @action="router.push(overviewRoute)"
+      />
+    </v-card>
+
     <!-- ── Not a Maropay store ──────────────────────────────────── -->
-    <v-card v-if="view === 'pos'" flat border rounded="lg">
+    <v-card v-else-if="view === 'pos'" flat border rounded="lg">
       <MpEmptyState
         icon="store"
         title="In-store payments are set up in Retail"
@@ -419,30 +406,15 @@ function decideMethod(method: StoreMethod, approved: boolean): void {
 
     <!-- ── The store's payments ─────────────────────────────────── -->
     <template v-else-if="binding">
-      <div v-if="justActivated && live" ref="activatedAlert" tabindex="-1" class="maropay-store__focus">
+      <div v-if="justActivated && live" ref="activatedAlert" tabindex="-1" class="store-payments__focus">
         <MpAlert tone="success" :title="`Maropay is live on ${storeName}`" dismissible @dismiss="justActivated = false">
           New checkouts use Maropay from now on. Payments show up in Transactions, and the money reaches your bank with a payout.
           <template #actions>
             <v-btn size="small" variant="outlined" class="text-none" :to="overviewRoute">Open overview</v-btn>
-            <v-btn size="small" variant="text" class="text-none" :to="{ name: 'MaropayCheckoutPreview', params: { accountId }, query: { store: channelId } }">Try checkout preview</v-btn>
+            <v-btn size="small" variant="text" class="text-none" append-icon="external-link" :href="storefrontHref" target="_blank" rel="noopener">Open your store</v-btn>
           </template>
         </MpAlert>
       </div>
-
-      <v-card flat border rounded="lg" class="maropay-store__card">
-        <MpSectionHeader title="Checkout provider" :heading-level="2" />
-        <dl class="mp-label-value">
-          <div>
-            <dt>New checkouts use</dt>
-            <dd>{{ live ? 'Maropay' : previousName ?? 'Current payment setup' }}</dd>
-          </div>
-          <div>
-            <dt>Maropay on this store</dt>
-            <dd><MpStatusChip :status="STORE_ACTIVATION_LABELS[storeState]" type="readiness" size="sm" show-icon /></dd>
-          </div>
-        </dl>
-        <p class="maropay-store__note">{{ routing }}</p>
-      </v-card>
 
       <MpAlert v-if="deactivatedAt" tone="info" live="off" :title="`Maropay was stopped on ${formatDay(deactivatedAt)}`">
         Payments taken while it was live — with their refunds, disputes and payouts — are still in Maropay.
@@ -468,189 +440,81 @@ function decideMethod(method: StoreMethod, approved: boolean): void {
         </template>
       </MaropayActivationChecklist>
 
-      <v-card id="maropay-store-methods" flat border rounded="lg" class="maropay-store__card" tabindex="-1">
-        <MpSectionHeader
-          title="Payment methods"
-          :description="live ? 'Changes apply to new checkouts straight away.' : 'Changing methods means running the test checkout and reviewing the changes again.'"
-          :heading-level="2"
-        />
-        <MpAlert v-if="pendingMethods.length && checkoutMethods.length" tone="info" live="off" class="mb-4">
-          {{ list(checkoutMethods.map((m) => m.label)) }} can go live while {{ list(pendingMethods.map((m) => m.label)) }} {{ pendingMethods.length === 1 ? 'awaits' : 'await' }} approval.
-        </MpAlert>
-        <div v-for="group in methodGroups" :key="group.category" class="maropay-store__group">
-          <h3 class="mp-meta-label maropay-store__group-label">{{ group.label }}</h3>
-          <MaropayMethodRow
-            v-for="method in group.methods"
-            :key="method.id"
-            :method="method"
-            :disabled-reason="methodDisabledReason(method)"
-            @toggle="toggleMethod(method, $event)"
-            @setup="openMethodSetup(method)"
-          />
-        </div>
-        <p v-if="unavailableCount" class="maropay-store__note">
-          {{ unavailableCount }} {{ unavailableCount === 1 ? 'method isn’t' : 'methods aren’t' }} available for {{ maropay.account?.currency ?? 'USD' }} accounts.
-        </p>
-      </v-card>
+      <!-- Settings beside what shoppers see; one column on a narrow page. -->
+      <div class="store-payments__split">
+        <div class="store-payments__settings">
+          <StorePaymentMethodsCard id="maropay-store-methods" tabindex="-1" class="store-payments__section" :channel-id="channelId" :live="live" :can-manage="canManage" />
+          <StoreCheckoutOptionsCard id="maropay-store-checkout" tabindex="-1" class="store-payments__section" :channel-id="channelId" :can-manage="canManage" />
 
-      <v-card id="maropay-store-capture" flat border rounded="lg" class="maropay-store__card" tabindex="-1">
-        <MpSectionHeader title="Capture" description="When the shopper’s money is taken." :heading-level="2" />
-        <div class="maropay-store__capture">
-          <MpSegmentedControl
-            :model-value="binding.captureMode"
-            :items="captureItems"
-            ariaLabel="Capture"
-            @update:model-value="setCapture"
-          />
-          <p class="maropay-store__note mt-0">
-            {{ binding.captureMode === 'automatic'
-              ? 'Payments are captured as soon as the shopper pays.'
-              : 'Payments are authorised at checkout. Capture each one from its order within 7 days, or the authorisation lapses.' }}
-            {{ canManage ? '' : ownerOnly }}
-          </p>
-        </div>
-        <MpAlert v-if="captureConflicts.length" tone="warning" live="off" class="mt-4" :title="`${list(captureConflicts.map((m) => m.label))} can’t be used with manual capture`">
-          Turn {{ captureConflicts.length === 1 ? 'it' : 'them' }} off or switch to automatic capture before you activate.
-        </MpAlert>
-      </v-card>
-
-      <v-card v-if="!live" id="maropay-store-impact" flat border rounded="lg" class="maropay-store__card" tabindex="-1">
-        <MpSectionHeader title="What changes when you activate" description="The business owner confirms this before the store switches." :heading-level="2" />
-        <dl class="mp-label-value">
-          <div>
-            <dt>Checkout provider</dt>
-            <dd>{{ previousName ? `${previousName} → Maropay` : 'Maropay' }}</dd>
-          </div>
-          <div>
-            <dt>Shoppers can pay with</dt>
-            <dd>{{ checkoutMethods.length ? list(checkoutMethods.map((m) => m.label)) : 'Nothing yet — turn on a method' }}</dd>
-          </div>
-          <div>
-            <dt>Fees</dt>
-            <dd>{{ feeSummary || '—' }}</dd>
-          </div>
-          <div>
-            <dt>Payouts</dt>
-            <dd>{{ payoutDestination ? `${payoutDestination.bankName} •••• ${payoutDestination.last4} · ${payoutSchedule}` : 'No payout account yet' }}</dd>
-          </div>
-          <div>
-            <dt>Capture</dt>
-            <dd>{{ binding.captureMode === 'automatic' ? 'Automatic' : 'Manual — from each order' }}</dd>
-          </div>
-          <div v-if="pendingMethods.length">
-            <dt>Awaiting approval</dt>
-            <dd>{{ list(pendingMethods.map((m) => m.label)) }}</dd>
-          </div>
-        </dl>
-
-        <template v-if="impact && previousName">
-          <h3 class="maropay-store__subhead">Switching from {{ previousName }}</h3>
-          <v-table density="compact" class="maropay-store__table">
-            <thead>
-              <tr>
-                <th scope="col">Method</th>
-                <th scope="col" class="text-end">With {{ previousName }}</th>
-                <th scope="col">With Maropay</th>
-                <th scope="col">Change</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="row in impact.rows" :key="row.label">
-                <td class="maropay-store__method">{{ row.label }}</td>
-                <td class="text-end maropay-store__rate">{{ row.currentRate }}</td>
-                <td>{{ row.maropayLabel ? `${row.maropayLabel} · ${row.maropayRate}` : `Stays with ${previousName}` }}</td>
-                <td>
-                  <span class="maropay-store__change" :class="`maropay-store__change--${row.change}`">
-                    <v-icon size="14">{{ CHANGE[row.change].icon }}</v-icon>{{ CHANGE[row.change].label }}
-                  </span>
-                </td>
-              </tr>
-            </tbody>
-          </v-table>
-          <p class="maropay-store__note">Fees compared on a $100.00 card payment. Illustrative Maropay rates.</p>
-
-          <div class="maropay-store__lists">
-            <div>
-              <h4 class="mp-meta-label">Moves to Maropay</h4>
-              <ul><li v-for="line in impact.transfers" :key="line">{{ line }}</li></ul>
+          <v-card id="maropay-store-capture" flat border rounded="lg" class="mp-card-inset store-payments__section" tabindex="-1">
+            <MpSectionHeader icon="hand-coins" title="Capture" description="When the shopper’s money is taken." :heading-level="2" />
+            <div class="store-payments__capture">
+              <MpSegmentedControl
+                :model-value="binding.captureMode"
+                :items="captureItems"
+                ariaLabel="Capture"
+                @update:model-value="setCapture"
+              />
+              <p class="store-payments__note">
+                {{ binding.captureMode === 'automatic'
+                  ? 'Payments are captured as soon as the shopper pays.'
+                  : 'Payments are authorised at checkout. Capture each one from its order within 7 days, or the authorisation lapses.' }}
+                {{ canManage ? '' : 'Only the business owner can change this.' }}
+              </p>
             </div>
-            <div>
-              <h4 class="mp-meta-label">Stays with {{ previousName }}</h4>
-              <ul><li v-for="line in impact.staysWithPrevious" :key="line">{{ line }}</li></ul>
-            </div>
-            <div v-if="impact.needsSetup.length">
-              <h4 class="mp-meta-label">Worth knowing</h4>
-              <ul><li v-for="line in impact.needsSetup" :key="line">{{ line }}</li></ul>
-            </div>
-          </div>
-          <MpAlert v-if="impact.blocking.length" tone="error" live="off" title="This store can’t switch yet" class="mt-4">
-            <ul class="maropay-store__plain-list"><li v-for="line in impact.blocking" :key="line">{{ line }}</li></ul>
-          </MpAlert>
-        </template>
-
-        <div class="maropay-store__review">
-          <template v-if="binding.impactReviewedAt">
-            <v-icon size="18" class="maropay-store__reviewed-icon">circle-check</v-icon>
-            <span>Reviewed on {{ formatDay(binding.impactReviewedAt) }}</span>
-          </template>
-          <template v-else>
-            <v-btn variant="outlined" class="text-none" prepend-icon="list-checks" :disabled="!canActivate" @click="markReviewed">
-              I’ve reviewed these changes
-            </v-btn>
-            <span v-if="!canActivate" class="maropay-store__note mt-0">Only the business owner confirms this.</span>
-          </template>
+            <MpAlert v-if="captureConflicts.length" tone="warning" live="off" class="mt-4" :title="`${joinList(captureConflicts.map((m) => m.label))} can’t be used with manual capture`">
+              Turn {{ captureConflicts.length === 1 ? 'it' : 'them' }} off or switch to automatic capture before you activate.
+            </MpAlert>
+          </v-card>
         </div>
+
+        <div class="store-payments__preview">
+          <StorePaymentsPreview :channel-id="channelId" :live="live" :domain="channel?.webStore?.domain" :storefront-href="storefrontHref" />
+        </div>
+      </div>
+
+      <StoreActivationImpactCard
+        v-if="!live"
+        id="maropay-store-impact"
+        tabindex="-1"
+        class="store-payments__section"
+        :channel-id="channelId"
+        :previous-name="previousName"
+        :can-activate="canActivate"
+      />
+
+      <v-card flat border rounded="lg" class="mp-card-inset">
+        <MpSectionHeader icon="history" title="Activity on this store" :heading-level="2" />
+        <div v-if="activity.length" role="list">
+          <MpListRow v-for="entry in activity" :key="entry.id" variant="divided" role="listitem" :title="entry.text" :subtitle="formatDay(entry.at)">
+            <template #lead>
+              <v-icon size="16" class="store-payments__activity-icon">{{ HISTORY_KIND_ICONS[entry.kind] }}</v-icon>
+            </template>
+          </MpListRow>
+        </div>
+        <MpEmptyState v-else icon="history" title="Nothing yet" description="Changes to this store’s payments show up here." :heading-level="3" />
       </v-card>
 
-      <v-card flat border rounded="lg" class="maropay-store__card">
-        <MpSectionHeader title="Activity on this store" :heading-level="2" />
-        <MpListRow v-for="entry in activity" :key="entry.id" variant="divided">
-          <span class="maropay-store__row-sub">{{ formatDay(entry.at) }}</span>
-          <span class="maropay-store__row-title">{{ entry.text }}</span>
-        </MpListRow>
-        <p v-if="!activity.length" class="maropay-store__note mt-0">Nothing yet.</p>
-      </v-card>
-
-      <v-card v-if="showDemo" flat border rounded="lg" class="maropay-store__card">
-        <MpSectionHeader icon="flask-conical" title="Simulate our payments partner" description="Demo controls — not part of the product." :heading-level="2" />
-        <MpListRow v-for="method in pendingMethods" :key="method.id" variant="divided">
-          <span class="maropay-store__row-title">{{ method.label }} is awaiting approval</span>
+      <MaropayDemoPanel v-if="showDemo">
+        <MpListRow v-for="method in pendingMethods" :key="method.id" variant="divided" :title="method.label" subtitle="Awaiting our payments partner’s approval">
           <template #trailing>
-            <span class="d-flex ga-2">
+            <span class="d-flex flex-wrap ga-2">
               <v-btn size="small" variant="outlined" class="text-none" @click="decideMethod(method, true)">Approve</v-btn>
               <v-btn size="small" variant="text" class="text-none" @click="decideMethod(method, false)">Decline</v-btn>
             </span>
           </template>
         </MpListRow>
-        <v-checkbox
-          v-if="!live"
-          :model-value="maropay.failures.checkoutValidationFails"
-          label="Make test checkouts fail"
-          @update:model-value="maropay.setFailure('checkoutValidationFails', Boolean($event))"
-        />
-      </v-card>
+        <MpListRow v-if="!live" variant="divided" title="Test checkouts" subtitle="Make the next test checkout fail">
+          <template #trailing>
+            <v-checkbox-btn
+              :model-value="maropay.failures.checkoutValidationFails"
+              aria-label="Make test checkouts fail"
+              @update:model-value="maropay.setFailure('checkoutValidationFails', Boolean($event))"
+            />
+          </template>
+        </MpListRow>
+      </MaropayDemoPanel>
     </template>
-
-    <MpFormDrawer v-model="setupOpen" :title="`Set up ${setupMethod?.label ?? 'payment method'}`" subtitle="Our payments partner reviews this before shoppers see it." size="sm">
-      <template v-if="setupMethod">
-        <MpFormGrid>
-          <v-text-field
-            v-for="(requirement, index) in setupMethod.requirements"
-            :key="requirement"
-            v-model="setupAnswers[index]"
-            :label="`${requirement} *`"
-            :error-messages="setupAttempted && !setupAnswers[index]?.trim() ? 'Answer this so the review can start.' : undefined"
-          />
-        </MpFormGrid>
-        <MpAlert tone="info" live="off">
-          Your other methods keep working while {{ setupMethod.label }} is reviewed. It turns on at checkout once it’s approved.
-        </MpAlert>
-      </template>
-      <template #footer>
-        <v-btn variant="text" class="text-none" @click="setupOpen = false">Cancel</v-btn>
-        <v-btn color="primary" variant="flat" class="text-none" @click="submitMethodSetup">Submit for review</v-btn>
-      </template>
-    </MpFormDrawer>
 
     <MpConfirmDialog
       v-model="activateOpen"
@@ -674,137 +538,63 @@ function decideMethod(method: StoreMethod, approved: boolean): void {
 </template>
 
 <style scoped lang="scss">
-.maropay-store__card {
-  padding: var(--mp-component-card-padding);
+/* The page is the container, so the split follows the page's width in either
+   frame (Maropay's rail or the store editor's), not the window's. */
+.store-payments {
+  container: store-payments / inline-size;
 }
 
-.maropay-store__card:focus-visible,
-.maropay-store__focus:focus-visible {
+.store-payments__section:focus-visible,
+.store-payments__focus:focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
-.maropay-store__focus:focus {
+.store-payments__focus:focus {
   outline: none;
 }
 
-.maropay-store__note {
-  margin: var(--mp-space-12) 0 0;
-  font-size: var(--mp-fontSize-13);
-  line-height: var(--mp-lineHeight-normal);
-  color: var(--text-secondary);
+.store-payments__split,
+.store-payments__settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-20);
+  min-width: 0;
 }
 
-.maropay-store__group + .maropay-store__group {
-  margin-top: var(--mp-space-16);
+/* Wide: settings | a sticky preview, capped to the visible frame so it never runs off screen. */
+@container store-payments (min-width: #{$mp-layout-previewSplitWidth}) {
+  .store-payments__split {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--mp-layout-previewPanelWidth);
+    align-items: start;
+  }
+
+  .store-payments__preview {
+    position: sticky;
+    top: var(--mp-space-24);
+    display: flex;
+    flex-direction: column;
+    max-height: calc(var(--mp-frame-height, 100vh) - 2 * var(--mp-space-24));
+  }
 }
 
-.maropay-store__group-label {
-  margin: 0 0 var(--mp-space-4);
-  color: var(--muted);
-}
-
-.maropay-store__capture {
+.store-payments__capture {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--mp-space-16);
 }
 
-.maropay-store__capture .maropay-store__note {
+.store-payments__note {
   flex: 1 1 var(--mp-component-state-measure);
-}
-
-.maropay-store__subhead {
-  margin: var(--mp-space-24) 0 var(--mp-space-8);
-  font-size: var(--mp-fontSize-14);
-  font-weight: var(--mp-fontWeight-semibold);
-  color: var(--text-primary);
-}
-
-.maropay-store__table {
-  background: transparent;
-}
-
-.maropay-store__method {
-  font-weight: var(--mp-fontWeight-medium);
-  white-space: nowrap;
-}
-
-.maropay-store__rate {
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-.maropay-store__change {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--mp-space-4);
-  font-size: var(--mp-fontSize-13);
-  white-space: nowrap;
-  color: var(--text-secondary);
-}
-
-.maropay-store__change--lower {
-  color: var(--pos-ink);
-}
-
-.maropay-store__change--higher {
-  color: var(--warn-ink);
-}
-
-/* One column per list, side by side; stacked below the split breakpoint. */
-.maropay-store__lists {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(0, 1fr);
-  gap: var(--mp-space-16) var(--mp-space-32);
-  margin-top: var(--mp-space-20);
-}
-
-@media (max-width: ($mp-layout-breakpointSplit - 0.02px)) {
-  .maropay-store__lists {
-    grid-auto-flow: row;
-  }
-}
-
-.maropay-store__lists ul,
-.maropay-store__plain-list {
-  margin: var(--mp-space-8) 0 0;
-  padding-inline-start: var(--mp-space-20);
+  margin: 0;
   font-size: var(--mp-fontSize-13);
   line-height: var(--mp-lineHeight-normal);
-  color: var(--text-primary);
+  color: var(--on-surface-muted);
 }
 
-.maropay-store__lists li + li {
-  margin-top: var(--mp-space-4);
-}
-
-.maropay-store__review {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--mp-space-12);
-  margin-top: var(--mp-space-24);
-  font-size: var(--mp-fontSize-14);
-  color: var(--text-primary);
-}
-
-.maropay-store__reviewed-icon {
-  color: var(--pos-ink);
-}
-
-.maropay-store__row-title {
-  font-size: var(--mp-fontSize-14);
-  font-weight: var(--mp-fontWeight-medium);
-  line-height: var(--mp-lineHeight-snug);
-  color: var(--text-primary);
-}
-
-.maropay-store__row-sub {
-  font-size: var(--mp-fontSize-13);
-  line-height: var(--mp-lineHeight-normal);
-  color: var(--text-secondary);
+.store-payments__activity-icon {
+  color: var(--icon-secondary);
 }
 </style>

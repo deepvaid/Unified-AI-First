@@ -1,24 +1,36 @@
 <script setup lang="ts">
 import { computed, provide, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useMaropayStore } from '@/stores/useMaropay'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import { useStoreThemesStore } from '@/stores/useStoreThemes'
 import { useStorefrontStore } from '@/stores/useStorefront'
+import { useStorefrontCartStore } from '@/stores/useStorefrontCart'
+import { money } from '@/maropay/money'
+import type { Money } from '@/maropay/money'
+import { storefrontOffer } from '@/maropay/storefront'
+import { storefrontThemeVars } from '@/stores/themeBuilderData'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import StorefrontAnchor from './StorefrontAnchor.vue'
+import StorefrontPayMark from './StorefrontPayMark.vue'
 import { STOREFRONT } from './storefrontContext'
 
 // A Maropost web store as its shoppers see it — full page, no admin chrome. Opened
 // from Themes › Show store and the store editor's View store. It draws the store's
 // current theme (colours, fonts, corner radius as CSS custom properties) and the
 // header and footer the storefront renders (useStorefront). Neelam-Store's is the
-// UAT crawl (docs/rebuild/neelam-store/CRAWL-SUMMARY.md).
+// UAT crawl (docs/rebuild/neelam-store/CRAWL-SUMMARY.md). How the store takes
+// payment — methods, express buttons, instalments — is the store's Maropay setup
+// (Store › Payments), shared with every page as `offerFor`. Checkout gets a
+// distraction-free header (logo only) and no footer, as hosted checkouts do.
 
 const route = useRoute()
 const router = useRouter()
 const salesChannels = useSalesChannelsStore()
 const themes = useStoreThemesStore()
 const storefronts = useStorefrontStore()
+const maropay = useMaropayStore()
+const cart = useStorefrontCartStore()
 
 const accountId = computed(() => String(route.params.accountId ?? '2000290'))
 const channelId = computed(() => String(route.params.channelId ?? ''))
@@ -39,22 +51,19 @@ function link(href: string): string {
 const channel = computed(() => found.value!)
 const theme = computed(() => (found.value ? themes.themeForChannel(found.value.id) : undefined))
 const chrome = computed(() => storefronts.chromeFor(channel.value))
+const currency = computed(() => maropay.account?.currency ?? 'USD')
 
-provide(STOREFRONT, { channel, theme, chrome, link })
+function offerFor(amount: Money) {
+  return storefrontOffer(maropay.state, maropay.bindingFor(channelId.value), amount)
+}
 
-const themeVars = computed(() => {
-  const styles = theme.value?.styles
-  if (!styles) return {}
-  return {
-    '--sf-brand': styles.brandColor,
-    '--sf-accent': styles.accentColor,
-    '--sf-bg': styles.background,
-    '--sf-text': styles.textColor,
-    '--sf-radius': `${styles.cornerRadius}px`,
-    '--sf-heading-font': styles.headingFont,
-    '--sf-body-font': styles.bodyFont,
-  }
-})
+provide(STOREFRONT, { channel, theme, chrome, link, currency, offerFor })
+
+const minimal = computed(() => route.meta.minimalChrome === true)
+const cartCount = computed(() => (found.value ? cart.count(found.value.id) : 0))
+const footerMarks = computed(() => offerFor(money(0, currency.value)).acceptedMarks)
+
+const themeVars = computed(() => storefrontThemeVars(theme.value?.styles))
 
 // ── Header ──────────────────────────────────────────────────────────────
 const menuOpen = ref(false)
@@ -85,8 +94,16 @@ function subscribe(): void {
 </script>
 
 <template>
-  <div v-if="found" class="storefront" :style="themeVars">
-    <header class="sf-top">
+  <div v-if="found" class="storefront sf-surface" :style="themeVars">
+    <header v-if="minimal" class="sf-top sf-top--minimal">
+      <StorefrontAnchor href="/" class="sf-logo" aria-label="Logo">
+        <v-icon v-if="chrome.wordmarkIcon" size="28">{{ chrome.wordmarkIcon }}</v-icon>
+        <span>{{ chrome.wordmark }}</span>
+      </StorefrontAnchor>
+      <span class="sf-top__secure"><v-icon size="16">lock</v-icon> Secure checkout</span>
+    </header>
+
+    <header v-else class="sf-top">
       <div class="sf-top__row">
         <button type="button" class="sf-icon-btn sf-top__menu" aria-label="menu" :aria-expanded="menuOpen" @click="menuOpen = !menuOpen">
           <v-icon size="22">{{ menuOpen ? 'x' : 'menu' }}</v-icon>
@@ -118,8 +135,9 @@ function subscribe(): void {
           <StorefrontAnchor href="/wishlist-page" class="sf-icon-btn" aria-label="Wishlist">
             <v-icon size="20">heart</v-icon>
           </StorefrontAnchor>
-          <StorefrontAnchor href="/cart-page" class="sf-icon-btn" aria-label="Cart">
+          <StorefrontAnchor href="/cart-page" class="sf-icon-btn sf-cart-link" :aria-label="cartCount ? `Cart, ${cartCount} ${cartCount === 1 ? 'item' : 'items'}` : 'Cart'">
             <v-icon size="20">shopping-cart</v-icon>
+            <span v-if="cartCount" class="sf-cart-link__count" aria-hidden="true">{{ cartCount > 99 ? '99+' : cartCount }}</span>
           </StorefrontAnchor>
         </div>
       </div>
@@ -137,7 +155,7 @@ function subscribe(): void {
       <RouterView />
     </div>
 
-    <footer v-if="chrome.footerColumns.length || chrome.newsletter || chrome.copyright" class="sf-foot">
+    <footer v-if="!minimal && (chrome.footerColumns.length || chrome.newsletter || chrome.copyright || footerMarks.length)" class="sf-foot">
       <div v-if="chrome.footerColumns.length || chrome.newsletter" class="sf-foot__grid">
         <div v-for="column in chrome.footerColumns" :key="column.heading.label" class="sf-foot__col">
           <StorefrontAnchor :href="column.heading.href" class="sf-foot__heading">{{ column.heading.label }}</StorefrontAnchor>
@@ -165,6 +183,9 @@ function subscribe(): void {
           </button>
         </form>
       </div>
+      <ul v-if="footerMarks.length" class="sf-foot__marks" aria-label="Ways to pay">
+        <li v-for="mark in footerMarks" :key="mark"><StorefrontPayMark :mark="mark" /></li>
+      </ul>
       <p v-if="chrome.copyright" class="sf-foot__copyright">{{ chrome.copyright }}</p>
     </footer>
   </div>
@@ -178,29 +199,22 @@ function subscribe(): void {
   />
 </template>
 
+<style scoped src="./storefront-surface.css"></style>
 <style scoped>
 /* ─────────────────────────────────────────────────────────────────────────────
- * P4-8 — DELIBERATELY OUT OF SYSTEM, like StorefrontPreview and the checkout
- * preview frame. This is a merchant's storefront as their theme draws it, not
+ * P4-8 — DELIBERATELY OUT OF SYSTEM, like StorefrontPreview. This is a
+ * merchant's storefront as their theme draws it, not
  * Marobase chrome: colours, fonts and radius come from the store's theme
  * (--sf-*), and the fixed sizes below are Aurora's, measured on Neelam-Store.
  * It never follows the app's dark mode.
  * ───────────────────────────────────────────────────────────────────────────── */
 .storefront {
-  --sf-bg-fallback: #ffffff;
-  --sf-text-fallback: #121011;
-  --sf-divider: #f0f0f0;
   --sf-search-border: #9e9e9e;
   --sf-gutter: 24px;
   --sf-measure: 1200px;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: var(--sf-bg, var(--sf-bg-fallback));
-  color: var(--sf-text, var(--sf-text-fallback));
-  font-family: var(--sf-body-font, system-ui), -apple-system, 'Segoe UI', Roboto, sans-serif;
-  font-size: 16px;
-  line-height: 24px;
 }
 
 .storefront a {
@@ -227,6 +241,47 @@ function subscribe(): void {
 /* Header */
 .sf-top {
   border-bottom: 1px solid var(--sf-divider);
+}
+
+.sf-top--minimal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: var(--sf-measure);
+  margin: 0 auto;
+  padding: 20px var(--sf-gutter);
+  border-bottom: 0;
+}
+
+.sf-top__secure {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.sf-cart-link {
+  position: relative;
+}
+
+.sf-cart-link__count {
+  position: absolute;
+  top: 0;
+  right: -2px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--sf-brand, #373842);
+  color: var(--sf-bg, #ffffff);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
 }
 
 .sf-top__row {
@@ -399,6 +454,17 @@ function subscribe(): void {
 .sf-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.sf-foot__marks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  max-width: var(--sf-measure);
+  margin: 0 auto;
+  padding: 0 var(--sf-gutter) 24px;
+  list-style: none;
 }
 
 .sf-foot__copyright {

@@ -12,7 +12,7 @@ import { useToast } from '@/composables/useToast'
 import { useMaropayStore } from '@/stores/useMaropay'
 import { PROVIDER_LABELS, STORE_ACTIVATION_LABELS } from '@/maropay/model'
 import type { MaropayError } from '@/maropay/model'
-import { formatDay } from '@/maropay/readiness'
+import { formatDay, joinList, storePaymentsTarget } from '@/maropay/readiness'
 
 // Settings → Stores: one Maropay account, activated store by store. Linking a
 // store reuses the verified business — no second setup — and changes nothing
@@ -22,16 +22,12 @@ const router = useRouter()
 const maropay = useMaropayStore()
 const toast = useToast()
 
-/** English list: "Cards, Apple Pay and Google Pay". */
-function list(items: string[]): string {
-  return items.length <= 1 ? items.join('') : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`
-}
 
 const rows = computed(() => maropay.bindings
   .filter((b) => maropay.can('view_transactions', b.channelId))
   .map((binding) => {
     const state = maropay.storeStateFor(binding.channelId) ?? 'inactive'
-    const methods = list(maropay.checkoutMethodsFor(binding.channelId).map((m) => m.label))
+    const methods = joinList(maropay.checkoutMethodsFor(binding.channelId).map((m) => m.label))
     const previous = binding.previousProvider ? PROVIDER_LABELS[binding.previousProvider.provider] : null
     let note: string
     if (state === 'live') note = `Maropay since ${formatDay(binding.activatedAt ?? binding.linkedAt)}${methods ? ` · ${methods}` : ''}`
@@ -42,7 +38,7 @@ const rows = computed(() => maropay.bindings
       name: maropay.channelName(binding.channelId),
       status: STORE_ACTIVATION_LABELS[state],
       note,
-      to: maropay.routeFor({ name: 'StorePayments', params: { channelId: binding.channelId } }),
+      to: maropay.routeFor(storePaymentsTarget(binding.channelId)),
     }
   }))
 
@@ -80,7 +76,7 @@ function link(): void {
   }
   linkOpen.value = false
   toast.success(`${maropay.channelName(channelId)} is linked. Nothing changes at checkout until you activate it.`)
-  void router.push(maropay.routeFor({ name: 'StorePayments', params: { channelId } }))
+  void router.push(maropay.routeFor(storePaymentsTarget(channelId)))
 }
 </script>
 

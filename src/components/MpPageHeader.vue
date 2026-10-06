@@ -53,8 +53,17 @@ withDefaults(defineProps<{
           </div>
 
           <template v-else>
+            <div v-if="$slots['title-append']" class="mp-page-header__title-row">
+              <component
+                :is="level === 2 ? 'h2' : 'h1'"
+                class="mp-page-header__title mp-page-title"
+                :class="{ 'mp-page-title--sm': level === 2 }"
+              >{{ title }}</component>
+              <slot name="title-append" />
+            </div>
             <component
               :is="level === 2 ? 'h2' : 'h1'"
+              v-else
               class="mp-page-header__title mp-page-title"
               :class="{ 'mp-page-title--sm': level === 2 }"
             >{{ title }}</component>
@@ -77,6 +86,14 @@ withDefaults(defineProps<{
 .mp-page-header__title {
   line-height: 1.2;
   color: rgb(var(--v-theme-on-surface));
+}
+
+/* `#title-append`: a status chip beside the title (a payment's amount + its state). */
+.mp-page-header__title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--mp-space-8) var(--mp-space-12);
 }
 
 /* Actions sit beside the title from tablet up. On phones the row wraps instead:

@@ -8,12 +8,13 @@ import MpErrorState from '@/components/MpErrorState.vue'
 import MpFilterTabs from '@/components/MpFilterTabs.vue'
 import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
+import MpListRow from '@/components/MpListRow.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
-import MpSectionHeader from '@/components/MpSectionHeader.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
-import MaropayBalanceCards from '@/components/maropay/MaropayBalanceCards.vue'
+import MaropayBalanceSummary from '@/components/maropay/MaropayBalanceSummary.vue'
 import MaropayBankAccountDrawer from '@/components/maropay/MaropayBankAccountDrawer.vue'
+import MaropayDemoPanel from '@/components/maropay/MaropayDemoPanel.vue'
 import MaropayMoney from '@/components/maropay/MaropayMoney.vue'
 import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import type { ResponsiveHeader } from '@/composables/useResponsiveTableHeaders'
@@ -122,14 +123,14 @@ const scoped = computed(() => {
 const filtered = computed(() => scoped.value.filter((r) => inTab(r, activeTab.value)))
 const tabs = computed(() => PAYOUT_TABS.map((t) => ({ label: t.label, key: t.key, count: ready.value ? scoped.value.filter((r) => inTab(r, t.key)).length : undefined })))
 
+// Amount and status share a column (Stripe), and the bank sits under the payout id,
+// so the table fits beside the rail without clipping. Search covers both.
 const HEADERS: (ResponsiveHeader & { title: string; key: string })[] = [
-  { title: 'Date', key: 'date', sortable: true },
+  { title: 'Amount', key: 'amountSort', sortable: true },
   { title: 'Payout', key: 'id' },
-  { title: 'Destination', key: 'destination', hideBelow: 'md' },
   { title: 'Payments', key: 'payments', align: 'end', hideBelow: 'lg' },
-  { title: 'Amount', key: 'amountSort', sortable: true, align: 'end' },
-  { title: 'Status', key: 'statusLabel' },
   { title: 'Arrival', key: 'arrival', hideBelow: 'md' },
+  { title: 'Date', key: 'date', sortable: true, hideBelow: 'sm' },
   { title: '', key: 'actions', sortable: false, align: 'end' },
 ]
 const hiddenColumns = ref<string[]>([])
@@ -187,6 +188,7 @@ function runPayout(): void {
 }
 
 const balance = computed(() => maropay.balances.find((b) => b.currency === (maropay.account?.currency ?? 'USD')) ?? maropay.balances[0] ?? null)
+const destinationLabel = computed(() => (destination.value ? `${destination.value.bankName} •••• ${destination.value.last4}` : null))
 const subtitle = computed(() => {
   const account = maropay.account
   if (!destination.value || !account) return 'Money Maropay sends to your bank.'
@@ -199,9 +201,6 @@ const subtitle = computed(() => {
     <MpPageHeader title="Payouts" :subtitle="subtitle">
       <template v-if="canView && maropay.can('export')" #actions>
         <v-btn variant="outlined" prepend-icon="download" class="text-none" :disabled="!ready || !maropay.payouts.length" @click="exportCsv">Export CSV</v-btn>
-      </template>
-      <template v-if="canView && maropay.account" #tabs>
-        <MpFilterTabs v-model="activeTab" :tabs="tabs" aria-label="Filter payouts by status" />
       </template>
     </MpPageHeader>
 
@@ -242,9 +241,18 @@ const subtitle = computed(() => {
         </template>
       </MpAlert>
 
-      <MaropayBalanceCards v-if="balance" :balance="balance" :upcoming="maropay.upcomingPayout" />
+      <MaropayBalanceSummary
+        v-if="balance"
+        :balance="balance"
+        :upcoming="maropay.upcomingPayout"
+        :destination="destinationLabel"
+        :description="`${balance.currency} · estimated from what has settled`"
+        :upcoming-to="detailRoute(UPCOMING_PAYOUT_ID)"
+      />
 
-      <v-card variant="flat" border rounded="lg" class="d-flex flex-column overflow-hidden">
+      <MpFilterTabs v-model="activeTab" :tabs="tabs" aria-label="Filter payouts by status" />
+
+      <v-card flat border rounded="lg" class="d-flex flex-column overflow-hidden">
         <MpDataTableToolbar
           v-model:search="search"
           v-model:hidden-columns="hiddenColumns"
@@ -274,30 +282,28 @@ const subtitle = computed(() => {
           class="maropay-payouts__table"
           @click:row="openRow"
         >
-          <template #item.date="{ item }">
-            <span class="text-no-wrap">{{ formatDay(item.date) }}</span>
-          </template>
-
-          <template #item.id="{ item }">
-            <span class="maropay-payouts__id">{{ item.upcoming ? 'Next payout' : item.id }}</span>
-          </template>
-
-          <template #item.destination="{ item }">
-            <span class="text-body-2 text-no-wrap">{{ item.destination }}</span>
-          </template>
-
           <template #item.amountSort="{ item }">
-            <span :class="{ 'maropay-payouts__estimate': item.upcoming }">
-              <template v-if="item.upcoming">≈ </template><MaropayMoney :amount="item.amount" />
+            <span class="maropay-payouts__amount">
+              <span :class="{ 'maropay-payouts__estimate': item.upcoming }">
+                <template v-if="item.upcoming">≈ </template><MaropayMoney :amount="item.amount" />
+              </span>
+              <MpStatusChip :status="item.statusLabel" type="payout" size="sm" />
             </span>
           </template>
 
-          <template #item.statusLabel="{ item }">
-            <MpStatusChip :status="item.statusLabel" type="payout" size="sm" />
+          <template #item.id="{ item }">
+            <span class="maropay-payouts__stack">
+              <span class="maropay-payouts__id" :class="{ 'maropay-payouts__id--ref': !item.upcoming }">{{ item.upcoming ? 'Next payout' : item.id }}</span>
+              <span class="maropay-payouts__sub">{{ item.destination }}</span>
+            </span>
           </template>
 
           <template #item.arrival="{ item }">
-            <span class="text-body-2 text-medium-emphasis text-no-wrap">{{ item.arrival }}</span>
+            <span class="maropay-payouts__muted text-no-wrap">{{ item.arrival }}</span>
+          </template>
+
+          <template #item.date="{ item }">
+            <span class="maropay-payouts__muted text-no-wrap">{{ formatDay(item.date) }}</span>
           </template>
 
           <template #header.actions>
@@ -337,13 +343,17 @@ const subtitle = computed(() => {
         </v-data-table>
       </v-card>
 
-      <v-card v-if="isOwner && maropay.upcomingPayout" flat border rounded="lg" class="maropay-payouts__card">
-        <MpSectionHeader icon="flask-conical" title="Simulate the payout schedule" description="Demo controls — not part of the product." :heading-level="2" />
-        <div class="d-flex flex-wrap align-center ga-3">
-          <v-btn size="small" variant="outlined" class="text-none" :disabled="maropay.upcomingPayout.blocked" @click="runPayout">Run the next payout now</v-btn>
-          <span v-if="maropay.upcomingPayout.blocked" class="maropay-payouts__note">Payouts are paused, so the schedule waits.</span>
-        </div>
-      </v-card>
+      <MaropayDemoPanel v-if="isOwner && maropay.upcomingPayout">
+        <MpListRow
+          variant="divided"
+          title="Run the next payout now"
+          :subtitle="maropay.upcomingPayout.blocked ? 'Payouts are paused, so the schedule waits.' : 'Sends what has settled, as the daily schedule would'"
+        >
+          <template #trailing>
+            <v-btn size="small" variant="outlined" class="text-none" :disabled="maropay.upcomingPayout.blocked" @click="runPayout">Run payout</v-btn>
+          </template>
+        </MpListRow>
+      </MaropayDemoPanel>
     </template>
 
     <MaropayBankAccountDrawer
@@ -361,22 +371,38 @@ const subtitle = computed(() => {
   cursor: pointer;
 }
 
+/* The chip drops under the amount when the cell is narrow (phones). */
+.maropay-payouts__amount {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--mp-space-4) var(--mp-space-8);
+  white-space: nowrap;
+}
+
+.maropay-payouts__stack {
+  display: flex;
+  flex-direction: column;
+}
+
 .maropay-payouts__id {
   font-weight: var(--mp-fontWeight-medium);
   white-space: nowrap;
 }
 
-.maropay-payouts__estimate {
-  color: var(--text-secondary);
-  white-space: nowrap;
-}
-
-.maropay-payouts__card {
-  padding: var(--mp-component-card-padding);
-}
-
-.maropay-payouts__note {
+.maropay-payouts__id--ref {
+  font-family: var(--mp-fontFamily-mono);
   font-size: var(--mp-fontSize-13);
-  color: var(--text-secondary);
+  font-weight: var(--mp-fontWeight-regular);
+}
+
+.maropay-payouts__sub,
+.maropay-payouts__muted,
+.maropay-payouts__estimate {
+  color: var(--on-surface-muted);
+}
+
+.maropay-payouts__sub {
+  font-size: var(--mp-fontSize-13);
 }
 </style>

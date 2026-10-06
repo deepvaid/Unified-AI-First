@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { buildScenario } from '../../src/maropay/scenarios.ts'
 import { DEFAULT_PAYOUT_SCHEDULE, parseState, representativeOf } from '../../src/maropay/model.ts'
-import { closureChecks, deriveCapabilities, deriveOverviewInstruction, taskTarget } from '../../src/maropay/readiness.ts'
+import { MAROPAY_STORE_ROUTE, closureChecks, deriveCapabilities, deriveOverviewInstruction, joinList, storePaymentsTarget, taskTarget } from '../../src/maropay/readiness.ts'
 import {
   closeAccount, deactivateAllStores, linkStore, requestBusinessChange, simulateBusinessChangeOutcome, updatePublicDetails,
 } from '../../src/services/maropay/mockAdapter.ts'
@@ -145,4 +145,26 @@ test('saves from before accounts could close read back as open accounts', () => 
   delete raw.account.closedAt
   const parsed = parseState(JSON.stringify(raw), state.accountId, NOW)
   assert.equal(parsed?.account?.closedAt, null)
+})
+
+test('saves from before PayPal and multi-line carts read back with both', () => {
+  const state = buildScenario('m13', context())
+  const raw = JSON.parse(JSON.stringify(state)) as Record<string, any>
+  raw.methods = raw.methods.filter((m: { id: string }) => m.id !== 'paypal').map(({ redirects: _r, ...m }: Record<string, unknown>) => m)
+  for (const s of raw.sessions) { s.lineItem = { product: s.lineItems[0].product, sku: s.lineItems[0].sku, price: s.lineItems[0].price }; delete s.lineItems }
+  const parsed = parseState(JSON.stringify(raw), state.accountId, NOW)!
+  assert.deepEqual(parsed.methods.map((m) => m.id), state.methods.map((m) => m.id), 'PayPal joins in catalogue order')
+  assert.equal(parsed.methods.find((m) => m.id === 'paypal')?.availability, 'available')
+  assert.equal(parsed.methods.find((m) => m.id === 'klarna')?.redirects, true)
+  assert.deepEqual(parsed.sessions[0]?.lineItems, [{ product: 'Patagonia Better Sweater Fleece Vest', sku: 'SKU-10001', price: '184.00', qty: 1 }])
+  assert.equal('lineItem' in parsed.sessions[0]!, false)
+  assert.deepEqual(parseState(JSON.stringify(parsed), state.accountId, NOW), parsed, 'a migrated save is stable')
+})
+
+test('store tasks and store links open the store inside Maropay, not the store editor', () => {
+  assert.deepEqual(taskTarget({ kind: 'activate_store', channelId: 'atlas' } as never), { name: MAROPAY_STORE_ROUTE, params: { channelId: 'atlas' } })
+  assert.deepEqual(taskTarget({ kind: 'method_review', channelId: 'atlas' } as never), { name: MAROPAY_STORE_ROUTE, params: { channelId: 'atlas' } })
+  assert.deepEqual(storePaymentsTarget('atlas', 'store'), { name: 'StorePayments', params: { channelId: 'atlas' } })
+  assert.equal(joinList(['Cards', 'Apple Pay', 'Google Pay']), 'Cards, Apple Pay and Google Pay')
+  assert.equal(joinList(['Cards']), 'Cards')
 })
