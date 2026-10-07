@@ -41,6 +41,16 @@ export default defineConfig(({ mode }) => {
             if (path === '/main-landing/') {
               req.url = '/main-landing/index.html' + (query ? `?${query}` : '')
             }
+            // The Maropay product page beside it (public/main-landing/maropay/)
+            if (path === '/main-landing/maropay') {
+              res.statusCode = 301
+              res.setHeader('Location', '/main-landing/maropay/' + (query ? `?${query}` : ''))
+              res.end()
+              return
+            }
+            if (path === '/main-landing/maropay/') {
+              req.url = '/main-landing/maropay/index.html' + (query ? `?${query}` : '')
+            }
             next()
           })
         },

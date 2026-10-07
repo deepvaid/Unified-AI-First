@@ -43,6 +43,8 @@
   .nav-links .navlink{ background:none; border:0; padding:0; font-family:inherit; }
   .nav-links a:hover, .nav-links .navlink:hover{ color:var(--accent); }
   .nav-links svg{ width:11px; height:11px; opacity:.6; }
+  .new-pill{ display:inline-block; padding:2px 7px; border-radius:999px; background:#e9f2fe; color:#0b5bd3;
+    font-size:11px; font-weight:600; letter-spacing:0.02em; line-height:1.4; }
   /* hamburger toggle (mobile only) */
   .nav-toggle{ display:none; width:44px; height:44px; align-items:center; justify-content:center;
     background:none; border:0; cursor:pointer; color:var(--ink); border-radius:8px; }
@@ -375,6 +377,7 @@
       <a class="wordmark" href="./">MAROPOST</a>
       <div class="nav-links">
         <button class="navlink" type="button">Products <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+        <a href="maropay/">Maropay <span class="new-pill">New</span></a>
         <button class="navlink" type="button">Customers <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
         <button class="navlink" type="button">Pricing</button>
         <button class="navlink" type="button">Resources <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
@@ -394,6 +397,7 @@
 
   <nav id="mobileMenu" class="mobile-menu" hidden aria-label="Mobile navigation">
     <button class="m-item" type="button">Products</button>
+    <a class="m-item" href="maropay/">Maropay <span class="new-pill">New</span></a>
     <button class="m-item" type="button">Customers</button>
     <button class="m-item" type="button">Pricing</button>
     <button class="m-item" type="button">Resources</button>
@@ -735,7 +739,7 @@
     <div class="wrap footer-cols">
       <div class="fcol">
         <h4>Products</h4>
-        <a href="#">Commerce Cloud</a><a href="#">Retail Cloud</a><a href="#">Marketing Cloud</a><a href="#">Merchandising Cloud</a><a href="#">Service Cloud</a><a href="#">Integrations</a><a href="#">Unified Commerce</a>
+        <a href="#">Commerce Cloud</a><a href="#">Retail Cloud</a><a href="#">Marketing Cloud</a><a href="#">Merchandising Cloud</a><a href="#">Service Cloud</a><a href="maropay/">Maropay</a><a href="#">Integrations</a><a href="#">Unified Commerce</a>
       </div>
       <div class="fcol">
         <h4>Solutions</h4>
