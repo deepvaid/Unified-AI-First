@@ -1796,9 +1796,11 @@
   --mp-component-table-cellPaddingInline: var(--mp-space-16);
   --mp-component-table-cellPaddingInlineCompact: var(--mp-space-8);
   --mp-component-table-headerPaddingBlock: var(--mp-space-8);
+  --mp-component-toolbar-titleMinWidth: 160px;
   --mp-component-toolbar-minHeight: var(--mp-space-64);
   --mp-component-toolbar-searchWidth: 300px;
   --mp-component-toolbar-searchMinWidth: 240px;
+  --mp-component-pageHeader-titleMinWidth: 280px;
   --mp-component-nav-itemRadius: var(--mp-radius-8);
   --mp-component-nav-groupGap: var(--mp-space-16);
   --mp-component-nav-activeBarInset: var(--mp-space-6);

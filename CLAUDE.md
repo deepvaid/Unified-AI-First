@@ -48,7 +48,7 @@ This is NOT a production app — it uses mock data and has no backend API.
 │   ├── components/            ← 112 components, all with stories (see Component Inventory)
 │   │   ├── Mp*.vue / ModuleLandingPage.vue ← 30 top-level design-system components
 │   │   ├── layout/            ← AppBar (top bar) + AppSidebar (left nav, collapsible rail)
-│   │   ├── copilot/           ← 18 Dv* Da Vinci surfaces + voice/ (7 orbit voice components)
+│   │   ├── copilot/           ← 22 Dv* Da Vinci surfaces (4 Catalog Co-Pilot) + voice/ (7 orbit voice components)
 │   │   ├── dashboards/        ← 7 dashboard containers + widgets/ (5) + wizard/ (2)
 │   │   ├── marketing/         ← Journey flow column, mini preview, add-step menu
 │   │   ├── maropay/           ← 17 Maropay* product surfaces (Product/Maropay stories)
@@ -348,7 +348,10 @@ Reach for a role token when the system has already made the decision, a primitiv
 - **Drawers** `component.drawer.width.{sm,md,lg}` → 440 / 480 / 640, default md. Everything else
   about a drawer is `component.dialog.*`; only the width ramp differs. `layout.drawerWidth` is a
   legacy alias for the md stop
-- **Toolbars** `component.toolbar.*` → `minHeight` 64 · `searchWidth` 300 · `searchMinWidth` 240
+- **Toolbars** `component.toolbar.*` → `minHeight` 64 · `searchWidth` 300 · `searchMinWidth` 240 ·
+  `titleMinWidth` 160 (the title column's floor before the controls wrap; the toolbar also stacks
+  by its own width via a container query, so a docked drawer stacks it like a phone does)
+- **Page header** `component.pageHeader.titleMinWidth` → 280 (the actions wrap under the title past it)
 - **Nav** `component.nav.*` → `itemRadius` 8 · `groupGap` 16 · `activeBarInset` 6. Item height,
   padding and gap come from `component.listItem.*` — there is no second nav sizing scale
 - **Widget actions** `component.widget.*` → `actionSize` 32 · `actionGap` 2 · `actionInset` 12.
@@ -402,6 +405,7 @@ changelog in `DESIGN_AUDIT.md`.
 | `npm run tokens:build` | Generate SCSS/CSS/TS from tokens.json |
 | `npm run contrast:check` | WCAG 2.1 ratios for every declared surface/foreground token pair |
 | `npm run test:maropay` | Maropay domain + adapter tests (`node:test` over `tests/maropay/`) |
+| `npm run test:catalog` | Da Vinci Catalog Co-Pilot draft-generator tests (`node:test` over `tests/davinci-catalog/`) |
 | `npm run tokens:watch` | Watch tokens.json and regenerate on save |
 | `npm run type-check` | Run vue-tsc type checking |
 | `npm run preview` | Preview production build locally |
@@ -432,6 +436,10 @@ Example: `[feat]: add MpDateRangePicker component with story`
   production gaps) and `implementation-report.md` (review entry point, M01–M15 scenarios, results).
   Pure modules under `src/maropay/` and `src/services/maropay/` import each other by relative
   `.ts` path so Node can run the tests without the Vite `@/` alias.
+- **`docs/davinci-catalog/decisions.md`** — Da Vinci Catalog Co-Pilot in the Products module
+  (PRD: Da Vinci Catalog Management): decisions, PRD → prototype map, demo guide with the
+  `?catalog=` entitlement scenarios, analytics, limitations. Da Vinci drafts, Apply fills the form
+  in memory, the form's own Save / Publish persists; credits move on Apply only.
 
 ---
 

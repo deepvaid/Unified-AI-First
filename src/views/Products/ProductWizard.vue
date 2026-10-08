@@ -15,13 +15,18 @@ import MpWizardStepCard from '@/components/MpWizardStepCard.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpFormSection from '@/components/MpFormSection.vue'
+import MpAlert from '@/components/MpAlert.vue'
+import DvCatalogCta from '@/components/copilot/DvCatalogCta.vue'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
 import { useWizardSteps } from '@/composables/useWizardSteps'
+import { useCatalogCopilotStore, type CatalogApplyPayload } from '@/stores/useCatalogCopilot'
+import type { ProductSnapshot } from '@/composables/useCatalogGenerator'
 
 const route = useRoute()
 const router = useRouter()
 const store = useCommerceStore()
 const extras = useProductExtrasStore()
+const catalog = useCatalogCopilotStore()
 
 const LOCATIONS = ['testing', 'Oxford warehouse']
 
@@ -62,6 +67,16 @@ const subtitle = ref('')
 const url = ref('')
 const description = ref('')
 const hasVariants = ref(false)
+
+// ── Step 1 — Search engine listing ──────────────────────────────────────
+const seoTitle = ref('')
+const seoMetaDescription = ref('')
+const seoUrlHandle = ref('')
+// Social fields are edited on the product editor; kept here so this wizard never drops them.
+const seoSocial = ref({ ogTitle: '', ogDescription: '' })
+// Search engines truncate past these lengths; the counter turns red only through these rules.
+const seoTitleRule = (v: string | null) => (v ?? '').length <= 60 || 'Search results show about 60 characters'
+const seoMetaRule = (v: string | null) => (v ?? '').length <= 155 || 'Search results show about 155 characters'
 
 // ── Step 2 — Organise ───────────────────────────────────────────────────
 const taxCategory = ref('')
@@ -147,6 +162,16 @@ function nextStep() {
 }
 
 // ── Persistence ─────────────────────────────────────────────────────────
+function buildSeo(): ProductDetail['seo'] {
+  const seo = {
+    title: seoTitle.value.trim(),
+    metaDescription: seoMetaDescription.value.trim(),
+    urlHandle: seoUrlHandle.value.trim(),
+    ...seoSocial.value,
+  }
+  return Object.values(seo).some(Boolean) ? seo : undefined
+}
+
 function buildDetail(): ProductDetail {
   return {
     subtitle: subtitle.value.trim(),
@@ -170,6 +195,7 @@ function buildDetail(): ProductDetail {
     countryOfOrigin: countryOfOrigin.value,
     discountable: discountable.value,
     salesChannels: [...salesChannels.value],
+    seo: buildSeo(),
   }
 }
 
@@ -228,10 +254,121 @@ function save(publishStatus: PublishStatus) {
   allowNextLeave()
   if (isEdit.value && editingId.value !== null) {
     store.updateProductDraft(editingId.value, input)
+    trackSave(publishStatus, editingId.value)
     router.push({ ...productsRoute.value, query: { flash: 'product-updated' } })
   } else {
-    store.createProduct(input)
+    const created = store.createProduct(input)
+    trackSave(publishStatus, created.id)
     router.push({ ...productsRoute.value, query: { flash: publishStatus === 'Draft' ? 'product-draft' : 'product-published' } })
+  }
+}
+
+// ── Da Vinci Catalog Co-Pilot ───────────────────────────────────────────
+// Apply hydrates this form's in-memory state only. Nothing is saved until the
+// merchant clicks Save as Draft or Publish, and Da Vinci never picks the status.
+
+/** Set once a Da Vinci draft has been applied to this form. */
+const daVinciApplied = ref<{ at: number; mode: CatalogApplyPayload['mode']; field?: CatalogApplyPayload['field'] } | null>(null)
+const daVinciNotice = ref(false)
+/** The status this product had when the wizard opened (edit mode). */
+const loadedStatus = ref<PublishStatus | null>(null)
+
+const daVinciNoticeTitle = computed(() => {
+  const applied = daVinciApplied.value
+  if (applied?.mode === 'create') return 'Da Vinci filled in this form'
+  return applied?.field === 'seo' ? 'Da Vinci drafted the search listing' : 'Da Vinci drafted the description'
+})
+
+function buildSnapshot(): ProductSnapshot {
+  return {
+    name: title.value.trim(),
+    subtitle: subtitle.value ?? '',
+    sku: sku.value ?? '',
+    description: description.value ?? '',
+    brand: brand.value ?? '',
+    tag: tag.value ?? '',
+    categories: [...categories.value],
+    collection: collection.value ?? '',
+    options: hasVariants.value
+      ? options.value.filter(o => o.name.trim() && o.values.length).map(o => ({ name: o.name, values: [...o.values] }))
+      : [],
+    seo: { title: seoTitle.value, metaDescription: seoMetaDescription.value, urlHandle: seoUrlHandle.value },
+  }
+}
+
+function generateField(field: 'description' | 'seo') {
+  const productId = editingId.value ?? undefined
+  catalog.ctaClicked('field', field, productId)
+  catalog.openField({ field, snapshot: buildSnapshot(), productId, productName: title.value.trim() || undefined })
+}
+
+function hydrateFromDraft(payload: CatalogApplyPayload) {
+  const f = payload.fields
+  if (f.title !== undefined) title.value = f.title
+  if (f.subtitle !== undefined) subtitle.value = f.subtitle
+  if (f.sku !== undefined) {
+    sku.value = f.sku
+    defaultVariant.value.sku = f.sku
+  }
+  if (f.handle !== undefined) {
+    url.value = `/products/${f.handle}`
+    seoUrlHandle.value = f.handle
+  }
+  if (f.description !== undefined) description.value = f.description
+  if (f.brand !== undefined) brand.value = f.brand
+  if (f.tag !== undefined) tag.value = f.tag
+  if (f.categories !== undefined) categories.value = [...f.categories]
+  if (f.collection !== undefined) collection.value = f.collection
+  if (f.seoTitle !== undefined) seoTitle.value = f.seoTitle
+  if (f.seoMetaDescription !== undefined) seoMetaDescription.value = f.seoMetaDescription
+  if (f.options?.length) {
+    // Options first, regenerate now, then price the rows. The deep options watcher
+    // runs after this and keeps every row whose title still matches its values.
+    hasVariants.value = true
+    options.value = f.options.map(o => ({ name: o.name, values: [...o.values] }))
+    regenerateVariants()
+    for (const variant of generatedVariants.value) {
+      if (f.price !== undefined) variant.price = f.price
+      if (f.sku !== undefined && !variant.sku) variant.sku = `${f.sku}-${variant.title.replace(/[^A-Za-z0-9]+/g, '-').toUpperCase()}`
+    }
+  } else if (f.price !== undefined) {
+    if (hasVariants.value) generatedVariants.value.forEach(v => { v.price = f.price! })
+    else defaultVariant.value.price = f.price
+  }
+  if (payload.mode === 'create') {
+    unlockAll()
+    goStep(1)
+  }
+  daVinciApplied.value = { at: payload.appliedAt, mode: payload.mode, field: payload.field }
+  daVinciNotice.value = true
+  catalog.confirmApplied(payload)
+}
+
+/** Takes a draft applied for this page — on arrival, or while the page is open. */
+function takeDaVinciApply() {
+  const payload = catalog.takePendingApply()
+  if (payload) hydrateFromDraft(payload)
+}
+
+// Post flush: after any reload of the form. Both routes share this component, so
+// a route change without a remount must be able to take the payload too.
+watch([() => catalog.pendingApply, () => route.fullPath], takeDaVinciApply, { flush: 'post' })
+
+function trackSave(publishStatus: PublishStatus, productId: number) {
+  const applied = daVinciApplied.value
+  if (!isEdit.value) {
+    catalog.track('Product Created', {
+      product_id: productId,
+      created_via: applied?.mode === 'create' ? 'davinci' : 'manual',
+      davinci_applied: !!applied,
+    })
+  }
+  if (publishStatus === 'Published' && loadedStatus.value !== 'Published') {
+    catalog.track('Product Published', {
+      product_id: productId,
+      published_via: applied ? 'davinci_assisted' : 'manual',
+      time_since_apply_ms: applied ? Date.now() - applied.at : null,
+    })
   }
 }
 
@@ -245,6 +382,7 @@ onMounted(() => {
   if (isEdit.value) {
     const product = store.products.find(p => p.id === editingId.value)
     if (product) {
+      loadedStatus.value = product.publishStatus
       title.value = product.name
       sku.value = product.sku
       const d = product.detail
@@ -269,6 +407,12 @@ onMounted(() => {
         countryOfOrigin.value = d.countryOfOrigin
         discountable.value = d.discountable
         salesChannels.value = [...d.salesChannels]
+        if (d.seo) {
+          seoTitle.value = d.seo.title
+          seoMetaDescription.value = d.seo.metaDescription
+          seoUrlHandle.value = d.seo.urlHandle
+          seoSocial.value = { ogTitle: d.seo.ogTitle, ogDescription: d.seo.ogDescription }
+        }
         if (d.hasVariants) {
           generatedVariants.value = d.variantsList.map(v => makeVariant(v.title, v))
         } else {
@@ -288,6 +432,9 @@ onMounted(() => {
     }
   }
   savedSnapshot.value = formSnapshot()
+  // After the snapshot, so an applied draft counts as unsaved (Cancel and leave prompt).
+  takeDaVinciApply()
+  if (catalog.ctaVisible) catalog.ctaViewed('field')
 })
 </script>
 
@@ -308,6 +455,18 @@ onMounted(() => {
     </template>
 
     <div class="d-flex flex-column ga-5">
+        <MpAlert
+          v-if="daVinciNotice"
+          tone="info"
+          icon="sparkles"
+          :title="daVinciNoticeTitle"
+          dismissible
+          @dismiss="daVinciNotice = false"
+        >
+          {{ daVinciApplied?.mode === 'create' ? 'Review each step, then' : 'Review it, then' }}
+          Save as Draft or Publish. Nothing is saved until you do.
+        </MpAlert>
+
         <!-- Step 1 — Details -->
         <template v-if="step === 1">
           <MpWizardStepCard title="General Information" description="Give this product a title and describe it for shoppers.">
@@ -321,7 +480,18 @@ onMounted(() => {
               <v-text-field v-model="sku" label="SKU" placeholder="Auto-generated if blank" />
               <v-text-field v-model="subtitle" label="Subtitle" />
               <v-text-field v-model="url" label="Product URL" placeholder="/products/my-product" prepend-inner-icon="link" />
-              <v-textarea v-model="description" label="Description" rows="4" auto-grow class="mp-form-grid__full" />
+              <!-- The field action sits in the label row, not on a row of its own. -->
+              <div class="mp-form-grid__full pw-field-action">
+                <v-textarea v-model="description" label="Description" rows="4" auto-grow />
+                <DvCatalogCta
+                  v-if="catalog.ctaVisible"
+                  label="Generate with Da Vinci"
+                  variant="link"
+                  class="pw-field-action__cta"
+                  :disabled="!catalog.canInvoke"
+                  @click="generateField('description')"
+                />
+              </div>
             </MpFormGrid>
           </MpWizardStepCard>
 
@@ -331,6 +501,32 @@ onMounted(() => {
               <div class="text-body-1 font-weight-medium mb-1">Drag and Drop</div>
               <div class="text-caption text-medium-emphasis mb-3">up to 20MB — PNG, JPG, GIF, JPEG, WEBP</div>
               <v-btn variant="flat" color="primary" size="small" class="text-none" prepend-icon="upload">Add Media</v-btn>
+            </div>
+          </MpWizardStepCard>
+
+          <MpWizardStepCard title="Search engine listing" description="How this product appears in search results and shared links." :heading-level="3">
+            <template #title-append>
+              <DvCatalogCta
+                v-if="catalog.ctaVisible"
+                label="Generate with Da Vinci"
+                variant="link"
+                class="ml-auto"
+                :disabled="!catalog.canInvoke"
+                @click="generateField('seo')"
+              />
+            </template>
+            <div class="d-flex flex-column ga-4">
+              <div class="pw-seo">
+                <div class="text-caption text-medium-emphasis">Storefront URL preview</div>
+                <div class="pw-seo__url">/products/{{ seoUrlHandle || 'product-handle' }}</div>
+                <div class="pw-seo__title">{{ seoTitle || title || 'Product title' }}</div>
+                <div class="pw-seo__desc">{{ seoMetaDescription || 'Add a meta description to control this snippet.' }}</div>
+              </div>
+              <MpFormGrid :cols="2">
+                <v-text-field v-model="seoTitle" label="SEO title" counter="60" :rules="[seoTitleRule]" class="mp-form-grid__full" />
+                <v-textarea v-model="seoMetaDescription" label="Meta description" rows="3" counter="155" :rules="[seoMetaRule]" class="mp-form-grid__full" />
+                <v-text-field v-model="seoUrlHandle" label="URL handle" prefix="/" class="mp-form-grid__full" />
+              </MpFormGrid>
             </div>
           </MpWizardStepCard>
 
@@ -350,8 +546,8 @@ onMounted(() => {
             <MpFormGrid :cols="2">
               <v-select v-model="taxCategory" :items="taxCategoryOptions" label="Tax Category" clearable />
               <v-select v-model="material" :items="MATERIALS" label="Material" clearable />
-              <v-select v-model="brand" :items="BRANDS" label="Brand" clearable />
-              <v-select v-model="tag" :items="TAGS" label="Tag" clearable />
+              <v-combobox v-model="brand" :items="BRANDS" label="Brand" clearable />
+              <v-combobox v-model="tag" :items="TAGS" label="Tag" clearable />
               <v-select v-model="collection" :items="collectionOptions" label="Collection" clearable />
               <v-select v-model="categories" :items="CATEGORIES" label="Categories" multiple chips closable-chips />
             </MpFormGrid>
@@ -498,6 +694,17 @@ onMounted(() => {
 </template>
 
 <style scoped>
+.pw-field-action {
+  position: relative;
+}
+
+.pw-field-action__cta {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 1;
+}
+
 .pw-dropzone {
   display: flex;
   flex-direction: column;
@@ -513,5 +720,31 @@ onMounted(() => {
   border: 1px solid var(--border-subtle);
   border-radius: var(--mp-radius-12);
   padding: var(--mp-space-16);
+}
+
+.pw-seo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-4);
+  padding: var(--mp-space-16);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--mp-radius-10);
+}
+
+.pw-seo__url {
+  font-family: var(--mp-fontFamily-mono);
+  font-size: var(--mp-fontSize-12);
+  color: rgb(var(--v-theme-on-surface-variant));
+  overflow-wrap: anywhere;
+}
+
+.pw-seo__title {
+  font-size: var(--mp-fontSize-16);
+  color: rgb(var(--v-theme-primary));
+}
+
+.pw-seo__desc {
+  font-size: var(--mp-fontSize-13);
+  color: rgb(var(--v-theme-on-surface-variant));
 }
 </style>

@@ -13,6 +13,8 @@ import MpSegmentedControl from '@/components/MpSegmentedControl.vue'
 import PlgTrialChip from '@/components/plg/PlgTrialChip.vue'
 import MaropayDemoControls from '@/components/maropay/MaropayDemoControls.vue'
 import { usePlgStore, PLG_DEMO_PRESETS, type PlgDemoPreset } from '@/stores/usePlg'
+import { useCatalogCopilotStore } from '@/stores/useCatalogCopilot'
+import { CATALOG_SCENARIOS, isCatalogScenario } from '@/composables/catalogCopilotConfig'
 import { useTrialLabStore } from '@/stores/useTrialLab'
 
 const copilot = useCopilotStore()
@@ -201,6 +203,20 @@ function resetPlgState() {
   plgStore.resetAccount()
   plgPresetValue.value = null
   showAppbarNotice('PLG demo state reset for this account.')
+}
+
+// Catalog Co-Pilot demo state — entitlement scenarios for the Products Da Vinci
+// CTAs (per account, like the PLG state). Demo control, not product UI.
+const catalogCopilot = useCatalogCopilotStore()
+function onCatalogScenario(value: unknown) {
+  if (!isCatalogScenario(value)) return
+  catalogCopilot.setScenario(value)
+  const label = CATALOG_SCENARIOS.find(s => s.key === value)?.label ?? value
+  showAppbarNotice(`Catalog Co-Pilot demo state: ${label}`)
+}
+function resetCatalogDemo() {
+  catalogCopilot.reset()
+  showAppbarNotice('Catalog Co-Pilot demo state reset for this account.')
 }
 
 const createOpen = ref(false)
@@ -789,6 +805,36 @@ function onSearchKeydown(event: KeyboardEvent) {
                     class="text-none"
                     :disabled="!plgStore.hasExplicitState"
                     @click="resetPlgState"
+                  >
+                    Reset
+                  </v-btn>
+                </div>
+                <div class="um-item" role="group" aria-label="Catalog Co-Pilot demo state">
+                  <v-icon class="um-item__icon" size="20">flask-conical</v-icon>
+                  <div class="um-item__body">
+                    <div class="um-item__title">Catalog Co-Pilot demo</div>
+                    <div class="um-item__sub">Demo controls — not part of the product</div>
+                  </div>
+                </div>
+                <div class="um-plg-demo">
+                  <!-- Compact menu control: detail-free so the user menu can't
+                       resize under the pointer while it is open. -->
+                  <v-select
+                    :model-value="catalogCopilot.scenario"
+                    :items="CATALOG_SCENARIOS"
+                    item-title="label"
+                    item-value="key"
+                    hide-details
+                    label="Entitlement state"
+                    class="um-plg-demo__select"
+                    @update:model-value="onCatalogScenario"
+                  />
+                  <v-btn
+                    size="small"
+                    variant="text"
+                    class="text-none"
+                    :disabled="!catalogCopilot.hasDemoState"
+                    @click="resetCatalogDemo"
                   >
                     Reset
                   </v-btn>

@@ -22,6 +22,10 @@ import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpDialog from '@/components/MpDialog.vue'
+import { useDisplay } from 'vuetify'
+import DvCatalogCta from '@/components/copilot/DvCatalogCta.vue'
+import { useCopilotStore } from '@/stores/useCopilot'
+import { useCatalogCopilotStore } from '@/stores/useCatalogCopilot'
 
 /**
  * Products — the commerce catalog list. Rebuilt from UAT `/commerce/:id/products`;
@@ -33,6 +37,13 @@ const salesChannels = useSalesChannelsStore()
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
+const catalog = useCatalogCopilotStore()
+// The Da Vinci CTA collapses to its mark on phones, and while the drawer it opens
+// is already open — the docked drawer narrows the page, and the full label would
+// push New product onto a row of its own.
+const { xs } = useDisplay()
+const copilot = useCopilotStore()
+const ctaIconOnly = computed(() => xs.value || copilot.isOpen)
 const { loading } = useInitialLoad()
 
 const accountId = computed(() => {
@@ -320,6 +331,14 @@ function runExport() {
   toast.success(`Exported ${exportRows.value.length} product${exportRows.value.length === 1 ? '' : 's'} as CSV`)
 }
 
+// ── Da Vinci Catalog Co-Pilot ───────────────────────────────────────
+// Opens the drawer in create mode. Nothing is created here: the draft is applied
+// to the create stepper, and the merchant's Save as Draft / Publish persists it.
+function createWithDaVinci() {
+  catalog.ctaClicked('index', 'create')
+  catalog.openCreate('index')
+}
+
 // ── Cross-page flash from the wizards ───────────────────────────────
 const flashMessages: Record<string, string> = {
   'product-draft': 'Product saved as draft',
@@ -331,6 +350,7 @@ const flashMessages: Record<string, string> = {
 }
 
 onMounted(() => {
+  if (catalog.ctaVisible) catalog.ctaViewed('index')
   const flash = route.query.flash
   const key = Array.isArray(flash) ? flash[0] : flash
   if (key && flashMessages[key]) {
@@ -361,6 +381,15 @@ onMounted(() => {
             <MpMenuItem icon="history" title="Import logs" @click="openImportLogs" />
           </v-list>
         </v-menu>
+
+        <DvCatalogCta
+          v-if="catalog.ctaVisible"
+          label="Create with Da Vinci"
+          :icon-only="ctaIconOnly"
+          :disabled="!catalog.canInvoke"
+          disabled-reason="You need permission to create products to use Da Vinci."
+          @click="createWithDaVinci"
+        />
 
         <v-menu location="bottom end">
           <template #activator="{ props: menu }">
@@ -624,6 +653,7 @@ onMounted(() => {
 
 .prod-mono {
   font-family: var(--mp-fontFamily-mono);
+  white-space: nowrap;
 }
 
 .prod-link {

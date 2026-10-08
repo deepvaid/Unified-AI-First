@@ -15,16 +15,36 @@ import DvLandingHero from './copilot/DvLandingHero.vue'
 import DvOrbitOrb from './copilot/voice/DvOrbitOrb.vue'
 import DvOrbitVoiceSurface from './copilot/voice/DvOrbitVoiceSurface.vue'
 import DvToolSteps, { type DvToolStep } from './copilot/DvToolSteps.vue'
+import DvCatalogContextBar from './copilot/DvCatalogContextBar.vue'
+import DvCatalogDraftCard from './copilot/DvCatalogDraftCard.vue'
+import DvCatalogGateCard from './copilot/DvCatalogGateCard.vue'
+import PlgTalkToSalesDialog from './plg/PlgTalkToSalesDialog.vue'
 import MpConfirmDialog from './MpConfirmDialog.vue'
+import MpListRow from './MpListRow.vue'
 import type { OrbitState } from './copilot/voice/orbit'
 import {
   useCopilotStore,
+  type CatalogDraftProps,
+  type CatalogGateProps,
+  type CatalogNoticeProps,
+  type ChatComponent,
   type ChatMessage,
   type CampaignOnboardingProps,
   type DraftSetProps,
   type IntentCardsProps,
   type SetupOnboardingProps,
 } from '@/stores/useCopilot'
+import { useCatalogCopilotStore, type CatalogApplyResult } from '@/stores/useCatalogCopilot'
+import {
+  SIMULATED_TIMEOUT_RE,
+  type CatalogDraft,
+  type CatalogFieldKey,
+  type CatalogGenErrorCode,
+  type CatalogGenFailure,
+  type CatalogGenSuccess,
+} from '@/composables/useCatalogGenerator'
+import type { CatalogGateAction } from '@/composables/catalogCopilotConfig'
+import { promptLengthBucket } from '@/composables/useCatalogCopilotAnalytics'
 import { useAccountsStore } from '@/stores/useAccounts'
 import { useDashboardsStore } from '@/stores/useDashboards'
 import { getMetricDescriptor } from '@/stores/dashboards/metricCatalog'
@@ -85,6 +105,7 @@ const campaignOnboarding = useDaVinciCampaignOnboarding()
 const setupOnboarding = useDaVinciSetupOnboarding()
 const voice = useDaVinciVoice()
 const copilot = useCopilotStore()
+const catalog = useCatalogCopilotStore()
 const onboarding = useDaVinciOnboardingStore()
 const setupStore = useDaVinciSetupStore()
 const setupGuide = useOnboardingStore()
@@ -197,9 +218,20 @@ const targetDashboard = computed(() => {
 })
 
 const headerStatus = computed(() => {
+  // The context bar names the mode; the header only reports work in progress.
+  if (catalog.context && isTyping.value) return generatingStatus.value || 'Drafting…'
   if (!chatMode.value) return props.subtitle
   if (isTyping.value) return generatingStatus.value || 'Drafting widgets…'
   return 'Intelligent AI assistant'
+})
+
+// The composer pills are analytics follow-ups ("Compare to YoY"); under a catalog
+// reply — even after the catalog session ends — they would be non sequiturs.
+const lastReplyIsCatalog = computed(() => {
+  const last = [...messages.value].reverse().find((m) => m.role === 'assistant')
+  return !!last?.componentData?.some((c) =>
+    c.type === 'catalogDraft' || c.type === 'catalogGate' || c.type === 'catalogNotice'
+    || (c.type === 'intentCards' && (c.props as IntentCardsProps).layout === 'list'))
 })
 
 const suggestionPills = computed(() => {
@@ -737,8 +769,10 @@ function onIntentCardAction(payload: { card: DvCardDescriptor; action: string })
 function processQuery(text: string) {
   if (!text) return
   // Routing precedence (kept identical to the Experience surface): guided
-  // setup → campaign wizard → the normal assistant.
-  const setupResponse = setupFlowActive.value ? setupOnboarding.handleText(text) : null
+  // setup → campaign wizard → the normal assistant. A live catalog context owns
+  // the conversation until the merchant leaves it, so the flows stand aside.
+  const catalogActive = !!catalog.context
+  const setupResponse = !catalogActive && setupFlowActive.value ? setupOnboarding.handleText(text) : null
   if (setupResponse) {
     pushUserTurn(text)
     appendSetupOnboardingResponse(setupResponse)
@@ -747,7 +781,7 @@ function processQuery(text: string) {
     }
     return
   }
-  const onboardingResponse = onboarding.isActive ? campaignOnboarding.handleText(text) : null
+  const onboardingResponse = !catalogActive && onboarding.isActive ? campaignOnboarding.handleText(text) : null
   if (onboardingResponse) {
     pushUserTurn(text)
     appendCampaignOnboardingResponse(onboardingResponse)
@@ -755,8 +789,8 @@ function processQuery(text: string) {
   }
   // Either flow pauses itself for off-topic questions; acknowledge the switch
   // once, then answer the actual question through the normal path.
-  const setupPauseNotice = setupOnboarding.consumePauseNotice()
-  const pauseNotice = campaignOnboarding.consumePauseNotice()
+  const setupPauseNotice = catalogActive ? null : setupOnboarding.consumePauseNotice()
+  const pauseNotice = catalogActive ? null : campaignOnboarding.consumePauseNotice()
   // Text mode mid-generation: show the turn immediately, answer it after the
   // current reply lands (queued follow-up).
   if (isTyping.value && !isVoiceMode.value) {
@@ -799,6 +833,23 @@ function runGeneration(text: string) {
     orbitLastRequest.value = text
   }
   scrollToBottom()
+
+  // Catalog Co-Pilot. "Add a product called…" from anywhere enters catalog create
+  // mode and drafts for real (instead of the canned description card). Inside the
+  // context every prompt is a catalog ask — unless it is another job entirely
+  // ("how's revenue this week?"), which leaves the context and routes normally.
+  // This sits in runGeneration, not processQuery: queued follow-ups land here too.
+  if (!catalog.context && !intents.pending.value && catalog.ctaVisible && intents.classify(text) === 'product') {
+    catalog.openCreate('chat', { greet: false })
+  }
+  if (catalog.context) {
+    const kind = intents.classify(text)
+    if (kind === 'product' || kind === 'fallback') {
+      runCatalogLane(text, gen)
+      return
+    }
+    catalog.exit()
+  }
 
   // Multi-turn intent clarification (e.g. campaign audience slot) — a
   // conversational turn, not tool work; no steps.
@@ -922,6 +973,200 @@ function runGeneration(text: string) {
   }, 1200))
 }
 
+// ── Catalog Co-Pilot (Da Vinci Catalog Management) ─────────────────────────
+// Da Vinci drafts; the merchant applies; the form's own Save / Publish persists.
+
+const applyingDraftId = ref<string | null>(null)
+const talkToSalesOpen = ref(false)
+
+/** Catalog context with a gate up: drafting is blocked and the composer says so. */
+const catalogGated = computed(() => !!catalog.context && !!catalog.gateReason)
+
+const composerPlaceholder = computed(() => {
+  if (catalogGated.value) return 'Drafting is unavailable — see the options above'
+  if (isTyping.value) return 'Queue a follow-up…'
+  if (catalog.context?.mode === 'create') return 'Describe the product, or refine the draft…'
+  if (catalog.context) return 'Ask for a change…'
+  return 'Ask Da Vinci…'
+})
+
+const skeletonEyebrow = computed(() => (catalog.context ? 'Drafting product' : 'Drafting · last 30 days'))
+
+const NOTICE_HEADLINES: Record<CatalogGenErrorCode, string> = {
+  timeout: 'Da Vinci didn’t respond in time',
+  missing_title: 'Add a product title first',
+  unclear: 'Tell me a little more',
+  no_changes: 'Nothing to change',
+}
+
+function runCatalogLane(text: string, gen: number) {
+  const ctx = catalog.context
+  if (!ctx) return
+  intents.reset()
+  catalog.track('MCC - Da Vinci Catalog - Prompt Submitted', {
+    mode: ctx.mode,
+    is_preset: catalog.isPreset(text),
+    prompt_length_bucket: promptLengthBucket(text),
+    conversation_id: currentConversationId.value,
+  })
+  if (catalog.gateReason) {
+    // Policy, not generation: answer at once, never bill.
+    catalog.pushGate()
+    finishGeneration(gen)
+    return
+  }
+  const started = Date.now()
+  const outcome = catalog.generate(text)
+  const delay = outcome.ok ? 1400 : outcome.code === 'timeout' ? 2600 : 700
+  generatingStatus.value = 'Drafting…'
+  startStepTicker(outcome.steps, gen, delay)
+  pendingTimers.push(setTimeout(() => {
+    if (gen !== generationSeq) return
+    const latency = Date.now() - started
+    if (outcome.ok) {
+      catalog.track('MCC - Da Vinci Catalog - Draft Returned', {
+        mode: ctx.mode,
+        latency_ms: latency,
+        field_count: outcome.keys.length,
+        has_variants: !!outcome.draft.options?.length,
+      })
+      pushCatalogDraft(outcome)
+    } else {
+      catalog.track('MCC - Da Vinci Catalog - Draft Failed', { mode: ctx.mode, error_code: outcome.code, latency_ms: latency })
+      pushCatalogNotice(outcome, text)
+    }
+    finishGeneration(gen)
+  }, delay))
+}
+
+function pushCatalogDraft(outcome: CatalogGenSuccess) {
+  const ctx = catalog.context
+  if (!ctx) return
+  catalog.closeOpenDrafts('superseded')
+  const card: CatalogDraftProps = {
+    draftId: makeId('draft'),
+    mode: ctx.mode,
+    field: ctx.field,
+    productId: ctx.productId,
+    draft: outcome.draft,
+    current: outcome.current,
+    keys: outcome.keys,
+    target: { name: ctx.target.name, params: { ...ctx.target.params } },
+    status: 'draft',
+    gaps: outcome.gaps,
+    notes: outcome.notes,
+  }
+  const componentData: ChatComponent[] = [{ type: 'catalogDraft', props: card }]
+  if (outcome.refinements.length) {
+    componentData.push({
+      type: 'intentCards',
+      props: {
+        cards: [],
+        quickReplies: outcome.refinements.map((value) => ({ label: value, value })),
+        layout: 'compact',
+      },
+    })
+  }
+  // One sentence in the bubble; the card carries the detail. Speech keeps the full version.
+  messages.value.push({ id: makeId('a'), role: 'assistant', text: outcome.intro, toolSteps: outcome.steps, componentData })
+  chatMode.value = true
+  maybeSpeak(outcome.explanation)
+}
+
+function pushCatalogNotice(outcome: CatalogGenFailure, prompt: string) {
+  const notice: CatalogNoticeProps = {
+    tone: outcome.code === 'timeout' ? 'error' : 'warning',
+    headline: NOTICE_HEADLINES[outcome.code],
+    description: outcome.message,
+    // The simulated fault is one-shot: Try again re-sends the brief without it.
+    retryPrompt: outcome.code === 'timeout' ? prompt.replace(SIMULATED_TIMEOUT_RE, '').replace(/\s{2,}/g, ' ').trim() : undefined,
+  }
+  messages.value.push({ id: makeId('a'), role: 'assistant', text: '', componentData: [{ type: 'catalogNotice', props: notice }] })
+  chatMode.value = true
+}
+
+function catalogDrafts(msg: ChatMessage): CatalogDraftProps[] {
+  return (msg.componentData ?? []).filter((item) => item.type === 'catalogDraft').map((item) => item.props as CatalogDraftProps)
+}
+
+function catalogGates(msg: ChatMessage): CatalogGateProps[] {
+  return (msg.componentData ?? []).filter((item) => item.type === 'catalogGate').map((item) => item.props as CatalogGateProps)
+}
+
+function catalogNotices(msg: ChatMessage): CatalogNoticeProps[] {
+  return (msg.componentData ?? []).filter((item) => item.type === 'catalogNotice').map((item) => item.props as CatalogNoticeProps)
+}
+
+async function onCatalogApply(card: CatalogDraftProps, keys: CatalogFieldKey[]) {
+  if (card.status !== 'draft' || applyingDraftId.value) return
+  catalog.track('MCC - Da Vinci Catalog - Apply Clicked', { mode: card.mode, fields_applied_count: keys.length })
+  const fields: CatalogDraft = {}
+  for (const key of keys) Object.assign(fields, { [key]: card.draft[key] })
+  applyingDraftId.value = card.draftId
+  let result: CatalogApplyResult
+  try {
+    result = await catalog.apply({
+      draftId: card.draftId,
+      mode: card.mode,
+      field: card.field,
+      productId: card.productId,
+      target: card.target,
+      fields,
+      keys,
+    })
+  } finally {
+    applyingDraftId.value = null
+  }
+  // Success is confirmed once on the form (its notice) and once here (the card's
+  // Applied state) — no toast on top.
+  if (result.ok) {
+    catalog.markDraft(card.draftId, 'applied', keys)
+  } else if (result.reason === 'navigation') {
+    pushToast({ title: 'Nothing was applied', sub: 'You stayed on this page, so no credits were used.' })
+  }
+  // A gate reason: the store has already posted the gate card.
+}
+
+function onCatalogDiscard(card: CatalogDraftProps) {
+  if (card.status !== 'draft') return
+  catalog.markDraft(card.draftId, 'discarded')
+  catalog.track('MCC - Da Vinci Catalog - Discarded', { mode: card.mode, had_draft: true })
+}
+
+function onCatalogGateAction(gate: CatalogGateProps, action: CatalogGateAction) {
+  const accountId = targetAccountId.value
+  if (action === 'add-manually') {
+    catalog.exit()
+    copilot.close()
+    if (accountId) void router.push({ name: 'ProductNew', params: { accountId } })
+    return
+  }
+  catalog.track('MCC - Da Vinci Catalog - Upgrade Clicked', {
+    gate_reason: gate.reason,
+    is_trial: gate.wallet.kind === 'trial',
+    target: action === 'talk-to-sales' ? 'sales' : action === 'buy-credits' ? 'billing' : 'plans',
+  })
+  if (action === 'talk-to-sales') {
+    talkToSalesOpen.value = true
+    return
+  }
+  if (!accountId) return
+  catalog.exit()
+  copilot.close()
+  void router.push({ name: action === 'buy-credits' ? 'Billing' : 'Plans', params: { accountId } })
+}
+
+function onCatalogRetry(notice: CatalogNoticeProps) {
+  if (notice.retryPrompt) sendSuggestion(notice.retryPrompt)
+}
+
+// Entering catalog context: the voice surface renders no catalog cards, so drop to text.
+watch(() => catalog.context, (ctx) => {
+  if (!ctx) return
+  if (isVoiceMode.value) setUiMode('text')
+  scrollToBottom()
+})
+
 function sendQuery() {
   voice.unlockSpeech() // prime TTS within the gesture (Safari/iOS autoplay)
   lastInputWasVoice.value = false // typed → silent unless "read aloud" is on
@@ -937,6 +1182,7 @@ function sendSuggestion(text: string) {
 function newChat() {
   stopGeneration()
   stopVoiceActivity()
+  catalog.exit('user')
   copilot.resetConversation()
   inputText.value = ''
   historyOpen.value = false
@@ -998,6 +1244,12 @@ function getIntentCardsProps(msg: ChatMessage): IntentCardsProps | null {
   return comp.props as IntentCardsProps
 }
 
+/** Quick replies hide once stale: their session ended, or the draft they refine was replaced, applied or discarded. */
+function quickRepliesLive(msg: ChatMessage): boolean {
+  if (getIntentCardsProps(msg)?.retired) return false
+  return catalogDrafts(msg).every((card) => card.status === 'draft')
+}
+
 function getCampaignOnboardingProps(msg: ChatMessage): CampaignOnboardingProps | null {
   const comp = msg.componentData?.find((item) => item.type === 'campaignOnboarding')
   if (!comp || comp.type !== 'campaignOnboarding') return null
@@ -1038,67 +1290,78 @@ function onComposerKeydown(event: KeyboardEvent) {
         <div class="dv-panel__title-name">Da Vinci</div>
         <div class="dv-panel__title-sub">{{ headerStatus }}</div>
       </div>
-      <v-btn icon size="34" variant="text" aria-label="Start a new chat" class="dv-panel__icon-btn" @click="newChat">
-        <v-icon size="18">square-pen</v-icon>
-        <v-tooltip activator="parent" location="bottom">New chat</v-tooltip>
-      </v-btn>
-      <v-btn
-        icon
-        size="34"
-        variant="text"
-        aria-label="Conversation history"
-        class="dv-panel__icon-btn"
-        @click="historyOpen = !historyOpen"
-      >
-        <v-icon size="18">history</v-icon>
-        <v-tooltip activator="parent" location="bottom">Conversation history</v-tooltip>
-      </v-btn>
-      <v-btn
-        icon
-        size="34"
-        variant="text"
-        :aria-label="copilot.isExpanded ? 'Collapse panel' : 'Expand panel'"
-        class="dv-panel__icon-btn"
-        @click="emit('expand')"
-      >
-        <v-icon size="18">{{ copilot.isExpanded ? 'chevrons-right' : 'chevrons-left' }}</v-icon>
-        <v-tooltip activator="parent" location="bottom">{{ copilot.isExpanded ? 'Collapse' : 'Expand' }}</v-tooltip>
-      </v-btn>
-      <v-menu offset="6" location="bottom end">
-        <template #activator="{ props: menuProps }">
-          <v-btn icon size="34" variant="text" aria-label="More" class="dv-panel__icon-btn" v-bind="menuProps">
-            <v-icon size="18">more-vertical</v-icon>
-          </v-btn>
-        </template>
-        <v-list density="compact" class="dv-panel__menu">
-          <v-list-item v-if="copilot.widthMode !== 'full'" @click="copilot.setWidthMode('full')">
-            <template #prepend><v-icon size="18">maximize-2</v-icon></template>
-            <v-list-item-title>Full width</v-list-item-title>
-          </v-list-item>
-          <v-list-item v-else @click="copilot.setWidthMode('panel')">
-            <template #prepend><v-icon size="18">minimize-2</v-icon></template>
-            <v-list-item-title>Exit full width</v-list-item-title>
-          </v-list-item>
-          <v-list-item v-if="isVoiceMode" @click="setUiMode('text')">
-            <template #prepend><v-icon size="18">keyboard</v-icon></template>
-            <v-list-item-title>Switch to text mode</v-list-item-title>
-          </v-list-item>
-          <v-list-item v-if="voice.ttsSupported" @click="toggleTts">
-            <template #prepend><v-icon size="18">{{ ttsEnabled ? 'volume-2' : 'volume-x' }}</v-icon></template>
-            <v-list-item-title>Read replies aloud</v-list-item-title>
-            <template #append><v-icon v-if="ttsEnabled" size="16" color="primary">check</v-icon></template>
-          </v-list-item>
-          <v-divider class="my-1" />
-          <v-list-item class="text-error" @click="handleClearAll">
-            <template #prepend><v-icon size="18" color="error">trash-2</v-icon></template>
-            <v-list-item-title>Delete all conversations</v-list-item-title>
-          </v-list-item>
-        </v-list>
-      </v-menu>
-      <v-btn icon size="34" variant="text" aria-label="Close" class="dv-panel__icon-btn" @click="emit('close')">
-        <v-icon size="18">x</v-icon>
-      </v-btn>
+      <div class="dv-panel__actions">
+        <v-btn icon size="34" variant="text" aria-label="Start a new chat" class="dv-panel__icon-btn" @click="newChat">
+          <v-icon size="18">square-pen</v-icon>
+          <v-tooltip activator="parent" location="bottom">New chat</v-tooltip>
+        </v-btn>
+        <v-btn
+          icon
+          size="34"
+          variant="text"
+          aria-label="Conversation history"
+          class="dv-panel__icon-btn"
+          @click="historyOpen = !historyOpen"
+        >
+          <v-icon size="18">history</v-icon>
+          <v-tooltip activator="parent" location="bottom">Conversation history</v-tooltip>
+        </v-btn>
+        <v-btn
+          icon
+          size="34"
+          variant="text"
+          :aria-label="copilot.isExpanded ? 'Collapse panel' : 'Expand panel'"
+          class="dv-panel__icon-btn dv-panel__expand"
+          @click="emit('expand')"
+        >
+          <v-icon size="18">{{ copilot.isExpanded ? 'chevrons-right' : 'chevrons-left' }}</v-icon>
+          <v-tooltip activator="parent" location="bottom">{{ copilot.isExpanded ? 'Collapse' : 'Expand' }}</v-tooltip>
+        </v-btn>
+        <v-menu offset="6" location="bottom end">
+          <template #activator="{ props: menuProps }">
+            <v-btn icon size="34" variant="text" aria-label="More" class="dv-panel__icon-btn" v-bind="menuProps">
+              <v-icon size="18">more-vertical</v-icon>
+            </v-btn>
+          </template>
+          <v-list density="compact" class="dv-panel__menu">
+            <v-list-item v-if="copilot.widthMode !== 'full'" @click="copilot.setWidthMode('full')">
+              <template #prepend><v-icon size="18">maximize-2</v-icon></template>
+              <v-list-item-title>Full width</v-list-item-title>
+            </v-list-item>
+            <v-list-item v-else @click="copilot.setWidthMode('panel')">
+              <template #prepend><v-icon size="18">minimize-2</v-icon></template>
+              <v-list-item-title>Exit full width</v-list-item-title>
+            </v-list-item>
+            <v-list-item v-if="isVoiceMode" @click="setUiMode('text')">
+              <template #prepend><v-icon size="18">keyboard</v-icon></template>
+              <v-list-item-title>Switch to text mode</v-list-item-title>
+            </v-list-item>
+            <v-list-item v-if="voice.ttsSupported" @click="toggleTts">
+              <template #prepend><v-icon size="18">{{ ttsEnabled ? 'volume-2' : 'volume-x' }}</v-icon></template>
+              <v-list-item-title>Read replies aloud</v-list-item-title>
+              <template #append><v-icon v-if="ttsEnabled" size="16" color="primary">check</v-icon></template>
+            </v-list-item>
+            <v-divider class="my-1" />
+            <v-list-item class="text-error" @click="handleClearAll">
+              <template #prepend><v-icon size="18" color="error">trash-2</v-icon></template>
+              <v-list-item-title>Delete all conversations</v-list-item-title>
+            </v-list-item>
+          </v-list>
+        </v-menu>
+        <v-btn icon size="34" variant="text" aria-label="Close" class="dv-panel__icon-btn" @click="emit('close')">
+          <v-icon size="18">x</v-icon>
+        </v-btn>
+      </div>
     </header>
+
+    <DvCatalogContextBar
+      v-if="catalog.context && !isVoiceMode"
+      :mode="catalog.context.mode"
+      :field="catalog.context.field"
+      :product-name="catalog.context.productName"
+      :wallet="catalog.wallet"
+      @exit="catalog.exit('user')"
+    />
 
     <DvHistoryDrawer
       :open="historyOpen"
@@ -1212,13 +1475,76 @@ function onComposerKeydown(event: KeyboardEvent) {
               :severity="(getInsightProps(msg)?.severity as 'info' | 'success' | 'warning' | 'error' | undefined)"
             />
 
+            <DvCatalogDraftCard
+              v-for="card in catalogDrafts(msg)"
+              :key="card.draftId"
+              :mode="card.mode"
+              :field="card.field"
+              :draft="card.draft"
+              :current="card.current"
+              :keys="card.keys"
+              :status="card.status"
+              :applied-keys="card.appliedKeys"
+              :gaps="card.gaps"
+              :notes="card.notes"
+              :commit-label="card.target.name === 'ProductEdit' ? 'Save' : 'Save as Draft or Publish'"
+              :busy="applyingDraftId === card.draftId"
+              @apply="(keys) => onCatalogApply(card, keys)"
+              @discard="onCatalogDiscard(card)"
+            />
+            <DvCatalogGateCard
+              v-for="(gate, gateIndex) in catalogGates(msg)"
+              :key="`${msg.id}-gate-${gateIndex}`"
+              :reason="gate.reason"
+              :wallet="gate.wallet"
+              @action="(action) => onCatalogGateAction(gate, action)"
+            />
+            <DvInsightCard
+              v-for="(notice, noticeIndex) in catalogNotices(msg)"
+              :key="`${msg.id}-notice-${noticeIndex}`"
+              :headline="notice.headline"
+              :description="notice.description"
+              :severity="notice.tone"
+              :icon="notice.tone === 'error' ? 'circle-alert' : 'triangle-alert'"
+              :action-label="notice.retryPrompt ? 'Try again' : undefined"
+              @action="onCatalogRetry(notice)"
+            />
+
             <template v-if="getIntentCardsProps(msg)">
               <DvIntentCardList
                 v-if="getIntentCardsProps(msg)?.cards?.length"
                 :cards="getIntentCardsProps(msg)?.cards ?? []"
                 @action="onIntentCardAction"
               />
-              <div v-if="getIntentCardsProps(msg)?.quickReplies?.length" class="dv-quick-replies">
+              <!-- Starting points: full-width rows with a hint of what each drafts. -->
+              <div
+                v-if="getIntentCardsProps(msg)?.quickReplies?.length && quickRepliesLive(msg) && getIntentCardsProps(msg)?.layout === 'list'"
+                class="dv-quick-list"
+              >
+                <MpListRow
+                  v-for="reply in getIntentCardsProps(msg)?.quickReplies ?? []"
+                  :key="reply.value"
+                  variant="boxed"
+                  density="compact"
+                  clickable
+                  class="dv-quick-list__row"
+                  @click="sendSuggestion(reply.value)"
+                >
+                  <template v-if="reply.icon" #lead>
+                    <v-icon size="16" class="dv-quick-list__icon">{{ reply.icon }}</v-icon>
+                  </template>
+                  <span class="dv-quick-list__label">{{ reply.label }}</span>
+                  <span v-if="reply.hint" class="dv-quick-list__hint">{{ reply.hint }}</span>
+                  <template #trailing>
+                    <v-icon size="16" aria-hidden="true">arrow-up</v-icon>
+                  </template>
+                </MpListRow>
+              </div>
+              <div
+                v-else-if="getIntentCardsProps(msg)?.quickReplies?.length && quickRepliesLive(msg)"
+                class="dv-quick-replies"
+                :class="{ 'dv-quick-replies--compact': getIntentCardsProps(msg)?.layout === 'compact' }"
+              >
                 <button
                   v-for="reply in getIntentCardsProps(msg)?.quickReplies ?? []"
                   :key="reply.value"
@@ -1257,9 +1583,18 @@ function onComposerKeydown(event: KeyboardEvent) {
           </div>
           <div class="dv-skeleton">
             <div class="dv-skeleton__top">
-              <span class="dv-eyebrow">Drafting · last 30 days</span>
+              <span class="dv-eyebrow">{{ skeletonEyebrow }}</span>
             </div>
-            <div class="dv-skeleton__bars">
+            <!-- A catalog draft is a card: the placeholder takes its shape. -->
+            <div v-if="catalog.context" class="dv-skeleton__bars">
+              <div class="dv-skeleton__bar dv-skeleton__bar--narrow"></div>
+              <div class="dv-skeleton__bar"></div>
+              <div class="dv-skeleton__bar dv-skeleton__bar--mid"></div>
+              <div class="dv-skeleton__bar"></div>
+              <div class="dv-skeleton__bar dv-skeleton__bar--mid"></div>
+              <div class="dv-skeleton__pill"></div>
+            </div>
+            <div v-else class="dv-skeleton__bars">
               <div class="dv-skeleton__bar"></div>
               <div class="dv-skeleton__bar dv-skeleton__bar--mid"></div>
               <div class="dv-skeleton__bar dv-skeleton__bar--narrow"></div>
@@ -1278,7 +1613,7 @@ function onComposerKeydown(event: KeyboardEvent) {
           <v-icon size="14">x</v-icon>
         </v-btn>
       </div>
-      <div v-if="chatMode" class="dv-composer__pills">
+      <div v-if="chatMode && !catalog.context && !lastReplyIsCatalog" class="dv-composer__pills">
         <button
           v-for="pill in suggestionPills"
           :key="pill.text"
@@ -1294,7 +1629,9 @@ function onComposerKeydown(event: KeyboardEvent) {
         <input
           v-model="inputText"
           type="text"
-          :placeholder="isTyping ? 'Queue a follow-up…' : 'Ask Da Vinci…'"
+          :placeholder="composerPlaceholder"
+          :disabled="catalogGated"
+          :aria-label="catalog.context ? 'Message Catalog Co-Pilot' : 'Message Da Vinci'"
           class="dv-composer__input"
           @keydown="onComposerKeydown"
         />
@@ -1307,6 +1644,7 @@ function onComposerKeydown(event: KeyboardEvent) {
             icon
             size="32"
             variant="text"
+            :disabled="catalogGated"
             :aria-label="isDictating ? 'Stop voice input' : 'Start voice input'"
             class="dv-composer__mic"
             :class="{ 'dv-composer__mic--live': isDictating }"
@@ -1315,7 +1653,7 @@ function onComposerKeydown(event: KeyboardEvent) {
             <v-icon size="16">{{ isDictating ? 'mic-off' : 'mic' }}</v-icon>
           </v-btn>
           <v-btn
-            v-if="voice.sttSupported"
+            v-if="voice.sttSupported && !catalog.context"
             icon
             size="32"
             variant="text"
@@ -1338,7 +1676,7 @@ function onComposerKeydown(event: KeyboardEvent) {
             type="button"
             class="dv-composer__send"
             aria-label="Send"
-            :disabled="!inputText.trim()"
+            :disabled="!inputText.trim() || catalogGated"
             @click="sendQuery"
           >
             <v-icon size="16" class="dv-on-accent-icon">arrow-up</v-icon>
@@ -1356,6 +1694,7 @@ function onComposerKeydown(event: KeyboardEvent) {
       </div>
     </div>
 
+    <PlgTalkToSalesDialog v-model="talkToSalesOpen" />
     <MpConfirmDialog
       v-model="clearAllOpen"
       title="Delete all Da Vinci conversations?"
@@ -1383,10 +1722,11 @@ function onComposerKeydown(event: KeyboardEvent) {
 }
 
 /* ─── Header ───────────────────────────────────────────────────────── */
+/* gap is 6, not 10: the orb's halo already pads it (a 32px orb in a 46px box). */
 .dv-panel__header {
   display: flex;
   align-items: center;
-  gap: var(--mp-space-10);
+  gap: var(--mp-space-6);
   padding: var(--mp-space-8) var(--mp-space-8) var(--mp-space-8) var(--mp-space-16);
   height: var(--mp-space-48);
   background: rgb(var(--v-theme-surface));
@@ -1425,8 +1765,30 @@ function onComposerKeydown(event: KeyboardEvent) {
   text-overflow: ellipsis;
 }
 
+/* One tight icon cluster: the 34px buttons carry their own padding, so a wide
+   gap only took room from the title — the status line truncated even at 400px. */
+.dv-panel__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-2);
+  flex-shrink: 0;
+}
+
 .dv-panel__icon-btn {
   flex-shrink: 0;
+}
+
+/* Phones: the drawer already spans nearly the whole viewport, so Expand gains
+   next to nothing — drop it, and tighten the header so "Da Vinci" and its status
+   get the room instead of wrapping and truncating. */
+@media (max-width: #{$mp-layout-breakpointCompact - 0.02px}) {
+  .dv-panel__header {
+    padding-left: var(--mp-space-12);
+  }
+
+  .dv-panel__expand {
+    display: none;
+  }
 }
 
 .dv-panel__icon-btn:focus-visible {
@@ -1466,6 +1828,8 @@ function onComposerKeydown(event: KeyboardEvent) {
 
 /* ─── Body ─────────────────────────────────────────────────────────── */
 .dv-panel__body {
+  /* Sticky card footers (DvCatalogDraftCard) pin to the scrollport edge, not the padding. */
+  --dv-sticky-bottom: calc(-1 * var(--mp-space-24));
   flex: 1;
   overflow-y: auto;
   padding: var(--mp-space-20) var(--mp-space-20) var(--mp-space-24);
@@ -1664,6 +2028,74 @@ function onComposerKeydown(event: KeyboardEvent) {
   flex-wrap: wrap;
   gap: var(--mp-space-8);
   margin-top: var(--mp-space-8);
+}
+
+/* Follow-up refinements: lighter than a starting point, several to a row. */
+.dv-quick-replies--compact {
+  gap: var(--mp-space-6);
+  margin-top: 0;
+}
+
+.dv-quick-replies--compact .dv-landing__pill {
+  min-height: var(--mp-component-segmented-height-sm);
+  padding: var(--mp-space-4) var(--mp-space-12);
+  gap: var(--mp-space-6);
+}
+
+.dv-quick-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-6);
+  margin-top: var(--mp-space-4);
+}
+
+/* Scoped under .dv-quick-list so these beat MpListRow's own boxed styles. */
+.dv-quick-list .dv-quick-list__row {
+  padding-block: var(--mp-space-8);
+  border-color: var(--dv-border);
+  background: rgb(var(--v-theme-surface));
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.dv-quick-list .dv-quick-list__row:hover,
+.dv-quick-list .dv-quick-list__row:focus-visible {
+  border-color: var(--dv-accent);
+  background: var(--dv-accent-soft);
+  color: var(--dv-text-primary);
+}
+
+.dv-quick-list__icon {
+  color: var(--dv-text-primary);
+}
+
+.dv-quick-list__label {
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-medium);
+  line-height: var(--mp-lineHeight-compact);
+}
+
+.dv-quick-list__hint {
+  font-size: var(--mp-fontSize-12);
+  line-height: var(--mp-lineHeight-compact);
+  color: var(--on-surface-muted);
+}
+
+.dv-quick-list__row:hover .dv-quick-list__hint,
+.dv-quick-list__row:focus-visible .dv-quick-list__hint {
+  color: var(--dv-text-secondary);
+}
+
+.dv-quick-list__row :deep(.mp-list-row__trailing .v-icon) {
+  transform: rotate(45deg);
+}
+
+.dv-skeleton__pill {
+  width: var(--mp-space-80);
+  height: var(--mp-space-28);
+  margin-top: var(--mp-space-4);
+  border-radius: var(--mp-radius-full);
+  background: rgb(var(--v-theme-surface-variant));
+  animation: dvShimmer 1.4s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {

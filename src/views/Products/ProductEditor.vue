@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   useCommerceStore,
@@ -11,6 +11,12 @@ import MpFormSection from '@/components/MpFormSection.vue'
 import MpFormField from '@/components/MpFormField.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpAlert from '@/components/MpAlert.vue'
+import { useDisplay } from 'vuetify'
+import DvCatalogCta from '@/components/copilot/DvCatalogCta.vue'
+import { useCopilotStore } from '@/stores/useCopilot'
+import { useCatalogCopilotStore, type CatalogApplyPayload } from '@/stores/useCatalogCopilot'
+import type { ProductSnapshot } from '@/composables/useCatalogGenerator'
 
 /**
  * Product editor — the single-page edit surface for an existing product
@@ -19,6 +25,12 @@ import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
  */
 const store = useCommerceStore()
 const extras = useProductExtrasStore()
+const catalog = useCatalogCopilotStore()
+// The Da Vinci CTA collapses to its mark on phones (so Cancel and Save stay on one
+// row) and while the drawer it opens is already open.
+const { xs } = useDisplay()
+const copilot = useCopilotStore()
+const ctaIconOnly = computed(() => xs.value || copilot.isOpen)
 const route = useRoute()
 const router = useRouter()
 
@@ -116,6 +128,7 @@ function requestCancel() {
 async function save() {
   const p = product.value
   if (!p || !valid.value) return
+  const wasPublished = p.publishStatus === 'Published'
   saving.value = true
   await new Promise((resolve) => setTimeout(resolve, 450))
   store.updateProductDraft(p.id, {
@@ -133,7 +146,89 @@ async function save() {
   })
   saving.value = false
   snapshot.value = JSON.stringify(form.value)
+  trackSave(p.id, wasPublished)
   router.push({ ...listRoute.value, query: { flash: 'product-updated' } })
+}
+
+// ── Da Vinci Catalog Co-Pilot ─────────────────────────────────────────
+// Suggestions patch the fields the merchant picked, in memory. Save persists them.
+// Da Vinci never touches status, options, prices or inventory on this page.
+
+const daVinciApplied = ref<{ at: number } | null>(null)
+const daVinciNotice = ref(false)
+
+function buildSnapshot(): ProductSnapshot {
+  const f = form.value
+  return {
+    name: f.name.trim(),
+    subtitle: f.detail.subtitle ?? '',
+    sku: f.sku ?? '',
+    description: f.detail.description ?? '',
+    brand: f.detail.brand ?? '',
+    tag: f.detail.tag ?? '',
+    categories: [...(f.detail.categories ?? [])],
+    collection: f.detail.collection ?? '',
+    options: f.detail.options.map((o) => ({ name: o.name, values: [...o.values] })),
+    seo: { title: f.seo.title, metaDescription: f.seo.metaDescription, urlHandle: f.seo.urlHandle },
+  }
+}
+
+function editWithDaVinci() {
+  catalog.ctaClicked('edit', 'enrich', productId.value)
+  catalog.openEnrich({ productId: productId.value, productName: form.value.name.trim(), snapshot: buildSnapshot() })
+}
+
+function generateField(field: 'description' | 'seo') {
+  catalog.ctaClicked('field', field, productId.value)
+  catalog.openField({ field, snapshot: buildSnapshot(), productId: productId.value, productName: form.value.name.trim() })
+}
+
+function applyDaVinci(payload: CatalogApplyPayload) {
+  const f = payload.fields
+  const target = form.value
+  if (f.title !== undefined) target.name = f.title
+  if (f.subtitle !== undefined) target.detail.subtitle = f.subtitle
+  if (f.sku !== undefined) target.sku = f.sku
+  if (f.handle !== undefined) target.seo.urlHandle = f.handle
+  if (f.description !== undefined) target.detail.description = f.description
+  if (f.brand !== undefined) target.detail.brand = f.brand
+  if (f.tag !== undefined) target.detail.tag = f.tag
+  if (f.categories !== undefined) target.detail.categories = [...f.categories]
+  if (f.collection !== undefined) target.detail.collection = f.collection
+  if (f.seoTitle !== undefined) target.seo.title = f.seoTitle
+  if (f.seoMetaDescription !== undefined) target.seo.metaDescription = f.seoMetaDescription
+  daVinciApplied.value = { at: payload.appliedAt }
+  daVinciNotice.value = true
+  catalog.confirmApplied(payload)
+}
+
+function takeDaVinciApply() {
+  const payload = catalog.takePendingApply()
+  if (payload) applyDaVinci(payload)
+}
+
+onMounted(() => {
+  // load() already ran in setup, so an applied draft lands after the saved snapshot.
+  takeDaVinciApply()
+  if (catalog.ctaVisible) {
+    catalog.ctaViewed('edit')
+    catalog.ctaViewed('field')
+  }
+})
+// Post flush: after load() re-runs for a different product.
+watch([() => catalog.pendingApply, () => route.fullPath], takeDaVinciApply, { flush: 'post' })
+
+function trackSave(id: number, wasPublished: boolean) {
+  const applied = daVinciApplied.value
+  if (applied) catalog.track('MCC - Da Vinci Catalog - Product Saved After Apply', { product_id: id })
+  if (form.value.publishStatus === 'Published' && !wasPublished) {
+    catalog.track('Product Published', {
+      product_id: id,
+      published_via: applied ? 'davinci_assisted' : 'manual',
+      time_since_apply_ms: applied ? Date.now() - applied.at : null,
+    })
+  }
+  daVinciApplied.value = null
 }
 
 function openVariantsWizard() {
@@ -149,6 +244,14 @@ function openVariantsWizard() {
       :back-to="listRoute"
     >
       <template #actions>
+        <DvCatalogCta
+          v-if="catalog.ctaVisible"
+          label="Edit with Da Vinci"
+          :icon-only="ctaIconOnly"
+          :disabled="!catalog.canInvoke"
+          disabled-reason="You need permission to edit products to use Da Vinci."
+          @click="editWithDaVinci"
+        />
         <v-btn variant="text" class="text-none" :disabled="saving" @click="requestCancel">Cancel</v-btn>
         <v-btn color="primary" variant="flat" class="text-none" :loading="saving" :disabled="!valid || !dirty" @click="save">
           Save
@@ -159,6 +262,17 @@ function openVariantsWizard() {
     <v-row class="flex-grow-1" no-gutters>
       <!-- ── Main column ─────────────────────────────────────────── -->
       <v-col cols="12" md="8" class="pr-md-4 d-flex flex-column ga-4">
+        <MpAlert
+          v-if="daVinciNotice"
+          tone="info"
+          icon="sparkles"
+          title="Da Vinci suggestions applied"
+          dismissible
+          @dismiss="daVinciNotice = false"
+        >
+          Review the changes, then click Save to keep them. The product’s status stays as you set it.
+        </MpAlert>
+
         <v-card variant="flat" border rounded="lg" class="ped-card">
           <MpFormSection title="General information" description="To start selling, all you need is a name and a price." required />
           <MpFormGrid :cols="2">
@@ -170,7 +284,18 @@ function openVariantsWizard() {
             <v-text-field v-model="form.sku" label="SKU" />
             <v-text-field v-model="form.detail.subtitle" label="Subtitle" />
             <v-text-field v-model="form.detail.url" label="Product URL" placeholder="https://…" />
-            <v-textarea v-model="form.detail.description" label="Description" rows="5" class="mp-form-grid__full" />
+            <!-- The field action sits in the label row, not on a row of its own. -->
+            <div class="mp-form-grid__full ped-field-action">
+              <v-textarea v-model="form.detail.description" label="Description" rows="5" />
+              <DvCatalogCta
+                v-if="catalog.ctaVisible"
+                label="Generate with Da Vinci"
+                variant="link"
+                class="ped-field-action__cta"
+                :disabled="!catalog.canInvoke"
+                @click="generateField('description')"
+              />
+            </div>
           </MpFormGrid>
           <v-switch
             v-model="form.detail.discountable"
@@ -233,7 +358,20 @@ function openVariantsWizard() {
         </v-card>
 
         <v-card variant="flat" border rounded="lg" class="ped-card">
-          <MpFormSection title="Search engine listing" description="How this product appears in search results and shared links." />
+          <div class="d-flex align-start ga-3">
+            <MpFormSection
+              class="flex-grow-1"
+              title="Search engine listing"
+              description="How this product appears in search results and shared links."
+            />
+            <DvCatalogCta
+              v-if="catalog.ctaVisible"
+              label="Generate with Da Vinci"
+              variant="link"
+              :disabled="!catalog.canInvoke"
+              @click="generateField('seo')"
+            />
+          </div>
           <div class="ped-seo">
             <div class="text-caption text-medium-emphasis">Storefront URL preview</div>
             <div class="ped-seo__url">/products/{{ form.seo.urlHandle || 'product-handle' }}</div>
@@ -308,6 +446,17 @@ function openVariantsWizard() {
 </template>
 
 <style scoped>
+.ped-field-action {
+  position: relative;
+}
+
+.ped-field-action__cta {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 1;
+}
+
 .ped-card {
   padding: var(--mp-component-card-padding);
   display: flex;
