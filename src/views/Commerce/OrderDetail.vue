@@ -17,6 +17,7 @@ import { useToast } from '@/composables/useToast'
 import { useMaropayStore } from '@/stores/useMaropay'
 import { formatMoney, isPositive } from '@/maropay/money'
 import { PROVIDER_LABELS } from '@/maropay/model'
+import { isManualKind } from '@/maropay/providers'
 import { formatDay } from '@/maropay/readiness'
 import type { RefundResult } from '@/services/maropay/mockAdapter'
 
@@ -55,8 +56,11 @@ const paymentBreakdown = computed(() => (payment.value ? maropay.breakdownFor(pa
 const paymentRoute = computed(() => (payment.value ? { name: 'MaropayPaymentDetail', params: { accountId: accountId.value, paymentId: payment.value.id } } : null))
 const paymentProviderLabel = computed(() => {
   if (!payment.value) return null
-  return payment.value.provider === 'maropay' ? 'Maropay' : `${PROVIDER_LABELS[payment.value.provider]} (original provider)`
+  const label = PROVIDER_LABELS[payment.value.provider]
+  // "Original provider" only for history taken before the store used Maropay; a current provider is simply named.
+  return payment.value.provider === 'maropay' ? 'Maropay' : payment.value.legacy ? `${label} (original provider)` : label
 })
+const canRecordManual = computed(() => payment.value?.status === 'processing' && isManualKind(payment.value.provider) && maropay.can('capture', payment.value.channelId))
 const canCapturePayment = computed(() => payment.value?.status === 'authorised' && maropay.can('capture', payment.value.channelId))
 const canVoidPayment = computed(() => payment.value?.status === 'authorised' && maropay.can('void', payment.value.channelId))
 const captureDialog = ref(false)
@@ -74,6 +78,14 @@ function voidPayment() {
   if (!payment.value) return
   const result = maropay.voidPayment(payment.value.id)
   if (result.ok) notify('Authorisation cancelled — the shopper won’t be charged')
+  else toast.error(result.error.message)
+}
+
+/** A manual payment (bank deposit, cheque, cash on delivery) arrived, or never did. */
+function recordManual(outcome: 'received' | 'not_received') {
+  if (!payment.value) return
+  const result = maropay.markManualPayment(payment.value.id, outcome, `manual_${payment.value.id}_${outcome}`)
+  if (result.ok) notify(outcome === 'received' ? `Marked as paid — ${formatMoney(payment.value.amount)} received` : 'Marked as not received')
   else toast.error(result.error.message)
 }
 
@@ -308,6 +320,13 @@ function timelineIcon(entry: { kind: string; text: string }): string {
             <template v-if="canCapturePayment || canVoidPayment" #actions>
               <v-btn v-if="canCapturePayment" size="small" variant="outlined" class="text-none" @click="captureDialog = true">Capture {{ formatMoney(payment.amount) }}</v-btn>
               <v-btn v-if="canVoidPayment" size="small" variant="text" class="text-none" @click="voidDialog = true">Cancel authorisation</v-btn>
+            </template>
+          </MpAlert>
+          <MpAlert v-else-if="payment?.status === 'processing' && isManualKind(payment.provider)" tone="info" live="off" class="mb-4" :title="`Awaiting ${payment.methodLabel}`">
+            The shopper chose {{ payment.methodLabel }}. Mark the order as paid once the money arrives.
+            <template v-if="canRecordManual" #actions>
+              <v-btn size="small" variant="outlined" class="text-none" @click="recordManual('received')">Mark as paid</v-btn>
+              <v-btn size="small" variant="text" class="text-none" @click="recordManual('not_received')">Payment didn’t arrive</v-btn>
             </template>
           </MpAlert>
           <MpAlert v-else-if="payment?.status === 'processing'" tone="info" live="off" class="mb-4" title="Payment processing">

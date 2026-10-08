@@ -27,7 +27,7 @@ Maropay can be reached from:
 - the **Maropay** sidebar group;
 - **Stores** in Maropay's own rail, which open a store's payments inside Maropay
   (`/accounts/2000290/maropay/stores/retest-sales-notification`);
-- the store editor, under **Selling › Payments** (the same page, with "Open in Maropay");
+- the store editor, under **Selling › Payments** — the store's Payments page lists every provider with the Maropay card on top; Maropay's own page for the store is one level down (`payments/maropay`, with "Open in Maropay");
 - **View in Maropay** on an order's Payment card;
 - **Settings › Payment account**;
 - the **Set up payments** task on Get started;
@@ -95,6 +95,9 @@ Checked in the in-app browser against the Vite dev server after the final edits.
 | M13 Delayed payment | Stays processing across navigation; one confirmation captures it; a duplicate is ignored; still one payment and one capture | Pass |
 | M14 Deactivation | Stopping routes new checkouts to PayPal; the checkout preview refuses; all payments, payouts and history stay | Pass |
 | M15 Method pending | The store activates on cards while Klarna waits; Klarna is absent from checkout until approved | Pass |
+| M16 Information needed later | A later-dated EIN request with a deadline; payments and payouts keep running until it | Pass |
+| M17 Deadline passed | Payouts paused at the deadline, Maropay payments a week later; the merchant's own PayPal and bank deposit keep working | Pass |
+| M18 Australian store on eWay, Afterpay and Zip | An AUD account ready to activate beside eWay, Afterpay, Zip, bank deposit and cash on delivery; the Activate dialog offers Maropay for cards or eWay keeping them; each provider row shows the illustrative platform fee | Pass |
 
 Also checked:
 - **Deep links and reload** on every Maropay route, in a fresh tab. No console errors.

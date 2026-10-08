@@ -59,7 +59,7 @@ const spec = computed(() => METHOD_MARKS[props.mark] ?? METHOD_MARKS.card)
   }
 }
 
-@each $id in maropay, card, visa, mastercard, amex, applePay, googlePay, paypal, klarna, afterpay, affirm, ach, ideal, sepa {
+@each $id in maropay, card, visa, mastercard, amex, applePay, googlePay, paypal, klarna, afterpay, affirm, zip, ach, ideal, sepa, stripe, eway, bankDeposit, cheque, cod {
   .maropay-mark--#{$id} {
     background: var(--mp-color-methodMark-#{$id}-tile);
     color: var(--mp-color-methodMark-#{$id}-onTile);

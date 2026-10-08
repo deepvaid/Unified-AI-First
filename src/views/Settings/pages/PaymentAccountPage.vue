@@ -27,6 +27,7 @@ const links = computed(() => {
     { icon: 'list-checks', title: 'Setup and verification', desc: 'Business details, identity checks and agreements.', to: { name: 'MaropaySetup', params } },
     { icon: 'landmark', title: 'Payout bank account', desc: 'Where your money is sent.', to: { name: 'MaropaySettings', params, query: { tab: 'bank' } } },
     { icon: 'store', title: 'Stores using Maropay', desc: 'Activate Maropay store by store.', to: { name: 'MaropaySettings', params, query: { tab: 'stores' } } },
+    { icon: 'plug', title: 'Payment providers by store', desc: 'PayPal, bank deposit and the other providers a store takes are set on its Payments page.', to: { name: 'SalesChannels', params } },
   ]
 })
 </script>

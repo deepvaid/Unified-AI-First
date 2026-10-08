@@ -1,5 +1,6 @@
 /**
- * Reviewer scenarios M01–M17 (plan §6.5 plus the partner-alignment phase).
+ * Reviewer scenarios M01–M18 (plan §6.5, the partner-alignment phase and the
+ * providers model).
  *
  * Every fixture is built by running the mock adapter's own operations at
  * back-dated times — onboarding, activation, payments, refunds, payouts,
@@ -8,20 +9,24 @@
  *
  * Fixture payments reuse the existing Commerce orders of the account's
  * primary store (the most recent twelve), so Transactions and Orders tell the
- * same story. Merchants, people and bank accounts are fictional.
+ * same story. Every live store keeps at least one of the merchant's own
+ * providers beside Maropay, so coexistence is always on screen. Merchants,
+ * people and bank accounts are fictional.
  *
  * Pure module — relative `.ts` imports only (see money.ts).
  */
 import { fromDecimal, money } from './money.ts'
-import { ONBOARDING_STEPS, REPRESENTATIVE_ID, emptyPerson, emptyState, isoAt } from './model.ts'
+import { ONBOARDING_STEPS, REPRESENTATIVE_ID, currencyFor, emptyPerson, emptyState, isoAt } from './model.ts'
 import type {
+  CaptureMode,
   MaropayAccountState,
   MaropayProvider,
   MaropayScenarioKey,
   OnboardingDraft,
-  PreviousProvider,
   StoreBinding,
 } from './model.ts'
+import { cardGateway, connectionFor } from './providers.ts'
+import type { OwnProviderKind, ProviderConnection, ProviderKind } from './providers.ts'
 import type { ChannelFacts } from './readiness.ts'
 import {
   acceptTerms,
@@ -80,13 +85,13 @@ export const MAROPAY_SCENARIOS: MaropayScenario[] = [
     'Use the support route to ask for the decision to be reviewed.',
   ] },
   { key: 'm05', label: 'M05 · Existing Stripe merchant', steps: [
-    'Verified details were reused from the existing Stripe account.',
+    'Verified details were reused from the existing Stripe account; the store takes cards through Stripe and bank deposits beside it.',
     'Earlier payments stay with Stripe — balances and payouts are not merged.',
-    'Activate: manual capture is kept, so new payments arrive authorised.',
+    'Activate: let Maropay take cards, or keep Stripe for cards and add only what it lacks. Manual capture is kept, so new payments arrive authorised.',
   ] },
   { key: 'm06', label: 'M06 · Switching from PayPal', steps: [
     'Compare fees and what stays with PayPal on the store’s Payments page.',
-    'Activate — new checkouts route to Maropay; PayPal Checkout stays connected.',
+    'Activate — cards move to Maropay; PayPal Checkout stays connected through the merchant’s own PayPal account.',
     'Refund an earlier order: it goes back through PayPal.',
   ] },
   { key: 'm07', label: 'M07 · One business, two stores', steps: [
@@ -125,7 +130,7 @@ export const MAROPAY_SCENARIOS: MaropayScenario[] = [
   ] },
   { key: 'm14', label: 'M14 · Stop using Maropay', steps: [
     'Stop Maropay on the primary store from its Payments page.',
-    'New checkouts route back to PayPal.',
+    'Cards go back to the merchant’s PayPal account; PayPal Checkout and bank deposit keep working as they did.',
     'Earlier payments, refunds, disputes and payouts stay available.',
   ] },
   { key: 'm15', label: 'M15 · Optional method pending approval', steps: [
@@ -140,8 +145,13 @@ export const MAROPAY_SCENARIOS: MaropayScenario[] = [
   ] },
   { key: 'm17', label: 'M17 · Deadline passed', steps: [
     'The EIN deadline passed: payouts paused first, payments a week later.',
-    'Checkout refuses new payments until the EIN is provided.',
+    'Checkout refuses new Maropay payments until the EIN is provided; PayPal Checkout and bank deposit keep working.',
     'Provide it — the account is under review again and both resume on approval.',
+  ] },
+  { key: 'm18', label: 'M18 · Australian store on eWay, Afterpay and Zip', steps: [
+    'The store already takes cards with eWay, plus Afterpay, Zip, bank deposit and cash on delivery — each row shows the illustrative platform fee.',
+    'Open Activate: let Maropay take cards, or keep eWay for cards — the preview changes with the choice.',
+    'Activate either way and buy something on the storefront — Afterpay, Zip and the manual methods stay with their own providers.',
   ] },
 ]
 
@@ -270,13 +280,16 @@ function completedDraft(state: MaropayAccountState, ctx: ScenarioContext, at: nu
   draft.authorityConfirmed = true
   draft.completedSteps = ONBOARDING_STEPS.filter((s) => s !== 'review')
   draft.lastStep = 'review'
-  // What Maropost can't prefill: the representative's date of birth, SSN last 4 and the owners attestation.
+  // What Maropost can't prefill: the representative's date of birth, SSN last 4 and the attestations.
   draft.representative.dob = '1986-04-12'
   draft.representative.ssnLast4 = '4821'
-  draft.attestations.owners = true
+  draft.attestations = { owners: true, directors: true, executives: true }
+  // The payout account follows the registration country, as the wizard insists.
+  const country = draft.country
+  const au = country === 'AU'
   draft.payout = {
-    holderName: draft.business.legalName || `${ctx.accountName} LLC`, bankName: 'Mercury Bank', last4: '4417',
-    routingNumber: '021000021', currency: 'USD', country: 'US', holderType: 'company',
+    holderName: draft.business.legalName || `${ctx.accountName} LLC`, bankName: au ? 'Commonwealth Bank' : 'Mercury Bank', last4: '4417',
+    routingNumber: au ? '062000' : '021000021', currency: currencyFor(country), country, holderType: 'company',
   }
   acceptTerms(state, { userAgent: FIXTURE_USER_AGENT }, env(at, ctx))
 }
@@ -339,6 +352,8 @@ interface HistoryOptions {
   payoutAges?: number[]
   /** No payment is recorded after this time — payments were paused. */
   until?: number
+  /** Record the seed orders in this currency instead of theirs (an AUD store's seed orders are priced in USD). */
+  currency?: string
 }
 
 /**
@@ -356,7 +371,7 @@ function recordHistory(state: MaropayAccountState, ctx: ScenarioContext, channel
     while (payoutAges.length && payoutAges[0]! > age) runPayout(state, env(ctx.now - payoutAges.shift()! * DAY_MS, ctx))
     const outcome = OUTCOMES[ref.paymentStatus]
     if (!outcome) continue
-    const method = provider === 'maropay' ? maropayMethod(ref.paymentMethod) : { id: ref.paymentMethod === 'PayPal' ? 'paypal_wallet' : 'card', label: ref.paymentMethod }
+    const method = provider === 'maropay' ? maropayMethod(ref.paymentMethod) : { id: ref.paymentMethod === 'PayPal' ? 'paypal' : 'card', label: ref.paymentMethod }
     recordHistoricalPayment(state, {
       id: ref.paymentReference,
       channelId,
@@ -365,7 +380,7 @@ function recordHistory(state: MaropayAccountState, ctx: ScenarioContext, channel
       provider,
       methodId: method.id,
       methodLabel: method.label,
-      amount: fromDecimal(ref.total, ref.currency),
+      amount: fromDecimal(ref.total, options.currency ?? ref.currency),
       outcome,
       customer: ref.customer,
     }, env(orderTime(ref.date, ctx.now), ctx))
@@ -375,31 +390,44 @@ function recordHistory(state: MaropayAccountState, ctx: ScenarioContext, channel
   if (oldest && state.payouts.length > 1) markPayoutPaid(state, oldest.id, env(ctx.now - 6 * DAY_MS, ctx))
 }
 
-const PAYPAL_PREVIOUS = (since: number): PreviousProvider => ({
-  provider: 'paypal',
-  methods: [
-    { label: 'Cards via PayPal', maropayMethodId: 'card', rate: { percentBps: 349, fixedMinor: 49, label: '3.49% + 49¢' }, keepSeparately: false },
-    { label: 'PayPal Checkout', maropayMethodId: null, rate: { percentBps: 349, fixedMinor: 49, label: '3.49% + 49¢' }, keepSeparately: true },
-  ],
-  captureMode: 'automatic',
-  savedCredentials: null,
-  connectedSince: isoAt(since),
-})
+// ── The merchant's own providers ──────────────────────────────────────────
 
-const STRIPE_PREVIOUS = (since: number): PreviousProvider => ({
-  provider: 'stripe-legacy',
-  methods: [
-    { label: 'Cards via Stripe', maropayMethodId: 'card', rate: { percentBps: 290, fixedMinor: 30, label: '2.9% + 30¢' }, keepSeparately: false },
-    { label: 'Apple Pay via Stripe', maropayMethodId: 'apple_pay', rate: { percentBps: 290, fixedMinor: 30, label: '2.9% + 30¢' }, keepSeparately: false },
-    { label: 'Google Pay via Stripe', maropayMethodId: 'google_pay', rate: { percentBps: 290, fixedMinor: 30, label: '2.9% + 30¢' }, keepSeparately: false },
-  ],
-  captureMode: 'manual',
-  savedCredentials: { count: 38, blocking: false },
-  connectedSince: isoAt(since),
-})
+/** The merchant's own connection, as the spec describes it, connected `since`. */
+function own(kind: OwnProviderKind, since: number): ProviderConnection {
+  return connectionFor(kind, isoAt(since), 'active')
+}
+
+/** A Stripe account that has taken the store's cards and wallets, with its capture setting and saved cards. */
+function stripe(since: number, options: { captureMode?: CaptureMode; savedCards?: number } = {}): ProviderConnection {
+  return {
+    ...own('stripe', since),
+    captureMode: options.captureMode ?? 'automatic',
+    savedCredentials: options.savedCards ? { count: options.savedCards, blocking: false } : null,
+  }
+}
+
+/** The merchant's own PayPal account: PayPal Checkout, and cards through PayPal when it has been the card processor. */
+function paypal(since: number, options: { cards?: boolean } = {}): ProviderConnection {
+  const connection = own('paypal', since)
+  if (options.cards === false) connection.methods = connection.methods.filter((m) => m.methodId !== 'card')
+  return connection
+}
+
+interface StoreProviders {
+  connections: ProviderConnection[]
+  /** Who takes cards before Maropay; defaults to the first gateway that offers them. */
+  cardProcessor?: ProviderKind | null
+}
+
+function setStoreProviders(state: MaropayAccountState, channelId: string, providers: StoreProviders): void {
+  const setup = { channelId, connections: providers.connections, cardProcessor: null as ProviderKind | null }
+  setup.cardProcessor = providers.cardProcessor === undefined ? cardGateway(setup)?.kind ?? null : providers.cardProcessor
+  state.storeProviders = [...state.storeProviders.filter((s) => s.channelId !== channelId), setup]
+}
 
 interface LiveOptions {
-  previous?: PreviousProvider | null
+  /** The store's own providers before Maropay; by default the merchant's PayPal Checkout and bank deposit, so coexistence is visible. */
+  providers?: StoreProviders
   prefill?: Partial<OnboardingDraft>
   /** Runs after activation and before the payment history; what it returns can cut the history short. */
   beforeHistory?: (state: MaropayAccountState) => HistoryOptions
@@ -412,13 +440,43 @@ function baseLive(ctx: ScenarioContext, options: LiveOptions = {}): MaropayAccou
   const start = ctx.now - 60 * DAY_MS
   verified(state, ctx, start, false, options.prefill)
   if (!primary) return state
-  const binding = bindingFor(state, primary.id)!
-  binding.previousProvider = options.previous ?? null
+  setStoreProviders(state, primary.id, options.providers ?? { connections: [paypal(start - 300 * DAY_MS, { cards: false }), own('bank_deposit', start - 300 * DAY_MS)] })
   activate(state, ctx, primary, start)
   recordHistory(state, ctx, primary.id, 'maropay', options.beforeHistory?.(state))
   // An established merchant has long since seen the first-payment and first-payout moments.
   state.milestones.dismissed = ['first_payment', 'first_payout']
   return state
+}
+
+/** An Australian company's details — the account settles in AUD, so the catalogue, prices and transactions read A$. */
+function prefillAU(ctx: ScenarioContext): Partial<OnboardingDraft> {
+  const base = prefillFor(ctx)
+  const trading = base.business?.tradingName ?? 'Atlas Outfitters'
+  return {
+    ...base,
+    country: 'AU',
+    business: {
+      ...base.business!,
+      legalName: `${trading} Pty Ltd`,
+      taxId: '51824753556',
+      registrationNumber: '824753556',
+      phone: '+61 2 9876 5432',
+      address: { line1: '12 Oxford Street', city: 'Sydney', region: 'NSW', postalCode: '2000', country: 'AU' },
+    },
+    representative: {
+      ...base.representative!,
+      ...emptyPerson(REPRESENTATIVE_ID, 'AU'),
+      firstName: 'Jordan',
+      lastName: 'Lee',
+      title: 'Director',
+      email: base.representative!.email,
+      phone: '+61 412 555 019',
+      address: { line1: '8 Bourke Street', city: 'Sydney', region: 'NSW', postalCode: '2010', country: 'AU' },
+      roles: { owner: true, director: true, executive: true },
+      percentOwnership: 100,
+    },
+    publicDetails: { ...base.publicDetails!, supportPhone: '+61 2 9876 5432' },
+  }
 }
 
 // ── Scenarios ─────────────────────────────────────────────────────────────
@@ -455,17 +513,16 @@ export function buildScenario(key: MaropayScenarioKey, ctx: ScenarioContext): Ma
     case 'm04': {
       submitted(state, ctx, now - 3 * DAY_MS)
       simulateReviewOutcome(state, 'rejected', env(now - DAY_MS, ctx), { reason: 'terms_of_service' })
-      if (primary) bindingFor(state, primary.id)!.previousProvider = PAYPAL_PREVIOUS(now - 400 * DAY_MS)
+      if (primary) setStoreProviders(state, primary.id, { connections: [paypal(now - 400 * DAY_MS)] })
       break
     }
 
     case 'm05': {
       verified(state, ctx, now - 2 * DAY_MS, true)
       if (primary) {
-        const binding = bindingFor(state, primary.id)!
-        binding.previousProvider = STRIPE_PREVIOUS(now - 700 * DAY_MS)
-        binding.captureMode = 'manual'
-        recordHistory(state, ctx, primary.id, 'stripe-legacy')
+        setStoreProviders(state, primary.id, { connections: [stripe(now - 700 * DAY_MS, { captureMode: 'manual', savedCards: 38 }), own('bank_deposit', now - 700 * DAY_MS)] })
+        bindingFor(state, primary.id)!.captureMode = 'manual'
+        recordHistory(state, ctx, primary.id, 'stripe')
       }
       break
     }
@@ -473,7 +530,7 @@ export function buildScenario(key: MaropayScenarioKey, ctx: ScenarioContext): Ma
     case 'm06': {
       verified(state, ctx, now - 2 * DAY_MS)
       if (primary) {
-        bindingFor(state, primary.id)!.previousProvider = PAYPAL_PREVIOUS(now - 400 * DAY_MS)
+        setStoreProviders(state, primary.id, { connections: [paypal(now - 400 * DAY_MS)] })
         recordHistory(state, ctx, primary.id, 'paypal')
       }
       break
@@ -534,13 +591,16 @@ export function buildScenario(key: MaropayScenarioKey, ctx: ScenarioContext): Ma
     }
 
     case 'm14':
-      state = baseLive(ctx, { previous: PAYPAL_PREVIOUS(now - 400 * DAY_MS) })
+      // PayPal took cards before Maropay, and takes them back when Maropay stops.
+      state = baseLive(ctx, { providers: { connections: [paypal(now - 400 * DAY_MS), own('bank_deposit', now - 400 * DAY_MS)] } })
       break
 
     case 'm15': {
       const at = now - 2 * DAY_MS
       verified(state, ctx, at)
       if (primary) {
+        // A real gateway, so the Activate dialog offers the choice: Maropay takes cards, or Stripe keeps them.
+        setStoreProviders(state, primary.id, { connections: [stripe(now - 500 * DAY_MS), own('bank_deposit', now - 500 * DAY_MS)] })
         setMethodEnabled(state, primary.id, 'klarna', true, env(at, ctx))
         validateCheckout(state, primary.id, env(at, ctx))
         markImpactReviewed(state, primary.id, env(at, ctx))
@@ -565,6 +625,23 @@ export function buildScenario(key: MaropayScenarioKey, ctx: ScenarioContext): Ma
         },
       })
       break
+
+    case 'm18': {
+      // An Australian store that already takes cards with eWay, plus Afterpay, Zip and two manual methods — ready to
+      // activate, so the dialog's choice (Maropay takes cards, or eWay keeps them) can be tried either way.
+      const at = now - 2 * DAY_MS
+      verified(state, ctx, at, false, prefillAU(ctx))
+      if (primary) {
+        const since = now - 900 * DAY_MS
+        setStoreProviders(state, primary.id, {
+          connections: [own('eway', since), own('afterpay', since), own('zip', since), own('bank_deposit', since), own('cod', since)],
+        })
+        recordHistory(state, ctx, primary.id, 'eway', { currency: 'AUD' })
+        validateCheckout(state, primary.id, env(at, ctx))
+        markImpactReviewed(state, primary.id, env(at, ctx))
+      }
+      break
+    }
   }
 
   state.scenarioKey = key

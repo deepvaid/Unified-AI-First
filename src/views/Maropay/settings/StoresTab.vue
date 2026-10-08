@@ -11,6 +11,7 @@ import MpStatusChip from '@/components/MpStatusChip.vue'
 import { useToast } from '@/composables/useToast'
 import { useMaropayStore } from '@/stores/useMaropay'
 import { PROVIDER_LABELS, STORE_ACTIVATION_LABELS } from '@/maropay/model'
+import { cardGateway } from '@/maropay/providers'
 import type { MaropayError } from '@/maropay/model'
 import { formatDay, joinList, storePaymentsTarget } from '@/maropay/readiness'
 
@@ -28,7 +29,8 @@ const rows = computed(() => maropay.bindings
   .map((binding) => {
     const state = maropay.storeStateFor(binding.channelId) ?? 'inactive'
     const methods = joinList(maropay.checkoutMethodsFor(binding.channelId).map((m) => m.label))
-    const previous = binding.previousProvider ? PROVIDER_LABELS[binding.previousProvider.provider] : null
+    const gateway = cardGateway(maropay.storeProvidersFor(binding.channelId))
+    const previous = gateway ? PROVIDER_LABELS[gateway.kind] : null
     let note: string
     if (state === 'live') note = `Maropay since ${formatDay(binding.activatedAt ?? binding.linkedAt)}${methods ? ` · ${methods}` : ''}`
     else if (previous) note = `Checkout uses ${previous} until you activate Maropay`

@@ -21,6 +21,7 @@ import {
   DEFAULT_PAYOUT_SCHEDULE,
   METHOD_DECLINE_COPY,
   MOCK_CLIENT_IP,
+  PAYMENT_STATUS_LABELS,
   PAYMENT_STATUS_RANK,
   PAY_BUTTON_LABELS,
   PROVIDER_LABELS,
@@ -81,15 +82,30 @@ import {
   canSubmitEvidence,
   canVoid,
   channelProblem,
-  checkoutMethods,
   closureChecks,
   deriveCapabilities,
   formatDay,
   isSupportedCountry,
   isThresholdTask,
+  joinList,
+  maropayOfferedMethods,
   settledStatus,
 } from '../../maropay/readiness.ts'
 import type { ChannelFacts } from '../../maropay/readiness.ts'
+import {
+  cardGateway,
+  connectionFor,
+  connectionOf,
+  ensureStoreProviders,
+  isManualKind,
+  isOwnProviderKind,
+  methodFacts,
+  ownMethodIds,
+  providerLabel,
+  storeProvidersFor,
+} from '../../maropay/providers.ts'
+import type { ManualMethodSettings, OwnProviderKind, ProviderStatus, StoreProviderSetup } from '../../maropay/providers.ts'
+import { resolveShopperMethods } from '../../maropay/storefront.ts'
 import { EDITABLE_DRAFT_FIELDS, bankAccountErrors, descriptorIssue, digitsOnly, isEmail, submissionIssues } from '../../maropay/onboarding.ts'
 import type { BankAccountInput, EditableDraftField, OnboardingPatch } from '../../maropay/onboarding.ts'
 import { MOCK_ERRORS, providedKeys, requestSubject, requestSubjectName, requirementForm, requirementLabel, rulesForState } from '../../maropay/requirements.ts'
@@ -187,7 +203,6 @@ export function newBinding(state: MaropayAccountState, channelId: string, now: n
     activation: 'inactive',
     enabledMethodIds: [...state.defaultMethodIds],
     captureMode,
-    previousProvider: null,
     checkoutValidation: { status: 'not_run', at: null, failureReason: null },
     impactReviewedAt: null,
     linkedAt: isoAt(now),
@@ -635,6 +650,11 @@ export function linkStore(state: MaropayAccountState, channelId: string, env: Ad
 
 const WALLETS_ON_CARD = ['apple_pay', 'google_pay']
 
+/** Whether Maropay takes this store's cards today, as `maropayOfferedMethods` wants to know it. */
+function maropayCardsVia(setup: StoreProviderSetup): 'maropay' | 'existing' {
+  return setup.cardProcessor === 'maropay' ? 'maropay' : 'existing'
+}
+
 /** Any change to what checkout offers invalidates the last test and the impact review. */
 function resetActivationChecks(binding: StoreBinding): void {
   binding.checkoutValidation = { status: 'not_run', at: null, failureReason: null }
@@ -677,7 +697,8 @@ export function setMethodEnabled(state: MaropayAccountState, channelId: string, 
     // Turning off cards takes the wallets that run on them too.
     const dropping = methodId === 'card' ? ['card', ...WALLETS_ON_CARD] : [methodId]
     const kept = binding.enabledMethodIds.filter((id) => !dropping.includes(id))
-    if (binding.activation === 'live' && checkoutMethods(state, { ...binding, enabledMethodIds: kept }).length === 0) {
+    const setup = storeProvidersFor(state, channelId)
+    if (binding.activation === 'live' && maropayOfferedMethods(state, { ...binding, enabledMethodIds: kept }, setup, maropayCardsVia(setup)).length === 0) {
       return fail('invalid_input', 'A live store needs at least one ready payment method.')
     }
     binding.enabledMethodIds = kept
@@ -731,15 +752,17 @@ export function updateCheckoutOptions(state: MaropayAccountState, channelId: str
   if (!allowed(env, 'manage_methods', channelId)) return denied('Only the business owner can change checkout options.')
   const binding = findBinding(state, channelId)
   if (!binding) return fail('not_found', 'That store isn’t linked to Maropay.')
-  const label = (id: string) => state.methods.find((m) => m.id === id)?.label ?? id
+  const label = (id: string) => methodFacts(state, id)?.label ?? id
+  // The order and default span every provider on the store: Maropay's methods and the merchant's own.
+  const arrangeable = new Set([...binding.enabledMethodIds, ...ownMethodIds(storeProvidersFor(state, channelId))])
   if (patch.payButtonLabel !== undefined && !(patch.payButtonLabel in PAY_BUTTON_LABELS)) return fail('invalid_input', 'Choose one of the pay button labels.')
   if (patch.methodOrder !== undefined) {
     const order = patch.methodOrder
-    if (new Set(order).size !== order.length || order.some((id) => !binding.enabledMethodIds.includes(id))) {
+    if (new Set(order).size !== order.length || order.some((id) => !arrangeable.has(id))) {
       return fail('invalid_input', 'The method order can only list methods that are on for this store, once each.')
     }
   }
-  if (patch.defaultMethodId != null && !binding.enabledMethodIds.includes(patch.defaultMethodId)) {
+  if (patch.defaultMethodId != null && !arrangeable.has(patch.defaultMethodId)) {
     return fail('invalid_input', `${label(patch.defaultMethodId)} isn’t on for this store, so it can’t be the default.`)
   }
   const changes: string[] = []
@@ -769,7 +792,7 @@ export function validateCheckout(state: MaropayAccountState, channelId: string, 
   const binding = findBinding(state, channelId)
   if (!binding) return fail('not_found', 'That store isn’t linked to Maropay.')
   const at = isoAt(env.now)
-  if (!checkoutMethods(state, binding).length) {
+  if (!maropayOfferedMethods(state, binding, storeProvidersFor(state, channelId), 'maropay').length) {
     binding.checkoutValidation = { status: 'failed', at, failureReason: 'No payment method is ready, so checkout had nothing to offer.' }
   } else if (env.failures.checkoutValidationFails) {
     binding.checkoutValidation = { status: 'failed', at, failureReason: 'The test payment didn’t complete: checkout returned an error at the payment step.' }
@@ -788,7 +811,15 @@ export function markImpactReviewed(state: MaropayAccountState, channelId: string
   return ok(binding)
 }
 
-export function activateStore(state: MaropayAccountState, channelId: string, channel: ChannelFacts | null, env: AdapterEnv): Result<StoreBinding> {
+export interface ActivateStoreOptions {
+  /**
+   * The Activate dialog's choice: Maropay takes cards (and the wallets that ride on them) from the
+   * store's gateway. On by default, and forced on when the store has no gateway.
+   */
+  takeCards?: boolean
+}
+
+export function activateStore(state: MaropayAccountState, channelId: string, channel: ChannelFacts | null, env: AdapterEnv, options: ActivateStoreOptions = {}): Result<StoreBinding> {
   if (!allowed(env, 'activate_store', channelId)) return denied('Only the business owner can activate Maropay on a store.')
   const binding = findBinding(state, channelId)
   if (!binding) return fail('not_found', 'That store isn’t linked to Maropay.')
@@ -796,13 +827,27 @@ export function activateStore(state: MaropayAccountState, channelId: string, cha
   if (state.account?.eligibility === 'unsupported') return fail('unsupported_country', 'Maropay isn’t available for this business.')
   const checklist = activationChecklist(state, binding, channel, env.now)
   if (!checklist.ok) return fail('requirement_pending', 'Finish the activation checklist first.')
+  const current = storeProvidersFor(state, channelId)
+  const gateway = cardGateway(current)
+  const via = gateway ? providerLabel(gateway.kind) : null
+  const takeCards = gateway ? options.takeCards ?? true : true
+  const added = maropayOfferedMethods(state, binding, current, takeCards ? 'maropay' : 'existing')
+  if (!added.length) {
+    return fail('invalid_input', via
+      ? `Maropay would add nothing while ${via} keeps cards — let Maropay take cards, or turn on a method ${via} doesn’t offer.`
+      : 'Turn on at least one payment method before you activate.')
+  }
   binding.activation = 'live'
   binding.activatedAt = isoAt(env.now)
   binding.deactivatedAt = null
   binding.activationNoticeDismissedAt = null
+  const setup = ensureStoreProviders(state, channelId)
+  if (takeCards) setup.cardProcessor = 'maropay'
   retireActivationTasks(state, env, channelId)
-  const replaced = binding.previousProvider ? ` — replaces ${PROVIDER_LABELS[binding.previousProvider.provider]} for new checkouts` : ''
-  log(state, env, 'store', `Activated Maropay on ${channel?.name ?? 'a store'}${replaced}`, channelId)
+  const name = channel?.name ?? 'a store'
+  log(state, env, 'store', takeCards
+    ? `Activated Maropay on ${name}${via ? ` — takes cards from ${via} for new checkouts` : ''}`
+    : `Activated Maropay on ${name} beside ${via} — ${via} keeps cards; Maropay adds ${joinList(added.map((m) => m.label))}`, channelId)
   return ok(binding)
 }
 
@@ -815,9 +860,77 @@ export function deactivateStore(state: MaropayAccountState, channelId: string, e
   binding.activation = 'inactive'
   binding.deactivatedAt = isoAt(env.now)
   binding.impactReviewedAt = null
-  const fallback = binding.previousProvider ? PROVIDER_LABELS[binding.previousProvider.provider] : 'no online payment provider'
-  log(state, env, 'store', `Stopped Maropay for new checkouts — they now use ${fallback}`, channelId)
+  // Cards go back to the merchant's own gateway, when one is still connected.
+  const setup = ensureStoreProviders(state, channelId)
+  if (setup.cardProcessor === 'maropay') setup.cardProcessor = cardGateway(setup)?.kind ?? null
+  const fallback = setup.cardProcessor ? `cards go back to ${providerLabel(setup.cardProcessor)}` : 'no card processor is connected'
+  log(state, env, 'store', `Stopped Maropay for new checkouts — ${fallback}`, channelId)
   return ok(binding)
+}
+
+// ── The store's own providers ─────────────────────────────────────────────
+// PayPal, Stripe, eWay, Afterpay, Zip and the manual methods a merchant adds
+// themselves. Connecting is a stub: a provider starts "setup incomplete" and the
+// Connect button marks it active, where production would sign in with the provider.
+
+export function connectProvider(state: MaropayAccountState, channelId: string, kind: OwnProviderKind, env: AdapterEnv): Result<StoreProviderSetup> {
+  if (!allowed(env, 'manage_methods', channelId)) return denied('Only the business owner can add payment providers.')
+  if (!isOwnProviderKind(kind)) return fail('invalid_input', 'That provider isn’t available here.')
+  if (connectionOf(storeProvidersFor(state, channelId), kind)) return fail('invalid_input', `${providerLabel(kind)} is already on this store.`)
+  const setup = ensureStoreProviders(state, channelId)
+  const manual = isManualKind(kind)
+  const status: ProviderStatus = manual ? 'active' : 'setup_incomplete'
+  setup.connections.push(connectionFor(kind, isoAt(env.now), status))
+  log(state, env, 'methods', manual ? `Added ${providerLabel(kind)}` : `Connected ${providerLabel(kind)} — setup still to finish`, channelId)
+  return ok(setup)
+}
+
+/** Switch a provider on or off at checkout. The card processor follows: switching it off hands cards to the next gateway, or to nobody. */
+export function setProviderStatus(state: MaropayAccountState, channelId: string, kind: OwnProviderKind, status: 'active' | 'inactive', env: AdapterEnv): Result<StoreProviderSetup> {
+  if (!allowed(env, 'manage_methods', channelId)) return denied('Only the business owner can change payment providers.')
+  const current = connectionOf(storeProvidersFor(state, channelId), kind)
+  if (!current) return fail('not_found', `${providerLabel(kind)} isn’t on this store.`)
+  if (current.status === status) return ok(storeProvidersFor(state, channelId))
+  const setup = ensureStoreProviders(state, channelId)
+  const connection = connectionOf(setup, kind)!
+  const was = connection.status
+  connection.status = status
+  const offersCards = connection.methods.some((m) => m.methodId === 'card')
+  if (status === 'inactive' && setup.cardProcessor === kind) setup.cardProcessor = cardGateway(setup)?.kind ?? null
+  if (status === 'active' && setup.cardProcessor === null && offersCards) setup.cardProcessor = kind
+  log(state, env, 'methods', status === 'active'
+    ? `${was === 'setup_incomplete' ? 'Connected' : 'Turned on'} ${providerLabel(kind)}`
+    : `Turned off ${providerLabel(kind)}`, channelId)
+  return ok(setup)
+}
+
+export function removeProvider(state: MaropayAccountState, channelId: string, kind: OwnProviderKind, env: AdapterEnv): Result<StoreProviderSetup> {
+  if (!allowed(env, 'manage_methods', channelId)) return denied('Only the business owner can remove payment providers.')
+  if (!connectionOf(storeProvidersFor(state, channelId), kind)) return fail('not_found', `${providerLabel(kind)} isn’t on this store.`)
+  const setup = ensureStoreProviders(state, channelId)
+  setup.connections = setup.connections.filter((c) => c.kind !== kind)
+  if (setup.cardProcessor === kind) setup.cardProcessor = cardGateway(setup)?.kind ?? null
+  log(state, env, 'methods', `Removed ${providerLabel(kind)} from the store`, channelId)
+  return ok(setup)
+}
+
+/** What a manual method says to shoppers. Every field is optional; only what's passed changes. */
+export function updateManualMethod(state: MaropayAccountState, channelId: string, kind: OwnProviderKind, fields: Partial<ManualMethodSettings>, env: AdapterEnv): Result<StoreProviderSetup> {
+  if (!allowed(env, 'manage_methods', channelId)) return denied('Only the business owner can change payment providers.')
+  if (!isManualKind(kind)) return fail('invalid_input', 'Only manual payment methods have checkout wording to edit.')
+  const current = connectionOf(storeProvidersFor(state, channelId), kind)
+  if (!current?.manual) return fail('not_found', `${providerLabel(kind)} isn’t on this store.`)
+  const next: ManualMethodSettings = {
+    displayName: (fields.displayName ?? current.manual.displayName).trim(),
+    checkoutDescription: (fields.checkoutDescription ?? current.manual.checkoutDescription).trim(),
+    paymentInstructions: (fields.paymentInstructions ?? current.manual.paymentInstructions).trim(),
+  }
+  if (!next.displayName) return fail('invalid_input', 'Give the method a name shoppers will see at checkout.')
+  if (JSON.stringify(next) === JSON.stringify(current.manual)) return ok(storeProvidersFor(state, channelId))
+  const setup = ensureStoreProviders(state, channelId)
+  connectionOf(setup, kind)!.manual = next
+  log(state, env, 'methods', `Updated what ${providerLabel(kind)} says at checkout`, channelId)
+  return ok(setup)
 }
 
 /** Stops Maropay on every live store at once — routing only, exactly like deactivateStore. */
@@ -850,16 +963,23 @@ const CARD_LABEL = 'Visa •••• 4242'
 const MAROPAY_ORDER_BASE = 900_000
 const MAROPAY_ORDER_NUMBER_BASE = 20_000
 
+/**
+ * Opens a checkout through whichever provider offers the chosen method on this store — Maropay,
+ * one of the merchant's own providers, or a manual method. The offer decides, so the shopper's
+ * page and the "server" can't disagree.
+ */
 export function createCheckoutSession(state: MaropayAccountState, input: CheckoutInput, env: AdapterEnv): Result<CheckoutSession> {
-  const binding = findBinding(state, input.channelId)
-  if (!binding || binding.activation !== 'live') {
-    const fallback = binding?.previousProvider ? PROVIDER_LABELS[binding.previousProvider.provider] : 'another provider'
-    return fail('store_not_live', `Maropay isn’t live on this store, so checkout uses ${fallback}.`)
-  }
-  if (deriveCapabilities(state, env.now).payments !== 'enabled') return fail('requirement_pending', 'Payments are restricted on this account.')
-  if (!checkoutMethods(state, binding).some((m) => m.id === input.methodId)) {
+  const method = resolveShopperMethods(state, input.channelId).find((m) => m.id === input.methodId)
+  if (!method) {
+    const binding = findBinding(state, input.channelId)
+    if (binding && binding.activation !== 'live' && binding.enabledMethodIds.includes(input.methodId)) {
+      const gateway = cardGateway(storeProvidersFor(state, input.channelId))
+      const label = methodFacts(state, input.methodId)?.label ?? 'That method'
+      return fail('store_not_live', `Maropay isn’t live on this store, so ${label} isn’t available yet — checkout uses ${gateway ? providerLabel(gateway.kind) : 'the store’s other providers'} for now.`)
+    }
     return fail('method_unavailable', 'That payment method isn’t offered at checkout on this store.')
   }
+  if (method.providerId === 'maropay' && deriveCapabilities(state, env.now).payments !== 'enabled') return fail('requirement_pending', 'Payments are restricted on this account.')
   if (!isPositive(input.amount)) return fail('invalid_amount', 'Checkout needs an amount greater than zero.')
   if (!input.lineItems.length || input.lineItems.some((l) => l.qty < 1)) return fail('invalid_input', 'Checkout needs at least one item.')
   const session: CheckoutSession = {
@@ -867,6 +987,8 @@ export function createCheckoutSession(state: MaropayAccountState, input: Checkou
     channelId: input.channelId,
     amount: input.amount,
     methodId: input.methodId,
+    providerId: method.providerId,
+    methodLabel: method.label,
     flow: input.flow,
     state: 'open',
     paymentId: null,
@@ -880,8 +1002,12 @@ export function createCheckoutSession(state: MaropayAccountState, input: Checkou
 }
 
 function sessionPayment(state: MaropayAccountState, session: CheckoutSession, status: PaymentStatus, env: AdapterEnv, failure: Payment['failure'] = null): Payment {
-  const binding = findBinding(state, session.channelId)!
-  const method = state.methods.find((m) => m.id === session.methodId)!
+  const ours = session.providerId === 'maropay'
+  const binding = findBinding(state, session.channelId)
+  // Maropay follows the store's capture setting; a merchant's gateway follows its own, and everything else captures at once.
+  const connection = ours ? null : connectionOf(storeProvidersFor(state, session.channelId), session.providerId)
+  const captureMode: CaptureMode = ours ? binding?.captureMode ?? 'automatic' : connection?.captureMode ?? 'automatic'
+  const facts = methodFacts(state, session.methodId)
   const n = nextNumber(state, 'checkout_payment')
   const at = isoAt(env.now)
   const payment: Payment = {
@@ -890,13 +1016,13 @@ function sessionPayment(state: MaropayAccountState, session: CheckoutSession, st
     channelId: session.channelId,
     orderId: null,
     orderNumber: null,
-    provider: 'maropay',
-    processorRef: `pi_mp${state.accountId}_${n}`,
-    methodId: method.id,
-    methodLabel: method.id === 'card' ? CARD_LABEL : method.label,
+    provider: session.providerId,
+    processorRef: ours ? `pi_mp${state.accountId}_${n}` : `${session.providerId}_${state.accountId}_${n}`,
+    methodId: session.methodId,
+    methodLabel: session.methodId === 'card' ? CARD_LABEL : session.methodLabel,
     amount: session.amount,
     status,
-    captureMode: binding.captureMode,
+    captureMode,
     captures: [],
     refunds: [],
     disputeId: null,
@@ -913,7 +1039,7 @@ function sessionPayment(state: MaropayAccountState, session: CheckoutSession, st
   }
   state.payments.unshift(payment)
   session.paymentId = payment.id
-  event(state, payment, env, 'created', `Checkout started on ${method.label}`)
+  event(state, payment, env, 'created', `Checkout started on ${facts?.label ?? session.methodLabel}${ours ? '' : ` through ${providerLabel(session.providerId)}`}`)
   return payment
 }
 
@@ -948,15 +1074,14 @@ function recordCapture(state: MaropayAccountState, payment: Payment, key: string
 
 /** Captured or authorised, per the store's capture setting — plus the order that now exists. */
 function succeed(state: MaropayAccountState, session: CheckoutSession, env: AdapterEnv): CheckoutStep {
-  const binding = findBinding(state, session.channelId)!
   const payment = sessionPayment(state, session, 'authorised', env)
   const order = orderFor(state, session, payment, env)
-  if (binding.captureMode === 'automatic') {
+  if (payment.captureMode === 'automatic') {
     recordCapture(state, payment, session.id, env)
     event(state, payment, env, 'captured', `Payment captured — ${payment.methodLabel}`)
   } else {
     event(state, payment, env, 'authorised', `Payment authorised — capture it from the order within 7 days`)
-    if (!state.milestones.firstPaymentId) state.milestones.firstPaymentId = payment.id
+    if (payment.provider === 'maropay' && !state.milestones.firstPaymentId) state.milestones.firstPaymentId = payment.id
   }
   session.state = 'complete'
   return { session, payment, createdOrder: order }
@@ -1018,7 +1143,41 @@ export function confirmCheckoutSession(state: MaropayAccountState, sessionId: st
       session.state = 'processing'
       return ok({ session, payment, createdOrder: order })
     }
+    case 'manual': {
+      // Paid outside the store: the order is placed now, and the merchant records the money when it arrives.
+      const payment = sessionPayment(state, session, 'processing', env)
+      payment.expectedResolutionAt = null
+      const order = orderFor(state, session, payment, env)
+      event(state, payment, env, 'processing', `Awaiting payment — ${payment.methodLabel}. Record it from the order once it arrives.`)
+      session.state = 'processing'
+      return ok({ session, payment, createdOrder: order })
+    }
   }
+}
+
+/**
+ * The merchant records a manual payment's outcome: the money arrived (captured — no fee, nothing
+ * moves in the Maropay balance) or it never did (failed). Idempotent by key, like a capture.
+ */
+export function markManualPayment(state: MaropayAccountState, paymentId: string, outcome: 'received' | 'not_received', key: string, env: AdapterEnv): Result<Payment> {
+  const payment = findPayment(state, paymentId)
+  if (!payment) return fail('not_found', 'That payment doesn’t exist on this account.')
+  if (!allowed(env, 'capture', payment.channelId)) return denied('You don’t have permission to record payments on this store.')
+  if (!isManualKind(payment.provider)) return fail('stale_state', 'Only payments made outside the store are recorded by hand.')
+  if (payment.captures.some((c) => c.idempotencyKey === key)) return ok(payment)
+  if (payment.status !== 'processing') {
+    return payment.status === 'failed' && outcome === 'not_received' ? ok(payment) : fail('stale_state', `This payment is already ${PAYMENT_STATUS_LABELS[payment.status].toLowerCase()}.`)
+  }
+  if (outcome === 'received') {
+    recordCapture(state, payment, key, env)
+    event(state, payment, env, 'captured', 'Payment received — recorded in Maropost')
+  } else {
+    payment.status = 'failed'
+    payment.failure = { code: 'not_received', message: 'The payment never arrived.' }
+    event(state, payment, env, 'failed', 'Marked as not received — the order can be cancelled')
+  }
+  payment.expectedResolutionAt = null
+  return ok(payment)
 }
 
 /** The shopper finishes (or walks away from) authentication or a redirect. */
@@ -1222,6 +1381,8 @@ export function recordHistoricalPayment(state: MaropayAccountState, input: Histo
     expectedResolutionAt: null,
     failure: null,
     flow: null,
+    // Fixture history through another provider is what "before Maropay" means on Transactions.
+    ...(input.provider === 'maropay' ? {} : { legacy: true }),
     timeline: [],
     appliedEventIds: [],
   }

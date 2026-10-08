@@ -11,19 +11,21 @@
  */
 import { money, zero } from './money.ts'
 import type { Money, RateCard } from './money.ts'
+import { DEFAULT_PROVIDERS_SINCE, PROVIDER_SPECS, cardGateway, isOwnProviderKind } from './providers.ts'
+import type { ManualMethodSettings, ProviderConnection, ProviderMethod, StoreProviderSetup } from './providers.ts'
 
 // ── Vocabulary ────────────────────────────────────────────────────────────
 
-/** Who processed a payment. Anything but 'maropay' is a previous provider kept for history. */
-export type MaropayProvider = 'maropay' | 'stripe-legacy' | 'paypal' | 'manual'
-export type LegacyProvider = Exclude<MaropayProvider, 'maropay'>
+/** Who takes a payment: Maropay, or one of the providers a merchant connects themselves (providers.ts). */
+export type MaropayProvider = 'maropay' | 'stripe' | 'paypal' | 'eway' | 'afterpay' | 'zip' | 'bank_deposit' | 'cheque' | 'cod'
 
 export const PROVIDER_LABELS: Record<MaropayProvider, string> = {
   maropay: 'Maropay',
-  'stripe-legacy': 'Stripe',
-  paypal: 'PayPal',
-  manual: 'Manual payment',
+  ...(Object.fromEntries(Object.entries(PROVIDER_SPECS).map(([kind, spec]) => [kind, spec.label])) as Record<Exclude<MaropayProvider, 'maropay'>, string>),
 }
+
+/** Provider ids a first-phase save used; parseState maps them onto today's. */
+export const LEGACY_PROVIDER_IDS: Record<string, MaropayProvider> = { 'stripe-legacy': 'stripe', manual: 'bank_deposit' }
 
 /** The reviewer-selectable persona the prototype acts as (plan §2 access model). */
 export type MaropayActingRole = 'owner' | 'finance' | 'store_ops'
@@ -130,12 +132,14 @@ export type PayoutCapability = 'inactive' | 'ready' | 'action_required' | 'pause
 export type StoreActivationState = 'inactive' | 'needs_setup' | 'ready_to_activate' | 'live'
 export type MethodStatus = 'available' | 'setup_required' | 'pending_approval' | 'enabled' | 'unavailable'
 
-export type MethodCategory = 'cards' | 'wallets' | 'bnpl' | 'local'
+/** `manual` is paid outside the store (bank deposit, cheque, cash on delivery) — never in Maropay's own catalogue. */
+export type MethodCategory = 'cards' | 'wallets' | 'bnpl' | 'local' | 'manual'
 export const METHOD_CATEGORY_LABELS: Record<MethodCategory, string> = {
   cards: 'Cards',
   wallets: 'Wallets',
   bnpl: 'Buy now, pay later',
   local: 'Bank and local methods',
+  manual: 'Manual payments',
 }
 
 /** Account-level availability of a method (store enablement lives on the binding). */
@@ -147,7 +151,7 @@ export const ONBOARDING_STEPS: OnboardingStepKey[] = ['business', 'terms', 'veri
 
 export type MaropayScenarioKey =
   | 'm01' | 'm02' | 'm03' | 'm04' | 'm05' | 'm06' | 'm07' | 'm08'
-  | 'm09' | 'm10' | 'm11' | 'm12' | 'm13' | 'm14' | 'm15' | 'm16' | 'm17'
+  | 'm09' | 'm10' | 'm11' | 'm12' | 'm13' | 'm14' | 'm15' | 'm16' | 'm17' | 'm18'
 
 // ── Results ───────────────────────────────────────────────────────────────
 
@@ -334,25 +338,11 @@ export interface MaropayAccount {
   closedAt: string | null
 }
 
-export interface PreviousProviderMethod {
-  label: string
-  /** Maropay equivalent, or null when the method has none. */
-  maropayMethodId: string | null
-  rate: RateCard
-  /** Stays connected through the previous provider after the switch. */
-  keepSeparately: boolean
-}
-
-export interface PreviousProvider {
-  provider: LegacyProvider
-  methods: PreviousProviderMethod[]
-  captureMode: CaptureMode
-  /** Saved cards/mandates. `blocking` = they back charges that need a supported migration first. */
-  savedCredentials: { count: number; blocking: boolean } | null
-  connectedSince: string
-}
-
-/** A sales channel linked to the Maropay account. One business, many bindings. */
+/**
+ * A sales channel linked to the Maropay account — Maropay's own connection on
+ * that store. One business, many bindings. The store's other providers live in
+ * `MaropayAccountState.storeProviders` (providers.ts).
+ */
 export interface StoreBinding {
   id: string
   accountId: string
@@ -361,7 +351,6 @@ export interface StoreBinding {
   /** Methods the merchant wants on this store; checkout offers only the available ones. */
   enabledMethodIds: string[]
   captureMode: CaptureMode
-  previousProvider: PreviousProvider | null
   checkoutValidation: { status: 'not_run' | 'passed' | 'failed'; at: string | null; failureReason: string | null }
   impactReviewedAt: string | null
   linkedAt: string
@@ -428,7 +417,8 @@ export type PaymentStatus =
   | 'processing' | 'authorised' | 'captured' | 'partially_refunded'
   | 'refunded' | 'failed' | 'voided' | 'disputed'
 
-export type ShopperFlow = 'success' | 'auth_required' | 'declined' | 'redirect' | 'delayed'
+/** `manual`: the order is placed now and the merchant records the money when it arrives. */
+export type ShopperFlow = 'success' | 'auth_required' | 'declined' | 'redirect' | 'delayed' | 'manual'
 
 export interface Capture {
   id: string
@@ -490,6 +480,8 @@ export interface Payment {
   expectedResolutionAt: string | null
   failure: { code: string; message: string } | null
   flow: ShopperFlow | null
+  /** Taken by another provider before the store used Maropay (fixture history). Present only when true. */
+  legacy?: boolean
   timeline: PaymentEvent[]
   /** Processor event ids already applied — late or duplicated deliveries are ignored. */
   appliedEventIds: string[]
@@ -706,6 +698,10 @@ export interface CheckoutSession {
   channelId: string
   amount: Money
   methodId: string
+  /** Who takes this payment — resolved from the store's offer when the session opens. */
+  providerId: MaropayProvider
+  /** The method as the shopper chose it ("Zip", "Direct bank transfer"), for pages that outlive the offer. */
+  methodLabel: string
   flow: ShopperFlow
   state: 'open' | 'requires_action' | 'redirected' | 'processing' | 'complete' | 'failed'
   paymentId: string | null
@@ -755,6 +751,8 @@ export interface MaropayAccountState {
   terms: CommercialTerms
   onboarding: OnboardingDraft
   bindings: StoreBinding[]
+  /** Each store's own providers and card processor; a store with no record has the default (providers.ts). */
+  storeProviders: StoreProviderSetup[]
   methods: PaymentMethodCatalogEntry[]
   payments: Payment[]
   disputes: Dispute[]
@@ -880,6 +878,7 @@ export function emptyState(accountId: string, now: number, currency = 'USD'): Ma
     terms: illustrativeTerms(currency),
     onboarding: emptyOnboarding(),
     bindings: [],
+    storeProviders: [],
     methods: catalogFor(currency),
     payments: [],
     disputes: [],
@@ -1024,11 +1023,81 @@ function migrateTask(task: ActionTask): ActionTask {
   return task
 }
 
-/** A first-phase session held one product as `lineItem`. */
+/** A first-phase session held one product as `lineItem`, and every session was Maropay's. */
 function migrateSession(session: CheckoutSession & { lineItem?: Omit<CheckoutLineItem, 'qty'> }): CheckoutSession {
-  if (Array.isArray(session.lineItems)) return session
   const { lineItem, ...rest } = session
-  return { ...rest, lineItems: lineItem ? [{ ...lineItem, qty: 1 }] : [] }
+  return {
+    ...rest,
+    providerId: typeof rest.providerId === 'string' ? rest.providerId : 'maropay',
+    methodLabel: typeof rest.methodLabel === 'string' ? rest.methodLabel : rest.methodId,
+    lineItems: Array.isArray(session.lineItems) ? session.lineItems : lineItem ? [{ ...lineItem, qty: 1 }] : [],
+  }
+}
+
+/** Provider ids from a first-phase save, and the "before Maropay" marker those payments carried only implicitly. */
+function migratePayment(p: Payment): Payment {
+  const provider = LEGACY_PROVIDER_IDS[p.provider as string] ?? p.provider
+  const legacy = p.legacy ?? (provider !== 'maropay' && p.flow === null)
+  return {
+    ...p,
+    provider,
+    refunds: Array.isArray(p.refunds) ? p.refunds.map((r) => ({ ...r, provider: LEGACY_PROVIDER_IDS[r.provider as string] ?? r.provider })) : [],
+    orderId: typeof p.orderId === 'number' ? p.orderId : null,
+    ...(legacy ? { legacy: true } : {}),
+  }
+}
+
+/** A saved store setup, with the fields later saves added and unknown providers dropped. */
+function withSetupDefaults(raw: unknown): StoreProviderSetup | null {
+  const r = record(raw)
+  if (!r || typeof r.channelId !== 'string') return null
+  const connections = (Array.isArray(r.connections) ? r.connections : []).flatMap((c): ProviderConnection[] => {
+    const rc = record(c)
+    if (!rc || !isOwnProviderKind(rc.kind)) return []
+    return [{
+      kind: rc.kind,
+      status: rc.status === 'inactive' || rc.status === 'setup_incomplete' ? rc.status : 'active',
+      methods: Array.isArray(rc.methods) ? (rc.methods as ProviderMethod[]) : [],
+      captureMode: rc.captureMode === 'manual' ? 'manual' : 'automatic',
+      savedCredentials: (record(rc.savedCredentials) as ProviderConnection['savedCredentials']) ?? null,
+      connectedSince: typeof rc.connectedSince === 'string' ? rc.connectedSince : DEFAULT_PROVIDERS_SINCE,
+      manual: (record(rc.manual) as ManualMethodSettings | null) ?? null,
+    }]
+  })
+  const setup: StoreProviderSetup = { channelId: r.channelId, connections, cardProcessor: null }
+  // Only a save that predates the pointer gets it derived; an explicit null means nobody takes cards.
+  const pointer = r.cardProcessor
+  setup.cardProcessor = !('cardProcessor' in r)
+    ? cardGateway(setup)?.kind ?? null
+    : pointer === 'maropay' || isOwnProviderKind(pointer) ? pointer : null
+  return setup
+}
+
+/** A first-phase binding carried the store's previous provider; it is one of the store's connections now. */
+function legacySetup(raw: Raw): StoreProviderSetup | null {
+  const prev = record(raw.previousProvider)
+  if (!prev || typeof raw.channelId !== 'string') return null
+  const kind = LEGACY_PROVIDER_IDS[prev.provider as string] ?? prev.provider
+  if (!isOwnProviderKind(kind)) return null
+  const spec = PROVIDER_SPECS[kind]
+  const legacyMethods = Array.isArray(prev.methods) ? (prev.methods as Array<{ label: string; maropayMethodId: string | null; rate: RateCard }>) : []
+  const methods = legacyMethods.flatMap((m): ProviderMethod[] => {
+    const methodId = m.maropayMethodId ?? (/^paypal\b/i.test(m.label) ? 'paypal' : null)
+    return methodId ? [{ methodId, label: m.label, rate: m.rate }] : []
+  })
+  return {
+    channelId: raw.channelId,
+    connections: [{
+      kind,
+      status: 'active',
+      methods: methods.length ? methods : spec.methods.map((m) => ({ ...m })),
+      captureMode: prev.captureMode === 'manual' ? 'manual' : 'automatic',
+      savedCredentials: (record(prev.savedCredentials) as ProviderConnection['savedCredentials']) ?? null,
+      connectedSince: typeof prev.connectedSince === 'string' ? prev.connectedSince : DEFAULT_PROVIDERS_SINCE,
+      manual: spec.manual ? { ...spec.manual } : null,
+    }],
+    cardProcessor: raw.activation === 'live' ? 'maropay' : kind,
+  }
 }
 
 /** Saved methods in catalogue order; methods added to the catalogue since the save (PayPal) join with their fresh availability. */
@@ -1066,6 +1135,14 @@ export function parseState(raw: string | null, accountId: string, now: number): 
   const settleIn = account && account.setup !== 'submitted' && account.currency !== currencyFor(account.country) ? currencyFor(account.country) : null
   if (account && settleIn) account.currency = settleIn
   const terms = { ...base.terms, ...(parsed.terms ?? {}) }
+  // A first-phase binding carried its previous provider; that is one of the store's connections now.
+  const rawBindings = list(parsed.bindings, []) as Array<StoreBinding & { previousProvider?: unknown }>
+  const storeProviders = list(parsed.storeProviders as unknown[] | undefined, []).map(withSetupDefaults).filter((s): s is StoreProviderSetup => s !== null)
+  for (const b of rawBindings) {
+    if (!b.previousProvider || storeProviders.some((s) => s.channelId === b.channelId)) continue
+    const legacy = legacySetup(b as unknown as Raw)
+    if (legacy) storeProviders.push(legacy)
+  }
   return {
     ...base,
     ...parsed,
@@ -1076,7 +1153,7 @@ export function parseState(raw: string | null, accountId: string, now: number): 
     account,
     milestones: { ...base.milestones, ...(parsed.milestones ?? {}) },
     terms: settleIn ? { ...terms, disputeFee: money(terms.disputeFee.amount, settleIn) } : terms,
-    bindings: list(parsed.bindings, []).map((b) => ({
+    bindings: rawBindings.map(({ previousProvider: _legacy, ...b }) => ({
       ...b,
       checkout: { ...defaultCheckoutSettings(), ...(record(b.checkout) ?? {}) },
       methodOrder: Array.isArray(b.methodOrder) ? b.methodOrder : [],
@@ -1084,10 +1161,11 @@ export function parseState(raw: string | null, accountId: string, now: number): 
       methodSettings: record(b.methodSettings) ? (b.methodSettings as Record<string, MethodSettings>) : {},
       activationNoticeDismissedAt: b.activationNoticeDismissedAt ?? null,
     })),
+    storeProviders,
     methods: settleIn
       ? catalogFor(settleIn)
       : migrateMethods(list(parsed.methods, base.methods), base.methods),
-    payments: list(parsed.payments, []).filter((p) => isMoney(p.amount)).map((p) => ({ ...p, orderId: typeof p.orderId === 'number' ? p.orderId : null })),
+    payments: list(parsed.payments, []).filter((p) => isMoney(p.amount)).map(migratePayment),
     disputes: list(parsed.disputes, []),
     payouts: list(parsed.payouts, []).map((po) => ({ ...po, destination: withBankDefaults(po.destination, country) })),
     movements: list(parsed.movements, []).filter((m) => isMoney(m.net)),

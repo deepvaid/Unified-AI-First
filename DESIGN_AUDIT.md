@@ -2087,3 +2087,39 @@ methods and payment-link pages; Stripe hosted checkout; Shopify settings (Mobbin
   SalesChannelDetail tab; 375 has no overflow (the comparison table becomes a list below 640);
   sticky preview capped and internally scrolling at 1440×900; live preview follows methods,
   approvals, express, order, default and pay label.
+
+### G — the providers model and the store's Payments page (2026-10-08)
+
+The owner's correction: Maropay is one payment channel on a store, not the whole of payments — sell it the way Shopify
+sells Shopify Payments. Research first (Mobbin: two generations of Shopify's Settings › Payments, its four-step setup
+and "Update details" page, Squarespace, Wix, Uvodo; help.shopify.com and shopify.com/pricing for the coexistence rule and
+the 2% / 1% / 0.6% / 0.2% third-party fee; galaxy.maropost.com for the real product's provider set), then four owner
+decisions (decisions.md G1–G4).
+
+**Domain (`src/maropay/providers.ts`, 176 tests).** Per-store provider connections with a card-processor pointer; the
+Stripe default for untouched stores; the flat illustrative 1% platform fee rule (never on Maropay or manual methods;
+PayPal waived once Maropay takes cards); `storefrontOffer(state, channelId, …)` merges every active provider into one
+ordered list (cards and wallets from one processor, the merchant's own PayPal/Afterpay win, one order and default across
+providers); `activateStore({ takeCards })`; `markManualPayment`; connect / switch / remove / update ops; `parseState`
+migrates `previousProvider`, `stripe-legacy`/`manual` ids and the `legacy` marker. New marks `stripe`, `eway`, `zip`,
+`bankDeposit`, `cheque`, `cod` (six token pairs, 272/272 enforced). `MpStatusChip` `connection` gains Active / Setup
+incomplete / Inactive. Scenarios: every live store keeps PayPal Checkout and bank deposit beside Maropay; m05 Stripe +
+bank deposit; m06/m14 PayPal with cards; m15 Stripe (the dialog's choice); new **m18** Australian store on eWay,
+Afterpay, Zip, bank deposit and cash on delivery, in AUD.
+
+**Admin.** `StorePayments` is now the providers index (`views/SalesChannels/StorePaymentsPage.vue`): the Maropay card
+(`MaropayProviderCard`, driven by `deriveMaropayCard` — twelve states, no second state machine: account states read the
+overview's instruction), Payment providers and Manual payment methods (`StoreProviderListCard` over `StoreProviderRow`:
+`MpListRow` + `connection` chip + kebab, never a clickable row), a Checkout summary with deep links, the chooser
+(`StoreProviderChooserDrawer`, `MpOptionCard` gallery), the provider and manual drawers, and the remove confirm. Maropay's
+own page for the store moved one level down as `StoreMaropayPage.vue` (`StorePaymentsMaropay`; still
+`MaropayStorePayments` inside Maropay) and gained the `MaropayActivateDialog` (composes `MpDialog`; `MpConfirmDialog`
+has no room for a control), a segmented "Maropay takes cards | Keep {gateway} for cards" preview on the impact card that
+the live preview follows, a hash-aware scroll, and an "Other providers on {store}" card in Maropay's frame. Activation
+and stop copy live once, in `useStoreActivation`. Ripples: the store overview's Online payments row and Apps tab, the
+Maropay overview's shared benefits and store rows, Transactions/Payment detail captions ("Through PayPal" vs "before
+Maropay"), the order page's Provider row and a "Mark as paid" path for manual payments, the Payment Account signpost.
+
+**Not in this check-in (next):** the shopper pages (product page, cart, checkout, manual-instructions confirmation)
+and `StoreCheckoutOptionsCard` over the merged list; the storefront already lists the extra providers from the shared
+offer, with the old not-live placeholder still in place.

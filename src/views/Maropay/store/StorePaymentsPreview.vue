@@ -16,28 +16,32 @@ import StorefrontPaymentPreview from '@/views/Storefront/StorefrontPaymentPrevie
 // it is. The preview is a picture, not a form — it's inert, and a sentence tells
 // screen readers what it shows.
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   channelId: string
   live: boolean
+  /** The Activate dialog's choice, previewed: who takes cards once the store is live. */
+  cardsVia?: 'maropay' | 'existing'
   /** The store's domain, when it has one. */
   domain?: string
   /** A product page of the store, to try the real thing. */
   storefrontHref: string
-}>()
+}>(), {
+  cardsVia: 'maropay',
+})
 
 const maropay = useMaropayStore()
 const themes = useStoreThemesStore()
 const idPrefix = `sf-pv-${useId()}`
 
-const binding = computed(() => maropay.bindingFor(props.channelId))
 /** The sample order the checkout options use for the pay button's words. */
 const sample = computed(() => money(4999, maropay.account?.currency ?? 'USD'))
-const offer = computed(() => storefrontOffer(maropay.state, binding.value ?? null, sample.value, { asIfLive: true }))
+const offer = computed(() => storefrontOffer(maropay.state, props.channelId, sample.value, { asIfLive: true, cardsVia: props.cardsVia }))
 const themeVars = computed(() => storefrontThemeVars(themes.themeForChannel(props.channelId)?.styles))
 const pending = computed(() => maropay.methodsForStore(props.channelId).filter((m) => m.status === 'pending_approval').map((m) => m.label))
+const otherProviders = computed(() => offer.value.providers.some((p) => p.id !== 'maropay'))
 
 const description = computed(() => {
-  if (!props.live) return 'How checkout looks once Maropay is live.'
+  if (!props.live) return otherProviders.value ? 'How checkout looks once Maropay is live — your other providers stay as they are.' : 'How checkout looks once Maropay is live.'
   return props.domain ? `Live on ${props.domain}.` : 'Live at checkout now.'
 })
 
@@ -45,6 +49,7 @@ const summary = computed(() => {
   const o = offer.value
   const chosen = o.methods.find((m) => m.id === o.defaultMethodId) ?? null
   const parts = [`Shoppers can pay with ${joinList(o.methods.map((m) => m.label))}.`]
+  if (o.cardsVia && o.cardsVia !== 'maropay') parts.push(`Cards go through ${o.providerLabel}.`)
   if (o.express.length) parts.push(`${joinList(o.express.map((m) => m.label))} also show as express buttons at the top.`)
   if (chosen) parts.push(`${chosen.label} is selected to start with, and the button reads “${payButtonText(chosen, o.payButton, sample.value)}”.`)
   return parts.join(' ')

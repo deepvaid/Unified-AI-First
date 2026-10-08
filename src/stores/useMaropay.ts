@@ -69,6 +69,7 @@ import {
   deriveCapabilities,
   deriveOverviewInstruction,
   formatDay,
+  maropayOfferedMethods,
   methodStatusForStore,
   migrationImpact,
   nextPayout,
@@ -81,12 +82,16 @@ import {
   storePaymentsTarget,
 } from '@/maropay/readiness'
 import type { ChannelFacts, MaropayTarget, PaymentFilter } from '@/maropay/readiness'
+import { isManualKind, storeProvidersFor as providersOf } from '@/maropay/providers'
+import type { ManualMethodSettings, OwnProviderKind } from '@/maropay/providers'
+import { storefrontOffer } from '@/maropay/storefront'
+import type { StorefrontOfferOptions } from '@/maropay/storefront'
 import type { BankAccountInput, OnboardingPatch } from '@/maropay/onboarding'
 import { deriveRequirements, rulesForState } from '@/maropay/requirements'
 import { MAROPAY_SCENARIOS, buildScenario, eligibleStores, isMaropayScenarioKey, prefillFor } from '@/maropay/scenarios'
 import type { ScenarioChannel, ScenarioContext } from '@/maropay/scenarios'
 import * as adapter from '@/services/maropay/mockAdapter'
-import type { AdapterEnv, CheckoutInput, CheckoutOptionsPatch, CheckoutStep, FailurePlan, ReviewOptions, StepUpChallenge, StepUpToken, TaskAnswer } from '@/services/maropay/mockAdapter'
+import type { ActivateStoreOptions, AdapterEnv, CheckoutInput, CheckoutOptionsPatch, CheckoutStep, FailurePlan, ReviewOptions, StepUpChallenge, StepUpToken, TaskAnswer } from '@/services/maropay/mockAdapter'
 
 export { MAROPAY_SCENARIOS, isMaropayScenarioKey }
 export type { MaropayActingRole, MaropayScenarioKey }
@@ -167,7 +172,9 @@ export const useMaropayStore = defineStore('maropay', () => {
     const amount = formatMoney(p.amount)
     const via = p.provider === 'maropay' ? 'via Maropay' : `through ${PROVIDER_LABELS[p.provider]}`
     switch (p.status) {
-      case 'processing': return `Payment of ${amount} processing ${via} (${p.methodLabel}) — confirmation can take a few days`
+      case 'processing': return isManualKind(p.provider)
+        ? `Order placed — awaiting ${p.methodLabel}`
+        : `Payment of ${amount} processing ${via} (${p.methodLabel}) — confirmation can take a few days`
       case 'authorised': return `Payment of ${amount} authorised ${via} (${p.methodLabel}) — capture within 7 days`
       case 'failed': return `Payment of ${amount} failed — ${p.failure?.message ?? 'the payment did not complete'}`
       case 'voided': return `Payment authorisation cancelled ${via}`
@@ -350,9 +357,25 @@ export const useMaropayStore = defineStore('maropay', () => {
     return binding ? checkoutMethods(state.value, binding) : []
   }
 
-  function migrationImpactFor(channelId: string) {
+  function migrationImpactFor(channelId: string, cardsVia: 'maropay' | 'existing' = 'maropay') {
     const binding = bindingFor(channelId)
-    return binding ? migrationImpact(state.value, binding, channelName(channelId)) : null
+    return binding ? migrationImpact(state.value, binding, channelName(channelId), cardsVia) : null
+  }
+
+  /** The store's own providers and card processor — the default when nothing was ever saved. */
+  function storeProvidersFor(channelId: string) {
+    return providersOf(state.value, channelId)
+  }
+
+  /** What Maropay itself would put in front of shoppers on this store, for either answer to the Activate dialog. */
+  function maropayOfferedFor(channelId: string, cardsVia: 'maropay' | 'existing' = 'maropay'): PaymentMethodCatalogEntry[] {
+    const binding = bindingFor(channelId)
+    return binding ? maropayOfferedMethods(state.value, binding, providersOf(state.value, channelId), cardsVia) : []
+  }
+
+  /** What the store's shoppers see of its payments (every provider at once). */
+  function storefrontOfferFor(channelId: string, amount: Money, options: StorefrontOfferOptions = {}) {
+    return storefrontOffer(state.value, channelId, amount, options)
   }
 
   function paymentById(id: string): Payment | undefined {
@@ -545,11 +568,29 @@ export const useMaropayStore = defineStore('maropay', () => {
     return run((e) => adapter.markImpactReviewed(state.value, channelId, e))
   }
 
-  function activateStore(channelId: string) {
-    return run((e) => adapter.activateStore(state.value, channelId, channelFacts(channelId), e), () => {
+  function activateStore(channelId: string, options: ActivateStoreOptions = {}) {
+    return run((e) => adapter.activateStore(state.value, channelId, channelFacts(channelId), e, options), () => {
       useOnboardingStore().complete('payments')
       notify(`live-${channelId}-${now.value}`, `Maropay is live on ${channelName(channelId)}`, storePaymentsTarget(channelId))
     })
+  }
+
+  // ── The store's own providers ───────────────────────────────────────
+
+  function connectProvider(channelId: string, kind: OwnProviderKind) {
+    return run((e) => adapter.connectProvider(state.value, channelId, kind, e))
+  }
+
+  function setProviderStatus(channelId: string, kind: OwnProviderKind, status: 'active' | 'inactive') {
+    return run((e) => adapter.setProviderStatus(state.value, channelId, kind, status, e))
+  }
+
+  function removeProvider(channelId: string, kind: OwnProviderKind) {
+    return run((e) => adapter.removeProvider(state.value, channelId, kind, e))
+  }
+
+  function updateManualMethod(channelId: string, kind: OwnProviderKind, fields: Partial<ManualMethodSettings>) {
+    return run((e) => adapter.updateManualMethod(state.value, channelId, kind, fields, e))
   }
 
   /** The store page's "you're verified — finish the checklist" notice, dismissed per store and remembered. */
@@ -598,6 +639,11 @@ export const useMaropayStore = defineStore('maropay', () => {
 
   function capture(paymentId: string, key: string) {
     return run((e) => adapter.capturePayment(state.value, paymentId, key, e), (p) => syncOrder(p, paymentLine(p)))
+  }
+
+  /** A manual payment arrived (or never did) — the merchant records it from the order. */
+  function markManualPayment(paymentId: string, outcome: 'received' | 'not_received', key: string) {
+    return run((e) => adapter.markManualPayment(state.value, paymentId, outcome, key, e), (p) => syncOrder(p, paymentLine(p)))
   }
 
   function voidPayment(paymentId: string) {
@@ -805,18 +851,21 @@ export const useMaropayStore = defineStore('maropay', () => {
     history, milestones, actingRole, assignedChannelIds, scenarioKey, discoveryDismissedAt,
     capabilities, dimensions, overview, requirements, rules, partnerDecisions, activationTarget, balances, upcomingPayout, closureChecks, eligibleChannels,
     can, filterPayments, bindingFor, storeStateFor, checklistFor, methodsForStore, checkoutMethodsFor, migrationImpactFor,
+    storeProvidersFor, storefrontOfferFor, maropayOfferedFor,
     paymentById, paymentForOrder, breakdownFor, refundableForOrder, payoutById, movementsForPayout, disputeById, taskById,
-    channelName, routeFor, loadRecords,
+    channelName, channelFacts, routeFor, loadRecords,
     // onboarding
     startSetup, saveStep, acceptTerms, savePayoutDetails, requestOwnerReview, submitSetup, resolveTask, simulateReviewOutcome,
     raiseThresholdRequirement,
     // stores
     linkStore, setMethodEnabled, simulateMethodApproval, setCaptureMode, updateCheckoutOptions, validateCheckout, markImpactReviewed, activateStore, deactivateStore,
     deactivateAllStores, dismissActivationNotice,
+    // the store's own providers
+    connectProvider, setProviderStatus, removeProvider, updateManualMethod,
     // account settings
     requestBusinessChange, simulateBusinessChangeOutcome, updatePublicDetails, closeAccount,
     // checkout and payments
-    startCheckout, confirmCheckout, completeCheckoutAction, capture, voidPayment, refund, refundLinkedOrder, settleRefund, deliverEvent,
+    startCheckout, confirmCheckout, completeCheckoutAction, capture, markManualPayment, voidPayment, refund, refundLinkedOrder, settleRefund, deliverEvent,
     // payouts
     runPayout, markPayoutPaid, failPayout, retryPayout, requestStepUp, confirmStepUp, updateBankAccount,
     // disputes

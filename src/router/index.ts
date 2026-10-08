@@ -260,8 +260,10 @@ const routes: RouteRecordRaw[] = [
       { path: 'assets', name: 'StoreAssets', component: () => import('@/views/SalesChannels/StoreAssets.vue') },
       // Installed themes: the current theme, the library themes on the store, and a way into the builder.
       { path: 'themes', name: 'StoreThemes', component: () => import('@/views/SalesChannels/StoreThemes.vue') },
-      // Maropay for this store: activation checklist, methods, capture and the switch itself.
-      { path: 'payments', name: 'StorePayments', component: () => import('@/views/Maropay/StorePaymentsPage.vue') },
+      // The store's Payments: every provider it has, Maropay sold at the top (the Shopify Payments model).
+      { path: 'payments', name: 'StorePayments', component: () => import('@/views/SalesChannels/StorePaymentsPage.vue') },
+      // Maropay on this store: activation checklist, methods, capture and the switch itself.
+      { path: 'payments/maropay', name: 'StorePaymentsMaropay', component: () => import('@/views/Maropay/StoreMaropayPage.vue') },
     ],
   },
 
@@ -301,8 +303,8 @@ const routes: RouteRecordRaw[] = [
       { path: 'disputes', name: 'MaropayDisputes', component: () => import('@/views/Maropay/MaropayDisputes.vue') },
       { path: 'disputes/:disputeId', name: 'MaropayDisputeDetail', component: () => import('@/views/Maropay/MaropayDisputeDetail.vue') },
       { path: 'settings', name: 'MaropaySettings', component: () => import('@/views/Maropay/MaropaySettings.vue') },
-      // One store's payments inside Maropay's frame — the same page the store editor shows as StorePayments.
-      { path: 'stores/:channelId', name: 'MaropayStorePayments', component: () => import('@/views/Maropay/StorePaymentsPage.vue'), props: { frame: 'maropay' } },
+      // Maropay on one store, inside Maropay's frame — the same page the store editor shows as StorePaymentsMaropay.
+      { path: 'stores/:channelId', name: 'MaropayStorePayments', component: () => import('@/views/Maropay/StoreMaropayPage.vue'), props: { frame: 'maropay' } },
       // Unknown sub-paths land on the overview (Merchandising precedent).
       { path: ':pathMatch(.*)*', redirect: (to) => ({ name: 'MaropayOverview', params: { accountId: to.params.accountId } }) },
     ],

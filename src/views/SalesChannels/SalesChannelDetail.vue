@@ -22,8 +22,10 @@ import {
 } from '@/stores/useSalesChannels'
 import { useCommerceStore } from '@/stores/useCommerce'
 import { useMaropayStore } from '@/stores/useMaropay'
+import { markForProvider } from '@/maropay/methodMarks'
 import type { MethodMarkId } from '@/maropay/methodMarks'
 import { PROVIDER_LABELS, STORE_ACTIVATION_LABELS } from '@/maropay/model'
+import { activeConnections, connectionOfferedMethods } from '@/maropay/providers'
 import { useRetailStore } from '@/stores/useRetail'
 import { useStoreThemesStore } from '@/stores/useStoreThemes'
 import { useStorefrontStore } from '@/stores/useStorefront'
@@ -161,16 +163,16 @@ const isWebStore = computed(() => channel.value?.type === 'web_store')
 const maropay = useMaropayStore()
 const maropayBinding = computed(() => maropay.bindingFor(channelId.value))
 /**
- * Who takes this store's online payments: Maropay once it's live, otherwise the
- * provider Maropay recorded for the store. Without any Maropay record the store
- * keeps its long-standing Stripe connection; null means nothing takes payments yet.
+ * Who takes this store's online payments: Maropay once it's live, and the
+ * merchant's own providers that offer something beside it (a store that never
+ * touched payments keeps its long-standing Stripe connection).
  */
-const paymentProvider = computed(() => {
-  const binding = maropayBinding.value
-  if (!binding) return 'Stripe'
-  if (binding.activation === 'live') return 'Maropay'
-  return binding.previousProvider ? PROVIDER_LABELS[binding.previousProvider.provider] : null
+const maropayLive = computed(() => maropayBinding.value?.activation === 'live')
+const otherProviders = computed(() => {
+  const setup = maropay.storeProvidersFor(channelId.value)
+  return activeConnections(setup).filter((c) => connectionOfferedMethods(c, setup).length > 0)
 })
+const paymentProviderNames = computed(() => [...(maropayLive.value ? ['Maropay'] : []), ...otherProviders.value.map((c) => PROVIDER_LABELS[c.kind])])
 
 // Published theme for this channel drives the preview dialog; falls back to the
 // default static storefront mock when no theme exists.
@@ -357,15 +359,15 @@ const quickActions = computed<QuickAction[]>(() => {
 })
 
 function paymentsSetupItem(): SetupItem {
-  const provider = paymentProvider.value
   const binding = maropayBinding.value
-  const state = binding && binding.activation !== 'live' ? maropay.storeStateFor(channelId.value) : null
-  const maropayNote = state ? ` · Maropay ${STORE_ACTIVATION_LABELS[state].toLowerCase()}` : ''
+  const state = binding && !maropayLive.value ? maropay.storeStateFor(channelId.value) : null
+  const maropayNote = maropayLive.value ? 'Maropay live' : state ? `Maropay ${STORE_ACTIVATION_LABELS[state].toLowerCase()}` : 'Maropay not set up'
+  const names = paymentProviderNames.value
   return {
     id: 'online_payments',
     title: 'Online payments',
-    description: provider ? `${provider} takes payments${maropayNote}` : 'Activate Maropay to take payments online',
-    done: provider !== null,
+    description: names.length ? `${names.join(', ')} · ${maropayNote}` : 'No payment methods yet — shoppers can’t check out',
+    done: names.length > 0,
     target: 'payments',
   }
 }
@@ -398,7 +400,7 @@ const pendingSetupItems = computed(() => setupChecklist.value.filter((item) => !
 const completedSetupItems = computed(() => setupChecklist.value.filter((item) => item.done && item.id !== 'online_payments'))
 /** Online payments always shows first on a web store, done or not; the other pending items follow, two at a time. */
 const paymentsItem = computed(() => (isWebStore.value ? setupChecklist.value.find((item) => item.id === 'online_payments') ?? null : null))
-const paymentsMark = computed<MethodMarkId>(() => (maropayBinding.value ? 'maropay' : 'card'))
+const paymentsMark = computed<MethodMarkId>(() => (maropayLive.value || !otherProviders.value.length ? 'maropay' : markForProvider(otherProviders.value[0]!.kind)))
 const visibleSetupItems = computed(() => pendingSetupItems.value.filter((item) => item.id !== 'online_payments').slice(0, 2))
 const setupProgress = computed(() => {
   if (!setupChecklist.value.length) return 0
@@ -426,14 +428,20 @@ const activityItems = computed<ActivityItem[]>(() => {
 
 const overviewActivityItems = computed(() => activityItems.value.slice(0, 3))
 
-const PROVIDER_MARKS: Record<string, MethodMarkId> = { Maropay: 'maropay', PayPal: 'paypal' }
+/** One row per payment provider on the store — Maropay first, live or still to set up. */
+const paymentApps = computed<ConnectedApp[]>(() => [
+  maropayLive.value
+    ? { id: 'payments-maropay', name: 'Maropay', category: 'Payments', initials: 'MA', mark: 'maropay', status: 'Connected' }
+    : { id: 'payments-maropay', name: 'Maropay', category: 'Payments · not live yet', initials: 'MA', mark: 'maropay', status: 'Needs setup' },
+  ...otherProviders.value.map((c): ConnectedApp => ({
+    id: `payments-${c.kind}`, name: PROVIDER_LABELS[c.kind], category: 'Payments', initials: PROVIDER_LABELS[c.kind].slice(0, 2).toUpperCase(), mark: markForProvider(c.kind), status: 'Connected',
+  })),
+])
 
 const connectedApps = computed<ConnectedApp[]>(() => {
   if (isWebStore.value) {
     return [
-      paymentProvider.value
-        ? { id: 'payments', name: paymentProvider.value, category: 'Payments', initials: paymentProvider.value.slice(0, 2).toUpperCase(), mark: PROVIDER_MARKS[paymentProvider.value], status: 'Connected' }
-        : { id: 'payments', name: 'Maropay', category: 'Payments · not live yet', initials: 'MA', mark: 'maropay', status: 'Needs setup' },
+      ...paymentApps.value,
       { id: 'shipstation', name: 'ShipStation', category: 'Fulfillment', initials: 'SH', status: 'Connected' },
       { id: 'meta', name: 'Meta Ads', category: 'Ads', initials: 'ME', status: 'Connected' },
       { id: 'google', name: 'Google Ads', category: 'Ads', initials: 'GO', status: 'Disconnected' },

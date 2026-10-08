@@ -241,7 +241,7 @@ function setRefundOutcome(value: string | null): void {
             <div>
               <dt>Taken by</dt>
               <dd class="maropay-payment__stack">
-                {{ ours ? 'Maropay' : `${providerName}, before Maropay` }}
+                {{ ours ? 'Maropay' : payment.legacy ? `${providerName}, before Maropay` : providerName }}
                 <span v-if="!ours" class="maropay-payment__sub">Refunds go back through {{ providerName }}; it isn’t part of your Maropay balance or payouts.</span>
               </dd>
             </div>

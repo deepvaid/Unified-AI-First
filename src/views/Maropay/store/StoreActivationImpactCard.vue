@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import MpAlert from '@/components/MpAlert.vue'
 import MpListRow from '@/components/MpListRow.vue'
 import MpSectionHeader from '@/components/MpSectionHeader.vue'
+import MpSegmentedControl from '@/components/MpSegmentedControl.vue'
 import MaropayMethodMark from '@/components/maropay/MaropayMethodMark.vue'
 import { useToast } from '@/composables/useToast'
 import { useMaropayStore } from '@/stores/useMaropay'
@@ -11,26 +12,48 @@ import { formatDay, joinList, payoutScheduleLabel } from '@/maropay/readiness'
 import type { MigrationRow } from '@/maropay/readiness'
 
 // What changes when a store switches to Maropay (plan §3E): the provider, what
-// shoppers can pay with, fees, payouts and capture — and, when the store comes
-// from another provider, method by method what moves and what stays. The business
-// owner confirms they've reviewed it before the store can activate.
+// shoppers can pay with, fees, payouts and capture — and, when the store has a
+// gateway taking cards, method by method what moves and what stays, for either
+// answer to the Activate dialog's choice (Maropay takes cards, or the gateway
+// keeps them). The business owner confirms they've reviewed it before the store
+// can activate.
 
 defineOptions({ inheritAttrs: false })
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   channelId: string
-  /** The store's current provider, when it has one. */
+  /** The store's gateway for cards, when it has one. */
   previousName: string | null
   canActivate: boolean
-}>()
+  /** The Activate dialog's choice, previewed: who takes cards once the store is live. */
+  cardsVia?: 'maropay' | 'existing'
+}>(), {
+  cardsVia: 'maropay',
+})
+
+const emit = defineEmits<{ 'update:cardsVia': [value: 'maropay' | 'existing'] }>()
 
 const maropay = useMaropayStore()
 const toast = useToast()
 
 const binding = computed(() => maropay.bindingFor(props.channelId))
-const checkoutMethods = computed(() => maropay.checkoutMethodsFor(props.channelId))
+const checkoutMethods = computed(() => maropay.maropayOfferedFor(props.channelId, props.cardsVia))
 const pendingMethods = computed(() => maropay.methodsForStore(props.channelId).filter((m) => m.status === 'pending_approval'))
-const impact = computed(() => maropay.migrationImpactFor(props.channelId))
+const impact = computed(() => maropay.migrationImpactFor(props.channelId, props.cardsVia))
+
+const choiceItems = computed(() => [
+  { value: 'maropay', label: 'Maropay takes cards' },
+  { value: 'existing', label: `Keep ${props.previousName} for cards` },
+])
+
+/** "Stripe → Maropay for cards · Bank deposit alongside" — who takes what once the store is live. */
+const providerLine = computed(() => {
+  const others = (impact.value?.coexisting ?? []).filter((name) => name !== props.previousName)
+  const lead = !props.previousName
+    ? 'Maropay'
+    : props.cardsVia === 'existing' ? `${props.previousName} keeps cards · Maropay adds the rest` : `${props.previousName} → Maropay for cards`
+  return others.length ? `${lead} · ${joinList(others)} alongside` : lead
+})
 const payoutDestination = computed(() => maropay.account?.payoutDestination ?? null)
 const payoutSchedule = computed(() => (maropay.account ? payoutScheduleLabel(maropay.account.payoutSchedule) : null))
 
@@ -62,10 +85,20 @@ function markReviewed(): void {
 <template>
   <v-card v-if="binding" v-bind="$attrs" flat border rounded="lg" class="mp-card-inset">
     <MpSectionHeader icon="arrow-left-right" title="What changes when you activate" description="The business owner confirms this before the store switches." :heading-level="2" />
+    <div v-if="previousName" class="store-impact__choice">
+      <MpSegmentedControl
+        :model-value="cardsVia"
+        :items="choiceItems"
+        size="sm"
+        ariaLabel="Who takes cards once Maropay is live"
+        @update:model-value="emit('update:cardsVia', $event === 'existing' ? 'existing' : 'maropay')"
+      />
+      <p class="store-impact__note mt-0">You choose this when you activate — preview either answer here.</p>
+    </div>
     <dl class="mp-label-value">
       <div>
         <dt>Checkout provider</dt>
-        <dd>{{ previousName ? `${previousName} → Maropay` : 'Maropay' }}</dd>
+        <dd>{{ providerLine }}</dd>
       </div>
       <div>
         <dt>Shoppers can pay with</dt>
@@ -137,7 +170,7 @@ function markReviewed(): void {
 
       <div class="store-impact__lists">
         <div>
-          <h4 class="store-impact__subhead store-impact__subhead--list">Moves to Maropay</h4>
+          <h4 class="store-impact__subhead store-impact__subhead--list">{{ cardsVia === 'existing' ? 'What Maropay adds' : 'Moves to Maropay' }}</h4>
           <ul><li v-for="line in impact.transfers" :key="line">{{ line }}</li></ul>
         </div>
         <div>
@@ -180,6 +213,14 @@ function markReviewed(): void {
 
 .store-impact__subhead--list {
   margin: 0;
+}
+
+.store-impact__choice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--mp-space-12);
+  margin-bottom: var(--mp-space-16);
 }
 
 .store-impact__table {

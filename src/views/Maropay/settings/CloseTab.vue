@@ -9,6 +9,7 @@ import MaropayStepUpDialog from '@/components/maropay/MaropayStepUpDialog.vue'
 import { useToast } from '@/composables/useToast'
 import { useMaropayStore } from '@/stores/useMaropay'
 import { PROVIDER_LABELS } from '@/maropay/model'
+import { cardGateway } from '@/maropay/providers'
 import type { StoreBinding } from '@/maropay/model'
 import type { ClosureCheck } from '@/maropay/readiness'
 import { formatDay, storePaymentsTarget } from '@/maropay/readiness'
@@ -28,9 +29,10 @@ const live = computed(() => maropay.bindings.filter((b) => b.activation === 'liv
 
 /** What happens to a store's new checkouts once Maropay stops — a clause, lower case. */
 function fallback(binding: StoreBinding): string {
-  return binding.previousProvider
-    ? `new checkouts go back to ${PROVIDER_LABELS[binding.previousProvider.provider]}`
-    : 'new checkouts can’t take online payments until you set up a provider'
+  const gateway = cardGateway(maropay.storeProvidersFor(binding.channelId))
+  return gateway
+    ? `cards go back to ${PROVIDER_LABELS[gateway.kind]}`
+    : 'new checkouts can’t take card payments until you set up a provider'
 }
 
 const stopBlocker = computed(() => {

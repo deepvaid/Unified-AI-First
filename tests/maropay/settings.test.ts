@@ -2,7 +2,8 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { buildScenario } from '../../src/maropay/scenarios.ts'
 import { DEFAULT_PAYOUT_SCHEDULE, parseState, representativeOf } from '../../src/maropay/model.ts'
-import { MAROPAY_STORE_ROUTE, closureChecks, deriveCapabilities, deriveOverviewInstruction, joinList, storePaymentsTarget, taskTarget } from '../../src/maropay/readiness.ts'
+import { storeProvidersFor } from '../../src/maropay/providers.ts'
+import { MAROPAY_STORE_ROUTE, closureChecks, deriveCapabilities, deriveOverviewInstruction, joinList, storePaymentsTarget, storeProvidersTarget, taskTarget } from '../../src/maropay/readiness.ts'
 import {
   closeAccount, deactivateAllStores, linkStore, requestBusinessChange, simulateBusinessChangeOutcome, updatePublicDetails,
 } from '../../src/services/maropay/mockAdapter.ts'
@@ -147,24 +148,62 @@ test('saves from before accounts could close read back as open accounts', () => 
   assert.equal(parsed?.account?.closedAt, null)
 })
 
-test('saves from before PayPal and multi-line carts read back with both', () => {
+test('saves from before PayPal, multi-line carts and provider-aware sessions read back with all three', () => {
   const state = buildScenario('m13', context())
   const raw = JSON.parse(JSON.stringify(state)) as Record<string, any>
   raw.methods = raw.methods.filter((m: { id: string }) => m.id !== 'paypal').map(({ redirects: _r, ...m }: Record<string, unknown>) => m)
-  for (const s of raw.sessions) { s.lineItem = { product: s.lineItems[0].product, sku: s.lineItems[0].sku, price: s.lineItems[0].price }; delete s.lineItems }
+  for (const s of raw.sessions) {
+    s.lineItem = { product: s.lineItems[0].product, sku: s.lineItems[0].sku, price: s.lineItems[0].price }
+    delete s.lineItems; delete s.providerId; delete s.methodLabel
+  }
   const parsed = parseState(JSON.stringify(raw), state.accountId, NOW)!
   assert.deepEqual(parsed.methods.map((m) => m.id), state.methods.map((m) => m.id), 'PayPal joins in catalogue order')
   assert.equal(parsed.methods.find((m) => m.id === 'paypal')?.availability, 'available')
   assert.equal(parsed.methods.find((m) => m.id === 'klarna')?.redirects, true)
   assert.deepEqual(parsed.sessions[0]?.lineItems, [{ product: 'Patagonia Better Sweater Fleece Vest', sku: 'SKU-10001', price: '184.00', qty: 1 }])
   assert.equal('lineItem' in parsed.sessions[0]!, false)
+  assert.deepEqual([parsed.sessions[0]?.providerId, parsed.sessions[0]?.methodLabel], ['maropay', 'us_bank_account'], 'every first-phase session was Maropay’s')
+  assert.deepEqual(parseState(JSON.stringify(parsed), state.accountId, NOW), parsed, 'a migrated save is stable')
+})
+
+test('a save that carried the store’s previous provider on the binding reads back as one of its connections', () => {
+  const state = buildScenario('m07', context())
+  const raw = JSON.parse(JSON.stringify(state)) as Record<string, any>
+  delete raw.storeProviders
+  raw.bindings[0].previousProvider = {
+    provider: 'stripe-legacy',
+    methods: [
+      { label: 'Cards via Stripe', maropayMethodId: 'card', rate: { percentBps: 290, fixedMinor: 30, label: '2.9% + 30¢' }, keepSeparately: false },
+      { label: 'Apple Pay via Stripe', maropayMethodId: 'apple_pay', rate: { percentBps: 290, fixedMinor: 30, label: '2.9% + 30¢' }, keepSeparately: false },
+      { label: 'PayPal Checkout', maropayMethodId: null, rate: { percentBps: 349, fixedMinor: 49, label: '3.49% + 49¢' }, keepSeparately: true },
+    ],
+    captureMode: 'manual',
+    savedCredentials: { count: 38, blocking: false },
+    connectedSince: '2024-01-01T00:00:00.000Z',
+  }
+  raw.payments[0].provider = 'stripe-legacy'
+  raw.payments[0].flow = null
+  delete raw.payments[0].legacy
+  raw.payments[1].provider = 'manual'
+  raw.payments[1].flow = null
+  const parsed = parseState(JSON.stringify(raw), state.accountId, NOW)!
+  const setup = storeProvidersFor(parsed, raw.bindings[0].channelId)
+  assert.equal(setup.cardProcessor, 'maropay', 'the store was live, so Maropay already took its cards')
+  const stripe = setup.connections.find((c) => c.kind === 'stripe')!
+  assert.deepEqual(stripe.methods.map((m) => [m.methodId, m.label]), [['card', 'Cards via Stripe'], ['apple_pay', 'Apple Pay via Stripe'], ['paypal', 'PayPal Checkout']])
+  assert.deepEqual([stripe.status, stripe.captureMode, stripe.savedCredentials?.count, stripe.connectedSince], ['active', 'manual', 38, '2024-01-01T00:00:00.000Z'])
+  assert.equal('previousProvider' in parsed.bindings[0]!, false)
+  assert.deepEqual([parsed.payments[0]?.provider, parsed.payments[0]?.legacy], ['stripe', true])
+  assert.deepEqual([parsed.payments[1]?.provider, parsed.payments[1]?.legacy], ['bank_deposit', true])
+  assert.equal(parsed.payments[2]?.legacy, undefined, 'Maropay’s own history is not "before Maropay"')
   assert.deepEqual(parseState(JSON.stringify(parsed), state.accountId, NOW), parsed, 'a migrated save is stable')
 })
 
 test('store tasks and store links open the store inside Maropay, not the store editor', () => {
   assert.deepEqual(taskTarget({ kind: 'activate_store', channelId: 'atlas' } as never), { name: MAROPAY_STORE_ROUTE, params: { channelId: 'atlas' } })
   assert.deepEqual(taskTarget({ kind: 'method_review', channelId: 'atlas' } as never), { name: MAROPAY_STORE_ROUTE, params: { channelId: 'atlas' } })
-  assert.deepEqual(storePaymentsTarget('atlas', 'store'), { name: 'StorePayments', params: { channelId: 'atlas' } })
+  assert.deepEqual(storePaymentsTarget('atlas', 'store'), { name: 'StorePaymentsMaropay', params: { channelId: 'atlas' } })
+  assert.deepEqual(storeProvidersTarget('atlas'), { name: 'StorePayments', params: { channelId: 'atlas' } })
   assert.equal(joinList(['Cards', 'Apple Pay', 'Google Pay']), 'Cards, Apple Pay and Google Pay')
   assert.equal(joinList(['Cards']), 'Cards')
 })

@@ -17,7 +17,9 @@ import MaropayTaskList from '@/components/maropay/MaropayTaskList.vue'
 import { useToast } from '@/composables/useToast'
 import { useMaropayStore } from '@/stores/useMaropay'
 import { toDecimal } from '@/maropay/money'
+import { MAROPAY_BENEFITS } from '@/maropay/benefits'
 import { PROVIDER_LABELS, STORE_ACTIVATION_LABELS } from '@/maropay/model'
+import { activeConnections, cardGateway, connectionOfferedMethods, providerLabel } from '@/maropay/providers'
 import { formatDay, storeCheckoutNote, storePaymentsTarget, taskTarget } from '@/maropay/readiness'
 import { dayLabel, volumeSeries } from '@/maropay/volume'
 import type { DashboardSeriesData } from '@/stores/dashboards/types'
@@ -44,13 +46,15 @@ const dismissed = computed(() => maropay.discoveryDismissedAt !== null)
 
 // ── Discovery ──────────────────────────────────────────────────────
 
-const BENEFITS = [
-  { icon: 'receipt', title: 'Payments beside your orders', desc: 'Capture, refund and investigate a payment from the order you’re already looking at.' },
-  { icon: 'landmark', title: 'Payouts you can trace', desc: 'Every payout breaks down into the payments, fees, refunds and disputes inside it.' },
-  { icon: 'shield-alert', title: 'Disputes with the deadline up front', desc: 'Respond with an evidence checklist before the shopper’s bank decides.' },
-  { icon: 'store', title: 'One business, every store', desc: 'Verify your business once, then switch stores on one at a time.' },
-  { icon: 'life-buoy', title: 'Maropost support first', desc: 'One place to ask about an order and the payment behind it.' },
-]
+// The same list the store's Payments page sells from (src/maropay/benefits.ts).
+const BENEFITS = MAROPAY_BENEFITS
+
+/** "Pays through Stripe, Bank deposit today" — what each store runs on before Maropay. */
+function storeProviderNote(channelId: string): string {
+  const setup = maropay.storeProvidersFor(channelId)
+  const names = activeConnections(setup).filter((c) => connectionOfferedMethods(c, setup).length > 0).map((c) => providerLabel(c.kind))
+  return names.length ? `Pays through ${names.join(', ')} today` : 'No payment provider yet'
+}
 
 const NEEDS = [
   { icon: 'building-2', title: 'Business details', desc: 'Legal name, registration number and address.' },
@@ -95,7 +99,7 @@ const storeRows = computed(() => maropay.bindings.map((binding) => {
     id: binding.channelId,
     name: maropay.channelName(binding.channelId),
     status: STORE_ACTIVATION_LABELS[state],
-    note: storeCheckoutNote(binding, state),
+    note: storeCheckoutNote(state, maropay.storeProvidersFor(binding.channelId)),
     to: maropay.routeFor(storePaymentsTarget(binding.channelId)),
   }
 }))
@@ -133,7 +137,10 @@ const activity = computed(() => {
 
 /** Declined or unsupported: nothing to activate, and the stores keep their current setup. */
 const unavailable = computed(() => maropay.overview.key === 'unavailable' || maropay.overview.key === 'declined')
-const keptProviders = computed(() => [...new Set(maropay.bindings.flatMap((b) => (b.previousProvider ? [PROVIDER_LABELS[b.previousProvider.provider]] : [])))])
+const keptProviders = computed(() => [...new Set(maropay.bindings.flatMap((b) => {
+  const gateway = cardGateway(maropay.storeProvidersFor(b.channelId))
+  return gateway ? [PROVIDER_LABELS[gateway.kind]] : []
+}))])
 const supportReferences = computed(() => [
   { label: 'Maropost account', value: accountId.value },
   { label: 'Maropay account', value: maropay.account?.processorAccountRef ?? '—' },
@@ -252,8 +259,9 @@ function openPayout(payoutId: string): void {
             :key="store.id"
             variant="divided"
             :title="store.name"
-            :subtitle="store.domain ?? undefined"
+            :subtitle="storeProviderNote(store.id)"
             meta="Keeps its current setup"
+            :to="{ name: 'StorePayments', params: { ...params, channelId: store.id } }"
           >
             <template #lead><v-icon size="16" class="maropay-overview__icon">globe</v-icon></template>
           </MpListRow>

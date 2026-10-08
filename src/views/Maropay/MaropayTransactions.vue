@@ -59,6 +59,8 @@ interface Row {
   method: string
   provider: MaropayProvider
   providerLabel: string
+  /** Taken by another provider before the store used Maropay. */
+  legacy: boolean
   amount: Money
   amountSort: number
   refunded: Money
@@ -86,6 +88,7 @@ const rows = computed<Row[]>(() => maropay.payments.map((p) => {
     method: p.methodLabel,
     provider: p.provider,
     providerLabel: PROVIDER_LABELS[p.provider],
+    legacy: p.legacy === true,
     amount: p.amount,
     amountSort: p.amount.amount,
     refunded: breakdown.refunded,
@@ -239,7 +242,7 @@ function openLiveStore(): void {
 <template>
   <!-- No h-100: the Maropay shell scrolls its content, so a height cap would clip the table. -->
   <div class="d-flex flex-column gap-5">
-    <MpPageHeader title="Transactions" subtitle="Every payment across your stores, including ones taken before Maropay.">
+    <MpPageHeader title="Transactions" subtitle="Every payment across your stores, including ones your other providers took.">
       <template v-if="maropay.can('export')" #actions>
         <v-btn variant="outlined" prepend-icon="download" class="text-none" :disabled="!ready || !filtered.length" @click="exportCsv">Export CSV</v-btn>
       </template>
@@ -311,7 +314,7 @@ function openLiveStore(): void {
               <MaropayMethodMark :mark="markFor(item.methodId, item.method)" size="sm" decorative />
               {{ methodCaption(item.methodId, item.method) }}
             </span>
-            <span v-if="item.provider !== 'maropay'" class="maropay-tx__sub">{{ item.providerLabel }} · before Maropay</span>
+            <span v-if="item.provider !== 'maropay'" class="maropay-tx__sub">{{ item.legacy ? `${item.providerLabel} · before Maropay` : `Through ${item.providerLabel}` }}</span>
           </div>
         </template>
 

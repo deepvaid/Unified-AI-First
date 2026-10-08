@@ -54,7 +54,7 @@ const chrome = computed(() => storefronts.chromeFor(channel.value))
 const currency = computed(() => maropay.account?.currency ?? 'USD')
 
 function offerFor(amount: Money) {
-  return storefrontOffer(maropay.state, maropay.bindingFor(channelId.value), amount)
+  return storefrontOffer(maropay.state, channelId.value, amount)
 }
 
 provide(STOREFRONT, { channel, theme, chrome, link, currency, offerFor })

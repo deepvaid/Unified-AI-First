@@ -2,7 +2,8 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { METHOD_CATALOG } from '../../src/maropay/model.ts'
-import { CARD_BRAND_MARKS, METHOD_MARK_IDS, METHOD_MARKS, markFor, methodCaption } from '../../src/maropay/methodMarks.ts'
+import { CARD_BRAND_MARKS, METHOD_MARK_IDS, METHOD_MARKS, markFor, markForProvider, methodCaption } from '../../src/maropay/methodMarks.ts'
+import { EXTRA_METHOD_FACTS, OWN_PROVIDER_KINDS } from '../../src/maropay/providers.ts'
 
 test('every catalogue method has a mark, and cards resolve their brand from the label', () => {
   for (const method of METHOD_CATALOG) assert.ok(METHOD_MARKS[markFor(method.id)], method.id)
@@ -11,9 +12,19 @@ test('every catalogue method has a mark, and cards resolve their brand from the 
   assert.equal(markFor('card', 'Mastercard •••• 8888'), 'mastercard')
   assert.equal(markFor('card', 'Amex •••• 1234'), 'amex')
   assert.equal(markFor('card', 'Shop Pay'), 'card', 'a brand Maropay does not know is a generic card')
-  assert.equal(markFor('paypal_wallet', 'PayPal'), 'paypal', 'previous-provider PayPal')
+  assert.equal(markFor('paypal_wallet', 'PayPal'), 'paypal', 'first-phase PayPal history')
   assert.equal(markFor('us_bank_account'), 'ach')
   assert.equal(markFor('something_new'), 'card')
+})
+
+test('the merchant’s own providers and the methods outside Maropay’s catalogue have marks of their own', () => {
+  for (const id of Object.keys(EXTRA_METHOD_FACTS)) assert.notEqual(markFor(id), 'card', id)
+  assert.equal(markFor('zip'), 'zip')
+  assert.equal(markFor('bank_deposit'), 'bankDeposit')
+  for (const kind of OWN_PROVIDER_KINDS) assert.notEqual(markForProvider(kind), 'card', kind)
+  assert.equal(markForProvider('maropay'), 'maropay')
+  assert.equal(markForProvider('stripe'), 'stripe')
+  assert.equal(markForProvider('cod'), 'cod')
 })
 
 test('every mark has a glyph or initials, and the caption drops what the mark already says', () => {

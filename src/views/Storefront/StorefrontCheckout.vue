@@ -94,11 +94,15 @@ const card = ref<CardInput>({ number: '4242 4242 4242 4242', expiry: '12 / 30', 
 /** While Maropay isn't taking the store's payments, its current provider's card form stands alone. */
 const options = computed<ShopperMethod[]>(() => (offer.value.live ? offer.value.methods : [{
   id: 'current_provider_card',
+  providerId: offer.value.cardsVia ?? 'maropay',
+  providerLabel: offer.value.providerLabel ?? '',
   label: 'Credit or debit card',
   caption: `Processed by ${offer.value.providerLabel ?? 'the store’s payment provider'}`,
   category: 'cards',
   redirects: false,
   delayed: false,
+  description: null,
+  instructions: null,
 }]))
 
 const methodId = ref<string | null>(null)

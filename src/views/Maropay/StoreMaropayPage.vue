@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MpAlert from '@/components/MpAlert.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
@@ -13,32 +13,39 @@ import MpSectionHeader from '@/components/MpSectionHeader.vue'
 import MpSegmentedControl from '@/components/MpSegmentedControl.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MaropayActingRoleBanner from '@/components/maropay/MaropayActingRoleBanner.vue'
+import MaropayActivateDialog from '@/components/maropay/MaropayActivateDialog.vue'
 import MaropayActivationChecklist from '@/components/maropay/MaropayActivationChecklist.vue'
 import MaropayDemoPanel from '@/components/maropay/MaropayDemoPanel.vue'
+import MaropayMethodMark from '@/components/maropay/MaropayMethodMark.vue'
 import { useToast } from '@/composables/useToast'
 import { useCommerceStore } from '@/stores/useCommerce'
 import { useMaropayStore } from '@/stores/useMaropay'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
+import { markForProvider } from '@/maropay/methodMarks'
 import { HISTORY_KIND_ICONS, PROVIDER_LABELS, STORE_ACTIVATION_LABELS } from '@/maropay/model'
+import { activeConnections, cardGateway, connectionOfferedMethods, providerLabel } from '@/maropay/providers'
 import type { CaptureMode, MethodStatus, PaymentMethodCatalogEntry } from '@/maropay/model'
-import { formatDay, joinList, payoutScheduleLabel, storePaymentsTarget, taskTarget } from '@/maropay/readiness'
+import { formatDay, joinList, storePaymentsTarget, taskTarget } from '@/maropay/readiness'
 import type { ActivationCheckItem } from '@/maropay/readiness'
 import { inStock, productHandle, storefrontProducts } from '@/views/Storefront/storefrontCatalog'
 import StoreActivationImpactCard from './store/StoreActivationImpactCard.vue'
 import StoreCheckoutOptionsCard from './store/StoreCheckoutOptionsCard.vue'
 import StorePaymentMethodsCard from './store/StorePaymentMethodsCard.vue'
 import StorePaymentsPreview from './store/StorePaymentsPreview.vue'
+import { useStoreActivation } from './store/useStoreActivation'
 
-// One store's payments: how it takes money online, and the switch to Maropay
-// (plan §3D–3E). The business is verified once; each store activates on its own —
-// after its checklist, its methods, a test checkout and the owner's review of what
-// changes. Activation and deactivation only change where new checkouts go: payments
-// already taken stay with the provider that took them.
+// Maropay on one store: its checklist, methods, capture and checkout options, and
+// the switch itself (plan §3D–3E). The business is verified once; each store
+// activates on its own — after its checklist, its methods, a test checkout and the
+// owner's review of what changes. Activation and deactivation only change where
+// new checkouts go: payments already taken stay with the provider that took them,
+// and the merchant's other providers (the store's Payments page) keep working.
 //
 // Two frames show this page. From anywhere in Maropay it opens inside Maropay's
-// rail (`MaropayStorePayments`), so the way back is on screen; from Sales channels
-// it's the store editor's Payments section (`StorePayments`). The settings sit
-// beside a live "What shoppers see" preview once the page is wide enough.
+// rail (`MaropayStorePayments`), so the way back is on screen; from the store's
+// Payments page it's one level down in the store editor (`StorePaymentsMaropay`).
+// The settings sit beside a live "What shoppers see" preview once the page is wide
+// enough.
 
 const props = withDefaults(defineProps<{
   frame?: 'maropay' | 'store'
@@ -80,7 +87,8 @@ const storefrontHref = computed(() => {
 
 const binding = computed(() => maropay.bindingFor(channelId.value))
 const live = computed(() => binding.value?.activation === 'live')
-const previousName = computed(() => (binding.value?.previousProvider ? PROVIDER_LABELS[binding.value.previousProvider.provider] : null))
+const gateway = computed(() => cardGateway(maropay.storeProvidersFor(channelId.value)))
+const previousName = computed(() => (gateway.value ? PROVIDER_LABELS[gateway.value.kind] : null))
 
 const canManage = computed(() => maropay.can('manage_methods', channelId.value))
 const canActivate = computed(() => maropay.can('activate_store', channelId.value))
@@ -180,6 +188,12 @@ function scrollToSection(id: string): void {
   el?.focus({ preventScroll: true })
 }
 
+// A deep link from the store's Payments page lands on its section (#maropay-store-capture).
+onMounted(() => {
+  const id = route.hash.replace(/^#/, '')
+  if (id) void nextTick(() => scrollToSection(id))
+})
+
 // ── Methods (what activating offers) ───────────────────────────────
 
 type StoreMethod = PaymentMethodCatalogEntry & { status: MethodStatus }
@@ -202,66 +216,38 @@ function setCapture(mode: string | null): void {
 }
 
 // ── Activate and deactivate ────────────────────────────────────────
+// Shared with the store's Payments page, so the Maropay card and this page say the same things.
 
-const activateOpen = ref(false)
-const deactivateOpen = ref(false)
-const justActivated = ref(false)
+const {
+  activateOpen, deactivateOpen, justActivated, activateHint,
+  activateConsequences, deactivateConsequences, activate: activateStore, deactivate: deactivateStore,
+} = useStoreActivation(channelId, storeName)
 const activatedAlert = ref<HTMLElement | null>(null)
+/** The Activate dialog's choice, previewed here: the impact card and the live preview follow it. */
+const cardsVia = ref<'maropay' | 'existing'>('maropay')
 
-const activateHint = computed(() => {
-  if (!canActivate.value) return 'Only the business owner can activate Maropay.'
-  const left = checklist.value?.blockedBy.length ?? 0
-  return left ? `Finish the checklist first — ${left} left` : ''
-})
-
-const activateConsequences = computed(() => {
-  const ready = checkoutMethods.value.map((m) => m.label)
-  const pending = pendingMethods.value.map((m) => m.label)
-  // Methods with no Maropay equivalent (PayPal Checkout) stay connected through the previous provider.
-  const staying = (binding.value?.previousProvider?.methods ?? []).filter((m) => m.keepSeparately || !m.maropayMethodId).map((m) => m.label)
-  const lines = [
-    `Shoppers can pay with ${joinList(ready)}.${pending.length ? ` ${joinList(pending)} turns on once it’s approved.` : ''}`,
-    previousName.value
-      ? `New checkouts on ${storeName.value} go through Maropay instead of ${previousName.value}${staying.length ? ` — ${joinList(staying)} stays connected through ${previousName.value}` : ''}. Earlier payments, refunds and payouts stay with ${previousName.value}.`
-      : `The current payment setup on ${storeName.value} stops taking new checkouts.`,
-  ]
-  const destination = maropay.account?.payoutDestination
-  if (destination && maropay.account) {
-    lines.push(`Money is paid out to ${destination.bankName} •••• ${destination.last4} — ${payoutScheduleLabel(maropay.account.payoutSchedule).toLowerCase()}.`)
-  }
-  if (binding.value?.captureMode === 'manual') lines.push('Payments are authorised at checkout — capture each one from its order.')
-  return lines
-})
-
-const deactivateConsequences = computed(() => [
-  previousName.value
-    ? `New checkouts on ${storeName.value} go back to ${previousName.value} straight away.`
-    : `${storeName.value} won’t take online payments until you activate Maropay again or connect another provider.`,
-  'Payments already taken — with their refunds, disputes and payouts — stay in Maropay.',
-  'To switch back, you’ll review the changes again first.',
-])
-
-async function activate(): Promise<void> {
-  const result = maropay.activateStore(channelId.value)
-  if (!result.ok) {
-    toast.error(result.error.message)
-    return
-  }
-  justActivated.value = true
+async function activate(takeCards: boolean): Promise<void> {
+  if (!activateStore(takeCards)) return
   await nextTick()
   activatedAlert.value?.scrollIntoView({ behavior: 'smooth', block: 'center' })
   activatedAlert.value?.focus({ preventScroll: true })
 }
 
 function deactivate(): void {
-  const result = maropay.deactivateStore(channelId.value)
-  if (!result.ok) {
-    toast.error(result.error.message)
-    return
-  }
-  justActivated.value = false
-  toast.info(`Maropay stopped on ${storeName.value}. New checkouts use ${previousName.value ?? 'no online payment provider'}.`)
+  deactivateStore()
 }
+
+// ── The store's other providers (Maropay's frame) ──────────────────
+
+const providersRoute = computed(() => ({ name: 'StorePayments', params: { accountId: accountId.value, channelId: channelId.value } }))
+const otherProviders = computed(() => {
+  const setup = maropay.storeProvidersFor(channelId.value)
+  return activeConnections(setup).map((c) => ({
+    kind: c.kind,
+    name: providerLabel(c.kind),
+    offers: connectionOfferedMethods(c, setup).map((m) => m.label),
+  }))
+})
 
 // ── Activity and demo ──────────────────────────────────────────────
 
@@ -282,9 +268,9 @@ function decideMethod(method: StoreMethod, approved: boolean): void {
 
     <MpPageHeader
       :eyebrow="inMaropay ? 'Store' : undefined"
-      :title="view === 'not_found' ? 'Store not found' : inMaropay ? storeName : 'Payments'"
+      :title="view === 'not_found' ? 'Store not found' : inMaropay ? storeName : 'Maropay'"
       :subtitle="view === 'not_found' ? undefined : headerSubtitle"
-      :back-to="inMaropay ? overviewRoute : undefined"
+      :back-to="inMaropay ? overviewRoute : providersRoute"
     >
       <template v-if="view === 'store'" #title-append>
         <MpStatusChip :status="STORE_ACTIVATION_LABELS[storeState]" type="readiness" show-icon />
@@ -469,19 +455,40 @@ function decideMethod(method: StoreMethod, approved: boolean): void {
         </div>
 
         <div class="store-payments__preview">
-          <StorePaymentsPreview :channel-id="channelId" :live="live" :domain="channel?.webStore?.domain" :storefront-href="storefrontHref" />
+          <StorePaymentsPreview :channel-id="channelId" :live="live" :cards-via="cardsVia" :domain="channel?.webStore?.domain" :storefront-href="storefrontHref" />
         </div>
       </div>
 
       <StoreActivationImpactCard
         v-if="!live"
         id="maropay-store-impact"
+        v-model:cards-via="cardsVia"
         tabindex="-1"
         class="store-payments__section"
         :channel-id="channelId"
         :previous-name="previousName"
         :can-activate="canActivate"
       />
+
+      <v-card v-if="inMaropay && otherProviders.length" flat border rounded="lg" class="mp-card-inset">
+        <MpSectionHeader icon="plug" :title="`Other providers on ${storeName}`" description="Connected in the store editor, beside Maropay." :heading-level="2">
+          <template #actions>
+            <v-btn size="small" variant="text" class="text-none" append-icon="arrow-right" :to="providersRoute">Manage in the store editor</v-btn>
+          </template>
+        </MpSectionHeader>
+        <div role="list">
+          <MpListRow
+            v-for="provider in otherProviders"
+            :key="provider.kind"
+            variant="divided"
+            role="listitem"
+            :title="provider.name"
+            :subtitle="provider.offers.length ? provider.offers.join(', ') : 'Nothing at checkout — cards and wallets go through Maropay'"
+          >
+            <template #lead><MaropayMethodMark :mark="markForProvider(provider.kind)" size="md" decorative /></template>
+          </MpListRow>
+        </div>
+      </v-card>
 
       <v-card flat border rounded="lg" class="mp-card-inset">
         <MpSectionHeader icon="history" title="Activity on this store" :heading-level="2" />
@@ -516,12 +523,11 @@ function decideMethod(method: StoreMethod, approved: boolean): void {
       </MaropayDemoPanel>
     </template>
 
-    <MpConfirmDialog
+    <MaropayActivateDialog
       v-model="activateOpen"
-      :title="`Activate Maropay on ${storeName}?`"
-      message="New checkouts start using Maropay straight away."
+      :store-name="storeName"
+      :gateway="previousName"
       :consequences="activateConsequences"
-      confirm-label="Activate Maropay"
       @confirm="activate"
     />
 
