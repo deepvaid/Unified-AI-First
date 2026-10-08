@@ -16,6 +16,7 @@ import { useDisplay } from 'vuetify'
 import DvCatalogCta from '@/components/copilot/DvCatalogCta.vue'
 import { useCopilotStore } from '@/stores/useCopilot'
 import { useCatalogCopilotStore, type CatalogApplyPayload } from '@/stores/useCatalogCopilot'
+import type { CatalogField } from '@/composables/catalogCopilotConfig'
 import type { ProductSnapshot } from '@/composables/useCatalogGenerator'
 
 /**
@@ -49,7 +50,9 @@ const CHANNELS = ['Online Store', 'POS', 'Amazon', 'eBay', 'Instagram Shop']
 const taxCategoryOptions = computed(() => extras.taxCategories.map((c) => c.name))
 const collectionOptions = computed(() => extras.collections.map((c) => c.title))
 const brandOptions = computed(() => Array.from(new Set(store.products.map((p) => p.vendor))).sort())
-const categoryOptions = computed(() => Array.from(new Set(store.products.map((p) => p.category))).sort())
+// Includes what this product is filed under, so a new category (one Da Vinci added) stays selectable.
+const categoryOptions = computed(() =>
+  Array.from(new Set([...store.products.map((p) => p.category), ...(form.value.detail.categories ?? [])])).sort())
 
 const emptyDetail = (): ProductDetail => ({
   subtitle: '', url: '', description: '', hasVariants: false, options: [], variantsList: [],
@@ -178,7 +181,7 @@ function editWithDaVinci() {
   catalog.openEnrich({ productId: productId.value, productName: form.value.name.trim(), snapshot: buildSnapshot() })
 }
 
-function generateField(field: 'description' | 'seo') {
+function generateField(field: CatalogField) {
   catalog.ctaClicked('field', field, productId.value)
   catalog.openField({ field, snapshot: buildSnapshot(), productId: productId.value, productName: form.value.name.trim() })
 }
@@ -428,7 +431,17 @@ function openVariantsWizard() {
             <v-combobox v-model="form.detail.brand" :items="brandOptions" label="Brand" clearable />
             <v-combobox v-model="form.detail.tag" :items="['Featured', 'New', 'Sale', 'Seasonal', 'Clearance']" label="Tags" clearable />
             <v-select v-model="form.detail.collection" :items="collectionOptions" label="Collection" clearable />
-            <v-select v-model="form.detail.categories" :items="categoryOptions" label="Categories" multiple chips closable-chips />
+            <div class="ped-field-action">
+              <v-select v-model="form.detail.categories" :items="categoryOptions" label="Categories" multiple chips closable-chips />
+              <DvCatalogCta
+                v-if="catalog.ctaVisible"
+                label="Suggest with Da Vinci"
+                variant="link"
+                class="ped-field-action__cta"
+                :disabled="!catalog.canInvoke"
+                @click="generateField('categories')"
+              />
+            </div>
           </MpFormGrid>
         </v-card>
       </v-col>
@@ -448,6 +461,8 @@ function openVariantsWizard() {
 <style scoped>
 .ped-field-action {
   position: relative;
+  /* The label-row CTA collapses to its mark by this field's width. */
+  container-type: inline-size;
 }
 
 .ped-field-action__cta {
@@ -488,6 +503,7 @@ function openVariantsWizard() {
 
 .ped-mono {
   font-family: var(--mp-fontFamily-mono);
+  white-space: nowrap;
 }
 
 .ped-seo {

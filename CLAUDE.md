@@ -332,7 +332,8 @@ Reach for a role token when the system has already made the decision, a primitiv
   `sectionGap` 24 · `height.{sm,md,lg}` 32/40/48 (mapped from the `density` prop; md =
   `control.height`) · `labelHeight` 18 (the static top label's line box — a labelled field
   reserves `labelHeight + labelGap` of headroom). `groupGap` is what `MpFormGrid` gaps on;
-  `sectionGap` is the air `MpFormSection` puts around a heading
+  `sectionGap` is the air `MpFormSection` puts around a heading · `actionCollapseWidth` 260
+  (a field narrower than this shows a label-row action as its mark only — container query)
 - **States** `component.state.*` → `padding` 32 · `paddingProminent` 48 · `gap` 8 ·
   `minHeight` 240 · `minHeightProminent` 320 · `measure` 420 · `measureWide` 480 · `iconDisc` 80
 - **Chips** `component.chip.height.{sm,md,lg}` → 20 / 24 / 32 · `paddingInline` 8

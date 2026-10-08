@@ -6,10 +6,10 @@ import type { CatalogFieldKey } from './useCatalogGenerator'
 
 /** create = new product from a brief · enrich = suggestions for a saved product · field = one field. */
 export type CatalogMode = 'create' | 'enrich' | 'field'
-export type CatalogField = 'description' | 'seo'
+export type CatalogField = 'description' | 'seo' | 'categories'
 /** Where the drawer was opened from. CTA events use the first four (PRD `surface`). */
 export type CatalogSurface = 'index' | 'create' | 'edit' | 'field' | 'chat'
-export type CatalogCtaAction = 'create' | 'enrich' | 'description' | 'seo'
+export type CatalogCtaAction = 'create' | 'enrich' | 'description' | 'seo' | 'categories'
 export type CatalogGateReason = 'no_commerce' | 'no_credits' | 'trial_exhausted' | 'kill_switch' | 'role'
 /** What a gate card can offer: Plans, Billing (credit packs), the sales dialog, or the manual path. */
 export type CatalogGateAction = 'upgrade' | 'buy-credits' | 'talk-to-sales' | 'add-manually'
@@ -72,6 +72,13 @@ export const CATALOG_FIELD_LABELS: Record<CatalogFieldKey, string> = {
   seoMetaDescription: 'Meta description',
 }
 
+/** What a field-level request works on — the context bar and the card heading. */
+export const CATALOG_FIELD_TITLES: Record<CatalogField, string> = {
+  description: 'Description',
+  seo: 'SEO listing',
+  categories: 'Categories',
+}
+
 export interface CatalogPreset {
   id: string
   label: string
@@ -90,10 +97,10 @@ export const CATALOG_PRESETS: Record<'create' | 'enrich' | CatalogField, Catalog
     { id: 'soy-candle', label: 'Soy wax candle', icon: 'flame', hint: 'Brand and price', prompt: 'Draft a soy wax candle called Cedar & Smoke by Local Artisan, $32' },
   ],
   enrich: [
-    { id: 'enrich-all', label: 'Improve description, SEO and tags', icon: 'sparkles', hint: 'Pick which suggestions to keep', prompt: 'Improve the description, SEO and tags' },
+    { id: 'enrich-all', label: 'Improve the whole listing', icon: 'sparkles', hint: 'Description, categories, SEO and tags', prompt: 'Improve the description, categories, SEO and tags' },
     { id: 'enrich-description', label: 'Rewrite the description', icon: 'align-left', hint: 'Description only', prompt: 'Rewrite the description' },
     { id: 'enrich-seo', label: 'Write the SEO listing', icon: 'search', hint: 'Title and meta description', prompt: 'Write the SEO title and meta description' },
-    { id: 'enrich-short', label: 'Make it shorter', icon: 'minimize-2', hint: 'A tighter description', prompt: 'Make the description shorter' },
+    { id: 'enrich-categories', label: 'Add categories', icon: 'folder-tree', hint: 'Keeps the ones it has', prompt: 'Suggest categories for this product' },
   ],
   description: [
     { id: 'description-default', label: 'Write a description', icon: 'align-left', hint: 'From the title and options', prompt: 'Write a product description' },
@@ -102,6 +109,9 @@ export const CATALOG_PRESETS: Record<'create' | 'enrich' | CatalogField, Catalog
   seo: [
     { id: 'seo-default', label: 'Write the SEO listing', icon: 'search', hint: 'Title and meta description', prompt: 'Write the SEO title and meta description' },
     { id: 'seo-short', label: 'Keep it short', icon: 'minimize-2', hint: 'Meta without the feature line', prompt: 'Write a short SEO title and meta description' },
+  ],
+  categories: [
+    { id: 'categories-default', label: 'Suggest categories', icon: 'folder-tree', hint: 'From the title and description', prompt: 'Suggest categories for this product' },
   ],
 }
 

@@ -1782,6 +1782,7 @@
   --mp-component-field-height-md: var(--mp-component-control-height);
   --mp-component-field-height-lg: 48px;
   --mp-component-field-labelHeight: 18px;
+  --mp-component-field-actionCollapseWidth: 260px;
   --mp-component-state-padding: var(--mp-space-32);
   --mp-component-state-paddingProminent: var(--mp-space-48);
   --mp-component-state-gap: var(--mp-space-8);

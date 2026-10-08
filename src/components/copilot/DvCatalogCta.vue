@@ -8,7 +8,9 @@
 //   catalog context bar, so the tinted button visibly opens the tinted mode. It
 //   stays below the page's one filled primary action.
 // - `link` (fields): a text action sized to a field's label line, so it can sit in
-//   the label row instead of adding a row under the field.
+//   the label row instead of adding a row under the field. In a field narrower than
+//   `component.field.actionCollapseWidth` it shows only its mark (the host declares
+//   the container); the label stays its accessible name.
 // - `outlined` / `text`: neutral fallbacks.
 // `iconOnly` collapses a header CTA to its mark on phones; the label becomes the
 // accessible name and the tooltip.
@@ -16,7 +18,7 @@
 // Presentational: the host decides whether it renders (feature flag, Build tier)
 // and whether the viewer may use it. A view-only role sees it disabled with the
 // reason on hover or focus — the PRD keeps the CTA visible.
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
 const props = withDefaults(defineProps<{
   label?: string
@@ -41,7 +43,23 @@ const emit = defineEmits<{ click: [] }>()
 const vuetifySize = computed(() => ({ sm: 'small', md: 'default', lg: 'large' } as const)[props.size])
 const vuetifyVariant = computed(() => (props.variant === 'outlined' ? 'outlined' : 'text'))
 const color = computed(() => (props.variant === 'text' ? 'primary' : undefined))
-const tooltip = computed(() => (props.disabled ? props.disabledReason : props.iconOnly ? props.label : ''))
+// A link collapsed to its mark by its field's width (see the container query) needs
+// its label as a tooltip, like iconOnly. Watched, because CSS decides it.
+const linkEl = ref<HTMLButtonElement | null>(null)
+const linkCollapsed = ref(false)
+let observer: ResizeObserver | undefined
+onMounted(() => {
+  const el = linkEl.value
+  if (!el || typeof ResizeObserver === 'undefined') return
+  observer = new ResizeObserver(() => {
+    const text = el.querySelector('.dv-catalog-cta-link__text')
+    linkCollapsed.value = !!text && getComputedStyle(text).position === 'absolute'
+  })
+  observer.observe(el)
+})
+onBeforeUnmount(() => observer?.disconnect())
+
+const tooltip = computed(() => (props.disabled ? props.disabledReason : props.iconOnly || linkCollapsed.value ? props.label : ''))
 </script>
 
 <template>
@@ -53,13 +71,14 @@ const tooltip = computed(() => (props.disabled ? props.disabledReason : props.ic
         <span v-bind="tip" class="dv-catalog-cta__wrap" :tabindex="disabled ? 0 : undefined">
           <button
             v-if="variant === 'link'"
+            ref="linkEl"
             type="button"
             class="dv-catalog-cta-link"
             :disabled="disabled"
             @click="emit('click')"
           >
             <v-icon size="14" aria-hidden="true">sparkles</v-icon>
-            {{ label }}
+            <span class="dv-catalog-cta-link__text">{{ label }}</span>
           </button>
           <v-btn
             v-else-if="iconOnly"
@@ -94,7 +113,7 @@ const tooltip = computed(() => (props.disabled ? props.disabledReason : props.ic
   </span>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .dv-catalog-cta__root,
 .dv-catalog-cta__wrap {
   display: inline-flex;
@@ -171,5 +190,26 @@ const tooltip = computed(() => (props.disabled ? props.disabledReason : props.ic
 .dv-catalog-cta-link:disabled {
   color: var(--text-muted);
   cursor: not-allowed;
+}
+
+/* A narrow field (a half-width grid column, a docked drawer) would put the label
+   and the action on top of each other: keep the mark, hide the words visually. */
+@container (max-width: #{$mp-component-field-actionCollapseWidth}) {
+  .dv-catalog-cta-link {
+    min-width: calc(var(--mp-component-field-labelHeight) + var(--mp-component-field-labelGap));
+    justify-content: center;
+  }
+
+  .dv-catalog-cta-link__text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
 }
 </style>

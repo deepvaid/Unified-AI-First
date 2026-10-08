@@ -1009,6 +1009,7 @@ export const mp_component_field_height_sm = `32px`
 export const mp_component_field_height_md = `40px`
 export const mp_component_field_height_lg = `48px`
 export const mp_component_field_labelHeight = `18px`
+export const mp_component_field_actionCollapseWidth = `260px`
 export const mp_component_state_padding = `32px`
 export const mp_component_state_paddingProminent = `48px`
 export const mp_component_state_gap = `8px`

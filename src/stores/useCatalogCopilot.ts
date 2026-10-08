@@ -321,7 +321,7 @@ export const useCatalogCopilotStore = defineStore('catalogCopilot', () => {
   function greetingFor(ctx: CatalogContext): string {
     const name = ctx.productName?.trim() || 'this product'
     if (ctx.mode === 'enrich') {
-      return `I can suggest a better description, SEO listing and tags for ${name}. You choose which suggestions to apply, and nothing changes until you click Save.`
+      return `I can suggest a better description, categories, SEO listing and tags for ${name}, or file it where you say — “put it in Home & Kitchen”. Nothing changes until you click Save.`
     }
     return 'Tell me about the product you want to add, or pick a starting point. I’ll draft it for you to review — nothing is saved until you apply the draft and click Save as Draft or Publish.'
   }
@@ -491,7 +491,7 @@ export const useCatalogCopilotStore = defineStore('catalogCopilot', () => {
   function actionOf(payload: CatalogApplyPayload): CatalogCtaAction {
     if (payload.mode === 'create') return 'create'
     if (payload.mode === 'enrich') return 'enrich'
-    return payload.field === 'seo' ? 'seo' : 'description'
+    return payload.field ?? 'description'
   }
 
   /** The form hydrated: bill one AI Action (10 credits) and record Apply Completed. */

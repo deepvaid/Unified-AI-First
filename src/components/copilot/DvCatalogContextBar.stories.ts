@@ -17,7 +17,7 @@ const meta = {
   },
   argTypes: {
     mode: { control: 'inline-radio', options: ['create', 'enrich', 'field'], description: 'What the drawer is working on.' },
-    field: { control: 'inline-radio', options: ['description', 'seo'], description: 'Field mode only.' },
+    field: { control: 'inline-radio', options: ['description', 'seo', 'categories'], description: 'Field mode only.' },
     productName: { control: 'text', description: 'The product being edited (enrich and field modes).' },
     wallet: { control: 'object', description: '`CatalogWallet` — trial allowance, Co-Pilot pack or none. Drives the allowance pill.' },
   },

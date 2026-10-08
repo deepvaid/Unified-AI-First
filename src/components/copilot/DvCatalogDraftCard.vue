@@ -15,6 +15,7 @@ import MpListRow from '@/components/MpListRow.vue'
 import type { CatalogDraft, CatalogFieldKey } from '@/composables/useCatalogGenerator'
 import {
   CATALOG_FIELD_LABELS,
+  CATALOG_FIELD_TITLES,
   CREDITS_PER_ACTION,
   type CatalogField,
   type CatalogMode,
@@ -80,7 +81,7 @@ const currentOpen = ref<CatalogFieldKey[]>([])
 const heading = computed(() => {
   if (props.mode === 'create') return props.draft.title || 'New product'
   if (props.mode === 'enrich') return 'Suggestions'
-  return props.field === 'seo' ? 'SEO listing' : 'Description'
+  return CATALOG_FIELD_TITLES[props.field ?? 'description']
 })
 
 const ariaLabel = computed(() => (props.mode === 'create' ? `Product draft: ${heading.value}` : heading.value))
@@ -129,6 +130,23 @@ function counter(key: CatalogFieldKey): string | undefined {
 
 function hasCurrent(key: CatalogFieldKey): boolean {
   return asText(props.current?.[key]).trim().length > 0
+}
+
+/** Categories are only added to, so the row shows the whole set with the additions marked. */
+function isNewCategory(category: string): boolean {
+  return !(props.current?.categories ?? []).some((c) => c.toLowerCase() === category.toLowerCase())
+}
+
+const addedCategoryCount = computed(() => (props.draft.categories ?? []).filter(isNewCategory).length)
+
+function diffTag(key: CatalogFieldKey): string {
+  if (key === 'categories' && hasCurrent(key)) return `Adds ${addedCategoryCount.value}`
+  return hasCurrent(key) ? 'Replaces current' : 'New'
+}
+
+/** "Show current" is for values a suggestion replaces; added-to categories show both already. */
+function canShowCurrent(key: CatalogFieldKey): boolean {
+  return key !== 'categories' && hasCurrent(key)
 }
 
 function toggleCurrent(key: CatalogFieldKey) {
@@ -256,12 +274,22 @@ function skipped(key: CatalogFieldKey): boolean {
         </template>
         <span class="dv-catalog-draft__diff-head">
           <span class="dv-catalog-draft__label">{{ CATALOG_FIELD_LABELS[key] }}</span>
-          <span class="dv-catalog-draft__tag">{{ hasCurrent(key) ? 'Replaces current' : 'New' }}</span>
+          <span class="dv-catalog-draft__tag">{{ diffTag(key) }}</span>
           <span v-if="counter(key)" class="dv-catalog-draft__count">{{ counter(key) }}</span>
           <span v-if="skipped(key)" class="dv-catalog-draft__tag">Not applied</span>
         </span>
         <span v-if="key === 'categories'" class="dv-catalog-draft__chips">
-          <v-chip v-for="category in draft.categories" :key="category" size="small" variant="tonal" label>{{ category }}</v-chip>
+          <v-chip
+            v-for="category in draft.categories"
+            :key="category"
+            size="small"
+            variant="tonal"
+            :color="hasCurrent(key) && isNewCategory(category) ? 'primary' : undefined"
+            :prepend-icon="hasCurrent(key) && isNewCategory(category) ? 'plus' : undefined"
+            label
+          >
+            {{ category }}<span v-if="hasCurrent(key) && isNewCategory(category)" class="d-sr-only">, added</span>
+          </v-chip>
         </span>
         <span
           v-else
@@ -269,7 +297,7 @@ function skipped(key: CatalogFieldKey): boolean {
           :class="{ 'is-clamped': key === 'description' && !descriptionOpen }"
         >{{ asText(draft[key]) }}</span>
         <span
-          v-if="(key === 'description' && isLong(draft.description)) || hasCurrent(key)"
+          v-if="(key === 'description' && isLong(draft.description)) || canShowCurrent(key)"
           class="dv-catalog-draft__links"
         >
           <button
@@ -282,7 +310,7 @@ function skipped(key: CatalogFieldKey): boolean {
             {{ descriptionOpen ? 'Show less' : 'Show all' }}
           </button>
           <button
-            v-if="hasCurrent(key)"
+            v-if="canShowCurrent(key)"
             type="button"
             class="dv-catalog-draft__link"
             :aria-expanded="currentOpen.includes(key)"
@@ -293,6 +321,9 @@ function skipped(key: CatalogFieldKey): boolean {
         </span>
         <span v-if="currentOpen.includes(key)" class="dv-catalog-draft__was">{{ asText(current?.[key]) }}</span>
       </MpListRow>
+      <div v-if="notes.length" class="dv-catalog-draft__todo dv-catalog-draft__todo--diff">
+        <p v-for="note in notes" :key="note" class="dv-catalog-draft__note">{{ note }}</p>
+      </div>
     </div>
 
     <!-- Sticky inside the drawer's scroll body: Apply stays in reach. -->
@@ -525,6 +556,11 @@ function skipped(key: CatalogFieldKey): boolean {
   border-radius: var(--mp-radius-10);
   background: var(--surface-secondary);
   color: var(--on-surface);
+}
+
+/* Under the diff rows: the rows sit flush, so the notes carry their own air. */
+.dv-catalog-draft__todo--diff {
+  margin-top: var(--mp-space-8);
 }
 
 .dv-catalog-draft__todo-line {

@@ -4,6 +4,7 @@
 // the way out. Sits on the Da Vinci soft tint with its declared text pair.
 import { computed } from 'vue'
 import {
+  CATALOG_FIELD_TITLES,
   walletLabel,
   type CatalogField,
   type CatalogMode,
@@ -23,8 +24,7 @@ const contextLabel = computed(() => {
   const name = props.productName?.trim()
   if (props.mode === 'create') return 'New product'
   if (props.mode === 'enrich') return name || 'This product'
-  const field = props.field === 'seo' ? 'SEO listing' : 'Description'
-  return `${field} · ${name || 'Untitled product'}`
+  return `${CATALOG_FIELD_TITLES[props.field ?? 'description']} · ${name || 'Untitled product'}`
 })
 
 const allowance = computed(() => walletLabel(props.wallet))

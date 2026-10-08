@@ -39,6 +39,7 @@ Da Vinci drafts; the merchant applies; the form's own Save persists. The Unified
 | D11 | **A field-level CTA runs its default ask straight away.** Create and Edit with Da Vinci open with presets. | "Generate" is a one-click promise. Enrich needs the merchant to say what to improve. |
 | D12 | **Credits move when the form confirms the hydrate.** The target page takes the pending payload, fills its fields, then calls `confirmApplied`. If a leave guard cancels the navigation, nothing is billed and the card stays open. | This is the PRD's "if Apply did not complete, do not bill". |
 | D13 | **Asking for a product in chat opens catalog create mode.** "Add a product called …" on any page enters create mode and drafts for real. Before, a canned description was copied to the clipboard and `ProductNew?source=davinci` opened blank. Inside the context, another job entirely (revenue, a segment, a campaign) leaves the context and routes normally. | The honest-card-actions rule from the September copilot audit. |
+| D14 | **Da Vinci files products into categories, and only ever adds.** Categories are a field-level ask (*Suggest with Da Vinci* on the Categories field in the stepper and the editor, `CatalogField = 'categories'`), a starting point (*Add categories*), and part of *Improve the whole listing*. A suggestion is what the product has plus what fits, so a merchant's filing is never removed. The fit comes from the product's kind, or from cues in its name when no kind matches ("Air Max" → Apparel, "QLED" → Electronics). A category named in the prompt wins: "put it in Home & Kitchen" uses the catalog's casing; "in a new Gifts category" or "category: Gifts" creates one, with a note to check the name. "Also add …" keeps the suggestion and adds the named one. A new name shows up in the field's options, so it stays selectable. | Products the kind table didn't know got no category at all, and a product that already had one could never gain a second. Adding without removing keeps Apply safe to accept as is. |
 
 ## UI refinements (design review, 29 September 2026)
 
@@ -92,8 +93,9 @@ Measured at 1100px with the drawer docked, at 375px, and in dark mode.
 3. Click *Set the price to $129*. The draft updates and the old one reads Replaced.
 4. **Apply to form**. The stepper is filled, and step 3 shows seven sized variants at $129.00. The allowance drops by 10 credits.
 5. **Publish**. The product is listed and the allowance doesn't change.
-6. Open any product → **Edit with Da Vinci** → *Improve description, SEO and tags*.
+6. Open any product → **Edit with Da Vinci** → *Improve the whole listing*.
 7. Untick a row → **Apply N selected** → **Save**.
+8. On the same page, click **Suggest with Da Vinci** on *Categories*, then type *Also add it to Sports & Outdoors and a new Gifts category*. The card marks the additions and notes that Gifts is new. In a narrow field (half-width column, docked drawer) the action shows only its mark, with the label as a tooltip.
 
 Created products live in memory like the rest of the prototype catalog. Navigate in-app rather than reloading.
 

@@ -32,6 +32,7 @@ const mug = success(generateCreateDraft('Add a ceramic coffee mug called Morning
 const enrich = success(generateEnrichDraft(SEED, 'all', 'Improve the description, SEO and tags', VOCAB))
 const description = success(generateEnrichDraft(SEED, 'description', 'Write a product description', VOCAB))
 const seo = success(generateEnrichDraft(SEED, 'seo', 'Write the SEO title and meta description', VOCAB))
+const categories = success(generateEnrichDraft({ ...SEED, categories: ['Apparel'] }, 'categories', 'Add it to Sports & Outdoors and a new Gifts category', VOCAB))
 
 const createArgs = { mode: 'create', draft: create.draft, keys: create.keys, gaps: create.gaps, notes: create.notes } as const
 const enrichArgs = { mode: 'enrich', draft: enrich.draft, current: enrich.current, keys: enrich.keys, commitLabel: 'Save' } as const
@@ -44,14 +45,14 @@ const meta = {
   args: { ...createArgs, status: 'draft' },
   argTypes: {
     mode: { control: 'inline-radio', options: ['create', 'enrich', 'field'], description: '`create` shows the draft grouped like the stepper; `enrich` and `field` show current vs suggested.' },
-    field: { control: 'inline-radio', options: ['description', 'seo'], description: 'Field mode only.' },
+    field: { control: 'inline-radio', options: ['description', 'seo', 'categories'], description: 'Field mode only.' },
     draft: { control: 'object', description: '`CatalogDraft` — the drafted values.' },
     current: { control: 'object', description: 'Current values for the same keys — the diff’s left side.' },
     keys: { control: 'object', description: 'Drafted keys, in form order.' },
     status: { control: 'select', options: ['draft', 'applied', 'discarded', 'superseded', 'inactive'], description: 'Lives in the thread, not the card, so it survives remounts. Anything but `draft` collapses to one line with a Show draft disclosure — never dimmed.' },
     appliedKeys: { control: 'object', description: 'The subset the merchant applied (enrich).' },
     gaps: { control: 'object', description: 'Fields left blank on purpose — shown under “Left for you” (create).' },
-    notes: { control: 'object', description: 'Assumptions to check, one short sentence each (create).' },
+    notes: { control: 'object', description: 'Assumptions to check, one short sentence each — e.g. a new category name.' },
     commitLabel: { control: 'text', description: '“Save as Draft or Publish” on the create stepper, “Save” on the edit page.' },
     busy: { control: 'boolean', description: 'Apply in flight — the drawer may be navigating to the form.' },
   },
@@ -69,6 +70,7 @@ it costs (1 AI action = 10 credits). Nothing is saved until the merchant's own S
   the search listing, and *Left for you* (fields deliberately blank, plus assumptions to check).
 - **enrich / field** — each suggestion says whether it is **New** or **Replaces current** (the current value is
   one click away); a checkbox per row when there is more than one. SEO rows show their length on the label line.
+  Categories are only ever **added** to: the row shows the whole set, the additions marked with a plus.
 
 ## Rules
 - The footer is sticky inside the drawer's scroll body, so Apply stays in reach. The host publishes its bottom
@@ -94,6 +96,7 @@ export const Variants: Story = {
     { label: 'Enrich — pick a subset', args: enrichArgs },
     { label: 'Field — description', args: { mode: 'field', field: 'description', draft: description.draft, current: description.current, keys: description.keys, commitLabel: 'Save' } },
     { label: 'Field — SEO', args: { mode: 'field', field: 'seo', draft: seo.draft, current: seo.current, keys: seo.keys, commitLabel: 'Save' } },
+    { label: 'Field — categories (adds, one new)', args: { mode: 'field', field: 'categories', draft: categories.draft, current: categories.current, keys: categories.keys, notes: categories.notes, commitLabel: 'Save' } },
   ], { columns: 'repeat(auto-fit, minmax(320px, 1fr))' }),
 }
 

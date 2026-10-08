@@ -20,6 +20,7 @@ import DvCatalogCta from '@/components/copilot/DvCatalogCta.vue'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
 import { useWizardSteps } from '@/composables/useWizardSteps'
 import { useCatalogCopilotStore, type CatalogApplyPayload } from '@/stores/useCatalogCopilot'
+import type { CatalogField } from '@/composables/catalogCopilotConfig'
 import type { ProductSnapshot } from '@/composables/useCatalogGenerator'
 
 const route = useRoute()
@@ -85,6 +86,8 @@ const brand = ref('')
 const tag = ref('')
 const collection = ref('')
 const categories = ref<string[]>([])
+// A category Da Vinci filed the product under that the list doesn't have yet stays selectable.
+const categoryOptions = computed(() => [...CATEGORIES, ...categories.value.filter(c => !CATEGORIES.includes(c))])
 const width = ref('')
 const length = ref('')
 const height = ref('')
@@ -296,7 +299,7 @@ function buildSnapshot(): ProductSnapshot {
   }
 }
 
-function generateField(field: 'description' | 'seo') {
+function generateField(field: CatalogField) {
   const productId = editingId.value ?? undefined
   catalog.ctaClicked('field', field, productId)
   catalog.openField({ field, snapshot: buildSnapshot(), productId, productName: title.value.trim() || undefined })
@@ -549,7 +552,17 @@ onMounted(() => {
               <v-combobox v-model="brand" :items="BRANDS" label="Brand" clearable />
               <v-combobox v-model="tag" :items="TAGS" label="Tag" clearable />
               <v-select v-model="collection" :items="collectionOptions" label="Collection" clearable />
-              <v-select v-model="categories" :items="CATEGORIES" label="Categories" multiple chips closable-chips />
+              <div class="pw-field-action">
+                <v-select v-model="categories" :items="categoryOptions" label="Categories" multiple chips closable-chips />
+                <DvCatalogCta
+                  v-if="catalog.ctaVisible"
+                  label="Suggest with Da Vinci"
+                  variant="link"
+                  class="pw-field-action__cta"
+                  :disabled="!catalog.canInvoke"
+                  @click="generateField('categories')"
+                />
+              </div>
             </MpFormGrid>
           </MpWizardStepCard>
 
@@ -696,6 +709,8 @@ onMounted(() => {
 <style scoped>
 .pw-field-action {
   position: relative;
+  /* The label-row CTA collapses to its mark by this field's width. */
+  container-type: inline-size;
 }
 
 .pw-field-action__cta {

@@ -4,6 +4,7 @@ import {
   generateCreateDraft,
   generateEnrichDraft,
   mergeBrief,
+  parseCategoryAsk,
   SEO_META_MAX,
   SEO_TITLE_MAX,
   type CatalogGenSuccess,
@@ -181,4 +182,78 @@ test('the chat intro is one sentence; gaps and notes carry what the merchant mus
   const enrich = ok(generateEnrichDraft(snapshot({ name: 'Allbirds Tree Runners - Wool White' }), 'all', 'Improve the description, SEO and tags', VOCAB))
   assert.match(enrich.intro, /^\d+ suggestions for Allbirds Tree Runners\.$/)
   assert.deepEqual(enrich.notes, ['It had no description, so I wrote one.'])
+})
+
+test('Da Vinci adds categories to the ones a product has, and never removes one', () => {
+  const { draft, keys, current, intro, refinements } = ok(generateEnrichDraft(
+    snapshot({ description: 'A trail running shoe for rocky ground', categories: ['Apparel'] }),
+    'categories',
+    'Suggest categories for this product',
+    VOCAB,
+  ))
+  assert.deepEqual(keys, ['categories'])
+  assert.deepEqual(draft.categories, ['Apparel', 'Sports & Outdoors'])
+  assert.deepEqual(current?.categories, ['Apparel'])
+  assert.equal(intro, '1 category for Trail Runner Pro.')
+  assert.deepEqual(refinements, [], 'tone refinements need copy to refine')
+})
+
+test('a product no kind matches still gets a category from its name', () => {
+  const category = (name: string) =>
+    ok(generateEnrichDraft(snapshot({ name }), 'categories', 'Suggest categories for this product', VOCAB)).draft.categories
+  assert.deepEqual(category('Nike Air Max 270 - Black/White'), ['Apparel'])
+  assert.deepEqual(category('Samsung 65" QLED 4K Smart TV'), ['Electronics'])
+  assert.deepEqual(category('DEWALT 20V MAX Cordless Drill'), ['Tools & Garden'])
+})
+
+test('"Improve the whole listing" includes categories', () => {
+  const { keys } = ok(generateEnrichDraft(snapshot({ name: 'Nike Air Max 270 - Black/White' }), 'all', 'Improve the description, categories, SEO and tags', VOCAB))
+  assert.ok(keys.includes('categories'))
+})
+
+test('a named category is filed as asked: catalog casing for one it has, a note for a new one', () => {
+  const known = ok(generateEnrichDraft(snapshot({ description: 'x', categories: ['Apparel'] }), 'all', 'Put it in home & kitchen', VOCAB))
+  assert.deepEqual(known.keys, ['categories'], 'naming a category asks for that alone')
+  assert.deepEqual(known.draft.categories, ['Apparel', 'Home & Kitchen'])
+  assert.deepEqual(known.notes, [])
+
+  const also = ok(generateEnrichDraft(snapshot({ name: 'Nike Air Max 270 - Black/White' }), 'categories', 'Also add it to Sports & Outdoors', VOCAB))
+  assert.deepEqual(also.draft.categories, ['Apparel', 'Sports & Outdoors'], '“also” keeps the suggestion and adds the named one')
+
+  const created = ok(generateEnrichDraft(snapshot({ categories: ['Apparel'] }), 'all', 'Add it to a new Gifts category', VOCAB))
+  assert.deepEqual(created.draft.categories, ['Apparel', 'Gifts'])
+  assert.deepEqual(created.notes, ['“Gifts” is a new category — check the name before you save.'])
+})
+
+test('category asks are read from how merchants phrase them, and filler is not a name', () => {
+  const names = (prompt: string) => parseCategoryAsk(prompt, VOCAB).names
+  assert.deepEqual(names('Add it to Home & Kitchen and Electronics'), ['Home & Kitchen', 'Electronics'])
+  assert.deepEqual(names('category: Holiday Gifts'), ['Holiday Gifts'])
+  assert.deepEqual(names('add it to my store under gifts category'), ['Gifts'])
+  assert.deepEqual(names('Also add it to Sports & Outdoors and a new Gifts category'), ['Sports & Outdoors', 'Gifts'])
+  assert.deepEqual(names('put it in a new Bed and Bath category'), ['Bed and Bath'])
+  assert.deepEqual(names('put it in the right category'), [])
+  assert.deepEqual(names('Suggest categories for this product'), [])
+  assert.deepEqual(names('Add a ceramic coffee mug called Morning Ritual in white and sage, priced at $24'), [])
+})
+
+test('create files the draft under a named category as well as the inferred one', () => {
+  const brief = 'Draft a soy wax candle called Cedar & Smoke by Local Artisan, $32'
+  const { draft, notes } = ok(generateCreateDraft(`${brief}, in the Gifts category`, VOCAB))
+  assert.equal(draft.title, 'Cedar & Smoke')
+  assert.deepEqual(draft.categories, ['Gifts', 'Home & Kitchen'])
+  assert.deepEqual(notes, ['“Gifts” is a new category — check the name before you save.'])
+  // A refinement naming a category refines the draft rather than starting over.
+  const refined = ok(generateCreateDraft(mergeBrief(brief, 'Add it to Home & Kitchen and Electronics'), VOCAB))
+  assert.equal(refined.draft.title, 'Cedar & Smoke')
+  assert.deepEqual(refined.draft.categories, ['Home & Kitchen', 'Electronics'])
+})
+
+test('nothing to add says so, and asks for a category by name', () => {
+  const filed = generateEnrichDraft(snapshot({ description: 'A trail running shoe', categories: ['Sports & Outdoors', 'Apparel'] }), 'categories', 'Suggest categories for this product', VOCAB)
+  assert.equal(filed.ok, false)
+  assert.match(filed.ok ? '' : filed.message, /already in the categories I’d suggest\. Name one to add, like “add it to Electronics”\./)
+  const unknown = generateEnrichDraft(snapshot({ name: 'Oura Ring Gen 3 - Gold' }), 'categories', 'Suggest categories for this product', VOCAB)
+  assert.equal(unknown.ok, false)
+  assert.match(unknown.ok ? '' : unknown.message, /^I can’t tell which category fits Oura Ring Gen 3/)
 })

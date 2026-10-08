@@ -70,7 +70,7 @@ export interface CatalogVocab {
   brands: string[]
 }
 
-export type CatalogAsk = 'all' | 'description' | 'seo'
+export type CatalogAsk = 'all' | 'description' | 'seo' | 'categories'
 export type CatalogGenErrorCode = 'timeout' | 'missing_title' | 'unclear' | 'no_changes'
 
 export interface CatalogGenSuccess {
@@ -646,6 +646,101 @@ function normaliseCategories(preferred: string[], vocab: CatalogVocab): string[]
   return preferred.map((c) => vocab.categories.find((v) => v.toLowerCase() === c.toLowerCase()) ?? c)
 }
 
+/** When no product kind matches, a category can still be read off the name. Catalog names. */
+const CATEGORY_CUES: { category: string; test: RegExp }[] = [
+  { category: 'Electronics', test: /\b(?:phone|iphone|tv|qled|oled|laptop|tablet|kindle|camera|gopro|headphones?|earbuds?|speakers?|charger|charging|usb(?:-c)?|bluetooth|tracker|thermostat|doorbell|smart|hue|robot|roomba|monitor)\b/i },
+  { category: 'Apparel', test: /\b(?:shoes?|sneakers?|trainers?|air max|runners?|boots?|jeans|leggings|pants|shorts|shirt|tee|sweater|hoodie|jacket|vest|fleece|dress|skirt|socks?|luggage|carry-on|backpack)\b/i },
+  { category: 'Home & Kitchen', test: /\b(?:kitchen|mixer|blender|cooker|pot|oven|pan|skillet|knife|mug|tumbler|kettle|espresso|coffee|sous vide|vacuum|mattress|pillow|towel|candle|lamp|grill)\b/i },
+  { category: 'Sports & Outdoors', test: /\b(?:bike|yoga|fitness|gym|running|trail|hiking|camping|tent|cooler|quencher|flask|adventure|outdoor)\b/i },
+  { category: 'Beauty & Health', test: /\b(?:massage|serum|cream|lotion|shampoo|skincare|makeup|vitamins?|supplements?|toothbrush|razor|fragrance|perfume)\b/i },
+  { category: 'Tools & Garden', test: /\b(?:drill|saw|hammer|wrench|screwdriver|tools?|garden|hose|mower|trimmer)\b/i },
+]
+
+/** The categories a product fits: its kind's, or — for a kind with none — what its name suggests. */
+function inferCategories(kind: Kind, text: string, vocab: CatalogVocab): string[] {
+  if (kind.categories.length) return normaliseCategories(kind.categories, vocab)
+  return CATEGORY_CUES
+    .filter((cue) => cue.test.test(text) && (!vocab.categories.length || hasCategory(vocab.categories, cue.category)))
+    .slice(0, 2)
+    .map((cue) => normaliseCategories([cue.category], vocab)[0]!)
+}
+
+function hasCategory(list: string[], name: string): boolean {
+  return list.some((c) => c.toLowerCase() === name.toLowerCase())
+}
+
+function uniqueCategories(list: string[]): string[] {
+  return list.filter((c, i) => list.findIndex((other) => other.toLowerCase() === c.toLowerCase()) === i)
+}
+
+/** Words that point at a category without naming one — "put it in the right category". */
+const CATEGORY_FILLER = new Set([
+  'a', 'an', 'the', 'new', 'right', 'best', 'correct', 'proper', 'relevant', 'suitable', 'same', 'other',
+  'another', 'its', 'this', 'that', 'my', 'our', 'their', 'more', 'some', 'any', 'which', 'what', 'own', 'one',
+])
+
+/** "in the Gifts category" · "to a new category called Gifts" · "category: Gifts". */
+const NAMED_CATEGORY_RES = [
+  /\b(?:to|in|into|under)\s+(?:an?\s+|the\s+)?(?:new\s+)?["“]?([\p{L}\p{N}&'’ -]{2,40}?)["”]?\s+categor(?:y|ies)\b/giu,
+  /\bcategor(?:y|ies)\s*(?::|=|called|named)\s*["“]?([\p{L}\p{N}&'’ -]{2,40}?)["”]?(?=$|[,.;!?]|\s+(?:and|with|for)\b)/giu,
+]
+
+function escapeRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+export interface CategoryAsk {
+  /** Categories the merchant named, catalog casing where the catalog has them. */
+  names: string[]
+  /** The named ones the catalog doesn't have yet. */
+  created: string[]
+}
+
+/**
+ * Categories the merchant asked for by name: one the catalog already has ("put it in
+ * Home & Kitchen"), or a new one, which needs the word category ("in a new Gifts
+ * category", "category: Gifts").
+ */
+export function parseCategoryAsk(prompt: string, vocab: CatalogVocab): CategoryAsk {
+  const found: { at: number; name: string }[] = []
+  const known = (lead: string) => {
+    for (const category of vocab.categories) {
+      if (hasCategory(found.map((f) => f.name), category)) continue
+      const match = new RegExp(`(?:^|\\b|,)\\s*(?:${lead})\\s+(?:the\\s+)?${escapeRegExp(category)}(?![\\p{L}\\p{N}])`, 'iu').exec(prompt)
+      if (match) found.push({ at: match.index, name: category })
+    }
+  }
+  known('to|in|into|under|as')
+  // A list continues what a preposition started: "to Home & Kitchen and Electronics".
+  if (found.length) known('and|or|,')
+  for (const re of NAMED_CATEGORY_RES) {
+    re.lastIndex = 0
+    for (let m = re.exec(prompt); m; m = re.exec(prompt)) {
+      // Keep what follows the last preposition or list break: "to my store under gifts
+      // category" and "to Sports & Outdoors and a new Gifts category" both name Gifts.
+      // "and" only breaks the list before an article, so "Bed and Bath" stays one name.
+      const tail = (m[1] ?? '').trim()
+        .split(/\s+(?:to|in|into|under|as|for|on|of)\s+|(?:\s+(?:and|or)|,)\s+(?=(?:an?|the|new)\s)/i).pop() ?? ''
+      const words = tail.split(/\s+/).filter(Boolean)
+      while (words.length && CATEGORY_FILLER.has(words[0]!.toLowerCase())) words.shift()
+      if (!words.length || words.length > 4 || words.every((w) => CATEGORY_FILLER.has(w.toLowerCase()))) continue
+      const raw = words.join(' ')
+      const known = vocab.categories.find((c) => c.toLowerCase() === raw.toLowerCase())
+      found.push({ at: m.index, name: known ?? titleCase(raw) })
+    }
+    re.lastIndex = 0
+  }
+  const names = uniqueCategories(found.sort((a, b) => a.at - b.at).map((f) => f.name))
+  return { names, created: names.filter((name) => !hasCategory(vocab.categories, name)) }
+}
+
+/** "Also add it to Gifts" adds to what Da Vinci suggested rather than replacing it. */
+const ALSO_RE = /\b(?:also|too|as well)\b/i
+
+function newCategoryNotes(created: string[]): string[] {
+  return created.map((name) => `“${name}” is a new category — check the name before you save.`)
+}
+
 const COLLECTION_STOP = new Set([
   'the', 'and', 'of', 'for', 'all', 'products', 'product', 'over', 'door', 'free', 'standing', 'wall', 'mounted',
   'ceiling', 'home', 'office', 'feature', 'picks', 'summer', 'clearance', 'inactive', 'self', 'emptying',
@@ -712,6 +807,7 @@ export function generateCreateDraft(brief: string, vocab: CatalogVocab): Catalog
   const title = name ?? titleCase(descriptor)
   const brand = parseBrand(brief, vocab)
   const price = parsePrice(brief)
+  const categoryAsk = parseCategoryAsk(brief, vocab)
 
   const options: ProductOption[] = []
   const explicitSizes = parseSizes(brief)
@@ -731,7 +827,7 @@ export function generateCreateDraft(brief: string, vocab: CatalogVocab): Catalog
     description: buildDescription(copy),
     brand,
     tag: kind.tag || 'New',
-    categories: normaliseCategories(kind.categories, vocab),
+    categories: uniqueCategories([...categoryAsk.names, ...inferCategories(kind, `${title} ${descriptor}`, vocab)]),
     collection: matchCollection(`${title} ${descriptor}`, vocab.collections),
     options: options.length ? options : undefined,
     price,
@@ -749,7 +845,8 @@ export function generateCreateDraft(brief: string, vocab: CatalogVocab): Catalog
   const gaps: CatalogFieldKey[] = []
   if (!price) gaps.push('price')
   if (!brand) gaps.push('brand')
-  const notes: string[] = []
+  if (!draft.categories?.length) gaps.push('categories')
+  const notes: string[] = [...newCategoryNotes(categoryAsk.created)]
   if (!name) notes.push(`“${title}” is a working title — you didn’t name the product.`)
   if (sizes && !explicitSizes) notes.push(`Standard size run (${sizeRange(sizes)}) — edit it in Variants if yours differs.`)
   else if (sizesAsked && !sizes) notes.push('No sizes yet — tell me which ones you sell.')
@@ -784,17 +881,25 @@ export function generateEnrichDraft(
     ? ['Read the current product', 'Draft description']
     : ask === 'seo'
       ? ['Read the current product', 'Draft SEO listing']
-      : ['Read the current product', 'Compare with your catalog', 'Draft suggestions']
+      : ask === 'categories'
+        ? ['Read the current product', 'Match catalog categories']
+        : ['Read the current product', 'Compare with your catalog', 'Draft suggestions']
   if (SIMULATED_TIMEOUT_RE.test(prompt)) return { ok: false, code: 'timeout', message: TIMEOUT_MESSAGE, steps }
 
   const name = snapshot.name.trim()
-  if (!name && (ask === 'seo' || !snapshot.description.trim())) {
+  const categoryAsk = parseCategoryAsk(prompt, vocab)
+  // Named categories need no product name; inferring them does.
+  const needsName = ask === 'categories' ? !categoryAsk.names.length && !snapshot.description.trim()
+    : ask === 'seo' || !snapshot.description.trim()
+  if (!name && needsName) {
     return {
       ok: false,
       code: 'missing_title',
       message: ask === 'seo'
         ? 'A useful SEO title needs the product name, so I haven’t drafted one. Add the title in the form, then try again.'
-        : 'I need the product name to write a description. Add the title in the form, then try again.',
+        : ask === 'categories'
+          ? 'I need the product name to suggest categories. Add the title in the form, or name the category you want.'
+          : 'I need the product name to write a description. Add the title in the form, then try again.',
       steps,
     }
   }
@@ -829,21 +934,32 @@ export function generateEnrichDraft(
   if (tone === 'default' && description === snapshot.description.trim()) {
     description = buildDescription({ ...copy, tone: 'premium' })
   }
+  // Categories are only ever added to — what the merchant filed stays filed. Named
+  // ones win over the ones that fit the product; "also add Gifts" keeps both.
+  const inferred = inferCategories(kind, `${name} ${snapshot.description}`, vocab)
+  const proposed = !categoryAsk.names.length ? inferred
+    : ALSO_RE.test(prompt) ? uniqueCategories([...inferred, ...categoryAsk.names])
+      : categoryAsk.names
+  const addedCategories = proposed.filter((c) => !hasCategory(snapshot.categories, c))
   const suggested: CatalogDraft = {
     subtitle: snapshot.subtitle ? undefined : kind.subtitle,
     description,
     tag: snapshot.tag || !kind.tag ? undefined : kind.tag,
-    categories: snapshot.categories.length || !kind.categories.length ? undefined : normaliseCategories(kind.categories, vocab),
+    categories: addedCategories.length ? [...snapshot.categories, ...addedCategories] : undefined,
     collection: snapshot.collection ? undefined : matchCollection(`${name} ${descriptor}`, vocab.collections),
     seoTitle: displayName ? buildSeoTitle(displayName, descriptor, snapshot.brand || undefined) : undefined,
     seoMetaDescription: displayName ? buildSeoMeta(copy) : undefined,
   }
 
-  const areas = ask === 'all' ? parseAreas(prompt) : null
+  let areas = ask === 'all' ? parseAreas(prompt) : null
+  // "Put it in Home & Kitchen" is a category ask, even without the word category.
+  if (ask === 'all' && categoryAsk.names.length) areas = new Set([...(areas ?? []), 'categories'])
   const wanted = (key: CatalogFieldKey) =>
     ask === 'description' ? key === 'description'
       : ask === 'seo' ? key === 'seoTitle' || key === 'seoMetaDescription'
-        : !areas || areas.has(key)
+        : ask === 'categories' ? key === 'categories'
+          : !areas || areas.has(key)
+  const categoriesOnly = ask === 'categories' || (areas?.size === 1 && areas.has('categories'))
   const draft: CatalogDraft = {}
   const currentForKeys: CatalogDraft = {}
   for (const key of CATALOG_FIELD_ORDER) {
@@ -854,29 +970,43 @@ export function generateEnrichDraft(
   }
   const keys = orderedKeys(draft)
   if (!keys.length) {
+    const example = vocab.categories.find((c) => !hasCategory(snapshot.categories, c)) ?? 'Home & Kitchen'
     return {
       ok: false,
       code: 'no_changes',
-      message: `${displayName || 'This product'} already has what I’d suggest. Ask for something specific, like “make the description shorter”.`,
+      message: !categoriesOnly
+        ? `${displayName || 'This product'} already has what I’d suggest. Ask for something specific, like “make the description shorter”.`
+        : snapshot.categories.length
+          ? `${displayName || 'This product'} is already in the categories I’d suggest. Name one to add, like “add it to ${example}”.`
+          : `I can’t tell which category fits ${displayName || 'this product'} from its name and description. Name one, like “add it to ${example}”.`,
       steps,
     }
   }
 
   const subject = displayName || 'this product'
+  const added = keys.includes('categories') ? addedCategories : []
   const intro = ask === 'description'
     ? `A description for ${subject}.`
     : ask === 'seo'
       ? `An SEO title and meta description for ${subject}.`
-      : `${keys.length === 1 ? '1 suggestion' : `${keys.length} suggestions`} for ${subject}.`
-  const notes = ask === 'all' && !snapshot.description.trim() ? ['It had no description, so I wrote one.'] : []
+      : categoriesOnly
+        ? `${added.length === 1 ? '1 category' : `${added.length} categories`} for ${subject}.`
+        : `${keys.length === 1 ? '1 suggestion' : `${keys.length} suggestions`} for ${subject}.`
+  const notes = [
+    ...(keys.includes('categories') ? newCategoryNotes(categoryAsk.created.filter((c) => hasCategory(added, c))) : []),
+    ...(keys.includes('description') && ask === 'all' && !snapshot.description.trim() ? ['It had no description, so I wrote one.'] : []),
+  ]
 
   let explanation: string
   if (ask === 'description') {
     explanation = `Here’s a description for ${displayName || 'this product'}. Apply it to fill the Description field — you can still edit it before you save.`
+  } else if (categoriesOnly) {
+    const keeps = snapshot.categories.length ? ' — the ones it has stay' : ''
+    explanation = `I’d add ${subject} to ${listOf(added)}. Apply it to update Categories${keeps}; nothing changes until you save.`
   } else if (ask === 'seo') {
     explanation = `Here’s an SEO title (${draft.seoTitle?.length ?? 0} characters) and meta description (${draft.seoMetaDescription?.length ?? 0} characters) for ${displayName}.`
   } else {
-    const lead = snapshot.description.trim() ? '' : 'It has no description yet, so I wrote one. '
+    const lead = keys.includes('description') && !snapshot.description.trim() ? 'It has no description yet, so I wrote one. ' : ''
     explanation = `${lead}Here ${keys.length === 1 ? 'is 1 suggestion' : `are ${keys.length} suggestions`} for ${displayName}. Pick the ones you want and apply them — nothing changes until you click Save. Brand, price and status stay as they are.`
   }
 
@@ -884,6 +1014,8 @@ export function generateEnrichDraft(
     !(tone === 'short' && r === 'Make it shorter') && !(tone === 'premium' && r.includes('premium')) && !(tone === 'playful' && r.includes('playful')),
   )
 
+  // Tone refinements only make sense when there is copy to refine.
+  const hasCopy = keys.some((k) => k === 'description' || k === 'subtitle' || k === 'seoTitle' || k === 'seoMetaDescription')
   return {
     ok: true,
     draft,
@@ -894,6 +1026,6 @@ export function generateEnrichDraft(
     gaps: [],
     notes,
     steps,
-    refinements: ask === 'seo' ? refinements.slice(0, 2) : refinements,
+    refinements: !hasCopy ? [] : ask === 'seo' ? refinements.slice(0, 2) : refinements,
   }
 }
