@@ -12,10 +12,10 @@ export interface MaropayBenefit {
 }
 
 export const MAROPAY_BENEFITS: readonly MaropayBenefit[] = [
-  { icon: 'receipt', title: 'Payments beside your orders', desc: 'Capture, refund and investigate a payment from the order you’re already looking at.' },
-  { icon: 'landmark', title: 'Payouts you can trace', desc: 'Every payout breaks down into the payments, fees, refunds and disputes inside it.' },
-  { icon: 'store', title: 'One business, every store', desc: 'Verify your business once, then switch stores on one at a time.' },
-  { icon: 'zap', title: 'Express buttons at checkout', desc: 'Apple Pay, Google Pay and PayPal as one-tap buttons on product pages, the cart and checkout.' },
+  { icon: 'receipt', title: 'Refund from the order', desc: 'Capture, refund or investigate a payment without leaving the order.' },
+  { icon: 'landmark', title: 'Payouts you can trace', desc: 'Every deposit breaks down to the payments, fees and refunds inside it.' },
+  { icon: 'store', title: 'Verify once', desc: 'One business check covers every store you add.' },
+  { icon: 'zap', title: 'One-tap checkout', desc: 'Apple Pay, Google Pay and PayPal on product pages, the cart and checkout.' },
   { icon: 'shield-alert', title: 'Disputes with the deadline up front', desc: 'Respond with an evidence checklist before the shopper’s bank decides.' },
   { icon: 'life-buoy', title: 'Maropost support first', desc: 'One place to ask about an order and the payment behind it.' },
 ]

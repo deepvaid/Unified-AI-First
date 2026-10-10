@@ -99,12 +99,13 @@ import {
   ensureStoreProviders,
   isManualKind,
   isOwnProviderKind,
+  lineupFor,
   methodFacts,
   ownMethodIds,
   providerLabel,
   storeProvidersFor,
 } from '../../maropay/providers.ts'
-import type { ManualMethodSettings, OwnProviderKind, ProviderStatus, StoreProviderSetup } from '../../maropay/providers.ts'
+import type { ManualMethodSettings, OwnProviderKind, ProviderKind, ProviderStatus, StoreProviderSetup } from '../../maropay/providers.ts'
 import { resolveShopperMethods } from '../../maropay/storefront.ts'
 import { EDITABLE_DRAFT_FIELDS, bankAccountErrors, descriptorIssue, digitsOnly, isEmail, submissionIssues } from '../../maropay/onboarding.ts'
 import type { BankAccountInput, EditableDraftField, OnboardingPatch } from '../../maropay/onboarding.ts'
@@ -914,6 +915,24 @@ export function removeProvider(state: MaropayAccountState, channelId: string, ki
   return ok(setup)
 }
 
+/**
+ * The checkout lineup, rearranged: every provider on the store once, Maropay among them while it is
+ * live. Presentation only, like checkout options — nothing about what checkout offers changes.
+ */
+export function reorderLineup(state: MaropayAccountState, channelId: string, kinds: ProviderKind[], env: AdapterEnv): Result<StoreProviderSetup> {
+  if (!allowed(env, 'manage_methods', channelId)) return denied('Only the business owner can change the checkout order.')
+  const current = storeProvidersFor(state, channelId)
+  const expected = lineupFor(current, { maropay: findBinding(state, channelId)?.activation === 'live' })
+  if (kinds.length !== expected.length || new Set(kinds).size !== kinds.length || kinds.some((k) => !expected.includes(k))) {
+    return fail('invalid_input', 'The checkout order can only list the providers on this store, once each.')
+  }
+  if (kinds.join() === expected.join()) return ok(current)
+  const setup = ensureStoreProviders(state, channelId)
+  setup.lineup = [...kinds]
+  log(state, env, 'methods', `Checkout order: ${kinds.map(providerLabel).join(', ')}`, channelId)
+  return ok(setup)
+}
+
 /** What a manual method says to shoppers. Every field is optional; only what's passed changes. */
 export function updateManualMethod(state: MaropayAccountState, channelId: string, kind: OwnProviderKind, fields: Partial<ManualMethodSettings>, env: AdapterEnv): Result<StoreProviderSetup> {
   if (!allowed(env, 'manage_methods', channelId)) return denied('Only the business owner can change payment providers.')
@@ -950,6 +969,8 @@ export interface CheckoutInput {
   amount: Money
   customer: { name: string; email: string }
   lineItems: CheckoutLineItem[]
+  /** Cards: "Visa •••• 4242" from the number typed (storefront.ts `cardLabel`); the prototype's default when absent. */
+  cardLabel?: string | null
 }
 
 export interface CheckoutStep {
@@ -989,6 +1010,7 @@ export function createCheckoutSession(state: MaropayAccountState, input: Checkou
     methodId: input.methodId,
     providerId: method.providerId,
     methodLabel: method.label,
+    cardLabel: input.methodId === 'card' ? input.cardLabel ?? null : null,
     flow: input.flow,
     state: 'open',
     paymentId: null,
@@ -1019,7 +1041,7 @@ function sessionPayment(state: MaropayAccountState, session: CheckoutSession, st
     provider: session.providerId,
     processorRef: ours ? `pi_mp${state.accountId}_${n}` : `${session.providerId}_${state.accountId}_${n}`,
     methodId: session.methodId,
-    methodLabel: session.methodId === 'card' ? CARD_LABEL : session.methodLabel,
+    methodLabel: session.methodId === 'card' ? session.cardLabel ?? CARD_LABEL : session.methodLabel,
     amount: session.amount,
     status,
     captureMode,

@@ -136,9 +136,12 @@ test('a card through the merchant’s Stripe captures (or declines) like any car
   const payment = done.ok ? done.value.payment! : null
   assert.equal(payment?.provider, 'stripe')
   assert.equal(payment?.status, 'captured')
-  assert.equal(payment?.methodLabel, 'Visa •••• 4242')
+  assert.equal(payment?.methodLabel, 'Visa •••• 4242', 'the prototype’s default card when none was typed')
   assert.equal(state.movements.length, 0)
   assert.equal(state.milestones.firstPaymentId, null, 'a Stripe payment is not Maropay’s first')
+  const typed = createCheckoutSession(state, { channelId: ATLAS, methodId: 'card', flow: 'success', cardLabel: 'Mastercard •••• 8810', ...INPUT }, env())
+  const typedDone = confirmCheckoutSession(state, typed.ok ? typed.value.id : '', env())
+  assert.equal(typedDone.ok ? typedDone.value.payment?.methodLabel : null, 'Mastercard •••• 8810', 'the card the shopper typed is the one on the record')
   const declined = createCheckoutSession(state, { channelId: ATLAS, methodId: 'card', flow: 'declined', ...INPUT }, env())
   const failed = confirmCheckoutSession(state, declined.ok ? declined.value.id : '', env())
   assert.equal(failed.ok && failed.value.payment?.status, 'failed')

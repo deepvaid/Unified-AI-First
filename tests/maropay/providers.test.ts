@@ -4,12 +4,13 @@ import { buildScenario } from '../../src/maropay/scenarios.ts'
 import { emptyState } from '../../src/maropay/model.ts'
 import { money } from '../../src/maropay/money.ts'
 import {
-  activeConnections, cardGateway, defaultStoreProviders, ensureStoreProviders, platformFeeFor, platformFeeLine, providerSubtitle, storeProvidersFor,
+  activeConnections, cardGateway, defaultStoreProviders, ensureStoreProviders, lineupFor, platformFeeFor, platformFeeLine, providerSubtitle, storeProvidersFor,
 } from '../../src/maropay/providers.ts'
+import { parseState } from '../../src/maropay/model.ts'
 import { activationChecklist, migrationImpact, storeCheckoutNote } from '../../src/maropay/readiness.ts'
 import { storefrontOffer } from '../../src/maropay/storefront.ts'
 import {
-  activateStore, connectProvider, deactivateStore, markImpactReviewed, removeProvider, setMethodEnabled, setProviderStatus, updateManualMethod, validateCheckout,
+  activateStore, connectProvider, deactivateStore, markImpactReviewed, removeProvider, reorderLineup, setMethodEnabled, setProviderStatus, updateManualMethod, validateCheckout,
 } from '../../src/services/maropay/mockAdapter.ts'
 import { ATLAS, NOW, channelFacts, context, env } from './fixtures.ts'
 
@@ -152,6 +153,36 @@ test('a manual method’s wording reaches the shopper, and needs a name', () => 
   assert.deepEqual([bank.label, bank.caption, bank.instructions], ['Bank transfer (EFT)', 'We ship once it clears.', 'BSB 062-000 · Account 1234 5678'])
   assert.ok(updateManualMethod(state, ATLAS, 'bank_deposit', { displayName: 'Bank transfer (EFT)' }, env()).ok)
   assert.equal(state.history.length, before + 1, 'no change, no history line')
+})
+
+test('the checkout lineup: whoever takes cards leads, manual methods close, Maropay joins once live, and a saved order survives', () => {
+  const m18 = buildScenario('m18', context())
+  assert.deepEqual(lineupFor(storeProvidersFor(m18, ATLAS), { maropay: false }), ['eway', 'afterpay', 'zip', 'bank_deposit', 'cod'])
+  assert.deepEqual(lineupFor(storeProvidersFor(m18, ATLAS), { maropay: true }), ['eway', 'afterpay', 'zip', 'maropay', 'bank_deposit', 'cod'], 'not yet taking cards, Maropay slots in after the other online providers')
+  assert.deepEqual(lineupFor(storeProvidersFor(m18, ATLAS), { maropay: true, processor: 'maropay' }), ['maropay', 'eway', 'afterpay', 'zip', 'bank_deposit', 'cod'])
+
+  const state = buildScenario('m10', context())
+  assert.deepEqual(lineupFor(storeProvidersFor(state, ATLAS), { maropay: true }), ['maropay', 'paypal', 'bank_deposit'])
+  assert.equal(reorderLineup(state, ATLAS, ['paypal', 'maropay', 'bank_deposit'], env(NOW, 'finance')).ok, false, 'owner only')
+  const twice = reorderLineup(state, ATLAS, ['paypal', 'paypal', 'bank_deposit'], env())
+  assert.equal(!twice.ok && twice.error.code, 'invalid_input')
+  const stranger = reorderLineup(state, ATLAS, ['paypal', 'maropay', 'zip'], env())
+  assert.equal(!stranger.ok && stranger.error.code, 'invalid_input')
+  const before = state.history.length
+  assert.ok(reorderLineup(state, ATLAS, ['maropay', 'paypal', 'bank_deposit'], env()).ok)
+  assert.equal(state.history.length, before, 'the same order is not a change')
+  assert.ok(reorderLineup(state, ATLAS, ['bank_deposit', 'maropay', 'paypal'], env()).ok)
+  assert.match(state.history[0]!.text, /^Checkout order: Bank deposit, Maropay, PayPal$/)
+  assert.deepEqual(storefrontOffer(state, ATLAS, PRICE).methods.map((m) => m.providerId), ['bank_deposit', 'maropay', 'maropay', 'maropay', 'paypal'])
+  // A newcomer slots in by the rule; a removed provider drops out; a reload keeps the order.
+  assert.ok(connectProvider(state, ATLAS, 'cod', env()).ok)
+  assert.deepEqual(lineupFor(storeProvidersFor(state, ATLAS), { maropay: true }), ['bank_deposit', 'maropay', 'paypal', 'cod'])
+  assert.ok(removeProvider(state, ATLAS, 'paypal', env()).ok)
+  assert.deepEqual(lineupFor(storeProvidersFor(state, ATLAS), { maropay: true }), ['bank_deposit', 'maropay', 'cod'])
+  const reloaded = parseState(JSON.stringify(state), state.accountId, NOW)!
+  assert.deepEqual(storeProvidersFor(reloaded, ATLAS).lineup, ['bank_deposit', 'maropay', 'paypal'])
+  assert.ok(deactivateStore(state, ATLAS, env()).ok)
+  assert.deepEqual(lineupFor(storeProvidersFor(state, ATLAS), { maropay: false }), ['bank_deposit', 'cod'], 'stopped: Maropay leaves the lineup; the saved order waits')
 })
 
 test('every live scenario keeps one of the merchant’s own providers beside Maropay', () => {

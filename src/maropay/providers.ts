@@ -58,6 +58,12 @@ export interface StoreProviderSetup {
   channelId: string
   connections: ProviderConnection[]
   cardProcessor: ProviderKind | null
+  /**
+   * The checkout lineup the merchant arranged: providers in the order shoppers see them, Maropay
+   * among them once it's live. Absent until they drag something; kinds it doesn't name follow
+   * the default rule in `lineupFor`.
+   */
+  lineup?: ProviderKind[]
 }
 
 /** Cards and the wallets that tokenise a card — they always go through the store's card processor. */
@@ -232,6 +238,29 @@ export function connectionOfferedMethods(connection: ProviderConnection, setup: 
 /** Every method id the store's own active connections can offer, whoever takes cards — what the merchant may arrange. */
 export function ownMethodIds(setup: StoreProviderSetup): string[] {
   return [...new Set(activeConnections(setup).flatMap((c) => c.methods.map((m) => m.methodId)))]
+}
+
+/**
+ * The checkout lineup: every provider on the store, in shopper order. The saved order leads
+ * (minus anything since removed); a provider it doesn't name slots in by the default rule —
+ * whoever takes cards goes first, other online providers follow the ones already there, manual
+ * methods close. `maropay` joins the list only while the caller says it is on (live, or a preview).
+ */
+export function lineupFor(setup: StoreProviderSetup, options: { maropay: boolean; processor?: ProviderKind | null }): ProviderKind[] {
+  const processor = options.processor === undefined ? setup.cardProcessor : options.processor
+  const present: ProviderKind[] = [...setup.connections.map((c) => c.kind), ...(options.maropay ? (['maropay'] as const) : [])]
+  const ordered = (setup.lineup ?? []).filter((kind, i, all) => present.includes(kind) && all.indexOf(kind) === i)
+  for (const kind of present) {
+    if (ordered.includes(kind)) continue
+    if (kind === processor) ordered.unshift(kind)
+    else if (isManualKind(kind)) ordered.push(kind)
+    else {
+      let last = -1
+      ordered.forEach((k, i) => { if (!isManualKind(k)) last = i })
+      ordered.splice(last + 1, 0, kind)
+    }
+  }
+  return ordered
 }
 
 // ── The illustrative platform fee ─────────────────────────────────────────

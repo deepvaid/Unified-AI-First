@@ -2123,3 +2123,35 @@ Maropay"), the order page's Provider row and a "Mark as paid" path for manual pa
 **Not in this check-in (next):** the shopper pages (product page, cart, checkout, manual-instructions confirmation)
 and `StoreCheckoutOptionsCard` over the merged list; the storefront already lists the extra providers from the shared
 offer, with the old not-live placeholder still in place.
+
+### H — the Claude Design UI pass on Maropay (2026-10-10)
+
+Five surfaces rebuilt from the owner's Claude Design mocks, **design-system tokens only** (the owner's rule: no new
+colour). What the pass added to the system and what it decided:
+
+- **Shopify-compact sell card.** `MaropayProviderCard` is one shape in twelve states: wordmark row, one line of copy,
+  a three-fact row (`factStrip`), the accepted marks, actions. A tall hero with a live checkout picture was built and
+  taken down the same day on the owner's call — logged as H1 in `docs/maropay/decisions.md`.
+- **One ordered lineup.** `StoreLineupRow` is a new shared row geometry (grip + position, tile, title/subtitle, a
+  right-aligned money block, status, actions); `StoreProviderRow` composes it; `StoreLineupCard` drags rows with native
+  HTML5 DnD and offers Move up / Move down in the kebab for keyboard users. The order lives on
+  `StoreProviderSetup.lineup` and the storefront sorts by it (H2).
+- **Ink money panel.** `MaropayMoneyPanel` is the first consumer of the `--ink-panel-*` pair at page scale. The skin
+  sets the text aliases (`--text-*`, `--on-surface*`) on its root, so token-driven children (`MaropayMoney`, labels)
+  take the pair without per-component overrides — the pattern to reuse for any inverted surface. A proportional bar,
+  legend and timestamp were removed as noise (H3).
+- **Vertical timeline.** `MaropaySetupTimeline` (discs on `--pos`/`--on-pos`, `--neg-soft`/`--neg-ink`, connector on
+  `--border-default`) over a pure `setupTimeline`. The DS still has no generic vertical stepper; if a second product
+  needs one, lift this into `Mp*`.
+- **Headless step cards.** `MpWizardStepCard headless` keeps an sr-only heading so the wizard's outline stays
+  h1 → h2 → h3 when the shell's header carries the step. `DIAL_CODES` joins `COUNTRY_LABELS` in the model.
+- **Storefront receipt.** `StorefrontReceipt.vue` (out of system, P4-8): till-slip card, the card actually typed
+  (`cardLabel` → `CheckoutSession.cardLabel`), `shopperReference`, a 10-second way back (paused on hover/focus,
+  cancelled by a key, off under reduced motion, never twice per receipt).
+- **Gotchas recorded.** A container query can't target the container itself (put the grid on an inner wrapper); a
+  `<style scoped>` without `lang="scss"` silently drops `#{$mp-layout-*}` media queries; dark mode in the app is
+  `localStorage['app-theme-mode']`, not `prefers-color-scheme`.
+
+Gates at the end of the pass: 182 Maropay tests, type-check, build, Storybook build, contrast 272/272, axe 0 on each
+surface (the only notes left are pre-existing: `MpWizardSteps`' role, the Da Vinci bot's tooltips), no horizontal
+overflow at 375, dark checked.

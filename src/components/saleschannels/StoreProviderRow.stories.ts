@@ -21,40 +21,42 @@ const meta = {
       description: {
         component: `
 ### Overview
-One of the merchant's own providers on a store's Payments page — PayPal, Stripe, eWay, Afterpay, Zip, or a
-manual method — as an \`MpListRow\`: the provider's tile, what it offers now, its rate and the illustrative
-Maropost platform fee (\`providerSubtitle\`), a \`connection\` status chip and a kebab (Configure · Turn on/off ·
-Remove). A provider still to connect also gets a visible **Finish setup** and an inline nag.
+One of the merchant's own providers in a store's checkout lineup — PayPal, Stripe, eWay, Afterpay, Zip, or a
+manual method — on \`StoreLineupRow\`: a grip and position number, the provider's tile, what it offers now, a
+money block (rate over the illustrative Maropost platform fee line), a \`connection\` status chip and a kebab
+(Configure · Turn on/off · Move up/down · Remove). A provider still to connect also gets a visible
+**Finish setup** and an inline nag.
 
-**Use when:** the Payment providers and Manual payment methods cards on \`StorePayments\`.
+**Use when:** the Checkout lineup card on \`StorePayments\`.
 
 **Don't use when:** listing Maropay's own methods — that's \`MaropayMethodRow\`.
 
 ### A11y
 - **Provides:** a static row (never a button, so the kebab isn't nested-interactive), a named kebab
-  ("Stripe actions"), chips with icons so the state is never colour alone.
-- **Consumer must:** wrap rows in \`role="list"\` and pass \`role="listitem"\`; handle \`configure\`, \`toggle\`
-  and \`remove\`.
+  ("Stripe actions"), chips with icons so the state is never colour alone, **Move up / Move down** menu items
+  as the keyboard path for what pointer users do by dragging (the grip is decorative).
+- **Consumer must:** wrap rows in \`role="list"\` and pass \`role="listitem"\`; handle \`configure\`, \`toggle\`,
+  \`remove\` and \`move\`; pass \`canMoveUp\` / \`canMoveDown\` only when the lineup can be rearranged.
         `,
       },
     },
   },
-  args: { connection: stripe, setup: m05, canManage: true },
+  args: { connection: stripe, setup: m05, position: 1, canManage: true, canMoveUp: false, canMoveDown: true, draggable: true },
 } satisfies Meta<typeof StoreProviderRow>
 
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** Stripe taking cards and wallets before Maropay (M05). */
+/** Stripe taking cards and wallets before Maropay (M05), first in the lineup. */
 export const Default: Story = {}
 
 export const States: Story = {
   render: stack({ StoreProviderRow }, [
-    { label: 'Active gateway (Stripe, M05)', args: { connection: stripe, setup: m05, canManage: true } },
-    { label: 'Setup incomplete (Zip, just added)', args: { connection: zip, setup: m05, canManage: true } },
-    { label: 'Inactive (PayPal switched off)', args: { connection: paypalOff, setup: live, canManage: true } },
-    { label: 'Manual method (Bank deposit)', args: { connection: bank, setup: m05, canManage: true } },
-    { label: 'Gateway after Maropay took cards (Stripe beside a live store)', args: { connection: { ...stripe }, setup: { ...m05, cardProcessor: 'maropay' }, canManage: true } },
-    { label: 'Read-only (store operations)', args: { connection: stripe, setup: m05, canManage: false } },
+    { label: 'Active gateway (Stripe, M05)', args: { connection: stripe, setup: m05, position: 1, canManage: true, canMoveUp: false, canMoveDown: true, draggable: true } },
+    { label: 'Setup incomplete (Zip, just added)', args: { connection: zip, setup: m05, position: 2, canManage: true, canMoveUp: true, canMoveDown: true, draggable: true } },
+    { label: 'Inactive (PayPal switched off)', args: { connection: paypalOff, setup: live, position: 2, canManage: true, canMoveUp: true, canMoveDown: true, draggable: true } },
+    { label: 'Manual method (Bank deposit)', args: { connection: bank, setup: m05, position: 3, canManage: true, canMoveUp: true, canMoveDown: false, draggable: true } },
+    { label: 'Gateway after Maropay took cards (Stripe beside a live store)', args: { connection: { ...stripe }, setup: { ...m05, cardProcessor: 'maropay' }, position: 2, canManage: true, canMoveUp: true, canMoveDown: true, draggable: true } },
+    { label: 'Read-only (store operations)', args: { connection: stripe, setup: m05, position: 1, canManage: false } },
   ]),
 }

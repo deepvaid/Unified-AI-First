@@ -51,7 +51,7 @@ This is NOT a production app — it uses mock data and has no backend API.
 │   │   ├── copilot/           ← 22 Dv* Da Vinci surfaces (4 Catalog Co-Pilot) + voice/ (7 orbit voice components)
 │   │   ├── dashboards/        ← 7 dashboard containers + widgets/ (5) + wizard/ (2)
 │   │   ├── marketing/         ← Journey flow column, mini preview, add-step menu
-│   │   ├── maropay/           ← 19 Maropay* product surfaces (Product/Maropay stories), incl. the Maropay card a store's Payments page sells from
+│   │   ├── maropay/           ← 23 Maropay* product surfaces (Product/Maropay stories), incl. the Maropay card a store's Payments page sells from, the overview's money panel and the setup timeline
 │   │   ├── merchandising/     ← MerchProductCard
 │   │   └── settings/          ← SettingsSection, SettingsPlaceholder, settingsMenu (rail = MpSectionRail)
 │   ├── maropay/               ← Maropay domain logic — pure TS, node:test-importable (see docs/maropay/)

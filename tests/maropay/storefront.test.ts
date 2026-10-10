@@ -2,8 +2,8 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { buildScenario } from '../../src/maropay/scenarios.ts'
 import { money } from '../../src/maropay/money.ts'
-import { cardErrors, flowForMethod, paidWithText, payButtonText, resolveShopperMethods, storefrontOffer } from '../../src/maropay/storefront.ts'
-import { activateStore, deactivateStore, markImpactReviewed, setMethodEnabled, setProviderStatus, simulateMethodApproval, updateCheckoutOptions, validateCheckout } from '../../src/services/maropay/mockAdapter.ts'
+import { cardErrors, cardLabel, flowForMethod, paidWithText, payButtonText, resolveShopperMethods, shopperReference, storefrontOffer } from '../../src/maropay/storefront.ts'
+import { activateStore, deactivateStore, markImpactReviewed, reorderLineup, setMethodEnabled, setProviderStatus, simulateMethodApproval, updateCheckoutOptions, validateCheckout } from '../../src/services/maropay/mockAdapter.ts'
 import { ATLAS, NOW, channelFacts, context, env } from './fixtures.ts'
 
 const PRICE = money(9995, 'USD')
@@ -32,17 +32,21 @@ test('one order and one default across providers reach the shopper, with the exp
   assert.equal(offer.defaultMethodId, 'google_pay')
   assert.deepEqual(offer.express, [])
   assert.equal(payButtonText(offer.methods[1]!, offer.payButton, PRICE), 'Place order')
-  // The merchant can put their own methods first too.
+  // Providers move as a block through the lineup; the method order only arranges a provider's own slot.
   assert.ok(updateCheckoutOptions(state, ATLAS, { methodOrder: ['bank_deposit', 'paypal'], defaultMethodId: 'bank_deposit' }, env()).ok)
   offer = storefrontOffer(state, ATLAS, PRICE)
-  assert.deepEqual(offer.methods.map((m) => m.id), ['bank_deposit', 'paypal', 'card', 'apple_pay', 'google_pay'])
+  assert.deepEqual(offer.methods.map((m) => m.id), ['card', 'apple_pay', 'google_pay', 'paypal', 'bank_deposit'], 'Maropay still leads: it takes the store’s cards')
   assert.equal(offer.defaultMethodId, 'bank_deposit')
+  assert.ok(reorderLineup(state, ATLAS, ['bank_deposit', 'paypal', 'maropay'], env()).ok)
+  offer = storefrontOffer(state, ATLAS, PRICE)
+  assert.deepEqual(offer.methods.map((m) => m.id), ['bank_deposit', 'paypal', 'card', 'apple_pay', 'google_pay'])
+  assert.deepEqual(offer.providers.map((p) => p.id), ['bank_deposit', 'paypal', 'maropay'])
   const notOnStore = updateCheckoutOptions(state, ATLAS, { methodOrder: ['zip'] }, env())
   assert.equal(!notOnStore.ok && notOnStore.error.code, 'invalid_input')
   // A default that is no longer offered falls back to the first method.
   assert.ok(updateCheckoutOptions(state, ATLAS, { methodOrder: [], defaultMethodId: 'google_pay' }, env()).ok)
   setMethodEnabled(state, ATLAS, 'google_pay', false, env())
-  assert.equal(storefrontOffer(state, ATLAS, PRICE).defaultMethodId, 'card')
+  assert.equal(storefrontOffer(state, ATLAS, PRICE).defaultMethodId, 'bank_deposit', 'the first method in the lineup, which bank deposit now leads')
 })
 
 test('the merchant’s own PayPal wins over PayPal through Maropay, and PayPal appears once either way', () => {
@@ -181,6 +185,17 @@ test('checkout options: owner only, validated across providers, logged — and t
 
 test('paid-with reads the brand the shopper chose; only Maropay’s cards carry the Maropay name', () => {
   assert.equal(paidWithText({ provider: 'maropay', methodId: 'card', methodLabel: 'Visa •••• 4242', status: 'captured' }), 'Maropay · Visa •••• 4242')
+  // The receipt's card label comes from the number typed; its reference is short, stable and never the processor's.
+  assert.equal(cardLabel('4242 4242 4242 4242'), 'Visa •••• 4242')
+  assert.equal(cardLabel('5555 5555 5555 8810'), 'Mastercard •••• 8810')
+  assert.equal(cardLabel('3782 822463 10005'), 'Amex •••• 0005')
+  assert.equal(cardLabel('6011 0009 9013 9424'), 'Card •••• 9424')
+  assert.equal(cardLabel('12'), null)
+  assert.equal(cardLabel(''), null)
+  assert.match(shopperReference('pay_mp1001'), /^MP-[A-Z2-9]{4}-[A-Z2-9]{4}$/)
+  assert.equal(shopperReference('pay_mp1001'), shopperReference('pay_mp1001'))
+  assert.notEqual(shopperReference('pay_mp1001'), shopperReference('pay_mp1002'))
+  assert.ok(!/[01IOL]/.test(shopperReference('pay_mp1001').slice(3)), 'no letters that read as digits')
   assert.equal(paidWithText({ provider: 'stripe', methodId: 'card', methodLabel: 'Visa •••• 4242', status: 'captured' }), 'Visa •••• 4242')
   assert.equal(paidWithText({ provider: 'paypal', methodId: 'paypal', methodLabel: 'PayPal', status: 'captured' }), 'PayPal')
   assert.equal(paidWithText({ provider: 'bank_deposit', methodId: 'bank_deposit', methodLabel: 'Direct bank transfer', status: 'processing' }), 'Direct bank transfer — awaiting payment')

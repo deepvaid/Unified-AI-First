@@ -7,7 +7,7 @@ import { buildScenario } from '../../src/maropay/scenarios.ts'
 import { money, sum, zero } from '../../src/maropay/money.ts'
 import { localDateKey } from '../../src/maropay/model.ts'
 import type { Payment } from '../../src/maropay/model.ts'
-import { dayLabel, volumeSeries } from '../../src/maropay/volume.ts'
+import { dayLabel, volumeDelta, volumeSeries } from '../../src/maropay/volume.ts'
 import { applyProcessorEvent } from '../../src/services/maropay/mockAdapter.ts'
 import { NOW, context, env } from './fixtures.ts'
 
@@ -17,6 +17,17 @@ function inWindow(payments: Payment[], now: number, days: number) {
   const first = new Date(new Date(now).getFullYear(), new Date(now).getMonth(), new Date(now).getDate() - (days - 1)).getTime()
   return payments.filter((p) => p.provider === 'maropay').flatMap((p) => p.captures).filter((c) => Date.parse(c.at) >= first && Date.parse(c.at) <= now)
 }
+
+test('the delta compares this window with the one just before it, and has no figure without a base', () => {
+  const state = buildScenario('m10', context())
+  const d = volumeDelta(state.payments, NOW, 30, 'USD')
+  assert.deepEqual(d.current, volumeSeries(state.payments, NOW, 30, 'USD').total)
+  const firstDay = new Date(new Date(NOW).getFullYear(), new Date(NOW).getMonth(), new Date(NOW).getDate() - 29)
+  assert.deepEqual(d.previous, volumeSeries(state.payments, firstDay.getTime() - 1, 30, 'USD').total, 'the previous window ends the day before this one starts')
+  if (d.previous.amount > 0) assert.equal(d.pct, Math.round(((d.current.amount - d.previous.amount) / d.previous.amount) * 1000) / 10)
+  const quiet = volumeDelta(state.payments, NOW, 7, 'EUR')
+  assert.deepEqual([quiet.current.amount, quiet.previous.amount, quiet.pct], [0, 0, null])
+})
 
 test('gross volume sums every Maropay capture in the window — refunded payments still count', () => {
   const state = buildScenario('m10', context())

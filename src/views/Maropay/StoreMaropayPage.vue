@@ -23,7 +23,7 @@ import { useMaropayStore } from '@/stores/useMaropay'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import { markForProvider } from '@/maropay/methodMarks'
 import { HISTORY_KIND_ICONS, PROVIDER_LABELS, STORE_ACTIVATION_LABELS } from '@/maropay/model'
-import { activeConnections, cardGateway, connectionOfferedMethods, providerLabel } from '@/maropay/providers'
+import { activeConnections, cardGateway, connectionOfferedMethods, lineupFor, providerLabel } from '@/maropay/providers'
 import type { CaptureMode, MethodStatus, PaymentMethodCatalogEntry } from '@/maropay/model'
 import { formatDay, joinList, storePaymentsTarget, taskTarget } from '@/maropay/readiness'
 import type { ActivationCheckItem } from '@/maropay/readiness'
@@ -240,9 +240,11 @@ function deactivate(): void {
 // ── The store's other providers (Maropay's frame) ──────────────────
 
 const providersRoute = computed(() => ({ name: 'StorePayments', params: { accountId: accountId.value, channelId: channelId.value } }))
+// In the store's checkout lineup order, so this list and the store editor's never disagree.
 const otherProviders = computed(() => {
   const setup = maropay.storeProvidersFor(channelId.value)
-  return activeConnections(setup).map((c) => ({
+  const order = lineupFor(setup, { maropay: false })
+  return [...activeConnections(setup)].sort((a, b) => order.indexOf(a.kind) - order.indexOf(b.kind)).map((c) => ({
     kind: c.kind,
     name: providerLabel(c.kind),
     offers: connectionOfferedMethods(c, setup).map((m) => m.label),

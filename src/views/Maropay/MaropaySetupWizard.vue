@@ -7,23 +7,27 @@ import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpFormSection from '@/components/MpFormSection.vue'
 import MpListRow from '@/components/MpListRow.vue'
 import MpOptionCard from '@/components/MpOptionCard.vue'
-import MpSectionHeader from '@/components/MpSectionHeader.vue'
+import MpSegmentedControl from '@/components/MpSegmentedControl.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpWizardShell from '@/components/MpWizardShell.vue'
 import MpWizardStepCard from '@/components/MpWizardStepCard.vue'
+import MaropayDemoPanel from '@/components/maropay/MaropayDemoPanel.vue'
 import MaropayRatesTable from '@/components/maropay/MaropayRatesTable.vue'
-import MaropayReadinessCard from '@/components/maropay/MaropayReadinessCard.vue'
+import MaropaySetupTimeline from '@/components/maropay/MaropaySetupTimeline.vue'
 import MaropaySupportAlert from '@/components/maropay/MaropaySupportAlert.vue'
 import { useToast } from '@/composables/useToast'
 import { useWizardSteps } from '@/composables/useWizardSteps'
 import { useMaropayStore } from '@/stores/useMaropay'
 import { formatMoney, money } from '@/maropay/money'
-import { BUSINESS_TYPE_LABELS, COUNTRY_LABELS, DEFAULT_PAYOUT_SCHEDULE, ONBOARDING_STEPS, ROLE_LABELS, localDateKey, personName } from '@/maropay/model'
+import { BUSINESS_TYPE_LABELS, COUNTRY_LABELS, DEFAULT_PAYOUT_SCHEDULE, DIAL_CODES, ONBOARDING_STEPS, ROLE_LABELS, localDateKey, personName } from '@/maropay/model'
 import { requirementForm, rulesFor } from '@/maropay/requirements'
 import type { MaropayError, MockDocument, OnboardingDraft, OnboardingStepKey } from '@/maropay/model'
 import { EDITABLE_DRAFT_FIELDS, bankAccountErrors, bankCodeFor, blockingIssues, countryLabel, submissionIssues } from '@/maropay/onboarding'
+import { websiteIssue } from '@/maropay/validation'
 import type { EditableDraftField, OnboardingPatch, SetupField, SetupIssue } from '@/maropay/onboarding'
-import { STEP_LABELS, formatDay, isSupportedCountry, payoutScheduleLabel } from '@/maropay/readiness'
+import { STEP_LABELS, formatDay, isSupportedCountry, payoutScheduleLabel, storePaymentsTarget } from '@/maropay/readiness'
+import type { PartnerDecision } from '@/maropay/readiness'
+import { setupTimeline } from '@/maropay/setupTimeline'
 
 // Maropay → Setup: the flow that turns a Maropost account into a verified
 // Maropay business (plan §3C). Maropost owns the journey; our payments partner
@@ -177,6 +181,61 @@ const structureItems = computed(() => rules.value.structures.map((s) => ({ value
 const industryItems = computed(() => rules.value.industries)
 /** US setups may describe their products instead of giving a website. */
 const websiteAlternative = computed(() => rules.value.alternatives.some((a) => a.original === 'business_profile.url'))
+const dialCode = computed(() => DIAL_CODES[form.country])
+
+/**
+ * "Reachable" — a simulated check: the prototype has no network, so a website that passes
+ * validation reads as reachable 600ms after the merchant stops typing. In production this is a
+ * real request; the field's success state is the same either way (settings-form.scss).
+ */
+const websiteReachable = ref(false)
+let reachTimer: ReturnType<typeof setTimeout> | null = null
+watch(() => form.business.website, (value) => {
+  websiteReachable.value = false
+  if (reachTimer) clearTimeout(reachTimer)
+  if (!value.trim() || websiteIssue(value)) return
+  reachTimer = setTimeout(() => { websiteReachable.value = true }, 600)
+}, { immediate: true })
+/** The field shows the host; the "https://" is its prefix. The draft keeps whatever was typed (validation normalises). */
+const websiteHost = computed(() => form.business.website.replace(/^https?:\/\//i, ''))
+/** The phone field shows the local number; the dial code is its prefix and travels with the saved value. */
+const phoneLocal = computed(() => (dialCode.value ? form.business.phone.replace(new RegExp(`^\\${dialCode.value}\\s*`), '') : form.business.phone))
+function setPhone(local: string): void {
+  const trimmed = local.replace(/^\+\d+\s*/, '')
+  form.business.phone = dialCode.value && trimmed ? `${dialCode.value} ${trimmed}` : trimmed
+}
+const websiteFieldAttrs = computed(() => {
+  const locked = lockedAttrs.value as { readonly?: boolean; class?: string }
+  const ok = websiteReachable.value && !errorFor('website')
+  return {
+    ...locked,
+    class: [locked.class, 'mp-form-grid__full', ok ? 'mp-field-success' : ''].filter(Boolean).join(' '),
+    appendInnerIcon: ok ? 'circle-check' : undefined,
+    messages: ok ? ['Reachable'] : undefined,
+  }
+})
+
+/** The shell's header carries the step: "Step 1 of 6" · the step's title · its one-line description. */
+const STEP_COPY: Record<OnboardingStepKey, { title: string; description: string }> = {
+  business: { title: 'Tell us about your business', description: 'Our payments partner uses this to verify the business that will take payments. Your answers are saved as you go.' },
+  terms: { title: 'Rates and terms', description: 'What Maropay costs, when you’re paid and the agreements you accept.' },
+  verify: { title: 'Verify your business', description: 'Our payments partner checks these details against official records, so they need to match exactly.' },
+  payout: { title: 'Payout account', description: 'Where Maropay sends your money. Once it’s saved, only the last four digits are kept.' },
+  public: { title: 'Public details', description: 'What shoppers see on card statements and receipts.' },
+  review: { title: 'Review and submit', description: 'Check your answers. Our payments partner reviews them after you submit.' },
+}
+/** "to rates and terms" — the destination, shown beside Continue where there's room (hidden on phones). */
+const nextStepLabel = computed(() => {
+  const next = STEP_KEYS[step.value]
+  return next ? `to ${STEP_LABELS[next].toLowerCase()}` : ''
+})
+/** When the draft last went to the store — the autosave caption in the footer. */
+const savedLabel = computed(() => {
+  const at = Date.parse(maropay.state.updatedAt)
+  if (Number.isNaN(at)) return null
+  const minutes = Math.round((maropay.now - at) / 60_000)
+  return minutes < 1 ? 'Saved a moment ago' : minutes < 60 ? `Saved ${minutes} min ago` : `Saved ${formatDay(maropay.state.updatedAt)}`
+})
 const askDescription = computed(() => rules.value.fields.has('business_profile.product_description') || (websiteAlternative.value && form.business.noWebsite))
 const today = localDateKey(Date.now())
 
@@ -443,32 +502,14 @@ async function sendRequirement(): Promise<void> {
 }
 
 // ── Outcome ────────────────────────────────────────────────────────
+// The status page is a timeline (src/maropay/setupTimeline.ts): submitted → verified → payments →
+// payouts → stores, with the headline and the store rows read from the same derivation.
 
-const readinessAction = computed(() => (maropay.overview.action ? maropay.routeFor(maropay.overview.action.target) : null))
-const firstStoreName = computed(() => (maropay.activationTarget ? maropay.channelName(maropay.activationTarget.binding.channelId) : 'a store'))
+const timeline = computed(() => setupTimeline(maropay.state, maropay.now, maropay.channelFacts))
 
-const nextSteps = computed(() => {
-  // A closed account has no next step; the readiness card says so.
-  if (maropay.account?.closedAt) return []
-  switch (maropay.account?.verification) {
-    case 'verified':
-      // Once a store is live, setup is history — the overview carries what's next.
-      if (maropay.dimensions.liveStores > 0) return []
-      return [
-        { title: 'Choose payment methods', desc: 'Cards, Apple Pay and Google Pay are on by default.' },
-        { title: 'Run a test checkout', desc: 'See exactly what shoppers see before anything changes.' },
-        { title: `Activate on ${firstStoreName.value}`, desc: 'Your call, whenever you’re ready — your current payment setup keeps working until you do.' },
-      ]
-    case 'under_review':
-      return [
-        { title: 'Our payments partner reviews your details', desc: 'Usually a few minutes, sometimes up to 2 business days.' },
-        { title: 'We’ll let you know', desc: 'You’ll get a notification when there’s a decision — no need to keep this page open.' },
-        { title: 'Then you choose when to switch', desc: 'Each store keeps its current payment setup until you activate Maropay on it.' },
-      ]
-    default:
-      return []
-  }
-})
+function storeTo(channelId: string) {
+  return maropay.routeFor(storePaymentsTarget(channelId))
+}
 
 const supportReferences = computed(() => [
   { label: 'Maropost account', value: accountId.value },
@@ -481,25 +522,49 @@ const DECISION_TOASTS = {
   more_info: 'Simulated: our payments partner asked for more information.',
   rejected: 'Simulated: verification was declined.',
 } as const
-const DECISION_LABELS = { verified: 'Approve', more_info: 'Needs information', rejected: 'Decline' } as const
+const DECISION_LABELS: Record<PartnerDecision, string> = { verified: 'Approved', more_info: 'Needs information', rejected: 'Declined' }
 
-function simulate(decision: keyof typeof DECISION_TOASTS): void {
+function simulate(decision: PartnerDecision): void {
   const result = maropay.simulateReviewOutcome(decision)
   if (result.ok) toast.info(DECISION_TOASTS[decision])
   else toast.error(result.error.message)
 }
 
+/** The partner's standing decision, as the segmented control shows it; picking another simulates it. */
+const DECISION_BY_VERIFICATION: Partial<Record<string, PartnerDecision>> = { verified: 'verified', action_required: 'more_info', rejected: 'rejected' }
+const decision = computed<PartnerDecision | null>(() => DECISION_BY_VERIFICATION[maropay.account?.verification ?? ''] ?? null)
+const decisionItems = computed(() => (['verified', 'more_info', 'rejected'] as const).map((value) => ({
+  value,
+  label: DECISION_LABELS[value],
+  disabled: value !== decision.value && !maropay.partnerDecisions.includes(value),
+})))
+
+function onDecision(value: string | null): void {
+  if (value && value !== decision.value) simulate(value as PartnerDecision)
+}
+
 // ── Shell ──────────────────────────────────────────────────────────
 
 const TITLES = { wizard: 'Set up Maropay', requirement: 'Provide information', outcome: 'Maropay setup', locked: 'Maropay setup' }
-const title = computed(() => TITLES[mode.value])
+const title = computed(() => {
+  if (mode.value === 'outcome' && timeline.value) return timeline.value.headline
+  if (mode.value === 'wizard') return STEP_COPY[currentKey.value].title
+  return TITLES[mode.value]
+})
+const eyebrow = computed(() => {
+  if (mode.value === 'outcome' && maropay.account?.submittedAt) return `Maropay setup · submitted ${formatDay(maropay.account.submittedAt)}`
+  if (mode.value === 'wizard') return `Step ${step.value} of ${STEP_KEYS.length}`
+  return 'Maropay'
+})
 
 const subtitle = computed(() => {
   switch (mode.value) {
     case 'requirement':
       return requirement.value?.dueAt ? `Requested by our payments partner · due ${formatDay(requirement.value.dueAt)}` : 'Requested by our payments partner'
     case 'outcome':
-      return maropay.account?.submittedAt ? `Submitted ${formatDay(maropay.account.submittedAt)}` : undefined
+      return timeline.value?.detail
+    case 'wizard':
+      return STEP_COPY[currentKey.value].description
     default:
       return undefined
   }
@@ -569,7 +634,7 @@ watch(() => [maropay.state, maropay.actingRole], enter)
 
 <template>
   <MpWizardShell
-    eyebrow="Maropay"
+    :eyebrow="eyebrow"
     :title="title"
     :subtitle="subtitle"
     :steps="mode === 'wizard' ? stepLabels : undefined"
@@ -581,10 +646,6 @@ watch(() => [maropay.state, maropay.actingRole], enter)
     @select="goTo"
     @back="prev"
   >
-    <template v-if="mode === 'wizard'" #actions>
-      <v-btn variant="text" class="text-none text-medium-emphasis" @click="saveAndExit">Save &amp; exit</v-btn>
-    </template>
-
     <div ref="region" class="maropay-setup" tabindex="-1" role="group" :aria-label="regionLabel">
       <!-- ── Locked ─────────────────────────────────────────── -->
       <v-card v-if="mode === 'locked'" flat border rounded="lg">
@@ -648,33 +709,21 @@ watch(() => [maropay.state, maropay.actingRole], enter)
       </MpWizardStepCard>
 
       <!-- ── Outcome ────────────────────────────────────────── -->
-      <template v-else-if="mode === 'outcome'">
-        <MaropayReadinessCard :instruction="maropay.overview" :dimensions="maropay.dimensions" :action-to="readinessAction" />
+      <template v-else-if="mode === 'outcome' && timeline">
+        <MaropaySetupTimeline :timeline="timeline" :store-to="storeTo" />
 
-        <v-card v-if="nextSteps.length" flat border rounded="lg" class="maropay-setup__card">
-          <MpSectionHeader title="What happens next" :heading-level="2" />
-          <MpListRow v-for="(item, index) in nextSteps" :key="item.title">
-            <template #lead><span class="maropay-setup__num" aria-hidden="true">{{ index + 1 }}</span></template>
-            <span class="maropay-setup__row-title">{{ item.title }}</span>
-            <span class="maropay-setup__row-sub">{{ item.desc }}</span>
-          </MpListRow>
-        </v-card>
+        <MaropaySupportAlert
+          v-if="maropay.account?.verification === 'rejected'"
+          title="Ask for this decision to be reviewed"
+          emphasis="prominent"
+          :references="supportReferences"
+        />
 
-        <template v-if="maropay.account?.verification === 'rejected'">
-          <MpAlert tone="info" live="off" title="Nothing changed at checkout">
-            Your stores keep their current payment setup.
-          </MpAlert>
-          <MaropaySupportAlert title="Ask for this decision to be reviewed" emphasis="prominent" :references="supportReferences" />
-        </template>
-
-        <v-card v-if="maropay.partnerDecisions.length" flat border rounded="lg" class="maropay-setup__card">
-          <MpSectionHeader icon="flask-conical" title="Simulate our payments partner’s decision" description="Demo controls — not part of the product." :heading-level="2" />
-          <div class="d-flex flex-wrap ga-2">
-            <v-btn v-for="decision in maropay.partnerDecisions" :key="decision" size="small" variant="outlined" class="text-none" @click="simulate(decision)">
-              {{ DECISION_LABELS[decision] }}
-            </v-btn>
+        <MaropayDemoPanel v-if="maropay.partnerDecisions.length" title="Simulate our partner’s decision" description="Demo controls — not part of the product." :open="true">
+          <div class="maropay-setup__decision">
+            <MpSegmentedControl :model-value="decision" :items="decisionItems" ariaLabel="Simulated partner decision" size="sm" @update:model-value="onDecision" />
           </div>
-        </v-card>
+        </MaropayDemoPanel>
       </template>
 
       <!-- ── Wizard ─────────────────────────────────────────── -->
@@ -692,7 +741,7 @@ watch(() => [maropay.state, maropay.actingRole], enter)
         </template>
 
         <!-- 1 · Business and eligibility -->
-        <MpWizardStepCard v-if="currentKey === 'business'" title="Your business" description="Tell us about the business that will take payments. Your answers are saved as you go.">
+        <MpWizardStepCard headless v-if="currentKey === 'business'" title="Your business" description="Tell us about the business that will take payments. Your answers are saved as you go.">
           <div class="maropay-setup__form">
             <MpFormSection title="How to set up">
               <div class="maropay-setup__choices" role="group" aria-label="How to set up the business">
@@ -722,7 +771,9 @@ watch(() => [maropay.state, maropay.actingRole], enter)
                   hint="Where the business is legally registered, not where you sell."
                   persistent-hint
                   :error-messages="errorFor('country')"
-                />
+                >
+                  <template #prepend-inner><span class="maropay-setup__iso" aria-hidden="true">{{ form.country }}</span></template>
+                </v-select>
                 <v-select
                   v-model="form.businessType"
                   :items="businessTypeItems"
@@ -753,20 +804,18 @@ watch(() => [maropay.state, maropay.actingRole], enter)
                   class="mp-form-grid__full"
                   :error-messages="errorFor('industry')"
                 />
-                <template v-if="!form.business.noWebsite">
-                  <v-text-field
-                    v-model="form.business.website"
-                    v-bind="lockedAttrs"
-                    label="Website *"
-                    type="url"
-                    hint="The site shoppers buy from."
-                    class="mp-form-grid__full"
-                    :error-messages="errorFor('website')"
-                  />
-                  <div v-if="websiteAlternative" class="mp-form-grid__full">
-                    <v-btn variant="text" size="small" class="text-none" @click="form.business.noWebsite = true">I don’t have a website — describe what you sell instead</v-btn>
-                  </div>
-                </template>
+                <v-text-field
+                  v-if="!form.business.noWebsite"
+                  :model-value="websiteHost"
+                  v-bind="websiteFieldAttrs"
+                  @update:model-value="form.business.website = $event"
+                  label="Website *"
+                  type="url"
+                  prefix="https://"
+                  placeholder="example.com"
+                  hint="The site shoppers buy from."
+                  :error-messages="errorFor('website')"
+                />
                 <v-textarea
                   v-if="askDescription"
                   v-model="form.business.productDescription"
@@ -776,15 +825,21 @@ watch(() => [maropay.state, maropay.actingRole], enter)
                   class="mp-form-grid__full"
                   :error-messages="errorFor('productDescription') ?? (form.business.noWebsite ? errorFor('website') : undefined)"
                 />
-                <div v-if="form.business.noWebsite" class="mp-form-grid__full">
-                  <v-btn variant="text" size="small" class="text-none" @click="form.business.noWebsite = false">Use a website instead</v-btn>
-                </div>
+                <v-checkbox
+                  v-if="websiteAlternative"
+                  v-model="form.business.noWebsite"
+                  label="I don’t have a website — I’ll describe what I sell instead"
+                  class="mp-form-grid__full"
+                />
                 <v-text-field
                   v-if="isCompany"
-                  v-model="form.business.phone"
+                  :model-value="phoneLocal"
                   label="Business phone *"
                   type="tel"
-                  autocomplete="tel"
+                  autocomplete="tel-national"
+                  :prefix="dialCode"
+                  placeholder="(415) 555-0199"
+                  @update:model-value="setPhone"
                   :error-messages="errorFor('phone')"
                 />
               </MpFormGrid>
@@ -824,7 +879,7 @@ watch(() => [maropay.state, maropay.actingRole], enter)
         </MpWizardStepCard>
 
         <!-- 2 · Rates and terms -->
-        <MpWizardStepCard v-else-if="currentKey === 'terms'" title="Rates and terms" description="What Maropay costs, when you’re paid and the agreements you accept.">
+        <MpWizardStepCard headless v-else-if="currentKey === 'terms'" title="Rates and terms" description="What Maropay costs, when you’re paid and the agreements you accept.">
           <div class="maropay-setup__form">
             <MpFormSection title="Rates">
               <MaropayRatesTable :methods="maropay.methods" hide-unavailable />
@@ -864,7 +919,7 @@ watch(() => [maropay.state, maropay.actingRole], enter)
         </MpWizardStepCard>
 
         <!-- 3 · Verification -->
-        <MpWizardStepCard v-else-if="currentKey === 'verify'" title="Verify your business" description="Our payments partner checks these details against official records, so they need to match exactly.">
+        <MpWizardStepCard headless v-else-if="currentKey === 'verify'" title="Verify your business" description="Our payments partner checks these details against official records, so they need to match exactly.">
           <div class="maropay-setup__form">
             <MpAlert v-if="form.reuseVerifiedDetails" tone="success" live="off" title="Using details already verified">
               These come from your verified account with our payments partner. To change them, update them there first.
@@ -962,7 +1017,7 @@ watch(() => [maropay.state, maropay.actingRole], enter)
         </MpWizardStepCard>
 
         <!-- 4 · Payout account -->
-        <MpWizardStepCard v-else-if="currentKey === 'payout'" title="Payout account" description="Where Maropay sends your money. Once it’s saved, only the last four digits are kept.">
+        <MpWizardStepCard headless v-else-if="currentKey === 'payout'" title="Payout account" description="Where Maropay sends your money. Once it’s saved, only the last four digits are kept.">
           <div class="maropay-setup__form">
             <MpListRow v-if="maropay.onboarding.payout && !payoutEditing" variant="boxed">
               <template #lead><v-icon size="18" class="maropay-setup__icon">landmark</v-icon></template>
@@ -1000,7 +1055,7 @@ watch(() => [maropay.state, maropay.actingRole], enter)
         </MpWizardStepCard>
 
         <!-- 5 · Public details -->
-        <MpWizardStepCard v-else-if="currentKey === 'public'" title="Public details" description="What shoppers see on card statements and receipts.">
+        <MpWizardStepCard headless v-else-if="currentKey === 'public'" title="Public details" description="What shoppers see on card statements and receipts.">
           <MpFormGrid :cols="2">
             <v-text-field
               v-model="form.publicDetails.statementDescriptor"
@@ -1023,7 +1078,7 @@ watch(() => [maropay.state, maropay.actingRole], enter)
         </MpWizardStepCard>
 
         <!-- 6 · Review and submit -->
-        <MpWizardStepCard v-else title="Review and submit" description="Check your answers. Our payments partner reviews them after you submit.">
+        <MpWizardStepCard headless v-else title="Review and submit" description="Check your answers. Our payments partner reviews them after you submit.">
           <div class="maropay-setup__form">
             <v-card flat border rounded="lg" class="maropay-setup__summary">
               <MpListRow v-for="row in reviewRows" :key="row.key" variant="divided">
@@ -1059,8 +1114,17 @@ watch(() => [maropay.state, maropay.actingRole], enter)
       <v-btn variant="text" class="text-none" prepend-icon="arrow-left" :to="overviewRoute">Back to overview</v-btn>
     </template>
 
+    <!-- Wizard mode owns the footer's start: Back from step 2, and when the draft last saved. -->
+    <template v-if="mode === 'wizard'" #footerStart>
+      <div class="maropay-setup__foot-start">
+        <v-btn v-if="step > 1" variant="text" class="text-none" prepend-icon="arrow-left" @click="prev">Back</v-btn>
+        <span v-if="savedLabel" class="maropay-setup__saved d-none d-sm-inline" aria-live="off">{{ savedLabel }}</span>
+      </div>
+    </template>
+
     <template #footer>
       <template v-if="mode === 'wizard'">
+        <v-btn variant="text" class="text-none" @click="saveAndExit">Save<span class="d-none d-sm-inline">&nbsp;and exit</span></v-btn>
         <template v-if="currentKey === 'review'">
           <v-btn
             v-if="isOwner"
@@ -1095,7 +1159,7 @@ watch(() => [maropay.state, maropay.actingRole], enter)
           :disabled="currentKey === 'business' && unsupported"
           @click="next"
         >
-          Continue
+          Continue<span v-if="nextStepLabel" class="d-none d-sm-inline">&nbsp;{{ nextStepLabel }}</span>
         </v-btn>
       </template>
       <v-btn
@@ -1132,6 +1196,38 @@ watch(() => [maropay.state, maropay.actingRole], enter)
   display: flex;
   flex-direction: column;
   gap: var(--mp-component-field-groupGap);
+}
+
+/* The country's ISO code as a quiet tag inside the select — a flag without artwork. */
+.maropay-setup__iso {
+  display: inline-flex;
+  align-items: center;
+  height: var(--mp-space-20);
+  padding-inline: var(--mp-space-6);
+  margin-inline-end: var(--mp-space-4);
+  border-radius: var(--mp-radius-4);
+  background: var(--surface-secondary);
+  color: var(--on-surface-muted);
+  font-family: var(--mp-fontFamily-mono);
+  font-size: var(--mp-fontSize-11);
+  font-weight: var(--mp-fontWeight-semibold);
+}
+
+.maropay-setup__foot-start {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-12);
+}
+
+.maropay-setup__saved {
+  font-size: var(--mp-fontSize-13);
+  color: var(--text-muted);
+}
+
+/* The demo's segmented control scrolls on a phone rather than widening the strip. */
+.maropay-setup__decision {
+  max-width: 100%;
+  overflow-x: auto;
 }
 
 .maropay-setup__card {

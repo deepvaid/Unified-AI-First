@@ -5,7 +5,7 @@ import { formatMoney, sum } from '@/maropay/money'
 import type { CheckoutLineItem } from '@/maropay/model'
 import { isEmail } from '@/maropay/onboarding'
 import { MAROPAY_STORE_ROUTE } from '@/maropay/readiness'
-import { cardErrors, flowForMethod, payButtonText } from '@/maropay/storefront'
+import { cardErrors, cardLabel, flowForMethod, payButtonText } from '@/maropay/storefront'
 import type { CardInput, ShopperMethod } from '@/maropay/storefront'
 import { useCommerceStore } from '@/stores/useCommerce'
 import { useMaropayStore } from '@/stores/useMaropay'
@@ -16,6 +16,7 @@ import StorefrontCheckoutSheet from './StorefrontCheckoutSheet.vue'
 import StorefrontExpressButtons from './StorefrontExpressButtons.vue'
 import StorefrontPayButton from './StorefrontPayButton.vue'
 import StorefrontPaymentOptions from './StorefrontPaymentOptions.vue'
+import StorefrontReceipt from './StorefrontReceipt.vue'
 import { STOREFRONT } from './storefrontContext'
 import { CATEGORY_ICONS, productHandle } from './storefrontCatalog'
 
@@ -144,7 +145,7 @@ const notLive = ref(false)
 const walletId = ref<string | null>(null)
 
 const payButton = ref<InstanceType<typeof StorefrontPayButton> | null>(null)
-const doneHeading = ref<HTMLElement | null>(null)
+const receipt = ref<InstanceType<typeof StorefrontReceipt> | null>(null)
 
 const failure = computed(() => {
   if (session.value?.state !== 'failed') return null
@@ -214,6 +215,7 @@ async function pay(chosen: ShopperMethod): Promise<void> {
     amount: total.value,
     customer: customer.value,
     lineItems: lineItems.value,
+    cardLabel: chosen.category === 'cards' ? cardLabel(card.value.number) : null,
   })
   if (!started.ok) {
     busy.value = false
@@ -258,7 +260,7 @@ function cancelSheet(): void {
 watch(sheet, async (now, before) => {
   if (now || !before) return
   await nextTick()
-  if (done.value) doneHeading.value?.focus()
+  if (done.value) receipt.value?.focus()
   else payButton.value?.focus()
 })
 
@@ -266,7 +268,7 @@ watch(done, async (isDone) => {
   if (!isDone) return
   if (!buyNow.value) cart.clear(channelId.value)
   await nextTick()
-  doneHeading.value?.focus()
+  receipt.value?.focus()
 }, { immediate: true })
 
 onMounted(() => {
@@ -276,10 +278,8 @@ onMounted(() => {
 
 // ── After the order ──────────────────────────────────────────────────
 
-const paidWith = computed(() => {
-  if (!payment.value) return ''
-  return payment.value.methodId === 'card' ? `Maropay · ${payment.value.methodLabel}` : payment.value.methodLabel
-})
+/** A manual method's instructions, from the offer the shopper paid through. */
+const instructions = computed(() => (session.value ? offer.value.methods.find((m) => m.id === session.value!.methodId)?.instructions ?? null : null))
 const adminLinks = computed(() => {
   const s = session.value
   if (!s?.order || !payment.value) return null
@@ -296,18 +296,14 @@ const storePaymentsHref = computed(() => router.resolve({ name: MAROPAY_STORE_RO
   <div class="sf-co">
     <!-- ── Order placed ─────────────────────────────────────────── -->
     <section v-if="done && session" class="sf-co__done" aria-labelledby="sf-co-done">
-      <v-icon size="48" class="sf-co__done-icon">circle-check</v-icon>
-      <p class="sf-muted sf-co__done-number">Order {{ session.order?.orderNumber }}</p>
-      <h1 id="sf-co-done" ref="doneHeading" tabindex="-1" class="sf-page-title sf-co__done-title">Thank you, {{ session.customer.name.split(' ')[0] }}!</h1>
-      <p v-if="session.state === 'processing'" class="sf-co__done-text">
-        Your order is placed. Your bank is confirming the payment, which takes a few business days; we’ll email {{ session.customer.email }} when it’s through.
-      </p>
-      <p v-else class="sf-co__done-text">Your order is confirmed. We’ve sent a receipt to {{ session.customer.email }}.</p>
-      <dl class="sf-co__done-facts">
-        <div><dt>Paid with</dt><dd>{{ paidWith }}</dd></div>
-        <div><dt>Total</dt><dd>{{ formatMoney(session.amount) }}</dd></div>
-      </dl>
-      <StorefrontAnchor href="/" class="sf-button">Continue shopping</StorefrontAnchor>
+      <StorefrontReceipt
+        ref="receipt"
+        :session="session"
+        :payment="payment"
+        :instructions="instructions"
+        :store-name="storefront.chrome.value.wordmark"
+        :home-href="storefront.link('/')"
+      />
       <p v-if="adminLinks" class="sf-co__demo">
         <strong>Prototype</strong> — what the merchant sees:
         <a :href="adminLinks.order" target="_blank" rel="noopener">the order in Commerce</a> ·
@@ -772,46 +768,6 @@ legend.sf-co__step-title {
   max-width: 560px;
   margin: 24px auto 0;
   text-align: center;
-}
-
-.sf-co__done-icon {
-  color: #2e7d32;
-}
-
-.sf-co__done-number {
-  margin: 0;
-  font-size: 14px;
-}
-
-.sf-co__done-title {
-  outline: none;
-}
-
-.sf-co__done-text {
-  margin: 0;
-}
-
-.sf-co__done-facts {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  width: 100%;
-  margin: 8px 0;
-  padding: 16px 20px;
-  border-radius: 8px;
-  background: #f7f7f5;
-  font-size: 14px;
-}
-
-.sf-co__done-facts div {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.sf-co__done-facts dd {
-  margin: 0;
-  font-weight: 600;
 }
 
 .sf-co__demo {

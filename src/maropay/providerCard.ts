@@ -8,8 +8,6 @@
  *
  * Pure module — relative `.ts` imports only (see money.ts).
  */
-import { CARD_BENEFITS } from './benefits.ts'
-import type { MaropayBenefit } from './benefits.ts'
 import { CARD_BRAND_MARKS, markFor } from './methodMarks.ts'
 import type { MethodMarkId } from './methodMarks.ts'
 import { SETUP_LABELS, STORE_ACTIVATION_LABELS, VERIFICATION_LABELS } from './model.ts'
@@ -29,7 +27,7 @@ export type MaropayCardState =
 export interface MaropayCardAction {
   label: string
   /** `route` opens the target; `href` opens a page outside the app; the rest are the card's own emits. */
-  kind: 'route' | 'href' | 'activate' | 'link' | 'see_providers'
+  kind: 'route' | 'href' | 'activate' | 'link'
   target?: MaropayTarget
   href?: string
   /** Why the actor can't do this (their role, an unfinished checklist). The button stays visible, disabled, with this as its tooltip. */
@@ -38,15 +36,14 @@ export interface MaropayCardAction {
 
 export interface MaropayCardModel {
   state: MaropayCardState
-  /** The quiet "Recommended" eyebrow — only while Maropay is still being sold. */
+  /** The "Recommended" tag — only while Maropay is still being sold. */
   recommended: boolean
   /** An MpStatusChip `readiness` label, when the state has one. */
   chip: string | null
   headline: string
   detail: string | null
-  /** One line of hard facts under the headline ("No Maropost platform fee · Cards and wallets from 2.9% + 30¢"). */
-  facts: string | null
-  benefits: readonly MaropayBenefit[]
+  /** Up to three label/value facts in a row — the sell's "Platform fee · Cards & wallets · PayPal", the live card's "Takes · Rates · Payouts". */
+  factStrip: Array<{ label: string; value: string }>
   marks: MethodMarkId[]
   moreCount: number
   progress: { done: number; total: number } | null
@@ -56,8 +53,6 @@ export interface MaropayCardModel {
   quiet: MaropayCardAction | null
   menu: Array<'open_in_maropay' | 'stop'>
   openInMaropay: MaropayTarget | null
-  /** The live state's label/value list. */
-  live: { takes: string; rates: string; payouts: string } | null
   footnote: string | null
 }
 
@@ -102,19 +97,24 @@ export function deriveMaropayCard(input: MaropayCardInput): MaropayCardModel {
 
   const card = state.methods.find((m) => m.id === 'card')
   const paypal = state.methods.find((m) => m.id === 'paypal')
-  const sellFacts = card ? `No Maropost platform fee · Cards and wallets from ${card.rate.label}${paypal ? ` · PayPal ${paypal.rate.label}` : ''}` : 'No Maropost platform fee'
+  const sellStrip: MaropayCardModel['factStrip'] = [
+    { label: 'Platform fee', value: 'None' },
+    ...(card ? [{ label: 'Cards & wallets', value: card.rate.label }] : []),
+    ...(paypal ? [{ label: 'PayPal', value: paypal.rate.label }] : []),
+  ]
   const available = state.methods.filter((m) => m.availability !== 'unavailable')
   const route = (label: string, target: MaropayTarget, disabledReason: string | null = null): MaropayCardAction => ({ label, kind: 'route', target, disabledReason })
   const setupGate = can('edit_onboarding') ? null : 'Only owners and finance users can set up Maropay'
   const ownerGate = (what: string) => (can('activate_store') ? null : `Only the business owner can ${what}.`)
-  const seeProviders: MaropayCardAction = { label: 'See all other providers', kind: 'see_providers', disabledReason: null }
+  const learnMore: MaropayCardAction = { label: 'Learn more', kind: 'href', href: MAROPAY_LEARN_MORE_HREF, disabledReason: null }
+  // The discovery page's rates table, side by side with the store's current gateway.
+  const compare = route(gatewayName ? `Compare with ${gatewayName}` : 'View rates', { ...overviewTarget, hash: '#maropay-rates' })
 
   const base: Omit<MaropayCardModel, 'state' | 'headline'> = {
     recommended: true,
     chip: null,
     detail: null,
-    facts: null,
-    benefits: [],
+    factStrip: [],
     marks: [],
     moreCount: 0,
     progress: null,
@@ -124,7 +124,6 @@ export function deriveMaropayCard(input: MaropayCardInput): MaropayCardModel {
     quiet: null,
     menu: [],
     openInMaropay: null,
-    live: null,
     footnote: null,
   }
   const withMarks = (methods: PaymentMethodCatalogEntry[]) => {
@@ -153,24 +152,24 @@ export function deriveMaropayCard(input: MaropayCardInput): MaropayCardModel {
   if (overview.key === 'not_started') {
     return {
       ...base, state: 'not_set_up',
-      headline: 'Let shoppers pay their way with Maropay',
-      detail: `Cards, wallets and buy now, pay later on ${storeName}, with every payment, payout and dispute next to its order.`,
-      facts: sellFacts,
-      benefits: CARD_BENEFITS,
+      headline: 'Payments that live next to your orders.',
+      detail: `Cards, wallets and buy now, pay later for ${storeName}. Refunds, payouts and disputes are handled from the order itself — no second dashboard.`,
+      factStrip: sellStrip,
       ...withMarks(available),
       primary: route('Set up Maropay', { name: 'MaropaySetup' }, setupGate),
-      secondary: { label: 'Learn more', kind: 'href', href: MAROPAY_LEARN_MORE_HREF, disabledReason: null },
-      quiet: seeProviders,
+      secondary: compare,
+      quiet: learnMore,
       footnote: RATES_FOOTNOTE,
     }
   }
   if (overview.key === 'finish_setup') {
     return {
       ...base, state: 'setup_in_progress', chip: SETUP_LABELS.in_progress,
-      headline: overview.headline, detail: overview.detail, facts: sellFacts,
+      headline: overview.headline, detail: overview.detail,
+      factStrip: sellStrip,
       ...withMarks(available),
       primary: route('Continue setup', { name: 'MaropaySetup' }, setupGate),
-      quiet: seeProviders,
+      quiet: learnMore,
       footnote: RATES_FOOTNOTE,
     }
   }
@@ -180,7 +179,6 @@ export function deriveMaropayCard(input: MaropayCardInput): MaropayCardModel {
       headline: overview.headline, detail: overview.detail,
       primary: overview.action ? route(overview.action.label, overview.action.target) : null,
       secondary: route('Open Maropay', overviewTarget),
-      quiet: seeProviders,
     }
   }
   if (!live && overview.key === 'under_review') {
@@ -190,7 +188,6 @@ export function deriveMaropayCard(input: MaropayCardInput): MaropayCardModel {
       detail: `Our payments partner is checking your details. Nothing is needed from you — we’ll tell you when ${storeName} can switch.`,
       ...withMarks(available),
       secondary: route('Open Maropay', overviewTarget),
-      quiet: seeProviders,
     }
   }
 
@@ -202,7 +199,6 @@ export function deriveMaropayCard(input: MaropayCardInput): MaropayCardModel {
       detail: 'Linking changes nothing at checkout. You’ll choose methods and run a test before anything switches.',
       ...withMarks(available),
       primary: { label: 'Link store', kind: 'link', disabledReason: can('link_store') ? null : 'Only the business owner can link stores.' },
-      quiet: seeProviders,
     }
   }
   if (live) {
@@ -218,16 +214,19 @@ export function deriveMaropayCard(input: MaropayCardInput): MaropayCardModel {
       nag: nagKey
         ? { tone: overview.key === 'under_review' ? 'info' : 'warning', title: overview.headline, body: overview.detail, action: overview.action }
         : null,
+      factStrip: [
+        { label: 'Takes', value: ready.length ? joinList(ready.map((m) => m.label)) : 'Nothing yet — turn on a method' },
+        { label: 'Rates', value: rates.length ? `${rates.join(' / ')} · No platform fee` : 'No platform fee' },
+        {
+          label: 'Payouts',
+          value: account?.payoutDestination
+            ? `${payoutScheduleLabel(account.payoutSchedule).split(',')[0]} to ${account.payoutDestination.bankName} •••• ${account.payoutDestination.last4}`
+            : 'No payout account yet',
+        },
+      ],
       secondary: route('Manage', managePage),
       menu: ['open_in_maropay', ...(can('deactivate_store') ? ['stop' as const] : [])],
       openInMaropay: storePaymentsTarget(channelId),
-      live: {
-        takes: ready.length ? joinList(ready.map((m) => m.label)) : 'Nothing yet — turn on a method',
-        rates: rates.length ? `${rates.join(' / ')} · No Maropost platform fee` : 'No Maropost platform fee',
-        payouts: account?.payoutDestination
-          ? `${payoutScheduleLabel(account.payoutSchedule).split(',')[0]} to ${account.payoutDestination.bankName} •••• ${account.payoutDestination.last4}`
-          : 'No payout account yet',
-      },
     }
   }
   if (binding.deactivatedAt) {
@@ -237,7 +236,6 @@ export function deriveMaropayCard(input: MaropayCardInput): MaropayCardModel {
       headline: `Maropay was stopped on ${storeName} on ${formatDay(binding.deactivatedAt)}`,
       detail: `New checkouts use ${others.length ? joinList(others) : 'no online provider'}. Payments taken while it was live — with their refunds, disputes and payouts — are still in Maropay.`,
       primary: route('Review and activate again', managePage, ownerGate('activate Maropay')),
-      quiet: seeProviders,
     }
   }
   if (activation === 'ready_to_activate') {
@@ -246,11 +244,12 @@ export function deriveMaropayCard(input: MaropayCardInput): MaropayCardModel {
       ...base, state: 'ready_to_activate', chip: STORE_ACTIVATION_LABELS.ready_to_activate,
       headline: `Ready to activate on ${storeName}`,
       detail: 'Every step is done. New checkouts switch to Maropay the moment you activate.',
-      facts: ready.length ? `${joinList(ready.map((m) => m.label))} · ${[...new Set(ready.map((m) => m.rate.label))].join(' / ')} · No Maropost platform fee` : null,
+      factStrip: ready.length
+        ? [{ label: 'Takes', value: joinList(ready.map((m) => m.label)) }, { label: 'Rates', value: [...new Set(ready.map((m) => m.rate.label))].join(' / ') }, { label: 'Platform fee', value: 'None' }]
+        : [],
       ...withMarks(ready),
       primary: { label: 'Activate Maropay', kind: 'activate', disabledReason: ownerGate('activate Maropay') },
       secondary: route('Review setup', managePage),
-      quiet: seeProviders,
     }
   }
   const progress = checklist ? checklistProgress(checklist) : null
@@ -261,6 +260,5 @@ export function deriveMaropayCard(input: MaropayCardInput): MaropayCardModel {
     ...withMarks(available),
     progress,
     primary: route('Finish setup for this store', managePage),
-    quiet: seeProviders,
   }
 }

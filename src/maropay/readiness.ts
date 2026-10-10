@@ -39,6 +39,8 @@ export interface MaropayTarget {
   name: string
   params?: Record<string, string>
   query?: Record<string, string>
+  /** A section on the page, with its `#` ("#maropay-rates"). */
+  hash?: string
 }
 
 /**
@@ -785,6 +787,67 @@ export function nextPayout(state: MaropayAccountState, now: number): UpcomingPay
     movementIds: unpaid.map((m) => m.id),
     blocked: deriveCapabilities(state, now).payouts !== 'ready',
   }
+}
+
+export interface MoneyBucket {
+  key: 'settling' | 'available' | 'on_its_way'
+  label: string
+  amount: Money
+  /** What the bucket is doing, in words ("From 3 payments, clears in 1–2 days"). */
+  caption: string
+}
+
+/**
+ * "Where your money is right now": one currency's balance as three buckets with a caption each —
+ * settling (pending), available (goes out with the next payout), on its way (sent, not yet
+ * landed). Captions are read from the movements and payouts themselves, never invented.
+ */
+export function moneyNow(state: MaropayAccountState, balance: BalanceSummary, now: number): MoneyBucket[] {
+  const currency = balance.currency
+  const settlingCount = state.movements.filter((m) => m.net.currency === currency && m.payoutId === null && m.kind === 'charge' && Date.parse(m.availableAt) > now).length
+  const blocked = deriveCapabilities(state, now).payouts !== 'ready'
+  const inTransit = state.payouts
+    .filter((p) => p.amount.currency === currency && p.status === 'in_transit' && p.arrivalEstimate)
+    .sort((a, b) => Date.parse(b.arrivalEstimate!) - Date.parse(a.arrivalEstimate!))[0] ?? null
+  return [
+    {
+      key: 'settling', label: 'Settling', amount: balance.pending,
+      caption: settlingCount ? `${settlingCount} ${settlingCount === 1 ? 'payment' : 'payments'} · clears in 1–2 days` : 'Nothing settling',
+    },
+    {
+      key: 'available', label: 'Available', amount: balance.available,
+      caption: balance.available.amount < 0
+        ? 'Recovered from upcoming payments'
+        : blocked ? 'Held until payouts are fixed' : balance.available.amount > 0 ? 'Goes out with the next payout' : 'Nothing to send',
+    },
+    {
+      key: 'on_its_way', label: 'On its way', amount: balance.inTransit,
+      caption: inTransit ? `In your bank ${formatDay(inTransit.arrivalEstimate!)}` : balance.inTransit.amount > 0 ? 'In your bank soon' : 'Nothing in transit',
+    },
+  ]
+}
+
+export interface StoreNag {
+  channelId: string
+  /** The gateway still taking the store's cards, when there is one. */
+  gateway: string | null
+  done: number
+  total: number
+}
+
+/**
+ * The store still to move: once one store is live on Maropay, the first linked store that isn't
+ * — with its checklist progress and the gateway it still checks out with. null when every linked
+ * store is live, or none is.
+ */
+export function storeNag(state: MaropayAccountState, now: number, factsFor?: FactsFor): StoreNag | null {
+  if (!state.bindings.some((b) => b.activation === 'live')) return null
+  const binding = state.bindings.find((b) => b.activation !== 'live')
+  if (!binding) return null
+  const checklist = activationChecklist(state, binding, factsFor?.(binding.channelId) ?? null, now)
+  const { done, total } = checklistProgress(checklist)
+  const gateway = cardGateway(storeProvidersFor(state, binding.channelId))
+  return { channelId: binding.channelId, gateway: gateway ? providerLabel(gateway.kind) : null, done, total }
 }
 
 // ── Migration from a previous provider (plan §3E) ─────────────────────────

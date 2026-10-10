@@ -83,7 +83,7 @@ import {
 } from '@/maropay/readiness'
 import type { ChannelFacts, MaropayTarget, PaymentFilter } from '@/maropay/readiness'
 import { isManualKind, storeProvidersFor as providersOf } from '@/maropay/providers'
-import type { ManualMethodSettings, OwnProviderKind } from '@/maropay/providers'
+import type { ManualMethodSettings, OwnProviderKind, ProviderKind } from '@/maropay/providers'
 import { storefrontOffer } from '@/maropay/storefront'
 import type { StorefrontOfferOptions } from '@/maropay/storefront'
 import type { BankAccountInput, OnboardingPatch } from '@/maropay/onboarding'
@@ -264,7 +264,7 @@ export const useMaropayStore = defineStore('maropay', () => {
   }
 
   function routeFor(target: MaropayTarget): RouteLocationRaw {
-    return { name: target.name, params: { accountId: state.value.accountId, ...(target.params ?? {}) }, query: target.query ?? {} }
+    return { name: target.name, params: { accountId: state.value.accountId, ...(target.params ?? {}) }, query: target.query ?? {}, ...(target.hash ? { hash: target.hash } : {}) }
   }
 
   function notify(id: string, title: string, target?: MaropayTarget): void {
@@ -589,6 +589,10 @@ export const useMaropayStore = defineStore('maropay', () => {
     return run((e) => adapter.removeProvider(state.value, channelId, kind, e))
   }
 
+  function reorderLineup(channelId: string, kinds: ProviderKind[]) {
+    return run((e) => adapter.reorderLineup(state.value, channelId, kinds, e))
+  }
+
   function updateManualMethod(channelId: string, kind: OwnProviderKind, fields: Partial<ManualMethodSettings>) {
     return run((e) => adapter.updateManualMethod(state.value, channelId, kind, fields, e))
   }
@@ -861,7 +865,7 @@ export const useMaropayStore = defineStore('maropay', () => {
     linkStore, setMethodEnabled, simulateMethodApproval, setCaptureMode, updateCheckoutOptions, validateCheckout, markImpactReviewed, activateStore, deactivateStore,
     deactivateAllStores, dismissActivationNotice,
     // the store's own providers
-    connectProvider, setProviderStatus, removeProvider, updateManualMethod,
+    connectProvider, setProviderStatus, removeProvider, reorderLineup, updateManualMethod,
     // account settings
     requestBusinessChange, simulateBusinessChangeOutcome, updatePublicDetails, closeAccount,
     // checkout and payments

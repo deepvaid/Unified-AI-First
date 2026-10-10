@@ -12,7 +12,7 @@
 import { money, zero } from './money.ts'
 import type { Money, RateCard } from './money.ts'
 import { DEFAULT_PROVIDERS_SINCE, PROVIDER_SPECS, cardGateway, isOwnProviderKind } from './providers.ts'
-import type { ManualMethodSettings, ProviderConnection, ProviderMethod, StoreProviderSetup } from './providers.ts'
+import type { ManualMethodSettings, ProviderConnection, ProviderKind, ProviderMethod, StoreProviderSetup } from './providers.ts'
 
 // ── Vocabulary ────────────────────────────────────────────────────────────
 
@@ -702,6 +702,8 @@ export interface CheckoutSession {
   providerId: MaropayProvider
   /** The method as the shopper chose it ("Zip", "Direct bank transfer"), for pages that outlive the offer. */
   methodLabel: string
+  /** Cards: the brand and last four of the number typed ("Mastercard •••• 8810"), so the receipt and the records agree. */
+  cardLabel: string | null
   flow: ShopperFlow
   state: 'open' | 'requires_action' | 'redirected' | 'processing' | 'complete' | 'failed'
   paymentId: string | null
@@ -778,6 +780,11 @@ export const SUPPORTED_COUNTRIES = ['US', 'CA', 'AU', 'NZ', 'GB']
 export const COUNTRY_LABELS: Record<string, string> = {
   US: 'United States', CA: 'Canada', AU: 'Australia', NZ: 'New Zealand', GB: 'United Kingdom',
   BR: 'Brazil', IN: 'India', NG: 'Nigeria',
+}
+
+/** The phone field's prefix per registration country. */
+export const DIAL_CODES: Record<string, string> = {
+  US: '+1', CA: '+1', AU: '+61', NZ: '+64', GB: '+44', BR: '+55', IN: '+91', NG: '+234',
 }
 
 function rate(percentBps: number, fixedMinor: number, label: string, capMinor?: number): RateCard {
@@ -1030,6 +1037,7 @@ function migrateSession(session: CheckoutSession & { lineItem?: Omit<CheckoutLin
     ...rest,
     providerId: typeof rest.providerId === 'string' ? rest.providerId : 'maropay',
     methodLabel: typeof rest.methodLabel === 'string' ? rest.methodLabel : rest.methodId,
+    cardLabel: typeof rest.cardLabel === 'string' ? rest.cardLabel : null,
     lineItems: Array.isArray(session.lineItems) ? session.lineItems : lineItem ? [{ ...lineItem, qty: 1 }] : [],
   }
 }
@@ -1070,6 +1078,8 @@ function withSetupDefaults(raw: unknown): StoreProviderSetup | null {
   setup.cardProcessor = !('cardProcessor' in r)
     ? cardGateway(setup)?.kind ?? null
     : pointer === 'maropay' || isOwnProviderKind(pointer) ? pointer : null
+  const lineup = Array.isArray(r.lineup) ? (r.lineup as unknown[]).filter((k): k is ProviderKind => k === 'maropay' || isOwnProviderKind(k)) : []
+  if (lineup.length) setup.lineup = lineup
   return setup
 }
 

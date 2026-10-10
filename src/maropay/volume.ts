@@ -59,6 +59,25 @@ export function volumeSeries(payments: readonly Payment[], now: number, days: nu
   }
 }
 
+export interface VolumeDelta {
+  current: Money
+  /** The same number of days, ending the day before the window starts. */
+  previous: Money
+  /** Percent change, one decimal; null when the previous window took nothing (no base to compare). */
+  pct: number | null
+}
+
+/** This window against the one before it — the Overview's "↗ 12.4%". */
+export function volumeDelta(payments: readonly Payment[], now: number, days: number, currency: string): VolumeDelta {
+  const today = new Date(now)
+  // The previous window ends at the last instant of the day before this window's first day.
+  const previousEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate() - days + 1).getTime() - 1
+  const current = volumeSeries(payments, now, days, currency).total
+  const previous = volumeSeries(payments, previousEnd, days, currency).total
+  const pct = previous.amount > 0 ? Math.round(((current.amount - previous.amount) / previous.amount) * 1000) / 10 : null
+  return { current, previous, pct }
+}
+
 /** "Sep 6" — a chart label for a day key. */
 export function dayLabel(day: string): string {
   const [y, m, d] = day.split('-').map(Number)

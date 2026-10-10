@@ -10,6 +10,11 @@ isn't published in this repository.
 > the store's own storefront checkout (Store › Payments › "See it in your store", or Maropay › "View
 > your store"), which takes the same sample payments. See F1–F4 in [`decisions.md`](decisions.md).
 
+> **10 October 2026:** the Claude Design UI pass (decisions H1–H5): the store's Payments page is a compact Maropay
+> card over one draggable checkout lineup; the overview leads with the money panel; the setup page is a timeline; the
+> wizard's header is the step; the storefront's done state is a receipt with the card actually typed. Row M18's
+> storefront still shows the not-live placeholder until the shopper pages move onto the merged offer (CI-2).
+
 ## Review entry point
 
 1. `npm install`, then `npm run dev`.
@@ -27,7 +32,7 @@ Maropay can be reached from:
 - the **Maropay** sidebar group;
 - **Stores** in Maropay's own rail, which open a store's payments inside Maropay
   (`/accounts/2000290/maropay/stores/retest-sales-notification`);
-- the store editor, under **Selling › Payments** — the store's Payments page lists every provider with the Maropay card on top; Maropay's own page for the store is one level down (`payments/maropay`, with "Open in Maropay");
+- the store editor, under **Selling › Payments** — the store's Payments page: the compact Maropay card on top, then the **Checkout lineup** (every provider in shopper order; drag a row, or Move up / Move down in its menu), then the capture and checkout-options tiles; Maropay's own page for the store is one level down (`payments/maropay`, with "Open in Maropay");
 - **View in Maropay** on an order's Payment card;
 - **Settings › Payment account**;
 - the **Set up payments** task on Get started;

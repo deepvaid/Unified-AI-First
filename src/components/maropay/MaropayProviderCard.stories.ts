@@ -41,8 +41,10 @@ const meta = {
 The Maropay card at the top of a store's Payments page — the one place Maropay is sold, the way
 Shopify sells Shopify Payments above a merchant's other providers. It is presentational: \`deriveMaropayCard\`
 (\`src/maropay/providerCard.ts\`) turns the account's and the store's state into one of twelve card states,
-each with its headline, facts, marks, actions and the quiet "Recommended" eyebrow (pre-live only). Account-level
-states read the overview's own instruction, so the card never grows a second state machine.
+each with its line of copy, a three-fact strip (Platform fee · Cards & wallets · PayPal while selling;
+Takes · Rates · Payouts once live), the accepted marks, actions and the "Recommended" tag (pre-live only) —
+one compact shape, like Shopify's own card. Account-level states read the overview's own instruction, so
+the card never grows a second state machine.
 
 **Use when:** the store's Payments page (\`StorePayments\`).
 
@@ -50,10 +52,9 @@ states read the overview's own instruction, so the card never grows a second sta
 which this card's **Manage** opens.
 
 ### A11y
-- **Provides:** a real heading (\`headingLevel\`), the readiness chip with its icon, a named list of accepted
+- **Provides:** a real heading (\`headingLevel\`), the readiness chip with its icon, a labelled list of accepted
   method marks, disabled primaries that keep their tooltip reason.
-- **Consumer must:** resolve routes through \`routeFor\` and handle \`activate\`, \`link\`, \`stop\` and
-  \`see-providers\` (which should move focus to the providers list).
+- **Consumer must:** resolve routes through \`routeFor\` and handle \`activate\`, \`link\` and \`stop\`.
         `,
       },
     },

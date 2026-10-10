@@ -20,14 +20,15 @@ import { storePaymentsTarget } from '@/maropay/readiness'
 import type { MaropayTarget } from '@/maropay/readiness'
 import { useStoreActivation } from '@/views/Maropay/store/useStoreActivation'
 import StoreCheckoutSummaryCard from './payments/StoreCheckoutSummaryCard.vue'
-import StoreProviderListCard from './payments/StoreProviderListCard.vue'
+import StoreLineupCard from './payments/StoreLineupCard.vue'
 
 // A store's Payments: every provider it has, the way Shopify's Settings › Payments
-// lists them — Maropay sold at the top (Maropost's own payments, one card, one
-// state at a time), then the merchant's own providers, then the manual methods,
-// then where Maropay's checkout settings live. Maropay's page for the store
-// (checklist, methods, capture, the live preview) is one level down, at
-// `StorePaymentsMaropay`, and the same page opens inside Maropay's own frame.
+// lists them — Maropay sold at the top (Maropost's own payments, one compact card,
+// one state at a time), then the checkout lineup (the merchant's own providers,
+// the manual methods and Maropay once live, in shopper order), then where
+// Maropay's checkout settings live. Maropay's page for the store (checklist, methods, capture, the live
+// preview) is one level down, at `StorePaymentsMaropay`, and the same page opens
+// inside Maropay's own frame.
 
 const route = useRoute()
 const router = useRouter()
@@ -88,12 +89,6 @@ function linkStore(): void {
   const result = maropay.linkStore(channelId.value)
   if (!result.ok) toast.error(result.error.message)
   else toast.success(`${storeName.value} is linked. Nothing changes at checkout until you activate.`)
-}
-
-function scrollToSection(id: string): void {
-  const el = document.getElementById(id)
-  el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  el?.focus({ preventScroll: true })
 }
 
 // ── The merchant's own providers ───────────────────────────────────
@@ -188,11 +183,9 @@ function confirmRemove(): void {
         @activate="activateOpen = true"
         @link="linkStore"
         @stop="deactivateOpen = true"
-        @see-providers="scrollToSection('store-providers')"
       />
 
-      <StoreProviderListCard :channel-id="channelId" family="providers" @add="openChooser('providers')" @configure="configure" @remove="askRemove" />
-      <StoreProviderListCard :channel-id="channelId" family="manual" @add="openChooser('manual')" @configure="configure" @remove="askRemove" />
+      <StoreLineupCard :channel-id="channelId" :route-for="routeFor" @add="openChooser" @configure="configure" @remove="askRemove" @stop="deactivateOpen = true" />
       <StoreCheckoutSummaryCard :channel-id="channelId" />
     </template>
 

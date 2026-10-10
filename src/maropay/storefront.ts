@@ -14,7 +14,7 @@ import { formatMoney, money } from './money.ts'
 import type { Money } from './money.ts'
 import { PAY_BUTTON_LABELS, defaultCheckoutSettings } from './model.ts'
 import type { MaropayAccountState, MaropayProvider, MethodCategory, PayButtonLabel, Payment, PaymentMethodCatalogEntry, ShopperFlow, StoreBinding } from './model.ts'
-import { CARD_FAMILY, activeConnections, cardGateway, connectionOfferedMethods, isManualKind, methodFacts, providerLabel, storeProvidersFor } from './providers.ts'
+import { CARD_FAMILY, activeConnections, cardGateway, connectionOfferedMethods, isManualKind, lineupFor, methodFacts, providerLabel, storeProvidersFor } from './providers.ts'
 import type { MethodFacts, ProviderConnection, StoreProviderSetup } from './providers.ts'
 import { checkoutMethods } from './readiness.ts'
 
@@ -150,12 +150,19 @@ export function resolveShopperMethods(state: MaropayAccountState, channelId: str
       candidates.push(shopperMethod(m, 'maropay', null))
     }
   }
+  // The lineup orders providers; inside a provider's slot the binding's method order applies
+  // (Maropay's "Order at checkout"), then the ladder, then the catalogue.
+  const lineup = lineupFor(setup, { maropay: maropayOn, processor })
   const order = binding?.methodOrder ?? []
   const catalogueIndex = (id: string) => {
     const i = state.methods.findIndex((m) => m.id === id)
     return i === -1 ? state.methods.length : i
   }
-  const rank = (m: ShopperMethodBase) => (order.includes(m.id) ? order.indexOf(m.id) : order.length + CATEGORY_RANK[m.category] * 100 + catalogueIndex(m.id))
+  const slot = (m: ShopperMethodBase) => {
+    const i = lineup.indexOf(m.providerId)
+    return i === -1 ? lineup.length : i
+  }
+  const rank = (m: ShopperMethodBase) => slot(m) * 10_000 + (order.includes(m.id) ? order.indexOf(m.id) : order.length + CATEGORY_RANK[m.category] * 100 + catalogueIndex(m.id))
   return candidates.sort((a, b) => rank(a) - rank(b))
 }
 
@@ -220,6 +227,38 @@ export function paidWithText(p: Pick<Payment, 'provider' | 'methodId' | 'methodL
   if (isManualKind(p.provider)) return p.status === 'processing' ? `${p.methodLabel} — awaiting payment` : p.methodLabel
   if (p.methodId === 'card' && p.provider === 'maropay') return `${MAROPAY_SHOPPER_LABEL} · ${p.methodLabel}`
   return p.methodLabel
+}
+
+/** The brand from the number's first digit — the three brands this prototype knows; anything else is a generic card. */
+export function cardBrand(number: string): string | null {
+  const digits = number.replace(/\D/g, '')
+  if (/^4/.test(digits)) return 'Visa'
+  if (/^(5[1-5]|2[2-7])/.test(digits)) return 'Mastercard'
+  if (/^3[47]/.test(digits)) return 'Amex'
+  return digits ? 'Card' : null
+}
+
+/** "Visa •••• 4242" for the number actually typed, so the receipt and the merchant's records agree. */
+export function cardLabel(number: string): string | null {
+  const digits = number.replace(/\D/g, '')
+  const brand = cardBrand(number)
+  return brand && digits.length >= 4 ? `${brand} •••• ${digits.slice(-4)}` : null
+}
+
+/**
+ * A short reference shoppers can quote ("MP-7F3K-92QD"): deterministic from the payment id, never
+ * the processor's own reference, and without letters that read as digits.
+ */
+export function shopperReference(paymentId: string): string {
+  const ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
+  let h1 = 0x811c9dc5
+  let h2 = 0x01000193
+  for (const ch of paymentId) {
+    h1 = Math.imul(h1 ^ ch.charCodeAt(0), 0x01000193) >>> 0
+    h2 = Math.imul(h2 + ch.charCodeAt(0), 0x5bd1e995) >>> 0
+  }
+  const chars = (seed: number) => Array.from({ length: 4 }, (_, i) => ALPHABET[Math.floor(seed / ALPHABET.length ** i) % ALPHABET.length]).join('')
+  return `MP-${chars(h1)}-${chars(h2)}`
 }
 
 // ── Test cards ────────────────────────────────────────────────────────────
