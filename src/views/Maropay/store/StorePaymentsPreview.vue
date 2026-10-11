@@ -6,6 +6,7 @@ import { useMaropayStore } from '@/stores/useMaropay'
 import { useStoreThemesStore } from '@/stores/useStoreThemes'
 import { storefrontThemeVars } from '@/stores/themeBuilderData'
 import { formatMoney, money } from '@/maropay/money'
+import { providerLabel } from '@/maropay/providers'
 import { joinList } from '@/maropay/readiness'
 import { payButtonText, storefrontOffer } from '@/maropay/storefront'
 import StorefrontPaymentPreview from '@/views/Storefront/StorefrontPaymentPreview.vue'
@@ -49,7 +50,7 @@ const summary = computed(() => {
   const o = offer.value
   const chosen = o.methods.find((m) => m.id === o.defaultMethodId) ?? null
   const parts = [`Shoppers can pay with ${joinList(o.methods.map((m) => m.label))}.`]
-  if (o.cardsVia && o.cardsVia !== 'maropay') parts.push(`Cards go through ${o.providerLabel}.`)
+  if (o.cardsVia && o.cardsVia !== 'maropay') parts.push(`Cards go through ${providerLabel(o.cardsVia)}.`)
   if (o.express.length) parts.push(`${joinList(o.express.map((m) => m.label))} also show as express buttons at the top.`)
   if (chosen) parts.push(`${chosen.label} is selected to start with, and the button reads “${payButtonText(chosen, o.payButton, sample.value)}”.`)
   return parts.join(' ')

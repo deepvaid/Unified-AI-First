@@ -51,7 +51,7 @@ const card = ref<CardInput>({ number: '', expiry: '', cvc: '' })
       </StorefrontPaymentOptions>
     </section>
 
-    <StorefrontPayButton :label="payButtonText(method, offer.payButton, total)" secured />
+    <StorefrontPayButton :label="payButtonText(method, offer.payButton, total)" :secured="method?.providerId === 'maropay'" />
   </div>
 </template>
 

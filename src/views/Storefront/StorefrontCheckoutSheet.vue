@@ -2,6 +2,7 @@
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { formatMoney, money, subtract } from '@/maropay/money'
 import type { Money } from '@/maropay/money'
+import { PAY_IN_4_IDS } from '@/maropay/storefront'
 import StorefrontPayMark from './StorefrontPayMark.vue'
 
 // What opens over the checkout while a payment is under way, in this prototype's
@@ -29,7 +30,7 @@ onMounted(() => { void nextTick(() => title.value?.focus()) })
 const code = ref('')
 const codeReady = computed(() => /^\d{6}$/.test(code.value))
 
-const payIn4 = computed(() => props.method.id === 'klarna' || props.method.id === 'afterpay_clearpay')
+const payIn4 = computed(() => PAY_IN_4_IDS.includes(props.method.id))
 /** Three equal payments, and a last one that takes the rounding so the plan adds up to the total. */
 const schedule = computed(() => {
   const last = subtract(props.total, money(props.instalment.amount * 3, props.total.currency))

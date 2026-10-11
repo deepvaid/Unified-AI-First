@@ -126,8 +126,8 @@ function buyNow(methodId: string): void {
           <StorefrontExpressButtons :methods="offer.express" @pick="buyNow" />
         </div>
 
-        <div v-if="offer.live" class="sf-pdp__trust">
-          <p class="sf-pdp__secure"><v-icon size="16">lock</v-icon> Secure checkout with Maropay</p>
+        <div v-if="offer.methods.length" class="sf-pdp__trust">
+          <p class="sf-pdp__secure"><v-icon size="16">lock</v-icon> {{ offer.cardsVia === 'maropay' ? 'Secure checkout with Maropay' : 'Secure checkout' }}</p>
           <ul class="sf-marks" aria-label="Ways to pay">
             <li v-for="mark in offer.acceptedMarks" :key="mark"><StorefrontPayMark :mark="mark" /></li>
           </ul>

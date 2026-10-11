@@ -54,9 +54,8 @@ export type ShopperMethodBase = Omit<ShopperMethod, 'caption'>
 
 export interface StorefrontOffer {
   /** Maropay takes (some of) this store's payments right now. */
-  live: boolean
-  /** Who takes cards at this checkout, as the trust line names them; null when nobody offers cards. */
-  providerLabel: string | null
+  maropayLive: boolean
+  /** Who takes cards at this checkout; null when nobody offers cards. */
   cardsVia: MaropayProvider | null
   /** Every provider with a method in the offer, in first-appearance order. */
   providers: Array<{ id: MaropayProvider; label: string }>
@@ -197,8 +196,7 @@ export function storefrontOffer(state: MaropayAccountState, channelId: string, a
   const providers: StorefrontOffer['providers'] = []
   for (const m of methods) if (!providers.some((p) => p.id === m.providerId)) providers.push({ id: m.providerId, label: m.providerLabel })
   return {
-    live: binding?.activation === 'live',
-    providerLabel: cardsVia ? providerLabel(cardsVia) : null,
+    maropayLive: binding?.activation === 'live',
     cardsVia,
     providers,
     methods,

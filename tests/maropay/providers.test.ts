@@ -135,7 +135,6 @@ test('switching the card gateway off before Maropay leaves the store without a c
   const offer = storefrontOffer(state, ATLAS, PRICE)
   assert.deepEqual(offer.methods.map((m) => m.id), ['bank_deposit'])
   assert.equal(offer.cardsVia, null)
-  assert.equal(offer.providerLabel, null)
   assert.equal(storeCheckoutNote('needs_setup', setup), 'Checkout uses Bank deposit — no card processor')
   assert.ok(setProviderStatus(state, ATLAS, 'stripe', 'active', env()).ok)
   assert.equal(storeProvidersFor(state, ATLAS).cardProcessor, 'stripe', 'switching it back on makes it the card processor again')

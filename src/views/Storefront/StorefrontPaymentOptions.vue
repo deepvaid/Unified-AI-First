@@ -2,6 +2,7 @@
 import MaropayMethodMark from '@/components/maropay/MaropayMethodMark.vue'
 import { CARD_BRAND_MARKS, markFor } from '@/maropay/methodMarks'
 import type { MethodMarkId } from '@/maropay/methodMarks'
+import { formatMoney } from '@/maropay/money'
 import type { Money } from '@/maropay/money'
 import type { PayButtonLabel } from '@/maropay/model'
 import { payButtonText } from '@/maropay/storefront'
@@ -22,9 +23,15 @@ defineProps<{
 
 const methodId = defineModel<string | null>('methodId', { required: true })
 
-/** Each option leads with its brand tile; cards are offered as Maropay, a provider's own card form as a card. */
+/** Each option leads with its brand tile: Maropay's cards wear the Maropay tile, another processor's a plain card, everything else its own mark. */
 function leadMark(method: ShopperMethod): MethodMarkId {
-  return method.id === 'card' ? 'maropay' : markFor(method.id)
+  return method.id === 'card' ? (method.providerId === 'maropay' ? 'maropay' : 'card') : markFor(method.id)
+}
+
+/** What a manual method asks of the shopper once the order is placed. */
+function manualNote(method: ShopperMethod, total: Money): string {
+  if (method.providerId === 'cod') return `Pay ${formatMoney(total)} in cash when your order arrives.`
+  return 'Your order is placed now and confirmed once we receive your payment. The details are on the confirmation page.'
 }
 </script>
 
@@ -44,7 +51,11 @@ function leadMark(method: ShopperMethod): MethodMarkId {
       <!-- The card form sits under its own option. -->
       <slot v-if="methodId === m.id && m.category === 'cards'" name="card" :method="m" />
       <div v-else-if="methodId === m.id" class="sf-co__panel sf-muted">
-        <template v-if="m.redirects">After you press <strong>{{ payButtonText(m, payButton, total) }}</strong>, you’ll approve the payment on {{ m.label }}’s page and come straight back here.</template>
+        <template v-if="m.category === 'manual'">
+          <span v-if="m.description" class="sf-co__panel-line">{{ m.description }}</span>
+          <span class="sf-co__panel-line">{{ manualNote(m, total) }}</span>
+        </template>
+        <template v-else-if="m.redirects">After you press <strong>{{ payButtonText(m, payButton, total) }}</strong>, you’ll approve the payment on {{ m.label }}’s page and come straight back here.</template>
         <template v-else-if="m.delayed">You’ll authorise a debit from your bank account. Your order is placed straight away; the bank confirms the payment in a few business days.</template>
         <template v-else>Press <strong>{{ payButtonText(m, payButton, total) }}</strong> and confirm with {{ m.label }}.</template>
       </div>
@@ -117,6 +128,14 @@ function leadMark(method: ShopperMethod): MethodMarkId {
   margin: 0 16px 16px 46px;
   font-size: 14px;
   line-height: 20px;
+}
+
+.sf-co__panel-line {
+  display: block;
+}
+
+.sf-co__panel-line + .sf-co__panel-line {
+  margin-top: 6px;
 }
 
 @media (max-width: 900px) {

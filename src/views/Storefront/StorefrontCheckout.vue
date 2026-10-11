@@ -92,19 +92,8 @@ const address = reactive({ firstName: 'Ava', lastName: 'Brown', address1: '200 M
 const COUNTRIES = ['United States', 'Canada', 'Australia', 'New Zealand', 'United Kingdom']
 const card = ref<CardInput>({ number: '4242 4242 4242 4242', expiry: '12 / 30', cvc: '123' })
 
-/** While Maropay isn't taking the store's payments, its current provider's card form stands alone. */
-const options = computed<ShopperMethod[]>(() => (offer.value.live ? offer.value.methods : [{
-  id: 'current_provider_card',
-  providerId: offer.value.cardsVia ?? 'maropay',
-  providerLabel: offer.value.providerLabel ?? '',
-  label: 'Credit or debit card',
-  caption: `Processed by ${offer.value.providerLabel ?? 'the store’s payment provider'}`,
-  category: 'cards',
-  redirects: false,
-  delayed: false,
-  description: null,
-  instructions: null,
-}]))
+/** Every provider's methods, in the store's lineup order — Maropay's beside the merchant's own and the manual ones. */
+const options = computed<ShopperMethod[]>(() => offer.value.methods)
 
 const methodId = ref<string | null>(null)
 watch(() => options.value.map((m) => m.id).join(), () => {
@@ -140,7 +129,6 @@ const customer = computed(() => ({ name: `${address.firstName} ${address.lastNam
 
 const busy = ref(false)
 const problem = ref<string | null>(null)
-const notLive = ref(false)
 /** Apple Pay / Google Pay sheet, before the payment starts. */
 const walletId = ref<string | null>(null)
 
@@ -183,12 +171,7 @@ async function submit(): Promise<void> {
   if (busy.value) return
   attempted.value = true
   problem.value = null
-  notLive.value = false
   if (Object.keys(errors.value).length) return void focusFirstError()
-  if (!offer.value.live) {
-    notLive.value = true
-    return
-  }
   const chosen = method.value
   if (!chosen) return
   if (chosen.category === 'wallets' && !chosen.redirects) walletId.value = chosen.id
@@ -402,36 +385,37 @@ const storePaymentsHref = computed(() => router.resolve({ name: MAROPAY_STORE_RO
             <legend class="sf-co__step-title"><span class="sf-co__num" aria-hidden="true">3</span> Payment</legend>
             <p class="sf-co__note sf-muted"><v-icon size="14">lock</v-icon> All payments are secure and encrypted.</p>
 
-            <StorefrontPaymentOptions v-model:method-id="methodId" :options="options" :pay-button="offer.payButton" :total="total" name="sf-co-method">
+            <StorefrontPaymentOptions v-if="options.length" v-model:method-id="methodId" :options="options" :pay-button="offer.payButton" :total="total" name="sf-co-method">
               <template #card>
                 <StorefrontCardFields
                   v-model:card="card"
                   id-prefix="sf-co"
                   :errors="{ number: errorFor('card.number'), expiry: errorFor('card.expiry'), cvc: errorFor('card.cvc') }"
-                  :test-cards="offer.live"
+                  test-cards
                 />
               </template>
             </StorefrontPaymentOptions>
+            <!-- No provider at all: nothing to choose, nothing to press. -->
+            <div v-else class="sf-co__none">
+              <p><strong>{{ storeName }} isn’t taking online payments yet.</strong></p>
+              <p class="sf-muted sf-co__none-note">
+                Prototype: connect a provider or activate Maropay on the store’s
+                <a :href="storePaymentsHref" target="_blank" rel="noopener">Payments page</a> and this checkout follows.
+              </p>
+            </div>
           </fieldset>
 
           <div v-if="message" class="sf-co__alert" role="alert">
             <v-icon size="18">circle-alert</v-icon>
             <span>{{ message }}</span>
           </div>
-          <div v-if="notLive" class="sf-co__alert sf-co__alert--info" role="alert">
-            <v-icon size="18">info</v-icon>
-            <span>
-              {{ storeName }} takes payments through {{ offer.providerLabel ?? 'its current provider' }}, which this prototype doesn’t run.
-              To take a test payment here, turn Maropay on for {{ storeName }} in
-              <a :href="storePaymentsHref" target="_blank" rel="noopener">Maropay</a>.
-            </span>
-          </div>
 
           <StorefrontPayButton
+            v-if="options.length"
             ref="payButton"
-            :label="busy ? 'Processing…' : payButtonText(offer.live ? method : null, offer.payButton, total)"
+            :label="busy ? 'Processing…' : payButtonText(method, offer.payButton, total)"
             :busy="busy"
-            :secured="offer.live"
+            :secured="method?.providerId === 'maropay'"
           />
           <p class="sr-only" role="status">{{ busy ? 'Processing your payment' : '' }}</p>
         </form>
@@ -768,6 +752,26 @@ legend.sf-co__step-title {
   max-width: 560px;
   margin: 24px auto 0;
   text-align: center;
+}
+
+.sf-co__none {
+  padding: 16px 20px;
+  border: 1px dashed #b6b6b6;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.sf-co__none p {
+  margin: 0;
+}
+
+.sf-co__none-note {
+  margin-top: 6px !important;
+  font-size: 13px;
+}
+
+.sf-co__none a {
+  text-decoration: underline;
 }
 
 .sf-co__demo {
