@@ -297,6 +297,12 @@ watch(open, (value) => {
 /* ── Generate-with-AI row ─────────────────────────────────────────────── */
 /* An MpListRow now: height, inline inset, gap and hover all come from the row
    primitive. Only the accent tint that marks it as the AI affordance is local. */
+/* MpListRow bleeds an interactive row 12px past its container so a hover fill
+   reaches a card's edge. This row already IS the pane's full width, so the bleed
+   pushed it under the pane's left border and the icon sat against the edge. */
+.mp-list-row.tb-generate-row {
+  margin-inline: 0;
+}
 .tb-generate-row {
   padding-inline: var(--mp-component-listItem-paddingInline);
   border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));

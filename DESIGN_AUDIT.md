@@ -2155,3 +2155,19 @@ colour). What the pass added to the system and what it decided:
 Gates at the end of the pass: 182 Maropay tests, type-check, build, Storybook build, contrast 272/272, axe 0 on each
 surface (the only notes left are pre-existing: `MpWizardSteps`' role, the Da Vinci bot's tooltips), no horizontal
 overflow at 375, dark checked.
+
+## Theme builder review polish — 2026-10-13
+
+Stakeholder review of the theme builder (Rahul Rawat) — three minor items, all fixed:
+- **`MpDialog` gains `density?: 'default' | 'compact'`; `MpConfirmDialog` uses compact.** A one-line confirm sat
+  in the 88px `headerMinHeight` band plus a divider plus the body inset — ~54px between "Remove this block?" and
+  its message. Compact drops the floor and the header divider and sets the body `headerGap` (8) under the title
+  (measured after: 8px; header 41px). Every confirm prompt in the app tightens the same way; default dialogs are
+  unchanged.
+- **AddSectionDialog "Generate with AI" row** sat against the pane's left border: `MpListRow`'s interactive-row
+  bleed (−12px margin, meant to carry a hover fill to a card edge) pushed a full-width row under the border. The row
+  cancels the bleed; its icon now shares the 12px inset of the search field and catalog rows.
+- **ThemeDaVinciPanel send button** was a 32×40 oval — the raw x-small icon `v-btn` inheriting the VBtn default's
+  inline min-height (the same root cause as the theme-editor polish, 2026-09-30). It restates min-height/padding in
+  its own style and is a 32px circle, matching the copilot's send button. `MpIconButton` (on
+  `feature/store-builder-reskin`) is the systemic fix once that branch lands.

@@ -34,6 +34,7 @@ function confirm() {
   <MpDialog
     :model-value="modelValue"
     size="sm"
+    density="compact"
     :title="title"
     :icon="danger ? 'triangle-alert' : undefined"
     :tone="danger ? 'error' : 'neutral'"

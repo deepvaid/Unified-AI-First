@@ -197,11 +197,16 @@ watch(
         @keydown="onKeydown"
       >
         <template #append-inner>
+          <!-- The explicit style restates the two properties maropostDefaults.VBtn writes
+               inline for TEXT buttons (min-height 40, padding-inline 14); Vuetify merges it
+               after the default, so the x-small icon button stays a 32px circle instead of
+               a 32×40 oval. -->
           <v-btn
             icon="arrow-up"
             size="x-small"
             color="primary"
             variant="flat"
+            :style="{ minHeight: '0', paddingInline: '0' }"
             :disabled="!draft.trim()"
             aria-label="Send"
             @click="send"

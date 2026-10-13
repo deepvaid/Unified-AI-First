@@ -174,6 +174,7 @@ export const Variants: Story = {
         <v-btn variant="outlined" class="text-none" @click="which = 'sub'">+ subtitle</v-btn>
         <v-btn variant="outlined" class="text-none" @click="which = 'icon'">+ icon</v-btn>
         <v-btn variant="outlined" class="text-none" @click="which = 'lead'">#lead + eyebrow</v-btn>
+        <v-btn variant="outlined" class="text-none" @click="which = 'compact'">density="compact"</v-btn>
 
         <MpDialog :model-value="which === 'plain'" title="Rename dashboard" @update:model-value="which = ''">
           <p class="ma-0">Title only — the minimum header.</p>
@@ -192,6 +193,10 @@ export const Variants: Story = {
             <v-avatar size="44" variant="tonal" color="primary"><v-icon>layout-dashboard</v-icon></v-avatar>
           </template>
           <p class="ma-0">An avatar rides in on <code>#lead</code>; the mode label on <code>eyebrow</code>.</p>
+        </MpDialog>
+
+        <MpDialog :model-value="which === 'compact'" size="sm" density="compact" title="Remove this block?" icon="triangle-alert" tone="error" @update:model-value="which = ''">
+          <p class="ma-0">Compact density — no header floor or divider; the message sits 8px under the title. MpConfirmDialog uses it.</p>
         </MpDialog>
       </div>
     `,

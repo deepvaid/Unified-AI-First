@@ -39,8 +39,18 @@ const props = withDefaults(defineProps<{
   /** Esc/X/scrim route through the `close` emit instead of closing directly, so a
    *  host can confirm before discarding unsaved work. Mirrors MpFormDrawer. */
   guarded?: boolean
+  /**
+   * Vertical rhythm. `compact` is for short prompts (MpConfirmDialog): the header
+   * drops its `headerMinHeight` floor and its divider, and the message sits
+   * `headerGap` (8) under the title, so title and message read as one unit. The
+   * floor exists to line up headers across a multi-step flow — a one-line confirm
+   * has no flow to line up with, and the floor + divider + body inset put ~54px
+   * between "Remove this block?" and its message (review, 2026-10).
+   */
+  density?: 'default' | 'compact'
 }>(), {
   tone: 'neutral',
+  density: 'default',
   size: 'md',
   fullscreen: false,
   persistent: false,
@@ -118,7 +128,7 @@ function restoreFocus() {
       border
       :rounded="fullscreen ? '0' : undefined"
       class="mp-dialog__card d-flex flex-column"
-      :class="{ 'mp-dialog__card--fullscreen': fullscreen }"
+      :class="{ 'mp-dialog__card--fullscreen': fullscreen, 'mp-dialog__card--compact': density === 'compact' }"
     >
       <header
         class="mp-dialog__header"
@@ -151,7 +161,7 @@ function restoreFocus() {
         </div>
       </header>
 
-      <v-divider />
+      <v-divider v-if="density !== 'compact'" />
 
       <div
         :id="bodyId"
@@ -380,5 +390,17 @@ function restoreFocus() {
   .mp-dialog__body:not(.mp-dialog__body--flush) {
     padding: var(--mp-component-dialog-paddingCompact);
   }
+}
+
+/* Compact density — after the compact-viewport rules above so it keeps winning
+   there. Only the vertical edges between header and body change; the side insets
+   stay on the dialog padding. */
+.mp-dialog__card--compact .mp-dialog__header {
+  min-height: 0;
+  padding-bottom: 0;
+}
+
+.mp-dialog__card--compact .mp-dialog__body:not(.mp-dialog__body--flush) {
+  padding-top: var(--mp-component-dialog-headerGap);
 }
 </style>
