@@ -2171,3 +2171,25 @@ Stakeholder review of the theme builder (Rahul Rawat) — three minor items, all
   inline min-height (the same root cause as the theme-editor polish, 2026-09-30). It restates min-height/padding in
   its own style and is a 32px circle, matching the copilot's send button. `MpIconButton` (on
   `feature/store-builder-reskin`) is the systemic fix once that branch lands.
+
+Design-system alignment pass over the same three surfaces (measured at 1440, presentation only — no layout,
+content or behaviour change):
+- **AddSectionDialog — one left edge.** Header title, Generate row icon, search icon, category chevrons and row
+  icons measured 20 / 12 / 12 / 20 / 8px. All now sit on the dialog's 20 line: the Generate band insets by
+  `component.dialog.padding`; the search and catalog share one 8px gutter (`space-8`) and rows drop their card-edge
+  bleed so the gutter + `listItem.paddingInline` lands on 20. Right edges mirror it: the catalog reserves its 6px
+  scrollbar (`scrollbar-gutter: stable`) out of the gutter, so rows and search both end 8px from the border. The
+  right pane moves from 16 to 20. The search is picker chrome, so it takes `placeholder` + `aria-label` instead of
+  a top label. Raw `rgba(...)` fills/ink → `--accent` mixes, `--text-secondary`, `--surface-secondary`,
+  `--icon-secondary`; focus rings → `--focus-ring`; transitions → motion tokens; 15px icons → the 16 row stop;
+  0.04em → `letterSpacing.eyebrow`.
+- **ThemeDaVinciPanel.** One 12px inset for header, welcome, transcript and composer (the welcome block carried an
+  extra 4px). The send circle sits concentric in the 40px composer — 4px above, below and beside it, 8px from the
+  text. Eyebrow, line heights and margins on tokens; 14/15px icons → 16.
+- **`MpDialog` / `MpFormDrawer` close button** was a 28×40 capsule (same VBtn inline-default cause). It restates
+  min-height/padding and is a 28px circle on the title's centre line in every dialog and drawer; header heights
+  are unchanged.
+- **Found, not fixed (needs a decision):** every `auto-grow` textarea (19 files) never grows — the field-height
+  ramp in `settings-form.scss` replaced Vuetify's `min-height`, which is what reads `--v-textarea-control-height`.
+  A one-rule fix was measured (Orders note 40 → 83px, the composer grows to its 4 rows) but it changes layout on
+  screens outside this pass, so it was reverted.

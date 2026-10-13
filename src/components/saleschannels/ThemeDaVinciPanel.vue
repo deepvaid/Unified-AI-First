@@ -116,7 +116,7 @@ watch(
           </div>
 
           <div class="tdv__tip d-flex align-start ga-2">
-            <v-icon size="14" class="flex-shrink-0">lightbulb</v-icon>
+            <v-icon size="16" class="flex-shrink-0">lightbulb</v-icon>
             <span class="text-caption text-medium-emphasis">
               Tip: add a headline in quotes, like <em>add a hero “Winter Sale”</em>.
             </span>
@@ -133,13 +133,13 @@ watch(
           <!-- Da Vinci turn -->
           <div v-else class="tdv-bot d-flex gap-2">
             <v-avatar color="primary" size="26" rounded="lg" class="flex-shrink-0 tdv-bot__avatar">
-              <v-icon color="on-primary" size="14">sparkles</v-icon>
+              <v-icon color="on-primary" size="16">sparkles</v-icon>
             </v-avatar>
             <div class="tdv-bot__body">
               <!-- Generated a set → compact result card with Undo -->
               <div v-if="msg.addedIds && msg.addedIds.length" class="tdv-result">
                 <div class="d-flex align-center ga-2">
-                  <v-icon size="15" color="success">circle-check</v-icon>
+                  <v-icon size="16" color="success">circle-check</v-icon>
                   <span class="text-body-2 font-weight-bold">
                     Added {{ msg.addedTitles?.join(', ') }}
                   </span>
@@ -200,7 +200,8 @@ watch(
           <!-- The explicit style restates the two properties maropostDefaults.VBtn writes
                inline for TEXT buttons (min-height 40, padding-inline 14); Vuetify merges it
                after the default, so the x-small icon button stays a 32px circle instead of
-               a 32×40 oval. -->
+               a 32×40 oval. The field's end inset drops to 4 (below) so the circle sits
+               concentric in the 40px composer: 4 above, below and beside it. -->
           <v-btn
             icon="arrow-up"
             size="x-small"
@@ -224,21 +225,32 @@ watch(
   overflow: hidden;
 }
 
-.tdv__header { height: 48px; }
+/* One 12px inset (pa-3 / px-3) for header, transcript and composer — every left
+   edge in the panel lands on the same line. */
+.tdv__header { min-height: var(--mp-space-48); }
 .tdv__eyebrow {
-  font-size: 0.6875rem;
+  font-size: var(--mp-fontSize-11);
   font-weight: var(--mp-fontWeight-bold);
-  letter-spacing: 0.08em;
+  letter-spacing: var(--mp-letterSpacing-eyebrow);
   text-transform: uppercase;
-  color: rgb(var(--v-theme-primary));
-  line-height: 1;
+  color: var(--accent);
+  line-height: var(--mp-lineHeight-tight);
 }
 
 .border-b { border-bottom: 1px solid var(--border-subtle); }
 .border-t { border-top: 1px solid var(--border-subtle); }
 
+/* Composer: the send circle (32) sits 4px in from the field's end, matching the
+   4px above and below it in the 40px field; it stays on the last line as the
+   field grows. */
+.tdv__input :deep(.v-field) { padding-inline-end: var(--mp-space-4); }
+.tdv__input :deep(.v-field__append-inner) {
+  align-self: flex-end;
+  padding-block: var(--mp-space-4);
+  padding-inline-start: var(--mp-space-8);
+}
+
 /* ── Welcome ─────────────────────────────────────────────────────── */
-.tdv__welcome { padding: 4px 4px 0; }
 .tdv__tip {
   padding: var(--mp-space-10) var(--mp-space-12);
   border-radius: var(--r-chip);
@@ -247,7 +259,7 @@ watch(
 .tdv__tip em { font-style: italic; }
 
 /* ── Conversation ────────────────────────────────────────────────── */
-.tdv-bot__avatar { margin-top: 2px; }
+.tdv-bot__avatar { margin-top: var(--mp-space-2); }
 /* The turn owns the space between its reply text and any follow-up chips. */
 .tdv-bot__body {
   flex: 1;
@@ -257,7 +269,7 @@ watch(
   gap: var(--mp-space-8);
 }
 .tdv-bot__text {
-  line-height: 1.5;
+  line-height: var(--mp-lineHeight-normal);
   color: var(--text-primary);
 }
 

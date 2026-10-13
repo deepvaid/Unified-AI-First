@@ -109,7 +109,7 @@ watch(open, (value) => {
           <MpListRow clickable class="tb-generate-row flex-shrink-0" @click="onGenerate">
             <template #lead>
               <v-avatar color="primary" size="28" rounded="lg" class="flex-shrink-0">
-                <v-icon color="on-primary" size="15">sparkles</v-icon>
+                <v-icon color="on-primary" size="16">sparkles</v-icon>
               </v-avatar>
             </template>
             <span class="tb-generate-row__title text-primary">Generate with AI</span>
@@ -119,19 +119,23 @@ watch(open, (value) => {
             </template>
           </MpListRow>
 
-          <div class="pa-3 pb-2 flex-shrink-0">
-            <!-- Picker filter, not a form field: compact and detail-free on
-                 purpose so the catalog below keeps its scroll height. -->
+          <!-- Same 8px gutter as the catalog below, so the search icon, the
+               category chevrons and the row icons share one left edge. -->
+          <div class="px-2 pt-3 pb-2 flex-shrink-0">
+            <!-- Picker filter, not a form field: chrome gets placeholder +
+                 aria-label (no top label), and hide-details keeps the catalog's
+                 scroll height. -->
             <v-text-field
               v-model="search"
-              label="Search sections"
+              placeholder="Search sections"
+              aria-label="Search sections"
               prepend-inner-icon="search"
               hide-details
               clearable
             ></v-text-field>
           </div>
 
-          <div class="asd-left__scroll flex-grow-1 overflow-y-auto px-2 pb-2">
+          <div class="asd-left__scroll flex-grow-1 overflow-y-auto pb-2">
             <!-- Flat filtered list while searching -->
             <template v-if="isSearching">
               <MpListRow
@@ -146,12 +150,12 @@ watch(open, (value) => {
               >
                 <template #lead>
                   <v-avatar color="primary" variant="tonal" size="28" rounded="lg" class="flex-shrink-0">
-                    <v-icon size="15">{{ def.icon }}</v-icon>
+                    <v-icon size="16">{{ def.icon }}</v-icon>
                   </v-avatar>
                 </template>
                 <template #trailing>
                   <span v-if="isKindDisabled(def)" class="asd-item__hint">Already added</span>
-                  <v-icon v-else-if="def.variants?.length" size="15" class="asd-item__chev">chevron-right</v-icon>
+                  <v-icon v-else-if="def.variants?.length" size="16" class="asd-item__chev">chevron-right</v-icon>
                 </template>
               </MpListRow>
               <div v-if="!filtered.length" class="text-caption text-medium-emphasis text-center pa-4">
@@ -167,7 +171,7 @@ watch(open, (value) => {
                   :aria-expanded="!collapsed.has(group.category)"
                   @click="toggleCategory(group.category)"
                 >
-                  <v-icon size="15" class="asd-cat__chev" :class="{ 'asd-cat__chev--open': !collapsed.has(group.category) }">
+                  <v-icon size="16" class="asd-cat__chev" :class="{ 'asd-cat__chev--open': !collapsed.has(group.category) }">
                     chevron-right
                   </v-icon>
                   <span class="asd-cat__label">{{ group.category }} ({{ group.defs.length }})</span>
@@ -185,12 +189,12 @@ watch(open, (value) => {
                   >
                     <template #lead>
                       <v-avatar color="primary" variant="tonal" size="28" rounded="lg" class="flex-shrink-0">
-                        <v-icon size="15">{{ def.icon }}</v-icon>
+                        <v-icon size="16">{{ def.icon }}</v-icon>
                       </v-avatar>
                     </template>
                     <template #trailing>
                       <span v-if="isKindDisabled(def)" class="asd-item__hint">Already added</span>
-                      <v-icon v-else-if="def.variants?.length" size="15" class="asd-item__chev">chevron-right</v-icon>
+                      <v-icon v-else-if="def.variants?.length" size="16" class="asd-item__chev">chevron-right</v-icon>
                     </template>
                   </MpListRow>
                 </div>
@@ -200,7 +204,7 @@ watch(open, (value) => {
         </div>
 
         <!-- RIGHT: variant cards or empty state -->
-        <div class="asd-right flex-grow-1 overflow-y-auto pa-4">
+        <div class="asd-right flex-grow-1 overflow-y-auto pa-5">
           <template v-if="selectedDef && selectedDef.variants?.length">
             <MpFormSection :title="selectedDef.title" description="Pick a layout to add." />
             <div class="asd-variants">
@@ -279,7 +283,15 @@ watch(open, (value) => {
 .border-r { border-right: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); }
 
 .asd-left { width: var(--mp-component-toolbar-searchWidth); flex-shrink: 0; min-height: 0; }
-.asd-left__scroll { min-height: 0; }
+/* The catalog scrolls under a fixed search field. Its scrollbar (6px app-wide,
+   global.scss — space-6) is always reserved and taken out of the right gutter, so
+   the rows end on the same 8px line as the search field whether or not the list
+   overflows. */
+.asd-left__scroll {
+  min-height: 0;
+  scrollbar-gutter: stable;
+  padding-inline: var(--mp-space-8) calc(var(--mp-space-8) - var(--mp-space-6));
+}
 
 /* The list owns the space between category groups; each group used to carry its
    own `mb-1`. */
@@ -291,7 +303,7 @@ watch(open, (value) => {
   display: flex;
   flex-direction: column;
   gap: var(--mp-component-field-groupGap);
-  background: rgba(var(--v-theme-on-surface), 0.02);
+  background: var(--surface-secondary);
 }
 
 /* ── Generate-with-AI row ─────────────────────────────────────────────── */
@@ -299,27 +311,29 @@ watch(open, (value) => {
    primitive. Only the accent tint that marks it as the AI affordance is local. */
 /* MpListRow bleeds an interactive row 12px past its container so a hover fill
    reaches a card's edge. This row already IS the pane's full width, so the bleed
-   pushed it under the pane's left border and the icon sat against the edge. */
+   pushed it under the pane's left border and the icon sat against the edge.
+   Its inset is the dialog's own (20), the same line the header title, the search
+   icon, the category chevrons and the row icons sit on (gutter 8 + row inset 12). */
 .mp-list-row.tb-generate-row {
   margin-inline: 0;
+  padding-inline: var(--mp-component-dialog-padding);
+  border-radius: 0;
 }
 .tb-generate-row {
-  padding-inline: var(--mp-component-listItem-paddingInline);
   border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
-  background: rgba(var(--v-theme-primary), 0.06);
+  background: color-mix(in oklch, var(--accent) 6%, var(--surface-primary));
 }
-.tb-generate-row:hover { background: rgba(var(--v-theme-primary), 0.1); }
-.tb-generate-row:focus-visible { outline: 2px solid rgb(var(--v-theme-primary)); outline-offset: -2px; }
+.tb-generate-row:hover { background: color-mix(in oklch, var(--accent) 10%, var(--surface-primary)); }
 .tb-generate-row__title {
   font-size: var(--mp-fontSize-13);
   font-weight: var(--mp-fontWeight-bold);
 }
 .tb-generate-row__sub {
   font-size: var(--mp-fontSize-11);
-  color: rgba(var(--v-theme-on-surface), 0.6);
-  line-height: 1.3;
+  color: var(--text-secondary);
+  line-height: var(--mp-lineHeight-snug);
 }
-.tb-generate-row__chev { color: rgb(var(--v-theme-primary)); flex-shrink: 0; }
+.tb-generate-row__chev { color: var(--accent); flex-shrink: 0; }
 
 /* ── Category headers ────────────────────────────────────────────────── */
 /* Not a list row — a disclosure header — so it stays hand-rolled, but on the
@@ -338,21 +352,23 @@ watch(open, (value) => {
   color: var(--muted);
 }
 .asd-cat:hover { background: var(--surface-secondary); }
-.asd-cat:focus-visible { outline: 2px solid rgb(var(--v-theme-primary)); outline-offset: -2px; }
-.asd-cat__chev { transition: transform 0.15s; color: var(--muted); }
+.asd-cat:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
+.asd-cat__chev { transition: transform var(--mp-motion-duration-fast) var(--mp-motion-easing-standard); color: var(--muted); }
 .asd-cat__chev--open { transform: rotate(90deg); }
 .asd-cat__label {
   font-size: var(--mp-fontSize-11);
   font-weight: var(--mp-fontWeight-bold);
-  letter-spacing: 0.04em;
+  letter-spacing: var(--mp-letterSpacing-eyebrow);
   text-transform: uppercase;
 }
 
 /* ── Section items ───────────────────────────────────────────────────── */
 /* MpListRow supplies height, inset, gap, hover and focus. Selection tint and the
-   disabled wash are the only things this list actually adds. */
-.asd-item {
-  padding-inline: var(--mp-component-listItem-paddingInline);
+   disabled wash are the only things this list actually adds. The pane's 8px
+   gutter is the hover margin here, so the row's card-edge bleed is switched off —
+   it put the icons at 8 instead of on the pane's 20 line. */
+.mp-list-row.asd-item {
+  margin-inline: 0;
   border-radius: var(--mp-component-nav-itemRadius);
 }
 .asd-item--active,
@@ -372,7 +388,7 @@ watch(open, (value) => {
   gap: var(--mp-component-state-gap);
   padding: var(--mp-component-state-padding);
 }
-.asd-empty__icon { color: rgba(var(--v-theme-on-surface), 0.3); }
+.asd-empty__icon { color: var(--icon-secondary); }
 
 /* ── Variant cards ───────────────────────────────────────────────────── */
 /* A media-thumbnail grid, not a list — deliberately NOT MpOptionCard: that
@@ -394,12 +410,12 @@ watch(open, (value) => {
   background: var(--surface-primary);
   cursor: pointer;
   text-align: left;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color var(--mp-motion-duration-fast) var(--mp-motion-easing-standard);
 }
 .asd-variant:hover { border-color: var(--accent); }
-.asd-variant:focus-visible { outline: 2px solid rgb(var(--v-theme-primary)); outline-offset: 2px; }
+.asd-variant:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 .asd-variant__label { font-size: var(--mp-fontSize-12); font-weight: var(--mp-fontWeight-bold); }
-.asd-variant__desc { font-size: var(--mp-fontSize-11); color: rgba(var(--v-theme-on-surface), 0.6); line-height: 1.3; }
+.asd-variant__desc { font-size: var(--mp-fontSize-11); color: var(--text-secondary); line-height: var(--mp-lineHeight-snug); }
 
 /* ── Schematic mini-mocks (dark tonal surface, token fills) ──────────── */
 /* Everything below draws a miniature of a storefront layout. Its dimensions are

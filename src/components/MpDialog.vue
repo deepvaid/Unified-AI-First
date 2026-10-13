@@ -150,11 +150,15 @@ function restoreFocus() {
         <div v-if="subtitle" class="mp-dialog__subtitle">{{ subtitle }}</div>
         <div class="mp-dialog__header-actions">
           <slot name="headerActions" />
+          <!-- maropostDefaults.VBtn writes min-height 40 / padding-inline 14 inline for text
+               buttons, which made this a 28×40 capsule; Vuetify merges this style after the
+               default, so the close control is a 28px circle like every other icon button. -->
           <v-btn
             icon="x"
             variant="text"
             size="small"
             density="comfortable"
+            :style="{ minHeight: '0', paddingInline: '0' }"
             aria-label="Close"
             @click="requestClose"
           />
