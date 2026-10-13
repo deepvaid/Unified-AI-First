@@ -23,6 +23,8 @@ declare module 'vue-router' {
     templateFill?: boolean
     /** Trial Lab prototype: full-page lab shell that also keeps the copilot drawer closed. */
     trialLab?: boolean
+    /** Mirrors a product screen that has no assistant (theme editor re-skin): the Da Vinci copilot drawer never renders here. */
+    hideCopilot?: boolean
     /** Trial journey plumbing — see src/views/TrialLab/trialLabRoutes.ts. */
     trialFamily?: 'lab' | 'signup'
     trialBase?: string
@@ -242,9 +244,9 @@ const routes: RouteRecordRaw[] = [
   // (…/themes/<id>/builder, /theme-settings, /code) rebuilt 1:1 on the design system. Full page —
   // the editor brings its own top bar and activity rail, exactly as the product does today. These
   // sit beside the AI-first StoreThemeBuilder/StoreThemeCode above, so both remain reachable.
-  { path: '/accounts/:accountId/sales_channels/:channelId/themes/:themeId/builder', name: 'ThemeEditorBuilder', component: () => import('@/views/ThemeEditor/ThemeEditorBuilder.vue'), meta: { ...commerceGate, fullPage: true } },
-  { path: '/accounts/:accountId/sales_channels/:channelId/themes/:themeId/theme-settings', name: 'ThemeEditorSettings', component: () => import('@/views/ThemeEditor/ThemeEditorBuilder.vue'), meta: { ...commerceGate, fullPage: true } },
-  { path: '/accounts/:accountId/sales_channels/:channelId/themes/:themeId/code', name: 'ThemeEditorCode', component: () => import('@/views/ThemeEditor/ThemeEditorCode.vue'), meta: { ...commerceGate, fullPage: true } },
+  { path: '/accounts/:accountId/sales_channels/:channelId/themes/:themeId/builder', name: 'ThemeEditorBuilder', component: () => import('@/views/ThemeEditor/ThemeEditorBuilder.vue'), meta: { ...commerceGate, fullPage: true, hideCopilot: true } },
+  { path: '/accounts/:accountId/sales_channels/:channelId/themes/:themeId/theme-settings', name: 'ThemeEditorSettings', component: () => import('@/views/ThemeEditor/ThemeEditorBuilder.vue'), meta: { ...commerceGate, fullPage: true, hideCopilot: true } },
+  { path: '/accounts/:accountId/sales_channels/:channelId/themes/:themeId/code', name: 'ThemeEditorCode', component: () => import('@/views/ThemeEditor/ThemeEditorCode.vue'), meta: { ...commerceGate, fullPage: true, hideCopilot: true } },
   // Store editor shell (UAT parity A06b): StoreEditorLayout adds a per-store section
   // rail around the hub + section pages. URLs/route names unchanged; fullPage theme
   // routes and POS-oriented locations routes stay standalone above.

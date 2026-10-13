@@ -43,7 +43,8 @@ so both can be compared side by side.
    mirror UAT's URL shape under the store; nothing AI-first was touched.
 5. **Da Vinci stays exactly as the product ships it:** the "Edit with Da Vinci" button and the
    "Generate with AI" tile are present and locked with the same "Upgrade to use" tooltip. They are
-   not new AI experiences — they are what the current screen shows.
+   not new AI experiences — they are what the current screen shows. The app's global Da Vinci
+   copilot drawer is hidden on these routes (`hideCopilot` meta): UAT has no assistant here.
 
 ## What is mocked
 

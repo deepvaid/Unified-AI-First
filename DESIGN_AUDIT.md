@@ -2032,3 +2032,7 @@ design system (`src/views/ThemeEditor/*`, `src/components/themeeditor/*`).
   canvas instead of taking layout width (recipe F6). Measured before: with the inspector open the theme
   builder's canvas was 382px at 1024 and 126px at 768, where the top bar also overflowed and clipped Publish.
   After: 702px at 1024 and 446px at 768, both toolbars fit, Publish fully visible.
+- **Da Vinci copilot hidden on the re-skin routes** (route meta `hideCopilot`, gated in App.vue beside
+  `trialLab`). On a first visit the global copilot drawer opened over the theme editor and covered
+  Preview / Save / Publish; the current product has no assistant there and the brief excludes new AI
+  experiences. The UAT-native "Edit with Da Vinci" button and "Generate with AI" tile stay (locked).

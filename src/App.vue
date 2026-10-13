@@ -177,7 +177,8 @@ const isFlush = computed(() => !!route.meta?.flush)
 // Showing the drawer alongside it puts two Da Vinci surfaces on screen at once,
 // each with its own greeting, so it stays closed there. The Trial Lab renders
 // its own shell for a brand-new user, so the drawer stays closed there too.
-const copilotAvailable = computed(() => route.name !== 'DaVinciExperience' && !route.meta?.trialLab)
+// Re-skins of product screens that have no assistant (route meta `hideCopilot`) keep it closed too.
+const copilotAvailable = computed(() => route.name !== 'DaVinciExperience' && !route.meta?.trialLab && !route.meta?.hideCopilot)
 const copilotVisible = computed({
   get: () => copilot.isOpen && copilotAvailable.value,
   set: (value: boolean) => {
