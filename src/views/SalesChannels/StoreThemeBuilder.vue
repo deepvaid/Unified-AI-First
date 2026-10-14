@@ -14,8 +14,8 @@ import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpFormField from '@/components/MpFormField.vue'
 import StorefrontPreview from '@/components/saleschannels/StorefrontPreview.vue'
 import AddSectionDialog from '@/components/saleschannels/AddSectionDialog.vue'
-import ThemeDaVinciPanel, { type ThemeChatMessage } from '@/components/saleschannels/ThemeDaVinciPanel.vue'
-import { generateSections } from '@/composables/useThemeGenerator'
+import ThemeDaVinciPanel, { type ThemeChatMessage, type ThemeGenerating } from '@/components/saleschannels/ThemeDaVinciPanel.vue'
+import { GENERATION_STAGES, GENERATION_STAGE_MS, generateSections } from '@/composables/useThemeGenerator'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
 import { useToast } from '@/composables/useToast'
 import { useCopilotStore } from '@/stores/useCopilot'
@@ -107,6 +107,8 @@ function selectBlock(sectionId: string, blockId: string) {
 // and clears any pending "New" cues (they're a transient, per-template review aid).
 watch(activeTemplate, () => {
   selected.value = null
+  generationToken += 1
+  generating.value = null
   newSectionIds.value.clear()
   newBlockIds.value.clear()
 })
@@ -485,10 +487,35 @@ const visibleMessages = computed(() =>
   chatMessages.value.filter((m) => !m.template || m.template === activeTemplate.value),
 )
 
-function onGenerate(prompt: string) {
-  if (!theme.value) return
+// A generation in flight. The generator is synchronous, but the panel and the
+// canvas walk the three stages the live builder shows, so a reviewer sees what
+// a merchant sees; a template or store switch mid-run cancels it (the token).
+const generating = ref<ThemeGenerating | null>(null)
+let generationToken = 0
+const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
+
+/** Generated sections land at the top of the content: under the announcement bar and header. */
+function topInsertIndex(sections: ThemeSection[]): number {
+  let i = 0
+  while (i < sections.length && ['announcement-bar', 'header'].includes(sections[i]!.kind)) i += 1
+  return i
+}
+
+async function onGenerate(prompt: string) {
+  if (!theme.value || generating.value) return
   const template = activeTemplate.value
-  chatMessages.value.push({ id: chatId('u'), role: 'user', text: prompt, template })
+  const token = ++generationToken
+  chatMessages.value.push({ id: chatId('u'), role: 'user', text: prompt, template, at: new Date().toISOString() })
+
+  generating.value = { prompt, stage: 0 }
+  for (let stage = 1; stage < GENERATION_STAGES.length; stage += 1) {
+    await wait(GENERATION_STAGE_MS)
+    if (token !== generationToken) return
+    generating.value = { prompt, stage }
+  }
+  await wait(GENERATION_STAGE_MS)
+  if (token !== generationToken) return
+  generating.value = null
 
   const result = generateSections(prompt, {
     template,
@@ -496,11 +523,17 @@ function onGenerate(prompt: string) {
   })
 
   if (!result.matched || result.kinds.length === 0) {
-    chatMessages.value.push({ id: chatId('d'), role: 'davinci', text: result.reply, template })
+    chatMessages.value.push({ id: chatId('d'), role: 'davinci', text: result.reply, template, at: new Date().toISOString() })
     return
   }
 
-  const created = themesStore.addSections(theme.value.id, template, result.kinds, result.overrides)
+  const created = themesStore.addSections(
+    theme.value.id,
+    template,
+    result.kinds,
+    result.overrides,
+    topInsertIndex(theme.value.templates[template]),
+  )
   if (created.length === 0) {
     // Everything requested already exists (unique kinds) — reply, no store write.
     chatMessages.value.push({
@@ -508,6 +541,7 @@ function onGenerate(prompt: string) {
       role: 'davinci',
       text: 'Those sections are already on this template.',
       template,
+      at: new Date().toISOString(),
     })
     return
   }
@@ -518,6 +552,7 @@ function onGenerate(prompt: string) {
     role: 'davinci',
     text: result.reply,
     template,
+    at: new Date().toISOString(),
     addedIds,
     addedTitles: created.map((s) => s.label),
   })
@@ -525,7 +560,12 @@ function onGenerate(prompt: string) {
   addedIds.forEach((id) => newSectionIds.value.add(id))
   // Select the first added section without clearing its "New" cue (review aid).
   selected.value = { type: 'section', id: created[0]!.id }
-  toast.success(`Da Vinci added ${created.length} section${created.length === 1 ? '' : 's'}`)
+  toast.success(created.length === 1 ? 'Section generated successfully' : `${created.length} sections generated successfully`)
+}
+
+/** Clear this template's conversation and start again. */
+function onClearChat() {
+  chatMessages.value = chatMessages.value.filter((m) => m.template && m.template !== activeTemplate.value)
 }
 
 function onUndo(ids: string[]) {
@@ -549,6 +589,8 @@ function onUndo(ids: string[]) {
 // never leaks into another's panel.
 watch(channelId, () => {
   chatMessages.value = []
+  generationToken += 1
+  generating.value = null
   newSectionIds.value.clear()
   newBlockIds.value.clear()
   selected.value = null
@@ -702,8 +744,10 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
         <ThemeDaVinciPanel
           v-if="leftMode === 'davinci'"
           :messages="visibleMessages"
+          :generating="generating"
           @generate="onGenerate"
           @undo="onUndo"
+          @clear="onClearChat"
           @close="leftMode = 'panel'"
         />
 
@@ -996,6 +1040,7 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
               :selected-block-id="selected?.type === 'block' ? selected.id : null"
               :pending-ids="[...newSectionIds]"
               :pending-block-ids="[...newBlockIds]"
+              :generating="generating"
               @select="selectSection"
               @select-block="selectBlock"
             />
