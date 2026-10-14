@@ -236,8 +236,18 @@ watch(open, (value) => {
   background: var(--accent-subtle-bg);
 }
 
-.te-asd__generate-row {
-  padding-inline: var(--mp-component-listItem-paddingInline);
+/* The tile is a full-width band, not a row inside a card: no hover bleed (an interactive
+   MpListRow pulls itself out by its inline padding, which put the mark on the dialog edge).
+   Its inset is the search field's, so the mark lines up with the field below; the hover
+   deepens the accent tint rather than greying it. */
+.te-asd__generate .te-asd__generate-row {
+  margin-inline: 0;
+  padding-inline: var(--mp-space-12);
+  border-radius: 0;
+}
+
+.te-asd__generate .te-asd__generate-row:hover {
+  background: color-mix(in oklch, var(--accent) 8%, transparent);
 }
 
 .te-asd__generate-title {
