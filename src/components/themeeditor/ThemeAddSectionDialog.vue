@@ -13,7 +13,7 @@ import {
 } from '@/stores/themeEditorData'
 
 // The builder's "Add section" picker (store builder re-skin), as UAT lays it out: a two-pane
-// dialog — left, the Da Vinci generator tile (locked on this plan), a search field, the category
+// dialog — left, the Da Vinci generator tile (opens the generator in the Layers column), a search field, the category
 // filter ("All (6)") and the accordion groups of section types; right, the chosen type's layout
 // variants. Types without variants add on click. Composes MpDialog; every row is MpListRow.
 
@@ -24,6 +24,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:modelValue': [value: boolean]
   add: [def: ThemeEditorSectionDef, variantId?: string]
+  /** The Da Vinci tile — the host closes the dialog and opens the generator. */
+  generate: []
 }>()
 
 const open = computed({
@@ -82,21 +84,17 @@ watch(open, (value) => {
     <div class="te-asd">
       <!-- LEFT: generator · search · categories · groups -->
       <div class="te-asd__left">
-        <v-tooltip location="bottom" text="Upgrade to use — unlock AI-powered capabilities with Da Vinci AI. Contact Sales to upgrade.">
-          <template #activator="{ props: tip }">
-            <div v-bind="tip" class="te-asd__generate" aria-disabled="true">
-              <MpListRow class="te-asd__generate-row">
-                <template #lead>
-                  <v-avatar color="primary" size="28" rounded="lg" class="flex-shrink-0">
-                    <v-icon color="on-primary" size="15">sparkles</v-icon>
-                  </v-avatar>
-                </template>
-                <span class="te-asd__generate-title">Da Vinci</span>
-                <span class="te-asd__generate-sub">Generate with AI</span>
-              </MpListRow>
-            </div>
-          </template>
-        </v-tooltip>
+        <div class="te-asd__generate">
+          <MpListRow class="te-asd__generate-row" clickable @click="emit('generate')">
+            <template #lead>
+              <v-avatar color="primary" size="28" rounded="lg" class="flex-shrink-0">
+                <v-icon color="on-primary" size="15">sparkles</v-icon>
+              </v-avatar>
+            </template>
+            <span class="te-asd__generate-title">Da Vinci</span>
+            <span class="te-asd__generate-sub">Generate with AI</span>
+          </MpListRow>
+        </div>
 
         <div class="te-asd__search">
           <!-- Picker filter, not a form field: placeholder + aria-label keep the catalog's scroll height. -->
@@ -231,13 +229,11 @@ watch(open, (value) => {
   border-right: 1px solid var(--border-subtle);
 }
 
-/* Da Vinci tile — the accent-tinted affordance, locked on this plan (tooltip explains). */
+/* Da Vinci tile — the accent-tinted affordance at the head of the picker. */
 .te-asd__generate {
   flex-shrink: 0;
   border-bottom: 1px solid var(--border-subtle);
   background: var(--accent-subtle-bg);
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 .te-asd__generate-row {

@@ -47,8 +47,9 @@ const meta = {
         component:
           'Da Vinci AI Generator — the store theme builder\'s left panel, mirroring the live builder: a welcome '
           + 'with three example requests that fill the composer, a three-stage progress state while a generation '
-          + 'runs (`generating`), then a conversation whose generated turns carry a per-turn Undo. Presentational: '
-          + 'the parent (StoreThemeBuilder) owns the conversation and the store writes.',
+          + 'runs (`generating`), then a conversation whose generated turns carry a per-turn Undo. `mode="edit"` is '
+          + 'the live builder\'s "Edit with Da Vinci" wording of the same panel (an existing section, its own examples). '
+          + 'Presentational: the parent (StoreThemeBuilder, ThemeEditorBuilder) owns the conversation and the store writes.',
       },
     },
   },
@@ -88,6 +89,11 @@ export const Generating: Story = {
 /** A matched turn: user prompt, then a result card with the added titles and an Undo button. */
 export const Conversation: Story = {
   args: { messages: conversationMessages },
+}
+
+/** "Edit with Da Vinci" on an existing section — the live builder's edit wording and examples. */
+export const EditMode: Story = {
+  args: { mode: 'edit' },
 }
 
 /** An unmatched prompt: Da Vinci replies with the capability fallback and re-shows the chips. */

@@ -70,11 +70,12 @@ export const useThemeEditorStore = defineStore('themeEditor', () => {
 
   // ── Sections ────────────────────────────────────────────────────────────────
 
-  function addSection(themeId: string, type: string, def: ThemeEditorSectionDef, variantId?: string): ThemeEditorSection | undefined {
+  /** Appends, or inserts at `index` (the Da Vinci generator puts its section at the top). */
+  function addSection(themeId: string, type: string, def: ThemeEditorSectionDef, variantId?: string, index?: number): ThemeEditorSection | undefined {
     const target = template(themeId, type)
     if (!target) return undefined
     const created = sectionFromDef(def, variantId)
-    target.sections.push(created)
+    target.sections.splice(index ?? target.sections.length, 0, created)
     return created
   }
 

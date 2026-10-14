@@ -197,6 +197,13 @@ export const examplePrompts: { label: string; icon: string; prompt: string }[] =
   { label: 'Generate me an image slideshow', icon: 'gallery-horizontal', prompt: 'Generate me an image slideshow' },
 ]
 
+/** Edit-mode examples ("Edit with Da Vinci" on a section), as the live builder words them. */
+export const editExamplePrompts: { label: string; icon: string; prompt: string }[] = [
+  { label: 'Increase the heading size and make it bold', icon: 'palette', prompt: 'Increase the heading size and make it bold' },
+  { label: 'Replace the banner image with a product shot', icon: 'layout-grid', prompt: 'Replace the banner image with a product shot' },
+  { label: 'Tighten spacing and center the content', icon: 'gallery-horizontal', prompt: 'Tighten spacing and center the content' },
+]
+
 /**
  * What the panel and the canvas show while a generation runs — the same three
  * stages the live builder walks through while its model works. The generator

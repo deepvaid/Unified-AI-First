@@ -32,6 +32,8 @@ const emit = defineEmits<{
   removeBlock: [sectionId: string, blockId: string]
   reorderSection: [from: number, to: number]
   reorderBlock: [sectionId: string, from: number, to: number]
+  /** "Edit with AI" on a section Da Vinci generated. */
+  editWithAi: [sectionId: string]
 }>()
 
 const expanded = ref<Set<string>>(new Set())
@@ -184,6 +186,10 @@ function onDragEnd() {
             <template #lead>
               <v-icon class="te-lead te-lead__type">{{ sectionIcon(section) }}</v-icon>
               <v-icon class="te-lead te-lead__grip" aria-hidden="true">grip-vertical</v-icon>
+            </template>
+            <!-- A generated section keeps its way back into the generator on the row, as UAT does. -->
+            <template v-if="section.aiGenerated" #meta>
+              <MpIconButton size="sm" icon="sparkles" color="primary" :ariaLabel="`Edit ${section.label} with AI`" tooltip="Edit with AI" @click.stop="emit('editWithAi', section.id)" />
             </template>
             <template #actions>
               <MpIconButton size="sm" icon="trash-2" :ariaLabel="`Remove ${section.label}`" @click.stop="emit('removeSection', section.id)" />

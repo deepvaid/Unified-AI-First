@@ -41,8 +41,9 @@ so both can be compared side by side.
    `toPreviewSections`. UAT iframes the real storefront; screenshots were rejected as static.
 4. **Parallel routes.** New `ThemeEditorBuilder` / `ThemeEditorSettings` / `ThemeEditorCode` routes
    mirror UAT's URL shape under the store; nothing AI-first was touched.
-5. **Da Vinci stays exactly as the product ships it:** the "Edit with Da Vinci" button and the
-   "Generate with AI" tile are present and locked with the same "Upgrade to use" tooltip. They are
+5. **Da Vinci stays exactly as the product ships it.** Until October UAT locked the "Edit with
+   Da Vinci" button and the "Generate with AI" tile behind "Upgrade to use"; on 2026-10-14 both are
+   live on store #9, so the re-skin runs them the way UAT does (see *Refresh 2026-10-14*). They are
    not new AI experiences — they are what the current screen shows. The app's global Da Vinci
    copilot drawer is hidden on these routes (`hideCopilot` meta): UAT has no assistant here.
 
@@ -96,11 +97,11 @@ so both can be compared side by side.
   The design system's preview stops are 390 / 768 / 1100 (`component.preview.viewport.*`).
 - Preview: selected section outlined with a label tag ("Hero Banner"); selected block outlined
   ("Heading"); header hover shows "EDIT HEADER".
-- Inspector 300px (hidden until a selection): section — "Section Name", "Edit with Da Vinci"
-  (locked), "Content Alignment", "Background Image" (preview, Clear, IMAGE, Focal point ▾),
+- Inspector (hidden until a selection; since the 2026-10-14 re-crawl it takes the Layers column's
+  place at Layers' width, × goes back to Layers): section — "Section Name", "Edit with Da Vinci", "Content Alignment", "Background Image" (preview, Clear, IMAGE, Focal point ▾),
   "Opacity" slider + number, "Style" (Select color / text / button schema). Block "Heading" —
   rich text (H1 ▾ | B I U | </>) + alignment toggle.
-- Add Section dialog (two panes): Da Vinci tile (locked) · Search · "Sections": *All (6)*
+- Add Section dialog (two panes): Da Vinci tile ("Generate with AI") · Search · "Sections": *All (6)*
   [Multicolumn, Home, Content, General, Products, Marketing], *Featured In Focus (2)* [Featured
   Collections → Grid / Slider, Featured Product Recommendations], *Text & Image (1)* [Image Banner].
 - Theme Settings: list "General" → Logo, Social Media, Theme Colors, Buttons, Product Card,
@@ -118,7 +119,7 @@ so both can be compared side by side.
 | Monaco | `MpCodeEditor` (CodeMirror 6) |
 | Layers rows, ADD SECTION / ADD BLOCK | `ThemeLayersPanel` on boxed `MpListRow`s, outlined `v-btn`, `v-menu` of `MpMenuItem`s |
 | Device icon group (elevated) | `MpSegmentedControl size="sm"` |
-| Inspector drawer, floating-label fields | `ThemeInspectorPanel` + `ThemeFieldControl` (static-label fields, `MpFormField` for composites, `MpFormSection` "Style") |
+| Inspector drawer (Layers column for a section/block, right for theme settings), floating-label fields | `ThemeInspectorPanel` (`placement` start / end) + `ThemeFieldControl` (static-label fields, `MpFormField` for composites, `MpFormSection` "Style") |
 | Add Section dialog | `ThemeAddSectionDialog` on `MpDialog` (flush, two panes), `MpOptionCard` variants |
 | Theme Settings list + scheme cards | `ThemeSettingsList`, `ThemeSettingsInspector`, `ThemeSchemeCard` |
 | Browser `confirm()` / none | `MpConfirmDialog` for remove, publish and unsaved-changes |
@@ -149,3 +150,19 @@ the rough edges came from the design system itself, so the fixes landed there fi
 
 Deliberately not done (logged in DESIGN_AUDIT.md): the app-wide icon-button reset, which would change
 table-row heights across the whole product (Orders 69 → 61px) and wants its own reviewed pass.
+
+## Refresh 2026-10-14
+
+Merged master into the branch, then re-crawled UAT store #9 (theme Lumos) against this spec. The
+code editor and Theme Settings were unchanged. The builder had moved on in three ways, all mirrored:
+
+| UAT now | Re-skin |
+|---|---|
+| Selecting a section or block slides its inspector into the Layers column (240, Layers slides out; × returns) — the September build had it on the right | `ThemeInspectorPanel placement="start"` at `editor.layersWidth`; theme settings keep `placement="end"` |
+| Block inspector has no name field ("Content" rich text + "Content Alignment") | The re-skin's extra "Block name" field removed |
+| Da Vinci is live: the Add Section tile opens the AI Generator in the Layers column (360); "Edit with Da Vinci" opens the same panel worded for the section ("Edit Section with Da Vinci AI", its own three examples, "Describe what you want to change") | The shared `ThemeDaVinciPanel` (`mode` generate / edit) in a `editor.assistantWidth` (360) column. Generate walks UAT's three stages with the canvas band, then inserts "Image Banner with Text" (placeholder copy) at the **top** of the template with an "Edit with AI" mark on its layer and the toast "Section generated successfully!". Edit walks the same stages; a centre / left / right request sets the section's alignment, and the toast is "Section updated successfully!" |
+
+Mocked, not crawled: UAT's edit results and examples come from its backend, so what an edit
+changes beyond alignment is not modelled. No prompt was sent on UAT (it would write to the live
+store's draft).
+

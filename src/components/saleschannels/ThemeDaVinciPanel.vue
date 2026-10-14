@@ -3,7 +3,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 import MpAlert from '@/components/MpAlert.vue'
 import MpChatBubble from '@/components/MpChatBubble.vue'
 import MpListRow from '@/components/MpListRow.vue'
-import { GENERATION_STAGES, examplePrompts } from '@/composables/useThemeGenerator'
+import { GENERATION_STAGES, editExamplePrompts, examplePrompts } from '@/composables/useThemeGenerator'
 import type { TemplateType } from '@/stores/themeBuilderData'
 
 /** One conversational turn. Da Vinci turns that generated sections carry the
@@ -32,9 +32,12 @@ const props = withDefaults(defineProps<{
   messages?: ThemeChatMessage[]
   /** The parent's in-flight generation; null when idle. */
   generating?: ThemeGenerating | null
+  /** `generate` builds a new section; `edit` updates the selected one ("Edit with Da Vinci"). */
+  mode?: 'generate' | 'edit'
 }>(), {
   messages: () => [],
   generating: null,
+  mode: 'generate',
 })
 
 const emit = defineEmits<{
@@ -49,6 +52,23 @@ const emit = defineEmits<{
 }>()
 
 const hasMessages = computed(() => props.messages.length > 0)
+
+// The live builder's two wordings of the same panel.
+const COPY = {
+  generate: {
+    title: 'Welcome to Da Vinci AI Generator',
+    body: 'Describe a scenario and Da Vinci will start to build. Click an example and start your conversation.',
+    placeholder: 'Ask me to change anything…',
+    examples: examplePrompts,
+  },
+  edit: {
+    title: 'Edit Section with Da Vinci AI',
+    body: 'You are updating an existing section. Describe what you want to change.',
+    placeholder: 'Describe what you want to change',
+    examples: editExamplePrompts,
+  },
+}
+const copy = computed(() => COPY[props.mode])
 const busy = computed(() => props.generating !== null)
 const stage = computed(() => GENERATION_STAGES[props.generating?.stage ?? 0] ?? GENERATION_STAGES[0]!)
 const completedStages = computed(() => GENERATION_STAGES.slice(0, props.generating?.stage ?? 0))
@@ -125,16 +145,14 @@ watch(
               <v-icon color="on-primary" size="28">sparkles</v-icon>
             </v-avatar>
             <div class="d-flex flex-column ga-1">
-              <div class="text-body-1 font-weight-bold">Welcome to Da Vinci AI Generator</div>
-              <p class="text-body-2 text-medium-emphasis">
-                Describe a scenario and Da Vinci will start to build. Click an example and start your conversation.
-              </p>
+              <div class="text-body-1 font-weight-bold">{{ copy.title }}</div>
+              <p class="text-body-2 text-medium-emphasis">{{ copy.body }}</p>
             </div>
           </div>
 
           <div class="tdv__examples d-flex flex-column ga-2">
             <MpListRow
-              v-for="example in examplePrompts"
+              v-for="example in copy.examples"
               :key="example.prompt"
               variant="boxed"
               density="compact"
@@ -210,7 +228,7 @@ watch(
                 <div class="text-body-2 tdv-bot__text">{{ msg.text }}</div>
                 <div v-if="!msg.addedTitles" class="d-flex flex-column ga-2">
                   <MpListRow
-                    v-for="example in examplePrompts"
+                    v-for="example in copy.examples"
                     :key="example.prompt"
                     variant="boxed"
                     density="compact"
@@ -282,7 +300,7 @@ watch(
       <v-textarea
         ref="textarea"
         v-model="draft"
-        :placeholder="hasMessages ? 'Continue the conversation…' : 'Ask me to change anything…'"
+        :placeholder="hasMessages ? 'Continue the conversation…' : copy.placeholder"
         rows="1"
         max-rows="4"
         auto-grow

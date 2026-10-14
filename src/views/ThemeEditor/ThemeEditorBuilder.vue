@@ -5,6 +5,7 @@ import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpFormSection from '@/components/MpFormSection.vue'
 import MpSegmentedControl from '@/components/MpSegmentedControl.vue'
 import StorefrontPreview from '@/components/saleschannels/StorefrontPreview.vue'
+import ThemeDaVinciPanel, { type ThemeChatMessage, type ThemeGenerating } from '@/components/saleschannels/ThemeDaVinciPanel.vue'
 import ThemeAddSectionDialog from '@/components/themeeditor/ThemeAddSectionDialog.vue'
 import ThemeEditorFrame from '@/components/themeeditor/ThemeEditorFrame.vue'
 import ThemeFieldControl from '@/components/themeeditor/ThemeFieldControl.vue'
@@ -13,6 +14,7 @@ import ThemeLayersPanel from '@/components/themeeditor/ThemeLayersPanel.vue'
 import ThemeSettingsInspector from '@/components/themeeditor/ThemeSettingsInspector.vue'
 import ThemeSettingsList from '@/components/themeeditor/ThemeSettingsList.vue'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
+import { GENERATION_STAGES, GENERATION_STAGE_MS } from '@/composables/useThemeGenerator'
 import { useToast } from '@/composables/useToast'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import { useStoreThemesStore } from '@/stores/useStoreThemes'
@@ -31,8 +33,10 @@ import {
 
 // Theme builder — store builder re-skin (docs/rebuild/theme-editor-reskin/README.md).
 // The UAT screen 1:1: Layers (or Theme Settings, from the rail) · template + variant pickers and
-// the device toggle over the storefront preview · the inspector for the selected section, block
-// or settings page · Preview / Save / Publish. Same workflow, on the design system's components.
+// the device toggle over the storefront preview · Preview / Save / Publish. As in UAT, a selected
+// section or block opens its inspector in the Layers column (× goes back to Layers), a theme
+// settings page opens on the right, and Da Vinci (Add section → "Generate with AI", or "Edit with
+// Da Vinci") takes the Layers column too. Same workflow, on the design system's components.
 
 const route = useRoute()
 const router = useRouter()
@@ -59,6 +63,7 @@ const variant = ref('default')
 function setTemplate(type: string | null) {
   if (!type || type === template.value.type) return
   clearSelection()
+  closeDaVinci()
   router.replace({ query: { ...route.query, 'template-type': type, 'template-id': 'default' } })
 }
 
@@ -94,6 +99,7 @@ function onPreviewSelect(id: string) {
 
 watch(mode, () => {
   clearSelection()
+  closeDaVinci()
   settingsItem.value = null
 })
 
@@ -101,12 +107,13 @@ const inspectorTitle = computed(() => {
   if (mode.value === 'settings') return THEME_SETTINGS_ITEMS.find((item) => item.id === settingsItem.value)?.label ?? ''
   return selectedBlock.value?.label ?? selectedSection.value?.label ?? ''
 })
-const inspectorOpen = computed(() => (mode.value === 'settings' ? settingsItem.value !== null : !!selectedSection.value))
 
-function closeInspector() {
-  if (mode.value === 'settings') settingsItem.value = null
-  else clearSelection()
-}
+/** What the Layers column shows: Da Vinci, the selection's inspector, or Layers itself. */
+const leftPanel = computed<'davinci' | 'inspector' | 'layers'>(() => {
+  if (davinci.value) return 'davinci'
+  if (mode.value === 'builder' && selectedSection.value) return 'inspector'
+  return 'layers'
+})
 
 const sectionFields = computed(() => (selectedSection.value ? getSectionDef(selectedSection.value.kind)?.fields ?? [] : []))
 const blockFields = computed(() => (selectedBlock.value ? getBlockDef(selectedBlock.value.kind)?.fields ?? [] : []))
@@ -124,10 +131,6 @@ function updateBlockSetting(key: string, value: ThemeEditorValue) {
   if (selectedSection.value && selectedBlock.value) editor.updateBlock(themeId.value, template.value.type, selectedSection.value.id, selectedBlock.value.id, { settings: { [key]: value } })
 }
 
-function renameBlock(label: string) {
-  if (selectedSection.value && selectedBlock.value) editor.updateBlock(themeId.value, template.value.type, selectedSection.value.id, selectedBlock.value.id, { label })
-}
-
 function addBlock(sectionId: string, kind: string, parentBlockId?: string) {
   const created = editor.addBlock(themeId.value, template.value.type, sectionId, kind, parentBlockId)
   if (created) selectBlock(sectionId, created.id)
@@ -141,6 +144,87 @@ function onAddSection(def: ThemeEditorSectionDef, variantId?: string) {
   if (!created) return
   selectSection(created.id)
   toast.success(`${created.label} added`)
+}
+
+// ── Da Vinci (generate a section, or edit the selected one) ─────────────────
+// UAT's generator, mocked: the request walks the same three stages, then a new section lands at
+// the top of the template ("Image Banner with Text", placeholder copy) or the edited section takes
+// the change. Each section keeps its own conversation; new sections share one.
+const davinci = ref<{ mode: 'generate' | 'edit'; sectionId?: string } | null>(null)
+const conversations = ref<Record<string, ThemeChatMessage[]>>({})
+const generating = ref<ThemeGenerating | null>(null)
+let generationToken = 0
+
+const conversationKey = computed(() => (davinci.value?.mode === 'edit' ? davinci.value.sectionId! : 'new'))
+const conversation = computed(() => conversations.value[conversationKey.value] ?? [])
+
+function openGenerator() {
+  addOpen.value = false
+  clearSelection()
+  davinci.value = { mode: 'generate' }
+}
+
+function openEditor(sectionId: string) {
+  if (selectedSectionId.value !== sectionId) selectSection(sectionId)
+  davinci.value = { mode: 'edit', sectionId }
+}
+
+function closeDaVinci() {
+  generationToken += 1
+  generating.value = null
+  davinci.value = null
+}
+
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+const chatId = () => `te-chat-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+
+function pushTurn(key: string, turn: Omit<ThemeChatMessage, 'id' | 'at'>) {
+  conversations.value[key] = [...(conversations.value[key] ?? []), { ...turn, id: chatId(), at: new Date().toISOString() }]
+}
+
+async function onGenerate(prompt: string) {
+  const session = davinci.value
+  if (!session || generating.value) return
+  const key = conversationKey.value
+  const token = ++generationToken
+  pushTurn(key, { role: 'user', text: prompt })
+  generating.value = { prompt, stage: 0 }
+  for (let stage = 1; stage < GENERATION_STAGES.length; stage += 1) {
+    await wait(GENERATION_STAGE_MS)
+    if (token !== generationToken) return
+    generating.value = { prompt, stage }
+  }
+  await wait(GENERATION_STAGE_MS)
+  if (token !== generationToken) return
+  generating.value = null
+
+  if (session.mode === 'generate') {
+    const def = getSectionDef('image-banner')!
+    const created = editor.addSection(themeId.value, template.value.type, def, 'with-cta', 0)
+    if (!created) return
+    editor.updateSection(themeId.value, template.value.type, created.id, {
+      label: 'Image Banner with Text',
+      settings: { headline: 'Section Title', ctaLabel: 'Button Text' },
+    })
+    const placed = template.value.sections.find((entry) => entry.id === created.id)
+    if (placed) placed.aiGenerated = true
+    pushTurn(key, { role: 'davinci', text: `Section generated: Image Banner with Text, added at the top of the ${template.value.label} template.`, addedTitles: ['Image Banner with Text'] })
+    toast.success('Section generated successfully!')
+    return
+  }
+
+  const target = template.value.sections.find((entry) => entry.id === session.sectionId)
+  if (!target) return
+  const align = /\bcent(?:er|re)\b/i.test(prompt) ? 'Center' : /\bright\b/i.test(prompt) ? 'Right' : /\bleft\b/i.test(prompt) ? 'Left' : null
+  if (align && getSectionDef(target.kind)?.fields.some((field) => field.key === 'alignment')) {
+    editor.updateSection(themeId.value, template.value.type, target.id, { settings: { alignment: align } })
+  }
+  pushTurn(key, { role: 'davinci', text: `Section updated: ${target.label}.`, addedTitles: [target.label] })
+  toast.success('Section updated successfully!')
+}
+
+function clearConversation() {
+  conversations.value[conversationKey.value] = []
 }
 
 // ── Remove (confirmed) ────────────────────────────────────────────────────────
@@ -172,6 +256,7 @@ function confirmRemove() {
   } else {
     editor.removeSection(themeId.value, template.value.type, pending.sectionId)
     if (selectedSectionId.value === pending.sectionId) clearSelection()
+    if (davinci.value?.sectionId === pending.sectionId) closeDaVinci()
   }
   toast.success(`${pending.label} removed`)
 }
@@ -232,8 +317,52 @@ const { confirmLeave, discardAndLeave, leaveTitle, leaveMessage, leaveConfirmLab
       <v-btn color="primary" variant="flat" class="text-none" @click="publishOpen = true">Publish</v-btn>
     </template>
 
+    <aside v-if="leftPanel === 'davinci'" class="te-assistant" aria-label="Da Vinci AI">
+      <ThemeDaVinciPanel
+        :mode="davinci!.mode"
+        :messages="conversation"
+        :generating="generating"
+        @generate="onGenerate"
+        @clear="clearConversation"
+        @close="closeDaVinci"
+      />
+    </aside>
+
+    <ThemeInspectorPanel v-else-if="leftPanel === 'inspector'" placement="start" :title="inspectorTitle" @close="clearSelection">
+      <template v-if="selectedBlock">
+        <ThemeFieldControl
+          v-for="field in blockFields"
+          :key="`${selectedBlock.id}-${field.key}`"
+          :field="field"
+          :model-value="selectedBlock.settings[field.key]"
+          @update:model-value="updateBlockSetting(field.key, $event)"
+        />
+      </template>
+
+      <template v-else-if="selectedSection">
+        <v-text-field label="Section name" :model-value="selectedSection.label" @update:model-value="renameSection" />
+        <v-btn variant="tonal" color="primary" block prepend-icon="sparkles" class="text-none" @click="openEditor(selectedSection.id)">Edit with Da Vinci</v-btn>
+        <ThemeFieldControl
+          v-for="field in sectionFields"
+          :key="`${selectedSection.id}-${field.key}`"
+          :field="field"
+          :model-value="selectedSection.settings[field.key]"
+          @update:model-value="updateSectionSetting(field.key, $event)"
+        />
+        <MpFormSection title="Style">
+          <ThemeFieldControl
+            v-for="field in STYLE_FIELDS"
+            :key="`${selectedSection.id}-${field.key}`"
+            :field="field"
+            :model-value="selectedSection.settings[field.key]"
+            @update:model-value="updateSectionSetting(field.key, $event)"
+          />
+        </MpFormSection>
+      </template>
+    </ThemeInspectorPanel>
+
     <ThemeLayersPanel
-      v-if="mode === 'builder'"
+      v-else-if="mode === 'builder'"
       :sections="template.sections"
       :selected-section-id="selectedSectionId"
       :selected-block-id="selectedBlockId"
@@ -245,6 +374,7 @@ const { confirmLeave, discardAndLeave, leaveTitle, leaveMessage, leaveConfirmLab
       @remove-block="askRemoveBlock"
       @reorder-section="(from, to) => editor.moveSection(themeId, template.type, from, to)"
       @reorder-block="(sectionId, from, to) => editor.moveBlock(themeId, template.type, sectionId, from, to)"
+      @edit-with-ai="openEditor"
     />
     <ThemeSettingsList v-else :selected="settingsItem" @select="settingsItem = $event" />
 
@@ -282,6 +412,7 @@ const { confirmLeave, discardAndLeave, leaveTitle, leaveMessage, leaveConfirmLab
             :selected-id="selectedSectionId"
             :selected-block-id="selectedBlockId"
             :brand="previewBrand"
+            :generating="davinci?.mode === 'generate' ? generating : null"
             :menu="['Contact Us']"
             @select="onPreviewSelect"
             @select-block="selectBlock"
@@ -290,52 +421,11 @@ const { confirmLeave, discardAndLeave, leaveTitle, leaveMessage, leaveConfirmLab
       </div>
     </div>
 
-    <ThemeInspectorPanel v-if="inspectorOpen" :title="inspectorTitle" @close="closeInspector">
-      <template v-if="mode === 'settings' && settingsItem">
-        <ThemeSettingsInspector :item="settingsItem" :settings="state.settings" @change="editor.patchSettings(themeId, $event)" />
-      </template>
-
-      <template v-else-if="selectedBlock">
-        <v-text-field label="Block name" :model-value="selectedBlock.label" @update:model-value="renameBlock" />
-        <ThemeFieldControl
-          v-for="field in blockFields"
-          :key="`${selectedBlock.id}-${field.key}`"
-          :field="field"
-          :model-value="selectedBlock.settings[field.key]"
-          @update:model-value="updateBlockSetting(field.key, $event)"
-        />
-      </template>
-
-      <template v-else-if="selectedSection">
-        <v-text-field label="Section name" :model-value="selectedSection.label" @update:model-value="renameSection" />
-        <!-- Present in the current product, locked on this plan — the tooltip says why. -->
-        <v-tooltip location="bottom" text="Upgrade to use — unlock AI-powered capabilities with Da Vinci AI. Contact Sales to upgrade.">
-          <template #activator="{ props: tip }">
-            <div v-bind="tip">
-              <v-btn variant="tonal" color="primary" block disabled prepend-icon="sparkles" class="text-none">Edit with Da Vinci</v-btn>
-            </div>
-          </template>
-        </v-tooltip>
-        <ThemeFieldControl
-          v-for="field in sectionFields"
-          :key="`${selectedSection.id}-${field.key}`"
-          :field="field"
-          :model-value="selectedSection.settings[field.key]"
-          @update:model-value="updateSectionSetting(field.key, $event)"
-        />
-        <MpFormSection title="Style">
-          <ThemeFieldControl
-            v-for="field in STYLE_FIELDS"
-            :key="`${selectedSection.id}-${field.key}`"
-            :field="field"
-            :model-value="selectedSection.settings[field.key]"
-            @update:model-value="updateSectionSetting(field.key, $event)"
-          />
-        </MpFormSection>
-      </template>
+    <ThemeInspectorPanel v-if="mode === 'settings' && settingsItem" :title="inspectorTitle" @close="settingsItem = null">
+      <ThemeSettingsInspector :item="settingsItem" :settings="state.settings" @change="editor.patchSettings(themeId, $event)" />
     </ThemeInspectorPanel>
 
-    <ThemeAddSectionDialog v-model="addOpen" @add="onAddSection" />
+    <ThemeAddSectionDialog v-model="addOpen" @add="onAddSection" @generate="openGenerator" />
 
     <MpConfirmDialog
       v-model="removeOpen"
@@ -364,6 +454,17 @@ const { confirmLeave, discardAndLeave, leaveTitle, leaveMessage, leaveConfirmLab
 </template>
 
 <style scoped>
+/* Da Vinci takes the Layers column's place, at a transcript's measure. */
+.te-assistant {
+  display: flex;
+  flex-shrink: 0;
+  width: var(--mp-component-editor-assistantWidth);
+  min-height: 0;
+  border-right: 1px solid var(--border-subtle);
+  background: var(--surface-primary);
+  color: var(--on-surface);
+}
+
 .te-canvas {
   display: flex;
   flex-direction: column;

@@ -1885,6 +1885,7 @@
   --mp-component-editor-explorerWidth: 300px;
   --mp-component-editor-layersWidth: 260px;
   --mp-component-editor-inspectorWidth: 320px;
+  --mp-component-editor-assistantWidth: 360px;
   --mp-component-editor-codeFontSize: var(--mp-fontSize-13);
   --mp-component-editor-codeLineHeight: 1.6;
   --mp-layout-sidebarWidth: 248px;

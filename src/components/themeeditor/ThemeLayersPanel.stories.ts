@@ -48,6 +48,7 @@ their grip; the trash removes; selection is reported to the host, never held her
     onRemoveBlock: { table: { category: 'events' } },
     onReorderSection: { table: { category: 'events' } },
     onReorderBlock: { table: { category: 'events' } },
+    onEditWithAi: { table: { category: 'events' } },
   },
   decorators: [railFrame('560px')],
 } satisfies Meta<typeof ThemeLayersPanel>
@@ -75,11 +76,20 @@ export const Sizes: Story = {
   render: grid({ ThemeLayersPanel }, [{ label: 'layersWidth 260', args: {} }], { columns: 'var(--mp-component-editor-layersWidth)' }),
 }
 
-/** An empty template. */
+/** A Da Vinci-generated section at the top (its row keeps "Edit with AI"), and an empty template. */
 export const States: Story = {
   decorators: [],
   render: grid({ ThemeLayersPanel }, [
     { label: 'Populated', args: {} },
+    {
+      label: 'Generated section',
+      args: {
+        sections: [
+          { id: 'gen-banner', kind: 'image-banner', label: 'Image Banner with Text', variant: 'with-cta', aiGenerated: true, settings: { headline: 'Section Title', ctaLabel: 'Button Text' }, blocks: [] },
+          ...home.sections,
+        ],
+      },
+    },
     { label: 'Empty template', args: { sections: [] } },
-  ], { columns: 'repeat(2, var(--mp-component-editor-layersWidth))' }),
+  ], { columns: 'repeat(3, var(--mp-component-editor-layersWidth))' }),
 }

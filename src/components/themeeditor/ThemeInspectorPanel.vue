@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import MpIconButton from '@/components/MpIconButton.vue'
 
-// The builder's right-hand inspector shell (store builder re-skin): a titled panel with a close
-// control and a scrolling body spaced on the form-group rhythm. Section, block and theme-settings
-// inspectors all render inside it; only the host decides when it is on screen.
-defineProps<{
+// The builder's inspector shell (store builder re-skin): a titled panel with a close control and
+// a scrolling body spaced on the form-group rhythm. Where it sits follows UAT: a section or block
+// opens in the Layers column (`start` — it takes Layers' place, × goes back), theme settings open
+// on the right (`end`). Only the host decides when it is on screen.
+withDefaults(defineProps<{
   title: string
-}>()
+  placement?: 'start' | 'end'
+}>(), {
+  placement: 'end',
+})
 
 const emit = defineEmits<{ close: [] }>()
 
@@ -17,7 +21,7 @@ defineSlots<{
 </script>
 
 <template>
-  <aside class="te-inspector" :aria-label="`${title} settings`">
+  <aside class="te-inspector" :class="`te-inspector--${placement}`" :aria-label="`${title} settings`">
     <header class="te-inspector__head">
       <h2 class="te-inspector__title text-truncate">{{ title }}</h2>
       <MpIconButton icon="x" ariaLabel="Close settings" @click="emit('close')" />
@@ -32,12 +36,21 @@ defineSlots<{
 .te-inspector {
   display: flex;
   flex-direction: column;
-  width: var(--mp-component-editor-inspectorWidth);
   flex-shrink: 0;
   min-height: 0;
-  border-left: 1px solid var(--border-subtle);
   background: var(--surface-primary);
   color: var(--on-surface);
+}
+
+/* In the Layers column: Layers' own width, so the canvas doesn't move when a row is picked. */
+.te-inspector--start {
+  width: var(--mp-component-editor-layersWidth);
+  border-right: 1px solid var(--border-subtle);
+}
+
+.te-inspector--end {
+  width: var(--mp-component-editor-inspectorWidth);
+  border-left: 1px solid var(--border-subtle);
 }
 
 .te-inspector__head {
@@ -82,7 +95,7 @@ defineSlots<{
    selection labels can't paint through. Closing it is the existing × — no new
    control. */
 @media (max-width: ($mp-layout-breakpointWide - 0.02px)) {
-  .te-inspector {
+  .te-inspector--end {
     position: absolute;
     inset-block: 0;
     inset-inline-end: 0;

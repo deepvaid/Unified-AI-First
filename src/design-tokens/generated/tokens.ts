@@ -1086,6 +1086,7 @@ export const mp_component_editor_toolWidth = `48px`
 export const mp_component_editor_explorerWidth = `300px`
 export const mp_component_editor_layersWidth = `260px`
 export const mp_component_editor_inspectorWidth = `320px`
+export const mp_component_editor_assistantWidth = `360px`
 export const mp_component_editor_codeFontSize = `13px`
 export const mp_component_editor_codeLineHeight = `1.6`
 export const mp_layout_sidebarWidth = `248px`

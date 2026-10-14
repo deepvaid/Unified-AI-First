@@ -26,6 +26,8 @@ export interface ThemeEditorSection {
   label: string
   /** The catalog variant it was added as (e.g. "slider"). */
   variant?: string
+  /** Built by the Da Vinci generator — its layer row carries "Edit with AI". */
+  aiGenerated?: boolean
   settings: Record<string, ThemeEditorValue>
   blocks: ThemeEditorBlock[]
 }

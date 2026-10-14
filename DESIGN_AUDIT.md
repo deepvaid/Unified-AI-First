@@ -2037,6 +2037,19 @@ design system (`src/views/ThemeEditor/*`, `src/components/themeeditor/*`).
   Preview / Save / Publish; the current product has no assistant there and the brief excludes new AI
   experiences. The UAT-native "Edit with Da Vinci" button and "Generate with AI" tile stay (locked).
 
+### Refresh — 2026-10-14 (UAT re-crawl)
+
+- **New token `component.editor.assistantWidth` (360).** The Da Vinci column that replaces Layers while open.
+- **`ThemeInspectorPanel` gains `placement` (`'start' | 'end'`, default `'end'`).** UAT now opens a section /
+  block inspector in the Layers column (start, at `editor.layersWidth`); theme settings stay on the right (end).
+  Only `end` overlays the canvas below `breakpointWide`.
+- **`ThemeDaVinciPanel` gains `mode` (`'generate' | 'edit'`, default `'generate'`)**, with
+  `editExamplePrompts` in `useThemeGenerator`. The AI-first StoreThemeBuilder is unchanged (default mode).
+- **`ThemeAddSectionDialog` emits `generate`; `ThemeLayersPanel` emits `editWithAi`;** sections carry
+  `aiGenerated`; `useThemeEditor.addSection` takes an insert `index`. Da Vinci is live on UAT store #9, so the
+  re-skin's two Da Vinci entry points are unlocked and run UAT's flow (docs/rebuild/theme-editor-reskin).
+- **Removed** the block inspector's "Block name" field. UAT has none.
+
 ## Storefront checkout — 2026-10-05
 
 The merchant's checkout choices (Store › Payments) now show on the store itself. Decisions F1–F4 in

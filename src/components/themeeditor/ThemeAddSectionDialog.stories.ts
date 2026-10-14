@@ -13,8 +13,8 @@ const meta = {
         component: `
 ### Overview
 The theme builder's **Add section** picker (store builder re-skin), laid out as the current admin
-lays it out: left, the Da Vinci generator tile (locked on this plan, with its "Upgrade to use"
-tooltip), a search field, the category filter ("All (6)") and the accordion groups of section
+lays it out: left, the Da Vinci generator tile (emits \`generate\`; the builder closes the dialog and opens
+the generator in the Layers column), a search field, the category filter ("All (6)") and the accordion groups of section
 types; right, the chosen type's layout variants as \`MpOptionCard\`s. Types without variants add on
 click. Composes \`MpDialog\` (\`size="lg"\`, \`flush\`); every row is \`MpListRow\`.
 
