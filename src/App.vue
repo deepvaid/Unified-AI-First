@@ -317,8 +317,11 @@ const copilotDrawerWidth = computed(() => {
   overflow: hidden;
 }
 
+/* Dark: the bed is the canvas tier (one step below the L1 nav and gutter around
+   it), so the L1 cards float on it the way white cards float on the light bed.
+   Owner asked for the dotted bed ~20% darker than the surface it was on. */
 html[data-theme='dark'] .mp-content-frame {
-  background: rgb(var(--v-theme-surface));
+  background: var(--surface-canvas);
 }
 
 /* Faint Da Vinci-orb stipple on the content bed. A ::before overlay (not the

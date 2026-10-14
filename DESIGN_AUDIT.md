@@ -2168,3 +2168,9 @@ its gutter into the nav gray (`shell-variants.css`, the `.v-main` rule) and its 
   the light one does. Previewed in the browser — the 1.08:1 step is not perceptible at the screenshot's crop, and
   it would put L1 cards a hair darker than their bed. Classic/rail dark shells (no frame) keep the canvas gutter by
   design: the canvas→card step is the ladder's largest.
+- **Follow-up the same day (owner):** "make the dotted bed behind the cards ~20% darker" in dark. The bed now
+  paints `--surface-canvas` (`#17191C`, ≈26% darker per channel than the `#1F2226` it was on), so the dark ladder
+  reads canvas bed → L1 cards → L1 nav and gutter around it; the stipple stays on-surface at 0.08. Light bed
+  unchanged (`#f9f9f9`).
+- **Sidenav:** the group divider after Service (the one closing Marketing … Service, above Da Vinci AI) is removed
+  in both themes at the owner's request; the dividers after Analytics, Products and Da Vinci AI stay.
