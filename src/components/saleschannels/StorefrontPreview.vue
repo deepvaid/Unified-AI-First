@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { getBlockDef, type ThemeBlock, type ThemeSection, type ThemeStyles } from '@/stores/themeBuilderData'
+import { GENERATION_STAGES } from '@/composables/useThemeGenerator'
+import { getBlockDef, storefrontThemeVars, type ThemeBlock, type ThemeSection, type ThemeStyles } from '@/stores/themeBuilderData'
 
 const props = withDefaults(defineProps<{
   /** Ordered sections of the active template. Omit for the static default storefront mock. */
@@ -23,6 +24,8 @@ const props = withDefaults(defineProps<{
   brand?: string
   /** The store's header menu labels. */
   menu?: string[]
+  /** A Da Vinci generation in flight — a placeholder band shows where the section will land. */
+  generating?: { prompt: string; stage: number } | null
 }>(), {
   sections: undefined,
   styles: undefined,
@@ -34,6 +37,7 @@ const props = withDefaults(defineProps<{
   pendingBlockIds: () => [],
   brand: 'ATLAS',
   menu: () => ['New', 'Women', 'Men', 'Sale'],
+  generating: null,
 })
 
 const emit = defineEmits<{
@@ -44,22 +48,19 @@ const emit = defineEmits<{
 
 const visibleSections = computed(() => props.sections?.filter((section) => !section.hidden) ?? [])
 
+// Generated sections land at the top of the content, under the announcement bar
+// and header — the band previews that slot: it renders before the section at
+// `bandAt`, or after the last section when nothing follows the header.
+const bandAt = computed(() => {
+  let i = 0
+  while (i < visibleSections.value.length && ['announcement-bar', 'header'].includes(visibleSections.value[i]!.kind)) i += 1
+  return i
+})
+
 const pendingSet = computed(() => new Set(props.pendingIds))
 const pendingBlockSet = computed(() => new Set(props.pendingBlockIds))
 
-const styleVars = computed(() => {
-  const s = props.styles
-  if (!s) return {}
-  const vars: Record<string, string> = {}
-  if (s.brandColor) vars['--sf-brand'] = s.brandColor
-  if (s.accentColor) vars['--sf-accent'] = s.accentColor
-  if (s.background) vars['--sf-bg'] = s.background
-  if (s.textColor) vars['--sf-text'] = s.textColor
-  if (s.cornerRadius !== undefined) vars['--sf-radius'] = `${s.cornerRadius}px`
-  if (s.headingFont) vars['--sf-heading-font'] = s.headingFont
-  if (s.bodyFont) vars['--sf-body-font'] = s.bodyFont
-  return vars
-})
+const styleVars = computed(() => storefrontThemeVars(props.styles))
 
 const rootClasses = computed(() => [
   `sf-preview--${props.device}`,
@@ -121,9 +122,15 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
     <div class="sf-preview__viewport" :class="{ 'sf-preview__viewport--page': sections }">
       <!-- Sectioned mode: schema-driven mocks per section kind -->
       <template v-if="sections">
+        <template v-for="(section, i) in visibleSections" :key="section.id">
+        <div v-if="generating && i === bandAt" class="sf-generating" role="status" aria-label="Da Vinci is generating a section">
+          <v-progress-circular indeterminate size="28" width="2" color="primary" aria-hidden="true" />
+          <ol class="sf-generating__steps" aria-hidden="true">
+            <li v-for="(step, n) in GENERATION_STAGES" :key="step.title" :class="{ 'is-on': n <= generating.stage }"><v-icon size="14">{{ step.icon }}</v-icon></li>
+          </ol>
+          <span>Hang tight! This will be worth the wait.</span>
+        </div>
         <div
-          v-for="section in visibleSections"
-          :key="section.id"
           class="sf-section"
           :class="{ 'sf-section--selected': section.id === selectedId, 'sf-section--new': pendingSet.has(section.id) }"
           :data-label="section.label"
@@ -308,8 +315,17 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
             </component>
           </div>
         </div>
+        </template>
 
-        <div v-if="!visibleSections.length" class="sf-empty">No sections yet — add sections to build this template.</div>
+        <div v-if="generating && bandAt >= visibleSections.length" class="sf-generating" role="status" aria-label="Da Vinci is generating a section">
+          <v-progress-circular indeterminate size="28" width="2" color="primary" aria-hidden="true" />
+          <ol class="sf-generating__steps" aria-hidden="true">
+            <li v-for="(step, n) in GENERATION_STAGES" :key="step.title" :class="{ 'is-on': n <= generating.stage }"><v-icon size="14">{{ step.icon }}</v-icon></li>
+          </ol>
+          <span>Hang tight! This will be worth the wait.</span>
+        </div>
+
+        <div v-if="!visibleSections.length && !generating" class="sf-empty">No sections yet — add sections to build this template.</div>
       </template>
 
       <!-- Default static mock (extracted 1:1 from SalesChannelDetail) -->
@@ -621,6 +637,52 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
 .sf-section--new {
   outline: 2px solid var(--accent);
   outline-offset: -2px;
+}
+
+/* Where the generated section will land while Da Vinci works. */
+.sf-generating {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 40px 16px;
+  border: 1px dashed var(--accent);
+  background: color-mix(in oklch, var(--accent) 6%, var(--surface-primary));
+  color: var(--text-primary);
+  font-size: 12.5px;
+}
+.sf-generating__steps {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sf-generating__steps li {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border-default);
+  border-radius: 50%;
+  background: var(--surface-primary);
+  color: var(--text-secondary);
+}
+.sf-generating__steps li + li { margin-left: 28px; }
+.sf-generating__steps li + li::before {
+  content: '';
+  position: absolute;
+  right: 100%;
+  width: 28px;
+  height: 1px;
+  background: var(--border-default);
+}
+.sf-generating__steps li.is-on {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-fg);
 }
 
 .sf-section--new::before {

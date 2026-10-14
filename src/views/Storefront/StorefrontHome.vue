@@ -1,15 +1,24 @@
 <script setup lang="ts">
 import { computed, inject, ref } from 'vue'
 import type { ThemeBlock, ThemeSection } from '@/stores/themeBuilderData'
+import { useCommerceStore } from '@/stores/useCommerce'
 import StorefrontAnchor from './StorefrontAnchor.vue'
+import StorefrontProductCard from './StorefrontProductCard.vue'
 import { STOREFRONT } from './storefrontContext'
+import { inStock, storefrontProducts } from './storefrontCatalog'
 
 // The storefront home page: the current theme's home template, section by
-// section. The header and footer belong to StorefrontLayout. Section kinds that
-// need products (featured products, testimonials) aren't drawn until the store's
-// catalogue is crawled.
+// section. The header and footer belong to StorefrontLayout. Featured products
+// come from the stand-in catalogue (storefrontCatalog); testimonials and
+// newsletter sections aren't drawn.
 
 const storefront = inject(STOREFRONT)!
+const commerce = useCommerceStore()
+
+function featured(section: ThemeSection) {
+  const count = Number(section.settings.productCount) || 4
+  return storefrontProducts(commerce.products).filter(inStock).slice(0, count)
+}
 
 const sections = computed<ThemeSection[]>(() =>
   (storefront.theme.value?.templates.home ?? []).filter((s) => !s.hidden && s.kind !== 'header' && s.kind !== 'footer'),
@@ -101,6 +110,16 @@ function looped(section: ThemeSection): ThemeBlock[] {
           <h1 v-if="text(section, 'headline')" class="sf-banner__headline">{{ text(section, 'headline') }}</h1>
           <p v-if="text(section, 'subheadline')" class="sf-banner__sub">{{ text(section, 'subheadline') }}</p>
           <span v-if="text(section, 'ctaLabel')" class="sf-banner__button">{{ text(section, 'ctaLabel') }}</span>
+        </div>
+      </section>
+
+      <section v-else-if="section.kind === 'featured-products'" class="sf-featured">
+        <div class="sf-featured__head">
+          <h2 class="sf-heading">{{ text(section, 'title') || 'Featured products' }}</h2>
+          <StorefrontAnchor href="/collections/all" class="sf-featured__all">View all</StorefrontAnchor>
+        </div>
+        <div class="sf-featured__grid">
+          <StorefrontProductCard v-for="product in featured(section)" :key="product.id" :product="product" />
         </div>
       </section>
 
@@ -243,6 +262,30 @@ function looped(section: ThemeSection): ThemeBlock[] {
   text-align: center;
 }
 
+.sf-featured {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 48px 24px 0;
+}
+
+.sf-featured__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.sf-featured__all {
+  font-size: 14px;
+  text-decoration: underline !important;
+}
+
+.sf-featured__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 32px 24px;
+}
+
 .sf-announcement {
   padding: 8px 24px;
   background: var(--sf-brand, #373842);
@@ -258,6 +301,11 @@ function looped(section: ThemeSection): ThemeBlock[] {
 
   .sf-collections__track {
     grid-auto-columns: 100%;
+  }
+
+  .sf-featured__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px 16px;
   }
 }
 </style>

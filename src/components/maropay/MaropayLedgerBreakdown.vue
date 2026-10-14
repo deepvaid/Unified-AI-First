@@ -22,12 +22,12 @@ withDefaults(defineProps<{
 </script>
 
 <template>
-  <v-card flat border rounded="lg" class="maropay-ledger">
+  <v-card flat border rounded="lg" class="mp-card-inset">
     <MpSectionHeader :title="title" :heading-level="headingLevel" />
     <dl class="maropay-ledger__list">
       <div v-for="line in lines" :key="line.label" class="maropay-ledger__row">
         <dt>
-          <router-link v-if="line.to" :to="line.to" class="maropay-ledger__link">{{ line.label }}</router-link>
+          <router-link v-if="line.to" :to="line.to" class="mp-link">{{ line.label }}</router-link>
           <template v-else>{{ line.label }}</template>
           <span v-if="line.hint" class="maropay-ledger__hint">{{ line.hint }}</span>
         </dt>
@@ -43,10 +43,6 @@ withDefaults(defineProps<{
 </template>
 
 <style scoped>
-.maropay-ledger {
-  padding: var(--mp-component-card-padding);
-}
-
 .maropay-ledger__list {
   margin: 0;
 }
@@ -82,22 +78,13 @@ withDefaults(defineProps<{
 
 .maropay-ledger__hint {
   font-size: var(--mp-fontSize-12);
-  color: var(--text-secondary);
-}
-
-.maropay-ledger__link {
-  color: rgb(var(--v-theme-primary));
-  text-decoration: none;
-}
-
-.maropay-ledger__link:hover {
-  text-decoration: underline;
+  color: var(--on-surface-muted);
 }
 
 .maropay-ledger__caption {
   margin: var(--mp-space-12) 0 0;
   font-size: var(--mp-fontSize-12);
   line-height: var(--mp-lineHeight-normal);
-  color: var(--text-secondary);
+  color: var(--on-surface-muted);
 }
 </style>

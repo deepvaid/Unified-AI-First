@@ -4,6 +4,14 @@ import type { DashboardWidgetDraft } from '@/stores/dashboards/types'
 import type { DvCardDescriptor, DvQuickReply } from '@/composables/useDaVinciIntents'
 import type { CampaignReadinessItem } from '@/stores/useDaVinciOnboarding'
 import type { SetupTaskStatus } from '@/stores/useOnboarding'
+import type { CatalogDraft, CatalogFieldKey } from '@/composables/useCatalogGenerator'
+import type {
+  CatalogField,
+  CatalogGateReason,
+  CatalogMode,
+  CatalogTarget,
+  CatalogWallet,
+} from '@/composables/catalogCopilotConfig'
 
 // ── Shared conversation types ────────────────────────────────────────────────
 // The conversation lives here (not in MpDaVinciBot) so it survives route
@@ -19,6 +27,10 @@ export interface DraftSetProps {
 export interface IntentCardsProps {
   cards: DvCardDescriptor[]
   quickReplies?: DvQuickReply[]
+  /** 'pills' (default) · 'list' — full-width starting points with hints · 'compact' — small wrapping pills. */
+  layout?: 'pills' | 'list' | 'compact'
+  /** The session these replies belong to has ended — the replies hide rather than send into another one. */
+  retired?: boolean
 }
 
 export interface CampaignOnboardingAction {
@@ -57,14 +69,63 @@ export interface SetupOnboardingProps {
   secondaryAction?: CampaignOnboardingAction
 }
 
+// ── Catalog Co-Pilot cards (Da Vinci Catalog Management) ────────────────────
+// Card status lives here, in the thread, not in the card: the full-page copilot
+// remounts the bot, and an applied draft must still read as applied.
+
+export type CatalogDraftStatus = 'draft' | 'applied' | 'discarded' | 'superseded' | 'inactive'
+
+export interface CatalogDraftProps {
+  draftId: string
+  mode: CatalogMode
+  field?: CatalogField
+  productId?: number
+  draft: CatalogDraft
+  /** Current values for the drafted keys (enrich / field) — the diff's left side. */
+  current?: CatalogDraft
+  keys: CatalogFieldKey[]
+  /** Where Apply lands — fixed when the draft is made. */
+  target: CatalogTarget
+  status: CatalogDraftStatus
+  appliedKeys?: CatalogFieldKey[]
+  /** Fields left blank on purpose (no price or brand stated). */
+  gaps?: CatalogFieldKey[]
+  /** Assumptions to check, one short sentence each. */
+  notes?: string[]
+}
+
+export interface CatalogGateProps {
+  reason: CatalogGateReason
+  wallet: CatalogWallet
+}
+
+export interface CatalogNoticeProps {
+  tone: 'error' | 'warning'
+  headline: string
+  description: string
+  /** Re-sent by "Try again" — recoverable failures only. */
+  retryPrompt?: string
+}
+
 export interface ChatComponent {
-  type: 'widgetDraftSet' | 'insight' | 'intentCards' | 'campaignOnboarding' | 'setupOnboarding'
+  type:
+    | 'widgetDraftSet'
+    | 'insight'
+    | 'intentCards'
+    | 'campaignOnboarding'
+    | 'setupOnboarding'
+    | 'catalogDraft'
+    | 'catalogGate'
+    | 'catalogNotice'
   props:
     | DraftSetProps
     | { headline: string; description: string; severity?: string }
     | IntentCardsProps
     | CampaignOnboardingProps
     | SetupOnboardingProps
+    | CatalogDraftProps
+    | CatalogGateProps
+    | CatalogNoticeProps
 }
 
 export interface ChatMessage {

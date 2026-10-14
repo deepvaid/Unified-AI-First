@@ -10,7 +10,9 @@
  */
 import { applyRate, compare, formatMoney, isPositive, subtract, sum, zero } from './money.ts'
 import type { Money } from './money.ts'
-import { DECLINE_REASON_COPY, LAST_DAY_OF_MONTH, ONBOARDING_STEPS, PROVIDER_LABELS, SUPPORTED_COUNTRIES, WEEKDAY_LABELS, problem } from './model.ts'
+import { DECLINE_REASON_COPY, LAST_DAY_OF_MONTH, ONBOARDING_STEPS, SUPPORTED_COUNTRIES, WEEKDAY_LABELS, problem } from './model.ts'
+import { CARD_FAMILY, activeConnections, cardGateway, connectionOfferedMethods, providerLabel, storeProvidersFor } from './providers.ts'
+import type { StoreProviderSetup } from './providers.ts'
 import type {
   ActionTask,
   CaptureMode,
@@ -37,6 +39,30 @@ export interface MaropayTarget {
   name: string
   params?: Record<string, string>
   query?: Record<string, string>
+  /** A section on the page, with its `#` ("#maropay-rates"). */
+  hash?: string
+}
+
+/**
+ * Maropay on one store, inside Maropay's own frame (its rail and way back stay on screen).
+ * The store editor shows the same page as `StorePaymentsMaropay`, one level under the store's
+ * Payments page (`StorePayments`), which lists every provider the store has.
+ */
+export const MAROPAY_STORE_ROUTE = 'MaropayStorePayments'
+
+/** Where Maropay's page for a store opens: Maropay's frame by default, the store editor's on request. */
+export function storePaymentsTarget(channelId: string, frame: 'maropay' | 'store' = 'maropay'): MaropayTarget {
+  return { name: frame === 'maropay' ? MAROPAY_STORE_ROUTE : 'StorePaymentsMaropay', params: { channelId } }
+}
+
+/** The store's Payments page — all of its providers, Maropay among them — in the store editor. */
+export function storeProvidersTarget(channelId: string): MaropayTarget {
+  return { name: 'StorePayments', params: { channelId } }
+}
+
+/** English list: "Cards, Apple Pay and Google Pay". */
+export function joinList(items: readonly string[]): string {
+  return items.length <= 1 ? items.join('') : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`
 }
 
 const DATE_FORMAT = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -115,6 +141,22 @@ export function storeActivationState(binding: StoreBinding, capabilities: Capabi
   return checklist.ok ? 'ready_to_activate' : 'needs_setup'
 }
 
+/**
+ * A store's line in a list (Overview, Settings › Stores): who takes cards at its checkout, and
+ * which of the merchant's own providers sit beside them.
+ */
+export function storeCheckoutNote(activation: StoreActivationState, setup: StoreProviderSetup): string {
+  const live = activation === 'live'
+  const processor = live && setup.cardProcessor === 'maropay' ? 'maropay' : cardGateway(setup)?.kind ?? null
+  const others = activeConnections(setup)
+    .filter((c) => c.kind !== processor && connectionOfferedMethods(c, { cardProcessor: processor }).length > 0)
+    .map((c) => providerLabel(c.kind))
+  if (live && processor !== 'maropay') others.unshift('Maropay')
+  if (!processor) return others.length ? `Checkout uses ${joinList(others)} — no card processor` : 'No payment provider connected'
+  const lead = `Checkout uses ${providerLabel(processor)}`
+  return others.length ? `${lead} for cards · ${others.join(', ')}` : lead
+}
+
 export interface ReadinessDimensions {
   setup: SetupState
   verification: VerificationState
@@ -179,11 +221,11 @@ export function taskTarget(task: ActionTask): MaropayTarget {
     case 'dispute':
       return task.disputeId ? { name: 'MaropayDisputeDetail', params: { disputeId: task.disputeId } } : { name: 'MaropayDisputes' }
     case 'method_review':
-      return task.channelId ? { name: 'StorePayments', params: { channelId: task.channelId } } : { name: 'MaropaySettings', query: { tab: 'methods' } }
+      return task.channelId ? storePaymentsTarget(task.channelId) : { name: 'MaropaySettings', query: { tab: 'methods' } }
     case 'business_change':
       return { name: 'MaropaySettings', query: { tab: 'business' } }
     case 'activate_store':
-      return task.channelId ? { name: 'StorePayments', params: { channelId: task.channelId } } : { name: 'MaropaySettings', query: { tab: 'stores' } }
+      return task.channelId ? storePaymentsTarget(task.channelId) : { name: 'MaropaySettings', query: { tab: 'stores' } }
   }
 }
 
@@ -319,7 +361,7 @@ export function deriveOverviewInstruction(state: MaropayAccountState, now: numbe
     }
     const name = nameOf(target.binding.channelId)
     const progress = checklistProgress(target.checklist)
-    const storeTarget = { name: 'StorePayments', params: { channelId: target.binding.channelId } }
+    const storeTarget = storePaymentsTarget(target.binding.channelId)
     if (target.kind === 'set_up_store') {
       return {
         ...base,
@@ -358,7 +400,7 @@ export function deriveOverviewInstruction(state: MaropayAccountState, now: numbe
       key: 'activate_more',
       headline: `Payments are active — ${name} isn’t on Maropay yet`,
       detail: `Maropay is live on ${stores}. ${target.kind === 'ready_to_activate' ? `${name} is ready to activate.` : `Finish ${name}’s checklist to activate it.`}`,
-      action: { label: target.kind === 'ready_to_activate' ? `Activate on ${name}` : `Set up ${name}`, target: { name: 'StorePayments', params: { channelId: target.binding.channelId } } },
+      action: { label: target.kind === 'ready_to_activate' ? `Activate on ${name}` : `Set up ${name}`, target: storePaymentsTarget(target.binding.channelId) },
     }
   }
   return {
@@ -459,9 +501,19 @@ export function methodStatusForStore(entry: PaymentMethodCatalogEntry, binding: 
   return wanted ? 'enabled' : 'available'
 }
 
-/** Methods shoppers actually see: wanted on the store and approved on the account. */
+/** Maropay's methods that are ready on this store: wanted on the store and approved on the account. */
 export function checkoutMethods(state: MaropayAccountState, binding: StoreBinding): PaymentMethodCatalogEntry[] {
   return state.methods.filter((m) => m.availability === 'available' && binding.enabledMethodIds.includes(m.id))
+}
+
+/**
+ * What Maropay itself puts in front of shoppers on this store: its ready methods, minus the card
+ * family unless Maropay takes cards, minus anything the merchant's own providers already offer
+ * (their own PayPal or Afterpay account wins over the same method through Maropay).
+ */
+export function maropayOfferedMethods(state: MaropayAccountState, binding: StoreBinding, setup: StoreProviderSetup, cardsVia: 'maropay' | 'existing'): PaymentMethodCatalogEntry[] {
+  const taken = new Set(activeConnections(setup).flatMap((c) => c.methods.map((m) => m.methodId)).filter((id) => !CARD_FAMILY.includes(id)))
+  return checkoutMethods(state, binding).filter((m) => (cardsVia === 'maropay' || !CARD_FAMILY.includes(m.id)) && !taken.has(m.id))
 }
 
 function captureIncompatibleMethods(methods: PaymentMethodCatalogEntry[], captureMode: CaptureMode): PaymentMethodCatalogEntry[] {
@@ -518,12 +570,13 @@ export function channelProblem(channel: ChannelFacts | null | undefined): string
 /** The channel problem, or a configuration the store can't go live with (capture mode, saved cards). */
 export function storePrerequisiteProblem(state: MaropayAccountState, binding: StoreBinding, channel: ChannelFacts | null | undefined): string | null {
   const incompatible = captureIncompatibleMethods(checkoutMethods(state, binding), binding.captureMode)
-  const credentials = binding.previousProvider?.savedCredentials
+  const gateway = cardGateway(storeProvidersFor(state, binding.channelId))
+  const credentials = gateway?.savedCredentials
   return channelProblem(channel)
     ?? (incompatible.length
       ? `Manual capture isn’t supported by ${incompatible.map((m) => m.label).join(', ')}. Switch to automatic capture or turn those methods off.`
       : credentials?.blocking
-        ? `${credentials.count} saved cards back recurring charges with ${PROVIDER_LABELS[binding.previousProvider!.provider]}. They need a supported migration before you switch.`
+        ? `${credentials.count} saved cards back recurring charges with ${providerLabel(gateway!.kind)}. They need a supported migration before you switch.`
         : null)
 }
 
@@ -539,7 +592,10 @@ export function activationChecklist(
   const underReview = account?.verification === 'under_review'
   const needsInformation = account?.verification === 'action_required'
   const blockingTasks = openTasks(state).filter((t) => t.blocking)
-  const ready = checkoutMethods(state, binding)
+  const setup = storeProvidersFor(state, binding.channelId)
+  // What Maropay would add with the Activate dialog's default (it takes cards); the dialog restates the other choice.
+  const ready = maropayOfferedMethods(state, binding, setup, 'maropay')
+  const gateway = cardGateway(setup)
   const pending = state.methods.filter((m) => m.availability === 'pending_approval' && binding.enabledMethodIds.includes(m.id))
   const storeProblem = storePrerequisiteProblem(state, binding, channel)
 
@@ -570,7 +626,9 @@ export function activationChecklist(
         : binding.checkoutValidation.status === 'failed' ? binding.checkoutValidation.failureReason ?? 'The last test checkout failed.'
           : 'Run a test checkout with the methods you’ve chosen.'),
     item('impact_reviewed', 'Owner has reviewed what changes', binding.impactReviewedAt !== null,
-      binding.impactReviewedAt ? 'Activation impact reviewed.' : 'Review which methods, fees and provider settings change.'),
+      binding.impactReviewedAt
+        ? 'Activation impact reviewed.'
+        : gateway ? `Review what moves to Maropay and what stays with ${providerLabel(gateway.kind)}.` : 'Review which methods, fees and provider settings change.'),
   ]
   const blockedBy = items.filter((i) => !i.ok).map((i) => i.key)
   return { items, ok: blockedBy.length === 0, blockedBy }
@@ -731,10 +789,73 @@ export function nextPayout(state: MaropayAccountState, now: number): UpcomingPay
   }
 }
 
+export interface MoneyBucket {
+  key: 'settling' | 'available' | 'on_its_way'
+  label: string
+  amount: Money
+  /** What the bucket is doing, in words ("From 3 payments, clears in 1–2 days"). */
+  caption: string
+}
+
+/**
+ * "Where your money is right now": one currency's balance as three buckets with a caption each —
+ * settling (pending), available (goes out with the next payout), on its way (sent, not yet
+ * landed). Captions are read from the movements and payouts themselves, never invented.
+ */
+export function moneyNow(state: MaropayAccountState, balance: BalanceSummary, now: number): MoneyBucket[] {
+  const currency = balance.currency
+  const settlingCount = state.movements.filter((m) => m.net.currency === currency && m.payoutId === null && m.kind === 'charge' && Date.parse(m.availableAt) > now).length
+  const blocked = deriveCapabilities(state, now).payouts !== 'ready'
+  const inTransit = state.payouts
+    .filter((p) => p.amount.currency === currency && p.status === 'in_transit' && p.arrivalEstimate)
+    .sort((a, b) => Date.parse(b.arrivalEstimate!) - Date.parse(a.arrivalEstimate!))[0] ?? null
+  return [
+    {
+      key: 'settling', label: 'Settling', amount: balance.pending,
+      caption: settlingCount ? `${settlingCount} ${settlingCount === 1 ? 'payment' : 'payments'} · clears in 1–2 days` : 'Nothing settling',
+    },
+    {
+      key: 'available', label: 'Available', amount: balance.available,
+      caption: balance.available.amount < 0
+        ? 'Recovered from upcoming payments'
+        : blocked ? 'Held until payouts are fixed' : balance.available.amount > 0 ? 'Goes out with the next payout' : 'Nothing to send',
+    },
+    {
+      key: 'on_its_way', label: 'On its way', amount: balance.inTransit,
+      caption: inTransit ? `In your bank ${formatDay(inTransit.arrivalEstimate!)}` : balance.inTransit.amount > 0 ? 'In your bank soon' : 'Nothing in transit',
+    },
+  ]
+}
+
+export interface StoreNag {
+  channelId: string
+  /** The gateway still taking the store's cards, when there is one. */
+  gateway: string | null
+  done: number
+  total: number
+}
+
+/**
+ * The store still to move: once one store is live on Maropay, the first linked store that isn't
+ * — with its checklist progress and the gateway it still checks out with. null when every linked
+ * store is live, or none is.
+ */
+export function storeNag(state: MaropayAccountState, now: number, factsFor?: FactsFor): StoreNag | null {
+  if (!state.bindings.some((b) => b.activation === 'live')) return null
+  const binding = state.bindings.find((b) => b.activation !== 'live')
+  if (!binding) return null
+  const checklist = activationChecklist(state, binding, factsFor?.(binding.channelId) ?? null, now)
+  const { done, total } = checklistProgress(checklist)
+  const gateway = cardGateway(storeProvidersFor(state, binding.channelId))
+  return { channelId: binding.channelId, gateway: gateway ? providerLabel(gateway.kind) : null, done, total }
+}
+
 // ── Migration from a previous provider (plan §3E) ─────────────────────────
 
 export interface MigrationRow {
   label: string
+  /** The Maropay catalogue method it maps to, when there is one — for its mark. */
+  methodId: string | null
   currentRate: string
   maropayLabel: string | null
   maropayRate: string | null
@@ -747,24 +868,35 @@ export interface MigrationImpact {
   needsSetup: string[]
   staysWithPrevious: string[]
   blocking: string[]
+  /** Providers that keep offering something beside Maropay once the store is live. */
+  coexisting: string[]
 }
 
 /** Reference order used to compare rates on like terms. */
 const REFERENCE_ORDER: Money = { amount: 10_000, currency: 'USD' }
 
-export function migrationImpact(state: MaropayAccountState, binding: StoreBinding, storeName: string): MigrationImpact | null {
-  const previous = binding.previousProvider
-  if (!previous) return null
-  const provider = PROVIDER_LABELS[previous.provider]
+/**
+ * What activating Maropay changes on a store, given the Activate dialog's choice: Maropay takes
+ * cards from the merchant's gateway (`cardsVia: 'maropay'`), or the gateway keeps them and Maropay
+ * adds only what it lacks (`'existing'`). Null only for a store with no provider at all.
+ */
+export function migrationImpact(state: MaropayAccountState, binding: StoreBinding, storeName: string, cardsVia: 'maropay' | 'existing' = 'maropay'): MigrationImpact | null {
+  const setup = storeProvidersFor(state, binding.channelId)
+  const gateway = cardGateway(setup)
+  const others = activeConnections(setup).filter((c) => c !== gateway)
+  if (!gateway && !others.length) return null
+  const provider = gateway ? providerLabel(gateway.kind) : null
   const byId = new Map(state.methods.map((m) => [m.id, m]))
-  const rows: MigrationRow[] = previous.methods.map((method) => {
-    const target = method.maropayMethodId ? byId.get(method.maropayMethodId) ?? null : null
-    if (!target || method.keepSeparately) {
-      return { label: method.label, currentRate: method.rate.label, maropayLabel: null, maropayRate: null, change: 'stays' }
+  const rows: MigrationRow[] = (gateway?.methods ?? []).map((method) => {
+    const target = byId.get(method.methodId) ?? null
+    const moves = cardsVia === 'maropay' && CARD_FAMILY.includes(method.methodId) && !!target && !!method.rate
+    if (!moves || !target || !method.rate) {
+      return { label: method.label, methodId: method.methodId, currentRate: method.rate?.label ?? '—', maropayLabel: null, maropayRate: null, change: 'stays' }
     }
     const diff = compare(applyRate(REFERENCE_ORDER, target.rate), applyRate(REFERENCE_ORDER, method.rate))
     return {
       label: method.label,
+      methodId: method.methodId,
       currentRate: method.rate.label,
       maropayLabel: target.label,
       maropayRate: target.rate.label,
@@ -772,29 +904,49 @@ export function migrationImpact(state: MaropayAccountState, binding: StoreBindin
     }
   })
   const moving = rows.filter((r) => r.change !== 'stays')
-  const staying = previous.methods.filter((m) => m.keepSeparately || !m.maropayMethodId)
+  const added = maropayOfferedMethods(state, binding, setup, cardsVia)
   const needsSetup = state.methods
     .filter((m) => binding.enabledMethodIds.includes(m.id) && m.availability !== 'available')
     .map((m) => `${m.label} needs approval before shoppers see it`)
   if (!state.account?.payoutDestination) needsSetup.push('A payout bank account')
-  if (previous.captureMode === 'manual') {
+  if (gateway?.captureMode === 'manual' && cardsVia === 'maropay') {
     needsSetup.push(binding.captureMode === 'manual'
       ? 'Manual capture is kept — capture each authorised payment from the order'
       : 'Capture changes from manual to automatic')
   }
-  const credentials = previous.savedCredentials
+  const credentials = cardsVia === 'maropay' ? gateway?.savedCredentials ?? null : null
+  // After activation: the gateway keeps what Maropay doesn't take; every other provider keeps offering what it did.
+  const after = { cardProcessor: cardsVia === 'maropay' ? 'maropay' as const : gateway?.kind ?? null }
+  const keeps = (c: NonNullable<typeof gateway>) => connectionOfferedMethods(c, after).map((m) => m.label)
+  const gatewayKeeps = gateway ? keeps(gateway) : []
   return {
     rows,
-    transfers: [`New checkout sessions on ${storeName}`, ...moving.map((r) => `${r.label} → ${r.maropayLabel} on Maropay`)],
+    transfers: cardsVia === 'maropay'
+      ? [`New checkout sessions on ${storeName}`, ...moving.map((r) => `${r.label} → ${r.maropayLabel} on Maropay`)]
+      : [added.length
+          ? `Maropay adds ${joinList(added.map((m) => m.label))}${provider ? ` beside ${provider}` : ''}`
+          : `Maropay adds nothing yet — turn on a method ${provider ?? 'your provider'} doesn’t offer`],
     needsSetup,
     staysWithPrevious: [
-      `Payments taken before the switch, with their refunds and disputes, stay with ${provider}`,
-      `Any unsettled ${provider} balance and its payouts`,
-      ...staying.map((m) => `${m.label} stays connected through ${provider}`),
+      ...(provider ? [
+        `Payments taken before the switch, with their refunds and disputes, stay with ${provider}`,
+        `Any unsettled ${provider} balance and its payouts`,
+        ...(gatewayKeeps.length ? [`${joinList(gatewayKeeps)} ${gatewayKeeps.length === 1 ? 'stays' : 'stay'} connected through ${provider}`] : []),
+      ] : []),
+      // A manual method's only method is itself; naming it twice says nothing.
+      ...others.map((c) => {
+        const offers = keeps(c)
+        const named = offers.length > 0 && !(offers.length === 1 && offers[0] === providerLabel(c.kind))
+        return `${providerLabel(c.kind)} stays as it is${named ? ` — ${joinList(offers)}` : ''}`
+      }),
       ...(credentials && !credentials.blocking ? [`${credentials.count} saved cards stay with ${provider} — shoppers re-enter card details on their next checkout`] : []),
     ],
     blocking: credentials?.blocking
       ? [`${credentials.count} saved cards back recurring charges. They need a supported migration before you switch.`]
       : [],
+    coexisting: [
+      ...(gateway && gatewayKeeps.length ? [providerLabel(gateway.kind)] : []),
+      ...others.filter((c) => keeps(c).length).map((c) => providerLabel(c.kind)),
+    ],
   }
 }

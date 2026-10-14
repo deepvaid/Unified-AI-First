@@ -2,6 +2,8 @@
 import { computed } from 'vue'
 import MpListRow from '@/components/MpListRow.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
+import MaropayMethodMark from './MaropayMethodMark.vue'
+import { markFor } from '@/maropay/methodMarks'
 import { METHOD_STATUS_LABELS } from '@/maropay/model'
 import type { MethodStatus, PaymentMethodCatalogEntry } from '@/maropay/model'
 
@@ -48,9 +50,10 @@ const detail = computed(() => {
 </script>
 
 <template>
-  <MpListRow variant="divided">
-    <span class="maropay-method__title">{{ method.label }}</span>
-    <span class="maropay-method__detail">{{ detail }}</span>
+  <MpListRow variant="divided" :title="method.label" :subtitle="detail">
+    <template #lead>
+      <MaropayMethodMark :mark="markFor(method.id)" size="md" decorative />
+    </template>
     <template #trailing>
       <span class="maropay-method__controls">
         <MpStatusChip v-if="chip" :status="chip" type="method" size="sm" />
@@ -84,20 +87,6 @@ const detail = computed(() => {
 </template>
 
 <style scoped>
-.maropay-method__title {
-  font-size: var(--mp-fontSize-14);
-  font-weight: var(--mp-fontWeight-medium);
-  line-height: var(--mp-lineHeight-snug);
-  color: var(--text-primary);
-}
-
-.maropay-method__detail {
-  margin-top: var(--mp-space-2);
-  font-size: var(--mp-fontSize-13);
-  line-height: var(--mp-lineHeight-normal);
-  color: var(--text-secondary);
-}
-
 .maropay-method__controls {
   display: inline-flex;
   align-items: center;

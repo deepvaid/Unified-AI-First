@@ -48,10 +48,10 @@ This is NOT a production app — it uses mock data and has no backend API.
 │   ├── components/            ← 112 components, all with stories (see Component Inventory)
 │   │   ├── Mp*.vue / ModuleLandingPage.vue ← 30 top-level design-system components
 │   │   ├── layout/            ← AppBar (top bar) + AppSidebar (left nav, collapsible rail)
-│   │   ├── copilot/           ← 18 Dv* Da Vinci surfaces + voice/ (7 orbit voice components)
+│   │   ├── copilot/           ← 22 Dv* Da Vinci surfaces (4 Catalog Co-Pilot) + voice/ (7 orbit voice components)
 │   │   ├── dashboards/        ← 7 dashboard containers + widgets/ (5) + wizard/ (2)
 │   │   ├── marketing/         ← Journey flow column, mini preview, add-step menu
-│   │   ├── maropay/           ← 16 Maropay* product surfaces (Product/Maropay stories)
+│   │   ├── maropay/           ← 23 Maropay* product surfaces (Product/Maropay stories), incl. the Maropay card a store's Payments page sells from, the overview's money panel and the setup timeline
 │   │   ├── merchandising/     ← MerchProductCard
 │   │   ├── settings/          ← SettingsSection, SettingsPlaceholder, settingsMenu (rail = MpSectionRail)
 │   │   └── themeeditor/       ← Theme editor re-skin (the current UAT store-builder screens on the DS): frame, explorer, layers, inspector, add-section, theme settings
@@ -75,6 +75,7 @@ This is NOT a production app — it uses mock data and has no backend API.
 │   │   ├── Products/          ← ProductsList, Inventory, Recommendations, TaxCategories
 │   │   ├── Service/           ← Tickets
 │   │   ├── Settings/          ← Settings, Billing, Users, Profile
+│   │   ├── Storefront/        ← Shopper storefront of a web store: home, collections, product, cart, checkout (P4-8, out of system)
 │   │   ├── Templates/         ← /templates page-archetype gallery (engineer reference, placeholder data)
 │   │   └── ThemeEditor/       ← Theme editor re-skin: …/themes/:themeId/builder, /theme-settings, /code (fullPage; docs/rebuild/theme-editor-reskin)
 │   ├── stores/                ← 6 Pinia stores with mock data
@@ -96,7 +97,7 @@ This is NOT a production app — it uses mock data and has no backend API.
 
 ### Layout & structure
 
-- **MpPageHeader** — `title`, `subtitle?`, `backTo?`, `level?`, `density?`, `eyebrow?`, `emphasis?` ('default'|'prominent') · slots `#actions`, `#tabs`. Every page's top section; `backTo` renders the back link on detail pages; `emphasis="prominent"` is the two-tone display masthead used on module landing pages.
+- **MpPageHeader** — `title`, `subtitle?`, `backTo?`, `level?`, `density?`, `eyebrow?`, `emphasis?` ('default'|'prominent') · slots `#actions`, `#tabs`, `#title-append` (a status chip beside the title — never squeeze it into `#tabs`). Every page's top section; `backTo` renders the back link on detail pages; `emphasis="prominent"` is the two-tone display masthead used on module landing pages.
 - **MpSectionHeader** — `title`, `headingLevel?` · slot `#actions`. Section headings inside dashboard cards.
 - **ModuleLandingPage** — `title`, `childPages`, `primaryActions?`, `quickActions?`, `recentActivity?`, `setupCard?`, `daVinciCard?`. Prop-driven module landing (Marketing/Content).
 
@@ -105,7 +106,7 @@ This is NOT a production app — it uses mock data and has no backend API.
 - **MpKpiCard** — `label`, `value`, `icon?`, `color?`, `trend?`, `trendPositive?`, `subStat?`, `period?` · slot `#sparkline`. Dashboard metric cards, 4-column row.
 - **MpStatusChip** — `status`, `type?` ('order'|'fulfillment'|'payment'|'payout'|'dispute'|'method'|'readiness'|'campaign'|'contact'|'ticket'|'coupon'|'priority'|'connection'|'stock'|'report'|'general'), `size?` ('sm'|'md'|'lg'), `variant?` ('tonal'|'flat'|'outlined'), `showIcon?`. Workflow states in tables; color maps are automatic per type. Use `size="sm"` in data tables. `readiness` is Maropay's one map for its account/store state dimensions (Submitted ≠ Verified ≠ Ready to activate ≠ Live).
 - **MpSourceCloudChip** — `dataSource`, `size?` ('sm'|'md'|'lg'), `iconOnly?`. Identifies a widget/KPI's source cloud.
-- **MpListRow** — `title?`, `eyebrow?`, `meta?`, `variant?` ('plain'|'divided'|'boxed'), `emphasis?`, `density?`, `to?`/`href?`/`clickable?` · slots `#lead`, default, `#trailing`. The one list-row geometry — activity feeds, checklists, suggestion menus. Resolves its own tag from whichever target prop is set. Never hand-roll a repeating row. A `clickable` row is a `<button>` — never put buttons in its slots; a row with actions is `MpTreeRow`.
+- **MpListRow** — `title?`, `subtitle?`, `eyebrow?`, `meta?`, `variant?` ('plain'|'divided'|'boxed'), `emphasis?`, `density?`, `to?`/`href?`/`clickable?` · slots `#lead`, default, `#title`, `#subtitle`, `#trailing`. The one list-row geometry — activity feeds, checklists, suggestion menus. `subtitle` makes a two-line row (14 title that wraps + muted 13 line); `#title`/`#subtitle` take rich content and keep the styling. Resolves its own tag from whichever target prop is set. Never hand-roll a repeating row, or its title/subtitle spans. A `clickable` row is a `<button>` — never put buttons in its slots; a row with actions is `MpTreeRow`.
 - **MpTreeRow** — `label`, `icon?`, `depth?` (0-based), `expandable?`, `expanded?`, `selected?`, `variant?` ('item'|'action'), `emphasis?` · emits `select`, `toggle` · slots `#lead`, `#meta`, `#actions` · exposes `focus()`. **The one tree row** (layers, file explorers) on `component.tree.*`: 32px rows, one `indent` per level with a hairline guide through the parent's toggle, `MpIconButton size="sm"` actions revealed on hover / focus-within / selection. The row is NOT a button — the label is the one main `<button>`, stretched over the row, with toggle/meta/actions as siblings above it. Host wraps rows as `role="listitem"` and nests child `role="list"`s; `variant="action"` is the "Add …" command closing a group.
 - **MpDataTableToolbar** — `searchPlaceholder?`, `activeFilters?`, `totalCount?`, `headers?`, `quickFilter?` ({ key, label, icon?, multiple?, options }) · models `v-model:search`, `v-model:quickFilterValue` · slots `#title`, `#actions`, `#filter-content` (filter drawer). Always above `v-data-table`. `quickFilter` promotes one high-traffic filter to a checkbox pill at the **head of the control row, before the Filter button** — the long tail stays in the drawer, and the consumer still owns filtering, its `activeFilters` entry and clearing the model. `multiple: false` makes it an exclusive mode toggle (list panel, no Clear, closes on pick, model holds exactly one value). The Filter button badges `activeFilters` minus the promoted key; when the promoted filter was the table's only one, drop `#filter-content` and the Filter button goes with it. Every control in the row is `component.control.height` (40) — give a new one the token, not a number.
 - **MpFolderSelect** — `folders`, `counts?`, `totalCount?`, `label?` · emits `manage`. Folder filter menu above foldered lists.
@@ -200,7 +201,9 @@ rhythm so a modal and a drawer cannot drift apart. **Never a hand-rolled rail** 
   property on the same element
 - **Always** use `<style scoped>` (never global styles in components)
 - **Prefer** Vuetify utility classes (`d-flex`, `pa-4`, `gap-3`, `text-medium-emphasis`)
-- **Cards**: Always `flat border rounded="lg"` (no elevation shadows)
+- **Cards**: Always `flat border rounded="lg"` (no elevation shadows); the inset is `class="mp-card-inset"` (`--compact`, `--spacious`), never a per-page padding rule
+- **Links** in copy and table cells: `class="mp-link"` (global — accent colour, underline on hover/focus, focus ring)
+- **Label/value pairs**: `<dl class="mp-label-value">` (labels sentence case, muted 12px); add `mp-label-value--inline` for label | value rows in a narrow panel
 - **Buttons**: `text-transform: none` (already set in Vuetify defaults)
 - **Font**: Inter (already configured globally)
 - **Global stylesheets**: add to `src/styles/app-styles.ts` (the shared manifest), never directly to `src/main.ts` or `.storybook/preview.ts` — this keeps Storybook rendering identical to the app. See `.claude/rules/global-styles.md`
@@ -335,7 +338,8 @@ Reach for a role token when the system has already made the decision, a primitiv
   `sectionGap` 24 · `height.{sm,md,lg}` 32/40/48 (mapped from the `density` prop; md =
   `control.height`) · `labelHeight` 18 (the static top label's line box — a labelled field
   reserves `labelHeight + labelGap` of headroom). `groupGap` is what `MpFormGrid` gaps on;
-  `sectionGap` is the air `MpFormSection` puts around a heading
+  `sectionGap` is the air `MpFormSection` puts around a heading · `actionCollapseWidth` 260
+  (a field narrower than this shows a label-row action as its mark only — container query)
 - **States** `component.state.*` → `padding` 32 · `paddingProminent` 48 · `gap` 8 ·
   `minHeight` 240 · `minHeightProminent` 320 · `measure` 420 · `measureWide` 480 · `iconDisc` 80
 - **Chips** `component.chip.height.{sm,md,lg}` → 20 / 24 / 32 · `paddingInline` 8
@@ -357,17 +361,19 @@ Reach for a role token when the system has already made the decision, a primitiv
 - **Drawers** `component.drawer.width.{sm,md,lg}` → 440 / 480 / 640, default md. Everything else
   about a drawer is `component.dialog.*`; only the width ramp differs. `layout.drawerWidth` is a
   legacy alias for the md stop
-- **Toolbars** `component.toolbar.*` → `minHeight` 64 · `searchWidth` 300 · `searchMinWidth` 240
+- **Toolbars** `component.toolbar.*` → `minHeight` 64 · `searchWidth` 300 · `searchMinWidth` 240 ·
+  `titleMinWidth` 160 (the title column's floor before the controls wrap; the toolbar also stacks
+  by its own width via a container query, so a docked drawer stacks it like a phone does)
+- **Page header** `component.pageHeader.titleMinWidth` → 280 (the actions wrap under the title past it)
 - **Nav** `component.nav.*` → `itemRadius` 8 · `groupGap` 16 · `activeBarInset` 6. Item height,
   padding and gap come from `component.listItem.*` — there is no second nav sizing scale
 - **Widget actions** `component.widget.*` → `actionSize` 32 · `actionGap` 2 · `actionInset` 12.
   Widget *insets* come from `component.card.*`; this group is only the floating action overlay
-- **Previews** `component.preview.viewport.mobile` → 390, the phone width for shopper-side
-  simulations (Maropay's `CheckoutPreviewFrame`); desktop previews simply fill their column
 - Colors: light theme primary `#0073AB`, secondary `#1a1814`, background `#f4f6fa` (dark theme
   under `color.dark.*`). **Every surface token has a declared foreground — see below**
 - Shadows: sm (1px), md (4px), lg (8px) — use sparingly, prefer border
-- Layout: sidebar 248px, rail 72px, section rail 260px, appbar 60px, drawer 480px, content max 1280px
+- Layout: sidebar 248px, rail 72px, section rail 260px, appbar 60px, drawer 480px, content max 1280px,
+  shopper preview 360px (`layout.previewPanelWidth`; side by side from a 840px page, `previewSplitWidth`)
 - Breakpoints (Sass-only, `$mp-layout-*`): `breakpointWide` 1200 (a three-panel builder's inspector overlays
   the canvas below it) · `breakpointSplit` 960 (master-detail shows one pane) · `breakpointCompact` 640
 
@@ -414,6 +420,7 @@ changelog in `DESIGN_AUDIT.md`.
 | `npm run tokens:build` | Generate SCSS/CSS/TS from tokens.json |
 | `npm run contrast:check` | WCAG 2.1 ratios for every declared surface/foreground token pair |
 | `npm run test:maropay` | Maropay domain + adapter tests (`node:test` over `tests/maropay/`) |
+| `npm run test:catalog` | Da Vinci Catalog Co-Pilot draft-generator tests (`node:test` over `tests/davinci-catalog/`) |
 | `npm run tokens:watch` | Watch tokens.json and regenerate on save |
 | `npm run type-check` | Run vue-tsc type checking |
 | `npm run preview` | Preview production build locally |
@@ -448,6 +455,10 @@ Example: `[feat]: add MpDateRangePicker component with story`
   production gaps) and `implementation-report.md` (review entry point, M01–M15 scenarios, results).
   Pure modules under `src/maropay/` and `src/services/maropay/` import each other by relative
   `.ts` path so Node can run the tests without the Vite `@/` alias.
+- **`docs/davinci-catalog/decisions.md`** — Da Vinci Catalog Co-Pilot in the Products module
+  (PRD: Da Vinci Catalog Management): decisions, PRD → prototype map, demo guide with the
+  `?catalog=` entitlement scenarios, analytics, limitations. Da Vinci drafts, Apply fills the form
+  in memory, the form's own Save / Publish persists; credits move on Apply only.
 
 ---
 

@@ -112,7 +112,7 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
         <slot name="title" />
       </div>
 
-      <div class="d-flex align-center ga-2 flex-wrap justify-end">
+      <div class="d-flex align-center ga-2 flex-wrap mp-toolbar-controls">
         <!-- Quick filter: the one promoted filter, leading the control
              cluster — it is the cut people reach for before the drawer. -->
         <v-menu
@@ -352,9 +352,12 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
   </MpFormDrawer>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
+/* A query container, so the toolbar stacks when its card is narrow — not only when
+   the viewport is (see the @container block at the end). */
 .mp-toolbar-shell {
   background: rgb(var(--v-theme-surface));
+  container-type: inline-size;
 }
 
 /* P4-5: a table toolbar is not app-shell chrome. This used to borrow
@@ -362,6 +365,7 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
    toolbar. `component.toolbar.minHeight` is its own decision. */
 .mp-toolbar-row {
   min-height: var(--mp-component-toolbar-minHeight);
+  flex-wrap: wrap;
 }
 
 /* P4-4: every control in this row is one height — the shared 40px control
@@ -374,6 +378,12 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
   min-width: var(--mp-component-control-height);
   width: var(--mp-component-control-height);
   padding-inline: 0;
+}
+
+/* In CSS, not a `justify-end` utility: Vuetify utilities are !important, so the
+   stacked layout below could never left-align the cluster. */
+.mp-toolbar-controls {
+  justify-content: flex-end;
 }
 
 .mp-toolbar-search {
@@ -487,7 +497,11 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
 
 /* The heading block owns the space between its title, its record count and any
    slotted content — that used to be an `mt-1` the count carried itself. */
+/* The title keeps its minimum width; past that the controls wrap under it.
+   Content-driven, not viewport-driven: a docked Da Vinci drawer narrows the card
+   without changing the viewport, and used to squeeze the title to a letter a line. */
 .mp-toolbar-heading {
+  flex: 1 1 var(--mp-component-toolbar-titleMinWidth);
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -499,13 +513,18 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
   font-size: var(--mp-fontSize-13);
 }
 
-@media (max-width: 959px) {
+@mixin toolbar-stacked {
   .mp-toolbar-row {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .mp-toolbar-row > .d-flex.align-center.flex-wrap {
+  /* Stacked, the main axis is vertical — the title's width basis would become a height. */
+  .mp-toolbar-heading {
+    flex: none;
+  }
+
+  .mp-toolbar-controls {
     width: 100%;
     justify-content: flex-start;
   }
@@ -515,5 +534,14 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
     min-width: 0;
     max-width: none;
   }
+}
+
+@media (max-width: 959px) {
+  @include toolbar-stacked;
+}
+
+/* A docked Da Vinci drawer narrows the card without changing the viewport. */
+@container (max-width: #{$mp-layout-breakpointCompact}) {
+  @include toolbar-stacked;
 }
 </style>

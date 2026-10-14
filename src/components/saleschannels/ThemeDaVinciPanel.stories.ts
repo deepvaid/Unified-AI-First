@@ -8,22 +8,30 @@ import { surfaceFrame } from '@/stories/decorators'
 // Conversation fixtures mirror what StoreThemeBuilder pushes: user turns are the
 // raw prompt; matched Da Vinci turns carry addedIds/addedTitles so the panel
 // renders the result card with its Undo button.
+const AT = '2026-10-14T09:30:00'
+
 const conversationMessages: ThemeChatMessage[] = [
-  { id: 'u-1', role: 'user', text: 'Add a hero “Winter Sale” and featured products' },
+  { id: 'u-1', role: 'user', text: 'Generate me an image banner', at: AT },
   {
     id: 'd-1',
     role: 'davinci',
-    text: 'Added Hero and Featured products to your Home page.',
-    addedIds: ['sec-hero-1', 'sec-featured-1'],
-    addedTitles: ['Hero', 'Featured products'],
+    text: 'Added Image banner to your Home page.',
+    at: AT,
+    addedIds: ['sec-banner-1'],
+    addedTitles: ['Image banner'],
   },
 ]
 
+const generatingMessages: ThemeChatMessage[] = [
+  { id: 'u-1', role: 'user', text: 'Build an image gallery', at: AT },
+]
+
 const unmatchedMessages: ThemeChatMessage[] = [
-  { id: 'u-1', role: 'user', text: 'Make my checkout faster' },
+  { id: 'u-1', role: 'user', text: 'Make my checkout faster', at: AT },
   {
     id: 'd-1',
     role: 'davinci',
+    at: AT,
     text: 'I can add sections like a hero banner, featured products, an image banner, '
       + 'testimonials, or a newsletter. Try “Draft a full homepage” or “add an image banner”.',
   },
@@ -37,23 +45,30 @@ const meta = {
     docs: {
       description: {
         component:
-          'Da Vinci chat surface for the store theme builder\'s left panel — presentational: the parent '
-          + '(StoreThemeBuilder) owns the conversation, runs `generateSections` on `generate`, and removes '
-          + 'sections on `undo`; turns with `addedIds` render a result card with a per-turn Undo button.',
+          'Da Vinci AI Generator — the store theme builder\'s left panel, mirroring the live builder: a welcome '
+          + 'with three example requests that fill the composer, a three-stage progress state while a generation '
+          + 'runs (`generating`), then a conversation whose generated turns carry a per-turn Undo. Presentational: '
+          + 'the parent (StoreThemeBuilder) owns the conversation and the store writes.',
       },
     },
   },
   args: {
     messages: [],
+    generating: null,
   },
   argTypes: {
     messages: {
       control: 'object',
-      description: 'ThemeChatMessage[] owned by the parent, newest last. Empty renders the welcome state with example-prompt chips; davinci turns with `addedIds`/`addedTitles` render the Undo result card.',
+      description: 'ThemeChatMessage[] owned by the parent, newest last. Empty renders the welcome state with the example requests; davinci turns with `addedIds`/`addedTitles` render the Undo result card.',
     },
-    onGenerate: { table: { category: 'events' }, description: 'Emitted with the prompt on chip click or textarea submit (Enter sends, Shift+Enter newline).' },
+    generating: {
+      control: 'object',
+      description: '`{ prompt, stage }` while the parent runs a generation (stage indexes GENERATION_STAGES); the composer locks and the progress card shows. `null` when idle.',
+    },
+    onGenerate: { table: { category: 'events' }, description: 'Emitted with the prompt on composer submit (Enter sends, Shift+Enter newline). Example rows only fill the composer.' },
     onUndo: { table: { category: 'events' }, description: 'Emitted with the exact section ids a turn created — parent removes them and clears the turn\'s `addedIds`.' },
-    onClose: { table: { category: 'events' }, description: 'Back button clicked — parent returns to the Sections/Styles tabs.' },
+    onClear: { table: { category: 'events' }, description: 'Clear-conversation button clicked — parent drops this template\'s turns.' },
+    onClose: { table: { category: 'events' }, description: 'Close button clicked — parent returns to the Sections/Styles tabs.' },
   },
   // The panel fills its host — stage it in a builder-panel-sized frame.
   decorators: [surfaceFrame({ width: '320px', height: '560px' })],
@@ -62,8 +77,13 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** Empty conversation — avatar intro, example-prompt chips, and the quoted-headline tip. */
+/** Empty conversation — the welcome intro, three example requests that fill the composer, and the tip. */
 export const Welcome: Story = {}
+
+/** A generation in flight: stage two of three, the completed stage listed, the request echoed, composer locked. */
+export const Generating: Story = {
+  args: { messages: generatingMessages, generating: { prompt: 'Build an image gallery', stage: 1 } },
+}
 
 /** A matched turn: user prompt, then a result card with the added titles and an Undo button. */
 export const Conversation: Story = {
@@ -135,7 +155,7 @@ export const Interactive: Story = {
 
 // ── Template: Variants · Sizes · States ──────────────────────────────────────
 
-/** One structure — the Da Vinci panel docked in the theme builder. Its variants are the conversation modes: welcome prompts, an active exchange, and the fallback when nothing matched. */
+/** One structure — the Da Vinci panel docked in the theme builder. Its variants are the conversation modes: welcome, generating, an active exchange, and the fallback when nothing matched. */
 export const Variants: Story = {
   render: (args) => ({
     components: { ThemeDaVinciPanel },
@@ -153,7 +173,7 @@ export const Sizes: Story = {
   }),
 }
 
-/** Welcome, mid-conversation, unmatched fallback, and interactive. */
+/** Welcome, generating, mid-conversation, unmatched fallback, and interactive. */
 export const States: Story = {
   render: (args) => ({
     components: { ThemeDaVinciPanel },

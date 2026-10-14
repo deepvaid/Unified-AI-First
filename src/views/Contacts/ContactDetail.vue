@@ -363,11 +363,11 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
           <div class="dc-sublabel mb-2">eRFM Customer Group</div>
           <dl class="mp-label-value dc-label-value mb-4">
             <div>
-              <dt>RFM Group</dt>
+              <dt>RFM group</dt>
               <dd>{{ detail.erfm.rfmGroup }}</dd>
             </div>
             <div>
-              <dt>Engagement Level</dt>
+              <dt>Engagement level</dt>
               <dd>{{ detail.erfm.engagementLevel }}</dd>
             </div>
           </dl>

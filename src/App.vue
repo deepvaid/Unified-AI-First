@@ -24,6 +24,8 @@ import { useAccountsStore } from '@/stores/useAccounts'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import { usePlgStore, isPlgDemoPreset } from '@/stores/usePlg'
 import { useMaropayStore, isMaropayScenarioKey } from '@/stores/useMaropay'
+import { useCatalogCopilotStore } from '@/stores/useCatalogCopilot'
+import { isCatalogScenario } from '@/composables/catalogCopilotConfig'
 import PlgTrialBanner from '@/components/plg/PlgTrialBanner.vue'
 
 // Apply stored accent and theme to Vuetify on initial mount
@@ -93,6 +95,14 @@ watch(() => chartOverride.value ?? 'grayBlue', applyChartPalette, { immediate: t
 const plgStore = usePlgStore()
 watch(() => route.query.plg, (p) => {
   if (isPlgDemoPreset(p)) plgStore.applyDemoPreset(p)
+}, { immediate: true })
+
+// Catalog Co-Pilot entitlement scenario: ?catalog=trial|trial_exhausted|no_pack|
+// pack_exhausted|kill_switch|flag_off|view_only|auto — same idiom as ?plg=, saved
+// per account by the catalog store (re-applying the same scenario changes nothing).
+const catalogCopilot = useCatalogCopilotStore()
+watch(() => route.query.catalog, (scenario) => {
+  if (isCatalogScenario(scenario)) catalogCopilot.setScenario(scenario)
 }, { immediate: true })
 
 // Maropay owns payment records and projects them onto Commerce orders, so it

@@ -121,7 +121,7 @@ const subtitle = computed(() => (record.value ? `Record ID · ${String(record.va
           </div>
           <dl class="mp-label-value">
             <template v-for="field in FIELDS" :key="field.label">
-              <dt class="mp-meta-label">{{ field.label }}</dt>
+              <dt>{{ field.label }}</dt>
               <dd class="mp-meta-value">{{ field.value }}</dd>
             </template>
           </dl>

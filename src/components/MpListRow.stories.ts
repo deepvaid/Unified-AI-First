@@ -51,6 +51,9 @@ RouterLink computes internally, which is exactly the bug this removes.
 - **Do** use \`variant="divided"\` for a feed inside a card — the hairline is drawn
   *between* siblings, never above the first or below the last.
 - **Do** put the timestamp or count in \`meta\`; it right-aligns and renders tabular.
+- **Do** use \`subtitle\` for a second, muted line (a rate, a date, a reason). The title then
+  wraps instead of truncating. \`#title\` / \`#subtitle\` slots replace the text (money, a link)
+  and keep the styling — never hand-roll title/subtitle spans in the default slot.
 
 ### 🔴 Don'ts
 - **Don't** re-implement a row because you need one different colour — pass a class and
@@ -81,7 +84,8 @@ RouterLink computes internally, which is exactly the bug this removes.
       options: ['default', 'compact'],
       description: "'default' holds the 40px control-height floor; 'compact' drops it for checklists and dense menus.",
     },
-    title: { control: 'text', description: 'Row title. Truncates with an ellipsis rather than wrapping.' },
+    title: { control: 'text', description: 'Row title. Truncates with an ellipsis on a one-line row; wraps on a two-line row.' },
+    subtitle: { control: 'text', description: 'Muted second line under the title — makes a two-line row.' },
     eyebrow: { control: 'text', description: 'Muted line above the title.' },
     meta: { control: 'text', description: 'Trailing muted value — right-aligned, tabular figures.' },
     to: { control: false, description: 'Router target — renders the row as a RouterLink.' },
@@ -125,6 +129,15 @@ export const Variants: Story = {
             <MpListRow variant="boxed" title="Generate subject line variants" />
           </div>
         </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">two-line (subtitle) — plain · divided · boxed</div>
+          <MpListRow title="Payouts are on their way" subtitle="Daily, 2 business days after a payment" />
+          <MpListRow variant="divided" title="Klarna" subtitle="5.99% + 30¢ · needs a refund policy URL" />
+          <MpListRow variant="divided" title="Afterpay" subtitle="6% + 30¢" />
+          <div class="d-flex flex-column ga-2 mt-2">
+            <MpListRow variant="boxed" title="Payout account" subtitle="Mercury Bank •••• 4417" />
+          </div>
+        </div>
       </div>
     `,
   }),
@@ -154,6 +167,12 @@ export const Sizes: Story = {
           <div class="text-caption text-medium-emphasis mb-2">emphasis="prominent" — heavier title</div>
           <MpListRow emphasis="prominent" title="Spring Refresh sent to Segment A" eyebrow="2m ago" meta="58.2% open" />
         </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">two-line at each density and emphasis</div>
+          <MpListRow variant="divided" title="Default density" subtitle="Subtitle under the title" />
+          <MpListRow variant="divided" density="compact" title="Compact density" subtitle="Subtitle under the title" />
+          <MpListRow variant="divided" emphasis="prominent" title="Prominent emphasis" subtitle="Subtitle under the title" />
+        </div>
       </div>
     `,
   }),
@@ -181,6 +200,17 @@ export const States: Story = {
         <div>
           <div class="text-caption text-medium-emphasis mb-2">boxed + interactive — border reacts too</div>
           <MpListRow variant="boxed" clickable title="Boxed and clickable" />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">two-line — long copy wraps; #title holds rich content</div>
+          <MpListRow
+            variant="divided"
+            title="Refund of $890.00 issued — the shopper's bank shows it in 5–10 business days"
+            subtitle="Oct 2, 2026 · Via Maropay · Order refunded because the item arrived damaged in transit"
+          />
+          <MpListRow variant="divided" subtitle="Oct 2, 2026 · Via Maropay">
+            <template #title><strong>$890.00</strong> refunded</template>
+          </MpListRow>
         </div>
         <div>
           <div class="text-caption text-medium-emphasis mb-2">long title — truncates rather than wrapping</div>

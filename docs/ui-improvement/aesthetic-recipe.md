@@ -49,6 +49,8 @@ planned fix`; a page with zero findings is marked done with no commit.
 - **C2.** Labels: `var(--mp-text-label-fontSize)` / `var(--mp-text-label-fontWeight)` (13/500).
   Eyebrows: `.mp-meta-label` (11/600 uppercase) **sparingly** — one per surface. Inline labels next
   to a value (property chips, key/value rows) are sentence-case muted 12px, not uppercase.
+  **Decided 2026-10-05:** `.mp-label-value dt` renders exactly that (caption 12/500, sentence case,
+  `--on-surface-muted`) app-wide, and `.mp-meta-label` no longer styles a `dt` — never put it on one.
 - **C3.** Body 14, caption 12; nothing below 11. Weights via `var(--mp-fontWeight-medium|semibold|bold)`.
   Vuetify has no `font-weight-semibold` utility — add one scoped class (`.x-strong`) rather than `600`.
 - **C4.** Numbers, dates and counts are `tabular-nums`; author/meta rows put the name in bold 12 and
@@ -60,7 +62,8 @@ planned fix`; a page with zero findings is marked done with no commit.
 
 - **D1.** One size ramp: **16** in rows, meta lines and chips · **18** in headers, rails and toolbars ·
   **20** in buttons (Vuetify default). The only exception is a 14 chevron inside a 32px chip.
-  Any 12/13/14 elsewhere is a finding.
+  Any 12/13/14 elsewhere is a finding. Payment-method marks (`MaropayMethodMark`) size their own
+  glyph to the tile (`component.methodMark.glyphSize`), like `MpSourceCloudChip` — not a finding.
 - **D2.** Icon-only buttons carry `aria-label` **and** a `v-tooltip`. Toggles carry `aria-pressed`;
   their active look is `variant="tonal" color="primary"`, never a bare `color` swap on a text button.
 - **D3.** Icons mean something: status `circle-dot`, agent/owner `user`, type/category `tag`,
@@ -73,6 +76,8 @@ planned fix`; a page with zero findings is marked done with no commit.
 - **E1.** Hover `background: var(--surface-secondary)`; selected `background: var(--accent-soft)`;
   no inset bars, no `rgba(…, 0.04)` literals.
 - **E2.** Focus is `outline: 2px solid var(--focus-ring)` (offset 2, or −2 inside a bordered box).
+  Links in body copy and table cells are `.mp-link` (global: `--accent-default`, medium, underline on
+  hover and focus, the focus ring) — not a scoped `rgb(var(--v-theme-primary))` rule per page.
 - **E3.** Status chips are `MpStatusChip` in the default tonal variant inside lists and tables, so
   colour carries the state; `variant="outlined"` only inside dense chrome where tint would shout.
 - **E4.** Every painted surface names its own foreground (`on*` pairs in `mp-theme-aliases.css`);
@@ -102,8 +107,11 @@ planned fix`; a page with zero findings is marked done with no commit.
   `flex-shrink-0` footer, `max-height: 60%`); the scroller gets `flex: 1 1 0; min-height: 0` and
   scrolls to its end on open/send. Inert controls (disabled toolbars for out-of-scope features) are
   removed in favour of one muted hint.
-- **F5. Panels and drawers.** Label/value pairs use `<dl class="mp-label-value">` (single column via a
-  scoped `grid-template-columns: 1fr`). Transcript surfaces use `MpChatBubble`, re-skinned through the
+- **F5. Panels and drawers.** Label/value pairs use `<dl class="mp-label-value">` — stacked pairs, two
+  per row (single column via a scoped `grid-template-columns: 1fr`). Label | value rows in a narrow
+  panel (detail sidebars, balance lists) add `.mp-label-value--inline`, whose label column fits its
+  longest label. A card's inset is `.mp-card-inset` (`--compact`, `--spacious`), never a per-page
+  `padding: var(--mp-component-card-padding)` rule. Transcript surfaces use `MpChatBubble`, re-skinned through the
   `--mp-bubble-*` custom properties on a host class — never `:deep`.
 - **F6. Responsive.** Two-pane layouts collapse below `$mp-layout-breakpointSplit` (960) to one pane
   at a time, keyed on a state class (`…--has-selection`) rather than `useDisplay()`. Media queries use

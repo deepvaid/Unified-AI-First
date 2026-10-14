@@ -28,7 +28,7 @@ const showRail = computed(() => channel.value?.type === 'web_store')
 
 <template>
   <div v-if="!channel" class="h-100 d-flex align-center justify-center">
-    <v-card variant="flat" border rounded="lg" class="pa-6" max-width="420">
+    <v-card variant="flat" border rounded="lg" class="mp-card-inset" max-width="420">
       <MpEmptyState
         icon="store"
         title="Sales channel not found"
@@ -39,21 +39,22 @@ const showRail = computed(() => channel.value?.type === 'web_store')
     </v-card>
   </div>
 
-  <div v-else-if="showRail" class="store-shell d-flex">
+  <div v-else-if="showRail" class="store-shell mp-frame-fill d-flex">
     <StoreEditorSidebar :channel="channel" />
-    <main class="store-shell__content">
+    <!-- A div, not <main>: v-main is already the page's main landmark. -->
+    <div class="store-shell__content">
       <router-view />
-    </main>
+    </div>
   </div>
 
   <router-view v-else />
 </template>
 
 <style scoped lang="scss">
+/* Mirrors SettingsLayout and MaropayLayout: .mp-frame-fill owns the bleed-to-edge
+   margins and the frame height; the content pane restates the shell's inset as
+   its padding. */
 .store-shell {
-  margin: -32px -36px;
-  height: calc(100vh - 52px - var(--mp-frame-offset, 0px));
-  overflow: hidden;
   align-items: stretch;
 }
 
@@ -62,15 +63,12 @@ const showRail = computed(() => channel.value?.type === 'web_store')
   min-width: 0;
   min-height: 0;
   overflow-y: auto;
-  padding: 24px 36px 32px 32px;
+  padding: var(--mp-space-24) var(--mp-layout-shellInsetInline) var(--mp-layout-shellInsetBlock) var(--mp-layout-shellInsetBlock);
 }
 
 @media (max-width: 1024px) {
-  .store-shell {
-    margin: -28px;
-  }
   .store-shell__content {
-    padding: 20px 28px 28px 28px;
+    padding: var(--mp-space-20) var(--mp-layout-shellInsetMedium) var(--mp-layout-shellInsetMedium) var(--mp-layout-shellInsetMedium);
   }
 }
 
@@ -78,7 +76,7 @@ const showRail = computed(() => channel.value?.type === 'web_store')
   .store-shell {
     flex-direction: column;
     height: auto;
-    min-height: calc(100vh - 52px - var(--mp-frame-offset, 0px));
+    min-height: var(--mp-frame-height);
     overflow: visible;
   }
 
@@ -88,11 +86,8 @@ const showRail = computed(() => channel.value?.type === 'web_store')
 }
 
 @media (max-width: 640px) {
-  .store-shell {
-    margin: -22px;
-  }
   .store-shell__content {
-    padding: 16px 22px 22px 22px;
+    padding: var(--mp-space-16) var(--mp-layout-shellInsetCompact) var(--mp-layout-shellInsetCompact) var(--mp-layout-shellInsetCompact);
   }
 }
 </style>

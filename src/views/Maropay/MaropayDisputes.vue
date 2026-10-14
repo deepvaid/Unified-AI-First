@@ -80,14 +80,13 @@ const tabs = computed(() => DISPUTE_TABS.map((t) => ({ label: t.label, key: t.ke
 
 const needResponse = computed(() => rows.value.filter((r) => r.status === 'needs_response').length)
 
+// As Transactions: the status rides with the amount and the reason sits under it,
+// the customer under the order — five columns that fit beside the rail.
 const HEADERS: (ResponsiveHeader & { title: string; key: string })[] = [
-  { title: 'Opened', key: 'opened', sortable: true },
-  { title: 'Order', key: 'orderNumber' },
-  { title: 'Customer', key: 'customer', hideBelow: 'md' },
-  { title: 'Reason', key: 'reason', hideBelow: 'lg' },
-  { title: 'Amount', key: 'amountSort', sortable: true, align: 'end' },
+  { title: 'Amount', key: 'amountSort', sortable: true },
   { title: 'Respond by', key: 'respondBy', sortable: true },
-  { title: 'Status', key: 'status' },
+  { title: 'Order', key: 'orderNumber', hideBelow: 'sm' },
+  { title: 'Opened', key: 'opened', sortable: true, hideBelow: 'sm' },
   { title: '', key: 'actions', sortable: false, align: 'end' },
 ]
 const hiddenColumns = ref<string[]>([])
@@ -112,7 +111,7 @@ function urgent(row: Row): boolean {
   <div class="d-flex flex-column gap-5">
     <MpPageHeader
       title="Disputes"
-      :subtitle="needResponse ? `${needResponse} ${needResponse === 1 ? 'dispute needs' : 'disputes need'} a response. Respond before the deadline, or the shopper’s bank decides without your side.` : 'When a shopper’s bank reverses a payment, respond here before the deadline.'"
+      :subtitle="needResponse ? `${needResponse} ${needResponse === 1 ? 'dispute needs' : 'disputes need'} a response before the deadline.` : 'When a shopper’s bank reverses a payment, respond here before the deadline.'"
     >
       <template v-if="canView && maropay.account" #tabs>
         <MpFilterTabs v-model="activeTab" :tabs="tabs" aria-label="Filter disputes by status" />
@@ -128,7 +127,7 @@ function urgent(row: Row): boolean {
       />
     </v-card>
 
-    <v-card v-else variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
+    <v-card v-else flat border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
         v-model:search="search"
         v-model:hidden-columns="hiddenColumns"
@@ -160,37 +159,34 @@ function urgent(row: Row): boolean {
         class="flex-grow-1 maropay-disputes__table"
         @click:row="openRow"
       >
-        <template #item.opened="{ item }">
-          <span class="text-no-wrap">{{ formatDay(item.opened) }}</span>
-        </template>
-
-        <template #item.orderNumber="{ item }">
-          <router-link v-if="item.orderId" :to="{ name: 'OrderDetail', params: { accountId, orderId: item.orderId } }" class="maropay-disputes__link" @click.stop>{{ item.orderNumber }}</router-link>
-          <span v-else class="text-medium-emphasis">—</span>
-        </template>
-
-        <template #item.customer="{ item }">
-          <span class="text-body-2 text-no-wrap">{{ item.customer }}</span>
-        </template>
-
-        <template #item.reason="{ item }">
-          <span class="text-body-2 text-medium-emphasis text-no-wrap">{{ item.reason }}</span>
-        </template>
-
         <template #item.amountSort="{ item }">
-          <MaropayMoney :amount="item.amount" />
+          <div class="maropay-disputes__stack">
+            <span class="maropay-disputes__amount">
+              <MaropayMoney :amount="item.amount" class="maropay-disputes__strong" />
+              <MpStatusChip :status="DISPUTE_STATUS_LABELS[item.status]" type="dispute" size="sm" />
+            </span>
+            <span class="maropay-disputes__sub">{{ item.reason }}</span>
+          </div>
         </template>
 
         <template #item.respondBy="{ item }">
-          <div v-if="item.status === 'needs_response'" class="maropay-disputes__deadline">
+          <div v-if="item.status === 'needs_response'" class="maropay-disputes__stack">
             <span class="text-no-wrap">{{ formatDay(item.respondBy) }}</span>
-            <span class="maropay-disputes__due" :class="{ 'maropay-disputes__due--urgent': urgent(item) }">{{ deadlineLabel(item.respondBy, maropay.now) }}</span>
+            <span class="maropay-disputes__sub" :class="{ 'maropay-disputes__due--urgent': urgent(item) }">{{ deadlineLabel(item.respondBy, maropay.now) }}</span>
           </div>
-          <span v-else class="text-body-2 text-medium-emphasis">—</span>
+          <span v-else class="maropay-disputes__sub">—</span>
         </template>
 
-        <template #item.status="{ item }">
-          <MpStatusChip :status="DISPUTE_STATUS_LABELS[item.status]" type="dispute" size="sm" />
+        <template #item.orderNumber="{ item }">
+          <div class="maropay-disputes__stack">
+            <router-link v-if="item.orderId" :to="{ name: 'OrderDetail', params: { accountId, orderId: item.orderId } }" class="mp-link" @click.stop>{{ item.orderNumber }}</router-link>
+            <span v-else class="maropay-disputes__sub">—</span>
+            <span class="maropay-disputes__sub">{{ item.customer }}</span>
+          </div>
+        </template>
+
+        <template #item.opened="{ item }">
+          <span class="maropay-disputes__sub maropay-disputes__date">{{ formatDay(item.opened) }}</span>
         </template>
 
         <template #header.actions>
@@ -233,25 +229,31 @@ function urgent(row: Row): boolean {
   cursor: pointer;
 }
 
-.maropay-disputes__link {
-  color: rgb(var(--v-theme-primary));
-  font-weight: var(--mp-fontWeight-semibold);
-  text-decoration: none;
-}
-
-.maropay-disputes__link:hover {
-  text-decoration: underline;
-}
-
-.maropay-disputes__deadline {
+.maropay-disputes__stack {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
 }
 
-.maropay-disputes__due {
-  font-size: var(--mp-fontSize-12);
-  color: var(--text-secondary);
+.maropay-disputes__amount {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--mp-space-4) var(--mp-space-8);
   white-space: nowrap;
+}
+
+.maropay-disputes__strong {
+  font-weight: var(--mp-fontWeight-semibold);
+}
+
+.maropay-disputes__sub {
+  font-size: var(--mp-fontSize-13);
+  color: var(--on-surface-muted);
+}
+
+.maropay-disputes__date {
+  font-size: var(--mp-text-body-fontSize);
 }
 
 .maropay-disputes__due--urgent {

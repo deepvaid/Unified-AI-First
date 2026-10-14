@@ -41,7 +41,7 @@ withDefaults(defineProps<{
       </RouterLink>
 
       <div class="mp-page-header__main min-width-0 flex-grow-1 d-flex align-start ga-3">
-        <div class="min-width-0 flex-grow-1">
+        <div class="mp-page-header__heading min-width-0 flex-grow-1">
           <span v-if="eyebrow" class="mp-page-header__eyebrow mp-meta-label">{{ eyebrow }}</span>
 
           <div v-if="emphasis === 'prominent'" class="mp-headline-duo">
@@ -53,8 +53,17 @@ withDefaults(defineProps<{
           </div>
 
           <template v-else>
+            <div v-if="$slots['title-append']" class="mp-page-header__title-row">
+              <component
+                :is="level === 2 ? 'h2' : 'h1'"
+                class="mp-page-header__title mp-page-title"
+                :class="{ 'mp-page-title--sm': level === 2 }"
+              >{{ title }}</component>
+              <slot name="title-append" />
+            </div>
             <component
               :is="level === 2 ? 'h2' : 'h1'"
+              v-else
               class="mp-page-header__title mp-page-title"
               :class="{ 'mp-page-title--sm': level === 2 }"
             >{{ title }}</component>
@@ -77,6 +86,33 @@ withDefaults(defineProps<{
 .mp-page-header__title {
   line-height: 1.2;
   color: rgb(var(--v-theme-on-surface));
+}
+
+/* `#title-append`: a status chip beside the title (a payment's amount + its state). */
+.mp-page-header__title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--mp-space-8) var(--mp-space-12);
+}
+
+/* Actions sit beside the title while the title keeps its minimum width; past that
+   they wrap under it. Content-driven, not viewport-driven: a docked Da Vinci drawer
+   narrows the page without changing the viewport, and a wide action cluster used to
+   squeeze the title into a sliver ("40 of 40 / products"). */
+.mp-page-header__main {
+  flex-wrap: wrap;
+}
+
+.mp-page-header__heading {
+  flex: 1 1 var(--mp-component-pageHeader-titleMinWidth);
+}
+
+/* Once wrapped under the title, a cluster wider than the header wraps itself
+   rather than running past the edge and clipping its last action. */
+.mp-page-header__actions {
+  flex-wrap: wrap;
+  max-width: 100%;
 }
 
 /* Actions sit beside the title from tablet up. On phones the row wraps instead:

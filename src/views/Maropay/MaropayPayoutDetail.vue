@@ -9,6 +9,7 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpSectionHeader from '@/components/MpSectionHeader.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MaropayBankAccountDrawer from '@/components/maropay/MaropayBankAccountDrawer.vue'
+import MaropayDemoPanel from '@/components/maropay/MaropayDemoPanel.vue'
 import MaropayLedgerBreakdown from '@/components/maropay/MaropayLedgerBreakdown.vue'
 import MaropayMoney from '@/components/maropay/MaropayMoney.vue'
 import MaropaySupportAlert from '@/components/maropay/MaropaySupportAlert.vue'
@@ -105,6 +106,10 @@ const history = computed(() => {
     const retry = maropay.payoutById(p.retriedBy)
     if (retry) rows.push({ id: 'retry', at: retry.createdAt, icon: 'rotate-ccw', text: `Retried as ${retry.id}`, to: detailRoute(retry.id) })
   }
+  if (p.retryOf) {
+    const original = maropay.payoutById(p.retryOf)
+    rows.push({ id: 'retry-of', at: original?.failure?.at ?? p.createdAt, icon: 'rotate-ccw', text: `Retry of ${p.retryOf} — the same money, sent again after the bank account was updated`, to: detailRoute(p.retryOf) })
+  }
   return rows.sort((a, b) => Date.parse(b.at) - Date.parse(a.at))
 })
 
@@ -155,6 +160,16 @@ function bankReturns(): void {
   else toast.error(result.error.message)
 }
 
+/** The state in words, beside the bank and date: arrival, sent or returned. */
+const statusLine = computed(() => {
+  const p = payout.value
+  if (!p) return ''
+  if (p.status === 'paid' && p.paidAt) return `Sent to bank ${formatDay(p.paidAt)}`
+  if (p.status === 'in_transit') return p.arrivalEstimate ? `Estimated arrival ${formatDay(p.arrivalEstimate)}` : 'Arrives in a few business days'
+  if (p.failure) return `Returned ${formatDay(p.failure.at)}`
+  return ''
+})
+
 const supportReferences = computed(() => {
   const p = payout.value
   if (!p) return []
@@ -167,18 +182,16 @@ const supportReferences = computed(() => {
 </script>
 
 <template>
-  <v-card v-if="!canView" flat border rounded="lg">
-    <MpEmptyState icon="lock" title="Payouts are for owners and finance" description="Store operations users can see payments for their stores, but not balances or payouts." :heading-level="2" />
-  </v-card>
-
   <!-- ── The next payout (an estimate) ───────────────────────────── -->
-  <div v-else-if="isUpcoming && upcoming && ledger" class="d-flex flex-column gap-5">
-    <MpPageHeader eyebrow="Payout" :title="`≈ ${formatMoney(upcoming.amount)}`" subtitle="Your next payout — an estimate of what’s in your balance now" :back-to="payoutsRoute">
-      <template #tabs>
-        <div class="d-flex align-center flex-wrap ga-2 mt-1">
-          <MpStatusChip status="Upcoming" type="payout" size="sm" show-icon />
-          <span class="text-caption text-medium-emphasis">{{ upcoming.blocked ? 'Paused until payouts are fixed' : `Estimated ${formatDay(upcoming.estimatedAt)}` }}</span>
-        </div>
+  <div v-if="canView && isUpcoming && upcoming && ledger" class="d-flex flex-column gap-5">
+    <MpPageHeader
+      eyebrow="Payout"
+      :title="`≈ ${formatMoney(upcoming.amount)}`"
+      :subtitle="upcoming.blocked ? 'Your next payout · paused until payouts are fixed' : `Your next payout · estimated ${formatDay(upcoming.estimatedAt)}`"
+      :back-to="payoutsRoute"
+    >
+      <template #title-append>
+        <MpStatusChip status="Upcoming" type="payout" show-icon />
       </template>
     </MpPageHeader>
     <MpAlert v-if="upcoming.blocked" tone="warning" live="off" title="This payout is waiting">
@@ -187,16 +200,23 @@ const supportReferences = computed(() => {
         <v-btn size="small" variant="outlined" class="text-none" :to="payoutsRoute">See why</v-btn>
       </template>
     </MpAlert>
-    <MpAlert v-else tone="info" live="off" title="An estimate, not a promise">
-      New payments, refunds and disputes before the payout date change the amount. The date moves if a payment settles later.
-    </MpAlert>
     <div class="maropay-payout">
-      <MaropayLedgerBreakdown title="What’s in it so far" :lines="ledger.lines" :total="ledger.total" />
-      <v-card flat border rounded="lg" class="maropay-payout__card">
+      <MaropayLedgerBreakdown
+        title="What’s in it so far"
+        :lines="ledger.lines"
+        :total="ledger.total"
+        caption="An estimate, not a promise: new payments, refunds and disputes before the payout date change the amount, and the date moves if a payment settles later."
+      />
+      <v-card flat border rounded="lg" class="mp-card-inset">
         <MpSectionHeader title="Included" :description="`${items.length} ${items.length === 1 ? 'item' : 'items'}`" :heading-level="2" />
-        <MpListRow v-for="item in items" :key="item.id" variant="divided" :to="item.paymentId ? paymentRoute(item.paymentId) : undefined">
-          <span class="maropay-payout__row-title">{{ item.kindLabel }}{{ item.orderNumber ? ` · ${item.orderNumber}` : '' }}</span>
-          <span class="maropay-payout__sub">{{ item.customer ? `${item.customer} · ` : '' }}{{ formatDay(item.createdAt) }}</span>
+        <MpListRow
+          v-for="item in items"
+          :key="item.id"
+          variant="divided"
+          :to="item.paymentId ? paymentRoute(item.paymentId) : undefined"
+          :title="`${item.kindLabel}${item.orderNumber ? ` · ${item.orderNumber}` : ''}`"
+          :subtitle="`${item.customer ? `${item.customer} · ` : ''}${formatDay(item.createdAt)}`"
+        >
           <template #trailing><MaropayMoney :amount="item.net" signed /></template>
         </MpListRow>
       </v-card>
@@ -204,13 +224,16 @@ const supportReferences = computed(() => {
   </div>
 
   <!-- ── A payout that happened ──────────────────────────────────── -->
-  <div v-else-if="payout && ledger" class="d-flex flex-column gap-5">
+  <div v-else-if="canView && payout && ledger" class="d-flex flex-column gap-5">
     <MpPageHeader
       eyebrow="Payout"
       :title="formatMoney(payout.amount)"
-      :subtitle="`${payout.id} · ${payout.destination.bankName} •••• ${payout.destination.last4} · ${formatDay(payout.createdAt)}`"
+      :subtitle="[`${payout.destination.bankName} •••• ${payout.destination.last4}`, statusLine, payout.id].filter(Boolean).join(' · ')"
       :back-to="payoutsRoute"
     >
+      <template #title-append>
+        <MpStatusChip :status="PAYOUT_STATUS_LABELS[payout.status]" type="payout" show-icon />
+      </template>
       <template v-if="payout.status === 'failed'" #actions>
         <v-btn v-if="isOwner" variant="outlined" class="text-none" prepend-icon="landmark" @click="bankOpen = true">Update bank account</v-btn>
         <v-tooltip v-if="canRetry" :disabled="accountUpdated" text="Update the bank account first — the old one just bounced." location="bottom">
@@ -221,23 +244,9 @@ const supportReferences = computed(() => {
           </template>
         </v-tooltip>
       </template>
-      <template #tabs>
-        <div class="d-flex align-center flex-wrap ga-2 mt-1">
-          <MpStatusChip :status="PAYOUT_STATUS_LABELS[payout.status]" type="payout" size="sm" show-icon />
-          <span class="text-caption text-medium-emphasis">
-            {{ payout.status === 'paid' && payout.paidAt ? `Sent ${formatDay(payout.paidAt)}` : payout.status === 'in_transit' && payout.arrivalEstimate ? `Estimated arrival ${formatDay(payout.arrivalEstimate)}` : payout.failure ? `Returned ${formatDay(payout.failure.at)}` : '' }}
-          </span>
-        </div>
-      </template>
     </MpPageHeader>
 
-    <MpAlert v-if="payout.status === 'in_transit'" tone="info" live="off" :title="`On its way to ${payout.destination.bankName} •••• ${payout.destination.last4}`">
-      Estimated arrival {{ payout.arrivalEstimate ? formatDay(payout.arrivalEstimate) : 'in a few business days' }}. It’s marked Sent to bank once the transfer is confirmed as sent.
-    </MpAlert>
-    <MpAlert v-else-if="payout.status === 'paid'" tone="success" live="off" :title="`Sent to bank on ${payout.paidAt ? formatDay(payout.paidAt) : '—'}`">
-      The transfer left Maropay. Banks usually show it the same or the next business day. If it hasn’t arrived after 3 business days, contact support with the references below.
-    </MpAlert>
-    <MpAlert v-else-if="payout.status === 'failed' && payout.failure" tone="error" title="This payout failed">
+    <MpAlert v-if="payout.status === 'failed' && payout.failure" tone="error" title="This payout failed">
       {{ payout.failure.message }} {{ formatMoney(payout.amount) }} is back in your Maropay balance and goes out again once the bank account is fixed.
       <template v-if="payout.retriedBy">It was retried as {{ payout.retriedBy }}.</template>
       <template v-else-if="!isOwner && !accountUpdated">The business owner needs to update the bank account before it can be retried.</template>
@@ -245,48 +254,50 @@ const supportReferences = computed(() => {
         <v-btn size="small" variant="outlined" class="text-none" :to="detailRoute(payout.retriedBy)">Open the retry</v-btn>
       </template>
     </MpAlert>
-    <MpAlert v-if="payout.retryOf" tone="info" live="off" :title="`Retry of ${payout.retryOf}`">
-      The same money, sent again after the bank account was updated.
-      <template #actions>
-        <v-btn size="small" variant="text" class="text-none" :to="detailRoute(payout.retryOf)">Open the original</v-btn>
-      </template>
-    </MpAlert>
 
     <div class="maropay-payout">
       <div class="maropay-payout__side">
         <MaropayLedgerBreakdown title="Breakdown" :lines="ledger.lines" :total="ledger.total" caption="Every line adds up the balance movements listed under Included." />
-        <v-card flat border rounded="lg" class="maropay-payout__card">
-          <MpSectionHeader title="History" :heading-level="2" />
-          <MpListRow v-for="row in history" :key="row.id" variant="divided" :to="row.to">
-            <template #lead><v-icon size="18" class="maropay-payout__icon">{{ row.icon }}</v-icon></template>
-            <span class="maropay-payout__row-title">{{ row.text }}</span>
-            <span class="maropay-payout__sub">{{ formatDay(row.at) }}</span>
+        <v-card flat border rounded="lg" class="mp-card-inset">
+          <MpSectionHeader
+            title="History"
+            :description="payout.status === 'paid' ? '“Sent to bank” means the transfer left Maropay. Banks usually show it the same or the next business day.' : undefined"
+            :heading-level="2"
+          />
+          <MpListRow v-for="row in history" :key="row.id" variant="divided" :to="row.to" :title="row.text" :subtitle="formatDay(row.at)">
+            <template #lead><v-icon size="16" class="maropay-payout__icon">{{ row.icon }}</v-icon></template>
           </MpListRow>
         </v-card>
         <MaropaySupportAlert :references="supportReferences" />
       </div>
 
       <div class="maropay-payout__body">
-        <v-card flat border rounded="lg" class="maropay-payout__card">
+        <v-card flat border rounded="lg" class="mp-card-inset">
           <MpSectionHeader title="Included" :description="`${items.length} ${items.length === 1 ? 'item' : 'items'}`" :heading-level="2" />
-          <MpListRow v-for="item in items" :key="item.id" variant="divided" :to="item.paymentId ? paymentRoute(item.paymentId) : undefined">
-            <span class="maropay-payout__row-title">{{ item.kindLabel }}{{ item.orderNumber ? ` · ${item.orderNumber}` : '' }}</span>
-            <span class="maropay-payout__sub">
-              {{ item.customer ? `${item.customer} · ` : '' }}{{ formatDay(item.createdAt) }}{{ item.fee.amount ? ` · fee ${formatMoney(item.fee)}` : '' }}
-            </span>
+          <MpListRow
+            v-for="item in items"
+            :key="item.id"
+            variant="divided"
+            :to="item.paymentId ? paymentRoute(item.paymentId) : undefined"
+            :title="`${item.kindLabel}${item.orderNumber ? ` · ${item.orderNumber}` : ''}`"
+            :subtitle="`${item.customer ? `${item.customer} · ` : ''}${formatDay(item.createdAt)}${item.fee.amount ? ` · fee ${formatMoney(item.fee)}` : ''}`"
+          >
             <template #trailing><MaropayMoney :amount="item.net" signed /></template>
           </MpListRow>
         </v-card>
-
-        <v-card v-if="payout.status === 'in_transit' && isOwner" flat border rounded="lg" class="maropay-payout__card">
-          <MpSectionHeader icon="flask-conical" title="Simulate the bank" description="Demo controls — not part of the product." :heading-level="2" />
-          <div class="d-flex flex-wrap ga-2">
-            <v-btn size="small" variant="outlined" class="text-none" @click="confirmSent">Confirm sent to bank</v-btn>
-            <v-btn size="small" variant="text" class="text-none" @click="bankReturns">Bank returns it</v-btn>
-          </div>
-        </v-card>
       </div>
     </div>
+
+    <MaropayDemoPanel v-if="payout.status === 'in_transit' && isOwner">
+      <MpListRow variant="divided" title="The bank" subtitle="Confirm the transfer, or have the bank send it back">
+        <template #trailing>
+          <span class="d-flex flex-wrap ga-2">
+            <v-btn size="small" variant="outlined" class="text-none" @click="confirmSent">Confirm sent to bank</v-btn>
+            <v-btn size="small" variant="text" class="text-none" @click="bankReturns">Bank returns it</v-btn>
+          </span>
+        </template>
+      </MpListRow>
+    </MaropayDemoPanel>
 
     <MaropayBankAccountDrawer
       v-model="bankOpen"
@@ -297,15 +308,38 @@ const supportReferences = computed(() => {
     />
   </div>
 
-  <MpErrorState
-    v-else
-    icon="file-x"
-    :title="isUpcoming ? 'No payout is coming up' : 'Payout not found'"
-    :description="isUpcoming ? 'Everything in your balance has already been paid out.' : 'This payout may belong to another account, or the link is incorrect.'"
-    action-label="Back to payouts"
-    action-icon="arrow-left"
-    @action="router.push(payoutsRoute)"
-  />
+  <!-- No access, nothing coming up, or not found: the page keeps its header and back link. -->
+  <div v-else class="d-flex flex-column gap-5">
+    <MpPageHeader eyebrow="Payout" :title="isUpcoming ? 'Next payout' : 'Payout'" :back-to="payoutsRoute" />
+    <v-card flat border rounded="lg">
+      <MpEmptyState
+        v-if="!canView"
+        icon="lock"
+        title="Payouts are for owners and finance"
+        description="Store operations users can see payments for their stores, but not balances or payouts."
+        :heading-level="2"
+      />
+      <MpEmptyState
+        v-else-if="isUpcoming"
+        icon="calendar-check"
+        title="No payout is coming up"
+        description="Everything in your balance has already been paid out."
+        action-label="Back to payouts"
+        action-icon="arrow-left"
+        :heading-level="2"
+        @action="router.push(payoutsRoute)"
+      />
+      <MpErrorState
+        v-else
+        icon="file-x"
+        title="We couldn’t find this payout"
+        description="It may belong to another account, or the link is incorrect."
+        action-label="Back to payouts"
+        action-icon="arrow-left"
+        @action="router.push(payoutsRoute)"
+      />
+    </v-card>
+  </div>
 </template>
 
 <style scoped lang="scss">
@@ -330,25 +364,7 @@ const supportReferences = computed(() => {
   min-width: 0;
 }
 
-.maropay-payout__card {
-  padding: var(--mp-component-card-padding);
-}
-
 .maropay-payout__icon {
   color: var(--icon-secondary);
-}
-
-.maropay-payout__row-title {
-  font-size: var(--mp-fontSize-14);
-  font-weight: var(--mp-fontWeight-medium);
-  line-height: var(--mp-lineHeight-snug);
-  color: var(--text-primary);
-}
-
-.maropay-payout__sub {
-  margin-top: var(--mp-space-2);
-  font-size: var(--mp-fontSize-13);
-  line-height: var(--mp-lineHeight-normal);
-  color: var(--text-secondary);
 }
 </style>

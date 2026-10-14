@@ -3,19 +3,20 @@ import assert from 'node:assert/strict'
 import { MAROPAY_SCENARIOS, buildScenario, isMaropayScenarioKey, linkedOrderRefs } from '../../src/maropay/scenarios.ts'
 import { deriveOverviewInstruction } from '../../src/maropay/readiness.ts'
 import { parseState, storageKey } from '../../src/maropay/model.ts'
+import { storeProvidersFor } from '../../src/maropay/providers.ts'
 import { ATLAS, NOW, context, orders } from './fixtures.ts'
 
 const EXPECTED_HEADLINE: Record<string, string> = {
   m01: 'not_started', m02: 'finish_setup', m03: 'provide_info', m04: 'declined', m05: 'set_up_store',
   m06: 'set_up_store', m07: 'activate_more', m08: 'payouts_attention', m09: 'payouts_attention', m10: 'active',
   m11: 'active', m12: 'active', m13: 'active', m14: 'active', m15: 'ready_to_activate',
-  m16: 'provide_info', m17: 'provide_info',
+  m16: 'provide_info', m17: 'provide_info', m18: 'ready_to_activate',
 }
 
-test('all seventeen scenarios are listed and recognised', () => {
-  assert.equal(MAROPAY_SCENARIOS.length, 17)
+test('all eighteen scenarios are listed and recognised', () => {
+  assert.equal(MAROPAY_SCENARIOS.length, 18)
   assert.ok(MAROPAY_SCENARIOS.every((s) => isMaropayScenarioKey(s.key)))
-  assert.equal(isMaropayScenarioKey('m18'), false)
+  assert.equal(isMaropayScenarioKey('m19'), false)
 })
 
 for (const scenario of MAROPAY_SCENARIOS) {
@@ -73,9 +74,14 @@ test('stored state from another account, another version or garbage is ignored',
 test('M05 keeps the previous processor’s history out of Maropay balances and payouts', () => {
   const state = buildScenario('m05', context())
   assert.ok(state.payments.length > 0)
-  assert.ok(state.payments.every((p) => p.provider === 'stripe-legacy'))
+  assert.ok(state.payments.every((p) => p.provider === 'stripe' && p.legacy === true))
   assert.equal(state.movements.length, 0)
   assert.equal(state.payouts.length, 0)
   assert.equal(state.account?.reusedVerifiedDetails, true)
   assert.equal(state.bindings[0]?.captureMode, 'manual')
+  const setup = storeProvidersFor(state, ATLAS)
+  assert.equal(setup.cardProcessor, 'stripe')
+  const stripe = setup.connections.find((c) => c.kind === 'stripe')!
+  assert.deepEqual([stripe.captureMode, stripe.savedCredentials], ['manual', { count: 38, blocking: false }])
+  assert.ok(setup.connections.some((c) => c.kind === 'bank_deposit' && c.status === 'active'))
 })

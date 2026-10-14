@@ -263,7 +263,7 @@ export interface TaxCategory {
 }
 
 /** Slugify a title into a URL handle (lowercase, hyphenated). */
-function toHandle(title: string): string {
+export function toHandle(title: string): string {
   return title
     .toLowerCase()
     .trim()

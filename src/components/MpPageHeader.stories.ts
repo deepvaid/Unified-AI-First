@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpPageHeader from './MpPageHeader.vue'
+import MpStatusChip from './MpStatusChip.vue'
 
 const meta = {
   title: 'Molecules/MpPageHeader',
@@ -124,7 +125,7 @@ export const Sizes: Story = {
 /** Every combination of the optional parts, so a missing subtitle or eyebrow is verifiable. */
 export const States: Story = {
   render: () => ({
-    components: { MpPageHeader },
+    components: { MpPageHeader, MpStatusChip },
     template: `
       <div class="d-flex flex-column ga-8">
         <div>
@@ -142,6 +143,12 @@ export const States: Story = {
         <div>
           <div class="text-caption text-medium-emphasis mb-2">with back link — tab to it to see the focus ring</div>
           <MpPageHeader title="Order #10482" subtitle="Placed 12 Apr 2026" back-to="/accounts/2000290/orders" />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">#title-append — a status chip beside the title (detail pages)</div>
+          <MpPageHeader eyebrow="Payment" title="$890.00" subtitle="Emma Johnson · Atlas Outfitters · Oct 2, 2026" back-to="/accounts/2000290/maropay/transactions">
+            <template #title-append><MpStatusChip status="Refunded" type="payment" show-icon /></template>
+          </MpPageHeader>
         </div>
         <div>
           <div class="text-caption text-medium-emphasis mb-2">with actions</div>

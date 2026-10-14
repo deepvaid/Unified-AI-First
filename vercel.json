@@ -4,7 +4,8 @@
   "outputDirectory": "dist",
   "framework": "vite",
   "redirects": [
-    { "source": "/main-landing", "destination": "/main-landing/", "permanent": false }
+    { "source": "/main-landing", "destination": "/main-landing/", "permanent": false },
+    { "source": "/main-landing/maropay", "destination": "/main-landing/maropay/", "permanent": false }
   ],
   "rewrites": [
     { "source": "/storybook/:path*", "destination": "/storybook/:path*" },

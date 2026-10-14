@@ -11,6 +11,7 @@ import MpListRow from '@/components/MpListRow.vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpSectionHeader from '@/components/MpSectionHeader.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
+import MaropayDemoPanel from '@/components/maropay/MaropayDemoPanel.vue'
 import MaropayLedgerBreakdown from '@/components/maropay/MaropayLedgerBreakdown.vue'
 import MaropaySupportAlert from '@/components/maropay/MaropaySupportAlert.vue'
 import MaropayTimeline from '@/components/maropay/MaropayTimeline.vue'
@@ -154,17 +155,16 @@ const supportReferences = computed(() => {
 </script>
 
 <template>
-  <v-card v-if="!canView" flat border rounded="lg">
-    <MpEmptyState icon="lock" title="Disputes are for owners and finance" description="Store operations users can see payments for their stores, but not disputes." :heading-level="2" />
-  </v-card>
-
-  <div v-else-if="dispute" class="d-flex flex-column gap-5">
+  <div v-if="canView && dispute" class="d-flex flex-column gap-5">
     <MpPageHeader
       eyebrow="Dispute"
       :title="formatMoney(dispute.amount)"
-      :subtitle="`${DISPUTE_REASON_LABELS[dispute.reason]} · ${dispute.orderNumber ?? dispute.paymentId} · opened ${formatDay(dispute.openedAt)}`"
+      :subtitle="[DISPUTE_REASON_LABELS[dispute.reason], dispute.orderNumber ?? dispute.paymentId, `opened ${formatDay(dispute.openedAt)}`].join(' · ')"
       :back-to="disputesRoute"
     >
+      <template #title-append>
+        <MpStatusChip :status="DISPUTE_STATUS_LABELS[dispute.status]" type="dispute" show-icon />
+      </template>
       <template v-if="open" #actions>
         <v-btn v-if="canAccept" variant="text" class="text-none" @click="acceptOpen = true">Accept dispute</v-btn>
         <v-tooltip v-if="canRespond" :disabled="!submitHint" :text="submitHint" location="bottom">
@@ -174,12 +174,6 @@ const supportReferences = computed(() => {
             </span>
           </template>
         </v-tooltip>
-      </template>
-      <template #tabs>
-        <div class="d-flex align-center flex-wrap ga-2 mt-1">
-          <MpStatusChip :status="DISPUTE_STATUS_LABELS[dispute.status]" type="dispute" size="sm" show-icon />
-          <span v-if="open" class="text-caption text-medium-emphasis">Respond by {{ formatDay(dispute.respondBy) }} · {{ deadlineLabel(dispute.respondBy, maropay.now) }}</span>
-        </div>
       </template>
     </MpPageHeader>
 
@@ -204,18 +198,18 @@ const supportReferences = computed(() => {
 
     <div class="maropay-dispute">
       <div class="maropay-dispute__side">
-        <v-card flat border rounded="lg" class="maropay-dispute__card">
+        <v-card flat border rounded="lg" class="mp-card-inset">
           <MpSectionHeader title="Details" :heading-level="2" />
-          <dl class="maropay-dispute__details">
+          <dl class="mp-label-value mp-label-value--inline">
             <div><dt>Reason</dt><dd>{{ DISPUTE_REASON_LABELS[dispute.reason] }}</dd></div>
             <div>
               <dt>Payment</dt>
-              <dd><router-link v-if="paymentRoute" :to="paymentRoute" class="maropay-dispute__link">{{ dispute.paymentId }}</router-link></dd>
+              <dd><router-link v-if="paymentRoute" :to="paymentRoute" class="mp-link">{{ dispute.paymentId }}</router-link></dd>
             </div>
             <div>
               <dt>Order</dt>
               <dd>
-                <router-link v-if="orderRoute" :to="orderRoute" class="maropay-dispute__link">{{ dispute.orderNumber }}</router-link>
+                <router-link v-if="orderRoute" :to="orderRoute" class="mp-link">{{ dispute.orderNumber }}</router-link>
                 <template v-else>—</template>
               </dd>
             </div>
@@ -231,26 +225,29 @@ const supportReferences = computed(() => {
       </div>
 
       <div class="maropay-dispute__body">
-        <v-card flat border rounded="lg" class="maropay-dispute__card">
+        <v-card flat border rounded="lg" class="mp-card-inset">
           <MpSectionHeader title="What the shopper’s bank says" :heading-level="2" />
           <p class="maropay-dispute__claim">{{ dispute.claim }}</p>
         </v-card>
 
-        <v-card flat border rounded="lg" class="maropay-dispute__card">
+        <v-card flat border rounded="lg" class="mp-card-inset">
           <MpSectionHeader
             title="Evidence"
             :description="open ? (missing.length ? `${missing.length} required ${missing.length === 1 ? 'item' : 'items'} still missing` : 'Everything required is added') : 'Sent to the shopper’s bank'"
             :heading-level="2"
           />
           <div role="list">
-            <MpListRow v-for="item in dispute.evidence" :key="item.key" variant="divided" role="listitem">
+            <MpListRow
+              v-for="item in dispute.evidence"
+              :key="item.key"
+              variant="divided"
+              role="listitem"
+              :title="item.label"
+              :subtitle="[item.required ? 'Required' : 'Optional', item.document ? `${item.document.name} · ${item.document.sizeLabel}` : item.required ? 'missing' : null, item.note].filter(Boolean).join(' · ')"
+            >
               <template #lead>
-                <v-icon size="18" :class="item.document ? 'maropay-dispute__done' : 'maropay-dispute__todo'">{{ item.document ? 'file-check' : 'file-plus' }}</v-icon>
+                <v-icon size="16" :class="item.document ? 'maropay-dispute__done' : 'maropay-dispute__todo'">{{ item.document ? 'file-check' : 'file-plus' }}</v-icon>
               </template>
-              <span class="maropay-dispute__row-title">{{ item.label }}{{ item.required ? ' · required' : '' }}</span>
-              <span class="maropay-dispute__sub">
-                {{ item.document ? `${item.document.name} · ${item.document.sizeLabel}` : item.required ? 'Missing' : 'Optional' }}{{ item.note ? ` · ${item.note}` : '' }}
-              </span>
               <template v-if="canRespond" #trailing>
                 <v-btn size="small" variant="text" class="text-none" :aria-label="`${item.document || item.note ? 'Edit' : 'Add'} ${item.label}`" @click="openEvidence(item)">
                   {{ item.document || item.note ? 'Edit' : 'Add' }}
@@ -260,7 +257,7 @@ const supportReferences = computed(() => {
           </div>
         </v-card>
 
-        <v-card flat border rounded="lg" class="maropay-dispute__card">
+        <v-card flat border rounded="lg" class="mp-card-inset">
           <MpSectionHeader title="Your response" :description="open ? (draftSaved ?? 'Saved as a draft as you type') : undefined" :heading-level="2" />
           <v-textarea
             v-if="canRespond"
@@ -275,23 +272,24 @@ const supportReferences = computed(() => {
         </v-card>
 
         <MaropayTimeline v-if="disputeEvents.length" title="Dispute history" :events="disputeEvents" />
-
-        <v-card v-if="dispute.status === 'under_review'" flat border rounded="lg" class="maropay-dispute__card">
-          <MpSectionHeader icon="flask-conical" title="Simulate the bank’s decision" description="Demo controls — not part of the product." :heading-level="2" />
-          <div class="d-flex flex-wrap ga-2">
-            <v-btn size="small" variant="outlined" class="text-none" @click="simulate('won')">You win</v-btn>
-            <v-btn size="small" variant="text" class="text-none" @click="simulate('lost')">The shopper wins</v-btn>
-          </div>
-        </v-card>
       </div>
     </div>
 
+    <MaropayDemoPanel v-if="dispute.status === 'under_review'">
+      <MpListRow variant="divided" title="The shopper’s bank decides" subtitle="Settle the dispute either way">
+        <template #trailing>
+          <span class="d-flex flex-wrap ga-2">
+            <v-btn size="small" variant="outlined" class="text-none" @click="simulate('won')">You win</v-btn>
+            <v-btn size="small" variant="text" class="text-none" @click="simulate('lost')">The shopper wins</v-btn>
+          </span>
+        </template>
+      </MpListRow>
+    </MaropayDemoPanel>
+
     <MpFormDrawer v-model="evidenceOpen" :title="evidenceItem?.label ?? 'Evidence'" :subtitle="evidenceItem?.required ? 'Required for this dispute' : 'Optional — it strengthens your case'" size="sm">
       <MpFormGrid>
-        <MpListRow v-if="evidenceDocument" variant="boxed">
-          <template #lead><v-icon size="18" class="maropay-dispute__done">file-check</v-icon></template>
-          <span class="maropay-dispute__row-title">{{ evidenceDocument.name }}</span>
-          <span class="maropay-dispute__sub">{{ evidenceDocument.sizeLabel }}</span>
+        <MpListRow v-if="evidenceDocument" variant="boxed" :title="evidenceDocument.name" :subtitle="evidenceDocument.sizeLabel">
+          <template #lead><v-icon size="16" class="maropay-dispute__done">file-check</v-icon></template>
           <template #trailing>
             <v-btn size="small" variant="text" class="text-none" :aria-label="`Remove ${evidenceDocument.name}`" @click="evidenceDocument = null; evidenceFile = null">Remove</v-btn>
           </template>
@@ -324,15 +322,28 @@ const supportReferences = computed(() => {
     />
   </div>
 
-  <MpErrorState
-    v-else
-    icon="file-x"
-    title="Dispute not found"
-    description="This dispute may belong to another account, or the link is incorrect."
-    action-label="Back to disputes"
-    action-icon="arrow-left"
-    @action="router.push(disputesRoute)"
-  />
+  <!-- No access or not found: the page keeps its header and back link. -->
+  <div v-else class="d-flex flex-column gap-5">
+    <MpPageHeader eyebrow="Dispute" title="Dispute" :back-to="disputesRoute" />
+    <v-card flat border rounded="lg">
+      <MpEmptyState
+        v-if="!canView"
+        icon="lock"
+        title="Disputes are for owners and finance"
+        description="Store operations users can see payments for their stores, but not disputes."
+        :heading-level="2"
+      />
+      <MpErrorState
+        v-else
+        icon="file-x"
+        title="We couldn’t find this dispute"
+        description="It may belong to another account, or the link is incorrect."
+        action-label="Back to disputes"
+        action-icon="arrow-left"
+        @action="router.push(disputesRoute)"
+      />
+    </v-card>
+  </div>
 </template>
 
 <style scoped lang="scss">
@@ -357,64 +368,12 @@ const supportReferences = computed(() => {
   min-width: 0;
 }
 
-.maropay-dispute__card {
-  padding: var(--mp-component-card-padding);
-}
-
-.maropay-dispute__details {
-  display: grid;
-  gap: var(--mp-space-12);
-  margin: 0;
-}
-
-.maropay-dispute__details > div {
-  display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
-  gap: var(--mp-space-12);
-  font-size: var(--mp-fontSize-14);
-}
-
-.maropay-dispute__details dt {
-  color: var(--text-secondary);
-}
-
-.maropay-dispute__details dd {
-  margin: 0;
-  min-width: 0;
-  overflow-wrap: anywhere;
-  color: var(--text-primary);
-}
-
-.maropay-dispute__link {
-  color: rgb(var(--v-theme-primary));
-  font-weight: var(--mp-fontWeight-semibold);
-  text-decoration: none;
-}
-
-.maropay-dispute__link:hover {
-  text-decoration: underline;
-}
-
 .maropay-dispute__claim {
   margin: 0;
   font-size: var(--mp-fontSize-14);
   line-height: var(--mp-lineHeight-normal);
   color: var(--text-primary);
   white-space: pre-wrap;
-}
-
-.maropay-dispute__row-title {
-  font-size: var(--mp-fontSize-14);
-  font-weight: var(--mp-fontWeight-medium);
-  line-height: var(--mp-lineHeight-snug);
-  color: var(--text-primary);
-}
-
-.maropay-dispute__sub {
-  margin-top: var(--mp-space-2);
-  font-size: var(--mp-fontSize-13);
-  line-height: var(--mp-lineHeight-normal);
-  color: var(--text-secondary);
 }
 
 .maropay-dispute__done {

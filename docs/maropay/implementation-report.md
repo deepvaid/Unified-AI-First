@@ -6,6 +6,17 @@ squashed into one commit. Decisions, defaults and the full list of launch
 dependencies are in [`decisions.md`](decisions.md). The product brief is an internal plan that
 isn't published in this repository.
 
+> **5 October 2026:** the Checkout preview page is retired. Rows below that mention it now run through
+> the store's own storefront checkout (Store › Payments › "See it in your store", or Maropay › "View
+> your store"), which takes the same sample payments. See F1–F4 in [`decisions.md`](decisions.md).
+
+> **10 October 2026:** the Claude Design UI pass (decisions H1–H5): the store's Payments page is a compact Maropay
+> card over one draggable checkout lineup; the overview leads with the money panel; the setup page is a timeline; the
+> wizard's header is the step; the storefront's done state is a receipt with the card actually typed.
+>
+> **11 October 2026 (CI-2):** the shopper pages run on the merged offer — every provider's methods at once, in the
+> store's lineup order, before and after Maropay goes live (F5, F6). The not-live card placeholder is gone.
+
 ## Review entry point
 
 1. `npm install`, then `npm run dev`.
@@ -21,7 +32,9 @@ isn't published in this repository.
 
 Maropay can be reached from:
 - the **Maropay** sidebar group;
-- the store editor, under **Selling › Payments**;
+- **Stores** in Maropay's own rail, which open a store's payments inside Maropay
+  (`/accounts/2000290/maropay/stores/retest-sales-notification`);
+- the store editor, under **Selling › Payments** — the store's Payments page: the compact Maropay card on top, then the **Checkout lineup** (every provider in shopper order; drag a row, or Move up / Move down in its menu), then the capture and checkout-options tiles; Maropay's own page for the store is one level down (`payments/maropay`, with "Open in Maropay");
 - **View in Maropay** on an order's Payment card;
 - **Settings › Payment account**;
 - the **Set up payments** task on Get started;
@@ -78,8 +91,8 @@ Checked in the in-app browser against the Vite dev server after the final edits.
 | M02 Setup abandoned | Resumes at step 3 with values after a full reload; an edit made on the step survives a reload | Pass |
 | M03 Action required | "Provide information by…" → the task opens its step → upload → *Under review* → approve → ready | Pass |
 | M04 Unsupported or rejected | "Maropay isn't available…" with no activation action on overview, store page or checkout preview; support path offered; PayPal keeps working | Pass |
-| M05 Existing processor merchant | Verified details reused; the earlier provider's history shown with no fees and kept out of balances; manual capture kept | Pass |
-| M06 Different provider | Method-by-method fee comparison; a partial refund on an old PayPal order goes through PayPal and doesn't touch the balance; activation says what stays with PayPal | Pass |
+| M05 Existing processor merchant | Verified details reused; the earlier provider's history shown with no fees and kept out of balances; manual capture kept; the storefront takes a card through Stripe (4242 pays, 0002 declines) with Stripe on the record and nothing in the Maropay balance | Pass |
+| M06 Different provider | Method-by-method fee comparison; a partial refund on an old PayPal order goes through PayPal and doesn't touch the balance; activation says what stays with PayPal; before activation the storefront offers PayPal's cards and PayPal Checkout, after it Maropay's cards beside PayPal Checkout | Pass |
 | M07 Two stores | Second store activated; its checkout payment appears; the store filter narrows tabs, count and totals (1 record, $319.81) | Pass |
 | M08 Payouts paused | "Payments are active. Payouts need attention"; checkout still takes payments; confirming the bank resumes payouts | Pass |
 | M09 Failed payout | Reason and returned funds shown → bank drawer → verification code typed → account changed (full number never stored) → retry creates one payout | Pass |
@@ -87,8 +100,11 @@ Checked in the in-app browser against the Vite dev server after the final edits.
 | M11 Dispute | Deadline in words → evidence → submit (confirmed as final) → under review → won; the fee isn't returned | Pass |
 | M12 Permissions | Store staff get a banner and see only their store's payments; payouts, setup, bank, stop and close are locked; another store is denied | Pass |
 | M13 Delayed payment | Stays processing across navigation; one confirmation captures it; a duplicate is ignored; still one payment and one capture | Pass |
-| M14 Deactivation | Stopping routes new checkouts to PayPal; the checkout preview refuses; all payments, payouts and history stay | Pass |
+| M14 Deactivation | Stopping routes new checkouts to PayPal — the storefront offers PayPal's cards again, with no dead placeholder; all payments, payouts and history stay | Pass |
 | M15 Method pending | The store activates on cards while Klarna waits; Klarna is absent from checkout until approved | Pass |
+| M16 Information needed later | A later-dated EIN request with a deadline; payments and payouts keep running until it | Pass |
+| M17 Deadline passed | Payouts paused at the deadline, Maropay payments a week later; the merchant's own PayPal and bank deposit keep working | Pass |
+| M18 Australian store on eWay, Afterpay and Zip | An AUD account ready to activate beside eWay, Afterpay, Zip, bank deposit and cash on delivery; the Activate dialog offers Maropay for cards or eWay keeping them; each provider row shows the illustrative platform fee | Pass |
 
 Also checked:
 - **Deep links and reload** on every Maropay route, in a fresh tab. No console errors.

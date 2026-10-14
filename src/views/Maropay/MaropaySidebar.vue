@@ -1,19 +1,23 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 import MpSectionRail from '@/components/MpSectionRail.vue'
 import { useAccountsStore } from '@/stores/useAccounts'
 import { useMaropayStore } from '@/stores/useMaropay'
+import { MAROPAY_STORE_ROUTE } from '@/maropay/readiness'
 import { maropayMenu } from './maropayMenu'
 
 const props = defineProps<{ accountId: string }>()
 
 const maropay = useMaropayStore()
 const accounts = useAccountsStore()
+const route = useRoute()
 
 const groups = computed(() => maropayMenu(props.accountId, {
   openTasks: maropay.openTasks.filter((t) => t.kind === 'verification' || t.kind === 'owner_review').length,
   openDisputes: maropay.disputes.filter((d) => d.status === 'needs_response').length,
   stores: maropay.bindings.map((b) => ({ channelId: b.channelId, name: maropay.channelName(b.channelId) })),
+  activeChannelId: route.name === MAROPAY_STORE_ROUTE ? String(route.params.channelId) : null,
 }))
 
 // The business and its currency stay in view on every financial screen (plan §2).

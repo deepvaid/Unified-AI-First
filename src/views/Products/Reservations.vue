@@ -282,19 +282,19 @@ function doDelete() {
         <MpFormSection title="Stock at this location">
           <dl class="mp-label-value">
             <div>
-              <dt class="mp-meta-label text-medium-emphasis">Item</dt>
+              <dt>Item</dt>
               <dd class="text-body-2">{{ selectedVariant?.label }}</dd>
             </div>
             <div>
-              <dt class="mp-meta-label text-medium-emphasis">SKU</dt>
+              <dt>SKU</dt>
               <dd class="res-mono text-body-2">{{ selectedVariant?.sku }}</dd>
             </div>
             <div>
-              <dt class="mp-meta-label text-medium-emphasis">In stock</dt>
+              <dt>In stock</dt>
               <dd class="text-body-2 num">{{ selectedVariant?.inStock ?? 0 }}</dd>
             </div>
             <div>
-              <dt class="mp-meta-label text-medium-emphasis">Available</dt>
+              <dt>Available</dt>
               <dd class="text-body-2 num">{{ selectedVariant?.available ?? 0 }}</dd>
             </div>
           </dl>

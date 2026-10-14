@@ -185,6 +185,9 @@ export const ConnectionStatuses: Story = {
         <MpStatusChip status="Needs Setup" type="connection" showIcon />
         <MpStatusChip status="Sync Issue" type="connection" showIcon />
         <MpStatusChip status="Auth Expired" type="connection" showIcon />
+        <MpStatusChip status="Active" type="connection" showIcon />
+        <MpStatusChip status="Setup Incomplete" type="connection" showIcon />
+        <MpStatusChip status="Inactive" type="connection" showIcon />
       </div>
     `,
   }),
@@ -337,7 +340,7 @@ export const FullMatrix: Story = {
         ticket: ['Open', 'In Progress', 'Awaiting Reply', 'Resolved', 'Closed', 'On Hold', 'Escalated', 'New'],
         coupon: ['Active', 'Expired', 'Scheduled', 'Used', 'Disabled'],
         priority: ['Critical', 'Urgent', 'High', 'Medium', 'Normal', 'Low'],
-        connection: ['Connected', 'Disconnected', 'Needs Setup', 'Sync Issue', 'Auth Expired', 'Syncing', 'Error', 'Healthy'],
+        connection: ['Connected', 'Disconnected', 'Needs Setup', 'Sync Issue', 'Auth Expired', 'Syncing', 'Error', 'Healthy', 'Active', 'Setup Incomplete', 'Inactive'],
         general: [
           'Active', 'Inactive', 'Pending', 'Error', 'Published', 'Draft', 'Archived',
           'Enabled', 'Disabled', 'Failed', 'Running', 'Paused', 'Completed',

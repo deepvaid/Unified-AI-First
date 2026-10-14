@@ -1,14 +1,17 @@
 import type { MpSectionRailGroup } from '@/components/MpSectionRail.vue'
+import { MAROPAY_STORE_ROUTE } from '@/maropay/readiness'
 
 /**
  * Maropay workspace sections. Money comes first — the day-to-day work — then
- * the linked stores (each opens its own Payments page in the store editor),
- * then setup and settings.
+ * the linked stores (each opens its payments inside Maropay, so this rail stays
+ * on screen), then setup and settings.
  */
 export interface MaropayMenuContext {
   openTasks: number
   openDisputes: number
   stores: Array<{ channelId: string; name: string }>
+  /** The store whose payments are on screen — every store shares one route, so only it gets `match`. */
+  activeChannelId: string | null
 }
 
 export function maropayMenu(accountId: string, ctx: MaropayMenuContext): MpSectionRailGroup[] {
@@ -35,7 +38,8 @@ export function maropayMenu(accountId: string, ctx: MaropayMenuContext): MpSecti
         slug: `store-${store.channelId}`,
         label: store.name,
         icon: 'globe',
-        to: { name: 'StorePayments', params: { accountId, channelId: store.channelId } },
+        to: { name: MAROPAY_STORE_ROUTE, params: { accountId, channelId: store.channelId } },
+        match: store.channelId === ctx.activeChannelId ? [MAROPAY_STORE_ROUTE] : undefined,
       })),
     })
   }
@@ -43,7 +47,6 @@ export function maropayMenu(accountId: string, ctx: MaropayMenuContext): MpSecti
     title: 'Setup',
     items: [
       { slug: 'setup', label: 'Setup & verification', icon: 'list-checks', to: { name: 'MaropaySetup', params }, match: ['MaropaySetup'], count: ctx.openTasks || undefined },
-      { slug: 'checkout-preview', label: 'Checkout preview', icon: 'monitor-smartphone', to: { name: 'MaropayCheckoutPreview', params }, match: ['MaropayCheckoutPreview'] },
       { slug: 'settings', label: 'Settings', icon: 'settings', to: { name: 'MaropaySettings', params }, match: ['MaropaySettings'] },
     ],
   })
