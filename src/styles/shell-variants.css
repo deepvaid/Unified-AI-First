@@ -55,9 +55,16 @@ html[data-theme="dark"][data-shell="studio"] .mp-appbar {
 
 /* Studio blends nav into canvas: make the light canvas match the nav gray so
    the borderless app bar meets it seamlessly (no faint two-gray band). The
-   white content frame provides the contrast. Light theme only — dark studio
-   keeps its own background. */
+   white content frame provides the contrast. */
 html[data-theme="light"][data-shell="studio"] .v-main {
+  background: var(--mp-nav-surface) !important;
+}
+
+/* Dark studio: the same dissolve — the gutter meets the L1 nav chrome, so the
+   framed content card is the only edge. Before this the gutter stayed on the
+   canvas token (#17191C) and read as a black band around the frame, while the
+   nav and the frame were both the lighter L1 surface. */
+html[data-theme="dark"][data-shell="studio"] .v-main {
   background: var(--mp-nav-surface) !important;
 }
 
@@ -97,7 +104,8 @@ html[data-theme="dark"] {
 }
 
 /* Light studio dissolves nav into canvas; dark studio keeps L1 nav chrome so
-   cards (also L1) do not sit visually above the navigation cluster. */
+   cards (also L1) do not sit visually above the navigation cluster — and its
+   gutter paints that same L1 surface (rule above), as light's paints the nav gray. */
 
 /* ── Dark side nav on a light app theme (rail shell / dark-sidebar accounts) ──
    The head nav matches the panel, plus on-dark foregrounds for the quiet

@@ -2155,3 +2155,16 @@ colour). What the pass added to the system and what it decided:
 Gates at the end of the pass: 182 Maropay tests, type-check, build, Storybook build, contrast 272/272, axe 0 on each
 surface (the only notes left are pre-existing: `MpWizardSteps`' role, the Da Vinci bot's tooltips), no horizontal
 overflow at 375, dark checked.
+## Dark studio gutter — 2026-10-14
+
+Owner's dark-mode screenshot: the gutter behind the rounded content frame read as a black band, unlike light.
+Nothing painted black — `v-main` sat on the canvas token (`#17191C`) while the sidebar, app bar and frame all
+painted the L1 surface (`#1F2226`), so the gutter was the darkest fill on screen. Light studio already dissolves
+its gutter into the nav gray (`shell-variants.css`, the `.v-main` rule) and its comment declared dark out of scope.
+- **Fix:** the same rule for `html[data-theme="dark"][data-shell="studio"] .v-main` → `--mp-nav-surface`. Measured
+  after: sidebar, app bar, gutter and frame all `rgb(31, 34, 38)`; light untouched (`#eaedf2` / frame `#f9f9f9`).
+  The frame is now told apart by its hairline and the stipple, exactly as cards already were inside it.
+- **Considered, not taken:** lifting the dark frame one tier to `--surface-raised` (`#24272C`) so it floats as
+  the light one does. Previewed in the browser — the 1.08:1 step is not perceptible at the screenshot's crop, and
+  it would put L1 cards a hair darker than their bed. Classic/rail dark shells (no frame) keep the canvas gutter by
+  design: the canvas→card step is the ladder's largest.
