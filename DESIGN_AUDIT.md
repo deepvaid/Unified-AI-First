@@ -2174,3 +2174,5 @@ its gutter into the nav gray (`shell-variants.css`, the `.v-main` rule) and its 
   unchanged (`#f9f9f9`).
 - **Sidenav:** the group divider after Service (the one closing Marketing … Service, above Da Vinci AI) is removed
   in both themes at the owner's request; the dividers after Analytics, Products and Da Vinci AI stay.
+- **Sidenav brand hairline (dark):** the gray skin already clears the `.sidebar-header` border so the brand sits on
+  the panel; the dark skin kept the base rule's line under MAROPOST. `sidebar-dark.css` now clears it the same way.

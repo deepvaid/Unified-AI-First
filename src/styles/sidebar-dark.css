@@ -59,6 +59,12 @@
   border-color: var(--sidebar-border) !important;
 }
 
+/* Brand sits directly on the panel — no hairline under the header (the gray
+   skin already does this; the dark skin kept the base rule's line). */
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar .sidebar-header {
+  border-bottom-color: transparent !important;
+}
+
 /* Group separators repeat down the panel, so they ride the divider role. */
 :is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar .sidebar-divider {
   border-color: var(--sidebar-line) !important;
