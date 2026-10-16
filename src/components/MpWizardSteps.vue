@@ -65,7 +65,8 @@ function onSelect(oneBased: number) {
   gap: var(--mp-space-8);
   font-size: var(--mp-fontSize-13);
   font-weight: 600;
-  color: rgba(var(--v-theme-on-surface), 0.5);
+  /* Upcoming and done steps: the secondary ink, gated at 4.5:1 (50% on-surface was 3.3:1, WCAG W-07). */
+  color: var(--text-secondary);
   background: none;
   border: 0;
   padding: 0;
