@@ -254,6 +254,14 @@
    control that has none of its own — now belongs to MpFormField, which also wires
    up the aria association a bare class could never provide. */
 
+/* Vuetify fades the whole messages row to medium-emphasis opacity (0.6). On top of
+   --text-muted that rendered hints at 2.56:1 (WCAG W-03); the colour token already
+   carries the hierarchy and is gated at 4.5:1 in $contrastPairs, so the row stays
+   opaque. A disabled field keeps the fade — 1.4.3 exempts it. */
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-input:not(.v-input--disabled) .v-messages {
+  opacity: 1;
+}
+
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-input--error .v-messages__message {
   color: rgb(var(--v-theme-error));
 }
