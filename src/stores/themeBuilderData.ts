@@ -119,6 +119,30 @@ export function defaultThemeStyles(): ThemeStyles {
   }
 }
 
+/** Relative luminance of a #rgb / #rrggbb colour, or null for anything else. */
+function hexLuminance(color: string): number | null {
+  const m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(color.trim())
+  if (!m) return null
+  const hex = m[1]!.length === 3 ? [...m[1]!].map((c) => c + c).join('') : m[1]!
+  const [r, g, b] = [0, 2, 4].map((i) => {
+    const v = Number.parseInt(hex.slice(i, i + 2), 16) / 255
+    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4
+  })
+  return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!
+}
+
+/**
+ * Ink for text on the store's brand colour: near-black or white, whichever
+ * contrasts more. The store's own colour decides it, so the admin theme can never
+ * reach inside the preview (WCAG 1.4.3 — W-19: dark admin's --accent-on put
+ * #06212c on a #373842 brand, 1.43:1).
+ */
+export function onBrandColor(brand: string): string | null {
+  const l = hexLuminance(brand)
+  if (l === null) return null
+  return (l + 0.05) / 0.05 >= 1.05 / (l + 0.05) ? '#121011' : '#ffffff'
+}
+
 /**
  * A theme's styles as the storefront's CSS custom properties (--sf-*). Missing
  * values are left out, so the storefront's own fallbacks apply.
@@ -126,7 +150,11 @@ export function defaultThemeStyles(): ThemeStyles {
 export function storefrontThemeVars(styles?: Partial<ThemeStyles> | null): Record<string, string> {
   if (!styles) return {}
   const vars: Record<string, string> = {}
-  if (styles.brandColor) vars['--sf-brand'] = styles.brandColor
+  if (styles.brandColor) {
+    vars['--sf-brand'] = styles.brandColor
+    const onBrand = onBrandColor(styles.brandColor)
+    if (onBrand) vars['--sf-on-brand'] = onBrand
+  }
   if (styles.accentColor) vars['--sf-accent'] = styles.accentColor
   if (styles.background) vars['--sf-bg'] = styles.background
   if (styles.textColor) vars['--sf-text'] = styles.textColor
