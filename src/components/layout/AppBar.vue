@@ -1021,7 +1021,13 @@ function onSearchKeydown(event: KeyboardEvent) {
 .appbar-utilities :deep(.appbar-action-btn:focus-visible) {
   background: var(--surface-interactive-hover);
   color: var(--text-primary);
-  outline: none;
+}
+
+/* Focus keeps the shell's shared 2px accent ring (global.scss) on top of the
+   hover tint; the tint alone was ~1.5:1 (WCAG 2.4.7 consistency — W-15). */
+.appbar-utilities :deep(.appbar-action-btn:focus-visible) {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }
 
 .appbar-utilities :deep(.appbar-action-btn .v-icon) {
@@ -1839,7 +1845,13 @@ function onSearchKeydown(event: KeyboardEvent) {
   .appbar-mobile-search-btn:hover,
   .appbar-mobile-search-btn:focus-visible {
     background: var(--surface-interactive-hover);
-    outline: none;
+  }
+
+  /* Same shared ring as the desktop utilities (W-15). */
+  .appbar-hamburger-btn:focus-visible,
+  .appbar-mobile-search-btn:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
   }
 
 }
