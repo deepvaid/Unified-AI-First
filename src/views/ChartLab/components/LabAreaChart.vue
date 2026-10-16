@@ -88,7 +88,7 @@ const options = computed<ApexOptions>(() => {
 </script>
 
 <template>
-  <div class="lac" role="img" :aria-label="chartLabel">
+  <div class="lac" role="group" :aria-label="chartLabel">
     <VueApexCharts type="area" :height="height" :options="options" :series="series" />
   </div>
 </template>

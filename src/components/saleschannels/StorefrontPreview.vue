@@ -134,15 +134,21 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
           class="sf-section"
           :class="{ 'sf-section--selected': section.id === selectedId, 'sf-section--new': pendingSet.has(section.id) }"
           :data-label="section.label"
-          :role="interactive ? 'button' : undefined"
-          :tabindex="interactive ? 0 : undefined"
-          :aria-label="interactive ? `Edit ${section.label} section` : undefined"
           @click="onSelect(section)"
-          @keydown.enter.prevent="onSelect(section)"
-          @keydown.space.prevent="onSelect(section)"
           @mouseenter="onHover(section.id)"
           @mouseleave="onHover(null)"
         >
+          <!-- The section's own action is a real button stretched over it, not
+               role=button on the section: the section contains block buttons, and
+               a button inside a button is invalid (WCAG W-10). Blocks come later in
+               the DOM and are positioned, so they paint — and click — above it. -->
+          <button
+            v-if="interactive"
+            type="button"
+            class="sf-section__hit"
+            :aria-label="`Edit ${section.label} section`"
+            @click.stop="onSelect(section)"
+          />
           <div v-if="section.kind === 'announcement-bar'" class="sf-announcement">
             <span>{{ text(section, 'text', 'Announcement') }}</span>
             <em v-if="text(section, 'link')">{{ text(section, 'link') }}</em>
@@ -607,7 +613,21 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
   outline-offset: -2px;
 }
 
-.sf-preview--interactive .sf-section:focus-visible {
+.sf-section__hit {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.sf-section__hit:focus-visible {
+  outline: none;
+}
+
+.sf-preview--interactive .sf-section:has(> .sf-section__hit:focus-visible) {
   outline: 2px solid var(--accent);
   outline-offset: -2px;
 }

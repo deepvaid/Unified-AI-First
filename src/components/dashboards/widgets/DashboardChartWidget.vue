@@ -832,7 +832,9 @@ const chartOptions = computed<ApexOptions>(() => {
 </script>
 
 <template>
-  <div ref="rootEl" class="dashboard-chart-widget" role="img" :aria-label="chartAriaLabel">
+  <!-- role=group, not img: Apex renders its own focusable chart and legend
+       buttons, which role=img would hide from assistive tech (WCAG W-10). -->
+  <div ref="rootEl" class="dashboard-chart-widget" role="group" :aria-label="chartAriaLabel">
     <div v-if="headline" ref="headlineEl" class="dashboard-chart-widget__headline">
       <span class="dashboard-chart-widget__headline-value">{{ headline.value }}</span>
       <span v-if="headline.deltaText" class="dashboard-chart-widget__headline-delta" :style="{ color: headlineColor }">

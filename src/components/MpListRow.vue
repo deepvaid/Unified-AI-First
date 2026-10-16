@@ -49,32 +49,51 @@ const isInteractive = computed(() => !!props.to || !!props.href || props.clickab
 
 const slots = useSlots()
 const twoLine = computed(() => !!props.subtitle || !!slots.subtitle)
+
+/**
+ * `#actions` on an interactive row: the root becomes a plain div and the body
+ * becomes the link/button, stretched over the row by a pseudo-element, so the
+ * actions sit beside it instead of nested inside it (WCAG 4.1.2 — W-10).
+ */
+const split = computed(() => isInteractive.value && !!slots.actions)
+const linkAttrs = computed(() => ({
+  to: props.to,
+  href: props.href,
+  type: props.clickable && !props.to && !props.href ? 'button' : undefined,
+}))
 </script>
 
 <template>
   <component
-    :is="tag"
-    :to="to"
-    :href="href"
-    :type="clickable && !to && !href ? 'button' : undefined"
+    :is="split ? 'div' : tag"
+    v-bind="split ? {} : linkAttrs"
     class="mp-list-row"
     :class="[
       `mp-list-row--${variant}`,
       `mp-list-row--${emphasis}`,
       `mp-list-row--${density}`,
-      { 'mp-list-row--interactive': isInteractive, 'mp-list-row--two-line': twoLine },
+      { 'mp-list-row--interactive': isInteractive, 'mp-list-row--two-line': twoLine, 'mp-list-row--split': split },
     ]"
   >
     <span v-if="$slots.lead" class="mp-list-row__lead">
       <slot name="lead" />
     </span>
 
-    <span class="mp-list-row__body">
+    <component
+      :is="split ? tag : 'span'"
+      v-bind="split ? linkAttrs : {}"
+      class="mp-list-row__body"
+      :class="{ 'mp-list-row__hit': split }"
+    >
       <slot>
         <span v-if="eyebrow" class="mp-list-row__eyebrow">{{ eyebrow }}</span>
         <span v-if="title || $slots.title" class="mp-list-row__title"><slot name="title">{{ title }}</slot></span>
         <span v-if="twoLine" class="mp-list-row__subtitle"><slot name="subtitle">{{ subtitle }}</slot></span>
       </slot>
+    </component>
+
+    <span v-if="$slots.actions" class="mp-list-row__actions">
+      <slot name="actions" />
     </span>
 
     <span v-if="meta || $slots.trailing" class="mp-list-row__trailing">
@@ -141,6 +160,55 @@ const twoLine = computed(() => !!props.subtitle || !!slots.subtitle)
 .mp-list-row--interactive:focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: -2px;
+}
+
+/* Split row (#actions): the body is the real link/button and its ::after covers
+   the row, so the whole row still activates it; actions are lifted above that
+   layer. Focus is drawn on the row, exactly as for an unsplit row. */
+.mp-list-row--split {
+  position: relative;
+}
+
+.mp-list-row__hit {
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.mp-list-row__hit::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.mp-list-row__hit:focus-visible {
+  outline: none;
+}
+
+.mp-list-row--split:has(.mp-list-row__hit:focus-visible) {
+  background: var(--surface-secondary);
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+
+.mp-list-row__actions {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.mp-list-row__actions + .mp-list-row__trailing {
+  margin-left: 0;
 }
 
 .mp-list-row--boxed.mp-list-row--interactive:hover {
