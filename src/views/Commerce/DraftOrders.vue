@@ -176,6 +176,23 @@ const { visibleHeaders } = useResponsiveTableHeaders(headers)
         class="flex-grow-1 drafts-table"
         @click:row="(_e: unknown, { item }: { item: DraftOrder }) => goEdit(item)"
       >
+        <!-- Labelled select boxes (WCAG W-04). aria-checked is dropped: Vuetify's "mixed" is invalid on a native checkbox. -->
+        <template #header.data-table-select="{ allSelected, selectAll, someSelected }">
+          <v-checkbox-btn
+            :model-value="allSelected"
+            :indeterminate="someSelected && !allSelected"
+            :aria-checked="undefined"
+            aria-label="Select all rows"
+            @update:model-value="selectAll(!allSelected)"
+          />
+        </template>
+        <template #item.data-table-select="{ internalItem, isSelected, toggleSelect }">
+          <v-checkbox-btn
+            :model-value="isSelected(internalItem)"
+            :aria-label="`Select draft ${internalItem.raw.draftNumber}`"
+            @update:model-value="toggleSelect(internalItem)"
+          />
+        </template>
         <template v-slot:item.draftNumber="{ item }">
           <span class="font-weight-bold text-primary">{{ item.draftNumber }}</span>
         </template>

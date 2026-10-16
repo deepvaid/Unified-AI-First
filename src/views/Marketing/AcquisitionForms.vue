@@ -302,6 +302,7 @@ function doDuplicate(form: AcquisitionForm) {
           <v-checkbox-btn
             :model-value="allSelected"
             :indeterminate="someSelected && !allSelected"
+            :aria-checked="undefined"
             aria-label="Select all forms on this page"
             @update:model-value="selectAll(!allSelected)"
           />

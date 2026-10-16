@@ -305,6 +305,23 @@ function bulkDeactivate() {
         class="users-table"
         @click:row="handleRowClick"
       >
+        <!-- Labelled select boxes (WCAG W-04). aria-checked is dropped: Vuetify's "mixed" is invalid on a native checkbox. -->
+        <template #header.data-table-select="{ allSelected, selectAll, someSelected }">
+          <v-checkbox-btn
+            :model-value="allSelected"
+            :indeterminate="someSelected && !allSelected"
+            :aria-checked="undefined"
+            aria-label="Select all rows"
+            @update:model-value="selectAll(!allSelected)"
+          />
+        </template>
+        <template #item.data-table-select="{ internalItem, isSelected, toggleSelect }">
+          <v-checkbox-btn
+            :model-value="isSelected(internalItem)"
+            :aria-label="`Select ${internalItem.raw.name}`"
+            @update:model-value="toggleSelect(internalItem)"
+          />
+        </template>
         <template v-slot:item.name="{ item }">
           <div class="d-flex align-center py-2">
             <v-avatar color="primary" variant="tonal" size="34" class="mr-3 font-weight-bold text-caption">

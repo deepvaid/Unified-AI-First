@@ -60,6 +60,10 @@ it a specific \`search-placeholder\` ("Search orders…"). Drawer filters go in 
 
 **4. v-data-table** — \`item-value\` for selection identity, \`show-select\` for the checkbox
 column, \`hover\`, \`density="comfortable"\`, and the \`search\` prop wired to the toolbar model.
+Override \`#header.data-table-select\` / \`#item.data-table-select\` with \`v-checkbox-btn\`s that carry an
+\`aria-label\` ("Select all rows", "Select order #1042") — Vuetify's default boxes have no name — and
+\`:aria-checked="undefined"\` on the header box, because Vuetify's \`aria-checked="mixed"\` is invalid on a
+native checkbox (WCAG W-04).
 Style cells with custom \`#item.*\` templates:
 - Identifier column reads as a link: \`text-primary font-weight-bold\`.
 - Status columns always use \`MpStatusChip\` with the **correct \`type\`** (\`order\`,
@@ -224,6 +228,23 @@ function tableStory(preselected: number[]) {
             density="comfortable"
             :items-per-page="15"
           >
+            <!-- Labelled select boxes (WCAG W-04). aria-checked is dropped: Vuetify's "mixed" is invalid on a native checkbox. -->
+            <template #header.data-table-select="{ allSelected, selectAll, someSelected }">
+              <v-checkbox-btn
+                :model-value="allSelected"
+                :indeterminate="someSelected && !allSelected"
+                :aria-checked="undefined"
+                aria-label="Select all rows"
+                @update:model-value="selectAll(!allSelected)"
+              />
+            </template>
+            <template #item.data-table-select="{ internalItem, isSelected, toggleSelect }">
+              <v-checkbox-btn
+                :model-value="isSelected(internalItem)"
+                :aria-label="\`Select order \${internalItem.raw.orderNumber}\`"
+                @update:model-value="toggleSelect(internalItem)"
+              />
+            </template>
             <template v-slot:item.orderNumber="{ item }">
               <span class="text-primary font-weight-bold cursor-pointer">{{ item.orderNumber }}</span>
             </template>

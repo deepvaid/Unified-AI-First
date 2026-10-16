@@ -294,6 +294,23 @@ function handleDashboardCreated(dashboardId: string) {
         class="flex-grow-1 dashboards-table"
         @click:row="handleDashboardRowClick"
       >
+        <!-- Labelled select boxes (WCAG W-04). aria-checked is dropped: Vuetify's "mixed" is invalid on a native checkbox. -->
+        <template #header.data-table-select="{ allSelected, selectAll, someSelected }">
+          <v-checkbox-btn
+            :model-value="allSelected"
+            :indeterminate="someSelected && !allSelected"
+            :aria-checked="undefined"
+            aria-label="Select all rows"
+            @update:model-value="selectAll(!allSelected)"
+          />
+        </template>
+        <template #item.data-table-select="{ internalItem, isSelected, toggleSelect }">
+          <v-checkbox-btn
+            :model-value="isSelected(internalItem)"
+            :aria-label="`Select ${internalItem.raw.name}`"
+            @update:model-value="toggleSelect(internalItem)"
+          />
+        </template>
         <template #item.name="{ item }">
           <div class="d-flex align-center ga-3 py-2 min-width-0">
             <v-avatar size="36" variant="tonal" :color="accentToVuetifyColor(item.accent)" class="flex-shrink-0">

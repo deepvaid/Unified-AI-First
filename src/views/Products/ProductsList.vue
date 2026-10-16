@@ -500,6 +500,7 @@ onMounted(() => {
           <v-checkbox-btn
             :model-value="allSelected"
             :indeterminate="someSelected && !allSelected"
+            :aria-checked="undefined"
             aria-label="Select all rows"
             @update:model-value="selectAll(!allSelected)"
           />

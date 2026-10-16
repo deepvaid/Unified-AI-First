@@ -310,6 +310,7 @@ function onBulkMove(folderId: string | null) {
           <v-checkbox-btn
             :model-value="allSelected"
             :indeterminate="someSelected && !allSelected"
+            :aria-checked="undefined"
             aria-label="Select all landing pages on this page"
             @update:model-value="selectAll(!allSelected)"
           />
