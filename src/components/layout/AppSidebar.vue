@@ -656,9 +656,10 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
       </v-tooltip>
     </template>
 
-    <!-- Navigation List -->
+    <!-- Navigation List — `group`, not Vuetify's `list`: its children are links,
+         buttons and separators, not list items (WCAG W-01) -->
     <div class="sidebar-scroll">
-    <v-list density="compact" class="py-1">
+    <v-list density="compact" class="py-1" role="group" aria-label="Main navigation">
       <template v-for="group in navGroups" :key="group.title">
         <template v-if="isAppsGroup(group) && !effectiveRail">
           <v-list-item
@@ -666,7 +667,6 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
             @click="group.singleRoute && goTo(group.singleRoute)"
             :prepend-icon="group.icon"
             :title="group.title"
-            :value="group.title"
             rounded="lg"
             :active="isModuleActive(group)"
             active-class="active-nav-item"
@@ -724,7 +724,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
               @click="group.singleRoute && goTo(group.singleRoute)"
               :prepend-icon="group.icon"
               :title="!effectiveRail ? group.title : ''"
-              :value="group.title"
+              :aria-label="effectiveRail ? group.title : undefined"
               rounded="lg"
               :active="isModuleActive(group)"
               active-class="active-nav-item"
@@ -759,7 +759,9 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
           <v-list-item
             :prepend-icon="group.icon"
             :title="group.title"
-            :value="group.title"
+            role="button"
+            aria-haspopup="menu"
+            :aria-expanded="flyoutOpen && flyoutGroupTitle === group.title"
             rounded="lg"
             :active="isModuleActive(group)"
             active-class="active-nav-item"
@@ -805,7 +807,8 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
               v-bind="menuProps"
               :prepend-icon="group.icon"
               :title="''"
-              :value="group.title"
+              role="button"
+              :aria-label="group.title"
               rounded="lg"
               class="sidebar-text mb-1"
               :class="{ 'rail-icon-hovered': railOpenGroup === group.title }"
