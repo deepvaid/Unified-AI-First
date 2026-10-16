@@ -97,7 +97,14 @@ const composedSubtitle = computed(() => {
       </MpPageHeader>
     </div>
 
-    <div class="mp-wizard-shell__body flex-grow-1 overflow-y-auto bg-background">
+    <!-- Focusable so a step with no fields (a review, a summary) can still be
+         scrolled from the keyboard (WCAG 2.1.1 — W-13). -->
+    <div
+      class="mp-wizard-shell__body flex-grow-1 overflow-y-auto bg-background"
+      tabindex="0"
+      role="group"
+      :aria-label="title"
+    >
       <div class="mp-wizard-shell__measure" :class="`mp-wizard-shell__measure--${measure}`">
         <slot />
       </div>

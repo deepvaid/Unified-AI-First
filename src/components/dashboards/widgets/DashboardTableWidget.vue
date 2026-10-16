@@ -37,9 +37,16 @@ const campaignRows = computed(() => {
 </script>
 
 <template>
-  <div class="dashboard-table-widget">
+  <!-- A scroll area with nothing focusable inside takes focus itself, so keyboard
+       users can scroll it (WCAG 2.1.1 — W-13). The campaign list scrolls its rows. -->
+  <div
+    class="dashboard-table-widget"
+    :tabindex="isCampaignRevenueTable ? undefined : 0"
+    :role="isCampaignRevenueTable ? undefined : 'group'"
+    :aria-label="isCampaignRevenueTable ? undefined : 'Table'"
+  >
     <div v-if="isCampaignRevenueTable" class="dashboard-campaign-list">
-      <div class="dashboard-campaign-list__rows">
+      <div class="dashboard-campaign-list__rows" tabindex="0" role="group" aria-label="Campaigns">
         <div v-for="row in campaignRows" :key="row.campaign" class="dashboard-campaign-list__row">
           <div class="dashboard-campaign-list__topline">
             <span class="dashboard-campaign-list__name">{{ row.campaign }}</span>
