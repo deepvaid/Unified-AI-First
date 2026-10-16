@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { watchEffect } from 'vue'
 import { RouterLink } from 'vue-router'
+import { setPageTitle } from '@/composables/usePageTitle'
 
-withDefaults(defineProps<{
+const props = withDefaults(defineProps<{
   title: string
   subtitle?: string
   backTo?: string | Record<string, unknown>
@@ -18,6 +20,11 @@ withDefaults(defineProps<{
   level: 1,
   density: 'default',
   emphasis: 'default',
+})
+
+// The page's own heading names the document (WCAG 2.4.2).
+watchEffect(() => {
+  if (props.level === 1) setPageTitle(props.title)
 })
 </script>
 

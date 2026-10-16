@@ -2,6 +2,7 @@ import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { useAccountsStore, type SubscriptionKey } from '@/stores/useAccounts'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import { trialLabRoutes } from '@/views/TrialLab/trialLabRoutes'
+import { setPageTitle, titleFromRouteName } from '@/composables/usePageTitle'
 
 declare module 'vue-router' {
   interface RouteMeta {
@@ -523,6 +524,11 @@ router.beforeEach((to) => {
   if (!required) return true
   if (accounts.hasSubscription(required)) return true
   return denied
+})
+
+// Fallback title from the route name; a level-1 MpPageHeader replaces it with its heading.
+router.afterEach((to) => {
+  setPageTitle(typeof to.name === 'string' ? titleFromRouteName(to.name) : undefined)
 })
 
 export default router
