@@ -91,6 +91,7 @@ function buildSub(item: DaVinciHistoryItem): string {
     class="dv-history"
     :class="[{ 'is-open': open }, `dv-history--${mode ?? 'overlay'}`]"
     :aria-hidden="mode !== 'rail' && !open"
+    :inert="mode !== 'rail' && !open"
     :role="isDialog && open ? 'dialog' : undefined"
     :aria-modal="isDialog && open ? 'true' : undefined"
     :aria-labelledby="isDialog ? titleId : undefined"
