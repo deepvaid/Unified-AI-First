@@ -2231,3 +2231,71 @@ Contrast was measured from computed styles, because axe `color-contrast` is unre
   `loading` bar. Neither takes a label prop, so the fix is a `#loader` slot per site or a shared wrapper.
 - **The app-bar search palette didn't open** on focus or typing in the hidden browser pane, with or without
   this change. This needs a check in a visible window.
+
+## WCAG 2.2 AA fixes, W-08 … W-19 — 2026-10-16
+
+This is the rest of `docs/ui-system-audit/04-wcag-compliance-2026-10.md`, done after the owner said "fix all and push".
+There is one commit per finding, and each was re-verified in the dev app or Storybook. axe-core 4.12 was used for
+structure; contrast was measured from computed styles. Gates at the end: type-check, build, contrast:check 296/296,
+test:maropay 182/182, test:catalog 22/22.
+
+- [x] **W-08 near-miss pairs.**
+  - Three light tokens are 1.5–7.5% darker:
+    - `primary` #0073AB → #0071A8
+    - `success` #1a7f54 → #197a51
+    - `warning` #a8630f → #9b5c0e
+  - Primary is the brand fill, so this is a deliberate visual change: buttons and links shift by about 1%.
+  - 18 new `$contrastPairs` entries cover {primary, success, warning} × {background, surface, surfaceVariant}, in
+    light and dark.
+  - MpBuilderShell's status chip now uses the declared `--pos-soft`/`--pos-ink` and `--warn-soft`/`--warn-ink` pairs.
+  - The journey-builder palette labels and the MpBuilderPreviewDialog story caption use `--text-secondary` instead
+    of opacity.
+  - Measured: rail active 4.53, canvas chips ≥4.94, palette 5.35, builder chip 7.64.
+- [x] **W-09 outlined borders (own commit, revertable alone). Closes A11Y-002.**
+  - `.v-btn--variant-outlined` and the MpDataTableToolbar search pill now use `--border-strong`, the field-border
+    token already gated at 3:1 (controlBoundary), so the toolbar row stays one family.
+  - Measured: 3.28–3.45:1 in light, 4.22–4.66:1 in dark.
+  - The A11Y-002 comment in MpDataTableToolbar is rewritten to describe this.
+- [x] **W-10 nested interactive content.**
+  - Apex chart wrappers are now `role="group"`, not `img`. Apex renders its own focusable SVG and legend buttons,
+    which `img` hid.
+  - **API added: `MpListRow #actions`.** On an interactive row the body becomes the link or button, stretched over
+    the row with `::after`, and the actions sit beside it. NotificationRow uses it for the download button.
+  - StorefrontPreview sections drop `role="button"` and get a stretched "Edit <section>" button instead.
+- [x] **W-11** The Da Vinci history drawer now gets `inert` whenever it is `aria-hidden`.
+- [x] **W-12** The storefront carousel dots and search submit now have 24px targets, drawn with `::before`. The visual
+  mark is unchanged and dot centres sit 24px apart.
+- [x] **W-13** These scroll areas are now `tabindex=0` groups with a name: the dashboard table widget, the
+  MpWizardShell body and the MpBuilderPreviewDialog stage.
+  - Left as is: the Form Fields many-options select. It's Vuetify's managed listbox, reached with the arrow keys.
+- [x] **W-14 rail focus order.**
+  - Tab, Enter or Space on a rail icon whose flyout is open moves focus into the flyout. Vuetify returns focus to the
+    icon after the last item.
+  - A one-shot flag stops the icon's open-on-focus flyout from catching the next Tab.
+  - **This also fixes a W-01 regression.** With `:value` gone, Vuetify stopped treating the hover-menu icons as
+    clickable, so they lost their tabindex. They are marked `link` again.
+- [x] **W-15** The app-bar icon buttons, and the mobile hamburger and search buttons, keep the shared 2px
+  `--focus-ring` on `:focus-visible`.
+- [x] **W-16 — documented, no change.** A closed `v-tooltip` keeps its overlay root with `role="tooltip"` and hides
+  the content. The role is set on Vuetify's root, which neither props nor defaults can reach, so there is no cheap
+  global fix. Every icon button checked has its own `aria-label`.
+- [x] **W-17** Settings › General's profile-image actions now wrap. At 320px, Remove sits inside the frame.
+- [x] **W-18 structure.**
+  - 11 nested `<main>` elements became `div`s, so `v-main` is the only main landmark.
+  - Actions, thumbnail, open and expand columns get a header name that is hidden visually: 78 headers using
+    `headerProps: { class: 'mp-th-sr' }`, with the rule in global.scss.
+  - MpBuilderShell's title is an `<h1>`, and so are the theme builder and code editor titles. The journey and
+    landing-page builders get a screen-reader-only `<h1>`.
+  - App Store card titles changed from h3 to h2. Product edit's MpFormSections use level 2.
+- [x] **W-19 store preview isolation.** `storefrontThemeVars` now derives `--sf-on-brand` from the store's own brand
+  colour (near-black or white, whichever has more contrast), so the admin's `--accent-on` no longer reaches inside
+  the preview. "See More" in dark: 11.62:1, was 1.43.
+
+### Follow-ups this opens
+- **Pages with no `<h1>`:**
+  - Settings pages use `MpPageHeader :level="2"`. Their `document.title` also falls back to the route name, for
+    example "Settings general".
+  - Ask Da Vinci has a custom hero.
+  - Both are outside the audit's W-18 list and need a call on heading levels.
+- **Vuetify-internal loaders (still open from steps 1–3):** the `v-btn :loading` spinners and the field loading bar.
+- **Screen-reader pass:** none was done; the audit's "What this does not prove" section still applies.
