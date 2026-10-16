@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch, nextTick, mergeProps } from 'vue'
+import { computed, ref, watch, nextTick, mergeProps, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAccountsStore } from '@/stores/useAccounts'
 import { useCopilotStore } from '@/stores/useCopilot'
@@ -52,6 +52,12 @@ function initialsOf(name: string | null): string {
 }
 const searchOpen = ref(false)
 const searchQuery = ref('')
+// The combobox role belongs on the <input> alone. v-text-field's `role` prop also
+// paints it on the .v-field wrapper — a second combobox with no aria-expanded
+// (WCAG W-05) — so it is set here instead; the aria-* attrs reach the input as attrs.
+// (A ref on the field itself would be overwritten by the menu activator's own ref.)
+const searchGroup = ref<HTMLElement | null>(null)
+onMounted(() => searchGroup.value?.querySelector('.appbar-search input')?.setAttribute('role', 'combobox'))
 
 const currentAccountId = computed(() => accountsStore.activeId)
 const settingsRoute = computed(() => ({ name: 'Settings' as const, params: { accountId: currentAccountId.value } }))
@@ -403,7 +409,7 @@ function onSearchKeydown(event: KeyboardEvent) {
 <template>
   <v-app-bar height="56" color="surface" flat class="mp-appbar">
     <div class="mp-appbar-shell w-100 d-flex align-center px-4 gap-2">
-      <div class="appbar-search-group">
+      <div ref="searchGroup" class="appbar-search-group">
         <button
           type="button"
           class="appbar-hamburger-btn"
@@ -428,7 +434,6 @@ function onSearchKeydown(event: KeyboardEvent) {
               class="appbar-search appbar-search--inline"
               bg-color="surface"
               clearable
-              role="combobox"
               aria-controls="cmd-palette-list"
               :aria-expanded="searchOpen"
               :aria-activedescendant="searchOpen ? `palette-opt-${activeIndex}` : undefined"
