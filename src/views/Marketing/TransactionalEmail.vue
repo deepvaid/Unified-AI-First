@@ -26,7 +26,7 @@ const headers = [
   { title: 'Transactional Event', key: 'name', sortable: true },
   { title: 'Sends', key: 'sends', align: 'end' as const },
   { title: 'Updated At', key: 'updatedAt' },
-  { title: '', key: 'actions', sortable: false, align: 'end' as const },
+  { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, sortable: false, align: 'end' as const },
 ]
 
 function editFlow(id: number) {

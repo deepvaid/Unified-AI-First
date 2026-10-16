@@ -27,7 +27,7 @@ const headers = [
   { title: 'Widgets', key: 'widgetCount', align: 'end' as const, sortable: true, width: '120px', hideBelow: 'lg' as const },
   { title: 'Updated', key: 'updatedAt', sortable: true, width: '140px', hideBelow: 'md' as const },
   { title: 'Last Viewed', key: 'lastViewedAt', sortable: true, width: '150px', hideBelow: 'lg' as const },
-  { title: '', key: 'actions', align: 'end' as const, sortable: false },
+  { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, align: 'end' as const, sortable: false },
 ]
 
 const route = useRoute()

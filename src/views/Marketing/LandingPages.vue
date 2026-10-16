@@ -141,7 +141,7 @@ const headers = [
   { title: 'Publish At', key: 'publishAt', sortable: true, minWidth: '170px' },
   { title: 'Expire At', key: 'expireAt', sortable: true, minWidth: '170px' },
   { title: 'Updated At', key: 'updatedAt', sortable: true, minWidth: '170px' },
-  { title: '', key: 'actions', sortable: false, width: 56 },
+  { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, sortable: false, width: 56 },
 ]
 
 /** UAT's own format: `Mar 26, 2026 at 02:30 PM`. */

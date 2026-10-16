@@ -205,7 +205,7 @@ const headers = [
   { title: 'Current balance', key: 'balance' },
   { title: 'Status', key: 'status', hideBelow: 'sm' as const },
   { title: 'Date added', key: 'issued', hideBelow: 'lg' as const },
-  { title: '', key: 'actions', align: 'end' as const, sortable: false },
+  { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, align: 'end' as const, sortable: false },
 ]
 const { visibleHeaders } = useResponsiveTableHeaders(headers)
 

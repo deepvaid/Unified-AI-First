@@ -670,7 +670,7 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
         :aria-label="leftPanelOpen ? 'Hide sections panel' : 'Show sections panel'"
         @click="leftPanelOpen = !leftPanelOpen"
       ></v-btn>
-      <div class="font-weight-bold text-body-1 text-truncate">{{ theme.name }}</div>
+      <h1 class="font-weight-bold text-body-1 text-truncate ma-0">{{ theme.name }}</h1>
       <MpStatusChip :status="theme.status" type="general" size="sm" />
       <MpRowActionsMenu ariaLabel="Theme actions">
         <MpMenuItem

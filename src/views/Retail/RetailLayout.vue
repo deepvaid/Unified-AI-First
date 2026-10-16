@@ -10,9 +10,10 @@ const accountId = computed(() => String(route.params.accountId ?? '2000290'))
 <template>
   <div class="retail-shell d-flex">
     <RetailSidebar :account-id="accountId" />
-    <main class="retail-shell__content">
+    <!-- A div, not <main>: v-main is already the page's main landmark (WCAG W-18). -->
+    <div class="retail-shell__content">
       <router-view />
-    </main>
+    </div>
   </div>
 </template>
 

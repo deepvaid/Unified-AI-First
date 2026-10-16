@@ -54,7 +54,7 @@ const headers = [
   { title: 'Adjustment', key: 'percentage', align: 'end' as const, sortable: true },
   { title: 'Products', key: 'productCount', align: 'end' as const, sortable: true, hideBelow: 'md' as const },
   { title: 'Status', key: 'status', sortable: true, hideBelow: 'sm' as const },
-  { title: '', key: 'actions', sortable: false, width: 56 },
+  { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, sortable: false, width: 56 },
 ]
 
 // Manual hides from the toolbar's column menu, merged with the responsive

@@ -22,7 +22,7 @@ const headers = [
   { title: 'Output field', key: 'outputField', sortable: false, width: 200 },
   { title: 'Rule type', key: 'ruleType', sortable: false, width: 200 },
   { title: 'Translations', key: 'translations', sortable: false, width: 180 },
-  { title: '', key: 'actions', sortable: false, width: 64 },
+  { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, sortable: false, width: 64 },
 ]
 
 const ruleTypeLabel: Record<FieldTransformation['ruleType'], string> = {

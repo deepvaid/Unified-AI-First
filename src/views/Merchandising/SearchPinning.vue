@@ -17,7 +17,7 @@ const headers = [
   { title: 'Query', key: 'query', sortable: true },
   { title: 'Pinned products', key: 'pinnedProductIds', sortable: false },
   { title: 'Updated', key: 'updatedAt', sortable: true, align: 'end' as const, width: 160 },
-  { title: '', key: 'actions', sortable: false, width: 64 },
+  { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, sortable: false, width: 64 },
 ]
 
 const filteredPins = computed(() => {

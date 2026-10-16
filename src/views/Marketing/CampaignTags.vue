@@ -19,7 +19,7 @@ const headers = [
   { title: 'Tag Name', key: 'name', sortable: true },
   { title: 'Created', key: 'createdAt', sortable: true, hideBelow: 'sm' as const },
   { title: 'Updated', key: 'updatedAt', sortable: true },
-  { title: '', key: 'actions', sortable: false, align: 'end' as const },
+  { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, sortable: false, align: 'end' as const },
 ]
 const { visibleHeaders } = useResponsiveTableHeaders(headers)
 

@@ -32,7 +32,7 @@ const headers = [
   { title: 'Column A · Name', key: 'name' },
   { title: 'Column B · Category', key: 'category' },
   { title: 'Status', key: 'status' },
-  { title: '', key: 'actions', sortable: false, align: 'end' as const },
+  { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, sortable: false, align: 'end' as const },
 ]
 
 /* ── Drawer state ───────────────────────────────────────────────────

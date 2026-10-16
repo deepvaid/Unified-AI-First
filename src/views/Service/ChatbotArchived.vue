@@ -30,7 +30,7 @@ const headers = [
   { title: 'Status', key: 'status', sortable: false },
   { title: 'Conversations', key: 'conversations', align: 'end' as const },
   { title: 'Archived on', key: 'archivedOn' },
-  { title: '', key: 'actions', sortable: false, align: 'end' as const },
+  { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, sortable: false, align: 'end' as const },
 ]
 
 function restore(c: Chatbot) { cb.restore(c.id) }

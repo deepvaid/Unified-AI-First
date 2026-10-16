@@ -38,7 +38,7 @@ function collectionName(id: string) {
 const pinningHeaders = [
   { title: 'Collection', key: 'collection', sortable: false },
   { title: 'Pinned products', key: 'count', align: 'end' as const, sortable: false, width: 160 },
-  { title: '', key: 'actions', align: 'end' as const, sortable: false, width: 64 },
+  { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, align: 'end' as const, sortable: false, width: 64 },
 ]
 
 const pinningRows = computed(() =>
@@ -60,7 +60,7 @@ const ruleHeaders = [
   { title: 'Rule', key: 'name', sortable: false },
   { title: 'Collections', key: 'collections', sortable: false },
   { title: 'Updated', key: 'updatedAt', align: 'end' as const, sortable: false, width: 140 },
-  { title: '', key: 'actions', align: 'end' as const, sortable: false, width: 64 },
+  { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, align: 'end' as const, sortable: false, width: 64 },
 ]
 
 function ruleCollectionsLabel(rule: MerchRule) {

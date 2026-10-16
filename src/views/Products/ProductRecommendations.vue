@@ -81,7 +81,7 @@ const catalogHeaders = [
   { title: 'Price', key: 'price', align: 'end' as const, sortable: true },
   { title: 'Created at', key: 'createdAt', sortable: true, hideBelow: 'lg' as const },
   { title: 'Updated at', key: 'updatedAt', sortable: true, hideBelow: 'md' as const },
-  { title: '', key: 'actions', sortable: false, width: 56 },
+  { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, sortable: false, width: 56 },
 ]
 const { visibleHeaders: catalogVisibleHeaders } = useResponsiveTableHeaders(catalogHeaders)
 
@@ -198,7 +198,7 @@ const feedHeaders = [
   { title: 'Metric', key: 'metric', sortable: true },
   { title: 'Created at', key: 'createdAt', sortable: true, hideBelow: 'lg' as const },
   { title: 'Updated at', key: 'updatedAt', sortable: true, hideBelow: 'md' as const },
-  { title: '', key: 'actions', sortable: false, width: 56 },
+  { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, sortable: false, width: 56 },
 ]
 const { visibleHeaders: feedVisibleHeaders } = useResponsiveTableHeaders(feedHeaders)
 
@@ -309,7 +309,7 @@ const templateHeaders = [
   { title: 'Block layout', key: 'layout', sortable: false },
   { title: 'Created at', key: 'createdAt', sortable: true, hideBelow: 'lg' as const },
   { title: 'Updated at', key: 'updatedAt', sortable: true, hideBelow: 'md' as const },
-  { title: '', key: 'actions', sortable: false, width: 56 },
+  { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, sortable: false, width: 56 },
 ]
 const { visibleHeaders: templateVisibleHeaders } = useResponsiveTableHeaders(templateHeaders)
 

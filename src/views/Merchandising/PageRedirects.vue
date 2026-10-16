@@ -23,7 +23,7 @@ const headers = [
   { title: 'Queries', key: 'queries', sortable: false },
   { title: 'Lead to URL', key: 'leadsTo', sortable: false },
   { title: 'Updated', key: 'updatedAt', sortable: true, align: 'end' as const, width: 160 },
-  { title: '', key: 'actions', sortable: false, width: 64 },
+  { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, sortable: false, width: 64 },
 ]
 
 const filteredRedirects = computed(() => {

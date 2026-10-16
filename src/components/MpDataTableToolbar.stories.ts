@@ -906,7 +906,7 @@ export const WithColumnToggle: Story = {
         { title: 'Status', key: 'status' },
         { title: 'Score', key: 'score', align: 'end' as const },
         { title: 'Last Active', key: 'lastActive', align: 'end' as const },
-        { title: '', key: 'actions', align: 'end' as const, sortable: false, width: '48px' },
+        { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, align: 'end' as const, sortable: false, width: '48px' },
       ]
 
       const visibleHeaders = computed(() =>
@@ -981,7 +981,7 @@ export const FullFeatured: Story = {
         { title: 'Company', key: 'company' },
         { title: 'Status', key: 'status' },
         { title: 'Score', key: 'score' },
-        { title: '', key: 'actions' },
+        { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' } },
       ]
 
       const activeFilters = computed(() => {

@@ -44,7 +44,7 @@ export const ORDER_HEADERS = [
   { title: 'Total', key: 'total', align: 'end' as const },
   { title: 'Fulfillment', key: 'fulfillment' },
   { title: 'Status', key: 'status' },
-  { title: '', key: 'actions', sortable: false, align: 'end' as const },
+  { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, sortable: false, align: 'end' as const },
 ]
 
 export interface CampaignRow {

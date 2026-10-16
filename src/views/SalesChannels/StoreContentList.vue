@@ -70,7 +70,7 @@ const headers = computed(() => [
   { title: 'Status', key: 'status', sortable: true },
   { title: 'Published', key: 'publishedAt', sortable: true },
   { title: 'Updated', key: 'updatedAt', sortable: true },
-  { title: '', key: 'actions', align: 'end' as const, sortable: false },
+  { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, align: 'end' as const, sortable: false },
 ])
 
 const createRoute = computed(() => ({

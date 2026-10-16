@@ -145,7 +145,8 @@ async function onApproved() {
       <div class="text-caption text-medium-emphasis">Powered by Chargebee</div>
     </header>
 
-    <main class="plg-checkout__main">
+    <!-- A div, not <main>: v-main is already the page's main landmark (WCAG W-18). -->
+    <div class="plg-checkout__main">
       <MpEmptyState
         v-if="!hasValidSelections"
         icon="shopping-cart"
@@ -211,7 +212,7 @@ async function onApproved() {
           </RouterLink>
         </v-card>
       </div>
-    </main>
+    </div>
 
     <div v-if="provisioning" class="plg-checkout__provisioning">
       <v-card flat border rounded="lg" class="pa-6 provisioning-card">

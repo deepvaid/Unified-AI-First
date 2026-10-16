@@ -277,7 +277,7 @@ function openVariantsWizard() {
         </MpAlert>
 
         <v-card variant="flat" border rounded="lg" class="ped-card">
-          <MpFormSection title="General information" description="To start selling, all you need is a name and a price." required />
+          <MpFormSection :heading-level="2" title="General information" description="To start selling, all you need is a name and a price." required />
           <MpFormGrid :cols="2">
             <v-text-field
               v-model="form.name"
@@ -309,7 +309,7 @@ function openVariantsWizard() {
         </v-card>
 
         <v-card variant="flat" border rounded="lg" class="ped-card">
-          <MpFormSection title="Media" description="PNG, JPG, GIF, JPEG or WEBP up to 20 MB each." />
+          <MpFormSection :heading-level="2" title="Media" description="PNG, JPG, GIF, JPEG or WEBP up to 20 MB each." />
           <div class="ped-media">
             <div class="ped-media__tile">
               <v-icon size="20" class="text-medium-emphasis">image</v-icon>
@@ -320,7 +320,7 @@ function openVariantsWizard() {
         </v-card>
 
         <v-card variant="flat" border rounded="lg" class="ped-card">
-          <MpFormSection title="Variants" description="Offer your customers different options for colour, size or finish." />
+          <MpFormSection :heading-level="2" title="Variants" description="Offer your customers different options for colour, size or finish." />
           <template v-if="form.detail.options.length">
             <MpFormField v-for="(option, index) in form.detail.options" :key="index" :label="option.name || `Option ${index + 1}`">
               <template #default="{ labelId }">
@@ -363,6 +363,7 @@ function openVariantsWizard() {
         <v-card variant="flat" border rounded="lg" class="ped-card">
           <div class="d-flex align-start ga-3">
             <MpFormSection
+              :heading-level="2"
               class="flex-grow-1"
               title="Search engine listing"
               description="How this product appears in search results and shared links."
@@ -394,12 +395,12 @@ function openVariantsWizard() {
       <!-- ── Side rail ───────────────────────────────────────────── -->
       <v-col cols="12" md="4" class="mt-4 mt-md-0 d-flex flex-column ga-4">
         <v-card variant="flat" border rounded="lg" class="ped-card">
-          <MpFormSection title="Product status" />
+          <MpFormSection :heading-level="2" title="Product status" />
           <v-select v-model="form.publishStatus" :items="['Draft', 'Published']" label="Status" />
         </v-card>
 
         <v-card variant="flat" border rounded="lg" class="ped-card">
-          <MpFormSection title="Sales channels" description="Without a channel, the product falls back to the default sales channel." />
+          <MpFormSection :heading-level="2" title="Sales channels" description="Without a channel, the product falls back to the default sales channel." />
           <v-select
             v-model="form.detail.salesChannels"
             :items="CHANNELS"
@@ -411,7 +412,7 @@ function openVariantsWizard() {
         </v-card>
 
         <v-card variant="flat" border rounded="lg" class="ped-card">
-          <MpFormSection title="Attributes" description="Missing weight may affect the shipping rate at checkout." />
+          <MpFormSection :heading-level="2" title="Attributes" description="Missing weight may affect the shipping rate at checkout." />
           <MpFormGrid :cols="2">
             <v-text-field v-model="form.detail.width" label="Width" suffix="cm" type="number" />
             <v-text-field v-model="form.detail.length" label="Length" suffix="cm" type="number" />
@@ -424,7 +425,7 @@ function openVariantsWizard() {
         </v-card>
 
         <v-card variant="flat" border rounded="lg" class="ped-card">
-          <MpFormSection title="Organise" />
+          <MpFormSection :heading-level="2" title="Organise" />
           <MpFormGrid>
             <v-select v-model="form.detail.taxCategory" :items="taxCategoryOptions" label="Tax category" clearable />
             <v-select v-model="form.detail.material" :items="MATERIALS" label="Material" clearable />

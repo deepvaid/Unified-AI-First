@@ -259,7 +259,7 @@ export const InContextDeleteFromTable: Story = {
       const open = ref(false)
       return {
         rows, pending, open,
-        headers: CAMPAIGN_HEADERS.concat([{ title: '', key: 'actions', sortable: false, align: 'end' as const }] as never),
+        headers: CAMPAIGN_HEADERS.concat([{ title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, sortable: false, align: 'end' as const }] as never),
         ask: (row: typeof CAMPAIGNS[number]) => { pending.value = row; open.value = true },
         remove: () => { rows.value = rows.value.filter(r => r.id !== pending.value?.id) },
       }

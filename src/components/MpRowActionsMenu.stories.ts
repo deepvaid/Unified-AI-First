@@ -291,7 +291,7 @@ export const InContextOrdersTable: Story = {
         { title: 'Customer', key: 'customer' },
         { title: 'Total', key: 'total', align: 'end' as const },
         { title: 'Status', key: 'status' },
-        { title: '', key: 'actions', sortable: false, align: 'end' as const },
+        { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, sortable: false, align: 'end' as const },
       ],
     }),
     template: `

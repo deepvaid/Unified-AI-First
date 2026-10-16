@@ -312,6 +312,8 @@ function saveAndClose() {
     :left-width="264"
   >
     <template #title>
+      <!-- The name is an editable field, so the page heading is screen-reader only (W-18). -->
+      <h1 class="d-sr-only">{{ pageName }}</h1>
       <!-- Toolbar chrome, not a form: plain/compact/hide-details are deliberate here. -->
       <v-text-field
         v-model="pageName"
@@ -432,7 +434,8 @@ function saveAndClose() {
         </aside>
 
         <!-- center: canvas -->
-        <main class="lpe-canvas flex-grow-1" @click.self="selectedId = null">
+        <!-- A div, not <main>: v-main is already the page's main landmark (WCAG W-18). -->
+        <div class="lpe-canvas flex-grow-1" @click.self="selectedId = null">
           <div class="lpe-sheet" :class="`lpe-sheet--${device}`" :style="{ background: pageStyle.backgroundColor, ...styleVars }" @click.self="selectedId = null">
             <div class="lpe-content" @click.self="selectedId = null">
               <div v-if="!blocks.length" class="lpe-empty text-center py-16 px-6">
@@ -466,7 +469,7 @@ function saveAndClose() {
               </template>
             </div>
           </div>
-        </main>
+        </div>
 
         <!-- right: block settings or page style -->
         <aside class="lpe-right pa-4">

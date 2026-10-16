@@ -114,7 +114,7 @@ const headers = [
   { title: 'Used by', key: 'usedByCampaigns', sortable: true, minWidth: '120px' },
   { title: 'Updated at', key: 'updatedAt', sortable: true, minWidth: '150px' },
   { title: 'Created at', key: 'createdAt', sortable: true, minWidth: '150px' },
-  { title: '', key: 'actions', sortable: false, width: 56 },
+  { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, sortable: false, width: 56 },
 ]
 
 function formatDate(iso: string) {

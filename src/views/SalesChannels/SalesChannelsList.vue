@@ -54,7 +54,7 @@ const tableHeaders = [
   { title: 'Clouds', key: 'connectedClouds', sortable: false, width: 150, hideBelow: 'lg' as const },
   { title: 'Status', key: 'health', sortable: true, width: 140 },
   { title: 'Activity', key: 'lastActivityAt', sortable: true, width: 120, hideBelow: 'sm' as const },
-  { title: '', key: 'actions', sortable: false, align: 'end' as const, width: 56 },
+  { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, sortable: false, align: 'end' as const, width: 56 },
 ]
 const { visibleHeaders } = useResponsiveTableHeaders(tableHeaders)
 

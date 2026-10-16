@@ -26,9 +26,10 @@ const groups = computed(() => settingsRailGroups(accountId.value))
       search-placeholder="Search Settings"
       :groups="groups"
     />
-    <main class="settings-shell__content">
+    <!-- A div, not <main>: v-main is already the page's main landmark (WCAG W-18). -->
+    <div class="settings-shell__content">
       <router-view />
-    </main>
+    </div>
   </div>
 </template>
 

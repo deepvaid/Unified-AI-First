@@ -54,7 +54,7 @@ const tableHeaders = [
   { title: 'Last seen',        key: 'lastSeenAt',          sortable: false, width: 130 },
   { title: 'Pending txns',     key: 'pendingOfflineTxns',  sortable: true,  align: 'end' as const, width: 120 },
   { title: 'Terminal',         key: 'pairedTerminal',      sortable: false, width: 150 },
-  { title: '',                 key: 'actions',             sortable: false, width: 56 },
+  { title: 'Actions',                 key: 'actions', headerProps: { class: 'mp-th-sr' },             sortable: false, width: 56 },
 ]
 
 const rows = computed(() => {

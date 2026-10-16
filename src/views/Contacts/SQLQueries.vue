@@ -65,7 +65,7 @@ const headers = [
   { title: 'Records', key: 'records', align: 'end' as const, sortable: true },
   { title: 'Created At', key: 'createdAt', sortable: true, hideBelow: 'lg' as const },
   { title: 'Updated At', key: 'updatedAt', sortable: true, hideBelow: 'md' as const },
-  { title: '', key: 'actions', sortable: false, width: 48 },
+  { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, sortable: false, width: 48 },
 ]
 
 // Row identity, its status and its headline count always show; the two timestamps

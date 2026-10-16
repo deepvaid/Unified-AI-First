@@ -236,7 +236,7 @@ export const InContextMoveACampaign: Story = {
           { title: 'Campaign', key: 'name' },
           { title: 'Folder', key: 'folder' },
           { title: 'Status', key: 'status' },
-          { title: '', key: 'actions', sortable: false, align: 'end' as const },
+          { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, sortable: false, align: 'end' as const },
         ],
         ask: (name: string) => { pending.value = name; open.value = true },
         onMove: (folderId: string | null) => {

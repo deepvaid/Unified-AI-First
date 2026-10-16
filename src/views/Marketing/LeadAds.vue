@@ -51,7 +51,7 @@ const headers = [
   { title: 'Status', key: 'status', minWidth: '128px' },
   { title: 'Created', key: 'createdAt', sortable: true, minWidth: '130px' },
   { title: 'Updated', key: 'updatedAt', sortable: true, minWidth: '130px' },
-  { title: '', key: 'actions', sortable: false, width: 56 },
+  { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, sortable: false, width: 56 },
 ]
 
 const filtered = computed(() => {

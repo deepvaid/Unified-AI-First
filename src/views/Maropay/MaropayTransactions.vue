@@ -184,7 +184,7 @@ const HEADERS: (ResponsiveHeader & { title: string; key: string })[] = [
   { title: 'Order', key: 'orderNumber', sortable: true },
   { title: 'Customer', key: 'customer', sortable: true, hideBelow: 'md' },
   { title: 'Date', key: 'date', sortable: true, hideBelow: 'sm' },
-  { title: '', key: 'actions', sortable: false, align: 'end' },
+  { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, sortable: false, align: 'end' },
 ]
 const multiStore = computed(() => storeOptions.value.length > 1)
 const hiddenColumns = ref<string[]>([])

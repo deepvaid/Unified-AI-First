@@ -593,6 +593,21 @@ tr:focus-within .action-btns {
   padding-inline: var(--mp-component-table-cellPaddingInline);
 }
 
+/* Utility columns (row actions, thumbnails, expand) carry a real header name for
+   assistive tech but show no visible label — `headerProps: { class: 'mp-th-sr' }`
+   on the header (WCAG best practice, axe empty-table-header — W-18). */
+.v-data-table__th.mp-th-sr .v-data-table-header__content > span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* Phone-width table density. Vuetify's 16px inline padding costs 32px per column,
    which on a 375px viewport (~311px usable) can push even a 3-column table into a
    horizontal scroll on its own — measured on Contacts/ContactTags: 156 + 112 + 64 =

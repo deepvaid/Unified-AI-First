@@ -139,7 +139,7 @@ const templateHeaders = [
   { title: 'Created by', key: 'createdBy', sortable: true, minWidth: '150px' },
   { title: 'Updated at', key: 'updatedAt', sortable: true, minWidth: '150px' },
   { title: 'Created at', key: 'createdAt', sortable: true, minWidth: '150px' },
-  { title: '', key: 'actions', sortable: false, width: 56 },
+  { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, sortable: false, width: 56 },
 ]
 
 function formatDate(iso: string) {

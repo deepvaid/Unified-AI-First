@@ -121,7 +121,7 @@ const headers = [
   { title: 'Status', key: 'enabled', minWidth: '128px' },
   { title: 'Updated at', key: 'updated', sortable: true, minWidth: '150px' },
   { title: 'Created at', key: 'createdAt', sortable: true, minWidth: '150px' },
-  { title: '', key: 'actions', sortable: false, width: 56 },
+  { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, sortable: false, width: 56 },
 ]
 
 function formatDate(iso: string) {

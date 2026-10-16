@@ -161,7 +161,7 @@ const headers = [
   { title: 'Total', key: 'total', align: 'end' as const },
   { title: 'Fulfillment', key: 'fulfillment' },
   { title: 'Status', key: 'status' },
-  { title: '', key: 'actions', sortable: false, width: 48 },
+  { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, sortable: false, width: 48 },
 ]
 
 /**

@@ -240,7 +240,7 @@ const headers = [
   { title: 'Status', key: 'status' },
   { title: 'Score', key: 'score', align: 'end' as const, hideBelow: 'md' as const },
   { title: 'Last Active', key: 'lastActive', align: 'end' as const, hideBelow: 'md' as const },
-  { title: '', key: 'actions', align: 'end' as const, sortable: false, width: '48px' },
+  { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, align: 'end' as const, sortable: false, width: '48px' },
 ]
 
 // Column visibility — manual hide menu + breakpoint-driven priority hiding

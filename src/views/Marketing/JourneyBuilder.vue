@@ -687,6 +687,8 @@ onBeforeUnmount(() => {
     @back="router.push(listRoute)"
   >
     <template #title>
+      <!-- The name is a rename button, so the page heading is screen-reader only (W-18). -->
+      <h1 class="d-sr-only">{{ journeyName }}</h1>
       <v-btn
         class="jb-palette-toggle"
         variant="text"

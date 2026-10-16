@@ -905,7 +905,8 @@ onBeforeUnmount(() => {
     </header>
 
     <!-- Centered content over the orb -->
-    <main class="dvx__center" :class="{ 'dvx__center--thread': hasThread }">
+    <!-- A div, not <main>: v-main is already the page's main landmark (WCAG W-18). -->
+    <div class="dvx__center" :class="{ 'dvx__center--thread': hasThread }">
       <section v-if="welcomeVisible" class="dvx__welcome dv-glass-field" aria-labelledby="dvx-welcome-title">
         <div class="dvx__welcome-eyebrow">
           <v-icon size="16">sparkles</v-icon>
@@ -1075,7 +1076,7 @@ onBeforeUnmount(() => {
           </button>
         </div>
       </div>
-    </main>
+    </div>
 
     <DvToastStack />
   </div>

@@ -65,7 +65,7 @@ const activeFilterEntries = computed(() => {
 })
 
 const headers = [
-  { title: '', key: 'thumb', sortable: false, width: 72 },
+  { title: 'Image', key: 'thumb', headerProps: { class: 'mp-th-sr' }, sortable: false, width: 72 },
   { title: 'Name', key: 'name', sortable: true },
   { title: 'Created At', key: 'date', sortable: true },
   { title: 'Updated At', key: 'updatedAt', sortable: true },

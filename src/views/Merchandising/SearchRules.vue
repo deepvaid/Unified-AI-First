@@ -27,7 +27,7 @@ const headers = [
   { title: 'Name', key: 'name', sortable: true },
   { title: 'Search terms', key: 'terms', sortable: false },
   { title: 'Updated', key: 'updatedAt', sortable: true, align: 'end' as const, width: 160 },
-  { title: '', key: 'actions', sortable: false, width: 64 },
+  { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, sortable: false, width: 64 },
 ]
 
 // Findify condition types (crawled order): Promote · Pin · Only include · Exclude

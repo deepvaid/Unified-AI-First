@@ -42,7 +42,7 @@ const headers = [
   { title: 'Merchandise', key: 'status', sortable: false },
   { title: 'Sync health', key: 'health', sortable: false },
   { title: 'Last activity', key: 'lastActivityAt', sortable: true, hideBelow: 'lg' as const },
-  { title: '', key: 'open', align: 'end' as const, sortable: false },
+  { title: 'Open', key: 'open', headerProps: { class: 'mp-th-sr' }, align: 'end' as const, sortable: false },
 ]
 const { visibleHeaders } = useResponsiveTableHeaders(headers)
 

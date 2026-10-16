@@ -80,12 +80,13 @@ function startNewChat() {
         />
       </aside>
 
-      <main class="davinci-copilot__main">
+      <!-- A div, not <main>: v-main is already the page's main landmark (WCAG W-18). -->
+      <div class="davinci-copilot__main">
         <MpDaVinciBot
           :key="botKey"
           :headerless="true"
         />
-      </main>
+      </div>
     </div>
   </div>
 </template>

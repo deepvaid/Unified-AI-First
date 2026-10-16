@@ -123,9 +123,10 @@ function openInbox() {
       </template>
     </MpBanner>
 
-    <main class="tl-shell__main" :class="{ 'tl-shell__main--fill': fill }">
+    <!-- A div, not <main>: v-main is already the page's main landmark (WCAG W-18). -->
+    <div class="tl-shell__main" :class="{ 'tl-shell__main--fill': fill }">
       <router-view />
-    </main>
+    </div>
 
     <TrialReviewerPanel
       v-if="store.ui.reviewerOpen"

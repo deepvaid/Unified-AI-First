@@ -108,7 +108,8 @@ const chipLabel = () => {
       <div class="min-width-0 flex-grow-1 d-flex align-center ga-3">
         <slot name="title">
           <div class="min-width-0">
-            <div class="text-subtitle-2 font-weight-bold text-truncate">{{ title }}</div>
+            <!-- The builder's page heading (WCAG best practice — W-18): an h1 at the toolbar's size. -->
+            <h1 class="text-subtitle-2 font-weight-bold text-truncate ma-0">{{ title }}</h1>
             <div v-if="subtitle" class="text-caption text-medium-emphasis text-truncate">{{ subtitle }}</div>
           </div>
         </slot>
@@ -141,9 +142,10 @@ const chipLabel = () => {
       <aside v-if="$slots.left" class="mp-builder__left">
         <slot name="left" />
       </aside>
-      <main class="mp-builder__canvas flex-grow-1 overflow-auto">
+      <!-- A div, not <main>: v-main is already the page's main landmark (WCAG W-18). -->
+      <div class="mp-builder__canvas flex-grow-1 overflow-auto">
         <slot />
-      </main>
+      </div>
       <aside v-if="$slots.right" class="mp-builder__right">
         <slot name="right" />
       </aside>

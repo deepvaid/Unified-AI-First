@@ -105,7 +105,7 @@ const headers = [
   { title: 'Products', key: 'products', sortable: false, hideBelow: 'md' as const },
   { title: 'Status', key: 'status' },
   { title: 'Last active', key: 'lastActiveAt', align: 'end' as const, hideBelow: 'lg' as const },
-  { title: '', key: 'actions', align: 'end' as const, sortable: false, width: '48px' },
+  { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, align: 'end' as const, sortable: false, width: '48px' },
 ]
 const hiddenColumns = ref<string[]>([])
 const { visibleHeaders } = useResponsiveTableHeaders(headers, hiddenColumns)

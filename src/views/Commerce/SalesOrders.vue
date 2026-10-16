@@ -81,8 +81,8 @@ const posHeaders = [
   { title: 'Total', key: 'total', align: 'end' as const, sortable: true },
   { title: 'Tender', key: 'paymentMethod', hideBelow: 'md' as const },
   { title: 'Status', key: 'status' },
-  { title: '', key: 'actions', sortable: false, width: 48 },
-  { title: '', key: 'data-table-expand', width: 40 },
+  { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, sortable: false, width: 48 },
+  { title: 'Details', key: 'data-table-expand', headerProps: { class: 'mp-th-sr' }, width: 40 },
 ]
 
 const headers = [
@@ -95,8 +95,8 @@ const headers = [
   { title: 'Payment', key: 'paymentStatus', hideBelow: 'md' as const },
   { title: 'Status', key: 'status' },
   { title: 'Sales Channel', key: 'salesChannel', hideBelow: 'lg' as const },
-  { title: '', key: 'actions', sortable: false, width: 48 },
-  { title: '', key: 'data-table-expand', width: 40 },
+  { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, sortable: false, width: 48 },
+  { title: 'Details', key: 'data-table-expand', headerProps: { class: 'mp-th-sr' }, width: 40 },
 ]
 
 // Payment + Sales Channel are demoted from the default scan (both surface in the
