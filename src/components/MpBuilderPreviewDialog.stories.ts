@@ -239,7 +239,7 @@ export const InContextEmailBuilderPreview: Story = {
               <p class="text-body-2 text-medium-emphasis mb-6">New arrivals for the trail, the town and everything between.</p>
               <v-btn color="primary" variant="flat" class="text-none">Shop new arrivals</v-btn>
             </div>
-            <div class="pa-4 text-center text-caption text-medium-emphasis" style="background: var(--surface-secondary)">
+            <div class="pa-4 text-center text-caption" style="background: var(--surface-secondary); color: var(--text-secondary)">
               You are receiving this because you subscribed. Unsubscribe.
             </div>
           </v-card>

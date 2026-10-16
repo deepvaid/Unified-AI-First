@@ -179,15 +179,17 @@ const chipLabel = () => {
   gap: 6px;
   font-size: 0.75rem;
   font-weight: 600;
-  color: rgb(var(--v-theme-success));
+  /* Declared soft pairs, not a tinted fill under the full-strength ink
+     (that read 4.49 / 4.13:1 — WCAG W-08). */
+  color: var(--pos-ink);
   padding: 4px 10px;
   border-radius: 999px;
-  background: rgba(var(--v-theme-success), 0.08);
+  background: var(--pos-soft);
   flex-shrink: 0;
 }
 .mp-builder__chip--dirty {
-  color: rgb(var(--v-theme-warning));
-  background: rgba(var(--v-theme-warning), 0.10);
+  color: var(--warn-ink);
+  background: var(--warn-soft);
 }
 .mp-builder__chip-dot {
   width: 6px;
