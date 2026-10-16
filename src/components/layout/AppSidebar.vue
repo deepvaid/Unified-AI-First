@@ -285,6 +285,37 @@ const drawerModel = computed<boolean>({
 const sidebarMode = computed<'expanded' | 'rail'>(() => effectiveRail.value ? 'rail' : 'expanded')
 const railHoveredSubGroup = ref<string | null>(null)
 const railOpenGroup = ref<string | null>(null)
+
+// Rail flyouts are teleported, so Tab from a rail icon skipped its open flyout and
+// landed in the app bar (WCAG 2.4.3 — W-14). Tab now steps into the flyout; Vuetify
+// hands focus back to the icon after its last item, and the icon's next Tab moves
+// on — the one-shot flag stops the icon's open-on-focus flyout catching it again.
+const railTabOut = ref<string | null>(null)
+const railFlyoutId = (group: NavGroup) => `rail-flyout-${group.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
+
+function enterRailFlyout(event: KeyboardEvent, group: NavGroup) {
+  if (railOpenGroup.value !== group.title) return
+  const first = document.getElementById(railFlyoutId(group))?.querySelector<HTMLElement>('.rail-flyout-item')
+  if (!first) return
+  event.preventDefault()
+  first.focus()
+}
+
+function onRailIconTab(event: KeyboardEvent, group: NavGroup) {
+  if (railTabOut.value === group.title) {
+    railTabOut.value = null
+    return
+  }
+  enterRailFlyout(event, group)
+}
+
+function onRailFlyoutKeydown(event: KeyboardEvent, group: NavGroup) {
+  if (event.key !== 'Tab' || event.shiftKey) return
+  const items = event.currentTarget instanceof HTMLElement
+    ? [...event.currentTarget.querySelectorAll<HTMLElement>('.rail-flyout-item')]
+    : []
+  if (items[items.length - 1] === event.target) railTabOut.value = group.title
+}
 const appsExpanded = ref(false)
 const flyoutOpen = ref(false)
 const flyoutGroupTitle = ref<string | null>(null)
@@ -794,6 +825,8 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
           :close-delay="120"
           offset="8"
           :close-on-content-click="false"
+          :id="railFlyoutId(group)"
+          :content-props="{ onKeydown: (e: KeyboardEvent) => onRailFlyoutKeydown(e, group) }"
           @update:model-value="(v: boolean) => {
             if (v) {
               railOpenGroup = group.title
@@ -808,11 +841,16 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
               v-bind="menuProps"
               :prepend-icon="group.icon"
               :title="''"
+              link
               role="button"
               :aria-label="group.title"
               rounded="lg"
               class="sidebar-text mb-1"
               :class="{ 'rail-icon-hovered': railOpenGroup === group.title }"
+              @keydown.tab.exact="onRailIconTab($event, group)"
+              @keydown.enter="enterRailFlyout($event, group)"
+              @keydown.space="enterRailFlyout($event, group)"
+              @blur="railTabOut = null"
             />
           </template>
 
