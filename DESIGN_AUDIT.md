@@ -2176,3 +2176,58 @@ its gutter into the nav gray (`shell-variants.css`, the `.v-main` rule) and its 
   in both themes at the owner's request; the dividers after Analytics, Products and Da Vinci AI stay.
 - **Sidenav brand hairline (dark):** the gray skin already clears the `.sidebar-header` border so the brand sits on
   the panel; the dark skin kept the base rule's line under MAROPOST. `sidebar-dark.css` now clears it the same way.
+
+## WCAG 2.2 AA fixes, steps 1–3 — 2026-10-16
+
+Fix order steps 1–3 from `docs/ui-system-audit/04-wcag-compliance-2026-10.md` (the 2026-10-15 audit, on branch
+`claude/wcag-compliance-check-c3372b`). One commit per finding; each re-checked with axe-core 4.12 in the dev app.
+Contrast was measured from computed styles, because axe `color-contrast` is unreliable in the hidden pane.
+**W-09 (outlined-button border) is untouched:** it is still waiting on a design decision.
+
+- [x] **W-01 sidebar names and roles** (`AppSidebar.vue`). Vuetify turned every nav item with `:value` into a
+  listbox `option` with `aria-selected`, inside `role="list"`.
+  - `:value` is dropped; the active state was already explicit through `:active`.
+  - The nav `v-list` is now `role="group"` with `aria-label="Main navigation"`, because its children are links,
+    buttons and separators.
+  - Rail flyout activators and expanded parent rows are `role="button"`. The parent rows also carry
+    `aria-haspopup` / `aria-expanded`.
+  - Rail items and the rail Apps link get `aria-label` set to the group title.
+  - Result: axe finds 0 violations in the sidebar, in both rail and expanded mode.
+  - Side effect: clicking a rail icon no longer leaves Vuetify's "selected" tint on it. It was never the
+    active-module marker.
+- [x] **W-02 page titles.** New helper `src/composables/usePageTitle.ts`.
+  - `router.afterEach` sets `<route name> · Maropost` as a fallback, so `SalesOrders` becomes "Sales orders".
+  - A level-1 `MpPageHeader` then replaces that with its own heading. `index.html` now says `Maropost`.
+- [x] **W-05 app-bar combobox** (`AppBar.vue`). The `role` prop on `v-text-field` painted `combobox` on both the
+  input and the `.v-field` wrapper.
+  - The role is now set on the `<input>` alone, on mount. A ref on the field doesn't work here, because the
+    menu activator's own ref overwrites it.
+  - Result: axe `aria-required-attr` is 0.
+- [x] **W-03 hint opacity** (`settings-form.scss`).
+  - Added `.v-input:not(.v-input--disabled) .v-messages { opacity: 1 }`. Vuetify's 0.6 opacity had faded hints
+    to 2.56:1.
+  - Added `background` / `surface` / `surfaceOverlay` × `textMuted` pairs, light and dark, to `$contrastPairs`.
+  - All six pass; the lowest is dark overlay at 4.70, so `textMuted` is unchanged. contrast:check: 278/278.
+  - Measured on Contacts › New: 5.93:1 in light, 4.70–6.26:1 in dark.
+- [x] **W-04 table select boxes.** The ProductsList `#header/#item.data-table-select` override is now on every
+  `show-select` table. That covers the 10 audited routes, gift cards, registers, staff, synonyms, optimize on open,
+  image library, `/templates/list`, Patterns/Data Table and MpDataTableToolbar › In context.
+  - The header box gets `:aria-checked="undefined"`. Vuetify's `aria-checked="mixed"` on a native checkbox
+    fails axe `aria-conditional-attr`; this was confirmed on ProductsList. The same line is added to the 8
+    existing overrides.
+  - The pattern docs (story text and template spec) now describe the slots.
+- [x] **W-06 progress names.**
+  - The 23 hand-placed `v-progress-*` elements now carry a value label, or `aria-hidden` where the same words sit
+    next to them.
+  - The sidebar Get-started count moves into the button's name.
+- [x] **W-07 wizard steps** (`MpWizardSteps.vue`).
+  - Non-current steps changed from `rgba(on-surface, 0.5)` to `--text-secondary`.
+  - Measured on Products › New: 6.33:1 in light (was 3.3) and 9.39:1 in dark (was 4.4).
+
+### Follow-ups this opens
+- **W-08** is listed in the report's step 2 but was not in this session's brief. It covers the rail-active,
+  warning-on-canvas and builder-chip pairs, and needs token nudges.
+- **Vuetify-internal loaders still have no name:** the `v-btn :loading` spinner (29 sites) and the field
+  `loading` bar. Neither takes a label prop, so the fix is a `#loader` slot per site or a shared wrapper.
+- **The app-bar search palette didn't open** on focus or typing in the hidden browser pane, with or without
+  this change. This needs a check in a visible window.
