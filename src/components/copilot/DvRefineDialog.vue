@@ -185,7 +185,7 @@ function close() {
           <DvDraftPreview :draft="previewDraft" density="compact" />
           <transition name="dv-refine-fade">
             <div v-if="loadingPreview" class="dv-refine__preview-loader">
-              <v-progress-circular indeterminate size="28" width="3" color="primary" />
+              <v-progress-circular aria-hidden="true" indeterminate size="28" width="3" color="primary" />
               <span class="dv-refine__preview-loader-label">Updating preview…</span>
             </div>
           </transition>

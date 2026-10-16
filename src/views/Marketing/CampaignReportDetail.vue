@@ -198,6 +198,7 @@ const details = computed(() => {
                       <span class="font-weight-medium">{{ fmt(stage.value) }}</span>
                     </div>
                     <v-progress-linear
+                      :aria-label="`${stage.label}: ${fmt(stage.value)}`"
                       :model-value="pct(stage.value, campaign.metrics.sent)"
                       :color="stage.color"
                       height="8"
@@ -221,7 +222,7 @@ const details = computed(() => {
                 <span class="min-width-0 text-truncate">{{ link.label }}</span>
                 <span class="font-weight-medium flex-shrink-0 ml-3">{{ fmt(link.clicks) }} · {{ link.share }}%</span>
               </div>
-              <v-progress-linear :model-value="link.share" color="marketing" height="8" rounded bg-color="surface-variant" />
+              <v-progress-linear :aria-label="`${link.label}: ${link.share}% of clicks`" :model-value="link.share" color="marketing" height="8" rounded bg-color="surface-variant" />
             </div>
           </div>
         </v-card>

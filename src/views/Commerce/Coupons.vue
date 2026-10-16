@@ -317,7 +317,7 @@ onMounted(() => {
         <template v-slot:item.usage="{ item }">
           <div class="promo-usage">
             <span class="font-weight-bold text-body-2">{{ item.usage.toLocaleString() }}</span>
-            <v-progress-linear v-if="item.limit" :model-value="(item.usage/item.limit)*100"
+            <v-progress-linear v-if="item.limit" :aria-label="`Usage: ${item.usage.toLocaleString()} of ${item.limit.toLocaleString()}`" :model-value="(item.usage/item.limit)*100"
               :color="item.usage/item.limit>0.9?'error':'primary'" height="4" rounded class="mt-1"></v-progress-linear>
             <div v-else class="text-caption text-medium-emphasis">∞ Unlimited</div>
           </div>

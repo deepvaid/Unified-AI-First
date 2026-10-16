@@ -2254,7 +2254,7 @@ const apkQrUrl = computed(() =>
                 <!-- Processing -->
                 <template v-else-if="paymentStep === 'processing'">
                   <div class="pos-payment-sheet__center">
-                    <v-progress-circular indeterminate color="primary" size="52" class="mb-4" />
+                    <v-progress-circular aria-hidden="true" indeterminate color="primary" size="52" class="mb-4" />
                     <div class="pos-payment-sheet__big-title">Processing…</div>
                     <div class="pos-payment-sheet__sub">{{ PROCESSING_TEXT[selectedTender] }}</div>
                   </div>

@@ -298,6 +298,7 @@ function notify(text: string) { toast.success(text) }
           <div class="gift-balance">
             <span class="font-weight-bold text-body-2">{{ money(item.balance) }}</span>
             <v-progress-linear
+              :aria-label="`Balance: ${money(item.balance)} of ${money(item.initialValue)}`"
               :model-value="(item.balance / item.initialValue) * 100"
               :color="item.balance === 0 ? 'medium-emphasis' : item.balance / item.initialValue < 0.25 ? 'warning' : 'success'"
               height="4"

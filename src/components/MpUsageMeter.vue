@@ -47,6 +47,7 @@ const rightText = computed(() => {
     </div>
 
     <v-progress-linear
+      :aria-label="`${label}: ${rightText}`"
       :model-value="pct"
       :color="color"
       :height="dense ? 4 : 6"

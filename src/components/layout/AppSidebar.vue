@@ -625,7 +625,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
         v-if="!effectiveRail"
         type="button"
         class="sidebar-get-started"
-        aria-label="Get started checklist"
+        :aria-label="`Get started checklist, ${onboardingDone} of ${onboardingTotal} done`"
         @click="goTo(`/accounts/${resolvedAccountId}/get-started`)"
       >
         <div class="sidebar-get-started__row">
@@ -634,6 +634,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
           <span class="sidebar-get-started__count">{{ onboardingDone }}/{{ onboardingTotal }}</span>
         </div>
         <v-progress-linear
+          aria-hidden="true"
           :model-value="onboardingProgress"
           color="primary"
           height="4"

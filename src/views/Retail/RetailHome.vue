@@ -241,6 +241,7 @@ function statusIcon(status: string): string {
           </div>
           <div class="retail-widget-progress">
             <v-progress-linear
+              :aria-label="`Setup checklist: ${todoProgress.done} of ${todoProgress.total} done`"
               :model-value="todoProgress.pct"
               color="primary"
               height="4"

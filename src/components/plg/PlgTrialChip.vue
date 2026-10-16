@@ -107,6 +107,7 @@ function openTalkToSales() {
             <span class="text-caption text-medium-emphasis">{{ tokensUsedLabel }}/{{ tokensLimitLabel }}</span>
           </div>
           <v-progress-linear
+            :aria-label="`Da Vinci AI tokens: ${tokensUsedLabel} of ${tokensLimitLabel}`"
             :model-value="tokensPct"
             height="6"
             rounded

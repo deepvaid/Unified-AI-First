@@ -199,6 +199,7 @@ withDefaults(defineProps<{
           <div class="side-card__desc">{{ setupCard.description }}</div>
           <v-progress-linear
             v-if="setupCard.items.length"
+            :aria-label="`${setupCard.title}: ${setupCard.items.filter(i => i.complete).length} of ${setupCard.items.length} complete`"
             :model-value="(setupCard.items.filter(i => i.complete).length / setupCard.items.length) * 100"
             color="primary"
             bg-color="surface-variant"

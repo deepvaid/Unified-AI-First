@@ -45,14 +45,14 @@ const invoices = [
               <span class="text-body-2">Email Sends (1.45M / 2.00M)</span>
               <span class="text-body-2 font-weight-medium">72%</span>
             </div>
-            <v-progress-linear model-value="72" color="primary" height="8" rounded />
+            <v-progress-linear aria-label="Email sends: 72% used" model-value="72" color="primary" height="8" rounded />
           </div>
           <div>
             <div class="d-flex justify-space-between mb-1">
               <span class="text-body-2">Active Contacts (450k / 500k)</span>
               <span class="text-body-2 font-weight-medium text-warning">90%</span>
             </div>
-            <v-progress-linear model-value="90" color="warning" height="8" rounded />
+            <v-progress-linear aria-label="Active contacts: 90% used" model-value="90" color="warning" height="8" rounded />
           </div>
         </v-card>
       </v-col>

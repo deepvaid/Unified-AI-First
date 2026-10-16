@@ -125,14 +125,14 @@ const CHIP_ROWS = [
           <v-alert type="success" variant="tonal" density="compact" rounded="lg">
             Payment captured — order #10482 is ready to fulfill.
           </v-alert>
-          <v-progress-linear :model-value="72" color="primary" height="6" rounded class="mt-4" />
+          <v-progress-linear aria-label="Progress: 72%" :model-value="72" color="primary" height="6" rounded class="mt-4" />
           <div class="d-flex flex-wrap ga-1 mt-4">
             <v-chip size="small" label>BFCM</v-chip>
             <v-chip size="small" label>Repeat buyers</v-chip>
             <v-chip size="small" label color="primary">High AOV</v-chip>
           </div>
           <div class="d-flex align-center ga-2 mt-4">
-            <v-progress-circular indeterminate size="20" width="2" color="primary" />
+            <v-progress-circular aria-hidden="true" indeterminate size="20" width="2" color="primary" />
             <span class="text-caption text-medium-emphasis">Syncing catalog…</span>
           </div>
         </v-card>

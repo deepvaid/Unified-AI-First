@@ -627,7 +627,7 @@ const scheduleSummary = computed(() => {
                 Run spam check
               </v-btn>
               <div v-if="spamScore !== null" class="d-flex align-center ga-3">
-                <v-progress-circular :model-value="100" :size="44" :width="5" color="success">
+                <v-progress-circular aria-hidden="true" :model-value="100" :size="44" :width="5" color="success">
                   <span class="text-caption font-weight-bold">{{ spamScore }}</span>
                 </v-progress-circular>
                 <div>

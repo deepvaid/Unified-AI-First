@@ -32,7 +32,7 @@ const slots = useSlots()
       </div>
       <div class="mp-chat-bubble__bubble">
         <div v-if="props.loading" class="mp-chat-bubble__loading">
-          <v-progress-circular indeterminate size="14" width="2" />
+          <v-progress-circular aria-hidden="true" indeterminate size="14" width="2" />
           <span><slot>Thinking…</slot></span>
         </div>
         <div v-else class="mp-chat-bubble__body"><slot /></div>
