@@ -59,7 +59,8 @@ function onFile(e: Event) {
           <div v-else class="profile-image-fallback">{{ profileInitials }}</div>
         </v-avatar>
         <div class="profile-image-actions">
-          <div class="d-flex align-center gap-2">
+          <!-- Wraps at narrow widths so Remove is never clipped (WCAG 1.4.10 — W-17). -->
+          <div class="d-flex flex-wrap align-center gap-2">
             <v-btn
               variant="outlined"
               size="small"
@@ -138,6 +139,7 @@ function onFile(e: Event) {
   display: flex;
   flex-direction: column;
   gap: var(--mp-space-6);
+  min-width: 0;
 }
 
 .profile-image-fallback {
