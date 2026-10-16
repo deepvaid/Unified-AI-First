@@ -414,30 +414,18 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
    toolbar shell), not a gray ghost fill. Vuetify's own outline is hidden
    below (opacity 0) since this draws its own border instead.
 
-   That border reuses --mp-border-subtle: the SAME custom property global.scss
-   (".v-btn--variant-outlined") sets on every outlined button, so this field and
-   the Filter / column-toggle buttons beside it in the same row cannot drift
-   apart in either theme (#e2e8f0 light, #33373D dark).
-
-   Consistency was chosen over contrast here, with eyes open: --mp-border-subtle
-   is ~1.2:1 on white, under the WCAG 1.4.11 3:1 non-text floor, so this reverses
-   the A11Y-001 finding *for this one field* (recorded under A11Y-002 in
-   docs/ui-system-audit/03-accessibility-audit.md). The sibling buttons were always
-   at this value, so matching them makes the row uniformly low-contrast rather than
-   mixed. Focus state below is unchanged and still compliant.
-
-   Still true after P5.5-12 (2026-08-28), which raised --border-strong so every
-   OTHER outlined field is compliant again (3.19:1+ light / 3.17:1+ dark). This row
-   is now the only outlined-control family left under the floor, and it stays that
-   way only because the field is matched to the buttons — so the open question is
-   the BUTTON border, not this line. Raising --mp-border-subtle here alone would
-   re-create exactly the mismatch that caused the earlier revert.
+   That border reuses --border-strong: the SAME token global.scss
+   (".v-btn--variant-outlined") sets on every outlined button and every outlined
+   field, so this pill and the Filter / column-toggle buttons beside it cannot
+   drift apart in either theme, and all of them clear the WCAG 1.4.11 3:1 floor
+   (gated as controlBoundary in tokens.json). Until 2026-10-16 the row shared
+   --mp-border-subtle at ~1.2:1 (A11Y-002, closed by W-09).
 
    If the outlined-button border ever changes, change this line with it. */
 .mp-toolbar-search :deep(.v-field) {
   border-radius: var(--r-pill);
   background: var(--surface-primary);
-  border: 1px solid var(--mp-border-subtle);
+  border: 1px solid var(--border-strong);
 }
 
 .mp-toolbar-search :deep(.v-field__outline) {

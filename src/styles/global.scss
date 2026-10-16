@@ -321,8 +321,12 @@ a {
   box-shadow: var(--btn-flat-shadow);
 }
 
+/* Outlined buttons share the field-border token: --border-strong is gated at 3:1
+   (controlBoundary) on every surface a control sits on. --mp-border-subtle was
+   ~1.2:1 (WCAG 1.4.11 — W-09, closes A11Y-002). MpDataTableToolbar's search pill
+   reads the same token so the toolbar row stays one family. */
 .v-btn--variant-outlined {
-  border-color: var(--mp-border-subtle) !important;
+  border-color: var(--border-strong) !important;
 }
 
 /* Disabled buttons (P6-15). Vuetify styles these with hardcoded alphas rather
