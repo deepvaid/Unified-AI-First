@@ -347,8 +347,14 @@ function subscribe(): void {
   font-size: 14px;
 }
 
+/* 24px target around the 16px icon (WCAG 2.5.8 — W-12). */
 .sf-search__go {
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  min-height: 24px;
+  padding: 0;
   border: 0;
   background: none;
   color: inherit;

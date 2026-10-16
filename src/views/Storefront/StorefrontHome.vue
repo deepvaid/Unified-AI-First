@@ -234,21 +234,32 @@ function looped(section: ThemeSection): ThemeBlock[] {
 .sf-dots {
   display: flex;
   justify-content: center;
-  gap: 8px;
-  margin-top: 16px;
+  margin-top: 12px;
 }
 
+/* 24px target, 8px mark (WCAG 2.5.8 — W-12): the button is the hit area and the
+   dot is drawn inside it, so adjacent targets never overlap. */
 .sf-dot {
-  width: 8px;
-  height: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
   padding: 0;
   border: 0;
-  border-radius: 50%;
-  background: #b6b6b6;
+  background: none;
   cursor: pointer;
 }
 
-.sf-dot--active {
+.sf-dot::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #b6b6b6;
+}
+
+.sf-dot--active::before {
   background: var(--sf-text, #121011);
 }
 
