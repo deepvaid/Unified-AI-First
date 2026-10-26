@@ -499,6 +499,7 @@ const oceanLineTreatment = (comparison: string) => makeTreatment({
 const GRAY_BLUE_TREATMENT = oceanLineTreatment(mp_color_chart_light_grayBlue_comparison)
 const GRAY_BLUE_GOLD_TREATMENT = oceanLineTreatment(mp_color_chart_light_grayBlueGold_series2)
 const SOCIAL_TREATMENT = oceanLineTreatment(mp_color_chart_light_social_series2)
+const OCEAN_TREATMENT = oceanLineTreatment(mp_color_chart_light_ocean_series2)
 // Own instance so the gradient exploration can retune stroke/bar/donut without
 // touching `social`. Identical values today — the two render the same.
 const SOCIAL_GRADIENT_TREATMENT = oceanLineTreatment(mp_color_chart_light_social_series2)
@@ -593,9 +594,7 @@ const embossTreatment = (base: ChartTreatment): ChartTreatment => ({
 export const SOCIAL_GRADIENT_EMBOSS_TREATMENT = embossTreatment(SOCIAL_GRADIENT_TREATMENT)
 const GRAY_BLUE_GRADIENT_TREATMENT = embossTreatment(GRAY_BLUE_TREATMENT)
 const GRAY_BLUE_GOLD_GRADIENT_TREATMENT = embossTreatment(GRAY_BLUE_GOLD_TREATMENT)
-// Ocean ships without a treatment (legacy Hyper gradientMarks branches), so its
-// gradient variant starts from the standard ocean-line base.
-const OCEAN_GRADIENT_TREATMENT = embossTreatment(oceanLineTreatment(mp_color_chart_light_ocean_series2))
+const OCEAN_GRADIENT_TREATMENT = embossTreatment(OCEAN_TREATMENT)
 
 
 /**
@@ -756,8 +755,10 @@ export const CHART_THEMES: Record<ChartPalette, Record<ChartMode, ChartTheme>> =
         mp_color_chart_light_ocean_axis4,
         mp_color_chart_light_ocean_axis5,
       ],
-      gradientMarks: true,
-      chrome: LIGHT_CHROME,
+      gradientMarks: false,
+      comparisonColor: mp_color_chart_light_ocean_series2,
+      chrome: cloneChrome(LIGHT_CHROME),
+      treatment: OCEAN_TREATMENT,
     },
     dark: {
       label: 'Ocean',
@@ -776,8 +777,10 @@ export const CHART_THEMES: Record<ChartPalette, Record<ChartMode, ChartTheme>> =
         mp_color_chart_dark_ocean_axis4,
         mp_color_chart_dark_ocean_axis5,
       ],
-      gradientMarks: true,
-      chrome: DARK_CHROME,
+      gradientMarks: false,
+      comparisonColor: mp_color_chart_dark_ocean_series2,
+      chrome: cloneChrome(DARK_CHROME),
+      treatment: OCEAN_TREATMENT,
     },
   },
   grayBlue: {
@@ -1272,7 +1275,7 @@ export const CHART_PALETTES: Record<ChartPalette, string[]> = Object.fromEntries
   Object.entries(CHART_THEMES).map(([id, modes]) => [id, modes.light.series]),
 ) as Record<ChartPalette, string[]>
 
-const chartPaletteId = ref<ChartPalette>('grayBlue')
+const chartPaletteId = ref<ChartPalette>('ocean')
 
 /**
  * Provide/inject key that lets a widget subtree pin an explicit theme instead of

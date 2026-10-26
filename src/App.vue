@@ -75,8 +75,8 @@ watch(() => route.query.frame, (f) => {
 
 // Dashboard chart palette: a ?chart=grayBlue|grayBlueGold|social|ocean query
 // param (stakeholder demo), same in-memory-per-tab handling as ?nav=.
-// Independent of, and composes with, ?nav=. Unknown values fall back to grayBlue
-// (the default — focal blue + gray de-emphasis with a monochrome blue ramp).
+// Independent of, and composes with, ?nav=. Unknown values fall back to ocean
+// (the default — Ocean colours on the standard flat treatment, no gradients).
 const VALID_CHART_PALETTES: readonly ChartPalette[] = [
   'grayBlue', 'grayBlueGold', 'social', 'ocean', 'merchant', 'shopify', 'shopifyAdmin', 'bloomreach', 'stripe',
   'socialGradient', 'grayBlueGradient', 'grayBlueGoldGradient', 'oceanGradient',
@@ -87,7 +87,7 @@ const chartOverride = ref<ChartPalette | null>(isChartPalette(route.query.chart)
 watch(() => route.query.chart, (chart) => {
   if (isChartPalette(chart)) chartOverride.value = chart
 })
-watch(() => chartOverride.value ?? 'grayBlue', applyChartPalette, { immediate: true })
+watch(() => chartOverride.value ?? 'ocean', applyChartPalette, { immediate: true })
 
 // PLG demo state: a ?plg=trial-d3|trial-d12|trial-expired|paid-build|...|grace
 // query param (stakeholder share links) applies a subscription preset to the
