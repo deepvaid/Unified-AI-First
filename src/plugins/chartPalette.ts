@@ -499,7 +499,8 @@ const oceanLineTreatment = (comparison: string) => makeTreatment({
 const GRAY_BLUE_TREATMENT = oceanLineTreatment(mp_color_chart_light_grayBlue_comparison)
 const GRAY_BLUE_GOLD_TREATMENT = oceanLineTreatment(mp_color_chart_light_grayBlueGold_series2)
 const SOCIAL_TREATMENT = oceanLineTreatment(mp_color_chart_light_social_series2)
-const OCEAN_TREATMENT = oceanLineTreatment(mp_color_chart_light_ocean_series2)
+// Ocean borrows grayBlue's gray for the previous period and its secondary series.
+const OCEAN_TREATMENT = oceanLineTreatment(mp_color_chart_light_grayBlue_comparison)
 // Own instance so the gradient exploration can retune stroke/bar/donut without
 // touching `social`. Identical values today — the two render the same.
 const SOCIAL_GRADIENT_TREATMENT = oceanLineTreatment(mp_color_chart_light_social_series2)
@@ -594,7 +595,7 @@ const embossTreatment = (base: ChartTreatment): ChartTreatment => ({
 export const SOCIAL_GRADIENT_EMBOSS_TREATMENT = embossTreatment(SOCIAL_GRADIENT_TREATMENT)
 const GRAY_BLUE_GRADIENT_TREATMENT = embossTreatment(GRAY_BLUE_TREATMENT)
 const GRAY_BLUE_GOLD_GRADIENT_TREATMENT = embossTreatment(GRAY_BLUE_GOLD_TREATMENT)
-const OCEAN_GRADIENT_TREATMENT = embossTreatment(OCEAN_TREATMENT)
+const OCEAN_GRADIENT_TREATMENT = embossTreatment(oceanLineTreatment(mp_color_chart_light_ocean_series2))
 
 
 /**
@@ -740,13 +741,14 @@ export const CHART_THEMES: Record<ChartPalette, Record<ChartMode, ChartTheme>> =
   ocean: {
     light: {
       label: 'Ocean',
+      // Focal blue, gray de-emphasis, then the Ocean ramp (Gray + Blue structure).
       series: [
         mp_color_chart_light_ocean_series1,
-        mp_color_chart_light_ocean_series2,
-        mp_color_chart_light_ocean_series3,
+        mp_color_chart_light_grayBlue_comparison,
         mp_color_chart_light_ocean_series4,
         mp_color_chart_light_ocean_series5,
-        mp_color_chart_light_ocean_series6,
+        mp_color_chart_light_ocean_series2,
+        mp_color_chart_light_ocean_series3,
       ],
       axis: [
         mp_color_chart_light_ocean_axis1,
@@ -756,19 +758,20 @@ export const CHART_THEMES: Record<ChartPalette, Record<ChartMode, ChartTheme>> =
         mp_color_chart_light_ocean_axis5,
       ],
       gradientMarks: false,
-      comparisonColor: mp_color_chart_light_ocean_series2,
+      comparisonColor: mp_color_chart_light_grayBlue_comparison,
       chrome: cloneChrome(LIGHT_CHROME),
       treatment: OCEAN_TREATMENT,
     },
     dark: {
       label: 'Ocean',
+      // Focal blue, gray de-emphasis, then the Ocean ramp (Gray + Blue structure).
       series: [
         mp_color_chart_dark_ocean_series1,
-        mp_color_chart_dark_ocean_series2,
-        mp_color_chart_dark_ocean_series3,
+        mp_color_chart_dark_grayBlue_comparison,
         mp_color_chart_dark_ocean_series4,
         mp_color_chart_dark_ocean_series5,
-        mp_color_chart_dark_ocean_series6,
+        mp_color_chart_dark_ocean_series2,
+        mp_color_chart_dark_ocean_series3,
       ],
       axis: [
         mp_color_chart_dark_ocean_axis1,
@@ -778,7 +781,7 @@ export const CHART_THEMES: Record<ChartPalette, Record<ChartMode, ChartTheme>> =
         mp_color_chart_dark_ocean_axis5,
       ],
       gradientMarks: false,
-      comparisonColor: mp_color_chart_dark_ocean_series2,
+      comparisonColor: mp_color_chart_dark_grayBlue_comparison,
       chrome: cloneChrome(DARK_CHROME),
       treatment: OCEAN_TREATMENT,
     },
