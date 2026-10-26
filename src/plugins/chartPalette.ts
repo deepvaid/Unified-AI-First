@@ -17,6 +17,7 @@ import {
   mp_color_chart_dark_ocean_series4,
   mp_color_chart_dark_ocean_series5,
   mp_color_chart_dark_ocean_series6,
+  mp_color_chart_dark_ocean_turquoise,
   mp_color_chart_dark_social_axis1,
   mp_color_chart_dark_social_axis2,
   mp_color_chart_dark_social_axis3,
@@ -45,6 +46,7 @@ import {
   mp_color_chart_light_ocean_series4,
   mp_color_chart_light_ocean_series5,
   mp_color_chart_light_ocean_series6,
+  mp_color_chart_light_ocean_turquoise,
   mp_color_chart_light_grayBlue_axis1,
   mp_color_chart_light_grayBlue_axis2,
   mp_color_chart_light_grayBlue_axis3,
@@ -741,14 +743,14 @@ export const CHART_THEMES: Record<ChartPalette, Record<ChartMode, ChartTheme>> =
   ocean: {
     light: {
       label: 'Ocean',
-      // Focal blue, gray de-emphasis, then the Ocean ramp (Gray + Blue structure).
+      // Focal blue, gray de-emphasis, then cyan → turquoise → navy → teal.
       series: [
         mp_color_chart_light_ocean_series1,
         mp_color_chart_light_grayBlue_comparison,
-        mp_color_chart_light_ocean_series4,
         mp_color_chart_light_ocean_series5,
+        mp_color_chart_light_ocean_turquoise,
+        mp_color_chart_light_ocean_series4,
         mp_color_chart_light_ocean_series2,
-        mp_color_chart_light_ocean_series3,
       ],
       axis: [
         mp_color_chart_light_ocean_axis1,
@@ -764,14 +766,14 @@ export const CHART_THEMES: Record<ChartPalette, Record<ChartMode, ChartTheme>> =
     },
     dark: {
       label: 'Ocean',
-      // Focal blue, gray de-emphasis, then the Ocean ramp (Gray + Blue structure).
+      // Focal blue, gray de-emphasis, then cyan → turquoise → navy → teal.
       series: [
         mp_color_chart_dark_ocean_series1,
         mp_color_chart_dark_grayBlue_comparison,
-        mp_color_chart_dark_ocean_series4,
         mp_color_chart_dark_ocean_series5,
+        mp_color_chart_dark_ocean_turquoise,
+        mp_color_chart_dark_ocean_series4,
         mp_color_chart_dark_ocean_series2,
-        mp_color_chart_dark_ocean_series3,
       ],
       axis: [
         mp_color_chart_dark_ocean_axis1,

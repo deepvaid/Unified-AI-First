@@ -1038,6 +1038,8 @@
   --mp-rgb-color-chart-light-ocean-series5: 0, 172, 200;
   --mp-color-chart-light-ocean-series6: #1361B8;
   --mp-rgb-color-chart-light-ocean-series6: 19, 97, 184;
+  --mp-color-chart-light-ocean-turquoise: #3FD0D4;
+  --mp-rgb-color-chart-light-ocean-turquoise: 63, 208, 212;
   --mp-color-chart-light-ocean-axis1: #0A4FA8;
   --mp-rgb-color-chart-light-ocean-axis1: 10, 79, 168;
   --mp-color-chart-light-ocean-axis2: #0077C8;
@@ -1354,6 +1356,8 @@
   --mp-rgb-color-chart-dark-ocean-series5: 51, 196, 213;
   --mp-color-chart-dark-ocean-series6: #559FE8;
   --mp-rgb-color-chart-dark-ocean-series6: 85, 159, 232;
+  --mp-color-chart-dark-ocean-turquoise: #7AE6E0;
+  --mp-rgb-color-chart-dark-ocean-turquoise: 122, 230, 224;
   --mp-color-chart-dark-ocean-axis1: #3D99E8;
   --mp-rgb-color-chart-dark-ocean-axis1: 61, 153, 232;
   --mp-color-chart-dark-ocean-axis2: #559FE8;
