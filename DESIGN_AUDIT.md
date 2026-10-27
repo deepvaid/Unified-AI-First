@@ -2299,3 +2299,67 @@ test:maropay 182/182, test:catalog 22/22.
   - Both are outside the audit's W-18 list and need a call on heading levels.
 - **Vuetify-internal loaders (still open from steps 1–3):** the `v-btn :loading` spinners and the field loading bar.
 - **Screen-reader pass:** none was done; the audit's "What this does not prove" section still applies.
+
+## POS cashier pass (AU / CA) — 2026-10-27
+
+Sale screen of `/retail/pos-preview`, reviewed for a counter cashier in Sydney or Vancouver (70% iPad, 30% Android
+tablet). Totals now come from a pure model, `src/views/Retail/pos/saleModel.ts`, tested in `tests/pos/sale.test.ts`
+(`npm run test:pos`). Every visible totals row adds up to the Charge amount; the test checks 300 random baskets in
+6 markets.
+
+- [x] **Totals reconcile.**
+  - AU/NZ GST is included in prices and shown as "Includes GST $x" under the total.
+  - CA tax is added on top as separate rows: BC GST + PST, ON HST, QC GST + QST.
+  - Coupons and whole-sale discounts are children of "Discounts", not extra rows to subtract.
+- [x] **Item-level discount notes.**
+  - Automatic promotions and manual line discounts (% or $, with a required reason) show as notes on the line, each with an icon and its amount.
+  - The line shows its final total, with the catalog price struck through.
+- [x] **Stock before the tap.**
+  - Tiles and variant rows carry Low / Out-of-stock badges.
+  - Adding past what's on hand opens a sheet with "Sell anyway" or "Check other stores". An oversold line keeps a "1 more than in stock" note.
+- [x] **Coupons are checked at the counter** against `commerce.promotions`, with a reason a cashier can say out loud: expired, online-only, switched off, limit reached.
+- [x] **Cash:**
+  - AU/CA cash totals round to 5c; card stays exact.
+  - Quick-tender amounts and change due are shown.
+  - The change line and the charge button are pinned to the bottom of the sheet.
+- [x] **One customer sheet for New and Edit.** It is used from three places: Customers › New customer, "Create new customer" in the
+  sale's picker, and Edit (from the cart chip or a profile). Every path gets the same checks:
+  - first and last name as separate fields;
+  - phone checked for the store's country;
+  - a number typed with `+` and a country code is accepted at any store (a visitor's number), and every number is saved
+    with its country code;
+  - a duplicate email or phone offers the existing profile ("Use" from the sale, "Open" from Customers);
+  - receipt and marketing consent are separate switches, all off by default;
+  - unsaved changes are guarded.
+  Create prefills from the search query (email, number or name). From the sale it reads "Create & add to sale".
+- [x] **Accessibility floor on the Sale, cart and payment surfaces:**
+  - status text uses ≥4.5:1 inks;
+  - 44px targets;
+  - labelled cart actions, with Clear set apart and undoable;
+  - Charge is a real `disabled` button;
+  - a polite live region announces adds, stock warnings and scan misses;
+  - `aria-current` on the rail.
+- [x] **Fixed: collection chips now filter the Sale catalog.** They were dead before.
+
+### Renames and breaking changes
+- **`MpSegmentedControl`** now renders `role="group"`, so its `aria-label` names a real group. This applies to every consumer.
+- **`RetailLocation.region?`** is a new field. New store **`loc-robson`** (Robson Street, Vancouver BC), with two registers, staff member `assoc-9`
+  and two Vancouver loyalty customers. The POS channel now includes it.
+- **PosPreview:**
+  - `posSettings.taxInclusive` is removed (tax follows the location);
+  - `discountPct` is replaced by `orderDiscount` + `appliedCoupon`;
+  - `customerName` is now derived from the attached profile;
+  - `fmt()` formats in the location's currency.
+  - "Add custom sale" opens a name-and-price sheet instead of adding a silent $25 line.
+  - The page-level "New customer" `MpDialog` and the picker's inline create form are deleted. `newCustomerOpen`,
+    `newCustomerDraft`, `saveNewCustomer`, `customerPickerMode` and `createAndAttachCustomer` are gone.
+  - `saveCustomerEdit` is now `saveCustomer`.
+  - The model's `normalizePhone` is replaced by `canonicalPhone`, which produces "+<country code><number>".
+  - `$pos-muted` is now `#646b78` (was `#6b7280`, 4.40:1 on `$pos-bg`).
+  - Bondi Junction stock is pinned for SNEAK-A1 (0) and BAG-LTH (2), so the default store shows every stock state.
+
+### Not done here (native app / follow-ups)
+- Dynamic Type and Android font scaling, safe areas, VoiceOver/TalkBack grouping, scanner focus while a sheet is open, haptics. These live in the
+  native app; see the audit report.
+- GST-free lines, CA status-card exemption, fr-CA copy, age-restricted items, split tender, returns, manager PIN
+  above a discount threshold, and a real Park & resume list.
