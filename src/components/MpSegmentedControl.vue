@@ -40,6 +40,7 @@ function onUpdate(value: unknown) {
     :class="{ 'mp-segmented--sm': props.size === 'sm' }"
     :model-value="props.modelValue ?? undefined"
     :mandatory="props.mandatory"
+    role="group"
     :aria-label="props.ariaLabel"
     :divided="false"
     @update:model-value="onUpdate"
