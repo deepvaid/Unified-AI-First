@@ -2,6 +2,10 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { useCommerceStore } from '@/stores/useCommerce'
 import { useSalesChannelsStore, type SalesChannel } from '@/stores/useSalesChannels'
+import {
+  RECEIPT_LIBRARY, copyName, copyTemplate, libraryTemplate, resolveTemplate, section, uniqueName,
+  type ReceiptLocation, type ReceiptTemplate,
+} from '@/views/Retail/receipts/receiptModel'
 
 /* ── Types ─────────────────────────────────────────────────────── */
 
@@ -14,6 +18,10 @@ export interface RetailLocation {
   country: Country
   /** State or province code — sets the register's tax (e.g. BC = GST + PST). */
   region?: string
+  /** Printed on receipts. */
+  phone?: string
+  /** Tax registration printed on receipts: ABN (AU), GST/HST number (CA), GST number (NZ). */
+  taxId?: string
   /** Stores sell at a register; warehouses only hold stock. */
   kind: 'store' | 'warehouse'
   registerCount: number
@@ -69,12 +77,8 @@ export interface PaymentsSettings {
   cashRoundingEnabled: boolean
 }
 
-/** What the shopper walks away with. */
+/** How receipts reach the shopper. What's printed on them lives in receipt templates. */
 export interface ReceiptSettings {
-  headerText: string
-  footerText: string
-  showLogo: boolean
-  showTaxNumber: boolean
   defaultDelivery: 'print' | 'email' | 'both' | 'ask'
   emailSubject: string
   giftReceiptsEnabled: boolean
@@ -89,6 +93,8 @@ const locations: RetailLocation[] = [
     address: '500 Oxford St, Bondi Junction NSW 2022',
     country: 'AU',
     region: 'NSW',
+    phone: '+61 2 9387 1000',
+    taxId: '12 345 678 901',
     kind: 'store',
     registerCount: 3,
     staffCount: 5,
@@ -101,6 +107,8 @@ const locations: RetailLocation[] = [
     address: '1341 Dandenong Rd, Chadstone VIC 3148',
     country: 'AU',
     region: 'VIC',
+    phone: '+61 3 9563 3355',
+    taxId: '12 345 678 901',
     kind: 'store',
     registerCount: 2,
     staffCount: 4,
@@ -112,6 +120,8 @@ const locations: RetailLocation[] = [
     name: 'Newmarket',
     address: '277 Broadway, Newmarket, Auckland 1023',
     country: 'NZ',
+    phone: '+64 9 520 1000',
+    taxId: '123-456-789',
     kind: 'store',
     registerCount: 2,
     staffCount: 3,
@@ -124,6 +134,8 @@ const locations: RetailLocation[] = [
     address: '1025 Robson St, Vancouver BC V6E 1A9',
     country: 'CA',
     region: 'BC',
+    phone: '+1 (604) 555-0100',
+    taxId: '123456789 RT0001',
     kind: 'store',
     registerCount: 2,
     staffCount: 3,
@@ -136,6 +148,7 @@ const locations: RetailLocation[] = [
     address: '460 Broadway, New York, NY 10013',
     country: 'US',
     region: 'NY',
+    phone: '+1 (212) 555-0100',
     kind: 'store',
     registerCount: 4,
     staffCount: 6,
@@ -232,10 +245,6 @@ export const useRetailStore = defineStore('retail', () => {
   })
 
   const receiptSettings = ref<ReceiptSettings>({
-    headerText: 'Thanks for shopping with us',
-    footerText: 'Returns accepted within 30 days with proof of purchase.',
-    showLogo: true,
-    showTaxNumber: true,
     defaultDelivery: 'ask',
     emailSubject: 'Your receipt from {{store}}',
     giftReceiptsEnabled: true,
@@ -247,6 +256,78 @@ export const useRetailStore = defineStore('retail', () => {
 
   function updateReceiptSettings(patch: Partial<ReceiptSettings>) {
     receiptSettings.value = { ...receiptSettings.value, ...patch }
+  }
+
+  /* ── Receipt templates — the ready-made ones live in the model; these are the merchant's own ── */
+  const bondiPromo = copyTemplate(libraryTemplate('standard')!, 'rt-1', 'Standard — Bondi promo', '2026-10-20')
+  bondiPromo.description = 'Standard with a spring-sale message under the store details.'
+  bondiPromo.sections.splice(1, 0, section('header', { text: 'Spring sale: 30% off tees and hoodies' }))
+  const receiptTemplates = ref<ReceiptTemplate[]>([bondiPromo])
+  /** POS channel id → template id. A channel with none prints Standard. */
+  const receiptAssignments = ref<Record<string, string>>({ 'pos-store': 'standard', 'mall-kiosk-pos': 'compact' })
+  let receiptSeq = 2
+
+  const today = () => new Date().toISOString().slice(0, 10)
+  const allReceiptTemplates = computed(() => [...RECEIPT_LIBRARY, ...receiptTemplates.value])
+
+  function receiptTemplate(id: string): ReceiptTemplate | undefined {
+    return receiptTemplates.value.find((t) => t.id === id) ?? libraryTemplate(id)
+  }
+
+  /** A new custom template from a ready-made or custom one, or blank (null). */
+  function createReceiptTemplate(fromId: string | null): ReceiptTemplate {
+    const source = fromId ? receiptTemplate(fromId) ?? null : null
+    const taken = allReceiptTemplates.value.map((t) => t.name)
+    const name = source ? copyName(source.name, taken) : uniqueName('Untitled receipt', taken)
+    const created = copyTemplate(source, `rt-${receiptSeq++}`, name, today())
+    receiptTemplates.value.push(created)
+    return created
+  }
+
+  function updateReceiptTemplate(id: string, next: ReceiptTemplate) {
+    const i = receiptTemplates.value.findIndex((t) => t.id === id)
+    if (i !== -1) receiptTemplates.value[i] = { ...next, id, source: 'custom', updatedAt: today() }
+  }
+
+  function templateForChannel(channelId: string): ReceiptTemplate {
+    return resolveTemplate(receiptAssignments.value, receiptTemplates.value, channelId)
+  }
+
+  /** Of `channelIds`, the ones that print this template. */
+  function channelsUsing(templateId: string, channelIds: string[]): string[] {
+    return channelIds.filter((c) => templateForChannel(c).id === templateId)
+  }
+
+  /** Exactly these channels print the template; any that stop fall back to Standard. */
+  function setReceiptTemplateChannels(templateId: string, channelIds: string[], allChannelIds: string[]) {
+    const next = { ...receiptAssignments.value }
+    for (const c of allChannelIds) {
+      if (channelIds.includes(c)) next[c] = templateId
+      else if (templateForChannel(c).id === templateId) next[c] = 'standard'
+    }
+    receiptAssignments.value = next
+  }
+
+  /** A store as its receipts print it. The brand is the merchant's trading name. */
+  function receiptLocationFor(locationId: string): ReceiptLocation {
+    const loc = locationList.value.find((l) => l.id === locationId) ?? activeLocation.value
+    return {
+      brand: 'Maropost Apparel',
+      name: loc.name,
+      address: loc.address,
+      country: loc.country,
+      region: loc.region,
+      phone: loc.phone,
+      taxId: loc.taxId,
+    }
+  }
+
+  /** Deletes a custom template; the channels that printed it go back to Standard. */
+  function deleteReceiptTemplate(id: string) {
+    receiptTemplates.value = receiptTemplates.value.filter((t) => t.id !== id)
+    const next = { ...receiptAssignments.value }
+    for (const [c, t] of Object.entries(next)) if (t === id) next[c] = 'standard'
+    receiptAssignments.value = next
   }
 
   const isAllLocations = computed(() => activeLocationId.value === ALL_LOCATIONS)
@@ -422,6 +503,17 @@ export const useRetailStore = defineStore('retail', () => {
     receiptSettings,
     updatePaymentsSettings,
     updateReceiptSettings,
+    receiptTemplates,
+    receiptAssignments,
+    allReceiptTemplates,
+    receiptTemplate,
+    createReceiptTemplate,
+    updateReceiptTemplate,
+    deleteReceiptTemplate,
+    templateForChannel,
+    channelsUsing,
+    setReceiptTemplateChannels,
+    receiptLocationFor,
     storeLocations,
     ALL_LOCATIONS,
     offlineMode,

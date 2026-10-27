@@ -64,17 +64,17 @@ export interface ReceiptTemplate {
 }
 
 export const SECTION_META: Record<SectionKind, { label: string; icon: string; hint: string }> = {
-  logo:     { label: 'Logo',            icon: 'image',          hint: 'Your logo at the top' },
-  store:    { label: 'Store details',   icon: 'store',          hint: 'Name, address and tax number' },
-  header:   { label: 'Header message',  icon: 'megaphone',      hint: 'A line under the store details' },
-  details:  { label: 'Receipt details', icon: 'receipt-text',   hint: 'Receipt number, date, register, staff' },
-  customer: { label: 'Customer',        icon: 'user-round',     hint: 'Name and points balance' },
-  items:    { label: 'Items',           icon: 'list',           hint: 'What was bought' },
-  totals:   { label: 'Totals and tax',  icon: 'sigma',          hint: 'Subtotal, discounts, tax, total' },
-  payment:  { label: 'Payment',         icon: 'credit-card',    hint: 'Tender, rounding and change' },
-  barcode:  { label: 'Barcode',         icon: 'scan-barcode',   hint: 'Scan for returns and lookups' },
-  returns:  { label: 'Returns policy',  icon: 'rotate-ccw',     hint: 'Your returns wording' },
-  footer:   { label: 'Footer message',  icon: 'message-square', hint: 'A closing line' },
+  logo:     { label: 'Logo',           icon: 'image',          hint: 'Your logo at the top' },
+  store:    { label: 'Store',          icon: 'store',          hint: 'Name, address and tax number' },
+  header:   { label: 'Header',         icon: 'megaphone',      hint: 'A line under the store details' },
+  details:  { label: 'Receipt info',   icon: 'receipt-text',   hint: 'Receipt number, date, register, staff' },
+  customer: { label: 'Customer',       icon: 'user-round',     hint: 'Name and points balance' },
+  items:    { label: 'Items',          icon: 'list',           hint: 'What was bought' },
+  totals:   { label: 'Totals & tax',   icon: 'sigma',          hint: 'Subtotal, discounts, tax, total' },
+  payment:  { label: 'Payment',        icon: 'credit-card',    hint: 'Tender, rounding and change' },
+  barcode:  { label: 'Barcode',        icon: 'scan-barcode',   hint: 'Scan for returns and lookups' },
+  returns:  { label: 'Returns policy', icon: 'rotate-ccw',     hint: 'Your returns wording' },
+  footer:   { label: 'Footer',         icon: 'message-square', hint: 'A closing line' },
 }
 
 /** Where a newly added section goes: its natural place on a receipt. */
@@ -164,13 +164,17 @@ export function copyTemplate(source: ReceiptTemplate | null, id: string, name: s
   }
 }
 
+/** `name`, or `name 2`, `name 3`… when it's taken. */
+export function uniqueName(name: string, taken: string[]): string {
+  if (!taken.includes(name)) return name
+  let n = 2
+  while (taken.includes(`${name} ${n}`)) n++
+  return `${name} ${n}`
+}
+
 /** "Standard copy", then "Standard copy 2", "Standard copy 3"… */
 export function copyName(base: string, taken: string[]): string {
-  const first = `${base} copy`
-  if (!taken.includes(first)) return first
-  let n = 2
-  while (taken.includes(`${first} ${n}`)) n++
-  return `${first} ${n}`
+  return uniqueName(`${base} copy`, taken)
 }
 
 /** A channel's template, falling back to Standard if it was deleted or never set. */
