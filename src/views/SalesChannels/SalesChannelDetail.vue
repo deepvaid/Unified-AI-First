@@ -50,6 +50,7 @@ type ProductTarget =
   | 'products'
   | 'preview'
   | 'registers'
+  | 'receipts'
   | 'settings'
   | 'shopping_assistant'
   | 'transactions'
@@ -390,7 +391,7 @@ const setupChecklist = computed<SetupItem[]>(() => {
     { id: 'locations', title: 'Locations linked', description: `${locations.value.length} locations assigned`, done: locations.value.length > 0, target: 'locations' },
     { id: 'registers', title: 'Registers paired', description: `${registers.value.length} devices in this channel`, done: registers.value.length > 0, target: 'registers' },
     { id: 'staff', title: 'StaffMembers added', description: `${activeStaffMemberCount.value} active staff`, done: activeStaffMemberCount.value > 0, target: 'locations' },
-    { id: 'receipt', title: 'Receipt template', description: 'Add logo and contact details', done: Boolean(channel.value?.offlineStore?.posSetupComplete), target: 'settings' },
+    { id: 'receipt', title: 'Receipt template', description: 'Choose what this channel\'s receipts print', done: Boolean(channel.value?.offlineStore?.posSetupComplete), target: 'receipts' },
     { id: 'payments', title: 'Payment terminals', description: 'Stripe Terminal or Tap to Pay', done: registers.value.some((register) => register.pairedTerminal), target: 'registers' },
   ]
 })
@@ -714,6 +715,10 @@ function runAction(target: ProductTarget) {
   }
   if (target === 'registers') {
     router.push({ name: 'RetailRegisters', params: { accountId: accountId.value } })
+    return
+  }
+  if (target === 'receipts') {
+    router.push({ name: 'RetailReceipts', params: { accountId: accountId.value } })
     return
   }
   if (target === 'inventory') {

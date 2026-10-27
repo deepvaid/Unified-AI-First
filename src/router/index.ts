@@ -209,6 +209,8 @@ const routes: RouteRecordRaw[] = [
       { path: 'settings',     name: 'RetailSettings',      component: () => import('@/views/Retail/RetailSettings.vue') },
     ],
   },
+  // Receipt designer: a builder, so it sits outside the rail shell like the landing-page editor.
+  { path: '/commerce/:accountId/retail/receipts/:templateId/design', name: 'RetailReceiptDesigner', component: () => import('@/views/Retail/ReceiptDesigner.vue'), meta: { ...retailGate, builderShell: true } },
   // Full-screen POS device mock stays outside the rail shell.
   { path: '/commerce/:accountId/retail/pos-preview', name: 'RetailPosPreview', component: () => import('@/views/Retail/PosPreview.vue'), meta: { ...retailGate, fullPage: true } },
   // Locations live with the POS sales channel that owns them; resolve the

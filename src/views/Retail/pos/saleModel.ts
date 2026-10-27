@@ -313,6 +313,10 @@ export interface CustomerValidation {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 
+export function isEmail(value: string): boolean {
+  return EMAIL_RE.test(value.trim())
+}
+
 const DIAL_CODE: Record<Country, string> = { AU: '61', NZ: '64', CA: '1', US: '1' }
 
 /** National digits for a number dialled in `country`: 61 412… → 0412…, 1 604… → 604…. */

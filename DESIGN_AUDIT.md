@@ -2363,3 +2363,59 @@ tablet). Totals now come from a pure model, `src/views/Retail/pos/saleModel.ts`,
   native app; see the audit report.
 - GST-free lines, CA status-card exemption, fr-CA copy, age-restricted items, split tender, returns, manager PIN
   above a discount threshold, and a real Park & resume list.
+
+## Retail receipt templates — 2026-10-27
+
+Retail › Receipts is now a receipt-template gallery, built on the landing-page template pattern:
+Library | My templates, a Blank card first, and Customise opening a designer in `MpBuilderShell`. It
+mirrors the live app's Retail › Template screen: Standard, Compact (58 mm), Detailed and Branded,
+plus your own, each with Customise / Assign / Delete and "Based on …" lineage. A template is
+assigned to a **POS channel**. Each store fills in its own tax and legal lines, so one template
+works in Sydney and Vancouver.
+
+- [x] **Receipt model:** `src/views/Retail/receipts/receiptModel.ts`, tested in `tests/pos/receipt.test.ts`
+  under `npm run test:pos`.
+  - It renders a sale at real printer widths: 48 columns at 80 mm, 32 at 58 mm. Long names wrap.
+  - Totals come from the sale model, so a receipt always matches the Charge amount.
+  - AU prints TAX INVOICE, the ABN and "Includes GST". CA prints the GST/HST number, with GST + PST
+    (or HST) on top. Cash shows rounding and change. Gift receipts hide every price.
+- [x] **`ReceiptPaper`** (`src/components/retail/`, story under Product/Retail): the receipt as
+  thermal paper. It stays white in both themes because real paper does, using the light surface/ink
+  token pair. It's used for gallery thumbnails, the designer canvas and the POS receipt sheet.
+- [x] **Gallery:**
+  - live thumbnails, and "Used by POS Store" / "Not assigned" chips;
+  - an Assign dialog that says what changes per channel;
+  - Delete confirms which channels fall back to Standard;
+  - Delivery settings move into a drawer.
+- [x] **Designer** (`RetailReceiptDesigner`, `builderShell`):
+  - sections can be reordered, hidden, removed or added; Store, Items and Totals are required;
+  - 80/58 mm, a Bondi (AU) / Robson (CA) preview, and a gift receipt toggle;
+  - explicit Save with a leave guard, because a template can be printing at live registers;
+  - the toolbar says where it prints;
+  - a ready-made template opens as your copy.
+- [x] **POS end to end:**
+  - Print and Email receipt render the sale from the channel's template, captured before the cart
+    clears.
+  - Print names the register's paired printer. With no printer it says so and offers email.
+  - Email uses the attached customer's address, or asks for one and checks it.
+  - POS Settings shows the template in use instead of its own footer field.
+- [x] The "Receipt template" setup items on Retail Home and the POS channel page now go to Receipts,
+  not Settings.
+
+### Renames and breaking changes
+- **`ReceiptSettings`** drops `headerText`, `footerText`, `showLogo` and `showTaxNumber`, which are now
+  template sections. It keeps `defaultDelivery`, `emailSubject` and `giftReceiptsEnabled`.
+- **`RetailLocation`** gains `phone?` and `taxId?`: an ABN for the AU stores, a BN/RT for Robson, and a
+  GST number for Newmarket.
+- **New store state and actions:** `receiptTemplates` (custom templates), `receiptAssignments` (channel →
+  template; POS Store prints Standard and Mall Kiosk POS prints Compact), `createReceiptTemplate`,
+  `updateReceiptTemplate`, `deleteReceiptTemplate`, `setReceiptTemplateChannels`, `templateForChannel`,
+  `channelsUsing` and `receiptLocationFor`.
+- **PosPreview:** `posSettings.receiptFooter` and the hard-coded receipt mini-preview are removed.
+  `completeApproved()` now takes the delivery (`'print' | 'email' | null`).
+- **`saleModel`** exports `isEmail`.
+
+### Not done here
+- Reprinting a past sale from POS History still shows a toast. Orders don't store their discount and tax
+  breakdown, so the receipt can't be rebuilt faithfully yet.
+- Logo upload: the logo section draws the brand initials.

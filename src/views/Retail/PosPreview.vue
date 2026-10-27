@@ -9,11 +9,13 @@ import type { Order, TenderType } from '@/stores/useCommerce'
 import { useElementSize } from '@/composables/useElementSize'
 import MpDialog from '@/components/MpDialog.vue'
 import MpFormField from '@/components/MpFormField.vue'
+import ReceiptPaper from '@/components/retail/ReceiptPaper.vue'
 import {
   DISCOUNT_REASONS, POS_PROMOTIONS, cashRound, changeDue, formatMoney, formatPhone, lineBreakdown, phoneExample,
-  quickTenderAmounts, saleTotals, taxRuleFor, taxRuleSummary, validateCoupon, validateCustomer,
+  isEmail, quickTenderAmounts, saleTotals, taxRuleFor, taxRuleSummary, validateCoupon, validateCustomer,
   type Coupon, type CustomerDraft, type CustomerField, type DiscountReason, type LineDiscount,
 } from './pos/saleModel'
+import { renderReceipt, sampleSale, type ReceiptDoc, type ReceiptSale } from './receipts/receiptModel'
 
 const route = useRoute()
 const router = useRouter()
@@ -1105,7 +1107,63 @@ const activeRegister = computed(() => {
   return store.registerList.find((r) => r.locationId === locId) ?? store.registerList[0]!
 })
 
-function completeApproved() {
+/* ── Receipts — printed from the template assigned to this POS channel ── */
+const receiptTemplate = computed(() => store.templateForChannel(store.activeChannelId))
+type ReceiptDelivery = 'print' | 'email'
+const receiptSheet = ref<{ doc: ReceiptDoc; number: string; delivery: ReceiptDelivery; email: string; sent: boolean } | null>(null)
+const receiptEmailTouched = ref(false)
+const receiptEmailError = computed(() =>
+  receiptSheet.value && receiptEmailTouched.value && !isEmail(receiptSheet.value.email) ? 'Enter an email like name@example.com' : '',
+)
+const receiptPrinter = computed(() => activeRegister.value.pairedPrinter)
+const receiptSubject = computed(() => store.receiptSettings.emailSubject.replace('{{store}}', store.activeLocation.name))
+/** POS Settings shows the template this register prints, with the sample sale. */
+const receiptSettingsPreview = computed(() =>
+  renderReceipt(receiptTemplate.value, sampleSale(), store.receiptLocationFor(store.activeLocation.id)),
+)
+
+/** The sale as its receipt needs it — taken before the cart clears. */
+function receiptSaleFor(number: string): ReceiptSale {
+  const now = new Date()
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const [first = '', last = ''] = activeStaffMember.value.name.split(' ')
+  return {
+    number,
+    date: `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`,
+    register: activeRegister.value.name,
+    staff: last ? `${first} ${last[0]}.` : first,
+    customer: attachedCustomer.value ? { name: attachedCustomer.value.name, points: attachedCustomer.value.points } : null,
+    lines: cart.value.map((c) => ({ name: c.name, variant: c.variant, sku: c.sku, qty: c.qty, price: c.price, discount: c.discount })),
+    orderDiscount: orderDiscount.value,
+    coupon: appliedCoupon.value,
+    tender: selectedTender.value,
+    cashTendered: selectedTender.value === 'cash' ? cashTendered.value : null,
+    cardLast4: selectedTender.value === 'card' ? '4242' : undefined,
+  }
+}
+
+function sendReceiptEmail() {
+  const sheet = receiptSheet.value
+  if (!sheet) return
+  receiptEmailTouched.value = true
+  if (!isEmail(sheet.email)) {
+    nextTick(() => document.getElementById('pos-receipt-email')?.focus())
+    return
+  }
+  sheet.sent = true
+  announce(`Receipt emailed to ${sheet.email}`)
+}
+
+/** No printer on this register: send the same receipt by email instead. */
+function emailInsteadOfPrint() {
+  const sheet = receiptSheet.value
+  if (!sheet) return
+  sheet.delivery = 'email'
+  receiptEmailTouched.value = false
+  nextTick(() => document.getElementById('pos-receipt-email')?.focus())
+}
+
+function completeApproved(delivery: ReceiptDelivery | null = null) {
   // Append real transaction to store — the demo loop
   const locId = store.activeLocation?.id ?? store.locationList[0]!.id
   const txn = commerce.addPosOrder({
@@ -1123,10 +1181,19 @@ function completeApproved() {
       price: c.price,
     })),
   })
+  // Render before the cart clears; the receipt is the sale as it was charged
+  const receipt = delivery
+    ? { doc: renderReceipt(receiptTemplate.value, receiptSaleFor(txn.orderNumber), store.receiptLocationFor(locId)), email: attachedCustomer.value?.email ?? '' }
+    : null
   if (attachedCustomerId.value) contacts.recordLoyaltyPurchase(attachedCustomerId.value, amountDue.value)
   lastTxnId.value = txn.orderNumber
   paymentStep.value = 'idle'
   clearCart()
+  if (receipt && delivery) {
+    receiptEmailTouched.value = false
+    receiptSheet.value = { ...receipt, number: txn.orderNumber, delivery, sent: delivery === 'email' && isEmail(receipt.email) }
+    if (delivery === 'print' && receiptPrinter.value) announce(`Receipt printed on ${receiptPrinter.value}`)
+  }
   saleCompleteVisible.value = true
   setTimeout(() => { saleCompleteVisible.value = false }, 3000)
 }
@@ -1175,7 +1242,6 @@ const TENDER_ORDER: TenderType[] = ['card', 'tap_to_pay', 'cash', 'gift_card', '
 const posSettings = reactive({
   printReceipt: true,
   emailReceipt: true,
-  receiptFooter: 'Thanks for shopping with us!',
   enabledTenders: { card: true, tap_to_pay: true, cash: true, gift_card: true, split: true } as Record<TenderType, boolean>,
 })
 
@@ -2150,12 +2216,16 @@ const apkQrUrl = computed(() =>
               <div class="pos-settings__scroll">
                 <div class="pos-settings__group-label">Receipt</div>
                 <div class="pos-settings__group">
-                  <div class="pos-receipt-preview">
-                    <div class="pos-receipt-preview__store">{{ store.activeLocation?.name }}</div>
-                    <div class="pos-receipt-preview__line"><span>Classic crew tee</span><span>$39.00</span></div>
-                    <div class="pos-receipt-preview__line"><span>Cap — Navy</span><span>$35.00</span></div>
-                    <div class="pos-receipt-preview__line pos-receipt-preview__line--total"><span>Total</span><span>$81.40</span></div>
-                    <div class="pos-receipt-preview__footer">{{ posSettings.receiptFooter }}</div>
+                  <div class="pos-setting-row">
+                    <div class="pos-setting-row__icon"><v-icon size="15">receipt-text</v-icon></div>
+                    <div>
+                      <div class="pos-setting-row__label">Template</div>
+                      <div class="pos-setting-row__sub">Set for {{ store.activeChannel?.name ?? 'this channel' }} in Retail › Receipts</div>
+                    </div>
+                    <div class="pos-setting-row__value">{{ receiptTemplate.name }}</div>
+                  </div>
+                  <div class="pos-receipt-settings-preview" aria-hidden="true">
+                    <ReceiptPaper :doc="receiptSettingsPreview" :scale="0.7" />
                   </div>
                   <div class="pos-setting-row">
                     <div class="pos-setting-row__icon"><v-icon size="15">printer</v-icon></div>
@@ -2166,14 +2236,6 @@ const apkQrUrl = computed(() =>
                     <div class="pos-setting-row__icon"><v-icon size="15">mail</v-icon></div>
                     <div class="pos-setting-row__label">Email receipt</div>
                     <v-switch v-model="posSettings.emailReceipt" color="#0d9488" hide-details density="compact" class="pos-setting-row__control" />
-                  </div>
-                  <div class="pos-setting-row pos-setting-row--stacked">
-                    <div class="pos-setting-row__label">Footer message</div>
-                    <v-text-field
-                      v-model="posSettings.receiptFooter"
-                      hide-details
-                      style="font-size: 13px;"
-                    />
                   </div>
                 </div>
 
@@ -2980,6 +3042,74 @@ const apkQrUrl = computed(() =>
             </div>
           </transition>
 
+          <!-- ── Receipt sheet: the sale's receipt, from this channel's template ── -->
+          <transition name="pos-variant-up">
+            <div v-if="receiptSheet" class="pos-variant-overlay" @click.self="receiptSheet = null">
+              <div class="pos-variant-sheet pos-receipt-sheet" role="dialog" aria-modal="true" aria-labelledby="pos-receipt-title">
+                <div class="pos-variant-sheet__grabber" />
+                <div class="pos-variant-sheet__header">
+                  <div class="pos-variant-sheet__thumb pos-receipt-sheet__icon">
+                    <v-icon size="18">{{ receiptSheet.delivery === 'print' ? 'printer' : 'mail' }}</v-icon>
+                  </div>
+                  <div class="pos-variant-sheet__info">
+                    <div id="pos-receipt-title" class="pos-variant-sheet__title">
+                      <template v-if="receiptSheet.delivery === 'print'">
+                        {{ receiptPrinter ? `Printed on ${receiptPrinter}` : 'No receipt printer on this register' }}
+                      </template>
+                      <template v-else>{{ receiptSheet.sent ? `Emailed to ${receiptSheet.email}` : 'Email the receipt' }}</template>
+                    </div>
+                    <div class="pos-variant-sheet__sub">
+                      {{ receiptSheet.number }} · {{ receiptTemplate.name }} template<template v-if="receiptSheet.delivery === 'email'"> · “{{ receiptSubject }}”</template>
+                    </div>
+                  </div>
+                  <button class="pos-variant-sheet__close" aria-label="Close receipt" @click="receiptSheet = null">
+                    <v-icon size="14">x</v-icon>
+                  </button>
+                </div>
+
+                <div class="pos-sheet-body">
+                  <div v-if="receiptSheet.delivery === 'print' && !receiptPrinter" class="pos-inline-alert pos-inline-alert--warn" role="alert">
+                    <v-icon size="16">printer-x</v-icon>
+                    <span>{{ activeRegister.name }} has no printer paired.</span>
+                    <button type="button" class="pos-link-btn" @click="emailInsteadOfPrint">Email it instead</button>
+                  </div>
+
+                  <form
+                    v-if="receiptSheet.delivery === 'email' && !receiptSheet.sent"
+                    class="pos-receipt-sheet__email"
+                    novalidate
+                    @submit.prevent="sendReceiptEmail"
+                  >
+                    <label class="pos-line-sheet__field-label" for="pos-receipt-email">Email address</label>
+                    <input
+                      id="pos-receipt-email"
+                      v-model="receiptSheet.email"
+                      class="pos-line-sheet__input pos-line-sheet__input--text"
+                      type="email"
+                      inputmode="email"
+                      autocomplete="email"
+                      placeholder="name@example.com"
+                      :aria-invalid="!!receiptEmailError"
+                      aria-describedby="pos-receipt-email-msg"
+                    />
+                    <div id="pos-receipt-email-msg" class="pos-line-sheet__hint" :class="{ 'pos-line-sheet__hint--error': receiptEmailError }">
+                      {{ receiptEmailError || 'Sent once. It doesn’t sign the shopper up for marketing.' }}
+                    </div>
+                    <button type="submit" class="pos-line-sheet__primary">Send receipt</button>
+                  </form>
+
+                  <div class="pos-receipt-sheet__paper">
+                    <ReceiptPaper :doc="receiptSheet.doc" :scale="0.9" />
+                  </div>
+                </div>
+
+                <div class="pos-receipt-sheet__footer">
+                  <button class="pos-line-sheet__primary" @click="receiptSheet = null">Done</button>
+                </div>
+              </div>
+            </div>
+          </transition>
+
           <!-- ── Transaction detail sheet ─────────────────────── -->
           <transition name="pos-variant-up">
             <div v-if="detailTxn" class="pos-variant-overlay" @click.self="closeTxnDetail">
@@ -3158,15 +3288,15 @@ const apkQrUrl = computed(() =>
                   </div>
 
                   <div class="pos-payment-sheet__receipt-actions">
-                    <button class="pos-receipt-action" @click="completeApproved">
+                    <button class="pos-receipt-action" @click="completeApproved('email')">
                       <v-icon size="16">mail</v-icon>
                       <span>Email receipt</span>
                     </button>
-                    <button class="pos-receipt-action" @click="completeApproved">
+                    <button class="pos-receipt-action" @click="completeApproved('print')">
                       <v-icon size="16">printer</v-icon>
                       <span>Print receipt</span>
                     </button>
-                    <button class="pos-receipt-action pos-receipt-action--primary" @click="completeApproved">
+                    <button class="pos-receipt-action pos-receipt-action--primary" @click="completeApproved(null)">
                       <span>Done</span>
                     </button>
                   </div>
@@ -5601,42 +5731,16 @@ $pos-target: 44px;
   &--off    { background: #9ca3af; }
 }
 
-.pos-receipt-preview {
-  margin: 12px 14px;
-  padding: 12px 14px;
-  border: 1px dashed $pos-hairline;
-  border-radius: 8px;
-  font-family: monospace;
-  font-size: 10px;
-  color: $pos-muted;
-
-  &__store {
-    text-align: center;
-    font-weight: 700;
-    color: $pos-ink;
-    font-size: 11px;
-    margin-bottom: 8px;
-  }
-
-  &__line {
-    display: flex;
-    justify-content: space-between;
-    padding: 1px 0;
-
-    &--total {
-      border-top: 1px dashed $pos-hairline;
-      margin-top: 4px;
-      padding-top: 4px;
-      font-weight: 700;
-      color: $pos-ink;
-    }
-  }
-
-  &__footer {
-    text-align: center;
-    margin-top: 8px;
-    font-style: italic;
-  }
+/* Settings: the template this register prints, cropped to its top */
+.pos-receipt-settings-preview {
+  display: flex;
+  justify-content: center;
+  max-height: 240px;
+  margin: 4px 14px 12px;
+  padding-top: 12px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: $pos-bg;
 }
 
 /* ── Transaction detail sheet ──────────────────────────────────── */
@@ -6055,6 +6159,33 @@ $pos-target: 44px;
   border-top: 1px solid $pos-hairline;
 
   .pos-cash__change { margin-bottom: 10px; text-align: center; }
+}
+
+.pos-receipt-sheet {
+  max-height: 92%;
+
+  &__icon { background: $pos-accent-soft; color: $pos-accent-ink; }
+
+  &__email {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  &__paper {
+    display: flex;
+    justify-content: center;
+    padding: 16px 0;
+    border-radius: 12px;
+    background: $pos-bg;
+  }
+
+  &__footer {
+    display: flex;
+    flex-direction: column;
+    padding: 8px 14px 4px;
+    border-top: 1px solid $pos-hairline;
+  }
 }
 
 .pos-payment-sheet__rounding {
