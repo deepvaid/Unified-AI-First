@@ -12,6 +12,8 @@ export interface RetailLocation {
   name: string
   address: string
   country: Country
+  /** State or province code — sets the register's tax (e.g. BC = GST + PST). */
+  region?: string
   /** Stores sell at a register; warehouses only hold stock. */
   kind: 'store' | 'warehouse'
   registerCount: number
@@ -86,6 +88,7 @@ const locations: RetailLocation[] = [
     name: 'Bondi Junction',
     address: '500 Oxford St, Bondi Junction NSW 2022',
     country: 'AU',
+    region: 'NSW',
     kind: 'store',
     registerCount: 3,
     staffCount: 5,
@@ -97,6 +100,7 @@ const locations: RetailLocation[] = [
     name: 'Chadstone',
     address: '1341 Dandenong Rd, Chadstone VIC 3148',
     country: 'AU',
+    region: 'VIC',
     kind: 'store',
     registerCount: 2,
     staffCount: 4,
@@ -115,10 +119,23 @@ const locations: RetailLocation[] = [
     status: 'open',
   },
   {
+    id: 'loc-robson',
+    name: 'Robson Street',
+    address: '1025 Robson St, Vancouver BC V6E 1A9',
+    country: 'CA',
+    region: 'BC',
+    kind: 'store',
+    registerCount: 2,
+    staffCount: 3,
+    todaysSales: 4385.75,
+    status: 'open',
+  },
+  {
     id: 'loc-soho',
     name: 'SoHo Flagship',
     address: '460 Broadway, New York, NY 10013',
     country: 'US',
+    region: 'NY',
     kind: 'store',
     registerCount: 4,
     staffCount: 6,
@@ -168,6 +185,8 @@ const registers: Register[] = [
   { id: 'reg-chad-2',  name: 'Register 2',     locationId: 'loc-chadstone', deviceType: 'Android Tablet', deviceModel: 'Galaxy Tab S9',    appVersion: '1.3.9', status: 'offline', lastSeenAt: '2026-05-23T11:12:00Z', pendingOfflineTxns: 7, pairedTerminal: 'Stripe S700',     pairedPrinter: 'Star mC-Print3' },
   { id: 'reg-auck-1',  name: 'Counter',        locationId: 'loc-auckland',  deviceType: 'iPad',           deviceModel: 'iPad Air',         appVersion: '1.4.2', status: 'online',  lastSeenAt: '2026-05-23T14:50:00Z', pendingOfflineTxns: 0, pairedTerminal: 'Stripe M2',       pairedPrinter: 'Star mC-Print3' },
   { id: 'reg-auck-2',  name: 'Floor roaming',  locationId: 'loc-auckland',  deviceType: 'iPhone',         deviceModel: 'iPhone 14',        appVersion: '1.4.2', status: 'online',  lastSeenAt: '2026-05-23T14:51:00Z', pendingOfflineTxns: 0, pairedTerminal: 'Tap to Pay',       pairedPrinter: undefined },
+  { id: 'reg-robson-1', name: 'Front counter', locationId: 'loc-robson',    deviceType: 'iPad',           deviceModel: 'iPad Air',         appVersion: '1.4.2', status: 'online',  lastSeenAt: '2026-05-23T14:56:00Z', pendingOfflineTxns: 0, pairedTerminal: 'Stripe S700',     pairedPrinter: 'Star mC-Print3' },
+  { id: 'reg-robson-2', name: 'Counter 2',     locationId: 'loc-robson',    deviceType: 'Android Tablet', deviceModel: 'Galaxy Tab S9 FE', appVersion: '1.4.2', status: 'online',  lastSeenAt: '2026-05-23T14:54:00Z', pendingOfflineTxns: 0, pairedTerminal: 'Stripe S700',     pairedPrinter: 'Epson TM-m30III' },
   { id: 'reg-soho-1',  name: 'Flagship 1',     locationId: 'loc-soho',      deviceType: 'iPad',           deviceModel: 'iPad Pro 11"',     appVersion: '1.4.2', status: 'online',  lastSeenAt: '2026-05-23T14:55:00Z', pendingOfflineTxns: 0, pairedTerminal: 'Stripe S700',     pairedPrinter: 'Star mC-Print3' },
   { id: 'reg-soho-2',  name: 'Flagship 2',     locationId: 'loc-soho',      deviceType: 'iPad',           deviceModel: 'iPad Pro 11"',     appVersion: '1.4.2', status: 'online',  lastSeenAt: '2026-05-23T14:52:00Z', pendingOfflineTxns: 0, pairedTerminal: 'Stripe S700',     pairedPrinter: 'Star mC-Print3' },
   { id: 'reg-soho-3',  name: 'Pop-up',         locationId: 'loc-soho',      deviceType: 'iPhone',         deviceModel: 'iPhone 15',        appVersion: '1.4.2', status: 'online',  lastSeenAt: '2026-05-23T14:49:00Z', pendingOfflineTxns: 0, pairedTerminal: 'Tap to Pay',       pairedPrinter: undefined },
@@ -181,6 +200,7 @@ const staff: StaffMember[] = [
   { id: 'assoc-4', name: 'Marcus Lee',       role: 'manager',          locationIds: ['loc-chadstone'],                   pinSet: true, active: true,  lastLoginAt: '2026-05-23T09:18:00Z' },
   { id: 'assoc-5', name: 'Olivia Walsh',     role: 'staff',        locationIds: ['loc-chadstone'],                   pinSet: false, active: false, lastLoginAt: '2026-05-19T15:20:00Z' },
   { id: 'assoc-6', name: 'Ethan Park',       role: 'senior_staff', locationIds: ['loc-auckland'],                    pinSet: true, active: true,  lastLoginAt: '2026-05-23T11:00:00Z' },
+  { id: 'assoc-9', name: 'Noah Tremblay',    role: 'senior_staff', locationIds: ['loc-robson'],                      pinSet: true, active: true,  lastLoginAt: '2026-05-23T14:20:00Z' },
   { id: 'assoc-7', name: 'Ava Brennan',      role: 'manager',          locationIds: ['loc-soho'],                        pinSet: true, active: true,  lastLoginAt: '2026-05-23T13:55:00Z' },
   { id: 'assoc-8', name: 'Daniel Rivera',    role: 'staff',        locationIds: ['loc-soho'],                        pinSet: true, active: true,  lastLoginAt: '2026-05-23T14:11:00Z' },
 ]
