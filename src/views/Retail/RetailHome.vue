@@ -105,7 +105,7 @@ interface TodoItem {
 const todos = ref<TodoItem[]>([
   { id: 't1', title: 'Pair your first register',     desc: 'Open the POS app on a tablet and follow the pairing flow', done: true,  path: '/registers' },
   { id: 't2', title: 'Add at least 1 staff member',   desc: 'Set up PIN-based sign-in for staff',                       done: true,  path: '/staff' },
-  { id: 't3', title: 'Configure receipt template',    desc: 'Add your logo and contact details',                        done: false, path: '/settings' },
+  { id: 't3', title: 'Choose a receipt template',     desc: 'Pick or customise what your receipts print',               done: false, path: '/receipts' },
   { id: 't4', title: 'Pair a payment terminal',       desc: 'Connect Stripe Reader or enable Tap to Pay',               done: false, path: '/hardware' },
   { id: 't5', title: 'Run a test transaction',        desc: 'Process a $0.01 sale to verify end-to-end',                done: false, path: '/pos-preview' },
 ])
