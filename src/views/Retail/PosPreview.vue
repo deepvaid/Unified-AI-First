@@ -1032,7 +1032,7 @@ function openPay() {
 function selectTender(t: TenderType) {
   selectedTender.value = t
   // Bring the amount-handed-over buttons up; the change line is pinned below them
-  if (t === 'cash') nextTick(() => screenEl.value?.querySelector('.pos-cash')?.scrollIntoView({ block: 'nearest' }))
+  if (t === 'cash') nextTick(() => screenEl.value?.querySelector('.pos-cash')?.scrollIntoView({ block: 'end' }))
 }
 
 function processPayment() {
@@ -6139,6 +6139,7 @@ $pos-target: 44px;
   flex-direction: column;
   gap: 8px;
   padding: 4px 18px 12px;
+  scroll-margin-bottom: 160px; // clears the pinned change-due footer when scrolled into view
 
   &__change {
     min-height: 24px;
