@@ -313,13 +313,25 @@ export interface CustomerValidation {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 
-/** Digits in national form: +61 412… → 0412…, +1 604… → 604…. */
-export function normalizePhone(raw: string, country: Country): string {
-  let d = raw.replace(/\D/g, '')
-  if (country === 'AU' && d.startsWith('61')) d = `0${d.slice(2)}`
-  if (country === 'NZ' && d.startsWith('64')) d = `0${d.slice(2)}`
-  if ((country === 'CA' || country === 'US') && d.length === 11 && d.startsWith('1')) d = d.slice(1)
-  return d
+const DIAL_CODE: Record<Country, string> = { AU: '61', NZ: '64', CA: '1', US: '1' }
+
+/** National digits for a number dialled in `country`: 61 412… → 0412…, 1 604… → 604…. */
+function nationalDigits(digits: string, country: Country): string {
+  if ((country === 'AU' || country === 'NZ') && digits.startsWith(DIAL_CODE[country])) return `0${digits.slice(2)}`
+  if ((country === 'CA' || country === 'US') && digits.length === 11 && digits.startsWith('1')) return digits.slice(1)
+  return digits
+}
+
+/**
+ * One comparable form for any number: "+<country code><number>".
+ * Typed with "+", it is international and taken as-is — so a visitor's number
+ * works at any store. Typed without, it is read in the store's own country.
+ */
+export function canonicalPhone(raw: string, country: Country): string {
+  const digits = raw.replace(/\D/g, '')
+  if (!digits) return ''
+  if (raw.trim().startsWith('+')) return `+${digits}`
+  return `+${DIAL_CODE[country]}${nationalDigits(digits, country).replace(/^0/, '')}`
 }
 
 const PHONE_RULES: Record<Country, { re: RegExp; example: string }> = {
@@ -333,12 +345,32 @@ export function phoneExample(country: Country): string {
   return PHONE_RULES[country].example
 }
 
+/** The country a canonical number belongs to, when it is one the stores sell in. */
+function homeCountryOf(canonical: string): Country | null {
+  if (canonical.startsWith('+61')) return 'AU'
+  if (canonical.startsWith('+64')) return 'NZ'
+  if (canonical.startsWith('+1')) return 'CA' // NANP: CA and US share the format
+  return null
+}
+
+/** Valid if it fits its own country's rule; other countries need a full international length (E.164: 8–15 digits). */
+function phoneIsValid(canonical: string): boolean {
+  const home = homeCountryOf(canonical)
+  if (!home) return /^\+\d{8,15}$/.test(canonical)
+  const rest = canonical.slice(DIAL_CODE[home].length + 1)
+  return PHONE_RULES[home].re.test(home === 'AU' || home === 'NZ' ? `0${rest}` : rest)
+}
+
+/** Stored with its country code, so a number saved in Vancouver still reads right in Sydney. */
 export function formatPhone(raw: string, country: Country): string {
-  const d = normalizePhone(raw, country)
-  if (!PHONE_RULES[country].re.test(d)) return raw.trim()
-  if (country === 'CA' || country === 'US') return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`
-  if (country === 'AU') return d.startsWith('04') ? `${d.slice(0, 4)} ${d.slice(4, 7)} ${d.slice(7)}` : `(${d.slice(0, 2)}) ${d.slice(2, 6)} ${d.slice(6)}`
-  return `${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6)}`
+  const c = canonicalPhone(raw, country)
+  if (!c || !phoneIsValid(c)) return raw.trim()
+  const home = homeCountryOf(c)
+  const n = home ? c.slice(DIAL_CODE[home].length + 1) : ''
+  if (home === 'CA') return `+1 (${n.slice(0, 3)}) ${n.slice(3, 6)}-${n.slice(6)}`
+  if (home === 'AU') return n.startsWith('4') ? `+61 ${n.slice(0, 3)} ${n.slice(3, 6)} ${n.slice(6)}` : `+61 ${n.slice(0, 1)} ${n.slice(1, 5)} ${n.slice(5)}`
+  if (home === 'NZ') return `+64 ${n.slice(0, 2)} ${n.slice(2, 5)} ${n.slice(5)}`
+  return raw.trim().replace(/\s+/g, ' ')
 }
 
 export function validateCustomer(
@@ -349,19 +381,23 @@ export function validateCustomer(
 ): CustomerValidation {
   const errors: CustomerValidation['errors'] = {}
   const email = draft.email.trim().toLowerCase()
-  const phone = normalizePhone(draft.phone, country)
+  const phone = canonicalPhone(draft.phone, country)
 
   if (!draft.firstName.trim()) errors.firstName = 'Enter a first name'
   if (email && !EMAIL_RE.test(email)) errors.email = 'Enter an email like name@example.com'
   else if (!email && draft.emailReceipts) errors.email = 'Add an email to send receipts'
-  if (draft.phone.trim() && !PHONE_RULES[country].re.test(phone)) errors.phone = `Use a number like ${PHONE_RULES[country].example}`
+  if (draft.phone.trim() && !phoneIsValid(phone)) {
+    errors.phone = draft.phone.trim().startsWith('+')
+      ? 'Check the number — country code, then the full number'
+      : `Use a number like ${PHONE_RULES[country].example}, or start with + and the country code`
+  }
   else if (!draft.phone.trim() && draft.marketingSms) errors.phone = 'Add a mobile number for SMS'
 
   let duplicate: CustomerValidation['duplicate'] = null
   for (const o of others) {
     if (o.id === selfId) continue
     if (email && !errors.email && o.email.trim().toLowerCase() === email) { duplicate = { id: o.id, name: o.name, field: 'email' }; break }
-    if (phone && !errors.phone && normalizePhone(o.phone, country) === phone) { duplicate = { id: o.id, name: o.name, field: 'phone' }; break }
+    if (phone && !errors.phone && canonicalPhone(o.phone, country) === phone) { duplicate = { id: o.id, name: o.name, field: 'phone' }; break }
   }
   if (duplicate) errors[duplicate.field] = `Already used by ${duplicate.name}`
 

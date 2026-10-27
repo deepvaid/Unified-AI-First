@@ -796,10 +796,9 @@ function removeOrderDiscount() {
   if (d) flashUndo('Sale discount removed', () => { orderDiscount.value = d })
 }
 
-/* ── Customer picker (in-frame sheet: search real customers, attach loyalty, inline create) ── */
+/* ── Customer picker (in-frame sheet: search real customers, attach loyalty; Create hands off to the customer sheet) ── */
 const customerPickerOpen = ref(false)
 const customerPickerSearch = ref('')
-const customerPickerMode = ref<'search' | 'create'>('search')
 const customerPickerFieldRef = ref<{ focus: () => void } | null>(null)
 
 const customerPickerResults = computed<PosCustomerView[]>(() => {
@@ -815,7 +814,6 @@ const customerPickerResults = computed<PosCustomerView[]>(() => {
 })
 
 function openCustomerPicker() {
-  customerPickerMode.value = 'search'
   customerPickerSearch.value = ''
   customerPickerOpen.value = true
   nextTick(() => customerPickerFieldRef.value?.focus?.())
@@ -832,28 +830,11 @@ function attachTopResult() {
   if (top) attachExistingCustomer(top)
 }
 
-/* Inline create — prefill from the current query, then attach on save */
+/* Create from the sale — the same customer sheet as Edit, prefilled from the search */
 function startCreateFromPicker() {
-  const q = customerPickerSearch.value.trim()
-  const looksLikeEmail = q.includes('@')
-  newCustomerDraft.name = looksLikeEmail ? '' : q
-  newCustomerDraft.email = looksLikeEmail ? q : ''
-  newCustomerDraft.phone = ''
-  customerPickerMode.value = 'create'
-}
-
-function createAndAttachCustomer() {
-  if (!newCustomerDraft.name.trim()) return
-  const c = toPosCustomer(contacts.addLoyaltyContact({
-    name: newCustomerDraft.name.trim(),
-    email: newCustomerDraft.email.trim(),
-    phone: newCustomerDraft.phone.trim(),
-    homeLocationId: store.activeLocation.id,
-  }))
-  newCustomerDraft.name = ''
-  newCustomerDraft.email = ''
-  newCustomerDraft.phone = ''
-  attachExistingCustomer(c)
+  const query = customerPickerSearch.value.trim()
+  customerPickerOpen.value = false
+  openCreateCustomer(query, true)
 }
 
 /* ── Attached loyalty customer (rides alongside customerName) ───── */
@@ -868,24 +849,31 @@ function detachCustomer() {
   const id = attachedCustomerId.value
   const name = customerName.value
   attachedCustomerId.value = null
-  customerSheetId.value = null
+  hideCustomerSheet()
   if (id !== null) flashUndo(`${name} removed from sale`, () => { attachedCustomerId.value = id })
 }
 
-/* ── Customer sheet: view the attached customer, edit their details ── */
-const customerSheetId = ref<number | null>(null)
-const customerSheetMode = ref<'view' | 'edit'>('view')
-/** Where Save/Cancel go: back to the summary (opened from the sale) or closed (opened as Edit from a profile). */
+/* ── Customer sheet: one form for New and Edit, plus the on-sale summary ── */
+// Three ways in — Customers › New customer, the sale's "Create new customer", and Edit
+// on the chip or a profile — so the same checks run wherever a profile is made or changed.
+type CustomerSheetMode = 'view' | 'edit' | 'create'
+const customerSheetOpen = ref(false)
+const customerSheetId = ref<number | null>(null) // null while creating
+const customerSheetMode = ref<CustomerSheetMode>('view')
+/** Where Save/Cancel go: back to the summary (opened from the sale) or closed (New, or Edit from a profile). */
 const customerSheetReturn = ref<'view' | 'close'>('view')
+/** Created from the sale: the new customer goes straight onto it. */
+const createAttaches = ref(false)
 const customerSheetCustomer = computed(
   () => loyaltyCustomers.value.find((c) => c.id === customerSheetId.value) ?? null,
 )
 const customerSheetContact = computed(() => contacts.contacts.find((c) => c.id === customerSheetId.value) ?? null)
 
-const customerDraft = reactive<CustomerDraft>({
+const EMPTY_CUSTOMER_DRAFT: CustomerDraft = {
   firstName: '', lastName: '', email: '', phone: '', note: '',
   emailReceipts: false, marketingEmail: false, marketingSms: false,
-})
+}
+const customerDraft = reactive<CustomerDraft>({ ...EMPTY_CUSTOMER_DRAFT })
 const draftBaseline = ref('')
 const draftDirty = computed(() => JSON.stringify(customerDraft) !== draftBaseline.value)
 const showCustomerErrors = ref(false)
@@ -899,18 +887,56 @@ const customerValidation = computed(() =>
 const customerErrors = computed<Partial<Record<CustomerField, string>>>(() =>
   showCustomerErrors.value ? customerValidation.value.errors : {},
 )
+const draftName = computed(() => `${customerDraft.firstName.trim()} ${customerDraft.lastName.trim()}`.trim())
+
+function loadCustomerDraft(draft: CustomerDraft) {
+  Object.assign(customerDraft, draft)
+  draftBaseline.value = JSON.stringify(customerDraft)
+  showCustomerErrors.value = false
+  confirmDiscard.value = false
+}
+
+function hideCustomerSheet() {
+  customerSheetOpen.value = false
+  customerSheetId.value = null
+  confirmDiscard.value = false
+}
 
 function openCustomerSheet(id: number, mode: 'view' | 'edit') {
   customerSheetId.value = id
   customerSheetReturn.value = mode === 'edit' ? 'close' : 'view'
   customerSheetMode.value = 'view'
+  customerSheetOpen.value = true
   if (mode === 'edit') startCustomerEdit()
+}
+
+/** Whatever the cashier already typed in search — an email, a number or a name — starts the form. */
+function draftFromQuery(query: string): CustomerDraft {
+  const draft = { ...EMPTY_CUSTOMER_DRAFT }
+  if (query.includes('@')) draft.email = query
+  else if (/^\+?[\d\s().-]{6,}$/.test(query)) draft.phone = query
+  else {
+    const [first = '', ...rest] = query.split(/\s+/)
+    draft.firstName = first
+    draft.lastName = rest.join(' ')
+  }
+  return draft
+}
+
+function openCreateCustomer(query = '', attach = false) {
+  customerSheetId.value = null
+  customerSheetMode.value = 'create'
+  customerSheetReturn.value = 'close'
+  createAttaches.value = attach
+  loadCustomerDraft(draftFromQuery(query))
+  customerSheetOpen.value = true
+  nextTick(() => document.getElementById('pos-cust-firstName')?.focus())
 }
 
 function startCustomerEdit() {
   const c = customerSheetContact.value
   if (!c) return
-  Object.assign(customerDraft, {
+  loadCustomerDraft({
     firstName: c.firstName,
     lastName: c.lastName,
     email: c.email,
@@ -920,19 +946,19 @@ function startCustomerEdit() {
     marketingEmail: !!c.optedInEmail,
     marketingSms: !!c.optedInSms,
   })
-  draftBaseline.value = JSON.stringify(customerDraft)
-  showCustomerErrors.value = false
-  confirmDiscard.value = false
   customerSheetMode.value = 'edit'
 }
 
 function leaveCustomerEdit() {
-  confirmDiscard.value = false
-  if (customerSheetReturn.value === 'close') customerSheetId.value = null
-  else customerSheetMode.value = 'view'
+  if (customerSheetReturn.value === 'close') {
+    hideCustomerSheet()
+  } else {
+    confirmDiscard.value = false
+    customerSheetMode.value = 'view'
+  }
 }
 
-function saveCustomerEdit() {
+function saveCustomer() {
   showCustomerErrors.value = true
   const errors = customerValidation.value.errors
   // Form order, so focus lands on the first error the cashier sees
@@ -941,17 +967,47 @@ function saveCustomerEdit() {
     nextTick(() => document.getElementById(`pos-cust-${first}`)?.focus())
     return
   }
-  const c = customerSheetContact.value
-  if (!c) return
-  contacts.updateContact(c.id, {
+  const details = {
     firstName: customerDraft.firstName.trim(),
     lastName: customerDraft.lastName.trim(),
     email: customerDraft.email.trim(),
     phone: customerDraft.phone.trim() ? formatPhone(customerDraft.phone, posCountry.value) : '',
     optedInEmail: customerDraft.marketingEmail,
     optedInSms: customerDraft.marketingSms,
+  }
+  const note = customerDraft.note.trim() || undefined
+
+  if (customerSheetMode.value === 'create') {
+    const created = contacts.addLoyaltyContact({
+      name: draftName.value,
+      email: details.email,
+      phone: details.phone,
+      homeLocationId: store.activeLocation.id,
+    })
+    // addLoyaltyContact splits a full name at the first space; keep the names as typed
+    contacts.updateContact(created.id, {
+      ...details,
+      customFields: { emailReceipts: customerDraft.emailReceipts },
+      loyalty: created.loyalty && { ...created.loyalty, notes: note },
+    })
+    const name = draftName.value
+    hideCustomerSheet()
+    if (createAttaches.value) {
+      attachedCustomerId.value = created.id
+      flashGridToast(`${name} joined and was added to the sale`)
+    } else {
+      selectedCustomerId.value = created.id
+      flashGridToast(`${name} joined as a member`)
+    }
+    return
+  }
+
+  const c = customerSheetContact.value
+  if (!c) return
+  contacts.updateContact(c.id, {
+    ...details,
     customFields: { ...c.customFields, emailReceipts: customerDraft.emailReceipts },
-    loyalty: c.loyalty && { ...c.loyalty, notes: customerDraft.note.trim() || undefined },
+    loyalty: c.loyalty && { ...c.loyalty, notes: note },
   })
   leaveCustomerEdit()
   flashGridToast('Customer details updated')
@@ -967,31 +1023,31 @@ function cancelCustomerEdit() {
 }
 
 function closeCustomerSheet() {
-  if (customerSheetMode.value === 'edit' && draftDirty.value) {
+  if (customerSheetMode.value !== 'view' && draftDirty.value) {
     closeAfterDiscard.value = true
     confirmDiscard.value = true
     return
   }
-  customerSheetId.value = null
+  hideCustomerSheet()
 }
 
 function discardCustomerEdit() {
-  if (closeAfterDiscard.value) {
-    confirmDiscard.value = false
-    customerSheetId.value = null
-  } else {
-    leaveCustomerEdit()
-  }
+  if (closeAfterDiscard.value) hideCustomerSheet()
+  else leaveCustomerEdit()
 }
 
-/** The email/phone belongs to someone else — switch to them rather than split one shopper into two profiles. */
+/** From the sale, a duplicate goes onto it; from Customers, it opens that profile. */
+const duplicateGoesToSale = computed(() =>
+  customerSheetMode.value === 'create' ? createAttaches.value : attachedCustomerId.value === customerSheetId.value,
+)
+
+/** The email/phone belongs to someone else — use them rather than split one shopper into two profiles. */
 function useDuplicateCustomer() {
   const dup = customerValidation.value.duplicate
   if (!dup) return
-  const onSale = attachedCustomerId.value === customerSheetId.value
-  customerSheetId.value = null
-  confirmDiscard.value = false
-  if (onSale) {
+  const toSale = duplicateGoesToSale.value
+  hideCustomerSheet()
+  if (toSale) {
     attachedCustomerId.value = dup.id
     flashGridToast(`${dup.name} is now on the sale`)
   } else {
@@ -1240,25 +1296,6 @@ function attachCustomerToSale(c: PosCustomerView) {
   attachedCustomerId.value = c.id
   posView.value = 'sale'
   flashGridToast(`${c.name} added to sale`)
-}
-
-/* New-customer dialog */
-const newCustomerOpen = ref(false)
-const newCustomerDraft = reactive({ name: '', email: '', phone: '' })
-function saveNewCustomer() {
-  if (!newCustomerDraft.name.trim()) return
-  const c = toPosCustomer(contacts.addLoyaltyContact({
-    name: newCustomerDraft.name.trim(),
-    email: newCustomerDraft.email.trim(),
-    phone: newCustomerDraft.phone.trim(),
-    homeLocationId: store.activeLocation.id,
-  }))
-  selectedCustomerId.value = c.id
-  newCustomerOpen.value = false
-  newCustomerDraft.name = ''
-  newCustomerDraft.email = ''
-  newCustomerDraft.phone = ''
-  flashGridToast('Customer created')
 }
 
 /* ── Smart Grid (Shopify-style home tiles) ─────────────────────── */
@@ -1912,7 +1949,7 @@ const apkQrUrl = computed(() =>
               <div class="pos-customers__list">
                 <div class="pos-pane-head">
                   <div class="pos-pane-head__title">Customers</div>
-                  <button class="pos-pane-head__link" @click="newCustomerOpen = true">
+                  <button class="pos-pane-head__link" @click="openCreateCustomer()">
                     <v-icon size="13" style="margin-right: 2px;">user-plus</v-icon>
                     New customer
                   </button>
@@ -2560,135 +2597,80 @@ const apkQrUrl = computed(() =>
               <div class="pos-variant-sheet pos-customer-picker">
                 <div class="pos-variant-sheet__grabber" />
 
-                <!-- SEARCH MODE -->
-                <template v-if="customerPickerMode === 'search'">
-                  <div class="pos-variant-sheet__header">
-                    <div class="pos-variant-sheet__info">
-                      <div class="pos-variant-sheet__title">Attach customer</div>
-                      <div class="pos-variant-sheet__sub">Link loyalty, purchase history &amp; receipts</div>
-                    </div>
-                    <button class="pos-variant-sheet__close" aria-label="Close" @click="customerPickerOpen = false">
-                      <v-icon size="14">x</v-icon>
-                    </button>
+                <div class="pos-variant-sheet__header">
+                  <div class="pos-variant-sheet__info">
+                    <div class="pos-variant-sheet__title">Attach customer</div>
+                    <div class="pos-variant-sheet__sub">Link loyalty, purchase history &amp; receipts</div>
                   </div>
-
-                  <!-- Currently attached -->
-                  <div v-if="attachedCustomer" class="pos-customer-picker__attached">
-                    <div class="pos-customer-row__avatar" :style="{ background: tileGradient(String(attachedCustomer.id)) }">{{ customerInitials(attachedCustomer.name) }}</div>
-                    <div class="pos-customer-picker__attached-body">
-                      <div class="pos-customer-picker__attached-name">
-                        {{ attachedCustomer.name }}
-                        <span class="pos-tier-chip" :class="`pos-tier-chip--${attachedCustomer.tier}`">{{ LOYALTY_TIER_LABELS[attachedCustomer.tier] }}</span>
-                      </div>
-                      <div class="pos-customer-picker__attached-meta">On this sale · {{ attachedCustomer.points.toLocaleString() }} pts</div>
-                    </div>
-                    <button class="pos-customer-picker__remove" @click="detachCustomer">Remove</button>
-                  </div>
-
-                  <!-- Search -->
-                  <div class="pos-customer-picker__search">
-                    <v-text-field
-                      ref="customerPickerFieldRef"
-                      v-model="customerPickerSearch"
-                      placeholder="Search name, email or phone"
-                      density="compact"
-                      variant="solo"
-                      flat
-                      prepend-inner-icon="search"
-                      hide-details
-                      clearable
-                      bg-color="surface"
-                      rounded="lg"
-                      style="font-size: 13px;"
-                      @keydown.enter="attachTopResult"
-                    />
-                  </div>
-
-                  <!-- Results -->
-                  <div class="pos-variant-sheet__list pos-customer-picker__list">
-                    <div v-if="!customerPickerSearch.trim()" class="pos-customer-picker__section">Top customers</div>
-                    <button
-                      v-for="c in customerPickerResults"
-                      :key="c.id"
-                      class="pos-customer-row"
-                      :class="{ 'pos-customer-row--selected': attachedCustomerId === c.id }"
-                      @click="attachExistingCustomer(c)"
-                    >
-                      <div class="pos-customer-row__avatar" :style="{ background: tileGradient(String(c.id)) }">{{ customerInitials(c.name) }}</div>
-                      <div class="pos-customer-row__body">
-                        <div class="pos-customer-row__name">{{ c.name }}</div>
-                        <div class="pos-customer-row__email">{{ c.email }}</div>
-                      </div>
-                      <div class="pos-customer-row__chips">
-                        <span class="pos-tier-chip" :class="`pos-tier-chip--${c.tier}`">{{ LOYALTY_TIER_LABELS[c.tier] }}</span>
-                        <span class="pos-customer-row__spend">{{ fmt(c.lifetimeSpend) }}</span>
-                      </div>
-                    </button>
-
-                    <div v-if="customerPickerResults.length === 0" class="pos-customer-picker__empty">
-                      <v-icon size="26" color="#9ca3af">user-search</v-icon>
-                      <div class="pos-customer-picker__empty-title">No match for “{{ customerPickerSearch.trim() }}”</div>
-                    </div>
-                  </div>
-
-                  <!-- Create CTA -->
-                  <button class="pos-customer-picker__create-cta" @click="startCreateFromPicker">
-                    <v-icon size="16">user-plus</v-icon>
-                    <span>Create new customer<template v-if="customerPickerSearch.trim()"> “{{ customerPickerSearch.trim() }}”</template></span>
+                  <button class="pos-variant-sheet__close" aria-label="Close" @click="customerPickerOpen = false">
+                    <v-icon size="14">x</v-icon>
                   </button>
-                </template>
+                </div>
 
-                <!-- CREATE MODE -->
-                <template v-else>
-                  <div class="pos-variant-sheet__header">
-                    <button class="pos-customer-picker__back" @click="customerPickerMode = 'search'">
-                      <v-icon size="15">chevron-left</v-icon>
-                    </button>
-                    <div class="pos-variant-sheet__info">
-                      <div class="pos-variant-sheet__title">New customer</div>
-                      <div class="pos-variant-sheet__sub">Add to loyalty &amp; attach to this sale</div>
+                <!-- Currently attached -->
+                <div v-if="attachedCustomer" class="pos-customer-picker__attached">
+                  <div class="pos-customer-row__avatar" :style="{ background: tileGradient(String(attachedCustomer.id)) }">{{ customerInitials(attachedCustomer.name) }}</div>
+                  <div class="pos-customer-picker__attached-body">
+                    <div class="pos-customer-picker__attached-name">
+                      {{ attachedCustomer.name }}
+                      <span class="pos-tier-chip" :class="`pos-tier-chip--${attachedCustomer.tier}`">{{ LOYALTY_TIER_LABELS[attachedCustomer.tier] }}</span>
                     </div>
-                    <button class="pos-variant-sheet__close" aria-label="Close" @click="customerPickerOpen = false">
-                      <v-icon size="14">x</v-icon>
-                    </button>
+                    <div class="pos-customer-picker__attached-meta">On this sale · {{ attachedCustomer.points.toLocaleString() }} pts</div>
                   </div>
+                  <button class="pos-customer-picker__remove" @click="detachCustomer">Remove</button>
+                </div>
 
-                  <div class="pos-customer-picker__form">
-                    <v-text-field
-                      v-model="newCustomerDraft.name"
-                      label="Full name"
-                      prepend-inner-icon="user"
-                      hide-details
-                      class="mb-2"
-                      @keydown.enter="createAndAttachCustomer"
-                    />
-                    <v-text-field
-                      v-model="newCustomerDraft.email"
-                      label="Email"
-                      prepend-inner-icon="mail"
-                      hide-details
-                      class="mb-2"
-                      @keydown.enter="createAndAttachCustomer"
-                    />
-                    <v-text-field
-                      v-model="newCustomerDraft.phone"
-                      label="Phone"
-                      prepend-inner-icon="phone"
-                      hide-details
-                      @keydown.enter="createAndAttachCustomer"
-                    />
-                    <div class="pos-customer-picker__form-actions">
-                      <button class="pos-sheet-cancel" @click="customerPickerMode = 'search'">Back</button>
-                      <button
-                        class="pos-customer-picker__save"
-                        :class="{ 'pos-customer-picker__save--disabled': !newCustomerDraft.name.trim() }"
-                        @click="createAndAttachCustomer"
-                      >
-                        Create &amp; attach
-                      </button>
+                <!-- Search -->
+                <div class="pos-customer-picker__search">
+                  <v-text-field
+                    ref="customerPickerFieldRef"
+                    v-model="customerPickerSearch"
+                    placeholder="Search name, email or phone"
+                    density="compact"
+                    variant="solo"
+                    flat
+                    prepend-inner-icon="search"
+                    hide-details
+                    clearable
+                    bg-color="surface"
+                    rounded="lg"
+                    style="font-size: 13px;"
+                    @keydown.enter="attachTopResult"
+                  />
+                </div>
+
+                <!-- Results -->
+                <div class="pos-variant-sheet__list pos-customer-picker__list">
+                  <div v-if="!customerPickerSearch.trim()" class="pos-customer-picker__section">Top customers</div>
+                  <button
+                    v-for="c in customerPickerResults"
+                    :key="c.id"
+                    class="pos-customer-row"
+                    :class="{ 'pos-customer-row--selected': attachedCustomerId === c.id }"
+                    @click="attachExistingCustomer(c)"
+                  >
+                    <div class="pos-customer-row__avatar" :style="{ background: tileGradient(String(c.id)) }">{{ customerInitials(c.name) }}</div>
+                    <div class="pos-customer-row__body">
+                      <div class="pos-customer-row__name">{{ c.name }}</div>
+                      <div class="pos-customer-row__email">{{ c.email }}</div>
                     </div>
+                    <div class="pos-customer-row__chips">
+                      <span class="pos-tier-chip" :class="`pos-tier-chip--${c.tier}`">{{ LOYALTY_TIER_LABELS[c.tier] }}</span>
+                      <span class="pos-customer-row__spend">{{ fmt(c.lifetimeSpend) }}</span>
+                    </div>
+                  </button>
+
+                  <div v-if="customerPickerResults.length === 0" class="pos-customer-picker__empty">
+                    <v-icon size="26" color="#9ca3af">user-search</v-icon>
+                    <div class="pos-customer-picker__empty-title">No match for “{{ customerPickerSearch.trim() }}”</div>
                   </div>
-                </template>
+                </div>
+
+                <!-- Create CTA -->
+                <button class="pos-customer-picker__create-cta" @click="startCreateFromPicker">
+                  <v-icon size="16">user-plus</v-icon>
+                  <span>Create new customer<template v-if="customerPickerSearch.trim()"> “{{ customerPickerSearch.trim() }}”</template></span>
+                </button>
               </div>
             </div>
           </transition>
@@ -2839,30 +2821,42 @@ const apkQrUrl = computed(() =>
             </div>
           </transition>
 
-          <!-- ── Customer sheet: who is on the sale, and edit their details ── -->
+          <!-- ── Customer sheet: New customer, Edit details, and who is on the sale — one form ── -->
           <transition name="pos-variant-up">
-            <div v-if="customerSheetCustomer" class="pos-variant-overlay" @click.self="closeCustomerSheet">
+            <div
+              v-if="customerSheetOpen && (customerSheetMode === 'create' || customerSheetCustomer)"
+              class="pos-variant-overlay"
+              @click.self="closeCustomerSheet"
+            >
               <div class="pos-variant-sheet pos-customer-sheet" role="dialog" aria-modal="true" aria-labelledby="pos-custsheet-title">
                 <div class="pos-variant-sheet__grabber" />
                 <div class="pos-variant-sheet__header">
-                  <div class="pos-customer-row__avatar" :style="{ background: tileGradient(String(customerSheetCustomer.id)) }">
-                    {{ customerInitials(customerSheetCustomer.name) }}
+                  <div class="pos-customer-row__avatar" :style="{ background: tileGradient(String(customerSheetCustomer?.id ?? 'new')) }">
+                    <v-icon v-if="customerSheetMode === 'create' && !draftName" size="16">user-plus</v-icon>
+                    <template v-else>{{ customerInitials(customerSheetMode === 'create' ? draftName : customerSheetCustomer?.name ?? '') }}</template>
                   </div>
                   <div class="pos-variant-sheet__info">
                     <div id="pos-custsheet-title" class="pos-variant-sheet__title">
-                      {{ customerSheetMode === 'edit' ? 'Edit customer details' : customerSheetCustomer.name }}
+                      {{ customerSheetMode === 'create' ? 'New customer' : customerSheetMode === 'edit' ? 'Edit customer details' : customerSheetCustomer?.name }}
                     </div>
-                    <div class="pos-variant-sheet__sub">
+                    <div v-if="customerSheetCustomer" class="pos-variant-sheet__sub">
                       {{ LOYALTY_TIER_LABELS[customerSheetCustomer.tier] }} · {{ customerSheetCustomer.points.toLocaleString() }} pts · {{ customerSheetCustomer.visits }} visits
                     </div>
+                    <div v-else class="pos-variant-sheet__sub">
+                      Joins as a Member at {{ store.activeLocation.name }}{{ createAttaches ? ' · goes on this sale' : '' }}
+                    </div>
                   </div>
-                  <button class="pos-variant-sheet__close" aria-label="Close customer details" @click="closeCustomerSheet">
+                  <button
+                    class="pos-variant-sheet__close"
+                    :aria-label="customerSheetMode === 'create' ? 'Close new customer' : 'Close customer details'"
+                    @click="closeCustomerSheet"
+                  >
                     <v-icon size="14">x</v-icon>
                   </button>
                 </div>
 
                 <!-- VIEW -->
-                <div v-if="customerSheetMode === 'view'" class="pos-sheet-body">
+                <div v-if="customerSheetMode === 'view' && customerSheetCustomer" class="pos-sheet-body">
                   <div class="pos-profile__card">
                     <div class="pos-setting-row">
                       <div class="pos-setting-row__icon"><v-icon size="15">mail</v-icon></div>
@@ -2889,7 +2883,7 @@ const apkQrUrl = computed(() =>
                       <v-icon size="16">pencil</v-icon>
                       Edit details
                     </button>
-                    <button class="pos-line-sheet__ghost" @click="customerSheetId = null; openCustomerPicker()">Change customer</button>
+                    <button class="pos-line-sheet__ghost" @click="hideCustomerSheet(); openCustomerPicker()">Change customer</button>
                     <button
                       v-if="attachedCustomerId === customerSheetCustomer.id"
                       class="pos-line-sheet__ghost pos-line-sheet__ghost--danger"
@@ -2900,8 +2894,8 @@ const apkQrUrl = computed(() =>
                   </div>
                 </div>
 
-                <!-- EDIT -->
-                <form v-else class="pos-sheet-body pos-customer-form" novalidate @submit.prevent="saveCustomerEdit">
+                <!-- NEW / EDIT — same fields, checks and consent either way -->
+                <form v-else class="pos-sheet-body pos-customer-form" novalidate @submit.prevent="saveCustomer">
                   <div class="pos-customer-form__names">
                     <v-text-field
                       id="pos-cust-firstName"
@@ -2920,6 +2914,7 @@ const apkQrUrl = computed(() =>
                     id="pos-cust-phone"
                     v-model="customerDraft.phone"
                     label="Mobile"
+                    hint="Overseas number? Start with + and the country code"
                     type="tel"
                     inputmode="tel"
                     autocomplete="tel"
@@ -2943,7 +2938,7 @@ const apkQrUrl = computed(() =>
                       Keep one profile per shopper.
                     </span>
                     <button type="button" class="pos-link-btn" @click="useDuplicateCustomer">
-                      Use {{ customerValidation.duplicate.name }}
+                      {{ duplicateGoesToSale ? 'Use' : 'Open' }} {{ customerValidation.duplicate.name }}
                     </button>
                   </div>
                   <v-textarea
@@ -2966,7 +2961,7 @@ const apkQrUrl = computed(() =>
                   </MpFormField>
                   <div class="pos-customer-form__readonly">
                     <v-icon size="14">lock</v-icon>
-                    Tier and points are managed in back office.
+                    {{ customerSheetMode === 'create' ? 'New customers start as Member with 0 points.' : 'Tier and points are managed in back office.' }}
                   </div>
                   <div v-if="confirmDiscard" class="pos-inline-alert pos-inline-alert--warn" role="alert">
                     <v-icon size="16">triangle-alert</v-icon>
@@ -2976,7 +2971,9 @@ const apkQrUrl = computed(() =>
                   </div>
                   <div class="pos-sheet-actions">
                     <button type="button" class="pos-line-sheet__ghost" @click="cancelCustomerEdit">Cancel</button>
-                    <button type="submit" class="pos-line-sheet__primary">Save details</button>
+                    <button type="submit" class="pos-line-sheet__primary">
+                      {{ customerSheetMode === 'create' ? (createAttaches ? 'Create & add to sale' : 'Create customer') : 'Save details' }}
+                    </button>
                   </div>
                 </form>
               </div>
@@ -3227,30 +3224,6 @@ const apkQrUrl = computed(() =>
       <template #footer>
         <v-btn variant="text" class="text-none" @click="discountDialogOpen = false">Cancel</v-btn>
         <v-btn color="primary" variant="flat" class="text-none" @click="applyDiscounts">Apply</v-btn>
-      </template>
-    </MpDialog>
-
-    <!-- New customer dialog -->
-    <MpDialog v-model="newCustomerOpen" size="sm" title="New customer">
-      <v-text-field
-        v-model="newCustomerDraft.name"
-        label="Full name"
-        prepend-inner-icon="user"
-      />
-      <v-text-field
-        v-model="newCustomerDraft.email"
-        label="Email"
-        prepend-inner-icon="mail"
-      />
-      <v-text-field
-        v-model="newCustomerDraft.phone"
-        label="Phone"
-        prepend-inner-icon="phone"
-      />
-
-      <template #footer>
-        <v-btn variant="text" class="text-none" @click="newCustomerOpen = false">Cancel</v-btn>
-        <v-btn color="primary" variant="flat" class="text-none" :disabled="!newCustomerDraft.name.trim()" @click="saveNewCustomer">Save</v-btn>
       </template>
     </MpDialog>
 
@@ -5115,50 +5088,6 @@ $pos-target: 44px;
     }
   }
 
-  &__back {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 26px;
-    height: 26px;
-    border: none;
-    background: rgba(17, 24, 39, 0.07);
-    border-radius: 50%;
-    cursor: pointer;
-    color: $pos-muted;
-    flex-shrink: 0;
-
-    &:hover { background: rgba(17, 24, 39, 0.12); }
-  }
-
-  &__form {
-    padding: 14px;
-    overflow-y: auto;
-  }
-
-  &__form-actions {
-    display: grid;
-    grid-template-columns: 1fr 2fr;
-    gap: 8px;
-    margin-top: 14px;
-  }
-
-  &__save {
-    border: none;
-    border-radius: 12px;
-    background: var(--cloud-retail-accent, #0d9488);
-    color: #fff;
-    font-family: inherit;
-    font-size: 14px;
-    font-weight: 700;
-    cursor: pointer;
-    padding: 13px;
-    transition: filter 100ms;
-
-    &:hover { filter: brightness(1.05); }
-
-    &--disabled { opacity: 0.5; pointer-events: none; }
-  }
 }
 
 /* ── Cart line enter animation ─────────────────────────────────── */

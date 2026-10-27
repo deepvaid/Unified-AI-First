@@ -131,14 +131,18 @@ test('customer details: name, email and phone are checked for the store’s coun
   assert.equal(validateCustomer(draft({ email: 'mia@' }), 'AU', others, null).errors.email, 'Enter an email like name@example.com')
   assert.equal(validateCustomer(draft({ emailReceipts: true }), 'AU', others, null).errors.email, 'Add an email to send receipts')
   assert.equal(validateCustomer(draft({ marketingSms: true }), 'CA', others, null).errors.phone, 'Add a mobile number for SMS')
-  // AU accepts local and +61 forms; rejects a Canadian number
+  // AU accepts local and +61 forms; a Canadian number typed without its code is read as Australian
   assert.deepEqual(validateCustomer(draft({ phone: '+61 400 111 222' }), 'AU', others, null).errors, {})
-  assert.equal(validateCustomer(draft({ phone: '604 555 0199' }), 'AU', others, null).errors.phone, 'Use a number like 0412 345 678')
+  assert.equal(validateCustomer(draft({ phone: '604 555 0199' }), 'AU', others, null).errors.phone,
+    'Use a number like 0412 345 678, or start with + and the country code')
   // CA accepts NANP with or without the leading 1
   assert.deepEqual(validateCustomer(draft({ phone: '1-604-555-0199' }), 'CA', others, null).errors, {})
-  assert.equal(validateCustomer(draft({ phone: '0412 345 678' }), 'CA', others, null).errors.phone, 'Use a number like (604) 555-0123')
-  assert.equal(formatPhone('+61400111222', 'AU'), '0400 111 222')
-  assert.equal(formatPhone('16045550199', 'CA'), '(604) 555-0199')
+  assert.equal(validateCustomer(draft({ phone: '0412 345 678' }), 'CA', others, null).errors.phone,
+    'Use a number like (604) 555-0123, or start with + and the country code')
+  // Stored with the country code
+  assert.equal(formatPhone('+61400111222', 'AU'), '+61 400 111 222')
+  assert.equal(formatPhone('0298765432', 'AU'), '+61 2 9876 5432')
+  assert.equal(formatPhone('16045550199', 'CA'), '+1 (604) 555-0199')
 })
 
 test('customer details: a duplicate email or phone points at the existing customer, but never at yourself', () => {
@@ -147,4 +151,23 @@ test('customer details: a duplicate email or phone points at the existing custom
   assert.equal(dupEmail.errors.email, 'Already used by Maya Diaz')
   assert.deepEqual(validateCustomer(draft({ phone: '+1 604 555 0123' }), 'CA', others, null).duplicate, { id: 2, name: 'Liam Chen', field: 'phone' })
   assert.equal(validateCustomer(draft({ email: 'maya@example.com' }), 'AU', others, 1).duplicate, null, 'editing Maya keeps her own email')
+  assert.deepEqual(validateCustomer(draft({ phone: '+61 412 345 678' }), 'AU', others, null).duplicate, { id: 1, name: 'Maya Diaz', field: 'phone' }, '+61 and 0 forms are the same number')
+})
+
+test('customer details: a visitor’s number with + and a country code works at any store', () => {
+  // A New Yorker shopping in Sydney, an Australian shopping in Vancouver, a Kiwi anywhere
+  assert.deepEqual(validateCustomer(draft({ phone: '+1 (646) 555-0117' }), 'AU', others, null).errors, {})
+  assert.deepEqual(validateCustomer(draft({ phone: '+61 412 999 000' }), 'CA', others, null).errors, {})
+  assert.deepEqual(validateCustomer(draft({ phone: '+64 21 123 4567' }), 'AU', others, null).errors, {})
+  assert.deepEqual(validateCustomer(draft({ phone: '+44 20 7946 0958' }), 'CA', others, null).errors, {})
+  // Still checked: a short or malformed international number
+  assert.equal(validateCustomer(draft({ phone: '+1 646' }), 'AU', others, null).errors.phone, 'Check the number — country code, then the full number')
+  assert.equal(validateCustomer(draft({ phone: '+61 99' }), 'CA', others, null).errors.phone, 'Check the number — country code, then the full number')
+  // Saved in a form every store reads the same way
+  assert.equal(formatPhone('+1 646 555 0117', 'AU'), '+1 (646) 555-0117')
+  assert.equal(formatPhone('+61412999000', 'CA'), '+61 412 999 000')
+  assert.equal(formatPhone('+44  20 7946 0958', 'AU'), '+44 20 7946 0958')
+  // And a duplicate is found across stores and formats
+  const withOwen = [...others, { id: 3, name: 'Owen Castillo', email: 'owen@example.com', phone: '+1 (646) 555-0117' }]
+  assert.deepEqual(validateCustomer(draft({ phone: '+1 646 555 0117' }), 'AU', withOwen, null).duplicate, { id: 3, name: 'Owen Castillo', field: 'phone' })
 })

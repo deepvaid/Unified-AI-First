@@ -2322,11 +2322,16 @@ tablet). Totals now come from a pure model, `src/views/Retail/pos/saleModel.ts`,
   - AU/CA cash totals round to 5c; card stays exact.
   - Quick-tender amounts and change due are shown.
   - The change line and the charge button are pinned to the bottom of the sheet.
-- [x] **Edit customer details** from the cart chip or a Customers profile:
-  - phone format checked for the store's country;
-  - duplicate email/phone points to the existing profile;
+- [x] **One customer sheet for New and Edit.** It is used from three places: Customers › New customer, "Create new customer" in the
+  sale's picker, and Edit (from the cart chip or a profile). Every path gets the same checks:
+  - first and last name as separate fields;
+  - phone checked for the store's country;
+  - a number typed with `+` and a country code is accepted at any store (a visitor's number), and every number is saved
+    with its country code;
+  - a duplicate email or phone offers the existing profile ("Use" from the sale, "Open" from Customers);
   - receipt and marketing consent are separate switches, all off by default;
   - unsaved changes are guarded.
+  Create prefills from the search query (email, number or name). From the sale it reads "Create & add to sale".
 - [x] **Accessibility floor on the Sale, cart and payment surfaces:**
   - status text uses ≥4.5:1 inks;
   - 44px targets;
@@ -2346,6 +2351,10 @@ tablet). Totals now come from a pure model, `src/views/Retail/pos/saleModel.ts`,
   - `customerName` is now derived from the attached profile;
   - `fmt()` formats in the location's currency.
   - "Add custom sale" opens a name-and-price sheet instead of adding a silent $25 line.
+  - The page-level "New customer" `MpDialog` and the picker's inline create form are deleted. `newCustomerOpen`,
+    `newCustomerDraft`, `saveNewCustomer`, `customerPickerMode` and `createAndAttachCustomer` are gone.
+  - `saveCustomerEdit` is now `saveCustomer`.
+  - The model's `normalizePhone` is replaced by `canonicalPhone`, which produces "+<country code><number>".
   - `$pos-muted` is now `#646b78` (was `#6b7280`, 4.40:1 on `$pos-bg`).
   - Bondi Junction stock is pinned for SNEAK-A1 (0) and BAG-LTH (2), so the default store shows every stock state.
 
