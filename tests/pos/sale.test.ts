@@ -62,6 +62,22 @@ test('CA (BC): GST and PST are added on top as separate rows that reconcile', ()
   assert.deepEqual(taxRuleFor('CA', 'ON').components, [{ label: 'HST', rate: 0.13 }])
 })
 
+test('a whole-sale discount sits between item discounts and the coupon', () => {
+  const t = saleTotals(basket, {
+    promos: POS_PROMOTIONS,
+    orderDiscount: { kind: 'percent', value: 10, reason: 'Loyalty' },
+    coupon: { code: 'REFER20', title: 'Refer a friend', kind: 'percent', value: 20 },
+    taxRule: taxRuleFor('CA', 'BC'),
+  })
+  assertReconciles(t)
+  assert.deepEqual(t.discounts.map((d) => [d.key, d.label, d.amount]), [
+    ['promo-spring-30', 'Spring sale 30%', -50.1],
+    ['line', 'Item discounts', -10.46],
+    ['order', 'Sale discount 10% · Loyalty', -30.04],
+    ['coupon', 'Coupon REFER20', -54.08],
+  ])
+})
+
 test('reconciles for many random baskets in every market', () => {
   let seed = 7
   const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280
@@ -73,7 +89,8 @@ test('reconciles for many random baskets in every market', () => {
     }))
     const coupon = rnd() < 0.5 ? { code: 'X', title: 'X', kind: 'percent' as const, value: 15 } : { code: 'Y', title: 'Y', kind: 'amount' as const, value: 1000 }
     for (const [country, region] of [['AU', 'NSW'], ['CA', 'BC'], ['CA', 'ON'], ['CA', 'QC'], ['NZ', ''], ['US', 'NY']] as const) {
-      const t = saleTotals(lines, { promos: POS_PROMOTIONS, coupon, taxRule: taxRuleFor(country, region) })
+      const orderDiscount = rnd() < 0.3 ? { kind: 'amount' as const, value: Math.round(rnd() * 50), reason: 'Other' as const } : null
+      const t = saleTotals(lines, { promos: POS_PROMOTIONS, orderDiscount, coupon, taxRule: taxRuleFor(country, region) })
       assertReconciles(t)
       assert.ok(t.total >= 0)
     }

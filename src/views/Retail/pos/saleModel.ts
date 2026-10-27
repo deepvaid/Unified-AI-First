@@ -126,10 +126,10 @@ function lineCents(line: SaleLine, promos: PosPromotion[]) {
 export function lineBreakdown(line: SaleLine, promos: PosPromotion[]): LineBreakdown {
   const c = lineCents(line, promos)
   const notes: LineNote[] = []
-  if (c.promo && c.promoOff > 0) notes.push({ kind: 'promo', label: `${c.promo.percent}% off · ${c.promo.title}`, amount: -dollars(c.promoOff) })
+  if (c.promo && c.promoOff > 0) notes.push({ kind: 'promo', label: `${c.promo.title} ${c.promo.percent}%`, amount: -dollars(c.promoOff) })
   if (line.discount && c.manualOff > 0) {
-    const what = line.discount.kind === 'percent' ? `${line.discount.value}% off` : 'Discount'
-    notes.push({ kind: 'discount', label: `${what} · ${line.discount.reason}`, amount: -dollars(c.manualOff) })
+    const what = line.discount.kind === 'percent' ? ` ${line.discount.value}%` : ''
+    notes.push({ kind: 'discount', label: `${line.discount.reason}${what}`, amount: -dollars(c.manualOff) })
   }
   return { gross: dollars(c.gross), notes, final: dollars(c.final) }
 }
@@ -203,9 +203,10 @@ export interface SaleTotals {
   total: number
 }
 
+/** Applied in this order: automatic promos → item discounts → whole-sale discount → coupon. */
 export function saleTotals(
   lines: SaleLine[],
-  opts: { promos: PosPromotion[]; coupon?: Coupon | null; taxRule: TaxRule },
+  opts: { promos: PosPromotion[]; orderDiscount?: LineDiscount | null; coupon?: Coupon | null; taxRule: TaxRule },
 ): SaleTotals {
   let subtotal = 0
   let afterLines = 0
@@ -226,15 +227,26 @@ export function saleTotals(
   for (const [id, p] of promoOff) discounts.push({ key: `promo-${id}`, label: `${p.title} ${p.percent}%`, amount: -dollars(p.off) })
   if (manualOff > 0) discounts.push({ key: 'line', label: 'Item discounts', amount: -dollars(manualOff) })
 
+  let orderOff = 0
+  const od = opts.orderDiscount
+  if (od) {
+    orderOff = Math.min(afterLines, od.kind === 'percent'
+      ? Math.round(afterLines * Math.min(100, Math.max(0, od.value)) / 100)
+      : Math.max(0, cents(od.value)))
+    const what = od.kind === 'percent' ? `Sale discount ${od.value}%` : 'Sale discount'
+    if (orderOff > 0) discounts.push({ key: 'order', label: `${what} · ${od.reason}`, amount: -dollars(orderOff) })
+  }
+  const afterOrder = afterLines - orderOff
+
   let couponOff = 0
   if (opts.coupon) {
-    couponOff = Math.min(afterLines, opts.coupon.kind === 'percent'
-      ? Math.round(afterLines * opts.coupon.value / 100)
+    couponOff = Math.min(afterOrder, opts.coupon.kind === 'percent'
+      ? Math.round(afterOrder * opts.coupon.value / 100)
       : cents(opts.coupon.value))
     if (couponOff > 0) discounts.push({ key: 'coupon', label: `Coupon ${opts.coupon.code}`, amount: -dollars(couponOff) })
   }
 
-  const base = afterLines - couponOff
+  const base = afterOrder - couponOff
   const rule = opts.taxRule
   const taxes: TaxRow[] = rule.mode === 'exclusive'
     ? rule.components.map((c) => ({ label: c.label, rate: c.rate, amount: dollars(Math.round(base * c.rate)) }))
@@ -244,7 +256,7 @@ export function saleTotals(
   return {
     subtotal: dollars(subtotal),
     discounts,
-    discountTotal: dollars(-(subtotal - afterLines + couponOff)),
+    discountTotal: dollars(-(subtotal - base)),
     taxMode: rule.mode,
     taxes,
     total: dollars(base + added),

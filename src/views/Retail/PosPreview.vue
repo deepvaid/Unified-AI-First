@@ -8,6 +8,12 @@ import { useCommerceStore } from '@/stores/useCommerce'
 import type { Order, TenderType } from '@/stores/useCommerce'
 import { useElementSize } from '@/composables/useElementSize'
 import MpDialog from '@/components/MpDialog.vue'
+import MpFormField from '@/components/MpFormField.vue'
+import {
+  DISCOUNT_REASONS, POS_PROMOTIONS, cashRound, changeDue, formatMoney, formatPhone, lineBreakdown, phoneExample,
+  quickTenderAmounts, saleTotals, taxRuleFor, taxRuleSummary, validateCoupon, validateCustomer,
+  type Coupon, type CustomerDraft, type CustomerField, type DiscountReason, type LineDiscount,
+} from './pos/saleModel'
 
 const route = useRoute()
 const router = useRouter()
@@ -53,6 +59,10 @@ function toPosCustomer(c: Contact): PosCustomerView {
 const loyaltyCustomers = computed<PosCustomerView[]>(() => contacts.loyaltyContacts.map(toPosCustomer))
 
 const accountId = computed(() => route.params.accountId as string)
+
+/* ── Register market: currency, tax and cash rules follow the store ── */
+const posCountry = computed(() => store.activeLocation.country)
+const taxRule = computed(() => taxRuleFor(posCountry.value, store.activeLocation.region))
 
 /* ── Device frame select ───────────────────────────────────────── */
 type DeviceFrame = 'ipad' | 'iphone' | 'android-tablet'
@@ -167,6 +177,7 @@ interface VariantGroup {
 const catalogGroups = computed<VariantGroup[]>(() => {
   const map = new Map<string, PosCatalogItem[]>()
   posCatalog.value
+    .filter((p) => saleMode.value !== 'catalog' || activeCollection.value === 'all' || collectionOf(p.sku) === activeCollection.value)
     .filter((p) =>
       !catalogSearch.value ||
       p.productName.toLowerCase().includes(catalogSearch.value.toLowerCase()) ||
@@ -190,7 +201,7 @@ const variantPickerGroup = ref<VariantGroup | null>(null)
 
 function handleTileClick(group: VariantGroup) {
   if (group.variants.length === 1) {
-    addToCart(group.variants[0]!)
+    requestAdd(group.variants[0]!)
   } else {
     variantPickerGroup.value = group
     variantPickerOpen.value = true
@@ -198,8 +209,95 @@ function handleTileClick(group: VariantGroup) {
 }
 
 function selectVariant(item: PosCatalogItem) {
-  addToCart(item)
   variantPickerOpen.value = false
+  requestAdd(item)
+}
+
+/* ── Adding to the sale: open price, stock check, then add ─────── */
+// The register checks before it adds, so a shortage is a decision the cashier
+// makes up front — not a note discovered on the receipt.
+function onHandHere(sku: string): number {
+  return stockAt(sku, store.activeLocation.id)
+}
+
+function qtyInCart(sku: string): number {
+  return cart.value.filter((c) => c.sku === sku).reduce((s, c) => s + c.qty, 0)
+}
+
+function groupOnHand(group: VariantGroup): number {
+  return group.variants.reduce((s, v) => s + onHandHere(v.sku), 0)
+}
+
+/** Units on the sale beyond what this store holds — shown as a note on the line. */
+function oversoldQty(line: CartLine): number {
+  if (line.sku.startsWith('CUSTOM-')) return 0
+  const sameSku = cart.value.filter((c) => c.sku === line.sku)
+  const over = Math.max(0, qtyInCart(line.sku) - onHandHere(line.sku))
+  // Pin the shortfall to the last line of that SKU so it is counted once
+  return sameSku[sameSku.length - 1]?.id === line.id ? over : 0
+}
+
+function requestAdd(item: PosCatalogItem) {
+  if (item.pos <= 0) {
+    openPriceFor({ sku: item.sku, name: item.productName, editableName: false })
+    return
+  }
+  if (onHandHere(item.sku) - qtyInCart(item.sku) <= 0) {
+    oversellItem.value = item
+    oversellShowStores.value = false
+    announce(`${parseTileProduct(item.productName).name}: ${onHandHere(item.sku)} on hand at ${store.activeLocation.name}`)
+    return
+  }
+  addToCart(item)
+}
+
+/* Oversell sheet */
+const oversellItem = ref<PosCatalogItem | null>(null)
+const oversellShowStores = ref(false)
+
+function otherLocationStock(sku: string) {
+  return store.locationList
+    .filter((l) => l.id !== store.activeLocation.id)
+    .map((l) => ({ loc: l, qty: stockAt(sku, l.id) }))
+}
+
+function sellAnyway() {
+  const item = oversellItem.value
+  oversellItem.value = null
+  if (item) addToCart(item)
+}
+
+/* Open price sheet — unpriced catalog items and custom sales */
+const openPriceTarget = ref<{ sku: string; name: string; editableName: boolean } | null>(null)
+const openPriceName = ref('')
+const openPriceValue = ref('')
+const openPriceTouched = ref(false)
+const openPriceAmount = computed(() => {
+  const n = parseFloat(openPriceValue.value)
+  return Number.isFinite(n) ? Math.round(n * 100) / 100 : 0
+})
+const openPriceError = computed(() => {
+  if (!openPriceTouched.value) return ''
+  if (openPriceAmount.value <= 0) return 'Enter a price above $0.00'
+  if (openPriceTarget.value?.editableName && !openPriceName.value.trim()) return 'Name the item so it reads on the receipt'
+  return ''
+})
+
+function openPriceFor(target: { sku: string; name: string; editableName: boolean }) {
+  openPriceTarget.value = target
+  openPriceName.value = target.editableName ? '' : target.name
+  openPriceValue.value = ''
+  openPriceTouched.value = false
+  nextTick(() => document.getElementById(target.editableName ? 'pos-openprice-name' : 'pos-openprice-value')?.focus())
+}
+
+function confirmOpenPrice() {
+  openPriceTouched.value = true
+  const target = openPriceTarget.value
+  if (!target || openPriceError.value) return
+  const { name, variant } = parseTileProduct(target.editableName ? openPriceName.value.trim() : target.name)
+  pushLine({ sku: target.sku, name, variant, price: openPriceAmount.value })
+  openPriceTarget.value = null
 }
 
 /* ── Products view (catalog lookup + details panel) ─────────────── */
@@ -274,8 +372,12 @@ watch(productsGroups, (groups) => {
 
 // Deterministic per-location stock — the shared inventory store uses a
 // different SKU keyspace, so the register mocks quantities (stable per reload).
+// Pinned so the default store shows every stock state the register handles (out, low, last units).
+const STOCK_PINS: Record<string, number> = { 'SNEAK-A1-WHT-10:loc-bondi': 0, 'BAG-LTH-BLK:loc-bondi': 2 }
+
 function stockAt(sku: string, locationId: string): number {
   const key = `${sku}:${locationId}`
+  if (key in STOCK_PINS) return STOCK_PINS[key]!
   let hash = 0
   for (let i = 0; i < key.length; i++) hash = ((hash << 5) - hash) + key.charCodeAt(i)
   const qty = Math.abs(hash) % 41
@@ -292,11 +394,7 @@ const selectedVariantStock = computed(() =>
   selectedVariant.value ? stockAt(selectedVariant.value.sku, store.activeLocation.id) : 0,
 )
 
-const otherLocationRows = computed(() =>
-  store.locationList
-    .filter((l) => l.id !== store.activeLocation.id)
-    .map((l) => ({ loc: l, qty: selectedVariant.value ? stockAt(selectedVariant.value.sku, l.id) : 0 })),
-)
+const otherLocationRows = computed(() => (selectedVariant.value ? otherLocationStock(selectedVariant.value.sku) : []))
 
 function addSelectedToCart() {
   if (!selectedVariant.value || selectedVariantStock.value === 0) return
@@ -325,13 +423,17 @@ function onScanSubmit() {
   // Hardware scanners type the barcode + Enter: exact SKU adds instantly
   const exact = posCatalog.value.find((p) => p.sku.toLowerCase() === query.toLowerCase())
   if (exact) {
-    addToCart(exact)
+    requestAdd(exact)
     catalogSearch.value = ''
     focusScanField()
     return
   }
   // A single match on Enter behaves like tapping its tile (variant picker aware)
   const groups = catalogGroups.value
+  if (groups.length === 0) {
+    announce(`No product for “${query}”`)
+    return
+  }
   if (groups.length === 1) {
     const group = groups[0]!
     handleTileClick(group)
@@ -391,34 +493,49 @@ interface CartLine {
   price: number           // actual unit sell price (override target)
   qty: number
   note: string            // '' = no note
+  discount: LineDiscount | null
 }
 
 const cart = ref<CartLine[]>([])
-const discountPct = ref(0)
-const customerName = ref('')
 let lineSeq = 0
 
 const isOverridden = (l: CartLine) => Math.abs(l.price - l.originalPrice) > 0.005
+const itemCount = computed(() => cart.value.reduce((s, c) => s + c.qty, 0))
+
+/* ── Screen-reader announcements + the just-added line highlight ── */
+const liveMessage = ref('')
+function announce(text: string) {
+  liveMessage.value = ''
+  nextTick(() => { liveMessage.value = text })
+}
+
+const freshLineId = ref<string | null>(null)
+let freshTimer: ReturnType<typeof setTimeout> | undefined
+function markFresh(id: string, name: string) {
+  freshLineId.value = id
+  nextTick(() => screenEl.value?.querySelector(`[data-line-id="${id}"]`)?.scrollIntoView({ block: 'nearest' }))
+  clearTimeout(freshTimer)
+  freshTimer = setTimeout(() => { freshLineId.value = null }, 1400)
+  announce(`Added ${name}. ${itemCount.value} item${itemCount.value === 1 ? '' : 's'}, total ${fmt(grandTotal.value)}`)
+}
 
 function addToCart(item: { sku: string; productName: string; pos: number }) {
-  // Merge into an existing same-SKU line only if it's untouched (no note/override),
+  // Merge into an existing same-SKU line only if it's untouched (no note/override/discount),
   // so a modified line keeps its own identity.
-  const existing = cart.value.find((c) => c.sku === item.sku && !c.note && !isOverridden(c))
+  const existing = cart.value.find((c) => c.sku === item.sku && !c.note && !isOverridden(c) && !c.discount)
   if (existing) {
     existing.qty++
+    markFresh(existing.id, existing.name)
   } else {
     const { name, variant } = parseTileProduct(item.productName)
-    cart.value.push({
-      id: `L${lineSeq++}`,
-      sku: item.sku,
-      name,
-      variant,
-      originalPrice: item.pos,
-      price: item.pos,
-      qty: 1,
-      note: '',
-    })
+    pushLine({ sku: item.sku, name, variant, price: item.pos })
   }
+}
+
+function pushLine(l: { sku: string; name: string; variant: string | null; price: number }) {
+  const id = `L${lineSeq++}`
+  cart.value.push({ id, sku: l.sku, name: l.name, variant: l.variant, originalPrice: l.price, price: l.price, qty: 1, note: '', discount: null })
+  markFresh(id, l.name)
 }
 
 function removeFromCart(id: string) {
@@ -430,32 +547,83 @@ function incrementQty(id: string) {
   if (line) line.qty++
 }
 
-const subtotal = computed(() => cart.value.reduce((s, c) => s + c.price * c.qty, 0))
-const discountAmount = computed(() => subtotal.value * (discountPct.value / 100))
-// Tax-inclusive mode (Settings): prices already include 10% GST — back it out instead of adding.
-const taxAmount = computed(() => {
-  const net = subtotal.value - discountAmount.value
-  return posSettings.taxInclusive ? net - net / 1.1 : net * 0.1
-})
-const grandTotal = computed(() => {
-  const net = subtotal.value - discountAmount.value
-  return posSettings.taxInclusive ? net : net + taxAmount.value
-})
+/* ── Totals — one model, so every visible row adds up to the Charge amount ── */
+const orderDiscount = ref<LineDiscount | null>(null)
+const appliedCoupon = ref<Coupon | null>(null)
+
+const totals = computed(() => saleTotals(cart.value, {
+  promos: POS_PROMOTIONS,
+  orderDiscount: orderDiscount.value,
+  coupon: appliedCoupon.value,
+  taxRule: taxRule.value,
+}))
+const grandTotal = computed(() => totals.value.total)
+/** Breakdown under "Discounts" — closed by default so line items keep the room. */
+const discountsOpen = ref(false)
+
+const lineViews = computed(() => new Map(cart.value.map((l) => [l.id, lineBreakdown(l, POS_PROMOTIONS)])))
+const lineView = (l: CartLine) => lineViews.value.get(l.id)!
+/** Catalog price × qty — struck through whenever the customer pays less. */
+const lineWas = (l: CartLine) => l.originalPrice * l.qty
+
+function pct(rate: number) {
+  return `${+(rate * 100).toFixed(3)}%`
+}
+
+function lineAriaLabel(l: CartLine): string {
+  const v = lineView(l)
+  const parts = [l.name, l.variant, `quantity ${l.qty}`, fmt(v.final)]
+  v.notes.forEach((n) => parts.push(`${n.label}, minus ${fmt(-n.amount)}`))
+  if (oversoldQty(l)) parts.push(`${oversoldQty(l)} more than in stock`)
+  if (l.note) parts.push(`note: ${l.note}`)
+  return `${parts.filter(Boolean).join(', ')}. Edit line`
+}
+
+/* ── Undo toast — cheaper than a confirm at a busy counter ──────── */
+const undoToast = reactive({ open: false, text: '', action: null as null | (() => void) })
+function flashUndo(text: string, action: () => void) {
+  gridToast.value = false // one toast at a time — the newest wins
+  undoToast.text = text
+  undoToast.action = action
+  undoToast.open = true
+  announce(`${text}. Undo available`)
+}
+function runUndo() {
+  undoToast.action?.()
+  undoToast.action = null
+  undoToast.open = false
+}
 
 function clearCart() {
   cart.value = []
-  discountPct.value = 0
-  customerName.value = ''
+  orderDiscount.value = null
+  appliedCoupon.value = null
   attachedCustomerId.value = null
   discountDialogOpen.value = false
   customerPickerOpen.value = false
+}
+
+function clearSale() {
+  const snapshot = {
+    lines: cart.value.map((l) => ({ ...l, discount: l.discount && { ...l.discount } })),
+    orderDiscount: orderDiscount.value,
+    coupon: appliedCoupon.value,
+    customerId: attachedCustomerId.value,
+  }
+  clearCart()
+  flashUndo('Sale cleared', () => {
+    cart.value = snapshot.lines
+    orderDiscount.value = snapshot.orderDiscount
+    appliedCoupon.value = snapshot.coupon
+    attachedCustomerId.value = snapshot.customerId
+  })
 }
 
 /* ── Line actions sheet (tap a cart line → edit menu) ──────────── */
 const lineActionsOpen = ref(false)
 const lineActionsId = ref<string | null>(null)
 const lineActionsLine = computed(() => cart.value.find((c) => c.id === lineActionsId.value) ?? null)
-const lineSheetMode = ref<'menu' | 'price' | 'note'>('menu')
+const lineSheetMode = ref<'menu' | 'price' | 'note' | 'discount'>('menu')
 const pendingPrice = ref('')
 const pendingNote = ref('')
 
@@ -509,8 +677,12 @@ function sheetDecrementQty() {
 }
 
 function removeLineFromSheet() {
-  if (lineActionsLine.value) removeFromCart(lineActionsLine.value.id)
+  const line = lineActionsLine.value
+  if (!line) return
+  const at = cart.value.indexOf(line)
+  removeFromCart(line.id)
   lineActionsOpen.value = false
+  flashUndo(`${line.name} removed`, () => { cart.value.splice(at, 0, line) })
 }
 
 // If the line disappears while the sheet is open (clear sale, checkout), close it.
@@ -518,13 +690,110 @@ watch(lineActionsLine, (l) => {
   if (!l) lineActionsOpen.value = false
 })
 
-/* ── Discount dialog ───────────────────────────────────────────── */
-const discountDialogOpen = ref(false)
-const pendingDiscount = ref(0)
+/* ── Discount entry (a line, or the whole sale) — always with a reason ── */
+interface DiscountEntry { kind: LineDiscount['kind']; value: string; reason: DiscountReason | null; touched: boolean }
 
-function applyDiscount() {
-  discountPct.value = pendingDiscount.value
+function entryFrom(d: LineDiscount | null): DiscountEntry {
+  return { kind: d?.kind ?? 'percent', value: d ? String(d.value) : '', reason: d?.reason ?? null, touched: false }
+}
+
+function entryErrors(e: DiscountEntry): { value?: string; reason?: string } {
+  if (!e.touched) return {}
+  const out: { value?: string; reason?: string } = {}
+  const n = parseFloat(e.value)
+  if (!Number.isFinite(n) || n <= 0) out.value = e.kind === 'percent' ? 'Enter a percentage above 0' : 'Enter an amount above $0.00'
+  else if (e.kind === 'percent' && n > 100) out.value = 'A discount can’t be more than 100%'
+  if (!e.reason) out.reason = 'Pick a reason — it’s kept on the audit log'
+  return out
+}
+
+function entryError(e: DiscountEntry): string {
+  const errs = entryErrors(e)
+  return errs.value ?? errs.reason ?? ''
+}
+
+function entryToDiscount(e: DiscountEntry): LineDiscount | null {
+  const n = parseFloat(e.value)
+  return Number.isFinite(n) && n > 0 && e.reason ? { kind: e.kind, value: Math.round(n * 100) / 100, reason: e.reason } : null
+}
+
+const PERCENT_PRESETS = [10, 15, 20, 25]
+
+const lineEntry = reactive<DiscountEntry>(entryFrom(null))
+const lineEntryPreview = computed(() => {
+  const line = lineActionsLine.value
+  return line ? lineBreakdown({ ...line, discount: entryToDiscount(lineEntry) }, POS_PROMOTIONS).final : 0
+})
+
+function openDiscountMode() {
+  Object.assign(lineEntry, entryFrom(lineActionsLine.value?.discount ?? null))
+  lineSheetMode.value = 'discount'
+}
+
+function applyLineDiscount() {
+  lineEntry.touched = true
+  const line = lineActionsLine.value
+  const d = entryToDiscount(lineEntry)
+  if (!line || entryError(lineEntry) || !d) return
+  line.discount = d
+  lineSheetMode.value = 'menu'
+  announce(`Discount applied. ${line.name} now ${fmt(lineView(line).final)}`)
+}
+
+function removeLineDiscount() {
+  const line = lineActionsLine.value
+  if (line) line.discount = null
+  lineSheetMode.value = 'menu'
+}
+
+/* ── Discounts dialog: coupon code + whole-sale discount ───────── */
+const discountDialogOpen = ref(false)
+const couponInput = ref('')
+const couponError = ref('')
+const orderEntry = reactive<DiscountEntry>(entryFrom(null))
+
+function openDiscountDialog() {
+  couponInput.value = ''
+  couponError.value = ''
+  Object.assign(orderEntry, entryFrom(orderDiscount.value))
+  discountDialogOpen.value = true
+}
+
+function applyCouponCode(): boolean {
+  const result = validateCoupon(couponInput.value, commerce.promotions, new Date().toISOString().slice(0, 10), posCountry.value)
+  if (!result.ok) {
+    couponError.value = result.reason
+    return false
+  }
+  appliedCoupon.value = result.coupon
+  couponInput.value = ''
+  couponError.value = ''
+  announce(`Coupon ${result.coupon.code} applied`)
+  return true
+}
+
+function applyDiscounts() {
+  if (couponInput.value.trim() && !applyCouponCode()) return
+  if (orderEntry.value.trim()) {
+    orderEntry.touched = true
+    if (entryError(orderEntry)) return
+    orderDiscount.value = entryToDiscount(orderEntry)
+  } else {
+    orderDiscount.value = null
+  }
   discountDialogOpen.value = false
+}
+
+function removeCoupon() {
+  const c = appliedCoupon.value
+  appliedCoupon.value = null
+  if (c) flashUndo(`Coupon ${c.code} removed`, () => { appliedCoupon.value = c })
+}
+
+function removeOrderDiscount() {
+  const d = orderDiscount.value
+  orderDiscount.value = null
+  if (d) flashUndo('Sale discount removed', () => { orderDiscount.value = d })
 }
 
 /* ── Customer picker (in-frame sheet: search real customers, attach loyalty, inline create) ── */
@@ -553,7 +822,6 @@ function openCustomerPicker() {
 }
 
 function attachExistingCustomer(c: PosCustomerView) {
-  customerName.value = c.name
   attachedCustomerId.value = c.id // real loyalty profile rides into checkout
   customerPickerOpen.value = false
   flashGridToast(`${c.name} added to sale`)
@@ -593,10 +861,142 @@ const attachedCustomerId = ref<number | null>(null)
 const attachedCustomer = computed<PosCustomerView | null>(
   () => loyaltyCustomers.value.find((c) => c.id === attachedCustomerId.value) ?? null,
 )
+// Derived, not copied, so an edit to the profile shows on the sale at once
+const customerName = computed(() => attachedCustomer.value?.name ?? '')
 
 function detachCustomer() {
-  customerName.value = ''
+  const id = attachedCustomerId.value
+  const name = customerName.value
   attachedCustomerId.value = null
+  customerSheetId.value = null
+  if (id !== null) flashUndo(`${name} removed from sale`, () => { attachedCustomerId.value = id })
+}
+
+/* ── Customer sheet: view the attached customer, edit their details ── */
+const customerSheetId = ref<number | null>(null)
+const customerSheetMode = ref<'view' | 'edit'>('view')
+/** Where Save/Cancel go: back to the summary (opened from the sale) or closed (opened as Edit from a profile). */
+const customerSheetReturn = ref<'view' | 'close'>('view')
+const customerSheetCustomer = computed(
+  () => loyaltyCustomers.value.find((c) => c.id === customerSheetId.value) ?? null,
+)
+const customerSheetContact = computed(() => contacts.contacts.find((c) => c.id === customerSheetId.value) ?? null)
+
+const customerDraft = reactive<CustomerDraft>({
+  firstName: '', lastName: '', email: '', phone: '', note: '',
+  emailReceipts: false, marketingEmail: false, marketingSms: false,
+})
+const draftBaseline = ref('')
+const draftDirty = computed(() => JSON.stringify(customerDraft) !== draftBaseline.value)
+const showCustomerErrors = ref(false)
+const confirmDiscard = ref(false)
+/** The discard prompt came from closing the sheet (not Cancel), so Discard closes it. */
+const closeAfterDiscard = ref(false)
+
+const customerValidation = computed(() =>
+  validateCustomer(customerDraft, posCountry.value, loyaltyCustomers.value, customerSheetId.value),
+)
+const customerErrors = computed<Partial<Record<CustomerField, string>>>(() =>
+  showCustomerErrors.value ? customerValidation.value.errors : {},
+)
+
+function openCustomerSheet(id: number, mode: 'view' | 'edit') {
+  customerSheetId.value = id
+  customerSheetReturn.value = mode === 'edit' ? 'close' : 'view'
+  customerSheetMode.value = 'view'
+  if (mode === 'edit') startCustomerEdit()
+}
+
+function startCustomerEdit() {
+  const c = customerSheetContact.value
+  if (!c) return
+  Object.assign(customerDraft, {
+    firstName: c.firstName,
+    lastName: c.lastName,
+    email: c.email,
+    phone: c.phone,
+    note: c.loyalty?.notes ?? '',
+    emailReceipts: c.customFields?.emailReceipts === true,
+    marketingEmail: !!c.optedInEmail,
+    marketingSms: !!c.optedInSms,
+  })
+  draftBaseline.value = JSON.stringify(customerDraft)
+  showCustomerErrors.value = false
+  confirmDiscard.value = false
+  customerSheetMode.value = 'edit'
+}
+
+function leaveCustomerEdit() {
+  confirmDiscard.value = false
+  if (customerSheetReturn.value === 'close') customerSheetId.value = null
+  else customerSheetMode.value = 'view'
+}
+
+function saveCustomerEdit() {
+  showCustomerErrors.value = true
+  const errors = customerValidation.value.errors
+  // Form order, so focus lands on the first error the cashier sees
+  const first = (['firstName', 'phone', 'email'] as CustomerField[]).find((f) => errors[f])
+  if (first) {
+    nextTick(() => document.getElementById(`pos-cust-${first}`)?.focus())
+    return
+  }
+  const c = customerSheetContact.value
+  if (!c) return
+  contacts.updateContact(c.id, {
+    firstName: customerDraft.firstName.trim(),
+    lastName: customerDraft.lastName.trim(),
+    email: customerDraft.email.trim(),
+    phone: customerDraft.phone.trim() ? formatPhone(customerDraft.phone, posCountry.value) : '',
+    optedInEmail: customerDraft.marketingEmail,
+    optedInSms: customerDraft.marketingSms,
+    customFields: { ...c.customFields, emailReceipts: customerDraft.emailReceipts },
+    loyalty: c.loyalty && { ...c.loyalty, notes: customerDraft.note.trim() || undefined },
+  })
+  leaveCustomerEdit()
+  flashGridToast('Customer details updated')
+}
+
+function cancelCustomerEdit() {
+  if (draftDirty.value) {
+    closeAfterDiscard.value = false
+    confirmDiscard.value = true
+    return
+  }
+  leaveCustomerEdit()
+}
+
+function closeCustomerSheet() {
+  if (customerSheetMode.value === 'edit' && draftDirty.value) {
+    closeAfterDiscard.value = true
+    confirmDiscard.value = true
+    return
+  }
+  customerSheetId.value = null
+}
+
+function discardCustomerEdit() {
+  if (closeAfterDiscard.value) {
+    confirmDiscard.value = false
+    customerSheetId.value = null
+  } else {
+    leaveCustomerEdit()
+  }
+}
+
+/** The email/phone belongs to someone else — switch to them rather than split one shopper into two profiles. */
+function useDuplicateCustomer() {
+  const dup = customerValidation.value.duplicate
+  if (!dup) return
+  const onSale = attachedCustomerId.value === customerSheetId.value
+  customerSheetId.value = null
+  confirmDiscard.value = false
+  if (onSale) {
+    attachedCustomerId.value = dup.id
+    flashGridToast(`${dup.name} is now on the sale`)
+  } else {
+    selectedCustomerId.value = dup.id
+  }
 }
 
 /* ── Payment flow ──────────────────────────────────────────────── */
@@ -604,18 +1004,39 @@ type PaymentStep = 'idle' | 'select' | 'processing' | 'approved'
 const paymentStep = ref<PaymentStep>('idle')
 const selectedTender = ref<TenderType>('card')
 
+/* Cash: AU and CA round cash (not card) to 5c; change is counted from what was handed over */
+const cashInput = ref('')
+const cashTendered = computed(() => {
+  const n = parseFloat(cashInput.value)
+  return Number.isFinite(n) ? n : null
+})
+// NZ rounds to 10c and the US still has the cent — out of scope for this AU/CA pass
+const roundsCash = computed(() => posCountry.value === 'AU' || posCountry.value === 'CA')
+const cashDue = computed(() => (roundsCash.value ? cashRound(grandTotal.value) : grandTotal.value))
+const cashRounding = computed(() => Math.round((cashDue.value - grandTotal.value) * 100) / 100)
+const cashQuickAmounts = computed(() => quickTenderAmounts(cashDue.value))
+const cashChange = computed(() => (cashTendered.value === null ? 0 : changeDue(cashTendered.value, cashDue.value)))
+const cashShort = computed(() => cashTendered.value !== null && cashTendered.value < cashDue.value)
+/** What this tender actually collects. */
+const amountDue = computed(() => (selectedTender.value === 'cash' ? cashDue.value : grandTotal.value))
+const canCharge = computed(() => selectedTender.value !== 'cash' || (cashTendered.value !== null && !cashShort.value))
+
 function openPay() {
   if (cart.value.length === 0) return
   if (!posSettings.enabledTenders[selectedTender.value]) selectedTender.value = enabledTenderList.value[0]!
+  cashInput.value = ''
   cartSheetOpen.value = false
   paymentStep.value = 'select'
 }
 
 function selectTender(t: TenderType) {
   selectedTender.value = t
+  // Bring the amount-handed-over buttons up; the change line is pinned below them
+  if (t === 'cash') nextTick(() => screenEl.value?.querySelector('.pos-cash')?.scrollIntoView({ block: 'nearest' }))
 }
 
 function processPayment() {
+  if (!canCharge.value) return
   paymentStep.value = 'processing'
   setTimeout(() => {
     paymentStep.value = 'approved'
@@ -636,7 +1057,7 @@ function completeApproved() {
     registerId: activeRegister.value.id,
     staffId: activeStaffId.value,
     customerName: customerName.value || undefined,
-    total: grandTotal.value,
+    total: amountDue.value,
     tender: selectedTender.value,
     itemCount: cart.value.reduce((s, c) => s + c.qty, 0),
     lines: cart.value.map((c) => ({
@@ -646,7 +1067,7 @@ function completeApproved() {
       price: c.price,
     })),
   })
-  if (attachedCustomerId.value) contacts.recordLoyaltyPurchase(attachedCustomerId.value, grandTotal.value)
+  if (attachedCustomerId.value) contacts.recordLoyaltyPurchase(attachedCustomerId.value, amountDue.value)
   lastTxnId.value = txn.orderNumber
   paymentStep.value = 'idle'
   clearCart()
@@ -666,7 +1087,7 @@ function suspendSale() {
 
 /* ── Formatters ────────────────────────────────────────────────── */
 function fmt(n: number) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n)
+  return formatMoney(n, posCountry.value)
 }
 
 /* ── Tender display maps (must include all TenderType values) ───── */
@@ -699,7 +1120,6 @@ const posSettings = reactive({
   printReceipt: true,
   emailReceipt: true,
   receiptFooter: 'Thanks for shopping with us!',
-  taxInclusive: false,
   enabledTenders: { card: true, tap_to_pay: true, cash: true, gift_card: true, split: true } as Record<TenderType, boolean>,
 })
 
@@ -817,7 +1237,6 @@ function memberSince(iso: string): string {
 }
 
 function attachCustomerToSale(c: PosCustomerView) {
-  customerName.value = c.name
   attachedCustomerId.value = c.id
   posView.value = 'sale'
   flashGridToast(`${c.name} added to sale`)
@@ -853,30 +1272,20 @@ interface SmartGridTile {
 const gridToast = ref(false)
 const gridToastText = ref('')
 function flashGridToast(text: string) {
+  undoToast.open = false
   gridToastText.value = text
   gridToast.value = true
 }
 
+/** Open-price entry: the cashier names it and keys the price, rather than a silent placeholder line. */
 function addCustomSale() {
-  const customSku = `CUSTOM-${Date.now().toString(36).slice(-4).toUpperCase()}`
-  cart.value.push({
-    id: `L${lineSeq++}`,
-    sku: customSku,
-    name: 'Custom item',
-    variant: null,
-    originalPrice: 25,
-    price: 25,
-    qty: 1,
-    note: '',
-  })
-  saleMode.value = 'catalog'
-  flashGridToast('Custom item added to sale')
+  openPriceFor({ sku: `CUSTOM-${Date.now().toString(36).slice(-4).toUpperCase()}`, name: '', editableName: true })
 }
 
 const SMART_GRID_TILES: SmartGridTile[] = [
   { key: 'browse',    label: 'Browse products', icon: 'grid-2x2',     color: '#6366f1', action: () => { saleMode.value = 'catalog' } },
   { key: 'custom',    label: 'Add custom sale', icon: 'plus-circle',  color: '#0d9488', action: addCustomSale },
-  { key: 'discount',  label: 'Apply discount',  icon: 'percent',      color: '#f59e0b', action: () => { discountDialogOpen.value = true; pendingDiscount.value = discountPct.value } },
+  { key: 'discount',  label: 'Apply discount',  icon: 'percent',      color: '#f59e0b', action: openDiscountDialog },
   { key: 'email',     label: 'Email customer',  icon: 'mail',         color: '#8b5cf6', action: openCustomerPicker },
   { key: 'save',      label: 'Save as draft',   icon: 'bookmark',     color: '#64748b', action: () => flashGridToast('Sale saved as draft') },
   { key: 'ship',      label: 'Ship all items',  icon: 'truck',        color: '#0ea5e9', action: () => flashGridToast('Ship from store flow opened') },
@@ -984,6 +1393,9 @@ const apkQrUrl = computed(() =>
         <!-- POS Screen -->
         <div ref="screenEl" class="pos-screen" :class="`pos-screen--${posBreakpoint}`">
 
+          <!-- Screen-reader announcements: adds, stock warnings, scan misses -->
+          <div class="d-sr-only" role="status" aria-live="polite" aria-atomic="true">{{ liveMessage }}</div>
+
           <!-- Offline banner -->
           <div v-if="isOffline" class="pos-offline-banner">
             <v-icon size="14">wifi-off</v-icon>
@@ -1005,7 +1417,7 @@ const apkQrUrl = computed(() =>
                   :key="nav.key"
                   class="pos-rail__item"
                   :class="{ 'pos-rail__item--active': posView === nav.key }"
-                  :title="nav.label"
+                  :aria-current="posView === nav.key ? 'page' : undefined"
                   @click="posView = nav.key as PosView"
                 >
                   <v-icon size="18">{{ nav.icon }}</v-icon>
@@ -1058,7 +1470,8 @@ const apkQrUrl = computed(() =>
                     ref="scanFieldRef"
                     v-model="catalogSearch"
                     placeholder="Scan barcode or search products"
-                    density="compact"
+                    aria-label="Scan barcode or search products"
+                    density="default"
                     variant="solo"
                     flat
                     prepend-inner-icon="search"
@@ -1067,7 +1480,7 @@ const apkQrUrl = computed(() =>
                     clearable
                     bg-color="surface"
                     rounded="lg"
-                    style="font-size: 13px;"
+                    style="font-size: 15px;"
                     @keydown.enter="onScanSubmit"
                   />
                 </div>
@@ -1109,10 +1522,18 @@ const apkQrUrl = computed(() =>
                       @click="handleTileClick(group)"
                     >
                       <div class="pos-product-tile__image" :style="{ background: tileGradient(group.representative.sku) }">
-                        <v-icon size="20" color="#11182766">package</v-icon>
+                        <span class="pos-product-tile__initials" aria-hidden="true">{{ customerInitials(group.baseName) }}</span>
                         <div v-if="group.variants.length > 1" class="pos-product-tile__variants-badge">
                           {{ group.variants.length }} variants
                         </div>
+                        <span
+                          v-if="groupOnHand(group) < 8"
+                          class="pos-tile-stock"
+                          :class="groupOnHand(group) === 0 ? 'pos-tile-stock--out' : 'pos-tile-stock--low'"
+                        >
+                          <v-icon size="12">{{ groupOnHand(group) === 0 ? 'package-x' : 'triangle-alert' }}</v-icon>
+                          {{ groupOnHand(group) === 0 ? 'Out of stock' : `Low · ${groupOnHand(group)} left` }}
+                        </span>
                       </div>
                       <div class="pos-product-tile__body">
                         <div class="pos-product-tile__name">{{ group.baseName }}</div>
@@ -1132,8 +1553,15 @@ const apkQrUrl = computed(() =>
                     </button>
 
                     <div v-if="catalogGroups.length === 0" class="pos-catalog__empty">
-                      <v-icon size="32" class="text-medium-emphasis">search</v-icon>
-                      <div>No products found</div>
+                      <v-icon size="32" class="text-medium-emphasis">scan-search</v-icon>
+                      <div class="pos-catalog__empty-title">
+                        {{ catalogSearch.trim() ? `No product for “${catalogSearch.trim()}”` : 'Nothing in this collection' }}
+                      </div>
+                      <div class="pos-catalog__empty-sub">Check the barcode, or sell it as a custom item.</div>
+                      <button class="pos-empty-chip" @click="addCustomSale">
+                        <v-icon size="14">plus</v-icon>
+                        Sell as custom item
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -1154,12 +1582,24 @@ const apkQrUrl = computed(() =>
                   </button>
                 </div>
 
-                <!-- Customer chip -->
-                <div v-if="customerName" class="pos-customer-chip">
-                  <v-icon size="14">user</v-icon>
-                  <span>{{ customerName }}<template v-if="attachedCustomer"> · {{ LOYALTY_TIER_LABELS[attachedCustomer.tier] }}</template></span>
-                  <button class="pos-customer-chip__x" @click="detachCustomer" aria-label="Remove customer">
-                    <v-icon size="12">x</v-icon>
+                <!-- Customer chip: tap for details / edit; remove sits on its own 44px target -->
+                <div v-if="attachedCustomer" class="pos-customer-chip">
+                  <button
+                    class="pos-customer-chip__main"
+                    :aria-label="`Customer ${attachedCustomer.name}, ${LOYALTY_TIER_LABELS[attachedCustomer.tier]}, ${attachedCustomer.points.toLocaleString()} points. Open customer details`"
+                    @click="openCustomerSheet(attachedCustomer.id, 'view')"
+                  >
+                    <v-icon size="16">user-round</v-icon>
+                    <span class="pos-customer-chip__id">
+                      <span class="pos-customer-chip__name">{{ attachedCustomer.name }}</span>
+                      <span class="pos-customer-chip__meta">
+                        <span class="pos-tier-chip" :class="`pos-tier-chip--${attachedCustomer.tier}`">{{ LOYALTY_TIER_LABELS[attachedCustomer.tier] }}</span>
+                        {{ attachedCustomer.points.toLocaleString() }} pts
+                      </span>
+                    </span>
+                  </button>
+                  <button class="pos-customer-chip__x" aria-label="Remove customer from sale" @click="detachCustomer">
+                    <v-icon size="16">x</v-icon>
                   </button>
                 </div>
 
@@ -1167,17 +1607,17 @@ const apkQrUrl = computed(() =>
                 <div class="pos-cart__lines">
                   <div v-if="cart.length === 0" class="pos-cart__empty">
                     <div class="pos-cart__empty-illo">
-                      <v-icon size="42" color="#9ca3af">shopping-bag</v-icon>
+                      <v-icon size="42" color="#6b7280">shopping-bag</v-icon>
                     </div>
                     <div class="pos-cart__empty-title">Add a product to get started</div>
                     <div class="pos-cart__empty-sub">Browse the smart grid or scan a barcode</div>
                     <div class="pos-cart__empty-chips">
                       <button class="pos-empty-chip" @click="addCustomSale">
-                        <v-icon size="13">plus</v-icon>
+                        <v-icon size="14">plus</v-icon>
                         Custom item
                       </button>
                       <button class="pos-empty-chip" @click="openCustomerPicker">
-                        <v-icon size="13">user-plus</v-icon>
+                        <v-icon size="14">user-plus</v-icon>
                         Add customer
                       </button>
                     </div>
@@ -1188,60 +1628,119 @@ const apkQrUrl = computed(() =>
                       v-for="line in cart"
                       :key="line.id"
                       class="pos-line"
+                      :class="{ 'pos-line--fresh': line.id === freshLineId }"
                       role="button"
                       tabindex="0"
+                      :data-line-id="line.id"
+                      :aria-label="lineAriaLabel(line)"
                       @click="openLineActions(line)"
                       @keydown.enter="openLineActions(line)"
+                      @keydown.space.prevent="openLineActions(line)"
                     >
-                      <div class="pos-line__thumb" :style="{ background: tileGradient(line.sku) }" />
+                      <div class="pos-line__thumb" :style="{ background: tileGradient(line.sku) }">
+                        <span aria-hidden="true">{{ customerInitials(line.name) }}</span>
+                        <span v-if="line.qty > 1" class="pos-line__qty-badge" aria-hidden="true">{{ line.qty }}</span>
+                      </div>
                       <div class="pos-line__body">
                         <div class="pos-line__name">{{ line.name }}</div>
-                        <div v-if="line.variant" class="pos-line__variant">{{ line.variant }}</div>
-                        <div class="pos-line__sku">{{ line.sku }}</div>
-                        <div v-if="isOverridden(line) || line.note" class="pos-line__tags">
-                          <span v-if="isOverridden(line)" class="pos-line-tag pos-line-tag--override">Price overridden</span>
-                          <span v-if="line.note" class="pos-line-tag pos-line-tag--note">Note</span>
+                        <div class="pos-line__meta">{{ [line.variant, line.sku].filter(Boolean).join(' · ') }}</div>
+                        <div v-if="line.qty > 1 || isOverridden(line)" class="pos-line__unit">
+                          {{ line.qty }} × {{ fmt(line.price) }}<template v-if="isOverridden(line)"> · price changed from {{ fmt(line.originalPrice) }}</template>
                         </div>
                       </div>
                       <div class="pos-line__pricing">
-                        <span v-if="line.qty > 1" class="pos-line__qtytext">× {{ line.qty }}</span>
-                        <span v-if="isOverridden(line)" class="pos-line__was">{{ fmt(line.originalPrice * line.qty) }}</span>
-                        <span class="pos-line__now">{{ fmt(line.price * line.qty) }}</span>
+                        <span v-if="lineWas(line) - lineView(line).final > 0.005" class="pos-line__was">{{ fmt(lineWas(line)) }}</span>
+                        <span class="pos-line__now">{{ fmt(lineView(line).final) }}</span>
                       </div>
+                      <ul v-if="lineView(line).notes.length || oversoldQty(line) || line.note" class="pos-line__notes">
+                        <li
+                          v-for="n in lineView(line).notes"
+                          :key="n.kind"
+                          class="pos-line-note"
+                          :class="`pos-line-note--${n.kind}`"
+                        >
+                          <v-icon size="14">{{ n.kind === 'promo' ? 'tag' : 'badge-percent' }}</v-icon>
+                          <span class="pos-line-note__text">{{ n.label }}</span>
+                          <span class="pos-line-note__amt">−{{ fmt(-n.amount) }}</span>
+                        </li>
+                        <li v-if="oversoldQty(line)" class="pos-line-note pos-line-note--stock">
+                          <v-icon size="14">triangle-alert</v-icon>
+                          <span class="pos-line-note__text">{{ oversoldQty(line) }} more than in stock</span>
+                        </li>
+                        <li v-if="line.note" class="pos-line-note pos-line-note--note">
+                          <v-icon size="14">sticky-note</v-icon>
+                          <span class="pos-line-note__text">{{ line.note }}</span>
+                        </li>
+                      </ul>
                     </div>
                   </transition-group>
                 </div>
 
-                <!-- Totals -->
+                <!-- Totals: every row adds up to the Charge amount -->
                 <div v-if="cart.length > 0" class="pos-cart__totals">
                   <div class="pos-total-row">
-                    <span>Subtotal</span><span>{{ fmt(subtotal) }}</span>
+                    <span>Subtotal</span><span>{{ fmt(totals.subtotal) }}</span>
                   </div>
-                  <div v-if="discountPct > 0" class="pos-total-row pos-total-row--discount">
-                    <span>Discount ({{ discountPct }}%)</span>
-                    <span>−{{ fmt(discountAmount) }}</span>
+                  <template v-if="totals.discounts.length">
+                    <button
+                      class="pos-total-row pos-total-row--discount pos-total-row--toggle"
+                      :aria-expanded="discountsOpen"
+                      aria-controls="pos-discount-rows"
+                      @click="discountsOpen = !discountsOpen"
+                    >
+                      <span class="d-flex align-center ga-1">
+                        Discounts ({{ totals.discounts.length }})
+                        <v-icon size="14">{{ discountsOpen ? 'chevron-up' : 'chevron-down' }}</v-icon>
+                      </span>
+                      <span>−{{ fmt(-totals.discountTotal) }}</span>
+                    </button>
+                  </template>
+                  <div v-show="discountsOpen && totals.discounts.length" id="pos-discount-rows">
+                    <div v-for="d in totals.discounts" :key="d.key" class="pos-total-row pos-total-row--child">
+                      <span class="pos-total-row__label">{{ d.label }}</span>
+                      <span class="pos-total-row__amt">
+                        −{{ fmt(-d.amount) }}
+                        <button
+                          v-if="d.key === 'coupon' || d.key === 'order'"
+                          class="pos-icon-btn"
+                          :aria-label="`Remove ${d.label}`"
+                          @click="d.key === 'coupon' ? removeCoupon() : removeOrderDiscount()"
+                        >
+                          <v-icon size="14">x</v-icon>
+                        </button>
+                      </span>
+                    </div>
                   </div>
-                  <div class="pos-total-row">
-                    <span>{{ posSettings.taxInclusive ? 'Includes GST (10%)' : 'Tax (10%)' }}</span><span>{{ fmt(taxAmount) }}</span>
-                  </div>
+                  <template v-if="totals.taxMode === 'exclusive'">
+                    <div v-for="t in totals.taxes" :key="t.label" class="pos-total-row">
+                      <span>{{ t.label }} {{ pct(t.rate) }}</span><span>{{ fmt(t.amount) }}</span>
+                    </div>
+                  </template>
                   <div class="pos-total-row pos-total-row--grand">
-                    <span>Total</span><span>{{ fmt(grandTotal) }}</span>
+                    <span>Total</span><span>{{ fmt(totals.total) }}</span>
+                  </div>
+                  <div v-if="totals.taxMode === 'inclusive'" class="pos-total-row pos-total-row--note">
+                    <span>Includes {{ totals.taxes.map((t) => `${t.label} ${fmt(t.amount)}`).join(' · ') }}</span>
                   </div>
                 </div>
 
-                <!-- Cart secondary actions -->
+                <!-- Cart actions: labelled, with Clear set apart from the rest -->
                 <div v-if="cart.length > 0" class="pos-cart__secondary">
-                  <button class="pos-secondary-btn" @click="suspendSale" title="Suspend sale">
-                    <v-icon size="14">pause-circle</v-icon>
+                  <button class="pos-secondary-btn" @click="suspendSale">
+                    <v-icon size="16">pause-circle</v-icon>
+                    <span>Park</span>
                   </button>
-                  <button class="pos-secondary-btn" @click="discountDialogOpen = true; pendingDiscount = discountPct" title="Discount">
-                    <v-icon size="14">percent</v-icon>
+                  <button class="pos-secondary-btn" @click="openDiscountDialog">
+                    <v-icon size="16">percent</v-icon>
+                    <span>Discount</span>
                   </button>
-                  <button class="pos-secondary-btn" @click="openCustomerPicker" title="Customer">
-                    <v-icon size="14">user-plus</v-icon>
+                  <button class="pos-secondary-btn" @click="openCustomerPicker">
+                    <v-icon size="16">user-plus</v-icon>
+                    <span>Customer</span>
                   </button>
-                  <button class="pos-secondary-btn" @click="clearCart" title="Clear sale">
-                    <v-icon size="14">trash-2</v-icon>
+                  <button class="pos-secondary-btn pos-secondary-btn--danger" @click="clearSale">
+                    <v-icon size="16">trash-2</v-icon>
+                    <span>Clear</span>
                   </button>
                 </div>
 
@@ -1249,6 +1748,7 @@ const apkQrUrl = computed(() =>
                 <button
                   class="pos-charge-btn"
                   :class="{ 'pos-charge-btn--disabled': cart.length === 0 }"
+                  :disabled="cart.length === 0"
                   @click="openPay"
                 >
                   Charge {{ fmt(grandTotal) }}
@@ -1265,6 +1765,7 @@ const apkQrUrl = computed(() =>
                 <button
                   class="pos-charge-btn pos-charge-btn--bar"
                   :class="{ 'pos-charge-btn--disabled': cart.length === 0 }"
+                  :disabled="cart.length === 0"
                   @click="openPay"
                 >
                   Charge
@@ -1490,6 +1991,10 @@ const apkQrUrl = computed(() =>
                       <v-icon size="14">check</v-icon>
                       On current sale
                     </div>
+                    <button class="pos-action-btn" @click="openCustomerSheet(selectedCustomer.id, 'edit')">
+                      <v-icon size="14">pencil</v-icon>
+                      Edit
+                    </button>
                   </div>
 
                   <div class="pos-profile__stats">
@@ -1639,16 +2144,19 @@ const apkQrUrl = computed(() =>
                 <div class="pos-settings__group">
                   <div class="pos-setting-row">
                     <div class="pos-setting-row__icon"><v-icon size="15">landmark</v-icon></div>
-                    <div class="pos-setting-row__label">Tax rate</div>
-                    <div class="pos-setting-row__value">10% GST</div>
+                    <div>
+                      <div class="pos-setting-row__label">Tax</div>
+                      <div class="pos-setting-row__sub">Set by {{ store.activeLocation.name }}<template v-if="store.activeLocation.region"> ({{ store.activeLocation.region }})</template></div>
+                    </div>
+                    <div class="pos-setting-row__value">{{ taxRuleSummary(taxRule) }}</div>
                   </div>
                   <div class="pos-setting-row">
-                    <div class="pos-setting-row__icon"><v-icon size="15">receipt-text</v-icon></div>
+                    <div class="pos-setting-row__icon"><v-icon size="15">coins</v-icon></div>
                     <div>
-                      <div class="pos-setting-row__label">Tax-inclusive pricing</div>
-                      <div class="pos-setting-row__sub">Prices shown include tax</div>
+                      <div class="pos-setting-row__label">Cash rounding</div>
+                      <div class="pos-setting-row__sub">Cash totals round to the nearest 5c; card is exact</div>
                     </div>
-                    <v-switch v-model="posSettings.taxInclusive" color="#0d9488" hide-details density="compact" class="pos-setting-row__control" />
+                    <div class="pos-setting-row__value">{{ roundsCash ? 'On' : 'Off' }}</div>
                   </div>
                 </div>
 
@@ -1814,7 +2322,7 @@ const apkQrUrl = computed(() =>
                     <div class="pos-variant-sheet__title">{{ variantPickerGroup?.baseName }}</div>
                     <div class="pos-variant-sheet__sub">{{ variantPickerGroup?.variants.length }} variants available</div>
                   </div>
-                  <button class="pos-variant-sheet__close" @click="variantPickerOpen = false">
+                  <button class="pos-variant-sheet__close" aria-label="Close variants" @click="variantPickerOpen = false">
                     <v-icon size="14">x</v-icon>
                   </button>
                 </div>
@@ -1832,6 +2340,13 @@ const apkQrUrl = computed(() =>
                       <div class="pos-variant-row__label">{{ parseTileProduct(v.productName).variant }}</div>
                       <div class="pos-variant-row__sku">SKU: {{ v.sku }}</div>
                     </div>
+                    <span
+                      v-if="onHandHere(v.sku) < 8"
+                      class="pos-stock-badge"
+                      :class="stockBadge(onHandHere(v.sku)).cls"
+                    >
+                      {{ stockBadge(onHandHere(v.sku)).label }}
+                    </span>
                     <div class="pos-variant-row__price">{{ fmt(v.pos) }}</div>
                     <v-icon size="14" color="#9ca3af">chevron-right</v-icon>
                   </button>
@@ -1861,7 +2376,7 @@ const apkQrUrl = computed(() =>
                     </div>
                     <div class="pos-variant-sheet__sub">SKU: {{ lineActionsLine.sku }}</div>
                   </div>
-                  <button class="pos-variant-sheet__close" @click="lineActionsOpen = false">
+                  <button class="pos-variant-sheet__close" aria-label="Close line actions" @click="lineActionsOpen = false">
                     <v-icon size="14">x</v-icon>
                   </button>
                 </div>
@@ -1901,10 +2416,13 @@ const apkQrUrl = computed(() =>
                       </div>
                       <v-icon size="14" color="#9ca3af">chevron-right</v-icon>
                     </button>
-                    <button class="pos-line-sheet__action" @click="flashGridToast('Line discounts coming soon')">
+                    <button class="pos-line-sheet__action" @click="openDiscountMode">
                       <v-icon size="15" color="#6b7280">percent</v-icon>
                       <div class="pos-line-sheet__action-info">
-                        <div class="pos-line-sheet__action-label">Apply discount</div>
+                        <div class="pos-line-sheet__action-label">{{ lineActionsLine.discount ? 'Edit discount' : 'Apply discount' }}</div>
+                        <div v-if="lineView(lineActionsLine).notes.length" class="pos-line-sheet__action-sub">
+                          {{ lineView(lineActionsLine).notes.map((n) => n.label).join(' · ') }}
+                        </div>
                       </div>
                       <v-icon size="14" color="#9ca3af">chevron-right</v-icon>
                     </button>
@@ -1940,6 +2458,74 @@ const apkQrUrl = computed(() =>
                       @click="removePriceOverride"
                     >
                       Remove override
+                    </button>
+                    <button class="pos-line-sheet__ghost" @click="lineSheetMode = 'menu'">Back</button>
+                  </div>
+                </template>
+
+                <!-- DISCOUNT MODE -->
+                <template v-else-if="lineSheetMode === 'discount'">
+                  <div class="pos-line-sheet__form">
+                    <MpSegmentedControl
+                      :model-value="lineEntry.kind"
+                      :items="[{ value: 'percent', label: 'Percent' }, { value: 'amount', label: 'Amount' }]"
+                      ariaLabel="Discount type"
+                      @update:model-value="(v) => { if (v) { lineEntry.kind = v as LineDiscount['kind']; lineEntry.value = '' } }"
+                    />
+                    <label class="pos-line-sheet__field-label" for="pos-line-discount">
+                      {{ lineEntry.kind === 'percent' ? 'Percent off this line' : 'Amount off this line' }}
+                    </label>
+                    <input
+                      id="pos-line-discount"
+                      v-model="lineEntry.value"
+                      class="pos-line-sheet__input"
+                      type="number"
+                      min="0"
+                      :step="lineEntry.kind === 'percent' ? 1 : 0.01"
+                      inputmode="decimal"
+                      :placeholder="lineEntry.kind === 'percent' ? '10' : '5.00'"
+                      :aria-invalid="!!entryError(lineEntry)"
+                      aria-describedby="pos-line-discount-msg"
+                    />
+                    <div v-if="lineEntry.kind === 'percent'" class="pos-chip-row" role="group" aria-label="Quick percentages">
+                      <button
+                        v-for="p in PERCENT_PRESETS"
+                        :key="p"
+                        class="pos-chip"
+                        :class="{ 'pos-chip--active': lineEntry.value === String(p) }"
+                        :aria-pressed="lineEntry.value === String(p)"
+                        @click="lineEntry.value = String(p)"
+                      >
+                        {{ p }}%
+                      </button>
+                    </div>
+                    <div id="pos-line-reason-label" class="pos-line-sheet__field-label">Reason</div>
+                    <div class="pos-chip-row" role="group" aria-labelledby="pos-line-reason-label">
+                      <button
+                        v-for="r in DISCOUNT_REASONS"
+                        :key="r"
+                        class="pos-chip"
+                        :class="{ 'pos-chip--active': lineEntry.reason === r }"
+                        :aria-pressed="lineEntry.reason === r"
+                        @click="lineEntry.reason = r"
+                      >
+                        {{ r }}
+                      </button>
+                    </div>
+                    <div
+                      id="pos-line-discount-msg"
+                      class="pos-line-sheet__hint"
+                      :class="{ 'pos-line-sheet__hint--error': entryError(lineEntry) }"
+                    >
+                      {{ entryError(lineEntry) || `Line total becomes ${fmt(lineEntryPreview)}` }}
+                    </div>
+                    <button class="pos-line-sheet__primary" @click="applyLineDiscount">Apply discount</button>
+                    <button
+                      v-if="lineActionsLine.discount"
+                      class="pos-line-sheet__ghost pos-line-sheet__ghost--danger"
+                      @click="removeLineDiscount"
+                    >
+                      Remove discount
                     </button>
                     <button class="pos-line-sheet__ghost" @click="lineSheetMode = 'menu'">Back</button>
                   </div>
@@ -1981,7 +2567,7 @@ const apkQrUrl = computed(() =>
                       <div class="pos-variant-sheet__title">Attach customer</div>
                       <div class="pos-variant-sheet__sub">Link loyalty, purchase history &amp; receipts</div>
                     </div>
-                    <button class="pos-variant-sheet__close" @click="customerPickerOpen = false">
+                    <button class="pos-variant-sheet__close" aria-label="Close" @click="customerPickerOpen = false">
                       <v-icon size="14">x</v-icon>
                     </button>
                   </div>
@@ -2062,7 +2648,7 @@ const apkQrUrl = computed(() =>
                       <div class="pos-variant-sheet__title">New customer</div>
                       <div class="pos-variant-sheet__sub">Add to loyalty &amp; attach to this sale</div>
                     </div>
-                    <button class="pos-variant-sheet__close" @click="customerPickerOpen = false">
+                    <button class="pos-variant-sheet__close" aria-label="Close" @click="customerPickerOpen = false">
                       <v-icon size="14">x</v-icon>
                     </button>
                   </div>
@@ -2128,7 +2714,7 @@ const apkQrUrl = computed(() =>
                     <div class="pos-variant-sheet__title">Stock at other locations</div>
                     <div class="pos-variant-sheet__sub">{{ selectedVariant?.productName }} · {{ selectedVariant?.sku }}</div>
                   </div>
-                  <button class="pos-variant-sheet__close" @click="otherLocationsOpen = false">
+                  <button class="pos-variant-sheet__close" aria-label="Close" @click="otherLocationsOpen = false">
                     <v-icon size="14">x</v-icon>
                   </button>
                 </div>
@@ -2148,6 +2734,255 @@ const apkQrUrl = computed(() =>
             </div>
           </transition>
 
+          <!-- ── Oversell sheet: a shortfall is decided before the line is added ── -->
+          <transition name="pos-variant-up">
+            <div v-if="oversellItem" class="pos-variant-overlay" @click.self="oversellItem = null">
+              <div class="pos-variant-sheet" role="dialog" aria-modal="true" aria-labelledby="pos-oversell-title">
+                <div class="pos-variant-sheet__grabber" />
+                <div class="pos-variant-sheet__header">
+                  <div class="pos-variant-sheet__thumb pos-variant-sheet__thumb--warn">
+                    <v-icon size="18">package-x</v-icon>
+                  </div>
+                  <div class="pos-variant-sheet__info">
+                    <div id="pos-oversell-title" class="pos-variant-sheet__title">
+                      {{ onHandHere(oversellItem.sku) === 0 ? 'Out of stock at this store' : `All ${onHandHere(oversellItem.sku)} on hand are already on the sale` }}
+                    </div>
+                    <div class="pos-variant-sheet__sub">{{ oversellItem.productName }} · {{ store.activeLocation.name }}</div>
+                  </div>
+                  <button class="pos-variant-sheet__close" aria-label="Close" @click="oversellItem = null">
+                    <v-icon size="14">x</v-icon>
+                  </button>
+                </div>
+
+                <div class="pos-sheet-body">
+                  <p class="pos-sheet-copy">
+                    If the customer is holding it, sell it anyway — the line is flagged so stock gets recounted.
+                    Otherwise, check whether another store has one.
+                  </p>
+                  <div v-if="oversellShowStores" class="pos-variant-sheet__list pos-sheet-body__list">
+                    <div v-for="row in otherLocationStock(oversellItem.sku)" :key="row.loc.id" class="pos-variant-row pos-variant-row--static">
+                      <div class="pos-variant-row__info">
+                        <div class="pos-variant-row__label">{{ row.loc.name }}</div>
+                        <div class="pos-variant-row__sku">{{ row.loc.kind === 'warehouse' ? 'Warehouse' : row.loc.address }}</div>
+                      </div>
+                      <div class="pos-variant-row__price">{{ row.qty }}</div>
+                      <span class="pos-stock-badge" :class="stockBadge(row.qty).cls">{{ stockBadge(row.qty).label }}</span>
+                    </div>
+                  </div>
+                  <div class="pos-sheet-actions">
+                    <button class="pos-line-sheet__ghost" :aria-expanded="oversellShowStores" @click="oversellShowStores = !oversellShowStores">
+                      {{ oversellShowStores ? 'Hide other stores' : 'Check other stores' }}
+                    </button>
+                    <button class="pos-line-sheet__primary" @click="sellAnyway">Sell anyway</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </transition>
+
+          <!-- ── Open price sheet: unpriced items and custom sales ─────── -->
+          <transition name="pos-variant-up">
+            <div v-if="openPriceTarget" class="pos-variant-overlay" @click.self="openPriceTarget = null">
+              <div class="pos-variant-sheet pos-line-sheet" role="dialog" aria-modal="true" aria-labelledby="pos-openprice-title">
+                <div class="pos-variant-sheet__grabber" />
+                <div class="pos-variant-sheet__header">
+                  <div class="pos-variant-sheet__info">
+                    <div id="pos-openprice-title" class="pos-variant-sheet__title">
+                      {{ openPriceTarget.editableName ? 'Custom item' : 'Enter a price' }}
+                    </div>
+                    <div class="pos-variant-sheet__sub">
+                      {{ openPriceTarget.editableName ? 'Sells as a one-off line on this sale' : `${openPriceTarget.name} has no register price` }}
+                    </div>
+                  </div>
+                  <button class="pos-variant-sheet__close" aria-label="Cancel" @click="openPriceTarget = null">
+                    <v-icon size="14">x</v-icon>
+                  </button>
+                </div>
+
+                <form class="pos-line-sheet__form" novalidate @submit.prevent="confirmOpenPrice">
+                  <template v-if="openPriceTarget.editableName">
+                    <label class="pos-line-sheet__field-label" for="pos-openprice-name">Item name</label>
+                    <input
+                      id="pos-openprice-name"
+                      v-model="openPriceName"
+                      class="pos-line-sheet__input pos-line-sheet__input--text"
+                      placeholder="Hem alteration"
+                      autocomplete="off"
+                    />
+                  </template>
+                  <label class="pos-line-sheet__field-label" for="pos-openprice-value">Price</label>
+                  <input
+                    id="pos-openprice-value"
+                    v-model="openPriceValue"
+                    class="pos-line-sheet__input"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    inputmode="decimal"
+                    placeholder="25.00"
+                    :aria-invalid="!!openPriceError"
+                    aria-describedby="pos-openprice-msg"
+                  />
+                  <div
+                    id="pos-openprice-msg"
+                    class="pos-line-sheet__hint"
+                    :class="{ 'pos-line-sheet__hint--error': openPriceError }"
+                  >
+                    {{ openPriceError || (taxRule.mode === 'inclusive'
+                      ? `Enter the shelf price — it includes ${taxRule.components.map((c) => c.label).join(' + ')}`
+                      : `${taxRule.components.map((c) => c.label).join(' + ')} is added at checkout`) }}
+                  </div>
+                  <button type="submit" class="pos-line-sheet__primary">Add to sale</button>
+                  <button type="button" class="pos-line-sheet__ghost" @click="openPriceTarget = null">Cancel</button>
+                </form>
+              </div>
+            </div>
+          </transition>
+
+          <!-- ── Customer sheet: who is on the sale, and edit their details ── -->
+          <transition name="pos-variant-up">
+            <div v-if="customerSheetCustomer" class="pos-variant-overlay" @click.self="closeCustomerSheet">
+              <div class="pos-variant-sheet pos-customer-sheet" role="dialog" aria-modal="true" aria-labelledby="pos-custsheet-title">
+                <div class="pos-variant-sheet__grabber" />
+                <div class="pos-variant-sheet__header">
+                  <div class="pos-customer-row__avatar" :style="{ background: tileGradient(String(customerSheetCustomer.id)) }">
+                    {{ customerInitials(customerSheetCustomer.name) }}
+                  </div>
+                  <div class="pos-variant-sheet__info">
+                    <div id="pos-custsheet-title" class="pos-variant-sheet__title">
+                      {{ customerSheetMode === 'edit' ? 'Edit customer details' : customerSheetCustomer.name }}
+                    </div>
+                    <div class="pos-variant-sheet__sub">
+                      {{ LOYALTY_TIER_LABELS[customerSheetCustomer.tier] }} · {{ customerSheetCustomer.points.toLocaleString() }} pts · {{ customerSheetCustomer.visits }} visits
+                    </div>
+                  </div>
+                  <button class="pos-variant-sheet__close" aria-label="Close customer details" @click="closeCustomerSheet">
+                    <v-icon size="14">x</v-icon>
+                  </button>
+                </div>
+
+                <!-- VIEW -->
+                <div v-if="customerSheetMode === 'view'" class="pos-sheet-body">
+                  <div class="pos-profile__card">
+                    <div class="pos-setting-row">
+                      <div class="pos-setting-row__icon"><v-icon size="15">mail</v-icon></div>
+                      <div class="pos-setting-row__label">{{ customerSheetCustomer.email || 'No email on file' }}</div>
+                    </div>
+                    <div class="pos-setting-row">
+                      <div class="pos-setting-row__icon"><v-icon size="15">phone</v-icon></div>
+                      <div class="pos-setting-row__label">{{ customerSheetCustomer.phone || 'No mobile on file' }}</div>
+                    </div>
+                    <div v-if="customerSheetCustomer.notes" class="pos-setting-row">
+                      <div class="pos-setting-row__icon"><v-icon size="15">sticky-note</v-icon></div>
+                      <div class="pos-setting-row__label">{{ customerSheetCustomer.notes }}</div>
+                    </div>
+                    <div class="pos-setting-row">
+                      <div class="pos-setting-row__icon"><v-icon size="15">receipt-text</v-icon></div>
+                      <div class="pos-setting-row__label">
+                        {{ customerSheetContact?.customFields?.emailReceipts === true ? 'Email receipts on' : 'Printed receipts' }} ·
+                        {{ customerSheetContact?.optedInEmail || customerSheetContact?.optedInSms ? 'Marketing opted in' : 'No marketing' }}
+                      </div>
+                    </div>
+                  </div>
+                  <div class="pos-sheet-actions pos-sheet-actions--stack">
+                    <button class="pos-line-sheet__primary" @click="startCustomerEdit">
+                      <v-icon size="16">pencil</v-icon>
+                      Edit details
+                    </button>
+                    <button class="pos-line-sheet__ghost" @click="customerSheetId = null; openCustomerPicker()">Change customer</button>
+                    <button
+                      v-if="attachedCustomerId === customerSheetCustomer.id"
+                      class="pos-line-sheet__ghost pos-line-sheet__ghost--danger"
+                      @click="detachCustomer"
+                    >
+                      Remove from sale
+                    </button>
+                  </div>
+                </div>
+
+                <!-- EDIT -->
+                <form v-else class="pos-sheet-body pos-customer-form" novalidate @submit.prevent="saveCustomerEdit">
+                  <div class="pos-customer-form__names">
+                    <v-text-field
+                      id="pos-cust-firstName"
+                      v-model="customerDraft.firstName"
+                      label="First name *"
+                      autocomplete="given-name"
+                      :error-messages="customerErrors.firstName"
+                    />
+                    <v-text-field
+                      v-model="customerDraft.lastName"
+                      label="Last name"
+                      autocomplete="family-name"
+                    />
+                  </div>
+                  <v-text-field
+                    id="pos-cust-phone"
+                    v-model="customerDraft.phone"
+                    label="Mobile"
+                    type="tel"
+                    inputmode="tel"
+                    autocomplete="tel"
+                    :placeholder="phoneExample(posCountry)"
+                    :error-messages="customerErrors.phone"
+                  />
+                  <v-text-field
+                    id="pos-cust-email"
+                    v-model="customerDraft.email"
+                    label="Email"
+                    type="email"
+                    inputmode="email"
+                    autocomplete="email"
+                    placeholder="name@example.com"
+                    :error-messages="customerErrors.email"
+                  />
+                  <div v-if="showCustomerErrors && customerValidation.duplicate" class="pos-inline-alert" role="alert">
+                    <v-icon size="16">users</v-icon>
+                    <span>
+                      {{ customerValidation.duplicate.name }} already has this {{ customerValidation.duplicate.field === 'email' ? 'email' : 'mobile' }}.
+                      Keep one profile per shopper.
+                    </span>
+                    <button type="button" class="pos-link-btn" @click="useDuplicateCustomer">
+                      Use {{ customerValidation.duplicate.name }}
+                    </button>
+                  </div>
+                  <v-textarea
+                    v-model="customerDraft.note"
+                    label="Note for staff"
+                    rows="3"
+                    placeholder="Size M in outerwear"
+                  />
+                  <MpFormField
+                    label="Contact preferences"
+                    hint="Marketing needs the customer’s yes — ask before switching it on."
+                  >
+                    <template #default="{ labelId, descriptionId }">
+                      <div class="pos-customer-form__consent" role="group" :aria-labelledby="labelId" :aria-describedby="descriptionId">
+                        <v-switch v-model="customerDraft.emailReceipts" label="Email receipts" color="#0f766e" />
+                        <v-switch v-model="customerDraft.marketingEmail" label="Marketing emails" color="#0f766e" />
+                        <v-switch v-model="customerDraft.marketingSms" label="Marketing SMS" color="#0f766e" />
+                      </div>
+                    </template>
+                  </MpFormField>
+                  <div class="pos-customer-form__readonly">
+                    <v-icon size="14">lock</v-icon>
+                    Tier and points are managed in back office.
+                  </div>
+                  <div v-if="confirmDiscard" class="pos-inline-alert pos-inline-alert--warn" role="alert">
+                    <v-icon size="16">triangle-alert</v-icon>
+                    <span>Discard your changes?</span>
+                    <button type="button" class="pos-link-btn" @click="confirmDiscard = false">Keep editing</button>
+                    <button type="button" class="pos-link-btn pos-link-btn--danger" @click="discardCustomerEdit">Discard</button>
+                  </div>
+                  <div class="pos-sheet-actions">
+                    <button type="button" class="pos-line-sheet__ghost" @click="cancelCustomerEdit">Cancel</button>
+                    <button type="submit" class="pos-line-sheet__primary">Save details</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </transition>
+
           <!-- ── Transaction detail sheet ─────────────────────── -->
           <transition name="pos-variant-up">
             <div v-if="detailTxn" class="pos-variant-overlay" @click.self="closeTxnDetail">
@@ -2159,7 +2994,7 @@ const apkQrUrl = computed(() =>
                   <span class="pos-status-pill" :class="statusPill(detailTxn).cls">
                     {{ statusPill(detailTxn).label }}
                   </span>
-                  <button class="pos-variant-sheet__close" @click="closeTxnDetail">
+                  <button class="pos-variant-sheet__close" aria-label="Close transaction" @click="closeTxnDetail">
                     <v-icon size="14">x</v-icon>
                   </button>
                 </div>
@@ -2180,7 +3015,7 @@ const apkQrUrl = computed(() =>
                   </div>
                   <div class="pos-cart__totals" style="padding: 8px 0 0;">
                     <div class="pos-total-row"><span>Subtotal</span><span>{{ fmt(detailSubtotal) }}</span></div>
-                    <div class="pos-total-row"><span>Tax (10%)</span><span>{{ fmt(Math.abs(parseFloat(detailTxn.total)) - detailSubtotal) }}</span></div>
+                    <div class="pos-total-row"><span>Tax</span><span>{{ fmt(Math.abs(parseFloat(detailTxn.total)) - detailSubtotal) }}</span></div>
                     <div class="pos-total-row pos-total-row--grand"><span>Total</span><span>{{ fmt(parseFloat(detailTxn.total)) }}</span></div>
                   </div>
                 </div>
@@ -2221,8 +3056,11 @@ const apkQrUrl = computed(() =>
                 <!-- Select tender -->
                 <template v-if="paymentStep === 'select'">
                   <div class="pos-payment-sheet__head">
-                    <div class="pos-payment-sheet__eyebrow">Tender amount</div>
-                    <div class="pos-payment-sheet__amount">{{ fmt(grandTotal) }}</div>
+                    <div class="pos-payment-sheet__eyebrow">{{ selectedTender === 'cash' ? 'Cash to collect' : 'Tender amount' }}</div>
+                    <div class="pos-payment-sheet__amount">{{ fmt(amountDue) }}</div>
+                    <div v-if="selectedTender === 'cash' && cashRounding !== 0" class="pos-payment-sheet__rounding">
+                      Sale total {{ fmt(grandTotal) }} · rounded {{ cashRounding > 0 ? 'up' : 'down' }} {{ fmt(Math.abs(cashRounding)) }} (no 1c coins)
+                    </div>
                   </div>
 
                   <div class="pos-tender-list">
@@ -2243,11 +3081,59 @@ const apkQrUrl = computed(() =>
                     </button>
                   </div>
 
-                  <div class="pos-payment-sheet__actions">
-                    <button class="pos-sheet-cancel" @click="paymentStep = 'idle'">Cancel</button>
-                    <button class="pos-charge-btn pos-charge-btn--in-sheet" @click="processPayment">
-                      Charge {{ fmt(grandTotal) }}
-                    </button>
+                  <!-- Cash: what was handed over → change due -->
+                  <div v-if="selectedTender === 'cash'" class="pos-cash">
+                    <div id="pos-cash-quick-label" class="pos-line-sheet__field-label">Amount handed over</div>
+                    <div class="pos-chip-row" role="group" aria-labelledby="pos-cash-quick-label">
+                      <button
+                        v-for="a in cashQuickAmounts"
+                        :key="a"
+                        class="pos-chip pos-chip--lg"
+                        :class="{ 'pos-chip--active': cashTendered === a }"
+                        :aria-pressed="cashTendered === a"
+                        @click="cashInput = a.toFixed(2)"
+                      >
+                        {{ a === cashDue ? `Exact ${fmt(a)}` : fmt(a) }}
+                      </button>
+                    </div>
+                    <label class="d-sr-only" for="pos-cash-input">Other amount handed over</label>
+                    <input
+                      id="pos-cash-input"
+                      v-model="cashInput"
+                      class="pos-line-sheet__input"
+                      type="number"
+                      min="0"
+                      step="0.05"
+                      inputmode="decimal"
+                      placeholder="Other amount"
+                      aria-describedby="pos-cash-change"
+                    />
+                  </div>
+
+                  <!-- Pinned: change due + the charge button never scroll out of reach -->
+                  <div class="pos-payment-sheet__footer">
+                    <div
+                      v-if="selectedTender === 'cash'"
+                      id="pos-cash-change"
+                      class="pos-cash__change"
+                      :class="{ 'pos-cash__change--short': cashShort, 'pos-cash__change--ready': cashTendered !== null && !cashShort }"
+                      aria-live="polite"
+                    >
+                      <template v-if="cashShort">Short by {{ fmt(changeDue(cashDue, cashTendered ?? 0)) }}</template>
+                      <template v-else-if="cashTendered !== null">Change due <strong>{{ fmt(cashChange) }}</strong></template>
+                      <template v-else>Pick or key in the amount handed over</template>
+                    </div>
+                    <div class="pos-payment-sheet__actions">
+                      <button class="pos-sheet-cancel" @click="paymentStep = 'idle'">Cancel</button>
+                      <button
+                        class="pos-charge-btn pos-charge-btn--in-sheet"
+                        :class="{ 'pos-charge-btn--disabled': !canCharge }"
+                        :disabled="!canCharge"
+                        @click="processPayment"
+                      >
+                        {{ selectedTender === 'cash' ? `Take cash ${fmt(cashDue)}` : `Charge ${fmt(grandTotal)}` }}
+                      </button>
+                    </div>
                   </div>
                 </template>
 
@@ -2267,10 +3153,10 @@ const apkQrUrl = computed(() =>
                       <v-icon size="56" color="success">circle-check-big</v-icon>
                     </div>
                     <div class="pos-payment-sheet__big-title">Approved</div>
-                    <div class="pos-payment-sheet__big-amount">{{ fmt(grandTotal) }}</div>
-                    <div class="pos-payment-sheet__sub">
-                      Paid via {{ TENDER_DISPLAY[selectedTender] }}
-                      <span v-if="selectedTender === 'cash'"> · change due {{ fmt(Math.ceil(grandTotal / 10) * 10 - grandTotal) }}</span>
+                    <div class="pos-payment-sheet__big-amount">{{ fmt(amountDue) }}</div>
+                    <div class="pos-payment-sheet__sub">Paid via {{ TENDER_DISPLAY[selectedTender] }}</div>
+                    <div v-if="selectedTender === 'cash' && cashChange > 0" class="pos-cash__change pos-cash__change--ready pos-cash__change--big">
+                      Change due <strong>{{ fmt(cashChange) }}</strong>
                     </div>
                   </div>
 
@@ -2301,20 +3187,46 @@ const apkQrUrl = computed(() =>
       </div><!-- pos-device-frame -->
     </div><!-- pos-stage -->
 
-    <!-- Discount dialog (small floating) -->
-    <MpDialog v-model="discountDialogOpen" size="sm" title="Apply discount">
+    <!-- Discounts dialog: coupon code + whole-sale discount (item discounts live on each line) -->
+    <MpDialog v-model="discountDialogOpen" size="sm" title="Discounts" subtitle="Item discounts are on each line — tap the line.">
       <v-text-field
-        v-model.number="pendingDiscount"
-        label="Discount %"
-        type="number"
-        :min="0"
-        :max="100"
-        suffix="%"
+        v-model="couponInput"
+        label="Coupon code"
+        placeholder="REFER20"
+        autocomplete="off"
+        autocapitalize="characters"
+        :error-messages="couponError"
+        :hint="appliedCoupon ? `${appliedCoupon.code} is applied — a new code replaces it` : ''"
+        persistent-hint
+        @update:model-value="couponError = ''"
+        @keydown.enter="applyDiscounts"
       />
+      <MpSegmentedControl
+        :model-value="orderEntry.kind"
+        :items="[{ value: 'percent', label: 'Percent' }, { value: 'amount', label: 'Amount' }]"
+        ariaLabel="Whole-sale discount type"
+        @update:model-value="(v) => { if (v) { orderEntry.kind = v as LineDiscount['kind']; orderEntry.value = '' } }"
+      />
+      <v-text-field
+        v-model="orderEntry.value"
+        :label="orderEntry.kind === 'percent' ? 'Discount the whole sale (%)' : 'Discount the whole sale'"
+        type="number"
+        inputmode="decimal"
+        :placeholder="orderEntry.kind === 'percent' ? '10' : '20.00'"
+        :suffix="orderEntry.kind === 'percent' ? '%' : undefined"
+        :error-messages="entryErrors(orderEntry).value"
+      />
+      <MpFormField label="Reason" :error="orderEntry.value.trim() ? entryErrors(orderEntry).reason : undefined">
+        <template #default="{ labelId }">
+          <v-chip-group v-model="orderEntry.reason" :aria-labelledby="labelId" selected-class="text-primary">
+            <v-chip v-for="r in DISCOUNT_REASONS" :key="r" :value="r" filter variant="outlined">{{ r }}</v-chip>
+          </v-chip-group>
+        </template>
+      </MpFormField>
 
       <template #footer>
         <v-btn variant="text" class="text-none" @click="discountDialogOpen = false">Cancel</v-btn>
-        <v-btn color="primary" variant="flat" class="text-none" @click="applyDiscount">Apply</v-btn>
+        <v-btn color="primary" variant="flat" class="text-none" @click="applyDiscounts">Apply</v-btn>
       </template>
     </MpDialog>
 
@@ -2363,6 +3275,14 @@ const apkQrUrl = computed(() =>
     <v-snackbar v-model="apkToast" :timeout="3000" location="top">
       <v-icon size="16" class="mr-2">mail</v-icon>
       TestFlight invite sent to your email
+    </v-snackbar>
+
+    <!-- Undo toast (clear sale, remove item / customer / coupon) -->
+    <v-snackbar v-model="undoToast.open" :timeout="6000" location="top">
+      {{ undoToast.text }}
+      <template #actions>
+        <v-btn variant="text" class="text-none" @click="runUndo">Undo</v-btn>
+      </template>
     </v-snackbar>
 
     <!-- Smart-grid action toast -->
@@ -2527,10 +3447,21 @@ const apkQrUrl = computed(() =>
 /* ── Rail ──────────────────────────────────────────────────────── */
 /* Shopify POS token vars (scoped to PosPreview) */
 $pos-ink: #111827;
-$pos-muted: #6b7280;
+$pos-muted: #646b78; // ≥4.8:1 on every POS surface (was #6b7280, 4.40 on $pos-bg)
 $pos-hairline: #e5e7eb;
 $pos-surface: #ffffff;
 $pos-bg: #f4f4f5;
+// Text-safe status inks (≥4.5:1 on white and on their soft fills) — status text never uses a 500-weight hue
+$pos-success-ink: #15803d;
+$pos-success-soft: #dcfce7;
+$pos-warn-ink: #b45309;
+$pos-warn-soft: #fef3c7;
+$pos-danger-ink: #b91c1c;
+$pos-danger-soft: #fee2e2;
+$pos-accent-ink: #0f766e;
+$pos-accent-soft: #ccfbf1;
+// Minimum touch target: Apple HIG 44pt (Material asks 48dp — Android tablets get the 48 rows below)
+$pos-target: 44px;
 
 .pos-rail {
   width: 72px;
@@ -2631,13 +3562,15 @@ $pos-bg: #f4f4f5;
     align-items: center;
     background: transparent;
     border: none;
+    position: relative;
     padding: 4px 8px;
     border-radius: 6px;
     color: $pos-muted;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 600;
     cursor: pointer;
 
+    &::before { content: ''; position: absolute; inset: -9px 0; } // 44px hit area, header keeps its height
     &:hover { background: rgba(17, 24, 39, 0.05); color: $pos-ink; }
   }
 }
@@ -2746,18 +3679,23 @@ $pos-bg: #f4f4f5;
     color: $pos-muted;
     font-size: 12px;
     gap: 8px;
+    text-align: center;
   }
+
+  &__empty-title { font-size: 14px; font-weight: 600; color: $pos-ink; }
+  &__empty-sub   { font-size: 12px; margin-bottom: 4px; }
 }
 
 .pos-chip {
   display: inline-flex;
   align-items: center;
-  padding: 6px 14px;
+  min-height: $pos-target;
+  padding: 6px 16px;
   border: 1px solid $pos-hairline;
   border-radius: 999px;
   background: $pos-surface;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: $pos-muted;
   white-space: nowrap;
@@ -2806,11 +3744,18 @@ $pos-bg: #f4f4f5;
     position: relative;
   }
 
+  &__initials {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: rgba(17, 24, 39, 0.55);
+  }
+
   &__variants-badge {
     position: absolute;
     top: 7px;
     right: 7px;
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 600;
     color: $pos-ink;
     background: rgba(255, 255, 255, 0.88);
@@ -2830,18 +3775,18 @@ $pos-bg: #f4f4f5;
   }
 
   &__name {
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 600;
     color: $pos-ink;
     line-height: 1.3;
     overflow: hidden;
     display: -webkit-box;
-    -webkit-line-clamp: 1;
+    -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
   }
 
   &__variant {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 400;
     color: $pos-muted;
     line-height: 1.3;
@@ -2851,11 +3796,28 @@ $pos-bg: #f4f4f5;
   }
 
   &__price {
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 700;
     color: $pos-ink;
     margin-top: 3px;
   }
+}
+
+/* Stock on the tile — so a shortage is seen before it is tapped */
+.pos-tile-stock {
+  position: absolute;
+  left: 7px;
+  bottom: 7px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+
+  &--low { background: $pos-warn-soft; color: $pos-warn-ink; }
+  &--out { background: $pos-danger-soft; color: $pos-danger-ink; }
 }
 
 /* ── Cart panel (Shopify-style) ────────────────────────────────── */
@@ -2893,6 +3855,12 @@ $pos-bg: #f4f4f5;
     flex: 1;
     overflow-y: auto;
     padding: 4px 0 8px;
+    // Scroll shadows: a soft edge appears only where more lines are hidden
+    background:
+      linear-gradient($pos-surface 30%, rgba(255, 255, 255, 0)) top / 100% 24px no-repeat local,
+      linear-gradient(rgba(255, 255, 255, 0), $pos-surface 70%) bottom / 100% 24px no-repeat local,
+      radial-gradient(farthest-side at 50% 0, rgba(17, 24, 39, 0.14), transparent) top / 100% 10px no-repeat scroll,
+      radial-gradient(farthest-side at 50% 100%, rgba(17, 24, 39, 0.14), transparent) bottom / 100% 10px no-repeat scroll;
   }
 
   &__empty {
@@ -2951,33 +3919,71 @@ $pos-bg: #f4f4f5;
 }
 
 .pos-customer-chip {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 6px;
   margin: 0 18px 8px;
-  padding: 6px 10px;
-  background: rgba(13, 148, 136, 0.1);
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--cloud-retail-accent);
-  width: fit-content;
+  background: $pos-accent-soft;
+  border-radius: 12px;
+  color: $pos-accent-ink;
+
+  &__main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: $pos-target;
+    padding: 0 4px 0 12px;
+    border: none;
+    border-radius: 12px;
+    background: transparent;
+    color: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+
+    &:hover { background: rgba(15, 118, 110, 0.08); }
+  }
+
+  // Name on its own line so it never loses room to the loyalty details
+  &__id {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    padding: 6px 0;
+  }
+
+  &__name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
 
   &__x {
+    width: $pos-target;
+    height: $pos-target;
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
     border: none;
+    border-radius: 12px;
     background: transparent;
-    color: currentColor;
+    color: inherit;
     cursor: pointer;
-    padding: 0;
-    opacity: 0.7;
 
-    &:hover { opacity: 1; background: rgba(13, 148, 136, 0.15); }
+    &:hover { background: rgba(15, 118, 110, 0.14); }
   }
 }
 
@@ -2999,23 +4005,49 @@ $pos-bg: #f4f4f5;
 
 .pos-line {
   display: grid;
-  grid-template-columns: 40px 1fr auto;
+  grid-template-columns: 44px 1fr auto;
   align-items: flex-start;
-  gap: 10px;
-  padding: 10px 18px;
-  border-bottom: 1px solid rgba(17, 24, 39, 0.04);
+  gap: 0 12px;
+  padding: 12px 18px;
+  border-bottom: 1px solid rgba(17, 24, 39, 0.06);
   cursor: pointer;
-  transition: background 80ms;
+  transition: background 600ms;
 
   &:last-child { border-bottom: none; }
   &:hover      { background: rgba(17, 24, 39, 0.03); }
   &:active     { background: rgba(17, 24, 39, 0.07); }
+  &--fresh     { background: rgba(15, 118, 110, 0.08); transition: none; }
 
   &__thumb {
-    width: 40px;
-    height: 40px;
-    border-radius: 8px;
+    position: relative;
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    color: rgba(17, 24, 39, 0.6);
+  }
+
+  &__qty-badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 6px;
+    border-radius: 999px;
+    border: 2px solid $pos-surface;
+    background: $pos-ink;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   &__body {
@@ -3023,7 +4055,7 @@ $pos-bg: #f4f4f5;
   }
 
   &__name {
-    font-size: 12.5px;
+    font-size: 14px;
     font-weight: 600;
     color: $pos-ink;
     overflow: hidden;
@@ -3031,87 +4063,146 @@ $pos-bg: #f4f4f5;
     white-space: nowrap;
   }
 
-  &__variant {
-    font-size: 11.5px;
+  &__meta,
+  &__unit {
+    font-size: 12px;
     color: $pos-muted;
-    margin-top: 1px;
+    margin-top: 2px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  &__sku {
-    font-size: 10.5px;
-    color: #9ca3af;
-    margin-top: 1px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  &__tags {
+  // Spans body + price columns, so a note and its amount sit on one line
+  &__notes {
+    grid-column: 2 / -1;
+    list-style: none;
+    margin: 6px 0 0;
+    padding: 0;
     display: flex;
+    flex-direction: column;
     gap: 4px;
-    margin-top: 4px;
-    flex-wrap: wrap;
   }
 
   &__pricing {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    gap: 1px;
+    gap: 2px;
     white-space: nowrap;
     min-width: 56px;
   }
 
-  &__qtytext {
-    font-size: 11px;
-    font-weight: 600;
-    color: $pos-muted;
-  }
-
   &__was {
-    font-size: 11px;
+    font-size: 12px;
     color: $pos-muted;
     text-decoration: line-through;
   }
 
   &__now {
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 700;
     color: $pos-ink;
   }
 }
 
-.pos-line-tag {
-  padding: 1px 7px;
-  border-radius: 999px;
-  font-size: 9.5px;
-  font-weight: 700;
+/* One note per reason the line costs less (or needs a look) — icon + words, never colour alone */
+.pos-line-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
 
-  &--override { background: #fef3c7; color: #a16207; }
-  &--note     { background: #dbeafe; color: #1d4ed8; }
+  .v-icon { flex-shrink: 0; margin-top: 1px; }
+
+  &__text { flex: 1; min-width: 0; }
+  &__amt  { white-space: nowrap; }
+
+  &--promo,
+  &--discount { color: $pos-success-ink; }
+  &--stock    { color: $pos-warn-ink; }
+  &--note     { color: $pos-muted; font-weight: 500; }
 }
+
 
 /* ── Cart total rows ───────────────────────────────────────────── */
 .pos-total-row {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  font-size: 12px;
+  gap: 8px;
+  font-size: 13px;
   color: $pos-muted;
   padding: 3px 0;
 
-  &--discount { color: #16a34a; }
+  &--discount { color: $pos-success-ink; font-weight: 600; }
+
+  &--toggle {
+    position: relative;
+    width: 100%;
+    min-height: 36px;
+    border: none;
+    background: none;
+    font: inherit;
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+
+    &::before { content: ''; position: absolute; inset: -4px 0; }
+  }
+
+  &--child {
+    min-height: 32px;
+    padding: 0 0 0 12px;
+    font-size: 12px;
+    color: $pos-success-ink;
+  }
+
+  &__label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__amt {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    white-space: nowrap;
+  }
 
   &--grand {
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 700;
     color: $pos-ink;
     margin-top: 6px;
     padding-top: 8px;
     border-top: 1px solid $pos-hairline;
   }
+
+  &--note { font-size: 12px; padding-top: 0; }
+}
+
+/* Small icon button whose hit area still reaches 44px */
+.pos-icon-btn {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: $pos-muted;
+  cursor: pointer;
+
+  &::before { content: ''; position: absolute; inset: -8px; }
+  &:hover   { background: rgba(17, 24, 39, 0.06); color: $pos-ink; }
 }
 
 /* ── Qty controls ──────────────────────────────────────────────── */
@@ -3157,22 +4248,36 @@ $pos-bg: #f4f4f5;
 }
 
 .pos-secondary-btn {
+  flex: 1;
+  min-width: 0;
+  min-height: 52px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 38px;
+  gap: 2px;
+  padding: 6px 2px;
   border-radius: 10px;
   border: 1px solid $pos-hairline;
   background: $pos-surface;
-  color: $pos-muted;
+  color: $pos-ink;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
   transition: background 100ms, color 100ms, border-color 100ms;
 
   &:hover {
     background: rgba(17, 24, 39, 0.04);
-    color: $pos-ink;
     border-color: rgba(17, 24, 39, 0.18);
+  }
+
+  // Destructive action stands apart from the everyday ones
+  &--danger {
+    margin-left: 8px;
+    color: $pos-danger-ink;
+
+    &:hover { background: $pos-danger-soft; border-color: rgba(185, 28, 28, 0.3); }
   }
 }
 
@@ -3197,9 +4302,10 @@ $pos-bg: #f4f4f5;
   &:hover { background: #0b1220; }
   &:active { transform: scale(0.995); }
 
-  &--disabled {
+  &--disabled,
+  &:disabled {
     background: rgba(17, 24, 39, 0.12);
-    color: rgba(17, 24, 39, 0.45);
+    color: rgba(17, 24, 39, 0.55);
     cursor: not-allowed;
     pointer-events: none;
   }
@@ -3319,6 +4425,7 @@ $pos-bg: #f4f4f5;
   padding: 14px 24px 24px;
   width: min(440px, calc(100% - 32px));
   max-height: 88%;
+  overflow-y: auto;
   box-shadow: 0 -16px 64px rgba(15, 23, 42, 0.25);
   pointer-events: all;
   animation: pos-sheet-up 240ms cubic-bezier(0.16, 1, 0.3, 1);
@@ -3819,7 +4926,7 @@ $pos-bg: #f4f4f5;
   }
 
   &__field-label {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
     color: $pos-muted;
     text-transform: uppercase;
@@ -3831,24 +4938,33 @@ $pos-bg: #f4f4f5;
     width: 100%;
     border: 1px solid $pos-hairline;
     border-radius: 10px;
+    min-height: $pos-target;
     padding: 9px 12px;
-    font-size: 13px;
+    font-size: 15px;
     font-family: inherit;
     color: $pos-ink;
     background: $pos-surface;
     outline: none;
 
     &:focus { border-color: rgba(17, 24, 39, 0.28); }
+    &[aria-invalid='true'] { border-color: $pos-danger-ink; }
   }
 
   &__textarea { resize: none; }
 
   &__hint {
-    font-size: 11px;
+    font-size: 12px;
     color: $pos-muted;
+
+    &--error { color: $pos-danger-ink; font-weight: 600; }
   }
 
   &__primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: $pos-target;
     border: none;
     border-radius: 10px;
     padding: 10px;
@@ -3862,12 +4978,13 @@ $pos-bg: #f4f4f5;
   }
 
   &__ghost {
+    min-height: $pos-target;
     border: none;
     border-radius: 10px;
     padding: 9px;
     background: transparent;
     color: $pos-muted;
-    font-size: 12.5px;
+    font-size: 13px;
     font-weight: 600;
     cursor: pointer;
 
@@ -4885,6 +6002,155 @@ $pos-bg: #f4f4f5;
 
   .pos-device-frame__bezel-top,
   .pos-device-frame__bezel-bottom { height: 18px; }
+}
+
+/* ── Cashier pass: shared sheet body, chips, alerts, cash ──────── */
+.pos-sheet-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 14px 8px;
+  overflow-y: auto;
+
+  &__list {
+    max-height: 200px;
+    border: 1px solid $pos-hairline;
+    border-radius: 12px;
+  }
+}
+
+.pos-sheet-copy {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: $pos-muted;
+}
+
+.pos-sheet-actions {
+  display: flex;
+  gap: 8px;
+
+  > * { flex: 1; }
+
+  &--stack { flex-direction: column; }
+}
+
+.pos-variant-sheet__thumb--warn {
+  background: $pos-warn-soft;
+  color: $pos-warn-ink;
+}
+
+.pos-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pos-chip--lg {
+  min-height: $pos-target;
+  padding: 0 16px;
+  font-size: 14px;
+}
+
+.pos-inline-alert {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(17, 24, 39, 0.05);
+  color: $pos-ink;
+  font-size: 13px;
+
+  &--warn { background: $pos-warn-soft; color: $pos-warn-ink; }
+}
+
+.pos-link-btn {
+  min-height: 32px;
+  padding: 0 4px;
+  border: none;
+  background: none;
+  font: inherit;
+  font-weight: 700;
+  color: $pos-accent-ink;
+  text-decoration: underline;
+  cursor: pointer;
+
+  &--danger { color: $pos-danger-ink; }
+}
+
+.pos-line-sheet__input--text { text-align: left; }
+
+.pos-customer-sheet { max-height: 92%; }
+
+.pos-customer-form {
+  gap: 16px;
+
+  &__names {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  &__consent {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__readonly {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: $pos-muted;
+  }
+
+  // Save stays reachable without scrolling past the consent toggles
+  .pos-sheet-actions {
+    position: sticky;
+    bottom: -8px;
+    margin: 0 -14px -8px;
+    padding: 8px 14px;
+    background: $pos-surface;
+    border-top: 1px solid $pos-hairline;
+  }
+}
+
+.pos-payment-sheet__footer {
+  position: sticky;
+  bottom: -24px;
+  margin: 0 -24px -24px;
+  padding: 12px 24px 24px;
+  background: $pos-surface;
+  border-top: 1px solid $pos-hairline;
+
+  .pos-cash__change { margin-bottom: 10px; text-align: center; }
+}
+
+.pos-payment-sheet__rounding {
+  margin-top: 4px;
+  font-size: 12px;
+  color: $pos-muted;
+}
+
+.pos-cash {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 18px 12px;
+
+  &__change {
+    min-height: 24px;
+    font-size: 14px;
+    color: $pos-muted;
+
+    strong { font-size: 20px; }
+
+    &--ready { color: $pos-success-ink; font-weight: 600; }
+    &--short { color: $pos-danger-ink; font-weight: 600; }
+    &--big   { margin-top: 12px; font-size: 16px; strong { font-size: 28px; } }
+  }
 }
 
 /* Small tablet (sm 601–960): tighten chrome but keep layout intact */
