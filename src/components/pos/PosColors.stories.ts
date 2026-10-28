@@ -79,18 +79,20 @@ export const Colors: Story = {
       <section style="padding: var(--mp-space-24); border: 1px solid var(--mp-color-light-pos-hairline); border-radius: var(--mp-radius-12); background: var(--mp-color-light-pos-surface);">
         <p class="text-overline" style="margin-bottom: var(--mp-space-12); color: var(--mp-color-light-pos-muted);">Pairs — enforced by contrast:check</p>
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: var(--mp-space-12);">
-          <div
-            v-for="p in pairs"
-            :key="p.surface + p.foreground"
-            :style="{
-              display: 'flex', flexDirection: 'column', gap: 'var(--mp-space-4)',
-              padding: 'var(--mp-space-12)', borderRadius: 'var(--mp-radius-10)',
-              border: '1px solid var(--mp-color-light-pos-hairline)',
-              background: p.surfaceValue, color: p.foregroundValue,
-            }"
-          >
-            <strong style="font-size: var(--mp-fontSize-14);">{{ p.foregroundName }} on {{ p.surfaceName }}</strong>
-            <span style="font-family: var(--mp-fontFamily-mono); font-size: var(--mp-fontSize-12);">
+          <div v-for="p in pairs" :key="p.surface + p.foreground" style="display: flex; flex-direction: column; gap: var(--mp-space-6);">
+            <!-- Text pairs are shown as text; ui and decorative pairs as the mark they colour, never as text -->
+            <div
+              :style="{
+                display: 'flex', alignItems: 'center', gap: 'var(--mp-space-8)', minHeight: 'var(--mp-space-48)',
+                padding: '0 var(--mp-space-12)', borderRadius: 'var(--mp-radius-10)',
+                border: '1px solid var(--mp-color-light-pos-hairline)', background: p.surfaceValue, color: p.foregroundValue,
+              }"
+            >
+              <strong v-if="p.level === 'text'" style="font-size: var(--mp-fontSize-14);">Spring sale 30%</strong>
+              <span v-else :style="{ width: 'var(--mp-space-20)', height: 'var(--mp-space-20)', borderRadius: 'var(--mp-radius-full)', border: '2px solid currentColor', background: p.level === 'ui' ? 'currentColor' : 'transparent' }" aria-hidden="true" />
+            </div>
+            <span style="font-size: var(--mp-fontSize-12); font-weight: var(--mp-fontWeight-semibold);">{{ p.foregroundName }} on {{ p.surfaceName }}</span>
+            <span style="font-family: var(--mp-fontFamily-mono); font-size: var(--mp-fontSize-11); color: var(--mp-color-light-pos-muted);">
               {{ p.ratio }}:1 · {{ p.level }} {{ p.pass ? '✓' : '✗' }}
             </span>
           </div>

@@ -101,8 +101,9 @@ const art = computed(() => posArt(props.seed))
 .pos-line:hover { background: rgba(var(--mp-rgb-color-light-pos-ink), 0.03); }
 .pos-line:active { background: rgba(var(--mp-rgb-color-light-pos-ink), 0.07); }
 
+/* Opaque, so muted meta keeps 4.5:1 whatever the line sits on */
 .pos-line--fresh {
-  background: rgba(var(--mp-rgb-color-light-pos-accentInk), 0.08);
+  background: color-mix(in srgb, var(--mp-color-light-pos-accentInk) 8%, var(--mp-color-light-pos-surface));
   transition: none;
 }
 
