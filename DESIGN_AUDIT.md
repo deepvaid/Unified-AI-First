@@ -2419,3 +2419,37 @@ works in Sydney and Vancouver.
 - Reprinting a past sale from POS History still shows a toast. Orders don't store their discount and tax
   breakdown, so the receipt can't be rebuilt faithfully yet.
 - Logo upload: the logo section draws the brand initials.
+
+## Receipt designer — benchmark follow-ups — 2026-10-28
+
+This round compared our receipt designer with Shopify POS, Square, Clover, Lightspeed X/R-Series, Toast, Revel, Heartland, Odoo, Loyverse and SumUp, plus the ATO, CRA, BC PST and Revenu Québec rules and Epson/Star printer specs. The benchmark report artifact has the full write-up.
+
+- [x] **Templates survive a reload.** Custom templates and channel assignments are saved under `mp.retail.receipts.v1`, using the `useDashboards` pattern. Data read back is shape-checked with `isReceiptTemplate`. A designer deep link such as `/receipts/rt-2/design` used to open on "doesn't exist" after a reload; it now loads the template.
+- [x] **ATO: AU tax invoices of $1,000 or more name the buyer.**
+  - The Buyer row (and Buyer ABN) prints inside the store block, which can't be hidden.
+  - The POS payment sheet shows a notice when there is no customer on the sale.
+  - The POS receipt sheet has buyer name and ABN fields that update the receipt as you type.
+- [x] **58 mm stays at 32 columns.** Epson fits 35 in Font A, but Star prints narrower, so 32 is the width every supported printer can print. This is documented on `COLUMNS` and in the designer.
+- [x] **New sections:**
+  - **Promotion:** coupon picker from POS Promotions, headline, code as text, barcode or QR, valid-until or N days, and a minimum spend.
+  - **QR link:** a label and an `https://` URL.
+- [x] **New toggles:** "Points earned" (customer) and "You saved" (totals).
+- [x] **Placeholders:** `{{store}}` and `{{first_name}}`, with a chip to insert each.
+- [x] **Logo upload:** PNG or JPG under 1 MB, scaled to at most 576 / 384 dots, then Floyd–Steinberg dithered to 1-bit. It's previewed exactly as it will print. The helper is `src/views/Retail/receipts/logoImage.ts`.
+- [x] **Designer Test menu:** print a test receipt to any register with a printer, or send a test email. Both send what's on screen, saved or not.
+- [x] **Reset to [base]:** shown for templates based on a library template. The name and assignments are kept, and the reset still needs Save.
+- [x] **New seed coupon:** BACK15 ("Come back 15%", POS, active). It prints on receipts and can be redeemed at the register.
+
+### Renames and breaking changes
+- `SectionKind` gains `promo` and `qr`.
+- `SectionSettings` gains `image`, `showPointsEarned`, `showSavings`, `headline`, `code`, `codeFormat`, `validUntil`, `validDays`, `minSpend`, `label` and `url`.
+- `ReceiptSale.customer` gains `pointsEarned`, and `ReceiptSale` gains `buyer`.
+- `sampleSale()` now includes `pointsEarned: 147`.
+- POS: `receiptSheet` holds the sale and re-renders through `receiptDoc`.
+
+### Not done (in the report)
+- Sale / Gift / Return and Printed / Email preview modes.
+- Québec French receipts and the QST number.
+- Marking GST-free lines.
+- Per-location template overrides.
+- Reprinting from History.

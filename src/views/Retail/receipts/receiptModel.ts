@@ -565,7 +565,7 @@ export function sampleSale(): ReceiptSale {
     date: '2026-10-27T14:32',
     register: 'Front counter',
     staff: 'Sienna M.',
-    customer: { name: 'Hannah Cole', points: 2840 },
+    customer: { name: 'Hannah Cole', points: 2840, pointsEarned: 147 },
     lines: [
       { name: 'Classic crew tee', variant: 'Black', sku: 'TEE-001-BLK-M', qty: 2, price: 39 },
       { name: 'Pullover hoodie', variant: 'Grey, L', sku: 'HOOD-101-GRY-L', qty: 1, price: 89 },
