@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  AU_BUYER_THRESHOLD, COLUMNS, RECEIPT_LIBRARY, addDays, copyName, copyTemplate, fillPlaceholders, libraryTemplate, needsBuyerDetails,
+  AU_BUYER_THRESHOLD, COLUMNS, RECEIPT_LIBRARY, addDays, copyName, copyTemplate, fillPlaceholders, isReceiptTemplate, libraryTemplate, needsBuyerDetails,
   renderReceipt, resolveTemplate, sampleSale, section, toText, wrap,
   type ReceiptLocation, type ReceiptSale, type ReceiptTemplate,
 } from '../../src/views/Retail/receipts/receiptModel.ts'
@@ -200,4 +200,11 @@ test('every section, including the new ones, fits both paper widths', () => {
     const lines = text({ ...all, paper }, { ...longSale(), customer: { name: 'Hannah Cole', points: 4000, pointsEarned: 15000 }, buyer: { name: 'Coastal Fitout Pty Ltd', abn: '98 765 432 109' } }, bondi)
     assert.deepEqual(lines.filter((l) => l.length > COLUMNS[paper]), [], `${paper} mm`)
   }
+})
+
+test('templates read back from storage are shape-checked before use', () => {
+  assert.ok(isReceiptTemplate(copyTemplate(standard, 'rt-9', 'Mine', '2026-10-27')))
+  assert.ok(!isReceiptTemplate({ id: 'rt-9', name: 'Bad', paper: 70, sections: [] }))
+  assert.ok(!isReceiptTemplate({ ...standard, sections: [{ id: 'nope', kind: 'nope', visible: true, settings: {} }] }))
+  assert.ok(!isReceiptTemplate(null))
 })

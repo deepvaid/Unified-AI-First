@@ -205,6 +205,16 @@ export function copyName(base: string, taken: string[]): string {
   return uniqueName(`${base} copy`, taken)
 }
 
+/** Shape check for templates read back from storage — anything else is dropped, not trusted. */
+export function isReceiptTemplate(value: unknown): value is ReceiptTemplate {
+  const t = value as ReceiptTemplate
+  return !!t && typeof t === 'object'
+    && typeof t.id === 'string' && typeof t.name === 'string'
+    && (t.paper === 58 || t.paper === 80)
+    && Array.isArray(t.sections)
+    && t.sections.every((s) => !!s && SECTION_ORDER.includes(s.kind) && s.id === s.kind && typeof s.settings === 'object')
+}
+
 /** A channel's template, falling back to Standard if it was deleted or never set. */
 export function resolveTemplate(
   assignments: Record<string, string>,
