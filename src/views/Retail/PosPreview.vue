@@ -3455,7 +3455,7 @@ const apkQrUrl = computed(() =>
 .pos-preview-shell {
   /* Sanctioned fixed-look POS mock: pin the retail accent to its light value so this
      terminal never shifts color under the dark-mode cloud-accent override. */
-  --cloud-retail-accent: #0d9488;
+  --cloud-retail-accent: var(--mp-color-light-pos-accent);
   width: 100vw;
   height: 100vh;
   background: color-mix(in oklch, var(--text-primary) 6%, var(--surface-primary));
@@ -3601,23 +3601,23 @@ const apkQrUrl = computed(() =>
 }
 
 /* ── Rail ──────────────────────────────────────────────────────── */
-/* Shopify POS token vars (scoped to PosPreview) */
-$pos-ink: #111827;
-$pos-muted: #646b78; // ≥4.8:1 on every POS surface (was #6b7280, 4.40 on $pos-bg)
-$pos-hairline: #e5e7eb;
-$pos-surface: #ffffff;
-$pos-bg: #f4f4f5;
-// Text-safe status inks (≥4.5:1 on white and on their soft fills) — status text never uses a 500-weight hue
-$pos-success-ink: #15803d;
-$pos-success-soft: #dcfce7;
-$pos-warn-ink: #b45309;
-$pos-warn-soft: #fef3c7;
-$pos-danger-ink: #b91c1c;
-$pos-danger-soft: #fee2e2;
-$pos-accent-ink: #0f766e;
-$pos-accent-soft: #ccfbf1;
+/* POS palette — short names for the color.light.pos.* tokens (contrast-checked in tokens.json).
+   Shared with src/components/pos; see Storybook › Product › POS › Foundations. */
+$pos-ink: var(--mp-color-light-pos-ink);
+$pos-muted: var(--mp-color-light-pos-muted);
+$pos-hairline: var(--mp-color-light-pos-hairline);
+$pos-surface: var(--mp-color-light-pos-surface);
+$pos-bg: var(--mp-color-light-pos-background);
+$pos-success-ink: var(--mp-color-light-pos-successInk);
+$pos-success-soft: var(--mp-color-light-pos-successSoft);
+$pos-warn-ink: var(--mp-color-light-pos-warnInk);
+$pos-warn-soft: var(--mp-color-light-pos-warnSoft);
+$pos-danger-ink: var(--mp-color-light-pos-dangerInk);
+$pos-danger-soft: var(--mp-color-light-pos-dangerSoft);
+$pos-accent-ink: var(--mp-color-light-pos-accentInk);
+$pos-accent-soft: var(--mp-color-light-pos-accentSoft);
 // Minimum touch target: Apple HIG 44pt (Material asks 48dp — Android tablets get the 48 rows below)
-$pos-target: 44px;
+$pos-target: var(--mp-component-pos-touchTarget);
 
 .pos-rail {
   width: 72px;
