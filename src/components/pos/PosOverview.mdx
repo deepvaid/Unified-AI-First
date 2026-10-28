@@ -1,0 +1,85 @@
+import { Meta } from '@storybook/addon-docs/blocks'
+
+<Meta title="Product/POS/Overview" />
+
+export const cell = { padding: 'var(--mp-space-8) var(--mp-space-12)', borderBottom: '1px solid var(--border-subtle)', textAlign: 'left', verticalAlign: 'top' }
+
+export const Table = ({ head, rows }) => (
+  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--mp-fontSize-14)' }}>
+    <thead><tr>{head.map((h) => <th key={h} style={{ ...cell, color: 'var(--text-muted)' }}>{h}</th>)}</tr></thead>
+    <tbody>{rows.map((r) => <tr key={r[0]}>{r.map((c, i) => <td key={i} style={cell}>{i === 0 ? <code>{c}</code> : c}</td>)}</tr>)}</tbody>
+  </table>
+)
+
+# POS design system
+
+The in-store register — Retail Cloud's POS, used by counter cashiers in Australia and Canada, mostly on
+iPads (about 70%) and Android tablets. It has its own fixed visual language, built from the same tokens
+pipeline as the rest of Marobase and shown live in `/commerce/:id/retail/pos-preview`.
+
+## The look
+
+- **Light and fixed.** A counter terminal never follows the app theme. The palette is
+  `color.light.pos.*`, with no dark twin; stories here stay light under the Theme toggle.
+- **Arm's length, one hand.** Type sits a step above the back office's, and nothing tappable is under
+  **44px** (`component.pos.touchTarget`). Charge and the cart actions are 52.
+- **Ink, not brand.** Near-black ink carries the primary action (Charge, Apply, Done); the retail teal
+  marks selection (tender, product, customer). Status lives in four text-safe `*Ink` on `*Soft` pairs.
+
+## Rules
+
+1. **44px floor.** Every button, chip, row and close mark reaches it — visually or with a hit area. The one
+   exception is a link inside a sentence (`PosButton variant="link"`, 32px), as WCAG 2.5.8 allows.
+2. **Status in words.** Colour and icon reinforce a status; the text always says it.
+3. **Text-safe pairs only.** Every ink is ≥ 4.5:1 on the surface, the background and its own soft fill,
+   enforced by `npm run contrast:check`. Use `var(--mp-color-light-pos-*)`; never shorten to `--pos-*`
+   (that already means *positive*).
+4. **Money arrives formatted.** Components take strings ("$54.60", "−$5.00") from the store's locale and
+   tax rules (`saleModel.ts`); none of them do arithmetic.
+5. **Every sheet is a dialog.** `PosSheet` names it, keeps Tab inside, closes on Escape and gives focus
+   back to what opened it.
+
+## Tokens
+
+<Table
+  head={['Token', 'Use']}
+  rows={[
+    ['ink / onInk', 'Text, the primary fill and what sits on it'],
+    ['muted', 'Meta, hints, off toggles (≥ 4.8:1 on every POS surface)'],
+    ['surface / background / subtle', 'Panels, the screen behind them, neutral fills'],
+    ['hairline', 'Dividers and outlines (decorative)'],
+    ['accent / onAccent', 'Selection — the retail cloud accent'],
+    ['accentInk / accentSoft', 'The customer chip, links, the fresh-line tint'],
+    ['successInk · warnInk · dangerInk + *Soft', 'Discounts and done · low stock and partial · out of stock, refunds, remove'],
+    ['scrim', 'Behind a sheet'],
+    ['component.pos.touchTarget · touchTargetLarge', '44 · 52'],
+    ['component.pos.radius.control · card · sheet', '10 · 12 · 16'],
+  ]}
+/>
+
+## Components
+
+All in `src/components/pos/`, named to match the
+[POS Figma kit](https://www.figma.com/design/2sd3oLBQHRXDE5KUwMgiPB) (file `2sd3oLBQHRXDE5KUwMgiPB`, page 🧩 Components).
+
+<Table
+  head={['Component', 'Figma kit', 'What it is']}
+  rows={[
+    ['PosButton', 'Button', 'Primary, secondary (stacked for cart actions), ghost, link; md 44 / lg 52'],
+    ['PosChip', 'Filter Chip', 'Filters, presets and quick actions; toggles render aria-pressed'],
+    ['PosBadge', 'Status Pill', 'Stock and sale status; posStock(qty) words and tones a count'],
+    ['PosTierChip', 'Tier Chip', 'Member, Silver, Gold, VIP'],
+    ['PosNotice', '—', 'A note inside a sheet, with inline link actions'],
+    ['PosField', '—', 'A labelled register input with one hint/error line'],
+    ['PosProductTile', 'Product Card', 'Grid tile, short stock on the artwork'],
+    ['PosCartLine', 'Cart Line', 'A sale line with one note per reason it costs less'],
+    ['PosTotals', '—', 'Subtotal, foldable discounts, tax rows or note, total'],
+    ['PosCustomerChip', '—', 'The customer on the sale; open or remove'],
+    ['PosTenderRow', 'Tender Row', 'One way to pay'],
+    ['PosSheet', '—', "The register's bottom sheet, a modal dialog"],
+    ['ReceiptPaper', '—', 'The printed receipt, shared with Retail › Receipts'],
+  ]}
+/>
+
+`posArt.ts` holds the placeholder product artwork (`posArt`, `posInitials`) and the stock wording
+(`posStock`) every surface shares.
