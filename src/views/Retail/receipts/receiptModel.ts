@@ -559,6 +559,12 @@ export function toText(doc: ReceiptDoc): string[] {
 /* ── Sample sale for previews ──────────────────────────────────── */
 
 /** The sale every template preview prints: promos, an item discount, cash with change. */
+/** The seeded stores a preview prints at: GST included (AU), GST + PST added (CA). */
+export const PREVIEW_STORES = [
+  { value: 'loc-bondi', label: 'Bondi (AU)' },
+  { value: 'loc-robson', label: 'Robson (CA)' },
+]
+
 export function sampleSale(): ReceiptSale {
   return {
     number: 'POS-12051',

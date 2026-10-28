@@ -27,7 +27,7 @@ import MpDialog from '@/components/MpDialog.vue'
 import MpMenuItem from '@/components/MpMenuItem.vue'
 import ReceiptPaper from '@/components/retail/ReceiptPaper.vue'
 import {
-  REQUIRED_SECTIONS, SECTION_META, SECTION_ORDER, libraryTemplate, renderReceipt, sampleSale, section,
+  PREVIEW_STORES, REQUIRED_SECTIONS, SECTION_META, SECTION_ORDER, libraryTemplate, renderReceipt, sampleSale, section,
   type PaperWidth, type ReceiptTemplate, type SectionKind,
 } from './receipts/receiptModel'
 import { prepareLogo } from './receipts/logoImage'
@@ -80,10 +80,6 @@ const storesAffected = computed(() =>
 const basedOnName = computed(() => (draft.value?.basedOn ? libraryTemplate(draft.value.basedOn)?.name : undefined))
 
 /* ── Preview ───────────────────────────────────────────────────── */
-const SAMPLE_STORES = [
-  { value: 'loc-bondi', label: 'Bondi (AU)' },
-  { value: 'loc-robson', label: 'Robson (CA)' },
-]
 const PAPER_ITEMS = [
   { value: '80', label: '80 mm' },
   { value: '58', label: '58 mm' },
@@ -321,7 +317,7 @@ function confirmAssign() {
         />
         <MpSegmentedControl
           v-model="sampleStore"
-          :items="SAMPLE_STORES"
+          :items="PREVIEW_STORES"
           size="sm"
           ariaLabel="Preview at store"
         />

@@ -17,8 +17,9 @@ import MpDialog from '@/components/MpDialog.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpSegmentedControl from '@/components/MpSegmentedControl.vue'
 import ReceiptPaper from '@/components/retail/ReceiptPaper.vue'
-import { RECEIPT_LIBRARY, libraryTemplate, renderReceipt, sampleSale, type ReceiptTemplate } from './receipts/receiptModel'
+import { PREVIEW_STORES, RECEIPT_LIBRARY, libraryTemplate, renderReceipt, sampleSale, type ReceiptTemplate } from './receipts/receiptModel'
 
 const route = useRoute()
 const router = useRouter()
@@ -59,6 +60,22 @@ function origin(t: ReceiptTemplate) {
   if (t.source === 'library') return 'Ready-made'
   const base = t.basedOn ? libraryTemplate(t.basedOn) : undefined
   return base ? `Based on ${base.name}` : 'From scratch'
+}
+
+/* ── Preview: the whole receipt, at either sample store, as a sale or a gift ── */
+const previewTarget = ref<ReceiptTemplate | null>(null)
+const previewOpen = computed({ get: () => !!previewTarget.value, set: (v) => { if (!v) previewTarget.value = null } })
+const previewStore = ref(PREVIEW_STORES.some((s) => s.value === store.activeLocation.id) ? store.activeLocation.id : PREVIEW_STORES[0]!.value)
+const previewGift = ref(false)
+const previewDoc = computed(() =>
+  previewTarget.value
+    ? renderReceipt(previewTarget.value, sample, store.receiptLocationFor(previewStore.value), { gift: previewGift.value })
+    : null,
+)
+
+function openPreview(t: ReceiptTemplate) {
+  previewGift.value = false
+  previewTarget.value = t
 }
 
 /** Ready-made templates are copied first; your own open as they are. */
@@ -161,9 +178,14 @@ const DELIVERY_OPTIONS = [
       <v-row v-else>
         <v-col v-for="t in shown" :key="t.id" cols="12" sm="6" lg="4" xl="3">
           <v-card flat border rounded="lg" class="receipt-card h-100">
-            <div class="receipt-card__media" aria-hidden="true">
-              <ReceiptPaper :doc="thumbnails.get(t.id)!" :scale="0.62" />
-            </div>
+            <!-- The thumbnail opens the full preview; the pill says so on touch screens too -->
+            <button type="button" class="receipt-card__media" :aria-label="`Preview ${t.name}`" @click="openPreview(t)">
+              <ReceiptPaper :doc="thumbnails.get(t.id)!" :scale="0.62" aria-hidden="true" />
+              <span class="receipt-card__preview" aria-hidden="true">
+                <v-icon size="16">eye</v-icon>
+                Preview
+              </span>
+            </button>
             <div class="receipt-card__body">
               <div class="receipt-card__heading">
                 <h2 class="receipt-card__title">{{ t.name }}</h2>
@@ -202,6 +224,28 @@ const DELIVERY_OPTIONS = [
         </v-col>
       </v-row>
     </div>
+
+    <!-- Preview -->
+    <MpDialog
+      v-model="previewOpen"
+      size="md"
+      :title="previewTarget?.name ?? ''"
+      :subtitle="previewTarget ? `${previewTarget.paper} mm · ${origin(previewTarget)} · ${usedBy(previewTarget).length ? `Prints at ${usedBy(previewTarget).map((c) => c.name).join(', ')}` : 'Not assigned'}` : ''"
+    >
+      <div class="receipt-preview__controls">
+        <MpSegmentedControl v-model="previewStore" :items="PREVIEW_STORES" size="sm" ariaLabel="Preview at store" />
+        <v-switch v-model="previewGift" label="Gift receipt" />
+      </div>
+      <div class="receipt-preview__bed">
+        <ReceiptPaper v-if="previewDoc" :doc="previewDoc" />
+      </div>
+      <template #footer>
+        <v-btn variant="text" class="text-none" @click="previewTarget = null">Close</v-btn>
+        <v-btn variant="flat" color="primary" prepend-icon="pencil" class="text-none" @click="customise(previewTarget)">
+          Customise
+        </v-btn>
+      </template>
+    </MpDialog>
 
     <!-- Assign to POS channels -->
     <MpDialog
@@ -277,12 +321,19 @@ const DELIVERY_OPTIONS = [
   position: relative;
   display: flex;
   justify-content: center;
+  width: 100%;
   height: calc(var(--mp-space-80) * 3);
-  padding-top: var(--mp-space-20);
+  padding: var(--mp-space-20) 0 0;
   overflow: hidden;
+  border: 0;
   background: var(--surface-secondary);
   color: var(--on-surface-muted);
+  font: inherit;
+  cursor: zoom-in;
 }
+
+/* Inside the card's clipped corners, so the ring sits inset */
+.receipt-card__media:focus-visible { outline-offset: calc(var(--mp-space-2) * -1); }
 
 .receipt-card__media::after {
   content: '';
@@ -290,6 +341,33 @@ const DELIVERY_OPTIONS = [
   inset: auto 0 0;
   height: var(--mp-space-40);
   background: linear-gradient(transparent, var(--surface-secondary));
+}
+
+.receipt-card__preview {
+  position: absolute;
+  z-index: 1;
+  bottom: var(--mp-space-12);
+  left: 50%;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mp-space-6);
+  padding: var(--mp-space-4) var(--mp-space-12);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--mp-radius-full);
+  background: var(--surface-primary);
+  box-shadow: var(--mp-shadow-sm);
+  color: var(--on-surface);
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-semibold);
+  transform: translateX(-50%);
+  transition: background var(--mp-motion-duration-fast), color var(--mp-motion-duration-fast);
+}
+
+.receipt-card__media:hover .receipt-card__preview,
+.receipt-card__media:focus-visible .receipt-card__preview {
+  border-color: rgb(var(--v-theme-primary));
+  background: rgb(var(--v-theme-primary));
+  color: rgb(var(--v-theme-on-primary));
 }
 
 .receipt-card__body {
@@ -326,5 +404,21 @@ const DELIVERY_OPTIONS = [
   align-items: center;
   gap: var(--mp-space-8);
   padding: var(--mp-component-card-padding);
+}
+
+.receipt-preview__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--mp-space-16);
+}
+
+/* Paper on the same quiet bed the gallery uses */
+.receipt-preview__bed {
+  display: flex;
+  justify-content: center;
+  padding: var(--mp-space-24) var(--mp-space-16);
+  border-radius: var(--mp-component-card-radius);
+  background: var(--surface-secondary);
 }
 </style>
