@@ -5,14 +5,15 @@
  * ancestor), not over the whole page.
  *
  * Always a modal dialog named by its title. Closes on the scrim, the close
- * button and Escape; focus moves in when it opens and back to the trigger
- * when it closes.
+ * button and Escape; focus moves in when it opens, Tab stays inside, and focus
+ * goes back to the trigger when it closes (useFocusTrap, as MpDialog does).
  */
-import { nextTick, ref, useId, watch } from 'vue'
+import { ref, useId } from 'vue'
+import { useFocusTrap } from '@/composables/useFocusTrap'
 
 defineOptions({ inheritAttrs: false })
 
-const props = withDefaults(defineProps<{
+withDefaults(defineProps<{
   title?: string
   subtitle?: string
   closeLabel?: string
@@ -30,24 +31,13 @@ const emit = defineEmits<{ close: [] }>()
 
 const titleId = useId()
 const panel = ref<HTMLElement | null>(null)
-let returnFocusTo: HTMLElement | null = null
 
 function close() {
   open.value = false
   emit('close')
 }
 
-watch(open, async (isOpen) => {
-  if (isOpen) {
-    returnFocusTo = document.activeElement as HTMLElement | null
-    await nextTick()
-    // A sheet that focuses its own field (search, first input) keeps that focus
-    if (panel.value && !panel.value.contains(document.activeElement)) panel.value.focus()
-  } else if (returnFocusTo?.isConnected) {
-    returnFocusTo.focus()
-    returnFocusTo = null
-  }
-}, { immediate: true })
+const { onKeydown } = useFocusTrap(panel, () => open.value, { onEscape: close })
 </script>
 
 <template>
@@ -62,7 +52,7 @@ watch(open, async (isOpen) => {
         aria-modal="true"
         :aria-labelledby="titleId"
         tabindex="-1"
-        @keydown.esc.stop="close"
+        @keydown="onKeydown"
       >
         <div class="pos-sheet__grabber" aria-hidden="true" />
         <div class="pos-sheet__header">

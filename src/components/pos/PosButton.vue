@@ -2,6 +2,8 @@
 /**
  * The register's one button. Every size clears the 44px touch target;
  * `lg` (52) is for the buttons a cashier hits most — Charge, the cart actions.
+ * `link` is the one exception (32): an action inside a sentence, which
+ * WCAG 2.5.8 exempts as inline.
  *
  * Icon-only when there is no label: pass `aria-label`, and it renders square.
  */
@@ -163,7 +165,8 @@ const iconSize = computed(() => (props.size === 'lg' && !props.stacked ? 18 : 16
 .pos-button--stacked {
   flex-direction: column;
   gap: var(--mp-space-2);
-  padding: var(--mp-space-6) var(--mp-space-2);
+  min-width: var(--mp-component-pos-touchTargetLarge);
+  padding: var(--mp-space-6) var(--mp-space-4);
   font-size: var(--mp-fontSize-12);
 }
 
