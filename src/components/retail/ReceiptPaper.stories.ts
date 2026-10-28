@@ -20,7 +20,7 @@ const doc = (id: string, location = BONDI, gift = false) =>
   renderReceipt(libraryTemplate(id)!, sampleSale(), location, { gift })
 
 const meta = {
-  title: 'Product/Retail/ReceiptPaper',
+  title: 'Product/POS/Components/ReceiptPaper',
   component: ReceiptPaper,
   tags: ['autodocs'],
   parameters: {

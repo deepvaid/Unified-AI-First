@@ -122,3 +122,40 @@ export const sidebarSkin: Decorator = (story, context) => ({
   },
   template: '<story />',
 })
+
+/**
+ * The register's own light surface. POS components are light-only by design
+ * (`color.light.pos.*`), so the frame keeps them on it under the dark Theme
+ * toggle too — and points the grid captions at the POS muted ink.
+ */
+export const posSurface: Decorator = () => ({
+  template: `
+    <div style="
+      --text-muted: var(--mp-color-light-pos-muted);
+      padding: var(--mp-space-24);
+      border-radius: var(--mp-component-card-radius);
+      background: var(--mp-color-light-pos-background);
+      color: var(--mp-color-light-pos-ink);
+    "><story /></div>
+  `,
+})
+
+/**
+ * A register screen: the positioned box a `PosSheet` rises inside. Use for
+ * sheets and whole-panel patterns.
+ */
+export function posScreen(height = '640px'): Decorator {
+  return () => ({
+    template: `
+      <div style="
+        --text-muted: var(--mp-color-light-pos-muted);
+        position: relative;
+        height: ${height};
+        overflow: hidden;
+        border-radius: var(--mp-component-card-radius);
+        background: var(--mp-color-light-pos-background);
+        color: var(--mp-color-light-pos-ink);
+      "><story /></div>
+    `,
+  })
+}
