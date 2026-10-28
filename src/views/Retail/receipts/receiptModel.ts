@@ -7,20 +7,25 @@
  * printer prints them. The preview draws those same lines, so what the designer
  * shows is what the printer gets.
  */
-import { formatMoney, lineBreakdown, saleTotals, taxRuleFor, cashRound, changeDue, POS_PROMOTIONS } from '../pos/saleModel.ts'
+import { formatDate, formatMoney, lineBreakdown, saleTotals, taxRuleFor, cashRound, changeDue, POS_PROMOTIONS } from '../pos/saleModel.ts'
 import type { Country, Coupon, LineDiscount, PosPromotion } from '../pos/saleModel.ts'
 
 /* ── Paper ─────────────────────────────────────────────────────── */
 
 export type PaperWidth = 58 | 80
-/** Characters per line in the printer's standard font (Font A, 12 × 24 dots). */
+/**
+ * Characters per line in the printer's standard font (Font A, 12 × 24 dots, 203 dpi).
+ * 80 mm prints 576 dots = 48 columns on both Epson TM-m30III and Star mC-Print3.
+ * 58 mm is 35 columns on Epson but narrower on Star, so 32 — Epson's 42-column
+ * mode — is the width every supported printer can print.
+ */
 export const COLUMNS: Record<PaperWidth, number> = { 80: 48, 58: 32 }
 
 /* ── Templates ─────────────────────────────────────────────────── */
 
 export type SectionKind =
   | 'logo' | 'store' | 'header' | 'details' | 'customer' | 'items'
-  | 'totals' | 'payment' | 'barcode' | 'returns' | 'footer'
+  | 'totals' | 'payment' | 'promo' | 'qr' | 'barcode' | 'returns' | 'footer'
 
 export interface SectionSettings {
   /** header, returns, footer */
@@ -28,6 +33,8 @@ export interface SectionSettings {
   align?: 'left' | 'center'
   /** logo */
   logoSize?: 'sm' | 'lg'
+  /** logo: uploaded image, already 1-bit black and white as the printer prints it */
+  image?: string
   /** store */
   showAddress?: boolean
   showPhone?: boolean
@@ -38,8 +45,25 @@ export interface SectionSettings {
   showVariant?: boolean
   showSku?: boolean
   showNotes?: boolean
-  /** barcode */
+  /** customer */
+  showPointsEarned?: boolean
+  /** totals */
+  showSavings?: boolean
+  /** barcode, and the promo code's graphic */
   format?: 'code128' | 'qr'
+  /** promo: a coupon for next time */
+  headline?: string
+  code?: string
+  codeFormat?: 'text' | 'code128' | 'qr'
+  /** promo: fixed end date (from the coupon), or… */
+  validUntil?: string
+  /** …a window counted from the sale date */
+  validDays?: number
+  /** promo: only print on sales of at least this much */
+  minSpend?: number
+  /** qr */
+  label?: string
+  url?: string
 }
 
 export interface ReceiptSection {
@@ -72,6 +96,8 @@ export const SECTION_META: Record<SectionKind, { label: string; icon: string; hi
   items:    { label: 'Items',          icon: 'list',           hint: 'What was bought' },
   totals:   { label: 'Totals & tax',   icon: 'sigma',          hint: 'Subtotal, discounts, tax, total' },
   payment:  { label: 'Payment',        icon: 'credit-card',    hint: 'Tender, rounding and change' },
+  promo:    { label: 'Promotion',      icon: 'ticket-percent', hint: 'A coupon to bring them back' },
+  qr:       { label: 'QR link',        icon: 'qr-code',        hint: 'Survey, reviews or loyalty sign-up' },
   barcode:  { label: 'Barcode',        icon: 'scan-barcode',   hint: 'Scan for returns and lookups' },
   returns:  { label: 'Returns policy', icon: 'rotate-ccw',     hint: 'Your returns wording' },
   footer:   { label: 'Footer',         icon: 'message-square', hint: 'A closing line' },
@@ -79,7 +105,7 @@ export const SECTION_META: Record<SectionKind, { label: string; icon: string; hi
 
 /** Where a newly added section goes: its natural place on a receipt. */
 export const SECTION_ORDER: SectionKind[] = [
-  'logo', 'store', 'header', 'details', 'customer', 'items', 'totals', 'payment', 'barcode', 'returns', 'footer',
+  'logo', 'store', 'header', 'details', 'customer', 'items', 'totals', 'payment', 'promo', 'qr', 'barcode', 'returns', 'footer',
 ]
 
 /** Sections a receipt can't do without — they can't be hidden or removed. */
@@ -90,10 +116,12 @@ const DEFAULT_SETTINGS: Record<SectionKind, SectionSettings> = {
   store:    { showAddress: true, showPhone: false },
   header:   { text: 'Spring sale on now', align: 'center' },
   details:  { showRegister: true, showStaff: false },
-  customer: {},
+  customer: { showPointsEarned: true },
   items:    { showVariant: true, showSku: false, showNotes: true },
-  totals:   {},
+  totals:   { showSavings: false },
   payment:  {},
+  promo:    { headline: '15% off your next visit', code: 'BACK15', codeFormat: 'code128', validDays: 30, minSpend: 50 },
+  qr:       { label: 'Tell us how we did', url: 'https://maropost.com/feedback' },
   barcode:  { format: 'code128' },
   returns:  { text: 'Change of mind returns within 30 days with this receipt.', align: 'left' },
   footer:   { text: 'Thanks for shopping with us!', align: 'center' },
@@ -177,6 +205,16 @@ export function copyName(base: string, taken: string[]): string {
   return uniqueName(`${base} copy`, taken)
 }
 
+/** Shape check for templates read back from storage — anything else is dropped, not trusted. */
+export function isReceiptTemplate(value: unknown): value is ReceiptTemplate {
+  const t = value as ReceiptTemplate
+  return !!t && typeof t === 'object'
+    && typeof t.id === 'string' && typeof t.name === 'string'
+    && (t.paper === 58 || t.paper === 80)
+    && Array.isArray(t.sections)
+    && t.sections.every((s) => !!s && SECTION_ORDER.includes(s.kind) && s.id === s.kind && typeof s.settings === 'object')
+}
+
 /** A channel's template, falling back to Standard if it was deleted or never set. */
 export function resolveTemplate(
   assignments: Record<string, string>,
@@ -207,7 +245,9 @@ export interface ReceiptSale {
   date: string
   register: string
   staff: string
-  customer?: { name: string; points: number } | null
+  customer?: { name: string; points: number; pointsEarned?: number } | null
+  /** Who bought, for Australian tax invoices of $1,000 or more (name or ABN). */
+  buyer?: { name: string; abn?: string } | null
   lines: ReceiptLine[]
   orderDiscount?: LineDiscount | null
   coupon?: Coupon | null
@@ -232,7 +272,7 @@ export type ReceiptRow =
   | { type: 'text'; text: string; align?: 'left' | 'center'; strong?: boolean }
   | { type: 'pair'; left: string; right: string; strong?: boolean; indent?: boolean }
   | { type: 'rule'; style?: 'single' | 'double' }
-  | { type: 'logo'; size: 'sm' | 'lg'; text: string }
+  | { type: 'logo'; size: 'sm' | 'lg'; text: string; image?: string }
   | { type: 'barcode'; format: 'code128' | 'qr'; value: string }
 
 export interface ReceiptBlock {
@@ -268,6 +308,33 @@ export function receiptDate(iso: string, country: Country): string {
 
 const neg = (n: number, country: Country) => `-${formatMoney(n, country)}`
 
+/** ATO: tax invoices of $1,000 or more must identify the buyer. */
+export const AU_BUYER_THRESHOLD = 1000
+
+export function needsBuyerDetails(country: Country, total: number): boolean {
+  return country === 'AU' && total >= AU_BUYER_THRESHOLD
+}
+
+/**
+ * `{{store}}` and `{{first_name}}` in the merchant's own text. A missing name
+ * drops out cleanly: "Thanks {{first_name}}!" prints "Thanks!".
+ */
+export function fillPlaceholders(text: string, ctx: { store: string; firstName?: string }): string {
+  return text
+    .replace(/\{\{\s*store\s*\}\}/g, ctx.store)
+    .replace(/\{\{\s*first_name\s*\}\}/g, ctx.firstName ?? '')
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/\s+([,!.?])/g, '$1')
+    .replace(/,([!.?])/g, '$1')
+    .trim()
+}
+
+/** "YYYY-MM-DD" plus `days`, without time-zone drift. */
+export function addDays(isoDate: string, days: number): string {
+  const [y, m, d] = isoDate.split('-').map(Number)
+  return new Date(Date.UTC(y!, m! - 1, d! + days)).toISOString().slice(0, 10)
+}
+
 export function renderReceipt(
   template: ReceiptTemplate,
   sale: ReceiptSale,
@@ -283,6 +350,10 @@ export function renderReceipt(
   const totals = saleTotals(saleLines, { promos, orderDiscount: sale.orderDiscount, coupon: sale.coupon, taxRule })
   const rounds = sale.tender === 'cash' && (country === 'AU' || country === 'CA')
   const amountPaid = rounds ? cashRound(totals.total) : totals.total
+  const fill = (text: string) => fillPlaceholders(text, {
+    store: location.name,
+    firstName: sale.customer?.name.split(/\s+/)[0],
+  })
 
   const blocks: ReceiptBlock[] = []
   for (const s of template.sections) {
@@ -291,7 +362,7 @@ export function renderReceipt(
     const st = s.settings
     switch (s.kind) {
       case 'logo':
-        rows.push({ type: 'logo', size: st.logoSize ?? 'sm', text: location.brand })
+        rows.push({ type: 'logo', size: st.logoSize ?? 'sm', text: location.brand, image: st.image })
         break
       case 'store': {
         if (country === 'AU' && !gift) rows.push({ type: 'text', text: 'TAX INVOICE', align: 'center', strong: true })
@@ -302,13 +373,23 @@ export function renderReceipt(
         if (st.showPhone && location.phone) rows.push({ type: 'text', text: location.phone, align: 'center' })
         const label = TAX_ID_LABEL[country]
         if (label && location.taxId) rows.push({ type: 'text', text: `${label} ${location.taxId}`, align: 'center' })
+        // Lives with the store details, which can't be hidden, so the rule can't be switched off
+        if (!gift && needsBuyerDetails(country, totals.total)) {
+          const buyer = sale.buyer?.name.trim() ? sale.buyer : sale.customer ? { name: sale.customer.name } : null
+          if (buyer) {
+            rows.push({ type: 'pair', left: 'Buyer', right: buyer.name })
+            if (buyer.abn?.trim()) rows.push({ type: 'pair', left: 'Buyer ABN', right: buyer.abn.trim() })
+          }
+        }
         break
       }
       case 'header':
       case 'returns':
-      case 'footer':
-        if (st.text?.trim()) rows.push({ type: 'text', text: st.text.trim(), align: st.align ?? 'center' })
+      case 'footer': {
+        const text = fill(st.text ?? '')
+        if (text) rows.push({ type: 'text', text, align: st.align ?? 'center' })
         break
+      }
       case 'details':
         rows.push({ type: 'pair', left: 'Receipt', right: sale.number })
         rows.push({ type: 'pair', left: 'Date', right: receiptDate(sale.date, country) })
@@ -318,6 +399,9 @@ export function renderReceipt(
       case 'customer':
         if (sale.customer) {
           rows.push({ type: 'pair', left: 'Customer', right: sale.customer.name })
+          if (!gift && st.showPointsEarned && sale.customer.pointsEarned) {
+            rows.push({ type: 'pair', left: 'Points earned', right: `+${sale.customer.pointsEarned.toLocaleString('en')}` })
+          }
           if (!gift) rows.push({ type: 'pair', left: 'Points balance', right: sale.customer.points.toLocaleString('en') })
         }
         break
@@ -352,6 +436,9 @@ export function renderReceipt(
         if (totals.taxMode === 'inclusive') {
           totals.taxes.forEach((t) => rows.push({ type: 'pair', left: `Includes ${t.label}`, right: money(t.amount) }))
         }
+        if (st.showSavings && totals.discountTotal < 0) {
+          rows.push({ type: 'text', text: `You saved ${money(-totals.discountTotal)}`, align: 'center', strong: true })
+        }
         break
       case 'payment':
         if (gift) break
@@ -371,6 +458,26 @@ export function renderReceipt(
       case 'barcode':
         rows.push({ type: 'barcode', format: st.format ?? 'code128', value: sale.number })
         break
+      case 'promo': {
+        const code = st.code?.trim().toUpperCase()
+        if (!code || (st.minSpend && totals.total < st.minSpend)) break
+        rows.push({ type: 'rule' })
+        const headline = fill(st.headline ?? '')
+        if (headline) rows.push({ type: 'text', text: headline, align: 'center', strong: true })
+        if (st.codeFormat === 'code128' || st.codeFormat === 'qr') rows.push({ type: 'barcode', format: st.codeFormat, value: code })
+        else rows.push({ type: 'text', text: `Code ${code}`, align: 'center', strong: true })
+        const until = st.validUntil ?? (st.validDays ? addDays(sale.date.slice(0, 10), st.validDays) : undefined)
+        if (until) rows.push({ type: 'text', text: `Valid until ${formatDate(until, country)}`, align: 'center' })
+        rows.push({ type: 'rule' })
+        break
+      }
+      case 'qr': {
+        const url = st.url?.trim()
+        if (!url) break
+        if (st.label?.trim()) rows.push({ type: 'text', text: fill(st.label), align: 'center', strong: true })
+        rows.push({ type: 'barcode', format: 'qr', value: url.replace(/^https?:\/\//, '') })
+        break
+      }
     }
     if (rows.length) blocks.push({ sectionId: s.id, rows })
   }
@@ -385,6 +492,8 @@ export interface ReceiptTextLine {
   strong?: boolean
   /** Drawn as a graphic by the preview; the text is the printer-width fallback. */
   graphic?: 'logo-sm' | 'logo-lg' | 'code128' | 'qr'
+  /** Uploaded logo (1-bit data URL) for a logo graphic. */
+  image?: string
 }
 
 /** Word-wrap to `width`, breaking words longer than a line. */
@@ -429,11 +538,11 @@ export function layoutRow(row: ReceiptRow, columns: number): ReceiptTextLine[] {
     case 'rule':
       return [{ text: (row.style === 'double' ? '=' : '-').repeat(columns) }]
     case 'logo':
-      return [{ text: center(`[ ${row.text.toUpperCase()} ]`.slice(0, columns), columns), graphic: row.size === 'lg' ? 'logo-lg' : 'logo-sm' }]
+      return [{ text: center(`[ ${row.text.toUpperCase()} ]`.slice(0, columns), columns), graphic: row.size === 'lg' ? 'logo-lg' : 'logo-sm', image: row.image }]
     case 'barcode':
       return [
         { text: center(row.format === 'qr' ? '[QR]' : '|'.repeat(Math.min(columns - 8, 32)), columns), graphic: row.format },
-        { text: center(row.value, columns) },
+        ...wrap(row.value, columns).map((t) => ({ text: center(t, columns) })),
       ]
   }
 }
@@ -456,7 +565,7 @@ export function sampleSale(): ReceiptSale {
     date: '2026-10-27T14:32',
     register: 'Front counter',
     staff: 'Sienna M.',
-    customer: { name: 'Hannah Cole', points: 2840 },
+    customer: { name: 'Hannah Cole', points: 2840, pointsEarned: 147 },
     lines: [
       { name: 'Classic crew tee', variant: 'Black', sku: 'TEE-001-BLK-M', qty: 2, price: 39 },
       { name: 'Pullover hoodie', variant: 'Grey, L', sku: 'HOOD-101-GRY-L', qty: 1, price: 89 },

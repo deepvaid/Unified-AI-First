@@ -1316,6 +1316,8 @@ export const useCommerceStore = defineStore('commerce', () => {
     { id: 10, title: 'Holiday 40', method: 'Product', mechanism: 'Code', code: 'HOLIDAY40', discountType: 'Percentage', value: 40, salesChannels: ['Online Store'], startDate: '2026-11-01', endDate: '2026-12-25', usage: 12, limit: 300, status: 'Active' },
     { id: 11, title: 'Bundle save', method: 'Product', mechanism: 'Automatic', discountType: 'Fixed', value: 25, salesChannels: ['Online Store', 'eBay'], startDate: '2026-01-01', endDate: '2026-06-30', usage: 78, limit: 200, status: 'Active' },
     { id: 12, title: 'Spring 10', method: 'Order', mechanism: 'Code', code: 'SPRING10', discountType: 'Percentage', value: 10, salesChannels: ['Online Store'], startDate: '2026-03-01', endDate: '2026-05-31', usage: 892, limit: null, status: 'Active' },
+    // Bounce-back coupon printed by the Promotion section on in-store receipts; redeemable at the register.
+    { id: 13, title: 'Come back 15%', description: 'Printed on in-store receipts to bring shoppers back.', method: 'Order', mechanism: 'Code', code: 'BACK15', discountType: 'Percentage', value: 15, salesChannels: ['POS'], startDate: '2026-10-01', usage: 0, limit: null, status: 'Active' },
   ])
 
   function nextPromotionId(): number {

@@ -58,6 +58,13 @@ function initials(text: string) {
       >
         <span v-if="line.graphic === 'code128'" class="receipt-paper__barcode" aria-hidden="true" />
         <span v-else-if="line.graphic === 'qr'" class="receipt-paper__qr" aria-hidden="true" />
+        <img
+          v-else-if="(line.graphic === 'logo-sm' || line.graphic === 'logo-lg') && line.image"
+          :src="line.image"
+          alt=""
+          class="receipt-paper__logo-img"
+          :class="{ 'receipt-paper__logo-img--lg': line.graphic === 'logo-lg' }"
+        >
         <span
           v-else-if="line.graphic === 'logo-sm' || line.graphic === 'logo-lg'"
           class="receipt-paper__logo"
@@ -168,6 +175,20 @@ button.receipt-paper__block:focus-visible { outline: 2px solid var(--focus-ring)
   background: var(--receipt-ink);
   color: var(--receipt-paper);
   font-weight: 700;
+}
+
+.receipt-paper__logo-img {
+  display: block;
+  max-width: 45%;
+  max-height: 6em;
+  margin: 0 auto;
+  object-fit: contain;
+  image-rendering: pixelated; /* dots, as the printer makes them */
+}
+
+.receipt-paper__logo-img--lg {
+  max-width: 80%;
+  max-height: 10em;
 }
 
 .receipt-paper__logo--lg {

@@ -1,7 +1,8 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  COLUMNS, RECEIPT_LIBRARY, copyName, copyTemplate, libraryTemplate, renderReceipt, resolveTemplate, sampleSale, section, toText, wrap,
+  AU_BUYER_THRESHOLD, COLUMNS, RECEIPT_LIBRARY, addDays, copyName, copyTemplate, fillPlaceholders, isReceiptTemplate, libraryTemplate, needsBuyerDetails,
+  renderReceipt, resolveTemplate, sampleSale, section, toText, wrap,
   type ReceiptLocation, type ReceiptSale, type ReceiptTemplate,
 } from '../../src/views/Retail/receipts/receiptModel.ts'
 import { POS_PROMOTIONS, saleTotals, taxRuleFor } from '../../src/views/Retail/pos/saleModel.ts'
@@ -118,4 +119,92 @@ test('copies record what they are based on, get unique names, and assignments fa
   assert.equal(resolveTemplate({ 'pos-store': 'compact' }, [], 'pos-store').id, 'compact')
   assert.equal(resolveTemplate({ 'pos-store': 'deleted' }, [], 'pos-store').id, 'standard')
   assert.equal(resolveTemplate({}, [], 'new-channel').id, 'standard')
+})
+
+/* ── Benchmark additions: promo, QR link, savings, points, buyer, placeholders ── */
+
+const withSections = (...extra: ReturnType<typeof section>[]): ReceiptTemplate => ({ ...standard, sections: [...standard.sections, ...extra] })
+
+test('a promotion prints its headline, code and validity, and only on qualifying sales', () => {
+  const tpl = withSections(section('promo', { headline: '15% off your next visit', code: 'back15', codeFormat: 'text', validDays: 30, minSpend: 50 }))
+  const au = text(tpl, sampleSale(), bondi) // $146.90
+  assert.ok(au.some((l) => l.trim() === '15% off your next visit'))
+  assert.ok(au.some((l) => l.trim() === 'Code BACK15'), 'codes print in capitals')
+  assert.ok(au.some((l) => l.trim() === 'Valid until 26 Nov 2026'), '30 days from 27 Oct, in Australian order')
+  const ca = text(tpl, sampleSale(), robson)
+  assert.ok(ca.some((l) => l.trim() === 'Valid until Nov 26, 2026'), 'Canadian date order')
+  const small = text(tpl, { ...sampleSale(), lines: [{ name: 'Cap', variant: 'Navy', sku: 'CAP-001-NVY', qty: 1, price: 35 }] }, bondi)
+  assert.ok(!small.some((l) => l.includes('BACK15')), 'a $35 sale is under the $50 minimum')
+  const fixed = text(withSections(section('promo', { code: 'REFER20', validUntil: '2026-12-31', validDays: undefined, minSpend: 0 })), sampleSale(), bondi)
+  assert.ok(fixed.some((l) => l.trim() === 'Valid until 31 Dec 2026'), "a coupon's own end date wins")
+  assert.equal(addDays('2026-12-20', 30), '2027-01-19')
+})
+
+test('a QR link prints its label and a short URL that wraps inside the paper', () => {
+  const tpl = withSections(section('qr', { label: 'Tell us how we did', url: 'https://maropost.com/feedback/bondi-junction/receipt-survey-2026' }))
+  for (const paper of [80, 58] as const) {
+    const lines = text({ ...tpl, paper }, sampleSale(), bondi)
+    assert.ok(lines.some((l) => l.trim() === 'Tell us how we did'))
+    assert.ok(lines.some((l) => l.includes('maropost.com/feedback')))
+    assert.ok(!lines.some((l) => l.includes('https://')), 'the scheme is dropped to save paper')
+    assert.deepEqual(lines.filter((l) => l.length > COLUMNS[paper]), [])
+  }
+})
+
+test('"You saved" is the total of every discount, and only prints when there was one', () => {
+  const tpl: ReceiptTemplate = { ...standard, sections: standard.sections.map((s) => (s.kind === 'totals' ? section('totals', { showSavings: true }) : s)) }
+  assert.ok(text(tpl, sampleSale(), bondi).some((l) => l.trim() === 'You saved $55.10'))
+  const full = { ...sampleSale(), lines: [{ name: 'Slim denim', variant: 'Dark, 32', sku: 'JEAN-512-DRK-32', qty: 1, price: 129 }] }
+  assert.ok(!text(tpl, full, bondi).some((l) => l.includes('You saved')))
+})
+
+test('points earned prints above the new balance when the POS passes it', () => {
+  const sale = { ...sampleSale(), customer: { name: 'Hannah Cole', points: 2987, pointsEarned: 147 } }
+  const lines = text(detailed, sale, bondi)
+  const earned = lines.findIndex((l) => /^Points earned\s+\+147$/.test(l))
+  assert.ok(earned >= 0)
+  assert.match(lines[earned + 1]!, /^Points balance\s+2,987$/)
+  const off: ReceiptTemplate = { ...detailed, sections: detailed.sections.map((s) => (s.kind === 'customer' ? section('customer', { showPointsEarned: false }) : s)) }
+  assert.ok(!text(off, sale, bondi).some((l) => l.startsWith('Points earned')))
+})
+
+test('placeholders fill from the sale, and a missing name drops out cleanly', () => {
+  assert.equal(fillPlaceholders('Thanks {{first_name}}!', { store: 'Bondi Junction', firstName: 'Hannah' }), 'Thanks Hannah!')
+  assert.equal(fillPlaceholders('Thanks {{first_name}}!', { store: 'Bondi Junction' }), 'Thanks!')
+  assert.equal(fillPlaceholders('Hi {{ first_name }}, welcome to {{store}}.', { store: 'Robson Street' }), 'Hi, welcome to Robson Street.')
+  const tpl = withSections(section('header', { text: 'Thanks {{first_name}} for visiting {{store}}' }))
+  assert.ok(text(tpl, sampleSale(), bondi).some((l) => l.trim() === 'Thanks Hannah for visiting Bondi Junction'))
+})
+
+test('Australia: a tax invoice of $1,000 or more names the buyer; under $1,000 and Canada do not need to', () => {
+  const big: ReceiptSale = { ...sampleSale(), customer: null, lines: [{ name: 'Leather tote', variant: 'Black', sku: 'BAG-LTH-BLK', qty: 5, price: 249 }] }
+  assert.ok(needsBuyerDetails('AU', 1000) && !needsBuyerDetails('AU', 999.99) && !needsBuyerDetails('CA', 5000))
+  assert.equal(AU_BUYER_THRESHOLD, 1000)
+  assert.ok(!text(standard, big, bondi).some((l) => l.startsWith('Buyer')), 'unknown buyer: nothing to print yet (the POS asks)')
+  const named = text(standard, { ...big, buyer: { name: 'Coastal Fitout Pty Ltd', abn: '98 765 432 109' } }, bondi)
+  assert.ok(named.some((l) => /^Buyer\s+Coastal Fitout Pty Ltd$/.test(l)))
+  assert.ok(named.some((l) => /^Buyer ABN\s+98 765 432 109$/.test(l)))
+  assert.ok(text(standard, { ...big, customer: { name: 'Hannah Cole', points: 0 } }, bondi).some((l) => /^Buyer\s+Hannah Cole$/.test(l)), 'falls back to the customer')
+  assert.ok(!text(standard, { ...sampleSale() }, bondi).some((l) => l.startsWith('Buyer')), 'under $1,000')
+  assert.ok(!text(standard, { ...big, buyer: { name: 'X' } }, robson).some((l) => l.startsWith('Buyer')), 'not a Canadian rule')
+  assert.ok(!text(standard, { ...big, buyer: { name: 'X' } }, bondi, true).some((l) => l.startsWith('Buyer')), 'not on gift receipts')
+})
+
+test('every section, including the new ones, fits both paper widths', () => {
+  const all: ReceiptTemplate = { ...detailed, sections: [
+    section('logo'), section('store'), section('header', { text: 'Thanks {{first_name}} for shopping at {{store}} today' }), section('details', { showStaff: true }),
+    section('customer'), section('items', { showSku: true }), section('totals', { showSavings: true }), section('payment'),
+    section('promo', { codeFormat: 'qr' }), section('qr'), section('barcode'), section('returns'), section('footer'),
+  ] }
+  for (const paper of [80, 58] as const) {
+    const lines = text({ ...all, paper }, { ...longSale(), customer: { name: 'Hannah Cole', points: 4000, pointsEarned: 15000 }, buyer: { name: 'Coastal Fitout Pty Ltd', abn: '98 765 432 109' } }, bondi)
+    assert.deepEqual(lines.filter((l) => l.length > COLUMNS[paper]), [], `${paper} mm`)
+  }
+})
+
+test('templates read back from storage are shape-checked before use', () => {
+  assert.ok(isReceiptTemplate(copyTemplate(standard, 'rt-9', 'Mine', '2026-10-27')))
+  assert.ok(!isReceiptTemplate({ id: 'rt-9', name: 'Bad', paper: 70, sections: [] }))
+  assert.ok(!isReceiptTemplate({ ...standard, sections: [{ id: 'nope', kind: 'nope', visible: true, settings: {} }] }))
+  assert.ok(!isReceiptTemplate(null))
 })

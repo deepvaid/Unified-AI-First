@@ -15,7 +15,7 @@ import {
   isEmail, quickTenderAmounts, saleTotals, taxRuleFor, taxRuleSummary, validateCoupon, validateCustomer,
   type Coupon, type CustomerDraft, type CustomerField, type DiscountReason, type LineDiscount,
 } from './pos/saleModel'
-import { renderReceipt, sampleSale, type ReceiptDoc, type ReceiptSale } from './receipts/receiptModel'
+import { needsBuyerDetails, renderReceipt, sampleSale, type ReceiptSale } from './receipts/receiptModel'
 
 const route = useRoute()
 const router = useRouter()
@@ -1110,7 +1110,27 @@ const activeRegister = computed(() => {
 /* ── Receipts — printed from the template assigned to this POS channel ── */
 const receiptTemplate = computed(() => store.templateForChannel(store.activeChannelId))
 type ReceiptDelivery = 'print' | 'email'
-const receiptSheet = ref<{ doc: ReceiptDoc; number: string; delivery: ReceiptDelivery; email: string; sent: boolean } | null>(null)
+const receiptSheet = ref<{
+  sale: ReceiptSale
+  locationId: string
+  number: string
+  delivery: ReceiptDelivery
+  email: string
+  sent: boolean
+} | null>(null)
+/** Re-rendered live, so buyer details typed on the sheet appear on the receipt. */
+const receiptDoc = computed(() => {
+  const sheet = receiptSheet.value
+  return sheet ? renderReceipt(receiptTemplate.value, sheet.sale, store.receiptLocationFor(sheet.locationId)) : null
+})
+/** ATO: AU tax invoices of $1,000 or more must name the buyer. */
+const receiptNeedsBuyer = computed(() => {
+  const sheet = receiptSheet.value
+  const doc = receiptDoc.value
+  return !!sheet && !!doc && !sheet.sale.customer
+    && needsBuyerDetails(store.receiptLocationFor(sheet.locationId).country, doc.total)
+})
+const saleNeedsBuyer = computed(() => !attachedCustomer.value && needsBuyerDetails(posCountry.value, grandTotal.value))
 const receiptEmailTouched = ref(false)
 const receiptEmailError = computed(() =>
   receiptSheet.value && receiptEmailTouched.value && !isEmail(receiptSheet.value.email) ? 'Enter an email like name@example.com' : '',
@@ -1132,7 +1152,10 @@ function receiptSaleFor(number: string): ReceiptSale {
     date: `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`,
     register: activeRegister.value.name,
     staff: last ? `${first} ${last[0]}.` : first,
-    customer: attachedCustomer.value ? { name: attachedCustomer.value.name, points: attachedCustomer.value.points } : null,
+    // Points are added after the receipt renders, so show the balance as it will be
+    customer: attachedCustomer.value
+      ? { name: attachedCustomer.value.name, points: attachedCustomer.value.points + Math.round(amountDue.value), pointsEarned: Math.round(amountDue.value) }
+      : null,
     lines: cart.value.map((c) => ({ name: c.name, variant: c.variant, sku: c.sku, qty: c.qty, price: c.price, discount: c.discount })),
     orderDiscount: orderDiscount.value,
     coupon: appliedCoupon.value,
@@ -1183,7 +1206,7 @@ function completeApproved(delivery: ReceiptDelivery | null = null) {
   })
   // Render before the cart clears; the receipt is the sale as it was charged
   const receipt = delivery
-    ? { doc: renderReceipt(receiptTemplate.value, receiptSaleFor(txn.orderNumber), store.receiptLocationFor(locId)), email: attachedCustomer.value?.email ?? '' }
+    ? { sale: { ...receiptSaleFor(txn.orderNumber), buyer: { name: '', abn: '' } }, email: attachedCustomer.value?.email ?? '' }
     : null
   if (attachedCustomerId.value) contacts.recordLoyaltyPurchase(attachedCustomerId.value, amountDue.value)
   lastTxnId.value = txn.orderNumber
@@ -1191,7 +1214,7 @@ function completeApproved(delivery: ReceiptDelivery | null = null) {
   clearCart()
   if (receipt && delivery) {
     receiptEmailTouched.value = false
-    receiptSheet.value = { ...receipt, number: txn.orderNumber, delivery, sent: delivery === 'email' && isEmail(receipt.email) }
+    receiptSheet.value = { ...receipt, locationId: locId, number: txn.orderNumber, delivery, sent: delivery === 'email' && isEmail(receipt.email) }
     if (delivery === 'print' && receiptPrinter.value) announce(`Receipt printed on ${receiptPrinter.value}`)
   }
   saleCompleteVisible.value = true
@@ -3098,8 +3121,31 @@ const apkQrUrl = computed(() =>
                     <button type="submit" class="pos-line-sheet__primary">Send receipt</button>
                   </form>
 
-                  <div class="pos-receipt-sheet__paper">
-                    <ReceiptPaper :doc="receiptSheet.doc" :scale="0.9" />
+                  <div v-if="receiptNeedsBuyer && receiptSheet.sale.buyer" class="pos-receipt-sheet__buyer">
+                    <div class="pos-inline-alert" role="note">
+                      <v-icon size="16">file-text</v-icon>
+                      <span>Tax invoices of $1,000 or more need the buyer's name or ABN. It prints as you type.</span>
+                    </div>
+                    <label class="pos-line-sheet__field-label" for="pos-receipt-buyer">Buyer name</label>
+                    <input
+                      id="pos-receipt-buyer"
+                      v-model="receiptSheet.sale.buyer.name"
+                      class="pos-line-sheet__input pos-line-sheet__input--text"
+                      autocomplete="organization"
+                      placeholder="Coastal Fitout Pty Ltd"
+                    />
+                    <label class="pos-line-sheet__field-label" for="pos-receipt-abn">Buyer ABN (optional)</label>
+                    <input
+                      id="pos-receipt-abn"
+                      v-model="receiptSheet.sale.buyer.abn"
+                      class="pos-line-sheet__input pos-line-sheet__input--text"
+                      inputmode="numeric"
+                      placeholder="98 765 432 109"
+                    />
+                  </div>
+
+                  <div v-if="receiptDoc" class="pos-receipt-sheet__paper">
+                    <ReceiptPaper :doc="receiptDoc" :scale="0.9" />
                   </div>
                 </div>
 
@@ -3206,6 +3252,13 @@ const apkQrUrl = computed(() =>
                         <v-icon v-if="selectedTender === t" size="18" color="primary">check</v-icon>
                       </div>
                     </button>
+                  </div>
+
+                  <div v-if="saleNeedsBuyer" class="pos-inline-alert pos-payment-sheet__notice" role="note">
+                    <v-icon size="16">file-text</v-icon>
+                    <span>Over $1,000: the tax invoice needs the buyer's name or ABN.</span>
+                    <button type="button" class="pos-link-btn" @click="paymentStep = 'idle'; openCustomerPicker()">Add customer</button>
+                    <span>or enter it on the receipt.</span>
                   </div>
 
                   <!-- Cash: what was handed over → change due -->
@@ -6186,6 +6239,14 @@ $pos-target: 44px;
     padding: 8px 14px 4px;
     border-top: 1px solid $pos-hairline;
   }
+}
+
+.pos-payment-sheet__notice { margin: 4px 0 12px; }
+
+.pos-receipt-sheet__buyer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .pos-payment-sheet__rounding {

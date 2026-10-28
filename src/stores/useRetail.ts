@@ -1,9 +1,9 @@
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useCommerceStore } from '@/stores/useCommerce'
 import { useSalesChannelsStore, type SalesChannel } from '@/stores/useSalesChannels'
 import {
-  RECEIPT_LIBRARY, copyName, copyTemplate, libraryTemplate, resolveTemplate, section, uniqueName,
+  RECEIPT_LIBRARY, copyName, copyTemplate, isReceiptTemplate, libraryTemplate, resolveTemplate, section, uniqueName,
   type ReceiptLocation, type ReceiptTemplate,
 } from '@/views/Retail/receipts/receiptModel'
 
@@ -266,6 +266,37 @@ export const useRetailStore = defineStore('retail', () => {
   /** POS channel id → template id. A channel with none prints Standard. */
   const receiptAssignments = ref<Record<string, string>>({ 'pos-store': 'standard', 'mall-kiosk-pos': 'compact' })
   let receiptSeq = 2
+
+  // Kept in this browser, so a template survives a reload and its designer link
+  // keeps working (the prototype has no backend). Bad or old data is dropped.
+  const RECEIPTS_STORAGE_KEY = 'mp.retail.receipts.v1'
+  try {
+    const raw = typeof window !== 'undefined' ? window.localStorage.getItem(RECEIPTS_STORAGE_KEY) : null
+    const saved = raw ? JSON.parse(raw) as { templates?: unknown[]; assignments?: Record<string, unknown>; seq?: number } : null
+    if (saved) {
+      if (Array.isArray(saved.templates)) receiptTemplates.value = saved.templates.filter(isReceiptTemplate)
+      if (saved.assignments && typeof saved.assignments === 'object') {
+        receiptAssignments.value = Object.fromEntries(
+          Object.entries(saved.assignments).filter((e): e is [string, string] => typeof e[1] === 'string'),
+        )
+      }
+      const highest = receiptTemplates.value.reduce((n, t) => Math.max(n, Number(t.id.replace('rt-', '')) || 0), 1)
+      receiptSeq = Math.max(saved.seq ?? 0, highest + 1)
+    }
+  } catch {
+    // Unreadable or blocked storage: start from the seeded templates
+  }
+  watch([receiptTemplates, receiptAssignments], () => {
+    try {
+      window.localStorage.setItem(RECEIPTS_STORAGE_KEY, JSON.stringify({
+        templates: receiptTemplates.value,
+        assignments: receiptAssignments.value,
+        seq: receiptSeq,
+      }))
+    } catch {
+      // Full or blocked storage: the change still applies for this session
+    }
+  }, { deep: true })
 
   const today = () => new Date().toISOString().slice(0, 10)
   const allReceiptTemplates = computed(() => [...RECEIPT_LIBRARY, ...receiptTemplates.value])
