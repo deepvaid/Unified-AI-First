@@ -2482,3 +2482,12 @@ The register's look gets its own group, **Product › POS** (Overview, Foundatio
 - The payment sheet keeps its own centred shell (it is a dialog now, but not a `PosSheet`).
 - The Figma kit's **POS Tokens** collection (28 vars) predates `color.light.pos.*` and needs re-syncing to it.
 - Customer, Settings and History rows, the smart-grid tile and the rail are still inline in `PosPreview`.
+
+## Receipts gallery — preview, no Blank card — 2026-10-28
+
+- [x] **No Blank template card** (PR #7). The header's **Start from scratch** already did the same thing; the library now opens on Standard.
+- [x] **Preview.** Each card's thumbnail is a button with a visible Preview pill (no hover needed on a tablet). It opens an `MpDialog` with the whole receipt at full size, the designer's Bondi (AU) / Robson (CA) switch and a Gift receipt toggle, plus Customise in the footer.
+
+### Renames and breaking changes
+- `ReceiptDesigner`'s local `SAMPLE_STORES` → `PREVIEW_STORES`, exported from `receiptModel.ts` and shared with the gallery.
+- `.receipt-card__media` is a `<button>` now (was an `aria-hidden` div); `.receipt-card__media--blank` is gone.
