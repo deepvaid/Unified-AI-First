@@ -1,8 +1,8 @@
 <script setup lang="ts">
 /**
  * Retail › Receipts — the receipt template gallery, on the landing-page
- * template pattern: Library | My templates, a Blank card first, and Customise
- * opening the designer. Each template is assigned to POS channels; the stores
+ * template pattern: Library | My templates, Start from scratch in the header,
+ * and Customise opening the designer. Each template is assigned to POS channels; the stores
  * in a channel fill in their own tax and legal lines.
  */
 import { computed, ref } from 'vue'
@@ -159,24 +159,6 @@ const DELIVERY_OPTIONS = [
       />
 
       <v-row v-else>
-        <!-- The blank card leads the library, as it does for landing pages -->
-        <v-col v-if="tab === 'library'" cols="12" sm="6" lg="4" xl="3">
-          <v-card flat border rounded="lg" class="receipt-card h-100">
-            <div class="receipt-card__media receipt-card__media--blank" aria-hidden="true">
-              <v-icon size="32">file-plus</v-icon>
-            </div>
-            <div class="receipt-card__body">
-              <h2 class="receipt-card__title">Blank template</h2>
-              <p class="receipt-card__description">Start from scratch: store details, items, totals and payment.</p>
-            </div>
-            <div class="receipt-card__actions">
-              <v-btn variant="flat" color="primary" prepend-icon="pencil" class="text-none" @click="customise(null)">
-                Start designing
-              </v-btn>
-            </div>
-          </v-card>
-        </v-col>
-
         <v-col v-for="t in shown" :key="t.id" cols="12" sm="6" lg="4" xl="3">
           <v-card flat border rounded="lg" class="receipt-card h-100">
             <div class="receipt-card__media" aria-hidden="true">
@@ -309,13 +291,6 @@ const DELIVERY_OPTIONS = [
   height: var(--mp-space-40);
   background: linear-gradient(transparent, var(--surface-secondary));
 }
-
-.receipt-card__media--blank {
-  align-items: center;
-  padding-top: 0;
-}
-
-.receipt-card__media--blank::after { content: none; }
 
 .receipt-card__body {
   flex: 1;
