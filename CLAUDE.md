@@ -145,6 +145,10 @@ This is NOT a production app — it uses mock data and has no backend API.
 - **MpMenuItem** — `title`, `icon?`, `danger?`. The one action-menu item (`v-list-item` with `role="menuitem"` baked in; attrs/slots pass through). Destructive = `danger`, last, behind `<v-divider class="my-1" />`. Never a raw `v-list-item` in an action menu.
 - **MpNotificationsMenu** — no props, store-driven (`useNotifications`): bell trigger whose unread badge **wraps** the button (the app's v-badge convention, capped 99+), `aria-haspopup="dialog"` panel of notification rows mirroring the real UAT centre — **one generic icon** (the real feed has no classification; never invent severity here), absolute timestamps, a download action on report/export rows, See all (→ the `/accounts/:id/notifications` page) + Mark-all-read, `MpEmptyState` when caught up. The row is the shared `notifications/NotificationRow` (panel + page). One per app frame; attrs fall through to the bell (`class="appbar-action-btn"`). Transient confirmations stay `useToast`'s job.
 
+### POS (Product › POS)
+
+- **`Pos*`** in `src/components/pos/` — the in-store register's own kit (`PosButton`, `PosChip`, `PosBadge`, `PosTierChip`, `PosNotice`, `PosField`, `PosProductTile`, `PosCartLine`, `PosTotals`, `PosCustomerChip`, `PosTenderRow`, `PosSheet`). **Light-only** on `color.light.pos.*` + `component.pos.*` (44px touch floor); never alias them to `--pos-*`, which means *positive*. Used by `PosPreview` and documented under Storybook › Product › POS (Overview has the rules and the Figma kit mapping). Money arrives formatted; stock wording comes from `posStock()`.
+
 ### AI
 
 - **MpDaVinciBot** — `initialChatMode?`, `initialMessages?`, `subtitle?`, `headerless?` · emits `close`, `expand`. Da Vinci copilot surface hosting the `copilot/` Dv* components.

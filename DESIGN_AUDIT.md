@@ -2453,3 +2453,32 @@ This round compared our receipt designer with Shopify POS, Square, Clover, Light
 - Marking GST-free lines.
 - Per-location template overrides.
 - Reprinting from History.
+
+## POS design system in Storybook — 2026-10-28
+
+The register's look gets its own group, **Product › POS** (Overview, Foundations, Components, Patterns), built from real components the register itself uses, so Storybook and `PosPreview` can't drift.
+
+- [x] **Tokens.** `color.light.pos.*` (18 colours: ink, onInk, muted, hairline, surface, background, subtle, scrim, accent, onAccent and the accent/success/warn/danger Ink + Soft pairs) and `component.pos.*` (touchTarget 44, touchTargetLarge 52, thumb 44, tileImageHeight 88, radius control/card/sheet). Light-only by design: there is no `color.dark.pos`. 21 pairs added to `$contrastPairs`; all pass. `PosPreview`'s `$pos-*` SCSS variables now point at the tokens.
+- [x] **Components** in `src/components/pos/`, named after the POS Figma kit (`2sd3oLBQHRXDE5KUwMgiPB`): `PosButton`, `PosChip`, `PosBadge`, `PosTierChip`, `PosNotice`, `PosField`, `PosProductTile`, `PosCartLine`, `PosTotals`, `PosCustomerChip`, `PosTenderRow`, `PosSheet`, plus `posArt.ts` (`posArt`, `posInitials`, `posStock`). Each has Default / Variants / Sizes / States stories on a `posSurface` frame.
+- [x] **Foundations:** POS Colors (palette plus every enforced pair with its ratio, read from `$contrastPairs`) and Type & Targets. **Patterns:** Cart and Line discount sheet. **Overview** MDX with the rules and the Figma mapping.
+- [x] **PosPreview composes the components.** It drops from 6,284 to 5,111 lines. Before/after captures of 16 states on the iPad and Android tablet frames match, apart from the fixes below.
+- [x] **Fixes on the way:**
+  - Every sheet is a modal dialog named by its title, keeps Tab inside (`useFocusTrap`, as `MpDialog`), closes on Escape and returns focus to its trigger. The variant, line-action, customer-picker, other-locations, transaction and payment sheets had no dialog role.
+  - The quantity stepper (32 → 44), empty-cart chips (~30 → 44) and sheet close buttons (26 → 44 hit area) reach the touch target.
+  - The Products view's Add to Cart is disabled for real when out of stock (it was disabled by class only).
+  - Stock badges, sale statuses, tier chips, the danger ghost button (`#dc2626`) and the grey icons (`#6b7280`, `#9ca3af`) use contrast-checked tokens. Stock badges carry an icon.
+  - Sheet titles go from 13 to 15px and wrap to two lines instead of truncating ("All 3 on hand are already on the sale").
+  - The customer picker's Remove is a 44px danger ghost button (it was a 26px grey text button).
+
+### Renames and breaking changes
+- `ReceiptPaper` story: `Product/Retail/ReceiptPaper` → `Product/POS/Components/ReceiptPaper`.
+- `SwatchGrid` moved out of `Foundations/Colors` into `src/stories/Foundation/SwatchGrid.ts`.
+- New story frames in `src/stories/decorators.ts`: `posSurface`, `posScreen(height)`.
+- `useFocusTrap` no longer pulls focus to the panel when the host already focused something inside it on open (the customer picker focuses its search box). `MpDialog`, `MpFormDrawer` and `DvHistoryDrawer` behave as before unless they do the same.
+- `PosPreview`: `tileGradient` → `posArt`, `customerInitials` → `posInitials`, `stockBadge()` → `posStock()` (returns `{ label, tone, icon }`); `STATUS_PILL_META` entries carry `tone` instead of `cls`. "In Stock" now reads "In stock". VIP tier text is white on ink (was teal).
+- Removed `PosPreview` classes: `.pos-chip`, `.pos-product-tile*`, `.pos-tile-stock`, `.pos-customer-chip*`, `.pos-empty-chip`, `.pos-line*`, `.pos-line-note*`, `.pos-total-row*`, `.pos-icon-btn`, `.pos-qty-btn`, `.pos-secondary-btn`, `.pos-charge-btn*`, `.pos-status-pill`, `.pos-tender-row*`, `.pos-sheet-cancel`, `.pos-receipt-action*`, `.pos-variant-overlay`, `.pos-variant-sheet*`, `.pos-stock-badge`, `.pos-tier-chip`, `.pos-inline-alert`, `.pos-link-btn`, `.pos-line-sheet__{field-label,input,textarea,hint,primary,ghost}`. New layout hooks: `.pos-sheet-list`, `.pos-sheet-thumb`, `.pos-group-label`, `.pos-chevron`.
+
+### Not done here
+- The payment sheet keeps its own centred shell (it is a dialog now, but not a `PosSheet`).
+- The Figma kit's **POS Tokens** collection (28 vars) predates `color.light.pos.*` and needs re-syncing to it.
+- Customer, Settings and History rows, the smart-grid tile and the rail are still inline in `PosPreview`.
