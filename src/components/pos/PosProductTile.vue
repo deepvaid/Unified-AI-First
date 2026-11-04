@@ -5,10 +5,14 @@
  *
  * Pass `selected` (true or false) where tapping picks a product for a details
  * panel — it renders `aria-pressed`. Leave it unset where tapping adds to the sale.
+ *
+ * Hold it — or right-click, or Shift+F10 / the Menu key — and it emits `hold`
+ * instead of `click`: the register opens a quick look there.
  */
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, ref } from 'vue'
 import PosBadge from './PosBadge.vue'
 import { posArt, posInitials, type PosStock } from './posArt'
+import { LONG_PRESS_MS, axisLock, posHaptic } from './posGestures'
 
 const props = withDefaults(defineProps<{
   name: string
@@ -24,28 +28,90 @@ const props = withDefaults(defineProps<{
   selected?: boolean
   /** Lucide icon on the artwork instead of the product's initials. */
   icon?: string
+  /** Units of this product already on the sale; above 0 shows "N in sale" in place of "N variants". */
+  inSale?: number
 }>(), {
   meta: undefined,
   variants: 1,
   stock: null,
   selected: undefined,
   icon: undefined,
+  inSale: 0,
 })
 
+const emit = defineEmits<{ click: [e: MouseEvent]; hold: [] }>()
+
 const art = computed(() => posArt(props.seed))
+
+/* ── Long press ────────────────────────────────────────────────── */
+const pressing = ref(false)
+let press: { x: number; y: number } | null = null
+let timer: ReturnType<typeof setTimeout> | undefined
+/** A hold fired: the click that ends it is not a tap. */
+let held = false
+
+function cancelPress() {
+  clearTimeout(timer)
+  press = null
+  pressing.value = false
+}
+
+function hold() {
+  cancelPress()
+  held = true
+  posHaptic()
+  emit('hold')
+}
+
+function onPointerdown(e: PointerEvent) {
+  if (e.button !== 0) return
+  held = false
+  press = { x: e.clientX, y: e.clientY }
+  pressing.value = true
+  timer = setTimeout(hold, LONG_PRESS_MS)
+}
+
+function onPointermove(e: PointerEvent) {
+  if (press && axisLock(e.clientX - press.x, e.clientY - press.y)) cancelPress()
+}
+
+function onClick(e: MouseEvent) {
+  // A keyboard click (detail 0) is never the end of a hold
+  const swallow = held && e.detail > 0
+  held = false
+  if (!swallow) emit('click', e)
+}
+
+/** Android fires this on a long press too — `held` keeps it to one hold. */
+function onContextmenu(e: MouseEvent) {
+  e.preventDefault()
+  if (!held) hold()
+}
+
+onBeforeUnmount(cancelPress)
 </script>
 
 <template>
   <button
     type="button"
     class="pos-tile"
-    :class="{ 'pos-tile--selected': selected }"
+    :class="{ 'pos-tile--selected': selected, 'pos-tile--pressing': pressing }"
     :aria-pressed="selected === undefined ? undefined : selected"
+    @pointerdown="onPointerdown"
+    @pointermove="onPointermove"
+    @pointerup="cancelPress"
+    @pointercancel="cancelPress"
+    @pointerleave="cancelPress"
+    @click="onClick"
+    @contextmenu="onContextmenu"
   >
     <span class="pos-tile__art" :style="{ background: art }">
       <v-icon v-if="icon" size="20" class="pos-tile__mark" aria-hidden="true">{{ icon }}</v-icon>
       <span v-else class="pos-tile__mark pos-tile__initials" aria-hidden="true">{{ posInitials(name) }}</span>
-      <span v-if="variants > 1" class="pos-tile__variants">{{ variants }} variants</span>
+      <!-- One flag at the top: a three-column grid on a tablet leaves room for one. Once the product is on
+           the sale, its count matters more than its variant count, which the meta line still lists. -->
+      <PosBadge v-if="inSale > 0" class="pos-tile__in-sale" size="md" tone="ink">{{ inSale }} in sale</PosBadge>
+      <span v-else-if="variants > 1" class="pos-tile__variants">{{ variants }} variants</span>
       <PosBadge v-if="stock" class="pos-tile__stock" size="md" :tone="stock.tone" :icon="stock.icon">{{ stock.label }}</PosBadge>
     </span>
     <span class="pos-tile__body">
@@ -69,6 +135,8 @@ const art = computed(() => posArt(props.seed))
   font-family: inherit;
   text-align: left;
   cursor: pointer;
+  -webkit-touch-callout: none;
+  user-select: none;
   transition:
     transform var(--mp-motion-duration-fast),
     box-shadow var(--mp-motion-duration-fast),
@@ -82,6 +150,18 @@ const art = computed(() => posArt(props.seed))
 }
 
 .pos-tile:active { transform: translateY(0); }
+
+/* Sinks over the hold, so the cashier sees a long press charging */
+.pos-tile--pressing,
+.pos-tile--pressing:hover {
+  transform: scale(0.97);
+  transition: transform var(--mp-motion-duration-entrance) var(--mp-motion-easing-standard);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pos-tile--pressing,
+  .pos-tile--pressing:hover { transform: none; }
+}
 
 .pos-tile--selected,
 .pos-tile--selected:hover {
@@ -118,6 +198,12 @@ const art = computed(() => posArt(props.seed))
   font-size: var(--mp-fontSize-12);
   font-weight: var(--mp-fontWeight-semibold);
   backdrop-filter: blur(4px);
+}
+
+.pos-tile__in-sale {
+  position: absolute;
+  top: var(--mp-space-6);
+  right: var(--mp-space-6);
 }
 
 .pos-tile__stock {

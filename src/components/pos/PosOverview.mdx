@@ -38,6 +38,22 @@ pipeline as the rest of Marobase and shown live in `/commerce/:id/retail/pos-pre
    tax rules (`saleModel.ts`); none of them do arithmetic.
 5. **Every sheet is a dialog.** `PosSheet` names it, keeps Tab inside, closes on Escape and gives focus
    back to what opened it.
+6. **A gesture is a shortcut, never the only way.** Each one below has a tap or keyboard twin (WCAG 2.5.1).
+   The thresholds live in `posGestures.ts`, tested in `tests/pos/gestures.test.ts`.
+
+## Gestures
+
+<Table
+  head={['Gesture', 'Where', 'What it does', 'Without the gesture']}
+  rows={[
+    ['Swipe left', 'PosCartLine', 'Reveals Remove; past half the row removes the line at once (the register offers Undo)', 'Tap the line → Remove item'],
+    ['Long press', 'PosProductTile', 'Emits hold: the register opens a quick look — variant, stock at every store, add a quantity', 'Right-click, or Shift+F10 / the Menu key'],
+    ['Drag down', 'PosSheet grabber and header', 'Closes the sheet past 30% of its height, or on a flick', 'The close button, the scrim, Escape'],
+  ]}
+/>
+
+Long presses and swipes never select text or raise the iOS callout, and a short haptic tick confirms a
+hold or a removal on Android (iPad Safari has no vibration API).
 
 ## Tokens
 
@@ -54,6 +70,7 @@ pipeline as the rest of Marobase and shown live in `/commerce/:id/retail/pos-pre
     ['scrim', 'Behind a sheet'],
     ['component.pos.touchTarget · touchTargetLarge', '44 · 52'],
     ['component.pos.radius.control · card · sheet', '10 · 12 · 16'],
+    ['component.pos.swipeAction', '88 — the Remove a swiped cart line reveals'],
   ]}
 />
 
@@ -71,12 +88,12 @@ All in `src/components/pos/`, named to match the
     ['PosTierChip', 'Tier Chip', 'Member, Silver, Gold, VIP'],
     ['PosNotice', '—', 'A note inside a sheet, with inline link actions'],
     ['PosField', '—', 'A labelled register input with one hint/error line'],
-    ['PosProductTile', 'Product Card', 'Grid tile, short stock on the artwork'],
-    ['PosCartLine', 'Cart Line', 'A sale line with one note per reason it costs less'],
+    ['PosProductTile', 'Product Card', 'Grid tile, short stock and "N in sale" on the artwork; hold for a quick look'],
+    ['PosCartLine', 'Cart Line', 'A sale line with one note per reason it costs less; swipe left to remove'],
     ['PosTotals', '—', 'Subtotal, foldable discounts, tax rows or note, total'],
     ['PosCustomerChip', '—', 'The customer on the sale; open or remove'],
     ['PosTenderRow', 'Tender Row', 'One way to pay'],
-    ['PosSheet', '—', "The register's bottom sheet, a modal dialog"],
+    ['PosSheet', '—', "The register's bottom sheet, a modal dialog; drag down to close"],
     ['ReceiptPaper', '—', 'The printed receipt, shared with Retail › Receipts'],
   ]}
 />

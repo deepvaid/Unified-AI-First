@@ -1877,6 +1877,7 @@
   --mp-component-pos-touchTargetLarge: 52px;
   --mp-component-pos-thumb: 44px;
   --mp-component-pos-tileImageHeight: 88px;
+  --mp-component-pos-swipeAction: 88px;
   --mp-component-pos-radius-control: var(--mp-radius-10);
   --mp-component-pos-radius-card: var(--mp-radius-12);
   --mp-component-pos-radius-sheet: var(--mp-radius-16);

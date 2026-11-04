@@ -27,6 +27,10 @@ its own lists).
 Use \`v-model\` when closing is always fine. When it isn't (unsaved edits), pass \`:model-value\` and handle
 \`@close\` — the sheet asks, you decide.
 
+**Drag to close.** The grabber and header drag: pull down past 30% of the sheet's height, or flick, and it
+closes exactly as the close button does (same \`@close\`); a shorter drag springs back. Buttons in the header
+still tap, and the body never drags, so its lists and forms scroll.
+
 ### A11y
 - **Provides:** \`role="dialog"\`, \`aria-modal\`, named by its title; closes on the scrim, the close
   button (32px mark, 44px hit area) and Escape; moves focus in on open (unless a field inside took it),

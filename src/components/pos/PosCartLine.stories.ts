@@ -26,11 +26,18 @@ icon and words, never colour alone. Figma kit: **Cart Line**.
 
 Prices arrive formatted; \`wasLabel\` (struck through) shows whenever the customer pays less than catalogue.
 
+**Swipe left** to reveal Remove (\`component.pos.swipeAction\`, 88); swipe past half the row, or flick from
+past the action, and the line slides out and emits \`remove\`. One line is revealed at a time; a tap anywhere
+else closes it, and a tap on a revealed line closes it rather than opening the actions. A vertical drag still
+scrolls the cart. Try it here with a mouse drag.
+
 ### A11y
 - **Provides:** \`role="button"\` with \`tabindex="0"\`, Enter/Space, the quantity badge hidden (the
-  consumer's label says it).
+  consumer's label says it). Every attribute the consumer passes lands on that button, not the outer row.
+  The Remove behind it is \`inert\` until revealed, and a long press never selects text.
 - **Consumer must:** write the row's \`aria-label\` from the sale — name, variant, quantity, total, each
-  note — ending with the action ("Edit line").
+  note — ending with the action ("Edit line"); keep Remove in the line's actions, since the swipe is a
+  shortcut (WCAG 2.5.1); offer Undo on \`remove\`.
         `,
       },
     },

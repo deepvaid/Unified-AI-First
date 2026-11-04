@@ -7,9 +7,14 @@
  * Always a modal dialog named by its title. Closes on the scrim, the close
  * button and Escape; focus moves in when it opens, Tab stays inside, and focus
  * goes back to the trigger when it closes (useFocusTrap, as MpDialog does).
+ *
+ * The grabber and header drag: pull the sheet down past 30% of its height, or
+ * flick it, and it closes as the close button would. The body never drags, so
+ * its lists and forms scroll as usual.
  */
-import { ref, useId } from 'vue'
+import { ref, useId, watch } from 'vue'
 import { useFocusTrap } from '@/composables/useFocusTrap'
+import { axisLock, sheetDragCloses } from './posGestures'
 
 defineOptions({ inheritAttrs: false })
 
@@ -38,6 +43,55 @@ function close() {
 }
 
 const { onKeydown } = useFocusTrap(panel, () => open.value, { onEscape: close })
+
+/* ── Drag down to close ────────────────────────────────────────── */
+const header = ref<HTMLElement | null>(null)
+/** How far below rest the panel sits, px (≥ 0). */
+const dragY = ref(0)
+const dragging = ref(false)
+let drag: { x: number; y: number; lastY: number; lastT: number; velocity: number } | null = null
+
+// Reset on open, not on close: a dropped sheet leaves from where it was let go
+watch(open, (o) => { if (o) dragY.value = 0 })
+
+function onPointerdown(e: PointerEvent) {
+  if (e.button !== 0 || !header.value) return
+  if (e.clientY > header.value.getBoundingClientRect().bottom) return
+  if ((e.target as Element).closest('button, a, input, textarea, select, [role="button"]')) return
+  drag = { x: e.clientX, y: e.clientY, lastY: e.clientY, lastT: e.timeStamp, velocity: 0 }
+}
+
+function onPointermove(e: PointerEvent) {
+  if (!drag) return
+  const dy = e.clientY - drag.y
+  if (!dragging.value) {
+    const axis = axisLock(e.clientX - drag.x, dy)
+    if (axis === 'x') { drag = null; return }
+    if (!axis) return
+    panel.value?.setPointerCapture(e.pointerId)
+    dragging.value = true
+  }
+  dragY.value = Math.max(0, dy)
+  const dt = e.timeStamp - drag.lastT
+  if (dt > 0) drag.velocity = (e.clientY - drag.lastY) / dt
+  drag.lastY = e.clientY
+  drag.lastT = e.timeStamp
+}
+
+function onPointerup() {
+  const d = drag
+  drag = null
+  if (!d || !dragging.value) return
+  dragging.value = false
+  if (sheetDragCloses(dragY.value, panel.value?.offsetHeight ?? 0, d.velocity)) close()
+  else dragY.value = 0
+}
+
+function onPointercancel() {
+  drag = null
+  dragging.value = false
+  dragY.value = 0
+}
 </script>
 
 <template>
@@ -47,15 +101,20 @@ const { onKeydown } = useFocusTrap(panel, () => open.value, { onEscape: close })
         ref="panel"
         v-bind="$attrs"
         class="pos-sheet"
-        :class="{ 'pos-sheet--tall': tall }"
+        :class="{ 'pos-sheet--tall': tall, 'pos-sheet--dragging': dragging }"
+        :style="dragY ? { transform: `translateY(${dragY}px)` } : undefined"
         role="dialog"
         aria-modal="true"
         :aria-labelledby="titleId"
         tabindex="-1"
         @keydown="onKeydown"
+        @pointerdown="onPointerdown"
+        @pointermove="onPointermove"
+        @pointerup="onPointerup"
+        @pointercancel="onPointercancel"
       >
         <div class="pos-sheet__grabber" aria-hidden="true" />
-        <div class="pos-sheet__header">
+        <div ref="header" class="pos-sheet__header">
           <div v-if="$slots.lead" class="pos-sheet__lead"><slot name="lead" /></div>
           <div class="pos-sheet__heading">
             <div :id="titleId" class="pos-sheet__title"><slot name="title">{{ title }}</slot></div>
@@ -95,9 +154,19 @@ const { onKeydown } = useFocusTrap(panel, () => open.value, { onEscape: close })
   background: var(--mp-color-light-pos-surface);
   box-shadow: var(--mp-shadow-lg);
   color: var(--mp-color-light-pos-ink);
+  transition: transform var(--mp-motion-duration-fast) var(--mp-motion-easing-standard);
 }
 
 .pos-sheet--tall { max-height: 92%; }
+
+.pos-sheet--dragging { transition: none; }
+
+/* The drag region: the browser must not pan or select text under the finger */
+.pos-sheet__grabber,
+.pos-sheet__header {
+  touch-action: none;
+  user-select: none;
+}
 
 .pos-sheet__grabber {
   flex-shrink: 0;
@@ -180,5 +249,6 @@ const { onKeydown } = useFocusTrap(panel, () => open.value, { onEscape: close })
 @media (prefers-reduced-motion: reduce) {
   .pos-sheet-enter-active,
   .pos-sheet-leave-active { animation-duration: 1ms; }
+  .pos-sheet { transition: none; }
 }
 </style>

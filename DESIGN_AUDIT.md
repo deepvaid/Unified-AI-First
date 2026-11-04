@@ -2491,3 +2491,25 @@ The register's look gets its own group, **Product › POS** (Overview, Foundatio
 ### Renames and breaking changes
 - `ReceiptDesigner`'s local `SAMPLE_STORES` → `PREVIEW_STORES`, exported from `receiptModel.ts` and shared with the gallery.
 - `.receipt-card__media` is a `<button>` now (was an `aria-hidden` div); `.receipt-card__media--blank` is gone.
+
+## POS register gestures — 2026-10-29
+
+The register is a touch device (70% iPad, 30% Android tablet), but every action was a tap. Each gesture is a shortcut with a tap or keyboard twin (WCAG 2.5.1); the thresholds live in `src/components/pos/posGestures.ts`, tested in `tests/pos/gestures.test.ts`.
+
+- [x] **Swipe left to remove** (`PosCartLine`). A partial swipe reveals a red Remove; past half the row (or a flick from past the action) removes the line at once. `PosPreview` removes it with the existing Undo toast. A vertical drag still scrolls the cart; one line is revealed at a time.
+- [x] **Long press a product tile → quick look** (`PosProductTile` emits `hold`; also right-click and Shift+F10 / the Menu key). The sheet shows the variant, stock here and at every other store, and a quantity: "Add 3 to sale" in one go. If the store is short, an inline warning and "Add 3 anyway" replace the separate oversell sheet; the line gets its usual "N more than in stock" note.
+- [x] **"N in sale"** on Sale-screen tiles once the product is on the sale. It takes the "N variants" pill's place: at the tablet breakpoint the grid's three columns leave tiles near 100px wide, room for one flag.
+- [x] `PosProductTile` stories fill their grid column (`itemClass: 'w-100'`). A `<button>` shrinks to its content in a block cell, so the Low stock badge was clipped there before.
+- [x] **Drag a sheet down to close** (`PosSheet` grabber and header): past 30% of its height or a flick; a shorter drag springs back. The body never drags.
+- [x] **No text selection on a long press.** Cart lines and tiles set `user-select: none` and `-webkit-touch-callout: none`. A long press on a cart line used to highlight its SKU.
+- [x] **Haptic tick on Android** (`navigator.vibrate`) when a hold fires or a swipe removes a line. iPad Safari has no vibration API.
+
+### Renames and breaking changes
+- `PosCartLine`: `inheritAttrs: false`. Attributes (`aria-label`, `data-line-id`, …) land on the tappable `.pos-line__face`, not the outer `.pos-line`. New emit `remove`. `PosLineNote` moves to the component's plain `<script>` block (same export).
+- `PosProductTile`: `click` is a declared emit (it no longer falls through to the button), so a hold can drop the click that ends it. New emit `hold`, new prop `inSale`.
+- New token `component.pos.swipeAction` (88). New contrast pair `pos.dangerInk × pos.onInk` (6.47:1; also covers `PosButton tone="danger"` primary).
+- `PosPreview`: `addToCart(item, qty = 1)` and `pushLine(l, qty = 1)` take a quantity; `removeLine(line)` is the one removal with Undo (the sheet's Remove and the swipe share it).
+
+### Not done here
+- The payment sheet and the phone cart slide-up are not `PosSheet`s, so they don't drag to close yet.
+- Hold-to-repeat on the quantity buttons and a typed quantity were offered and not picked.
