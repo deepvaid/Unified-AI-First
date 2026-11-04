@@ -1073,6 +1073,7 @@ export const mp_component_pos_touchTarget = `44px`
 export const mp_component_pos_touchTargetLarge = `52px`
 export const mp_component_pos_thumb = `44px`
 export const mp_component_pos_tileImageHeight = `88px`
+export const mp_component_pos_swipeAction = `88px`
 export const mp_component_pos_radius_control = `10px`
 export const mp_component_pos_radius_card = `12px`
 export const mp_component_pos_radius_sheet = `16px`

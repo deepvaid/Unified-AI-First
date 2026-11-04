@@ -228,6 +228,39 @@ function selectVariant(item: PosCatalogItem) {
   requestAdd(item)
 }
 
+/* ── Quick look (hold a tile): stock everywhere, then add N at once ── */
+const quickLookGroup = ref<VariantGroup | null>(null)
+const quickLookSku = ref('')
+const quickLookQty = ref(1)
+const quickLookItem = computed(() =>
+  quickLookGroup.value?.variants.find((v) => v.sku === quickLookSku.value) ?? quickLookGroup.value?.variants[0] ?? null,
+)
+/** Units still free at this store once the sale's own are counted. */
+const quickLookAvailable = computed(() =>
+  quickLookItem.value ? Math.max(0, onHandHere(quickLookItem.value.sku) - qtyInCart(quickLookItem.value.sku)) : 0,
+)
+const quickLookShort = computed(() => Math.max(0, quickLookQty.value - quickLookAvailable.value))
+
+function openQuickLook(group: VariantGroup) {
+  quickLookGroup.value = group
+  const free = group.variants.find((v) => onHandHere(v.sku) - qtyInCart(v.sku) > 0)
+  quickLookSku.value = (free ?? group.variants[0]!).sku
+  quickLookQty.value = 1
+}
+
+/** The shortfall is shown in the sheet, so adding here skips the oversell sheet. */
+function addFromQuickLook() {
+  const item = quickLookItem.value
+  if (!item) return
+  quickLookGroup.value = null
+  if (item.pos <= 0) requestAdd(item) // the open-price sheet asks for it
+  else addToCart(item, quickLookQty.value)
+}
+
+function groupInSale(group: VariantGroup): number {
+  return group.variants.reduce((s, v) => s + qtyInCart(v.sku), 0)
+}
+
 /* ── Adding to the sale: open price, stock check, then add ─────── */
 // The register checks before it adds, so a shortage is a decision the cashier
 // makes up front — not a note discovered on the receipt.
@@ -517,27 +550,34 @@ function markFresh(id: string, name: string) {
   announce(`Added ${name}. ${itemCount.value} item${itemCount.value === 1 ? '' : 's'}, total ${fmt(grandTotal.value)}`)
 }
 
-function addToCart(item: { sku: string; productName: string; pos: number }) {
+function addToCart(item: { sku: string; productName: string; pos: number }, qty = 1) {
   // Merge into an existing same-SKU line only if it's untouched (no note/override/discount),
   // so a modified line keeps its own identity.
   const existing = cart.value.find((c) => c.sku === item.sku && !c.note && !isOverridden(c) && !c.discount)
   if (existing) {
-    existing.qty++
+    existing.qty += qty
     markFresh(existing.id, existing.name)
   } else {
     const { name, variant } = parseTileProduct(item.productName)
-    pushLine({ sku: item.sku, name, variant, price: item.pos })
+    pushLine({ sku: item.sku, name, variant, price: item.pos }, qty)
   }
 }
 
-function pushLine(l: { sku: string; name: string; variant: string | null; price: number }) {
+function pushLine(l: { sku: string; name: string; variant: string | null; price: number }, qty = 1) {
   const id = `L${lineSeq++}`
-  cart.value.push({ id, sku: l.sku, name: l.name, variant: l.variant, originalPrice: l.price, price: l.price, qty: 1, note: '', discount: null })
+  cart.value.push({ id, sku: l.sku, name: l.name, variant: l.variant, originalPrice: l.price, price: l.price, qty, note: '', discount: null })
   markFresh(id, l.name)
 }
 
 function removeFromCart(id: string) {
   cart.value = cart.value.filter((c) => c.id !== id)
+}
+
+/** Remove a line, with Undo — from its swipe or its actions sheet. */
+function removeLine(line: CartLine) {
+  const at = cart.value.indexOf(line)
+  removeFromCart(line.id)
+  flashUndo(`${line.name} removed`, () => { cart.value.splice(at, 0, line) })
 }
 
 function incrementQty(id: string) {
@@ -717,10 +757,8 @@ function sheetDecrementQty() {
 function removeLineFromSheet() {
   const line = lineActionsLine.value
   if (!line) return
-  const at = cart.value.indexOf(line)
-  removeFromCart(line.id)
   lineActionsOpen.value = false
-  flashUndo(`${line.name} removed`, () => { cart.value.splice(at, 0, line) })
+  removeLine(line)
 }
 
 // If the line disappears while the sheet is open (clear sale, checkout), close it.
@@ -1681,7 +1719,9 @@ const apkQrUrl = computed(() =>
                       :seed="group.representative.sku"
                       :variants="group.variants.length"
                       :stock="posStock(groupOnHand(group), 'tile')"
+                      :in-sale="groupInSale(group)"
                       @click="handleTileClick(group)"
+                      @hold="openQuickLook(group)"
                     />
 
                     <div v-if="catalogGroups.length === 0" class="pos-catalog__empty">
@@ -1748,6 +1788,7 @@ const apkQrUrl = computed(() =>
                       :data-line-id="line.id"
                       :aria-label="lineAriaLabel(line)"
                       @open="openLineActions(line)"
+                      @remove="removeLine(line)"
                     />
                   </transition-group>
                 </div>
@@ -2320,6 +2361,80 @@ const apkQrUrl = computed(() =>
                 <div class="pos-variant-row__price">{{ fmt(v.pos) }}</div>
                 <v-icon size="14" class="pos-chevron">chevron-right</v-icon>
               </button>
+            </div>
+          </PosSheet>
+
+          <!-- ── Quick look (hold a product tile): variant, stock everywhere, quantity ── -->
+          <PosSheet
+            :model-value="!!quickLookGroup"
+            :tall="isPhone"
+            :title="quickLookGroup?.baseName"
+            :subtitle="quickLookGroup ? tilePrice(quickLookGroup) : undefined"
+            close-label="Close quick look"
+            @close="quickLookGroup = null"
+          >
+            <template #lead>
+              <div class="pos-sheet-thumb" :style="{ background: posArt(quickLookItem?.sku ?? '') }">
+                <v-icon size="16">package</v-icon>
+              </div>
+            </template>
+            <div v-if="quickLookGroup && quickLookItem" class="pos-sheet-body">
+              <div v-if="quickLookGroup.variants.length > 1" class="pos-quick-look__section">
+                <div id="pos-quick-look-variant" class="pos-group-label">Variant</div>
+                <div class="pos-chip-row" role="group" aria-labelledby="pos-quick-look-variant">
+                  <PosChip
+                    v-for="v in quickLookGroup.variants"
+                    :key="v.sku"
+                    :active="v.sku === quickLookItem.sku"
+                    @click="quickLookSku = v.sku"
+                  >
+                    {{ parseTileProduct(v.productName).variant }} · {{ fmt(v.pos) }}
+                  </PosChip>
+                </div>
+              </div>
+
+              <div class="pos-quick-look__section">
+                <div class="pos-group-label">Stock · {{ quickLookItem.sku }}</div>
+                <div class="pos-sheet-list pos-sheet-body__list">
+                  <div class="pos-variant-row pos-variant-row--static">
+                    <div class="pos-variant-row__info">
+                      <div class="pos-variant-row__label">{{ store.activeLocation.name }}</div>
+                      <div class="pos-variant-row__sku">This store<template v-if="qtyInCart(quickLookItem.sku)"> · {{ qtyInCart(quickLookItem.sku) }} on this sale</template></div>
+                    </div>
+                    <div class="pos-variant-row__price">{{ onHandHere(quickLookItem.sku) }}</div>
+                    <PosBadge :tone="posStock(onHandHere(quickLookItem.sku))!.tone" :icon="posStock(onHandHere(quickLookItem.sku))!.icon">
+                      {{ posStock(onHandHere(quickLookItem.sku))!.label }}
+                    </PosBadge>
+                  </div>
+                  <div v-for="row in otherLocationStock(quickLookItem.sku)" :key="row.loc.id" class="pos-variant-row pos-variant-row--static">
+                    <div class="pos-variant-row__info">
+                      <div class="pos-variant-row__label">{{ row.loc.name }}</div>
+                      <div class="pos-variant-row__sku">{{ row.loc.kind === 'warehouse' ? 'Warehouse' : row.loc.address }}</div>
+                    </div>
+                    <div class="pos-variant-row__price">{{ row.qty }}</div>
+                    <PosBadge :tone="posStock(row.qty)!.tone" :icon="posStock(row.qty)!.icon">{{ posStock(row.qty)!.label }}</PosBadge>
+                  </div>
+                </div>
+              </div>
+
+              <PosNotice v-if="quickLookItem.pos > 0 && quickLookShort" tone="warn" icon="triangle-alert" role="note">
+                <template v-if="quickLookAvailable">
+                  Only {{ quickLookAvailable }} left here — {{ quickLookShort }} will be more than in stock.
+                </template>
+                <template v-else>None left here — the line is flagged so stock gets recounted.</template>
+              </PosNotice>
+
+              <!-- Quantity and Add share a row, so the action stays in view without scrolling -->
+              <div class="pos-quick-look__footer">
+                <div v-if="quickLookItem.pos > 0" class="pos-quick-look__qty" role="group" aria-label="Quantity">
+                  <PosButton variant="secondary" icon="minus" aria-label="Decrease quantity" :disabled="quickLookQty <= 1" @click="quickLookQty--" />
+                  <span class="pos-qty-value pos-qty-value--lg" aria-live="polite">{{ quickLookQty }}</span>
+                  <PosButton variant="secondary" icon="plus" aria-label="Increase quantity" @click="quickLookQty++" />
+                </div>
+                <PosButton size="lg" class="pos-quick-look__add" @click="addFromQuickLook">
+                  {{ quickLookItem.pos <= 0 ? 'Set price' : `Add ${quickLookQty}${quickLookShort ? ' anyway' : ' to sale'}` }}
+                </PosButton>
+              </div>
             </div>
           </PosSheet>
 
@@ -4999,6 +5114,28 @@ $pos-target: var(--mp-component-pos-touchTarget);
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+}
+
+.pos-quick-look {
+  &__section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--mp-space-8);
+  }
+
+  &__footer {
+    display: flex;
+    align-items: center;
+    gap: var(--mp-space-16);
+  }
+
+  &__qty {
+    display: flex;
+    align-items: center;
+    gap: var(--mp-space-8);
+  }
+
+  &__add { flex: 1; }
 }
 
 .pos-customer-form {
