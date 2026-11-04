@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
+import { useRoute, useRouter, type LocationQuery, type LocationQueryRaw } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFilterTabs from '@/components/MpFilterTabs.vue'
@@ -38,10 +38,56 @@ const toast = useToast()
 const accountId = computed(() => route.params.accountId as string)
 const CURRENT_AGENT = 'Deepak Vaidya'
 
+// ── List context ⇄ URL ────────────────────────────────────────────────────────
+// Inbox, view, filters, search and sort live in the query string next to
+// ?selected, so opening a ticket as a full page and coming back (or reloading,
+// or sharing the link) lands on the same list instead of a reset All Tickets.
+function queryText(value: unknown): string {
+  return typeof value === 'string' ? value : ''
+}
+function queryList(value: unknown): string[] {
+  if (Array.isArray(value)) return value.map(String)
+  return typeof value === 'string' && value ? value.split(',') : []
+}
+const pick = <T extends string>(values: string[], allowed: readonly T[]): T[] =>
+  values.filter((v): v is T => (allowed as readonly string[]).includes(v))
+
+function filtersFromQuery(q: LocationQuery): TicketFilters {
+  const read = queryText(q.read)
+  return {
+    status: pick(queryList(q.status), TICKET_STATUSES),
+    priority: pick(queryList(q.priority), TICKET_PRIORITIES),
+    channel: pick(queryList(q.channel), TICKET_CHANNELS),
+    type: queryList(q.type),
+    group: queryList(q.group),
+    agent: queryText(q.agent),
+    contact: queryText(q.contact),
+    tags: queryList(q.tags),
+    createdFrom: queryText(q.from),
+    createdTo: queryText(q.to),
+    readStatus: read === 'Read' || read === 'Unread' ? read : '',
+  }
+}
+
+function filtersToQuery(f: TicketFilters): Record<string, string> {
+  const query: Record<string, string> = {}
+  const lists = { status: f.status, priority: f.priority, channel: f.channel, type: f.type, group: f.group, tags: f.tags }
+  for (const [key, values] of Object.entries(lists)) if (values.length) query[key] = values.join(',')
+  const texts = { agent: f.agent, contact: f.contact, from: f.createdFrom, to: f.createdTo, read: f.readStatus }
+  for (const [key, value] of Object.entries(texts)) if (value) query[key] = value
+  return query
+}
+
 // ── Views menu (inbox groups × built-in + saved views, Trash last) ───────────
 const BUILT_IN_VIEWS = ['All Tickets', 'My Tickets', 'High Priority Tickets']
-const currentInbox = ref<'all' | 'trash' | string>('all')
-const currentView = ref('All Tickets')
+const inboxFromQuery = queryText(route.query.inbox)
+const viewFromQuery = queryText(route.query.view)
+const currentInbox = ref<'all' | 'trash' | string>(
+  ['trash', ...SUPPORT_INBOXES].includes(inboxFromQuery) ? inboxFromQuery : 'all',
+)
+const currentView = ref(
+  [...BUILT_IN_VIEWS, ...store.customViews.map(v => v.name)].includes(viewFromQuery) ? viewFromQuery : 'All Tickets',
+)
 const viewsMenuOpen = ref(false)
 
 const inboxGroups = computed(() => [
@@ -76,7 +122,7 @@ function selectTrash() {
 }
 
 // ── Search + sort (list-local, not part of a saved view) ─────────────────────
-const search = ref('')
+const search = ref(queryText(route.query.q))
 
 const SORT_OPTIONS = [
   { key: 'updated', label: 'Last updated' },
@@ -85,7 +131,8 @@ const SORT_OPTIONS = [
   { key: 'priority', label: 'Priority (high first)' },
 ] as const
 type SortKey = (typeof SORT_OPTIONS)[number]['key']
-const sortKey = ref<SortKey>('updated')
+const sortFromQuery = SORT_OPTIONS.find(o => o.key === route.query.sort)?.key
+const sortKey = ref<SortKey>(sortFromQuery ?? 'updated')
 const PRIORITY_RANK: Record<TicketPriority, number> = { High: 0, Medium: 1, Low: 2 }
 
 // ── Filters drawer ────────────────────────────────────────────────────────────
@@ -93,12 +140,23 @@ const PRIORITY_RANK: Record<TicketPriority, number> = { High: 0, Medium: 1, Low:
 // the drawer — the same field never lives in both places.
 const filtersOpen = ref(false)
 const workingFilters = reactive<TicketFilters>(emptyTicketFilters())
-const appliedFilters = ref<TicketFilters>(emptyTicketFilters())
+const appliedFilters = ref<TicketFilters>(filtersFromQuery(route.query))
 const filtersDirty = computed(() => JSON.stringify(workingFilters) !== JSON.stringify(appliedFilters.value))
 
 watch(filtersOpen, open => {
   if (open) Object.assign(workingFilters, JSON.parse(JSON.stringify(appliedFilters.value)))
 })
+
+// Defaults stay out of the URL so a plain inbox link stays plain.
+watch([currentInbox, currentView, appliedFilters, search, sortKey], () => {
+  const query: LocationQueryRaw = filtersToQuery(appliedFilters.value)
+  if (currentInbox.value !== 'all') query.inbox = currentInbox.value
+  if (currentView.value !== 'All Tickets') query.view = currentView.value
+  if (search.value.trim()) query.q = search.value.trim()
+  if (sortKey.value !== 'updated') query.sort = sortKey.value
+  if (route.query.selected) query.selected = route.query.selected
+  void router.replace({ query })
+}, { deep: true })
 
 function applyFilters() {
   appliedFilters.value = JSON.parse(JSON.stringify(workingFilters))
@@ -215,6 +273,17 @@ function clearSelection() {
   router.replace({ query: { ...route.query, selected: undefined } })
 }
 
+// Back from the full page (or a shared link): bring the selected row into view
+// and put focus on it, so the agent carries on from the ticket they left.
+const listEl = ref<HTMLElement | null>(null)
+onMounted(async () => {
+  if (!selectedId.value) return
+  await nextTick()
+  const row = listEl.value?.querySelector<HTMLElement>(`[data-ticket-id="${selectedId.value}"] .tickets-row__body`)
+  row?.scrollIntoView({ block: 'nearest' })
+  row?.focus({ preventScroll: true })
+})
+
 // ── Bulk selection ────────────────────────────────────────────────────────────
 const checked = ref<number[]>([])
 function toggleChecked(id: number, value: boolean) {
@@ -289,7 +358,10 @@ function newContact() {
       </MpPageHeader>
     </div>
 
-    <div class="tickets-split" :class="{ 'tickets-split--has-selection': !!selectedTicket }">
+    <div
+      class="tickets-split"
+      :class="{ 'tickets-split--has-selection': !!selectedTicket, 'tickets-split--bulk': checked.length > 0 }"
+    >
       <!-- List panel -->
       <v-card flat border rounded="lg" class="tickets-list" :class="{ 'tickets-list--selecting': checked.length > 0 }">
         <div class="tickets-toolbar border-b d-flex flex-column ga-2">
@@ -376,10 +448,11 @@ function newContact() {
           />
         </div>
 
-        <div id="tickets-list" class="tickets-list__scroll">
+        <div id="tickets-list" ref="listEl" class="tickets-list__scroll">
           <div
             v-for="t in listTickets"
             :key="t.id"
+            :data-ticket-id="t.id"
             class="tickets-row d-flex align-center"
             :class="{ 'tickets-row--selected': t.id === selectedId, 'tickets-row--checked': checked.includes(t.id) }"
           >
@@ -532,6 +605,13 @@ function newContact() {
   display: flex;
   gap: var(--mp-space-16);
   padding: 0 var(--mp-space-32) var(--mp-space-32);
+}
+/* While rows are checked, MpFloatingBulkBar floats over the bottom of the
+   frame (24 from the edge + its own 20 margin + 48 tall). Both panes end
+   above it — plus one gap — so it never covers the reply bar or the last row.
+   Two classes, so this also beats the compact padding below the breakpoint. */
+.tickets-split.tickets-split--bulk {
+  padding-bottom: calc(var(--mp-space-24) + var(--mp-space-20) + var(--mp-space-48) + var(--mp-space-16));
 }
 
 /* display lives here, not in d-flex, so the stacked breakpoint can hide a pane

@@ -11,14 +11,31 @@ const route = useRoute()
 const accountId = computed(() => route.params.accountId as string)
 const ticketId = computed(() => Number(route.params.id))
 const ticket = computed(() => store.find(ticketId.value))
+
+// Expand carries the list's query here (see Tickets.vue), so Back lands on the
+// same inbox, view, filters and search with this ticket still selected.
+const backTo = computed(() => ({
+  name: 'Tickets',
+  params: { accountId: accountId.value },
+  query: { ...route.query, selected: String(ticketId.value) },
+}))
+
+// Same wording as the list's views trigger: where the agent came from.
+const listLabel = computed(() => {
+  const { inbox, view } = route.query
+  if (inbox === 'trash') return 'Trash'
+  const inboxName = typeof inbox === 'string' && inbox ? inbox : 'All Inboxes'
+  const viewName = typeof view === 'string' && view ? view : 'All Tickets'
+  return `${inboxName} · ${viewName}`
+})
 </script>
 
 <template>
   <div class="mp-frame-fill ticket-shell d-flex flex-column">
     <div class="ticket-head flex-shrink-0">
       <MpPageHeader
-        :backTo="{ name: 'Tickets', params: { accountId } }"
-        :eyebrow="ticket ? `All Tickets · ${ticket.number}` : 'All Tickets'"
+        :backTo="backTo"
+        :eyebrow="ticket ? `${listLabel} · ${ticket.number}` : listLabel"
         :title="ticket?.subject ?? 'Ticket'"
         density="compact"
       />
