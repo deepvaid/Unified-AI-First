@@ -248,7 +248,7 @@ deliberately left for per-page adoption, to check on each page as you polish it:
 | 12 | Settings/pages/StoreProfilePage.vue | /accounts/2000290/settings/store-profile | standard | pending | | |
 | 13 | Settings/pages/SalesChannelsPage.vue | /accounts/2000290/settings/sales-channels | standard | pending | | |
 | 14 | Settings/pages/PaymentAccountPage.vue | /accounts/2000290/settings/payment-account | standard | pending | | |
-| 15 | Settings/pages/ServicePage.vue | /accounts/2000290/settings/service | standard | pending | | |
+| 15 | Settings/pages/service/* (ServicePage.vue deleted) | /accounts/2000290/settings/service/inboxes · reply-templates · ticket-types · tags · agents | standard | done | | Rebuilt 2026-11 from the UAT audit (docs/rebuild/service-tickets/MEETING-2026-11-03-TASKS.md S1) |
 | 16 | Settings/pages/AiSettingsPage.vue | /accounts/2000290/settings/ai-settings | standard | pending | | |
 
 ## Module 14 — Billing & Misc   [module-status: pending]

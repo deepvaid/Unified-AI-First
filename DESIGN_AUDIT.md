@@ -2513,3 +2513,7 @@ The register is a touch device (70% iPad, 30% Android tablet), but every action 
 ### Not done here
 - The payment sheet and the phone cart slide-up are not `PosSheet`s, so they don't drag to close yet.
 - Hold-to-repeat on the quantity buttons and a typed quantity were offered and not picked.
+
+## MpRichTextArea + MpTagChip — 2026-11-05
+
+- [x] Added **MpRichTextArea** (Molecule; Tiptap 3.32 — toolbar, link popover, Insert tag `{{KEY}}`) and **MpTagChip** (Atom; the eight service-desk tag swatches). New tokens: `color.{light,dark}.tag.{sky,green,slate,amber,violet,blue,orange,red}.{container,onContainer}` (16 text pairs in `$contrastPairs`, 6.37–10.07:1), `component.field.borderWidth` (1) / `borderWidthActive` (2) and `component.menu.formWidth` (320). No renames.

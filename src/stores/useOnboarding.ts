@@ -236,11 +236,12 @@ export const ONBOARDING_PHASES: OnboardingPhase[] = [
       {
         id: 'support-inbox',
         title: 'Set up your support inbox',
-        description: 'Connect the email address customer inquiries arrive at.',
+        description: 'Add the email address customers write to, then open the verification link so replies can go out.',
         why: 'Fast first replies are the strongest loyalty signal.',
         minutes: 3,
         icon: 'inbox',
-        routeName: 'SettingsService',
+        // The Inboxes list shows each inbox as Live / Pending / Needs setup, with Create inbox.
+        routeName: 'SettingsServiceInboxes',
         cta: 'Set up inbox',
         cloud: 'service',
       },

@@ -430,6 +430,32 @@ Nothing exists yet for: resizable panes (T11), a drop-line indicator (T2), a ric
   (the Account details tabs + left rail pattern). Inbox creation is multi-page with 2 steps, so it
   needs its own flow, not a tab. Reply templates stay reachable from the composer (T9); email
   verification is the target of T15's action.
+
+  > **Status 6 Nov 2026: built in the sandbox** (branch `feature/service-settings`, not merged).
+  > **UAT audit (5 Nov):** Reply templates (21, notifications mixed in) · Ticket types (14) · Tags (79)
+  > · Inboxes (create: name/description/CRM, Manual|Round robin, SLA ≥ 70 min, signature with agent
+  > tags; edit adds Acknowledgement) · Support emails per inbox (Verified/Pending/Default) · Agents
+  > (name, email, nickname, job title, phone).
+  >
+  > **What's built:**
+  > - **Navigation:** a **Service** group in the Settings rail: Inboxes · Reply Templates · Ticket Types · Tags · Agents.
+  > - **Inbox detail:** one page with four tabs in `?tab=` (General · Support emails · Replies · Assignment & SLA). Unsaved changes are guarded on tab switch and on leave.
+  > - **Templates:** reply templates are split from **notification** templates.
+  > - **Usage counts:** on types, tags and agents. Renames and deletes carry into tickets and saved views.
+  > - **Editors:** `MpRichTextArea` (Tiptap) for signatures and templates; `MpTagChip` with the 8-colour tag palette (`--tag-<hue>-container` / `-on-container`, contrast-checked in both themes).
+  > - **Onboarding:** "Set up your support inbox" lands on the Inboxes list with each inbox's Live / Pending / Needs setup status (S2).
+  >
+  > **Pattern for multi-step settings** (the call's open question): a setting that needs more than
+  > one page gets its own route **inside** the Settings shell, so the rail stays. The steps sit in the
+  > page header (`MpWizardSteps`), Back/Next sit at the foot, and the flow ends on the new item's detail page,
+  > whose sub-areas are tabs held in `?tab=`. Create inbox = ① Basics ② Support email (skippable).
+  >
+  > **Engineering handoff (current UI first):**
+  > - Keep UAT's separate URLs for now, but add the four inbox sub-areas as tabs on the Edit Inbox page, with Support emails as one of them.
+  > - Move Acknowledgement out of Edit-only into that tab, and disable it with the reason shown until a support email is verified.
+  > - Split notification templates into their own tab.
+  > - Show the SLA's 70-minute minimum as a hint, not only as an error.
+  > - Add a status column (Live / Pending / Needs setup) to the inbox list.
 - **S2 · Onboarding.** Easier "set your support email" in Get Started (links to S1, T15).
 - **S3 · Chatbot module.** A separate call is to be scheduled.
 - **Process.** Design **both** old-UI and new-UI versions for features in Samriti's tickets. Eng
