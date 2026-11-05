@@ -133,6 +133,24 @@
   --ink-panel-muted-fg: var(--mp-color-light-inkPanel-mutedFg);
   --ink-panel-accent: var(--mp-color-light-inkPanel-accent);
   --ink-panel-border: var(--mp-color-light-inkPanel-border);
+
+  /* Tag palette — categories, not states. Soft fill + its foreground. */
+  --tag-sky-container: var(--mp-color-light-tag-sky-container);
+  --tag-sky-on-container: var(--mp-color-light-tag-sky-onContainer);
+  --tag-green-container: var(--mp-color-light-tag-green-container);
+  --tag-green-on-container: var(--mp-color-light-tag-green-onContainer);
+  --tag-slate-container: var(--mp-color-light-tag-slate-container);
+  --tag-slate-on-container: var(--mp-color-light-tag-slate-onContainer);
+  --tag-amber-container: var(--mp-color-light-tag-amber-container);
+  --tag-amber-on-container: var(--mp-color-light-tag-amber-onContainer);
+  --tag-violet-container: var(--mp-color-light-tag-violet-container);
+  --tag-violet-on-container: var(--mp-color-light-tag-violet-onContainer);
+  --tag-blue-container: var(--mp-color-light-tag-blue-container);
+  --tag-blue-on-container: var(--mp-color-light-tag-blue-onContainer);
+  --tag-orange-container: var(--mp-color-light-tag-orange-container);
+  --tag-orange-on-container: var(--mp-color-light-tag-orange-onContainer);
+  --tag-red-container: var(--mp-color-light-tag-red-container);
+  --tag-red-on-container: var(--mp-color-light-tag-red-onContainer);
 }
 
 /* Bare theme class too: teleported roots (drawers/dialogs/menus) live outside
@@ -246,4 +264,22 @@
   --ink-panel-muted-fg: var(--mp-color-dark-inkPanel-mutedFg);
   --ink-panel-accent: var(--mp-color-dark-inkPanel-accent);
   --ink-panel-border: var(--mp-color-dark-inkPanel-border);
+
+  /* Tag palette */
+  --tag-sky-container: var(--mp-color-dark-tag-sky-container);
+  --tag-sky-on-container: var(--mp-color-dark-tag-sky-onContainer);
+  --tag-green-container: var(--mp-color-dark-tag-green-container);
+  --tag-green-on-container: var(--mp-color-dark-tag-green-onContainer);
+  --tag-slate-container: var(--mp-color-dark-tag-slate-container);
+  --tag-slate-on-container: var(--mp-color-dark-tag-slate-onContainer);
+  --tag-amber-container: var(--mp-color-dark-tag-amber-container);
+  --tag-amber-on-container: var(--mp-color-dark-tag-amber-onContainer);
+  --tag-violet-container: var(--mp-color-dark-tag-violet-container);
+  --tag-violet-on-container: var(--mp-color-dark-tag-violet-onContainer);
+  --tag-blue-container: var(--mp-color-dark-tag-blue-container);
+  --tag-blue-on-container: var(--mp-color-dark-tag-blue-onContainer);
+  --tag-orange-container: var(--mp-color-dark-tag-orange-container);
+  --tag-orange-on-container: var(--mp-color-dark-tag-orange-onContainer);
+  --tag-red-container: var(--mp-color-dark-tag-red-container);
+  --tag-red-on-container: var(--mp-color-dark-tag-red-onContainer);
 }

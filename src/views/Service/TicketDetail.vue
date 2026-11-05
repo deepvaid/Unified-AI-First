@@ -5,8 +5,10 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import TicketWorkspace from '@/components/service/TicketWorkspace.vue'
 import { useTicketsStore } from '@/stores/useTickets'
+import { useServiceSettingsStore } from '@/stores/useServiceSettings'
 
 const store = useTicketsStore()
+const settings = useServiceSettingsStore()
 const route = useRoute()
 const accountId = computed(() => route.params.accountId as string)
 const ticketId = computed(() => Number(route.params.id))
@@ -24,7 +26,7 @@ const backTo = computed(() => ({
 const listLabel = computed(() => {
   const { inbox, view } = route.query
   if (inbox === 'trash') return 'Trash'
-  const inboxName = typeof inbox === 'string' && inbox ? inbox : 'All Inboxes'
+  const inboxName = typeof inbox === 'string' && inbox ? settings.inboxName(inbox) : 'All Inboxes'
   const viewName = typeof view === 'string' && view ? view : 'All Tickets'
   return `${inboxName} · ${viewName}`
 })
