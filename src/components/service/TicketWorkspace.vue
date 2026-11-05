@@ -12,14 +12,12 @@ import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpMenuItem from '@/components/MpMenuItem.vue'
 import {
   useTicketsStore,
-  TICKET_AGENTS,
   TICKET_PRIORITIES,
   TICKET_STATUSES,
-  TICKET_TAGS,
-  TICKET_TYPES,
   type TicketPriority,
   type TicketStatus,
 } from '@/stores/useTickets'
+import { useServiceSettingsStore } from '@/stores/useServiceSettings'
 import { useToast } from '@/composables/useToast'
 
 const props = withDefaults(defineProps<{
@@ -39,6 +37,7 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{ back: [] }>()
 
 const store = useTicketsStore()
+const settings = useServiceSettingsStore()
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
@@ -47,7 +46,9 @@ const accountId = computed(() => route.params.accountId as string)
 const ticket = computed(() => store.find(props.ticketId))
 
 const eyebrow = computed(() =>
-  [ticket.value?.number, ticket.value?.channel, ticket.value?.inbox].filter(Boolean).join(' · '),
+  [ticket.value?.number, ticket.value?.channel, ticket.value && settings.inboxName(ticket.value.inboxId)]
+    .filter(Boolean)
+    .join(' · '),
 )
 
 // ── Formatting ───────────────────────────────────────────────────────────────
@@ -98,9 +99,9 @@ const propertyMenus = computed(() => {
   if (!t) return []
   return [
     { key: 'priority', label: 'Priority', icon: null, value: t.priority, options: TICKET_PRIORITIES as readonly string[] },
-    { key: 'type', label: 'Type', icon: 'tag', value: t.type || 'None', options: TICKET_TYPES as readonly string[] },
+    { key: 'type', label: 'Type', icon: 'tag', value: t.type || 'None', options: settings.typeNames },
     { key: 'status', label: 'Status', icon: 'circle-dot', value: t.status, options: TICKET_STATUSES as readonly string[] },
-    { key: 'agent', label: 'Agent', icon: 'user', value: t.assignee || 'Unassigned', options: TICKET_AGENTS as readonly string[] },
+    { key: 'agent', label: 'Agent', icon: 'user', value: t.assignee || 'Unassigned', options: settings.agentNames },
   ]
 })
 
@@ -537,7 +538,7 @@ const SEND_AND_SET: TicketStatus[] = ['Pending', 'On Hold', 'Closed']
             <template v-else-if="railOpen === 'tags'">
               <v-select
                 :model-value="ticket.tags"
-                :items="TICKET_TAGS"
+                :items="settings.tagNames"
                 label="Tags"
                 multiple
                 chips

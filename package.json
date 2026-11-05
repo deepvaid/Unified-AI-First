@@ -15,6 +15,7 @@
     "test:maropay": "node --experimental-strip-types --test 'tests/maropay/*.test.ts'",
     "test:catalog": "node --experimental-strip-types --test 'tests/davinci-catalog/*.test.ts'",
     "test:pos": "node --experimental-strip-types --test 'tests/pos/*.test.ts'",
+    "test:service": "node --experimental-strip-types --test 'tests/service/*.test.ts'",
     "contrast:check": "node scripts/check-contrast.mjs",
     "audit:ui": "node scripts/ui-visibility-audit.mjs",
     "audit:ui:json": "node scripts/ui-visibility-audit.mjs --json",

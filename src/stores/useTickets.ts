@@ -1,7 +1,10 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
+import type { TicketFolder } from '@/service/model'
 
 // ── Vocabulary (mirrors the production service desk) ─────────────────────────
+// Inboxes, ticket types, tags and agents are configured in Settings › Service
+// (useServiceSettings); tickets reference inboxes by id and the rest by name.
 export type TicketStatus = 'New' | 'Open' | 'Pending' | 'On Hold' | 'Closed'
 export type TicketPriority = 'Low' | 'Medium' | 'High'
 export type TicketChannel = 'Email' | 'Webstore' | 'Inbound Call' | 'Walk In'
@@ -9,13 +12,7 @@ export type TicketChannel = 'Email' | 'Webstore' | 'Inbound Call' | 'Walk In'
 export const TICKET_STATUSES: TicketStatus[] = ['New', 'Open', 'Pending', 'On Hold', 'Closed']
 export const TICKET_PRIORITIES: TicketPriority[] = ['Low', 'Medium', 'High']
 export const TICKET_CHANNELS: TicketChannel[] = ['Email', 'Webstore', 'Inbound Call', 'Walk In']
-export const TICKET_TYPES = ['Customer Request', 'Bug', 'Technical Support', 'Service Request', 'Pricing', 'Payment', 'Product Enquiry', 'Incident']
 export const TICKET_GROUPS = ['General']
-export const TICKET_AGENTS = ['Chris Parker', 'Sushant Rana', 'Deepak Vaidya', 'Priya Shah']
-export const TICKET_TAGS = ['500 Error', 'VIP', 'Refund', 'Order Issue', 'Loyalty', 'Escalated']
-
-// One support inbox per intake mailbox (the views menu groups by these).
-export const SUPPORT_INBOXES = ['New inbox', 'Webstore Support']
 
 export interface TicketMessage {
   id: number
@@ -54,10 +51,11 @@ export interface Ticket {
   type: string
   assignee: string
   group: string
-  inbox: string
+  /** `Inbox.id` from Settings › Service. */
+  inboxId: string
   tags: string[]
   unread: boolean
-  trashed: boolean
+  folder: TicketFolder
   createdAt: string
   updatedAt: string
   thread: TicketMessage[]
@@ -100,7 +98,7 @@ export interface SavedTicketView {
 }
 
 export interface NewTicketPayload {
-  inbox: string
+  inboxId: string
   customer: string
   customerEmail: string
   type: string
@@ -130,7 +128,8 @@ interface TicketSeed {
   channel: TicketChannel
   type?: string
   assignee?: string
-  inbox?: string
+  inboxId?: string
+  folder?: TicketFolder
   tags?: string[]
   unread?: boolean
   createdAt: string
@@ -151,7 +150,10 @@ function seedTicket(seed: TicketSeed): Ticket {
       time: created.toISOString(),
       body: seed.body,
     },
-    {
+  ]
+  // Spam never gets the acknowledgement — replying would confirm the address to the sender.
+  if (seed.folder !== 'spam') {
+    thread.push({
       id: messageSeq++,
       author: 'Automated Bot',
       role: 'bot',
@@ -159,8 +161,8 @@ function seedTicket(seed: TicketSeed): Ticket {
       to: seed.email,
       time: new Date(created.getTime() + 60_000).toISOString(),
       body: AUTO_REPLY(seed.customer.split(' ')[0] ?? seed.customer, seed.subject),
-    },
-  ]
+    })
+  }
   const activities: TicketActivity[] = [
     { id: activitySeq++, actor: 'System', time: new Date(created.getTime() + 61_000).toISOString(), text: 'Status updated to Open' },
   ]
@@ -190,10 +192,10 @@ function seedTicket(seed: TicketSeed): Ticket {
     type: seed.type ?? '',
     assignee: seed.assignee ?? '',
     group: 'General',
-    inbox: seed.inbox ?? 'New inbox',
+    inboxId: seed.inboxId ?? 'support',
     tags: seed.tags ?? [],
     unread: seed.unread ?? false,
-    trashed: false,
+    folder: seed.folder ?? 'inbox',
     createdAt: created.toISOString(),
     updatedAt: new Date(last).toISOString(),
     thread,
@@ -204,6 +206,17 @@ function seedTicket(seed: TicketSeed): Ticket {
 
 export const useTicketsStore = defineStore('tickets', () => {
   const tickets = ref<Ticket[]>([
+    // System-detected spam (agents can't mark spam; they can only rescue with Not spam).
+    seedTicket({
+      id: 1526, subject: 'SECURITY ALERT: Your account has been SUSPENDED', customer: 'Fraud Prevention Desk', email: 'alerts@secure-verify-account.co',
+      status: 'New', priority: 'Low', channel: 'Email', folder: 'spam', unread: true, createdAt: '2026-10-26T04:12:00Z',
+      body: 'We detected a suspicious login attempt. Verify your identity within 12 hours using our secure shortened link or your account will be permanently deleted.',
+    }),
+    seedTicket({
+      id: 1525, subject: 'Congratulations — you won the store lottery!', customer: 'Prize Team', email: 'winner@claim-prize-now.biz',
+      status: 'New', priority: 'Low', channel: 'Email', folder: 'spam', unread: true, createdAt: '2026-10-30T09:40:00Z',
+      body: 'You have been selected to receive a $1,000 gift card. Reply with your bank details to claim it today.',
+    }),
     seedTicket({
       id: 1524, subject: 'Need help cancelling my order', customer: 'Rajan Bhanot', email: 'rjbhanot38@gmail.com',
       status: 'Open', priority: 'Low', channel: 'Email', assignee: 'Chris Parker', createdAt: '2026-08-31T08:25:00Z',
@@ -228,12 +241,12 @@ export const useTicketsStore = defineStore('tickets', () => {
     }),
     seedTicket({
       id: 1520, subject: 'Hello from Google Workspace', customer: 'Lorem Anderson', email: 'lorem@example.com',
-      status: 'New', priority: 'Low', channel: 'Email', unread: true, createdAt: '2026-08-30T10:31:00Z',
+      status: 'New', priority: 'Low', channel: 'Email', inboxId: 'orders', unread: true, createdAt: '2026-08-30T10:31:00Z',
       body: 'Hello From Google — verifying our new support address works.',
     }),
     seedTicket({
       id: 1519, subject: 'Give me an offer', customer: 'Abhinav Marla', email: 'abhinav.marla@example.com',
-      status: 'New', priority: 'Low', channel: 'Email', type: 'Pricing', createdAt: '2026-08-30T08:15:00Z',
+      status: 'New', priority: 'Low', channel: 'Email', type: 'Pricing', tags: ['VIP'], createdAt: '2026-08-30T08:15:00Z',
       body: 'Please — Thanks & Regards, Abhinav Marla, Senior Buyer. Looking for a bulk order discount on 200 units.',
     }),
     seedTicket({
@@ -248,7 +261,7 @@ export const useTicketsStore = defineStore('tickets', () => {
     }),
     seedTicket({
       id: 1516, subject: 'Attachment test for shop account', customer: 'Lorem Anderson', email: 'lorem@example.com',
-      status: 'New', priority: 'Low', channel: 'Webstore', createdAt: '2026-08-27T16:41:00Z',
+      status: 'New', priority: 'Low', channel: 'Webstore', inboxId: 'orders', createdAt: '2026-08-27T16:41:00Z',
       body: 'Attachment test — please confirm you can open the file.',
     }),
     seedTicket({
@@ -295,8 +308,10 @@ export const useTicketsStore = defineStore('tickets', () => {
     { name: 'Payment Escalations', filters: { ...emptyTicketFilters(), type: ['Payment'], priority: ['High', 'Medium'] } },
   ])
 
-  const visibleTickets = computed(() => tickets.value.filter(t => !t.trashed))
-  const trashedTickets = computed(() => tickets.value.filter(t => t.trashed))
+  /** The working set: everything not in Spam or Trash. Lists, counts and widgets read this. */
+  const visibleTickets = computed(() => tickets.value.filter(t => t.folder === 'inbox'))
+  const trashedTickets = computed(() => tickets.value.filter(t => t.folder === 'trash'))
+  const spamTickets = computed(() => tickets.value.filter(t => t.folder === 'spam'))
 
   function find(id: number): Ticket | undefined {
     return tickets.value.find(t => t.id === id)
@@ -373,14 +388,48 @@ export const useTicketsStore = defineStore('tickets', () => {
   function trashMany(ids: number[]) {
     ids.forEach(id => {
       const t = find(id)
-      if (t) t.trashed = true
+      if (t) t.folder = 'trash'
     })
   }
 
   function restoreMany(ids: number[]) {
     ids.forEach(id => {
       const t = find(id)
-      if (t) t.trashed = false
+      if (t) t.folder = 'inbox'
+    })
+  }
+
+  // ── Kept in step with Settings › Service ───────────────────────────────────
+  /** A deleted inbox hands its tickets to another one. */
+  function moveInbox(fromId: string, toId: string) {
+    tickets.value.forEach(t => { if (t.inboxId === fromId) t.inboxId = toId })
+  }
+
+  /** Types, tags and agents are referenced by name: a rename follows into tickets and saved views. */
+  function renameValue(kind: 'type' | 'tag' | 'agent', from: string, to: string) {
+    const swap = (list: string[]) => list.map(v => (v === from ? to : v))
+    tickets.value.forEach(t => {
+      if (kind === 'type' && t.type === from) t.type = to
+      if (kind === 'tag') t.tags = swap(t.tags)
+      if (kind === 'agent' && t.assignee === from) t.assignee = to
+    })
+    customViews.value.forEach(({ filters }) => {
+      if (kind === 'type') filters.type = swap(filters.type)
+      if (kind === 'tag') filters.tags = swap(filters.tags)
+      if (kind === 'agent' && filters.agent === from) filters.agent = to
+    })
+  }
+
+  /** A deleted type or tag leaves no dangling reference behind. */
+  function removeValue(kind: 'type' | 'tag', name: string) {
+    const drop = (list: string[]) => list.filter(v => v !== name)
+    tickets.value.forEach(t => {
+      if (kind === 'type' && t.type === name) t.type = ''
+      if (kind === 'tag') t.tags = drop(t.tags)
+    })
+    customViews.value.forEach(({ filters }) => {
+      if (kind === 'type') filters.type = drop(filters.type)
+      if (kind === 'tag') filters.tags = drop(filters.tags)
     })
   }
 
@@ -415,10 +464,10 @@ export const useTicketsStore = defineStore('tickets', () => {
       type: payload.type,
       assignee: payload.assignee,
       group: 'General',
-      inbox: payload.inbox,
+      inboxId: payload.inboxId,
       tags: payload.tags,
       unread: false,
-      trashed: false,
+      folder: 'inbox',
       createdAt: now,
       updatedAt: now,
       thread: [{
@@ -441,6 +490,7 @@ export const useTicketsStore = defineStore('tickets', () => {
     tickets,
     visibleTickets,
     trashedTickets,
+    spamTickets,
     activeTicketId,
     customViews,
     find,
@@ -453,6 +503,9 @@ export const useTicketsStore = defineStore('tickets', () => {
     closeMany,
     trashMany,
     restoreMany,
+    moveInbox,
+    renameValue,
+    removeValue,
     updateContact,
     saveView,
     createTicket,

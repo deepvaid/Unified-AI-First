@@ -591,16 +591,16 @@ export function useWidgetData(
         )
       }
       case 'service_open_tickets': {
-        const openTickets = tickets.tickets.filter((ticket) => ticket.status !== 'Closed').length
+        const openTickets = tickets.visibleTickets.filter((ticket) => ticket.status !== 'Closed').length
         return buildKpiData(openTickets, openTickets * 1.08, 'count', 'Tickets still requiring action')
       }
       case 'service_resolution_rate': {
-        const resolved = tickets.tickets.filter((ticket) => ticket.status === 'Closed').length
-        const rate = tickets.tickets.length ? (resolved / tickets.tickets.length) * 100 : 0
+        const resolved = tickets.visibleTickets.filter((ticket) => ticket.status === 'Closed').length
+        const rate = tickets.visibleTickets.length ? (resolved / tickets.visibleTickets.length) * 100 : 0
         return buildKpiData(rate, rate - 2.5, 'percent', 'Closed tickets as a share of total tickets')
       }
       case 'service_ticket_volume': {
-        const sorted = [...tickets.tickets].sort((left, right) => (left.createdAt ?? '').localeCompare(right.createdAt ?? '')).slice(-7)
+        const sorted = [...tickets.visibleTickets].sort((left, right) => (left.createdAt ?? '').localeCompare(right.createdAt ?? '')).slice(-7)
         return buildSeriesData(
           sorted.map((ticket) => new Date(ticket.createdAt ?? '').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })),
           sorted.map((_ticket, index) => index + 1),
@@ -609,7 +609,7 @@ export function useWidgetData(
         )
       }
       case 'service_recent_tickets': {
-        const rows = [...tickets.tickets]
+        const rows = [...tickets.visibleTickets]
           .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
           .slice(0, 6)
           .map((ticket) => ({
@@ -629,20 +629,20 @@ export function useWidgetData(
         )
       }
       case 'service_new_tickets': {
-        const ranges = sliceRecordsByWindow(tickets.tickets, (t) => new Date(t.createdAt ?? ''), dateWindow)
+        const ranges = sliceRecordsByWindow(tickets.visibleTickets, (t) => new Date(t.createdAt ?? ''), dateWindow)
         return buildKpiData(ranges.current.length, pickPreviousValue(filters, ranges.current.length, ranges.previous.length), 'count', 'Tickets created in the selected period')
       }
       case 'service_pending_tickets': {
-        const pending = tickets.tickets.filter((t) => t.status === 'Pending' || t.status === 'On Hold').length
+        const pending = tickets.visibleTickets.filter((t) => t.status === 'Pending' || t.status === 'On Hold').length
         return buildKpiData(pending, pending * 1.1, 'count', 'Tickets waiting or on hold')
       }
       case 'service_unresolved_tickets': {
-        const unresolved = tickets.tickets.filter((t) => t.status !== 'Closed').length
+        const unresolved = tickets.visibleTickets.filter((t) => t.status !== 'Closed').length
         return buildKpiData(unresolved, unresolved * 1.05, 'count', 'All unresolved tickets')
       }
       case 'service_support_health': {
-        const open = tickets.tickets.filter((t) => t.status === 'Open').length
-        const unresolved = tickets.tickets.filter((t) => t.status !== 'Closed')
+        const open = tickets.visibleTickets.filter((t) => t.status === 'Open').length
+        const unresolved = tickets.visibleTickets.filter((t) => t.status !== 'Closed')
         const kpi = buildKpiData(open, open * 1.08, 'count', 'Open tickets requiring action')
         if (!unresolved.length) return kpi
         const oldestMs = Math.min(...unresolved.map((t) => new Date(t.createdAt ?? '').getTime()).filter((ms) => !Number.isNaN(ms)))
@@ -655,14 +655,14 @@ export function useWidgetData(
       case 'service_tickets_by_channel': {
         const channels = ['Email', 'Inbound call', 'Walk in']
         const counts = channels.map((_channel, i) => {
-          const base = tickets.tickets.length
+          const base = tickets.visibleTickets.length
           return Math.round(base * ([0.55, 0.3, 0.15][i] ?? 0))
         })
         return buildSeriesData(channels, counts, 'count', 'Tickets')
       }
       case 'service_tickets_by_type': {
         const typeCounts = new Map<string, number>()
-        tickets.tickets.forEach((t) => {
+        tickets.visibleTickets.forEach((t) => {
           typeCounts.set(t.type || 'Untyped', (typeCounts.get(t.type || 'Untyped') ?? 0) + 1)
         })
         const labels = Array.from(typeCounts.keys())
@@ -1395,11 +1395,11 @@ export function useWidgetData(
         }
       }
       case 'service_tickets_breakdown': {
-        const open = tickets.tickets.filter((t) => t.status !== 'Closed')
-        const awaiting = tickets.tickets.filter((t) => t.status === 'Pending').length
+        const open = tickets.visibleTickets.filter((t) => t.status !== 'Closed')
+        const awaiting = tickets.visibleTickets.filter((t) => t.status === 'Pending').length
         const slaCutoff = Date.now() - 48 * 60 * 60 * 1000
         const breaching = open.filter((t) => new Date(t.createdAt ?? '').getTime() < slaCutoff).length
-        const resolved = tickets.tickets.filter((t) => t.status === 'Closed').length
+        const resolved = tickets.visibleTickets.filter((t) => t.status === 'Closed').length
         return {
           kind: 'breakdown',
           headline: { value: formatNumber(open.length, 'count'), caption: 'open tickets' },

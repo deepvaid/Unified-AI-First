@@ -16,22 +16,20 @@ import TicketWorkspace from '@/components/service/TicketWorkspace.vue'
 import {
   useTicketsStore,
   emptyTicketFilters,
-  SUPPORT_INBOXES,
-  TICKET_AGENTS,
   TICKET_CHANNELS,
   TICKET_GROUPS,
   TICKET_PRIORITIES,
   TICKET_STATUSES,
-  TICKET_TAGS,
-  TICKET_TYPES,
   type Ticket,
   type TicketFilters,
   type TicketPriority,
   type TicketStatus,
 } from '@/stores/useTickets'
+import { useServiceSettingsStore } from '@/stores/useServiceSettings'
 import { useToast } from '@/composables/useToast'
 
 const store = useTicketsStore()
+const settings = useServiceSettingsStore()
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
@@ -83,7 +81,7 @@ const BUILT_IN_VIEWS = ['All Tickets', 'My Tickets', 'High Priority Tickets']
 const inboxFromQuery = queryText(route.query.inbox)
 const viewFromQuery = queryText(route.query.view)
 const currentInbox = ref<'all' | 'trash' | string>(
-  ['trash', ...SUPPORT_INBOXES].includes(inboxFromQuery) ? inboxFromQuery : 'all',
+  ['trash', ...settings.inboxes.map(i => i.id)].includes(inboxFromQuery) ? inboxFromQuery : 'all',
 )
 const currentView = ref(
   [...BUILT_IN_VIEWS, ...store.customViews.map(v => v.name)].includes(viewFromQuery) ? viewFromQuery : 'All Tickets',
@@ -92,13 +90,13 @@ const viewsMenuOpen = ref(false)
 
 const inboxGroups = computed(() => [
   { key: 'all', label: 'ALL INBOXES' },
-  ...SUPPORT_INBOXES.map(name => ({ key: name, label: name.toUpperCase() })),
+  ...settings.inboxes.map(inbox => ({ key: inbox.id, label: inbox.name.toUpperCase() })),
 ])
 const viewNames = computed(() => [...BUILT_IN_VIEWS, ...store.customViews.map(v => v.name)])
 
 const currentLabel = computed(() => {
   if (currentInbox.value === 'trash') return 'Trash'
-  const inbox = currentInbox.value === 'all' ? 'All Inboxes' : currentInbox.value
+  const inbox = currentInbox.value === 'all' ? 'All Inboxes' : settings.inboxName(currentInbox.value)
   return `${inbox} · ${currentView.value}`
 })
 
@@ -180,8 +178,9 @@ function saveAsView() {
   toast.success(`View "${name}" saved`)
 }
 
+// Spam senders are never offered as contacts.
 const contactOptions = computed(() =>
-  [...new Set(store.tickets.map(t => `${t.customer} - ${t.customerEmail}`))],
+  [...new Set(store.tickets.filter(t => t.folder !== 'spam').map(t => `${t.customer} - ${t.customerEmail}`))],
 )
 
 // ── Status quick filter (tabs) ⇄ appliedFilters.status ───────────────────────
@@ -198,7 +197,7 @@ const statusTab = computed<string>({
 const searchedTickets = computed<Ticket[]>(() => {
   let list = currentInbox.value === 'trash' ? store.trashedTickets : store.visibleTickets
   if (currentInbox.value !== 'all' && currentInbox.value !== 'trash') {
-    list = list.filter(t => t.inbox === currentInbox.value)
+    list = list.filter(t => t.inboxId === currentInbox.value)
   }
   if (currentView.value === 'My Tickets') list = list.filter(t => t.assignee === CURRENT_AGENT)
   if (currentView.value === 'High Priority Tickets') list = list.filter(t => t.priority === 'High')
@@ -533,11 +532,11 @@ function newContact() {
       <MpFormGrid>
         <v-select v-model="workingFilters.priority" :items="TICKET_PRIORITIES" label="Priority" multiple chips closable-chips></v-select>
         <v-select v-model="workingFilters.channel" :items="TICKET_CHANNELS" label="Channel" multiple chips closable-chips></v-select>
-        <v-select v-model="workingFilters.type" :items="TICKET_TYPES" label="Type" multiple chips closable-chips></v-select>
+        <v-select v-model="workingFilters.type" :items="settings.typeNames" label="Type" multiple chips closable-chips></v-select>
         <v-select v-model="workingFilters.group" :items="TICKET_GROUPS" label="Group" multiple chips closable-chips></v-select>
-        <v-select v-model="workingFilters.agent" :items="['', ...TICKET_AGENTS]" label="Agent" clearable></v-select>
+        <v-select v-model="workingFilters.agent" :items="['', ...settings.agentNames]" label="Agent" clearable></v-select>
         <v-select v-model="workingFilters.contact" :items="['', ...contactOptions]" label="Contacts" clearable></v-select>
-        <v-select v-model="workingFilters.tags" :items="TICKET_TAGS" label="Tags" multiple chips closable-chips></v-select>
+        <v-select v-model="workingFilters.tags" :items="settings.tagNames" label="Tags" multiple chips closable-chips></v-select>
       </MpFormGrid>
       <MpFormGrid :cols="2" class="mt-4">
         <v-text-field v-model="workingFilters.createdFrom" label="Created from" type="date"></v-text-field>
@@ -572,7 +571,7 @@ function newContact() {
       size="sm"
     >
       <MpFormGrid>
-        <v-select v-model="assignAgent" :items="TICKET_AGENTS" label="Select agent *"></v-select>
+        <v-select v-model="assignAgent" :items="settings.agentNames" label="Select agent *"></v-select>
       </MpFormGrid>
       <template #footer>
         <v-btn variant="text" class="text-none" @click="assignDialog = false">Cancel</v-btn>
