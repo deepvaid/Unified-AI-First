@@ -8,8 +8,10 @@ import MpDialog from '@/components/MpDialog.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
-import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpMenuItem from '@/components/MpMenuItem.vue'
+import TicketWorkspaceActions from '@/components/service/TicketWorkspaceActions.vue'
+import TicketOrdersPanel from '@/components/service/TicketOrdersPanel.vue'
+import { useCommerceStore } from '@/stores/useCommerce'
 import {
   useTicketsStore,
   TICKET_PRIORITIES,
@@ -34,7 +36,11 @@ const props = withDefaults(defineProps<{
   showBack: false,
 })
 
-const emit = defineEmits<{ back: [] }>()
+const emit = defineEmits<{
+  back: []
+  /** The ticket left its folder (spam / not spam / trash / restore) — the list opens the next one. */
+  moved: [ticketId: number]
+}>()
 
 const store = useTicketsStore()
 const settings = useServiceSettingsStore()
@@ -143,12 +149,34 @@ const railButtons: { panel: RailPanel; icon: string; label: string }[] = [
 ]
 const activeRail = computed(() => railButtons.find(b => b.panel === railOpen.value))
 
-const orderSearch = ref('')
-const visibleOrders = computed(() => {
-  const q = orderSearch.value.trim().toLowerCase()
-  const orders = ticket.value?.orders ?? []
-  return q ? orders.filter(o => `${o.id} ${o.store}`.toLowerCase().includes(q)) : orders
-})
+// ── Orders: the panel drills into one order; the title band's chip opens the linked one ──
+const commerce = useCommerceStore()
+const orderDetailId = ref<number | null>(null)
+watch(() => props.ticketId, () => { orderDetailId.value = null })
+
+const linkedOrder = computed(() =>
+  ticket.value?.linkedOrderId ? commerce.getOrderById(ticket.value.linkedOrderId) : undefined,
+)
+async function openLinkedOrder() {
+  if (!linkedOrder.value) return
+  orderDetailId.value = linkedOrder.value.id
+  railOpen.value = 'orders'
+  // Same as opening it from the list: focus lands on the order's heading.
+  await nextTick()
+  feedEl.value?.closest('.tw-body')?.querySelector<HTMLElement>('.top__title')?.focus()
+}
+
+/** "Insert in reply": the order summary goes above the signature, in an open Reply. */
+async function insertIntoReply(text: string) {
+  if (composerMode.value !== 'Reply' && composerMode.value !== 'Forward') openComposer('Reply')
+  const signatureAt = composer.body.indexOf(SIGNATURE)
+  composer.body = signatureAt >= 0
+    ? `${composer.body.slice(0, signatureAt).trimEnd()}${composer.body.slice(0, signatureAt).trim() ? '\n\n' : ''}${text}${composer.body.slice(signatureAt)}`
+    : `${composer.body.trimEnd()}${composer.body.trim() ? '\n\n' : ''}${text}`
+  toast.success('Order details added to your reply')
+  await nextTick()
+  feedEl.value?.closest('.tw-thread')?.querySelector<HTMLTextAreaElement>('.tw-composer-body textarea')?.focus()
+}
 
 function setTags(tags: string[]) {
   store.updateTicket(props.ticketId, { tags })
@@ -200,6 +228,34 @@ function mockAttach(target: { attachments: string[] }) {
 function markUnread() {
   store.markUnread([props.ticketId])
   toast.success('Marked as unread')
+}
+
+// ── Folder moves (⋮ menu and the read-only footer) — each with Undo ─────────
+type FolderMove = 'spam' | 'notSpam' | 'trash' | 'restore'
+const FOLDER_MOVES: Record<FolderMove, { run: (ids: number[]) => void; message: string }> = {
+  spam: { run: ids => store.markSpam(ids), message: 'Marked as spam' },
+  notSpam: { run: ids => store.markNotSpam(ids), message: 'Moved back to the inbox' },
+  trash: { run: ids => store.trashMany(ids), message: 'Moved to Trash' },
+  restore: { run: ids => store.restoreMany(ids), message: 'Restored' },
+}
+function moveTicket(to: FolderMove) {
+  const id = props.ticketId
+  const from = ticket.value?.folder
+  if (!from) return
+  FOLDER_MOVES[to].run([id])
+  closeComposer()
+  emit('moved', id)
+  toast.success(FOLDER_MOVES[to].message, {
+    action: {
+      label: 'Undo',
+      onClick: () => {
+        if (from === 'spam') store.markSpam([id])
+        else if (from === 'trash') store.trashMany([id])
+        else if (to === 'spam') store.markNotSpam([id])
+        else store.restoreMany([id])
+      },
+    },
+  })
 }
 
 // The list's query (inbox, view, filters, search, sort) rides along so the full
@@ -282,10 +338,32 @@ const SEND_AND_SET: TicketStatus[] = ['Pending', 'On Hold', 'Closed']
       <div class="tw-head__title">
         <div class="mp-meta-label text-medium-emphasis">{{ eyebrow }}</div>
         <h2 class="mp-section-title text-truncate">{{ ticket.subject }}</h2>
+        <!-- The order this ticket is about, one click from its details. -->
+        <button
+          v-if="linkedOrder"
+          type="button"
+          class="tw-order-chip"
+          :aria-label="`Open linked order ${linkedOrder.orderNumber}, ${linkedOrder.status}`"
+          @click="openLinkedOrder"
+        >
+          <v-icon size="14">package</v-icon>
+          <span>Order {{ linkedOrder.orderNumber }}</span>
+          <span class="tw-order-chip__status">· {{ linkedOrder.status }}</span>
+        </button>
       </div>
+      <!-- The ticket's actions ride on its title, so the property row never wraps. -->
+      <TicketWorkspaceActions
+        v-model:show-activities="showActivities"
+        :folder="ticket.folder"
+        can-expand
+        @expand="expandToPage"
+        @edit="openEditDetails"
+        @unread="markUnread"
+        @move="moveTicket"
+      />
     </header>
 
-    <!-- Property row + pane actions -->
+    <!-- Property row (the full page, which has no title band, ends it with the actions) -->
     <div class="tw-props border-b d-flex align-center flex-wrap ga-2">
       <v-menu v-for="menu in propertyMenus" :key="menu.key" location="bottom start">
         <template #activator="{ props: activator }">
@@ -317,44 +395,28 @@ const SEND_AND_SET: TicketStatus[] = ['Pending', 'On Hold', 'Closed']
         </v-list>
       </v-menu>
 
-      <div class="d-flex align-center ga-1 ms-auto">
-        <v-tooltip text="Show activities" location="bottom">
-          <template #activator="{ props: tooltip }">
-            <v-btn
-              v-bind="tooltip"
-              icon="history"
-              variant="text"
-              size="small"
-              :color="showActivities ? 'primary' : undefined"
-              :aria-pressed="showActivities"
-              aria-label="Show activities"
-              @click="showActivities = !showActivities"
-            ></v-btn>
-          </template>
-        </v-tooltip>
-        <v-tooltip v-if="variant === 'pane'" text="Open as a full page" location="bottom">
-          <template #activator="{ props: tooltip }">
-            <v-btn
-              v-bind="tooltip"
-              icon="expand"
-              variant="text"
-              size="small"
-              aria-label="Open ticket as a full page"
-              @click="expandToPage"
-            ></v-btn>
-          </template>
-        </v-tooltip>
-        <MpRowActionsMenu ariaLabel="Ticket actions">
-          <MpMenuItem title="Edit ticket details" icon="pencil" @click="openEditDetails" />
-          <MpMenuItem title="Mark as unread" icon="mail" @click="markUnread" />
-        </MpRowActionsMenu>
-      </div>
+      <TicketWorkspaceActions
+        v-if="variant === 'page'"
+        v-model:show-activities="showActivities"
+        :folder="ticket.folder"
+        class="ms-auto"
+        @edit="openEditDetails"
+        @unread="markUnread"
+        @move="moveTicket"
+      />
     </div>
 
     <!-- Body: thread column (feed + docked footer) beside the right rail -->
     <div class="tw-body flex-grow-1">
       <div class="tw-thread flex-grow-1">
-        <div ref="feedEl" class="tw-feed flex-grow-1 overflow-y-auto d-flex flex-column">
+        <!-- Focusable so the thread can be scrolled from the keyboard (WCAG 2.1.1). -->
+        <div
+          ref="feedEl"
+          class="tw-feed flex-grow-1 overflow-y-auto d-flex flex-column"
+          tabindex="0"
+          role="region"
+          :aria-label="`Conversation: ${ticket.subject}`"
+        >
           <template v-for="item in feed" :key="item.kind === 'message' ? `m${item.message.id}` : `a${item.activity.id}`">
             <MpChatBubble
               v-if="item.kind === 'message'"
@@ -406,7 +468,25 @@ const SEND_AND_SET: TicketStatus[] = ['Pending', 'On Hold', 'Closed']
 
         <!-- Docked footer: the composer replaces the action bar while it is open -->
         <div class="tw-foot border-t flex-shrink-0 d-flex flex-column">
-          <v-card v-if="composerMode" flat border rounded="lg" class="tw-composer ma-4">
+          <!-- Spam and Trash are read-only: nobody replies to a phishing mail by accident. -->
+          <div v-if="ticket.folder !== 'inbox'" class="tw-actions tw-folder-note d-flex align-center flex-wrap ga-3">
+            <v-icon size="20" class="tw-folder-note__icon">{{ ticket.folder === 'spam' ? 'shield-alert' : 'trash-2' }}</v-icon>
+            <span class="text-body-2 flex-grow-1">
+              {{ ticket.folder === 'spam'
+                ? 'Marked as spam. Replies are off until it’s back in the inbox.'
+                : 'In Trash. Restore it to reply.' }}
+            </span>
+            <v-btn
+              color="primary"
+              variant="flat"
+              class="text-none"
+              :prepend-icon="ticket.folder === 'spam' ? 'shield-check' : 'undo-2'"
+              @click="moveTicket(ticket.folder === 'spam' ? 'notSpam' : 'restore')"
+            >
+              {{ ticket.folder === 'spam' ? 'Not spam' : 'Restore' }}
+            </v-btn>
+          </div>
+          <v-card v-else-if="composerMode" flat border rounded="lg" class="tw-composer ma-4">
             <div class="tw-composer__head d-flex align-center ga-2 px-3 py-2 border-b">
               <!-- Composer chrome, not form fields: placeholder + aria-label, details
                    suppressed so the control row can never shift height. -->
@@ -512,7 +592,8 @@ const SEND_AND_SET: TicketStatus[] = ['Pending', 'On Hold', 'Closed']
             <v-btn icon="x" variant="text" size="small" aria-label="Close panel" @click="railOpen = null"></v-btn>
           </div>
 
-          <div class="tw-rail-panel__body">
+          <!-- The orders panel scrolls its own body and pins its action bar, so it takes the whole panel. -->
+          <div class="tw-rail-panel__body" :class="{ 'tw-rail-panel__body--flush': railOpen === 'orders' }">
             <template v-if="railOpen === 'contact'">
               <dl class="mp-label-value tw-dl">
                 <div>
@@ -547,36 +628,12 @@ const SEND_AND_SET: TicketStatus[] = ['Pending', 'On Hold', 'Closed']
               ></v-select>
             </template>
 
-            <template v-else>
-              <v-text-field
-                v-model="orderSearch"
-                placeholder="Search orders"
-                aria-label="Search customer orders"
-                prepend-inner-icon="search"
-                hide-details
-                density="compact"
-                class="mb-3"
-              ></v-text-field>
-              <v-table density="compact">
-                <thead>
-                  <tr>
-                    <th>Order ID</th>
-                    <th>Store</th>
-                    <th>Order date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="order in visibleOrders" :key="order.id">
-                    <td>{{ order.id }}</td>
-                    <td>{{ order.store }}</td>
-                    <td>{{ order.date }}</td>
-                  </tr>
-                  <tr v-if="!visibleOrders.length">
-                    <td colspan="3" class="text-center text-caption text-medium-emphasis py-4">No orders found</td>
-                  </tr>
-                </tbody>
-              </v-table>
-            </template>
+            <TicketOrdersPanel
+              v-else
+              v-model:order-id="orderDetailId"
+              :ticket-id="ticket.id"
+              @insert="insertIntoReply"
+            />
           </div>
         </section>
 
@@ -719,6 +776,7 @@ const SEND_AND_SET: TicketStatus[] = ['Pending', 'On Hold', 'Closed']
   padding: var(--mp-component-card-padding);
   gap: var(--mp-component-card-gap);
 }
+.tw-feed:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
 /* The feed is a height-capped flex column, so its items would shrink to fit.
    Compact MpListRow (the activity rows) drops its min-height to 0, so all the
    shrink landed on activities and their text overlapped. Items keep their
@@ -757,6 +815,7 @@ const SEND_AND_SET: TicketStatus[] = ['Pending', 'On Hold', 'Closed']
   overflow-y: auto;
 }
 .tw-actions { padding: var(--mp-space-12) var(--mp-component-card-padding); }
+.tw-folder-note__icon { color: var(--on-surface-muted); }
 
 /* Composer selects share the toolbar search widths so the chrome sits on one ramp. */
 .tw-composer__mode { max-width: calc(var(--mp-component-toolbar-searchMinWidth) / 2); }
@@ -787,6 +846,36 @@ const SEND_AND_SET: TicketStatus[] = ['Pending', 'On Hold', 'Closed']
   min-height: var(--mp-component-control-height);
   padding: var(--mp-space-8) var(--mp-space-12) var(--mp-space-8) var(--mp-space-16);
 }
+/* Two classes: the plain .tw-rail-panel__body rule below would otherwise win on order. */
+.tw-rail-panel__body.tw-rail-panel__body--flush {
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Linked-order chip under the subject: a quiet link-button on the chip ramp. */
+.tw-order-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mp-space-4);
+  margin-top: var(--mp-space-6);
+  height: var(--mp-component-chip-height-md);
+  padding-inline: var(--mp-component-chip-paddingInline);
+  border: 0;
+  border-radius: var(--mp-component-chip-radius);
+  background: var(--surface-secondary);
+  color: var(--on-surface);
+  font: inherit;
+  font-size: var(--mp-fontSize-12);
+  font-weight: var(--mp-fontWeight-medium);
+  cursor: pointer;
+  transition: background var(--mp-motion-duration-fast) var(--mp-motion-easing-standard);
+}
+.tw-order-chip:hover { background: var(--accent-soft); }
+.tw-order-chip:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.tw-order-chip__status { color: var(--on-surface-muted); }
+
 .tw-rail-panel__body {
   flex: 1 1 0;
   min-height: 0;

@@ -32,12 +32,6 @@ export interface TicketActivity {
   text: string
 }
 
-export interface CustomerOrder {
-  id: string
-  store: string
-  date: string
-}
-
 export interface Ticket {
   id: number
   number: string
@@ -60,7 +54,11 @@ export interface Ticket {
   updatedAt: string
   thread: TicketMessage[]
   activities: TicketActivity[]
-  orders: CustomerOrder[]
+  /**
+   * The Commerce order (`Order.id`) this ticket is about. The customer's other
+   * orders come from useCommerce().ordersForCustomer(customerEmail).
+   */
+  linkedOrderId: number | null
 }
 
 export interface TicketFilters {
@@ -91,9 +89,11 @@ export const emptyTicketFilters = (): TicketFilters => ({
   readStatus: '',
 })
 
-/** A custom view is a named, saved filter set (created via "Save as View"). */
+/** A custom view is a named, saved filter set (created via "Save as View"), kept under one inbox. */
 export interface SavedTicketView {
   name: string
+  /** `Inbox.id`, or `'all'` for views under All inboxes. */
+  inboxId: string
   filters: TicketFilters
 }
 
@@ -135,7 +135,7 @@ interface TicketSeed {
   createdAt: string
   body: string
   replies?: { author: string; body: string; note?: boolean }[]
-  orders?: CustomerOrder[]
+  linkedOrderId?: number
 }
 
 function seedTicket(seed: TicketSeed): Ticket {
@@ -200,7 +200,7 @@ function seedTicket(seed: TicketSeed): Ticket {
     updatedAt: new Date(last).toISOString(),
     thread,
     activities,
-    orders: seed.orders ?? [],
+    linkedOrderId: seed.linkedOrderId ?? null,
   }
 }
 
@@ -221,11 +221,12 @@ export const useTicketsStore = defineStore('tickets', () => {
       id: 1524, subject: 'Need help cancelling my order', customer: 'Rajan Bhanot', email: 'rjbhanot38@gmail.com',
       status: 'Open', priority: 'Low', channel: 'Email', assignee: 'Chris Parker', createdAt: '2026-08-31T08:25:00Z',
       body: 'need help to cancel order',
-      orders: [{ id: 'ORD-10241', store: 'Atlas Outfitters', date: '2026-08-28' }, { id: 'ORD-10198', store: 'Atlas Outfitters', date: '2026-08-11' }],
+      linkedOrderId: 1, // #10000 — still processing, so it can be cancelled
     }),
     seedTicket({
       id: 1523, subject: 'Where is my refund?', customer: 'Rajan Bhanot', email: 'rjbhanot38@gmail.com',
       status: 'Open', priority: 'Medium', channel: 'Email', type: 'Payment', assignee: 'Chris Parker', tags: ['Refund'],
+      linkedOrderId: 19, // #10018 — already refunded
       createdAt: '2026-08-31T07:02:00Z', body: 'I returned my order ten days ago and still have no refund on my card.',
       replies: [{ author: 'Chris Parker', body: 'Hi Rajan — your refund was issued today and should appear within 3–5 business days.' }],
     }),
@@ -257,6 +258,7 @@ export const useTicketsStore = defineStore('tickets', () => {
     seedTicket({
       id: 1517, subject: 'Request regarding refund of product', customer: 'Lorem Anderson', email: 'lorem@example.com',
       status: 'New', priority: 'Medium', channel: 'Email', type: 'Payment', tags: ['Refund'],
+      linkedOrderId: 22, // #10021 — completed, return requested
       createdAt: '2026-08-28T11:20:00Z', body: 'Request Regarding Refund Of Product — description attached.',
     }),
     seedTicket({
@@ -279,20 +281,20 @@ export const useTicketsStore = defineStore('tickets', () => {
       ],
     }),
     seedTicket({
-      id: 1513, subject: 'POS terminal not syncing loyalty points', customer: 'Emma Johnson', email: 'emma.johnson@example.com', phone: '+1 416 555 0132',
+      id: 1513, subject: 'POS terminal not syncing loyalty points', customer: 'Emma Johnson', email: 'emma.johnson@email.com', phone: '+1 416 555 0132',
       status: 'On Hold', priority: 'High', channel: 'Walk In', type: 'Incident', assignee: 'Priya Shah', tags: ['Loyalty'],
       createdAt: '2026-06-02T16:20:00Z', body: 'Loyalty points from in-store purchases are not appearing in customer accounts.',
       replies: [{ author: 'Priya Shah', body: 'We\'ve paused the sync while the vendor investigates — I\'ll update you as soon as it resumes.' }],
     }),
     seedTicket({
-      id: 1512, subject: 'Exchange for a different size', customer: 'Sofia Thompson', email: 'sofia.thompson@example.com',
+      id: 1512, subject: 'Exchange for a different size', customer: 'Sofia Thompson', email: 'sofia.thompson@email.com',
       status: 'Closed', priority: 'Low', channel: 'Webstore', type: 'Customer Request', assignee: 'Chris Parker', tags: ['Order Issue'],
       createdAt: '2026-05-21T10:00:00Z', body: 'I\'d like to exchange my jacket for a size M.',
       replies: [{ author: 'Chris Parker', body: 'Exchange label sent — drop the parcel at any post office and the M ships on receipt.' }],
-      orders: [{ id: 'ORD-9911', store: 'Atlas Outfitters', date: '2026-05-18' }],
+      linkedOrderId: 2, // #10001
     }),
     seedTicket({
-      id: 1511, subject: 'Billing charged twice this month', customer: 'Liam Martinez', email: 'liam.martinez@example.com',
+      id: 1511, subject: 'Billing charged twice this month', customer: 'Liam Martinez', email: 'liam.martinez@email.com',
       status: 'Closed', priority: 'Medium', channel: 'Email', type: 'Payment', assignee: 'Deepak Vaidya',
       createdAt: '2026-05-04T08:47:00Z', body: 'My card was charged twice for the same invoice this month.',
       replies: [{ author: 'Deepak Vaidya', body: 'The duplicate charge was voided — apologies for the trouble.' }],
@@ -303,9 +305,10 @@ export const useTicketsStore = defineStore('tickets', () => {
 
   // Saved views created from the filter drawer ("Save as View").
   const customViews = ref<SavedTicketView[]>([
-    { name: 'High Value Orders', filters: { ...emptyTicketFilters(), tags: ['VIP'] } },
-    { name: 'Walk-in Follow-ups', filters: { ...emptyTicketFilters(), channel: ['Walk In'] } },
-    { name: 'Payment Escalations', filters: { ...emptyTicketFilters(), type: ['Payment'], priority: ['High', 'Medium'] } },
+    { name: 'High Value Orders', inboxId: 'all', filters: { ...emptyTicketFilters(), tags: ['VIP'] } },
+    { name: 'Walk-in Follow-ups', inboxId: 'all', filters: { ...emptyTicketFilters(), channel: ['Walk In'] } },
+    { name: 'Payment Escalations', inboxId: 'all', filters: { ...emptyTicketFilters(), type: ['Payment'], priority: ['High', 'Medium'] } },
+    { name: 'From the webstore', inboxId: 'orders', filters: { ...emptyTicketFilters(), channel: ['Webstore'] } },
   ])
 
   /** The working set: everything not in Spam or Trash. Lists, counts and widgets read this. */
@@ -384,25 +387,39 @@ export const useTicketsStore = defineStore('tickets', () => {
     ids.forEach(id => updateTicket(id, { status: 'Closed' }, actor))
   }
 
-  /** Soft delete — tickets land in the Trash view and can be restored. */
-  function trashMany(ids: number[]) {
+  // ── Folders: inbox ⇄ spam ⇄ trash. Every move leaves a trail. ──────────────
+  function moveToFolder(ids: number[], folder: TicketFolder, text: string, actor: string) {
     ids.forEach(id => {
       const t = find(id)
-      if (t) t.folder = 'trash'
+      if (!t || t.folder === folder) return
+      t.folder = folder
+      pushActivity(t, actor, text)
     })
   }
 
-  function restoreMany(ids: number[]) {
-    ids.forEach(id => {
-      const t = find(id)
-      if (t) t.folder = 'inbox'
-    })
+  /** Soft delete — tickets land in the Trash view and can be restored. */
+  function trashMany(ids: number[], actor = 'Deepak Vaidya') {
+    moveToFolder(ids, 'trash', 'Moved to trash', actor)
+  }
+
+  function restoreMany(ids: number[], actor = 'Deepak Vaidya') {
+    moveToFolder(ids, 'inbox', 'Restored from trash', actor)
+  }
+
+  /** Agents can mark spam (6 Nov proposal; the call had spam as system-only). */
+  function markSpam(ids: number[], actor = 'Deepak Vaidya') {
+    moveToFolder(ids, 'spam', 'Marked as spam', actor)
+  }
+
+  function markNotSpam(ids: number[], actor = 'Deepak Vaidya') {
+    moveToFolder(ids, 'inbox', 'Marked as not spam', actor)
   }
 
   // ── Kept in step with Settings › Service ───────────────────────────────────
-  /** A deleted inbox hands its tickets to another one. */
+  /** A deleted inbox hands its tickets — and the views saved under it — to another one. */
   function moveInbox(fromId: string, toId: string) {
     tickets.value.forEach(t => { if (t.inboxId === fromId) t.inboxId = toId })
+    customViews.value.forEach(v => { if (v.inboxId === fromId) v.inboxId = toId })
   }
 
   /** Types, tags and agents are referenced by name: a rename follows into tickets and saved views. */
@@ -433,6 +450,25 @@ export const useTicketsStore = defineStore('tickets', () => {
     })
   }
 
+  // ── Orders (the data lives in useCommerce; the ticket keeps a reference) ────
+  /** Marks which order the ticket is about; `null` unlinks. `orderNumber` labels the activity. */
+  function linkOrder(id: number, order: { id: number; orderNumber: string } | null, actor = 'Deepak Vaidya') {
+    const t = find(id)
+    if (!t) return
+    const previous = t.linkedOrderId
+    t.linkedOrderId = order?.id ?? null
+    pushActivity(t, actor, order ? `Linked order ${order.orderNumber}` : 'Unlinked the order')
+    if (previous !== t.linkedOrderId) touch(t)
+  }
+
+  /** Something done to the customer's order from this ticket (cancel, refund) leaves a trail here too. */
+  function logActivity(id: number, text: string, actor = 'Deepak Vaidya') {
+    const t = find(id)
+    if (!t) return
+    pushActivity(t, actor, text)
+    touch(t)
+  }
+
   function updateContact(id: number, contact: { name: string; email: string; phone: string }) {
     const t = find(id)
     if (!t) return
@@ -442,10 +478,11 @@ export const useTicketsStore = defineStore('tickets', () => {
     touch(t)
   }
 
-  function saveView(name: string, filters: TicketFilters) {
-    const existing = customViews.value.find(v => v.name === name)
+  /** Saving under a name that already exists in that inbox updates it. */
+  function saveView(name: string, filters: TicketFilters, inboxId = 'all') {
+    const existing = customViews.value.find(v => v.name === name && v.inboxId === inboxId)
     if (existing) existing.filters = { ...filters }
-    else customViews.value.push({ name, filters: { ...filters } })
+    else customViews.value.push({ name, inboxId, filters: { ...filters } })
   }
 
   function createTicket(payload: NewTicketPayload): number {
@@ -480,7 +517,7 @@ export const useTicketsStore = defineStore('tickets', () => {
         body: payload.description,
       }],
       activities: [{ id: activitySeq++, actor: 'Deepak Vaidya', time: now, text: 'Ticket created' }],
-      orders: [],
+      linkedOrderId: null,
     }
     tickets.value.unshift(ticket)
     return id
@@ -503,9 +540,13 @@ export const useTicketsStore = defineStore('tickets', () => {
     closeMany,
     trashMany,
     restoreMany,
+    markSpam,
+    markNotSpam,
     moveInbox,
     renameValue,
     removeValue,
+    linkOrder,
+    logActivity,
     updateContact,
     saveView,
     createTicket,

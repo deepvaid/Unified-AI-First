@@ -6,12 +6,18 @@ withDefaults(defineProps<{
   title: string
   message: string
   confirmLabel?: string
+  /**
+   * The dismiss button. Rename it when the action itself is a "cancel" — a
+   * "Cancel" next to "Cancel order" reads as two ways to cancel ("Keep order").
+   */
+  cancelLabel?: string
   /** Destructive action: error icon + error confirm button. */
   danger?: boolean
   /** Optional bullet list of consequences, rendered between the message and the actions. */
   consequences?: string[]
 }>(), {
   confirmLabel: 'Confirm',
+  cancelLabel: 'Cancel',
   danger: false,
 })
 
@@ -45,7 +51,7 @@ function confirm() {
     </ul>
 
     <template #footer>
-      <v-btn variant="text" class="text-none" @click="emit('update:modelValue', false)">Cancel</v-btn>
+      <v-btn variant="text" class="text-none" @click="emit('update:modelValue', false)">{{ cancelLabel }}</v-btn>
       <v-btn :color="danger ? 'error' : 'primary'" variant="flat" class="text-none" @click="confirm">
         {{ confirmLabel }}
       </v-btn>

@@ -23,6 +23,28 @@ const productNames = [
 const categories = ['Electronics', 'Apparel', 'Home & Kitchen', 'Sports & Outdoors', 'Beauty & Health', 'Tools & Garden']
 const customerFirstNames = ['James', 'Sofia', 'Liam', 'Emma', 'Noah', 'Olivia', 'Ethan', 'Ava', 'Mason', 'Isabella', 'Logan', 'Mia', 'Lucas', 'Charlotte', 'Aiden', 'Amelia', 'Jackson', 'Harper', 'Sebastian', 'Evelyn', 'Mateo', 'Abigail', 'Jack', 'Emily', 'Owen', 'Ella', 'Theodore', 'Scarlett', 'Henry', 'Grace']
 const customerLastNames = ['Anderson', 'Thompson', 'Martinez', 'Johnson', 'Williams', 'Brown', 'Davis', 'Miller', 'Wilson', 'Moore', 'Taylor', 'Jackson', 'White', 'Harris', 'Martin', 'Garcia', 'Thompson', 'Robinson', 'Clark', 'Lewis', 'Lee', 'Walker', 'Hall', 'Allen', 'Young', 'Hernandez', 'King', 'Wright', 'Lopez', 'Hill']
+/**
+ * Ticket customers (useTickets seed) who are also shoppers. Indexes into the 60
+ * generated web orders, picked for the states their tickets talk about:
+ * #10000 still cancellable, #10018 refunded, #10026 shipped with tracking,
+ * #10021 completed with a return requested. Sofia, Liam and Emma are already
+ * shoppers here, so their tickets match by email without an entry.
+ */
+const SERVICE_DESK_CUSTOMERS: { index: number; name: string; email: string }[] = [
+  { index: 0, name: 'Rajan Bhanot', email: 'rjbhanot38@gmail.com' },
+  { index: 18, name: 'Rajan Bhanot', email: 'rjbhanot38@gmail.com' },
+  { index: 26, name: 'Rajan Bhanot', email: 'rjbhanot38@gmail.com' },
+  { index: 21, name: 'Lorem Anderson', email: 'lorem@example.com' },
+]
+
+/** Every shopper who also has support tickets — their orders are read beside a ticket. */
+const SERVICE_DESK_SHOPPERS = new Set([
+  ...SERVICE_DESK_CUSTOMERS.map((c) => c.email),
+  'sofia.thompson@email.com',
+  'liam.martinez@email.com',
+  'emma.johnson@email.com',
+])
+
 const cities = ['San Francisco, CA', 'New York, NY', 'Austin, TX', 'Chicago, IL', 'Seattle, WA', 'Miami, FL', 'Boston, MA', 'Denver, CO', 'Los Angeles, CA', 'Phoenix, AZ']
 // Real Maropost order status values
 const orderStatuses = ['Processing', 'Completed', 'Cancelled', 'Refunded', 'On Hold']
@@ -1036,6 +1058,44 @@ export const useCommerceStore = defineStore('commerce', () => {
     }
   }).concat(buildPosOrders()))
 
+  // Service desk customers (useTickets seed) own a few of the generated web
+  // orders, so a ticket's Customer orders panel opens real orders. Only the
+  // customer changes — totals, dates and statuses stay, so Sales and the
+  // dashboards (which sum these orders) are untouched.
+  for (const { index, name, email } of SERVICE_DESK_CUSTOMERS) {
+    const order = orders.value[index]
+    if (!order) continue
+    const [first = '', last = ''] = name.split(' ')
+    order.customer = { name, email, avatar: `${first[0] ?? ''}${last[0] ?? ''}` }
+    order.shippingAddress = { ...order.shippingAddress, name }
+    order.billingAddress = { ...order.billingAddress, name }
+  }
+
+  // The generator draws totals (dashboard revenue) and line prices (product pool)
+  // independently, so an order's items don't add up to its subtotal. A support
+  // agent reads both side by side, so for the orders tickets show, the line
+  // prices are rescaled to the subtotal — totals stay exactly as generated.
+  for (const order of orders.value) {
+    if (!SERVICE_DESK_SHOPPERS.has(order.customer.email)) continue
+    const net = (li: OrderLineItem) => li.qty * (1 - li.discountPct / 100)
+    const weights = order.lineItems.map((li) => net(li) * parseFloat(li.price))
+    const sum = weights.reduce((a, b) => a + b, 0)
+    const subtotal = parseFloat(order.subtotal)
+    if (!sum || !subtotal) continue
+    order.lineItems.forEach((li, k) => {
+      li.price = ((weights[k]! / sum) * subtotal / net(li)).toFixed(2)
+    })
+  }
+
+  /** A shopper's orders, newest first — what a support ticket's Orders panel lists. */
+  function ordersForCustomer(email: string): Order[] {
+    const key = email.trim().toLowerCase()
+    if (!key) return []
+    return orders.value
+      .filter((o) => o.customer.email.toLowerCase() === key)
+      .sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id)
+  }
+
   // ── Order actions (mock-persistent) ──────────────────────────────
   function getOrderById(id: number): Order | undefined {
     return orders.value.find((o) => o.id === id)
@@ -1737,7 +1797,7 @@ export const useCommerceStore = defineStore('commerce', () => {
     productViews, addProductView, removeProductView,
     adjustStock, transferStock, inventoryImports,
     priceLists, priceOverrides, priceFor, deletePriceOverride,
-    getOrderById, addOrderNote, setOrderTags, updateOrderAddress, cancelOrder, cancelOrders, refundOrder, markOrderFulfilled, markOrdersFulfilled,
+    getOrderById, ordersForCustomer, addOrderNote, setOrderTags, updateOrderAddress, cancelOrder, cancelOrders, refundOrder, markOrderFulfilled, markOrdersFulfilled,
     applyPaymentSummary, clearPaymentSummary, createCheckoutOrder,
     posOrders, addPosOrder, refundPosOrder, voidPosOrder,
     advanceFulfillment, markShipped,

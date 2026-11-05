@@ -134,6 +134,23 @@ Bonus: views become shareable links.
 Priority: **P0** = asked for and blocks parity · **P1** = asked for, polish ·
 **P2** = from the persona, not asked for. Pitch P2s as proposals, not commitments.
 
+> **Status 6 Nov 2026 — Slice 2a built** (branch `feature/service-settings`), after Deepak's review
+> of the live page:
+> - **One container:** list and ticket share one card, with `MpSplitPane` between them. The list
+>   width is dragged or keyboard-moved (←/→, Home/End, Enter resets) and remembered in
+>   `mp.tickets.listWidth.v1`. A narrower window squeezes the list without losing the saved width.
+>   (T11)
+> - **Title-row actions:** history, expand and ⋮ sit on the ticket's title row, so the property row
+>   no longer wraps onto a second line.
+> - **Inbox menu:** `TicketViewSwitcher` (T1). It has search, collapsible inbox groups (remembered),
+>   views that belong to their inbox, open counts, and Spam + Trash pinned at the foot.
+> - **Spam (T3 changed):** agents **can mark a ticket as spam** (⋮ and bulk, with Undo). This is a
+>   proposal for Abhinav, because the call had spam as system-only. Spam is read-only until it's
+>   rescued with *Not spam*.
+> - **Trash (T4):** *Move to trash* is in ⋮ and in bulk, and "Delete" is renamed. The next ticket
+>   opens after any folder move.
+> - **Still open in Slice 2:** view reordering (T2) and filter chips (T5).
+
 ### T1 · Inbox & view selector — restructure (P0)
 
 **Problem.** The sandbox repeats All / My / High-priority + every saved view under every inbox, so
@@ -321,6 +338,22 @@ Found while reviewing the sandbox:
 - Check at 360 / 768 / 1024 / 1440, light and dark.
 
 ### T13 · Orders — link, see items, act (P0)
+
+> **Status 6 Nov 2026 — order detail built (Slice 2b).** The *Customer orders* panel lists the
+> customer's **real Commerce orders**: the linked one on top, then the others, each showing number,
+> date, items, total and status. Clicking one **drills in** inside the panel, so the thread and
+> Reply stay visible. The detail shows status, payment and channel, the line items (they add up to
+> the subtotal), totals, shipping, tracking and recent activity.
+>
+> Pinned at the bottom: **Insert in reply** (a plain-text order summary above the signature),
+> **Link** to the ticket, and ⋮ Open in Commerce · Unlink · **Refund…** (amount + reason) ·
+> **Cancel order**. Cancel's dialog buttons read "Keep order" / "Cancel order". An action that
+> doesn't apply is disabled with its reason ("Already shipped — refund it instead"). Cancels and
+> refunds write to the order's timeline and the ticket's activity. A linked order also shows as an
+> "Order #… · status" chip under the ticket title, which opens it.
+>
+> **Still open:** an Order field on New ticket, and partial refunds (Commerce marks any refund
+> as Refunded).
 
 Chat: *"Order linking UI"* (→ UAT 1549), *"new ticket doesn't have orders dropdown"*, *"couldn't
 confirm orders / order items… UI"*. UAT's Customer orders panel lists the customer's orders
