@@ -944,6 +944,16 @@ tr:focus-within .action-btns {
   overflow: hidden;
 }
 
+/* On mobile browsers 100vh includes the area behind the URL bar, which pushed
+   docked footers (the ticket reply bar) below the fold. dvh is the visible
+   height. Behind @supports because an unsupported unit inside a custom
+   property would only fail at use time and void the height. */
+@supports (height: 100dvh) {
+  .mp-frame-fill {
+    --mp-frame-height: calc(100dvh - 52px - var(--mp-frame-offset, 0px));
+  }
+}
+
 @media (max-width: 1024px) {
   .mp-frame-fill {
     margin: calc(-1 * var(--mp-layout-shellInsetMedium));

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useDisplay } from 'vuetify'
 import MpChatBubble from '@/components/MpChatBubble.vue'
 import MpListRow from '@/components/MpListRow.vue'
 import MpDialog from '@/components/MpDialog.vue'
@@ -121,9 +122,13 @@ function setProperty(key: string, value: string) {
 
 // ── Right rail panels ────────────────────────────────────────────────────────
 type RailPanel = 'contact' | 'tags' | 'orders'
-const railOpen = ref<RailPanel | null>(props.defaultRail)
+// Below the split breakpoint (Vuetify md = layout.breakpointSplit, 960) an open
+// panel takes the thread's place, so it never opens by itself there.
+const { mdAndUp } = useDisplay()
+const initialRail = () => (mdAndUp.value ? props.defaultRail : null)
+const railOpen = ref<RailPanel | null>(initialRail())
 watch(() => props.ticketId, () => {
-  railOpen.value = props.defaultRail
+  railOpen.value = initialRail()
   closeComposer()
   scrollFeedToEnd(false)
 })
@@ -196,8 +201,14 @@ function markUnread() {
   toast.success('Marked as unread')
 }
 
+// The list's query (inbox, view, filters, search, sort) rides along so the full
+// page's Back returns to exactly that list.
 function expandToPage() {
-  router.push({ name: 'TicketDetail', params: { accountId: accountId.value, id: String(props.ticketId) } })
+  router.push({
+    name: 'TicketDetail',
+    params: { accountId: accountId.value, id: String(props.ticketId) },
+    query: route.query,
+  })
 }
 
 // ── Composer (Reply / Forward / Note) ────────────────────────────────────────
@@ -340,8 +351,8 @@ const SEND_AND_SET: TicketStatus[] = ['Pending', 'On Hold', 'Closed']
     </div>
 
     <!-- Body: thread column (feed + docked footer) beside the right rail -->
-    <div class="tw-body d-flex flex-grow-1">
-      <div class="tw-thread d-flex flex-column flex-grow-1">
+    <div class="tw-body flex-grow-1">
+      <div class="tw-thread flex-grow-1">
         <div ref="feedEl" class="tw-feed flex-grow-1 overflow-y-auto d-flex flex-column">
           <template v-for="item in feed" :key="item.kind === 'message' ? `m${item.message.id}` : `a${item.activity.id}`">
             <MpChatBubble
@@ -395,7 +406,7 @@ const SEND_AND_SET: TicketStatus[] = ['Pending', 'On Hold', 'Closed']
         <!-- Docked footer: the composer replaces the action bar while it is open -->
         <div class="tw-foot border-t flex-shrink-0 d-flex flex-column">
           <v-card v-if="composerMode" flat border rounded="lg" class="tw-composer ma-4">
-            <div class="d-flex align-center ga-2 px-3 py-2 border-b">
+            <div class="tw-composer__head d-flex align-center ga-2 px-3 py-2 border-b">
               <!-- Composer chrome, not form fields: placeholder + aria-label, details
                    suppressed so the control row can never shift height. -->
               <v-select
@@ -421,33 +432,37 @@ const SEND_AND_SET: TicketStatus[] = ['Pending', 'On Hold', 'Closed']
               <v-btn icon="paperclip" variant="text" size="small" aria-label="Attach a file" @click="mockAttach(composer)"></v-btn>
             </div>
 
-            <div v-if="composerMode !== 'Note'" class="d-flex align-center ga-2 px-3 py-1 border-b">
-              <v-text-field v-model="composer.to" placeholder="To" aria-label="To" hide-details density="compact"></v-text-field>
-              <v-btn v-if="!showCc" variant="text" size="small" class="text-none" @click="showCc = true">Cc</v-btn>
-              <v-btn v-if="!showBcc" variant="text" size="small" class="text-none" @click="showBcc = true">Bcc</v-btn>
-            </div>
-            <div v-if="showCc" class="px-3 py-1 border-b">
-              <v-text-field v-model="composer.cc" placeholder="Cc" aria-label="Cc" hide-details density="compact"></v-text-field>
-            </div>
-            <div v-if="showBcc" class="px-3 py-1 border-b">
-              <v-text-field v-model="composer.bcc" placeholder="Bcc" aria-label="Bcc" hide-details density="compact"></v-text-field>
+            <!-- Only the middle scrolls: the head row above and the Send row below
+                 stay in view however long the message or recipient list gets. -->
+            <div class="tw-composer__scroll">
+              <div v-if="composerMode !== 'Note'" class="d-flex align-center ga-2 px-3 py-1 border-b">
+                <v-text-field v-model="composer.to" placeholder="To" aria-label="To" hide-details density="compact"></v-text-field>
+                <v-btn v-if="!showCc" variant="text" size="small" class="text-none" @click="showCc = true">Cc</v-btn>
+                <v-btn v-if="!showBcc" variant="text" size="small" class="text-none" @click="showBcc = true">Bcc</v-btn>
+              </div>
+              <div v-if="showCc" class="px-3 py-1 border-b">
+                <v-text-field v-model="composer.cc" placeholder="Cc" aria-label="Cc" hide-details density="compact"></v-text-field>
+              </div>
+              <div v-if="showBcc" class="px-3 py-1 border-b">
+                <v-text-field v-model="composer.bcc" placeholder="Bcc" aria-label="Bcc" hide-details density="compact"></v-text-field>
+              </div>
+
+              <v-textarea
+                v-model="composer.body"
+                :placeholder="composerMode === 'Note' ? 'Write an internal note…' : 'Write your message…'"
+                :aria-label="composerMode === 'Note' ? 'Internal note' : 'Message body'"
+                rows="5"
+                hide-details
+                class="tw-composer-body"
+              ></v-textarea>
+
+              <div v-if="composer.attachments.length" class="d-flex flex-wrap ga-2 px-3 pt-2">
+                <v-chip v-for="(file, i) in composer.attachments" :key="file" size="small" closable
+                  prepend-icon="paperclip" @click:close="composer.attachments.splice(i, 1)">{{ file }}</v-chip>
+              </div>
             </div>
 
-            <v-textarea
-              v-model="composer.body"
-              :placeholder="composerMode === 'Note' ? 'Write an internal note…' : 'Write your message…'"
-              :aria-label="composerMode === 'Note' ? 'Internal note' : 'Message body'"
-              rows="5"
-              hide-details
-              class="tw-composer-body"
-            ></v-textarea>
-
-            <div v-if="composer.attachments.length" class="d-flex flex-wrap ga-2 px-3 pt-2">
-              <v-chip v-for="(file, i) in composer.attachments" :key="file" size="small" closable
-                prepend-icon="paperclip" @click:close="composer.attachments.splice(i, 1)">{{ file }}</v-chip>
-            </div>
-
-            <div class="d-flex align-center ga-2 pa-3">
+            <div class="tw-composer__actions d-flex align-center ga-2 pa-3">
               <v-btn variant="text" class="text-none" @click="closeComposer">Cancel</v-btn>
               <!-- Rich text is out of scope (see GAPS.md); say so instead of showing dead controls. -->
               <span class="text-caption text-medium-emphasis">Plain text</span>
@@ -485,7 +500,7 @@ const SEND_AND_SET: TicketStatus[] = ['Pending', 'On Hold', 'Closed']
       </div>
 
       <!-- Right rail: optional panel + icon strip -->
-      <div class="tw-aside d-flex flex-shrink-0">
+      <div class="tw-aside flex-shrink-0">
         <section v-if="railOpen && activeRail" class="tw-rail-panel border-l d-flex flex-column" :aria-label="activeRail.label">
           <div class="tw-rail-panel__head d-flex align-center ga-2 border-b">
             <v-icon size="18" class="text-medium-emphasis">{{ activeRail.icon }}</v-icon>
@@ -693,13 +708,21 @@ const SEND_AND_SET: TicketStatus[] = ['Pending', 'On Hold', 'Closed']
 }
 
 /* ── Body ───────────────────────────────────────────────────────────────── */
-.tw-body { min-height: 0; position: relative; isolation: isolate; }
-.tw-thread { min-width: 0; min-height: 0; }
+/* display lives here, not in d-flex: below the split breakpoint the body turns
+   into a grid and the thread/aside wrappers step aside (Vuetify's .d-flex is
+   display:flex !important and would win). */
+.tw-body { display: flex; min-height: 0; position: relative; isolation: isolate; }
+.tw-thread { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 
 .tw-feed {
   padding: var(--mp-component-card-padding);
   gap: var(--mp-component-card-gap);
 }
+/* The feed is a height-capped flex column, so its items would shrink to fit.
+   Compact MpListRow (the activity rows) drops its min-height to 0, so all the
+   shrink landed on activities and their text overlapped. Items keep their
+   content height; the feed scrolls instead. */
+.tw-feed > * { flex-shrink: 0; }
 
 /* The thread reads as documents, not chat: bubbles span the column. */
 .tw-bubble { max-width: 100%; }
@@ -718,9 +741,17 @@ const SEND_AND_SET: TicketStatus[] = ['Pending', 'On Hold', 'Closed']
 
 /* Docked footer: the thread keeps at least 40% of the pane. */
 .tw-foot { max-height: 60%; }
+/* The card shrinks to the footer's cap; only its middle scrolls, so the mode
+   row and the Send row are never scrolled out of reach. */
 .tw-composer {
   display: flex;
   flex-direction: column;
+  min-height: 0;
+}
+.tw-composer__head,
+.tw-composer__actions { flex-shrink: 0; }
+.tw-composer__scroll {
+  flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
 }
@@ -738,7 +769,7 @@ const SEND_AND_SET: TicketStatus[] = ['Pending', 'On Hold', 'Closed']
 .tw-composer-body :deep(.v-field__outline) { display: none; }
 
 /* ── Right rail ─────────────────────────────────────────────────────────── */
-.tw-aside { min-height: 0; }
+.tw-aside { display: flex; min-height: 0; }
 
 .tw-rail {
   width: var(--mp-space-48);
@@ -778,9 +809,23 @@ const SEND_AND_SET: TicketStatus[] = ['Pending', 'On Hold', 'Closed']
   .tw-feed { padding: var(--mp-space-16); }
   .tw-actions { padding-inline: var(--mp-space-16); }
 
+  /* A 2×2 grid — feed | rail strip over footer | rail strip — so an open rail
+     panel takes the feed's cell and the reply bar stays visible beneath it.
+     The feed keeps at least 40% of the height; the footer gets the rest it
+     needs (the same 60% cap the column layout uses). */
+  .tw-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: minmax(40%, 1fr) minmax(0, auto);
+  }
+  .tw-thread,
+  .tw-aside { display: contents; }
+  .tw-feed { grid-area: 1 / 1; }
+  .tw-foot { grid-area: 2 / 1; max-height: none; }
+  .tw-rail { grid-area: 1 / 2 / 3 / 3; }
+
   .tw-rail-panel {
-    position: absolute;
-    inset: 0 var(--mp-space-48) 0 0;
+    grid-area: 1 / 1;
     width: auto;
     z-index: 1;
     background: var(--surface-primary);
