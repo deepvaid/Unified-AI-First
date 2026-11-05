@@ -70,6 +70,8 @@ export interface TicketFilters {
   agent: string
   contact: string
   tags: string[]
+  /** A rolling window ("last 7 days" stays true tomorrow); '' = none, or custom from/to dates. */
+  createdWithin: '' | 'today' | '7d' | '30d'
   createdFrom: string
   createdTo: string
   readStatus: '' | 'Read' | 'Unread'
@@ -84,6 +86,7 @@ export const emptyTicketFilters = (): TicketFilters => ({
   agent: '',
   contact: '',
   tags: [],
+  createdWithin: '',
   createdFrom: '',
   createdTo: '',
   readStatus: '',

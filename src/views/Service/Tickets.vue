@@ -15,6 +15,9 @@ import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
 import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpSplitPane from '@/components/MpSplitPane.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
+import MpFormField from '@/components/MpFormField.vue'
+import MpSegmentedControl from '@/components/MpSegmentedControl.vue'
 import TicketWorkspace from '@/components/service/TicketWorkspace.vue'
 import TicketViewSwitcher from '@/components/service/TicketViewSwitcher.vue'
 import {
@@ -32,11 +35,17 @@ import {
 import { useServiceSettingsStore } from '@/stores/useServiceSettings'
 import {
   BUILT_IN_VIEWS,
+  CREATED_WITHIN,
+  UNASSIGNED,
+  filterChips,
   inInbox,
   isBuiltInView,
   matchesBuiltInView,
   matchesFilters,
   matchesSearch,
+  sameFilters,
+  withoutChip,
+  type FilterChipKey,
 } from '@/service/ticketFilters'
 import { mp_layout_inboxListMinWidth, mp_layout_inboxListWidth } from '@/design-tokens/generated/tokens'
 import { useToast } from '@/composables/useToast'
@@ -67,6 +76,7 @@ const pick = <T extends string>(values: string[], allowed: readonly T[]): T[] =>
 
 function filtersFromQuery(q: LocationQuery): TicketFilters {
   const read = queryText(q.read)
+  const within = queryText(q.within)
   return {
     status: pick(queryList(q.status), TICKET_STATUSES),
     priority: pick(queryList(q.priority), TICKET_PRIORITIES),
@@ -76,6 +86,7 @@ function filtersFromQuery(q: LocationQuery): TicketFilters {
     agent: queryText(q.agent),
     contact: queryText(q.contact),
     tags: queryList(q.tags),
+    createdWithin: within === 'today' || within === '7d' || within === '30d' ? within : '',
     createdFrom: queryText(q.from),
     createdTo: queryText(q.to),
     readStatus: read === 'Read' || read === 'Unread' ? read : '',
@@ -86,7 +97,7 @@ function filtersToQuery(f: TicketFilters): Record<string, string> {
   const query: Record<string, string> = {}
   const lists = { status: f.status, priority: f.priority, channel: f.channel, type: f.type, group: f.group, tags: f.tags }
   for (const [key, values] of Object.entries(lists)) if (values.length) query[key] = values.join(',')
-  const texts = { agent: f.agent, contact: f.contact, from: f.createdFrom, to: f.createdTo, read: f.readStatus }
+  const texts = { agent: f.agent, contact: f.contact, within: f.createdWithin, from: f.createdFrom, to: f.createdTo, read: f.readStatus }
   for (const [key, value] of Object.entries(texts)) if (value) query[key] = value
   return query
 }
@@ -137,11 +148,48 @@ const PRIORITY_RANK: Record<TicketPriority, number> = { High: 0, Medium: 1, Low:
 const filtersOpen = ref(false)
 const workingFilters = reactive<TicketFilters>(emptyTicketFilters())
 const appliedFilters = ref<TicketFilters>(filtersFromQuery(route.query))
-const filtersDirty = computed(() => JSON.stringify(workingFilters) !== JSON.stringify(appliedFilters.value))
+const copyFilters = (f: TicketFilters): TicketFilters => JSON.parse(JSON.stringify(f))
+
+// A link that names a saved view but carries no filters opens the view as saved.
+const viewOnLoad = store.customViews.find(v => v.name === currentView.value && v.inboxId === currentInbox.value)
+if (viewOnLoad && !Object.keys(filtersToQuery(appliedFilters.value)).length) appliedFilters.value = copyFilters(viewOnLoad.filters)
+
+// "Created" is one choice in the drawer: a rolling window, or a custom range
+// that reveals the two date fields.
+type CreatedMode = '' | 'today' | '7d' | '30d' | 'custom'
+const createdMode = ref<CreatedMode>('')
+const CREATED_OPTIONS: { value: CreatedMode; label: string }[] = [
+  { value: '', label: 'Any time' },
+  ...CREATED_WITHIN.map(p => ({ value: p.value, label: p.label })),
+  { value: 'custom', label: 'Custom range' },
+]
+watch(createdMode, mode => {
+  workingFilters.createdWithin = mode === 'custom' ? '' : mode
+  if (mode !== 'custom') {
+    workingFilters.createdFrom = ''
+    workingFilters.createdTo = ''
+  }
+})
+
+const READ_OPTIONS = [
+  { value: 'any', label: 'Any' },
+  { value: 'Unread', label: 'Unread' },
+  { value: 'Read', label: 'Read' },
+]
+const readStatusModel = computed<string | null>({
+  get: () => workingFilters.readStatus || 'any',
+  set: value => { workingFilters.readStatus = value === 'Read' || value === 'Unread' ? value : '' },
+})
 
 watch(filtersOpen, open => {
-  if (open) Object.assign(workingFilters, JSON.parse(JSON.stringify(appliedFilters.value)))
+  if (!open) return
+  Object.assign(workingFilters, copyFilters(appliedFilters.value))
+  const f = appliedFilters.value
+  createdMode.value = f.createdWithin || (f.createdFrom || f.createdTo ? 'custom' : '')
 })
+
+const workingChipCount = computed(() => filterChips(workingFilters).length)
+const agentOptions = computed(() => [UNASSIGNED, ...settings.agentNames])
 
 // Defaults stay out of the URL so a plain inbox link stays plain.
 watch([currentInbox, currentView, appliedFilters, search, sortKey], () => {
@@ -155,22 +203,58 @@ watch([currentInbox, currentView, appliedFilters, search, sortKey], () => {
 }, { deep: true })
 
 function applyFilters() {
-  appliedFilters.value = JSON.parse(JSON.stringify(workingFilters))
+  appliedFilters.value = copyFilters(workingFilters)
   filtersOpen.value = false
 }
+/** Clears the drawer; status stays with the tabs. */
 function clearFilters() {
   Object.assign(workingFilters, { ...emptyTicketFilters(), status: [...workingFilters.status] })
+  createdMode.value = ''
+}
+
+// ── Applied filters: chips above the list ────────────────────────────────────
+const appliedChips = computed(() => filterChips(appliedFilters.value))
+function removeChip(key: FilterChipKey) {
+  appliedFilters.value = withoutChip(appliedFilters.value, key)
+}
+function clearApplied() {
+  appliedFilters.value = { ...emptyTicketFilters(), status: [...appliedFilters.value.status] }
+}
+
+// A saved view whose filters were changed here is "edited" until it is saved
+// or reset — the view itself only changes when the agent says so.
+const savedView = computed(() =>
+  store.customViews.find(v => v.name === currentView.value && v.inboxId === currentInbox.value))
+const viewEdited = computed(() => !!savedView.value && !sameFilters(appliedFilters.value, savedView.value.filters))
+function resetView() {
+  if (savedView.value) appliedFilters.value = copyFilters(savedView.value.filters)
+}
+function saveViewChanges() {
+  if (!savedView.value) return
+  store.saveView(savedView.value.name, copyFilters(appliedFilters.value), savedView.value.inboxId)
+  toast.success(`View "${savedView.value.name}" updated`)
+}
+/** From the list: the applied filters become the new view's. */
+function saveAppliedAsView() {
+  Object.assign(workingFilters, copyFilters(appliedFilters.value))
+  saveViewDialog.value = true
 }
 
 // Views are saved in the inbox you're in (from Spam/Trash, under All inboxes).
 const saveViewDialog = ref(false)
 const saveViewName = ref('')
 const saveViewInbox = computed(() => (inFolder.value ? 'all' : currentInbox.value))
+const saveViewError = computed(() => {
+  const name = saveViewName.value.trim().toLowerCase()
+  if (!name) return ''
+  const taken = viewsIn(saveViewInbox.value).some(view => view.toLowerCase() === name)
+  return taken ? 'A view with this name already exists in this inbox.' : ''
+})
 function saveAsView() {
   const name = saveViewName.value.trim()
-  if (!name) return
-  store.saveView(name, JSON.parse(JSON.stringify(workingFilters)), saveViewInbox.value)
-  appliedFilters.value = JSON.parse(JSON.stringify(workingFilters))
+  if (!name || saveViewError.value) return
+  store.saveView(name, copyFilters(workingFilters), saveViewInbox.value)
+  appliedFilters.value = copyFilters(workingFilters)
   currentInbox.value = saveViewInbox.value
   currentView.value = name
   saveViewDialog.value = false
@@ -195,17 +279,26 @@ const statusTab = computed<string>({
 // ── The list ──────────────────────────────────────────────────────────────────
 // Everything except the status cut and the sort, so the tab counts come from
 // the same base the tabs slice. The rules are shared with the switcher's counts.
-const searchedTickets = computed<Ticket[]>(() => {
+// The folder or inbox, cut by a built-in view and the search — what the
+// filters then narrow. The drawer previews its count from the same base.
+const baseTickets = computed<Ticket[]>(() => {
   const folder = currentInbox.value === 'spam' ? store.spamTickets
     : currentInbox.value === 'trash' ? store.trashedTickets
       : store.visibleTickets.filter(t => inInbox(t, currentInbox.value))
   const view = currentView.value
   return folder.filter(t =>
-    (!isBuiltInView(view) || matchesBuiltInView(t, view, CURRENT_AGENT))
-    && matchesFilters(t, appliedFilters.value, { status: false })
-    && matchesSearch(t, search.value),
-  )
+    (!isBuiltInView(view) || matchesBuiltInView(t, view, CURRENT_AGENT)) && matchesSearch(t, search.value))
 })
+const searchedTickets = computed<Ticket[]>(() =>
+  baseTickets.value.filter(t => matchesFilters(t, appliedFilters.value, { status: false })))
+const previewCount = computed(() => baseTickets.value.filter(t => matchesFilters(t, workingFilters)).length)
+
+const inboxLabel = computed(() =>
+  currentInbox.value === 'all' ? 'All inboxes'
+    : currentInbox.value === 'spam' ? 'Spam'
+      : currentInbox.value === 'trash' ? 'Trash' : settings.inboxName(currentInbox.value))
+const filtersSubtitle = computed(() =>
+  inFolder.value ? `In ${inboxLabel.value}.` : `In ${inboxLabel.value} · ${currentView.value}.`)
 
 const statusTabs = computed(() => [
   { key: 'all', label: 'All', count: searchedTickets.value.length },
@@ -228,6 +321,12 @@ const listTickets = computed<Ticket[]>(() => {
     default: return sorted.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
   }
 })
+
+// Applying or removing a filter says what it did, for screen readers.
+const filterAnnouncement = ref('')
+watch(appliedFilters, () => {
+  filterAnnouncement.value = `${plural(listTickets.value.length)} shown`
+}, { deep: true })
 
 function formatListDate(iso: string): string {
   const d = new Date(iso)
@@ -367,9 +466,24 @@ function newContact() {
     <div class="tickets-head flex-shrink-0">
       <MpPageHeader title="Tickets" density="compact">
         <template #actions>
-          <v-btn variant="outlined" class="text-none" prepend-icon="list-filter" @click="filtersOpen = true">
-            Filters
-          </v-btn>
+          <v-badge
+            :model-value="appliedChips.length > 0"
+            :content="appliedChips.length"
+            color="primary"
+            location="top end"
+            offset-x="8"
+            offset-y="6"
+          >
+            <v-btn
+              variant="outlined"
+              class="text-none"
+              prepend-icon="list-filter"
+              :aria-label="appliedChips.length ? `Filters (${appliedChips.length} applied)` : 'Filters'"
+              @click="filtersOpen = true"
+            >
+              Filters
+            </v-btn>
+          </v-badge>
           <v-menu location="bottom end">
             <template #activator="{ props: activator }">
               <v-btn v-bind="activator" color="primary" variant="flat" class="text-none"
@@ -446,6 +560,42 @@ function newContact() {
                   hide-details
                 ></v-text-field>
 
+                <!-- Applied filters: one chip per field, removable in place. -->
+                <div v-if="appliedChips.length" class="tickets-chips d-flex align-center flex-wrap ga-1" role="group" aria-label="Applied filters">
+                  <v-chip
+                    v-for="chip in appliedChips"
+                    :key="chip.key"
+                    size="small"
+                    variant="tonal"
+                    color="primary"
+                    closable
+                    :close-label="`Remove filter: ${chip.label}`"
+                    class="tickets-chip"
+                    @click:close="removeChip(chip.key)"
+                  >
+                    <span class="text-truncate">{{ chip.label }}</span>
+                  </v-chip>
+                  <!-- The actions wrap as one unit, so neither is left alone on a line. -->
+                  <span class="d-flex align-center ms-auto">
+                    <v-btn variant="text" size="small" class="text-none" @click="clearApplied">Clear all</v-btn>
+                    <v-btn v-if="!savedView" variant="text" size="small" class="text-none" @click="saveAppliedAsView">Save as view</v-btn>
+                  </span>
+                </div>
+
+                <!-- A saved view changed here stays the same until saved or reset. -->
+                <div v-if="viewEdited" class="tickets-edited d-flex flex-column ga-1" role="status">
+                  <p class="tickets-edited__text text-caption d-flex align-center ga-1">
+                    <v-icon size="14" aria-hidden="true">pencil</v-icon>
+                    <span class="text-truncate">Unsaved changes to “{{ currentView }}”</span>
+                  </p>
+                  <div class="d-flex justify-end flex-wrap ga-1">
+                    <v-btn variant="text" size="small" class="text-none" @click="resetView">Reset</v-btn>
+                    <v-btn variant="text" size="small" class="text-none" @click="saveAppliedAsView">Save as new</v-btn>
+                    <v-btn variant="flat" color="primary" size="small" class="text-none" @click="saveViewChanges">Save view</v-btn>
+                  </div>
+                </div>
+                <p class="d-sr-only" aria-live="polite">{{ filterAnnouncement }}</p>
+
                 <MpFilterTabs
                   v-model="statusTab"
                   :tabs="statusTabs"
@@ -503,12 +653,20 @@ function newContact() {
                   description="Tickets marked as spam — by you or the spam filter — land here."
                 />
                 <MpEmptyState
+                  v-else-if="!listTickets.length && appliedChips.length"
+                  icon="list-filter"
+                  title="No tickets match these filters"
+                  description="Remove a filter above, or clear them all."
+                  actionLabel="Clear filters"
+                  @action="clearApplied"
+                />
+                <MpEmptyState
                   v-else-if="!listTickets.length"
                   icon="inbox"
                   :title="currentInbox === 'trash' ? 'Trash is empty' : 'No tickets in this view'"
                   :description="currentInbox === 'trash'
                     ? 'Tickets you move to Trash land here and can be restored.'
-                    : 'Change the view or adjust your filters to see more tickets.'"
+                    : 'Change the view or the status tab to see more tickets.'"
                 />
               </div>
             </div>
@@ -555,27 +713,78 @@ function newContact() {
     </MpFloatingBulkBar>
 
     <!-- Filters -->
-    <MpFormDrawer v-model="filtersOpen" title="Filters" subtitle="Status is filtered with the tabs above the list." size="sm">
-      <MpFormGrid>
-        <v-select v-model="workingFilters.priority" :items="TICKET_PRIORITIES" label="Priority" multiple chips closable-chips></v-select>
-        <v-select v-model="workingFilters.channel" :items="TICKET_CHANNELS" label="Channel" multiple chips closable-chips></v-select>
-        <v-select v-model="workingFilters.type" :items="settings.typeNames" label="Type" multiple chips closable-chips></v-select>
-        <v-select v-model="workingFilters.group" :items="TICKET_GROUPS" label="Group" multiple chips closable-chips></v-select>
-        <v-select v-model="workingFilters.agent" :items="['', ...settings.agentNames]" label="Agent" clearable></v-select>
-        <v-select v-model="workingFilters.contact" :items="['', ...contactOptions]" label="Contacts" clearable></v-select>
-        <v-select v-model="workingFilters.tags" :items="settings.tagNames" label="Tags" multiple chips closable-chips></v-select>
-      </MpFormGrid>
-      <MpFormGrid :cols="2" class="mt-4">
-        <v-text-field v-model="workingFilters.createdFrom" label="Created from" type="date"></v-text-field>
-        <v-text-field v-model="workingFilters.createdTo" label="Created to" type="date"></v-text-field>
-        <v-select v-model="workingFilters.readStatus" :items="['', 'Read', 'Unread']" label="Read status" clearable class="mp-form-grid__full"></v-select>
-      </MpFormGrid>
+    <MpFormDrawer v-model="filtersOpen" title="Filters" :subtitle="`${filtersSubtitle} Status stays on the tabs above the list.`" size="sm">
+      <MpFormSection title="Ticket">
+        <MpFormGrid>
+          <MpFormField label="Priority">
+            <template #default="{ labelId }">
+              <v-chip-group v-model="workingFilters.priority" multiple column color="primary" class="tickets-toggles" role="group" :aria-labelledby="labelId">
+                <v-chip v-for="p in TICKET_PRIORITIES" :key="p" :value="p" variant="outlined" filter role="button" class="tickets-toggle"
+                  :aria-pressed="workingFilters.priority.includes(p)">{{ p }}</v-chip>
+              </v-chip-group>
+            </template>
+          </MpFormField>
+          <MpFormField label="Channel">
+            <template #default="{ labelId }">
+              <v-chip-group v-model="workingFilters.channel" multiple column color="primary" class="tickets-toggles" role="group" :aria-labelledby="labelId">
+                <v-chip v-for="c in TICKET_CHANNELS" :key="c" :value="c" variant="outlined" filter role="button" class="tickets-toggle"
+                  :aria-pressed="workingFilters.channel.includes(c)">{{ c }}</v-chip>
+              </v-chip-group>
+            </template>
+          </MpFormField>
+          <v-autocomplete v-model="workingFilters.type" :items="settings.typeNames" label="Type" placeholder="Any type"
+            multiple chips closable-chips clearable></v-autocomplete>
+          <v-autocomplete v-model="workingFilters.tags" :items="settings.tagNames" label="Tags" placeholder="Any tag"
+            multiple chips closable-chips clearable hint="Tickets with any of these tags"></v-autocomplete>
+        </MpFormGrid>
+      </MpFormSection>
+
+      <MpFormSection title="People">
+        <MpFormGrid>
+          <!-- '' means "no filter"; the field wants null so the placeholder shows. -->
+          <v-autocomplete :model-value="workingFilters.agent || null" :items="agentOptions" label="Agent" placeholder="Anyone" clearable
+            @update:model-value="(v: string | null) => { workingFilters.agent = v ?? '' }"></v-autocomplete>
+          <v-autocomplete :model-value="workingFilters.contact || null" :items="contactOptions" label="Contact" placeholder="Any contact" clearable
+            @update:model-value="(v: string | null) => { workingFilters.contact = v ?? '' }"></v-autocomplete>
+          <MpFormField label="Group">
+            <template #default="{ labelId }">
+              <v-chip-group v-model="workingFilters.group" multiple column color="primary" class="tickets-toggles" role="group" :aria-labelledby="labelId">
+                <v-chip v-for="g in TICKET_GROUPS" :key="g" :value="g" variant="outlined" filter role="button" class="tickets-toggle"
+                  :aria-pressed="workingFilters.group.includes(g)">{{ g }}</v-chip>
+              </v-chip-group>
+            </template>
+          </MpFormField>
+        </MpFormGrid>
+      </MpFormSection>
+
+      <MpFormSection title="Activity">
+        <MpFormGrid>
+          <MpFormField label="Created">
+            <template #default="{ labelId }">
+              <v-chip-group v-model="createdMode" mandatory column color="primary" class="tickets-toggles" role="radiogroup" :aria-labelledby="labelId">
+                <v-chip v-for="o in CREATED_OPTIONS" :key="o.value" :value="o.value" variant="outlined" class="tickets-toggle"
+                  role="radio" :aria-checked="createdMode === o.value">{{ o.label }}</v-chip>
+              </v-chip-group>
+            </template>
+          </MpFormField>
+          <MpFormGrid v-if="createdMode === 'custom'" :cols="2">
+            <v-text-field v-model="workingFilters.createdFrom" label="From" type="date" :max="workingFilters.createdTo || undefined"></v-text-field>
+            <v-text-field v-model="workingFilters.createdTo" label="To" type="date" :min="workingFilters.createdFrom || undefined"></v-text-field>
+          </MpFormGrid>
+          <MpFormField label="Read status">
+            <MpSegmentedControl v-model="readStatusModel" :items="READ_OPTIONS" ariaLabel="Read status" />
+          </MpFormField>
+        </MpFormGrid>
+      </MpFormSection>
+
       <template #footerStart>
-        <v-btn variant="text" class="text-none" @click="clearFilters">Clear filter</v-btn>
+        <v-btn variant="text" class="text-none" :disabled="!workingChipCount" @click="clearFilters">Clear all</v-btn>
       </template>
       <template #footer>
-        <v-btn variant="outlined" class="text-none" @click="saveViewDialog = true">Save as view</v-btn>
-        <v-btn color="primary" variant="flat" class="text-none" :disabled="!filtersDirty" @click="applyFilters">Apply</v-btn>
+        <v-btn variant="outlined" class="text-none" :disabled="!workingChipCount" @click="saveViewDialog = true">Save as view</v-btn>
+        <v-btn color="primary" variant="flat" class="text-none" @click="applyFilters">
+          Show {{ plural(previewCount) }}
+        </v-btn>
       </template>
     </MpFormDrawer>
 
@@ -587,11 +796,12 @@ function newContact() {
       size="sm"
     >
       <MpFormGrid>
-        <v-text-field v-model="saveViewName" label="View name *"></v-text-field>
+        <v-text-field v-model="saveViewName" label="View name *" placeholder="e.g. Unassigned refunds" :error-messages="saveViewError"
+          @keydown.enter="saveAsView"></v-text-field>
       </MpFormGrid>
       <template #footer>
         <v-btn variant="text" class="text-none" @click="saveViewDialog = false">Cancel</v-btn>
-        <v-btn color="primary" variant="flat" class="text-none" :disabled="!saveViewName.trim()" @click="saveAsView">Save</v-btn>
+        <v-btn color="primary" variant="flat" class="text-none" :disabled="!saveViewName.trim() || !!saveViewError" @click="saveAsView">Save view</v-btn>
       </template>
     </MpDialog>
 
@@ -684,6 +894,34 @@ function newContact() {
   flex-shrink: 0;
   margin: var(--mp-space-8) var(--mp-component-card-paddingCompact) 0;
 }
+
+/* Drawer toggles are controls, not marks: the lg chip height (32), so they're
+   easy to hit. Vuetify sizes chips from its own custom property. */
+.tickets-toggles { padding: 0; }
+/* The chips sit in Vuetify's slide-group content box, not the group root. */
+.tickets-toggles :deep(.v-slide-group__content) { gap: var(--mp-space-8); }
+.tickets-toggle {
+  --v-chip-height: var(--mp-component-chip-height-lg);
+  margin: 0;
+}
+
+/* Applied filters: chips wrap; a long value truncates inside its chip. */
+.tickets-chip { max-width: 100%; }
+
+/* Edited saved view: a quiet strip on the warning pair, actions trailing. */
+.tickets-edited {
+  padding: var(--mp-space-8);
+  border-radius: var(--mp-component-chip-radius);
+  background: var(--warn-soft);
+  color: var(--warn-ink);
+}
+.tickets-edited__text {
+  margin: 0;
+  padding-inline: var(--mp-space-4);
+  min-width: 0;
+  color: var(--warn-ink);
+}
+.tickets-edited .v-btn--variant-text { color: var(--warn-ink); }
 
 /* ── Rows ───────────────────────────────────────────────────────────────── */
 .tickets-row {

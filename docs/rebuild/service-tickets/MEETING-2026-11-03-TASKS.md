@@ -149,7 +149,7 @@ Priority: **P0** = asked for and blocks parity · **P1** = asked for, polish ·
 >   rescued with *Not spam*.
 > - **Trash (T4):** *Move to trash* is in ⋮ and in bulk, and "Delete" is renamed. The next ticket
 >   opens after any folder move.
-> - **Still open in Slice 2:** view reordering (T2) and filter chips (T5).
+> - **Still open in Slice 2:** view reordering (T2). Filter chips (T5) are built.
 
 ### T1 · Inbox & view selector — restructure (P0)
 
@@ -229,6 +229,35 @@ deliberately don't.
 - Trash view: Restore per ticket and in bulk. Permanent delete waits on retention (Q3).
 
 ### T5 · Show applied filters and views (P1)
+
+> **Status 6 Nov 2026 — built (uncommitted).**
+>
+> **Drawer.** The fields are grouped as Ticket · People · Activity.
+> - Priority, Channel and Group are one-click toggle chips (`aria-pressed`), not selects.
+> - Type, Tags, Agent and Contact are searchable autocompletes; Agent gains **Unassigned**.
+> - **Created** is Any time · Today · Last 7 days · Last 30 days · Custom range. The presets are
+>   rolling windows (`createdWithin`), so a saved "last 7 days" view stays true tomorrow. Custom
+>   range reveals From/To.
+> - Read status is a segmented Any / Unread / Read.
+> - The primary button previews the result, "Show 6 tickets", instead of a greyed-out Apply. Clear all
+>   and Save as view are disabled when nothing is set.
+>
+> **After Apply:**
+> - Filters shows a count badge, and removable chips sit under the search, one per field
+>   ("Tags: VIP +2"). Clear all and Save as view stay together at the end of the chips.
+> - Screen readers hear "6 tickets shown".
+> - Zero results shows "No tickets match these filters" with **Clear filters**.
+>
+> **Saved views:** a view's criteria show as chips. Changing them shows an "Unsaved changes to
+> '…'" strip with **Reset · Save as new · Save view**. Save as view rejects a name the inbox
+> already uses.
+>
+> The rules (`filterChips`, `withoutChip`, `sameFilters`, `CREATED_WITHIN`, `UNASSIGNED`) live in
+> `src/service/ticketFilters.ts` with tests.
+>
+> **Differences from this spec:**
+> - The switcher trigger has no "· edited" suffix; the strip carries that instead.
+> - The chips don't cap at 3 + "N more", because one chip per field keeps the row short.
 
 Chat: *"When filters are selected, there should be an indication… Same for custom ticket view
 selection."*

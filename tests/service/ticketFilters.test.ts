@@ -7,12 +7,16 @@ import {
   matchesBuiltInView,
   matchesFilters,
   matchesSearch,
+  filterChips,
+  sameFilters,
+  withoutChip,
+  UNASSIGNED,
 } from '../../src/service/ticketFilters.ts'
 import type { Ticket, TicketFilters } from '../../src/stores/useTickets.ts'
 
 const filters = (patch: Partial<TicketFilters> = {}): TicketFilters => ({
   status: [], priority: [], channel: [], type: [], group: [], agent: '', contact: '', tags: [],
-  createdFrom: '', createdTo: '', readStatus: '', ...patch,
+  createdWithin: '', createdFrom: '', createdTo: '', readStatus: '', ...patch,
 })
 
 const ticket = (patch: Partial<Ticket> = {}): Ticket => ({
@@ -65,4 +69,42 @@ test('search covers number, subject, customer, email and message bodies', () => 
 test('open means anything not closed', () => {
   assert.equal(isOpen(ticket({ status: 'On Hold' })), true)
   assert.equal(isOpen(ticket({ status: 'Closed' })), false)
+})
+
+test('Unassigned is the triage queue, and created windows roll with today', () => {
+  assert.equal(matchesFilters(ticket({ assignee: '' }), filters({ agent: UNASSIGNED })), true)
+  assert.equal(matchesFilters(ticket(), filters({ agent: UNASSIGNED })), false)
+  const now = new Date(2026, 8, 6, 15, 0) // 6 Sep 2026, 3pm local
+  const created = (y: number, m: number, d: number) => ticket({ createdAt: new Date(y, m, d, 9, 0).toISOString() })
+  assert.equal(matchesFilters(created(2026, 8, 6), filters({ createdWithin: 'today' }), { now }), true)
+  assert.equal(matchesFilters(created(2026, 8, 5), filters({ createdWithin: 'today' }), { now }), false)
+  assert.equal(matchesFilters(created(2026, 7, 31), filters({ createdWithin: '7d' }), { now }), true, '7 days includes today')
+  assert.equal(matchesFilters(created(2026, 7, 30), filters({ createdWithin: '7d' }), { now }), false)
+  assert.equal(matchesFilters(created(2026, 7, 8), filters({ createdWithin: '30d' }), { now }), true)
+})
+
+test('applied filters read as one chip per field, never status', () => {
+  assert.deepEqual(filterChips(filters({ status: ['Open'] })), [], 'the tabs show status')
+  assert.deepEqual(
+    filterChips(filters({
+      priority: ['Low', 'High'], tags: ['Refund', 'VIP', 'Loyalty'], agent: UNASSIGNED,
+      contact: 'Rajan Bhanot - rjbhanot38@gmail.com', createdWithin: '7d', readStatus: 'Unread',
+    })).map(c => c.label),
+    ['Priority: Low, High', 'Tags: Refund +2', 'Unassigned', 'Contact: Rajan Bhanot', 'Created: Last 7 days', 'Unread only'],
+  )
+  assert.equal(filterChips(filters({ createdFrom: '2026-10-01', createdTo: '2026-10-20' }))[0]?.label, 'Created: Oct 1 – Oct 20')
+  assert.equal(filterChips(filters({ createdTo: '2026-10-20' }))[0]?.label, 'Created: until Oct 20')
+})
+
+test('removing a chip resets only its field; edited views ignore order and status', () => {
+  const f = filters({ priority: ['Low'], createdWithin: '7d', createdFrom: '2026-10-01', status: ['Open'] })
+  const next = withoutChip(f, 'created')
+  assert.equal(next.createdWithin, '')
+  assert.equal(next.createdFrom, '')
+  assert.deepEqual(next.priority, ['Low'])
+  assert.deepEqual(withoutChip(f, 'priority').priority, [])
+  assert.equal(sameFilters(filters({ tags: ['A', 'B'] }), filters({ tags: ['B', 'A'] })), true)
+  assert.equal(sameFilters(filters({ status: ['Open'] }), filters()), true, 'status belongs to the tabs')
+  assert.equal(sameFilters(filters({ status: ['Open'] }), filters(), { status: true }), false)
+  assert.equal(sameFilters(filters({ agent: 'Chris Parker' }), filters()), false)
 })
