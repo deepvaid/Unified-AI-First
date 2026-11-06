@@ -183,7 +183,7 @@ const selectedPage = computed(() => FACEBOOK_PAGES.find(p => p.id === form.value
       description="Lead ads sync leads from your Facebook Pages. Connect your Meta account under Apps to choose a Page and a lead form."
       action-label="Go to Apps"
       action-icon="arrow-right"
-      @action="router.push(`/accounts/${accountId}/integrations`)"
+      @action="router.push(`/accounts/${accountId}/app_store`)"
     />
 
     <v-card v-else variant="flat" border rounded="lg" class="pa-6">

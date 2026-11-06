@@ -492,10 +492,14 @@ const routes: RouteRecordRaw[] = [
   // Trial Lab — four free-trial onboarding prototypes (design research, not a product surface).
   ...trialLabRoutes,
 
+  // The standardized insufficient-permission page (RBAC spec). Permission-level route guards
+  // (meta.requiresPermission) aren't built yet; when they are, they land here.
+  { path: '/accounts/:accountId/access-denied', name: 'AccessDenied', component: () => import('@/views/AccessDeniedView.vue') },
+
   // Redirect root to dashboard
   { path: '/', redirect: '/accounts/2000290/dashboard' },
-  // Catchall
-  { path: '/:pathMatch(.*)*', redirect: '/accounts/2000290/dashboard' }
+  // Catchall: any URL no route claims shows the 404 in the app chrome
+  { path: '/:pathMatch(.*)*', name: 'NotFound', component: () => import('@/views/NotFoundView.vue') }
 ]
 
 const router = createRouter({
