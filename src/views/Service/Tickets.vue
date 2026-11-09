@@ -192,13 +192,18 @@ const workingChipCount = computed(() => filterChips(workingFilters).length)
 const agentOptions = computed(() => [UNASSIGNED, ...settings.agentNames])
 
 // Defaults stay out of the URL so a plain inbox link stays plain.
-watch([currentInbox, currentView, appliedFilters, search, sortKey], () => {
+// Switching inbox or view closes the open ticket unless the new list has it, so
+// the pane never shows a ticket the list beside it doesn't. Filters and search
+// keep it open: narrowing the list shouldn't take away what the agent is reading.
+watch([currentInbox, currentView, appliedFilters, search, sortKey], ([inbox, view], [oldInbox, oldView]) => {
   const query: LocationQueryRaw = filtersToQuery(appliedFilters.value)
   if (currentInbox.value !== 'all') query.inbox = currentInbox.value
   if (currentView.value !== 'All Tickets') query.view = currentView.value
   if (search.value.trim()) query.q = search.value.trim()
   if (sortKey.value !== 'updated') query.sort = sortKey.value
-  if (route.query.selected) query.selected = route.query.selected
+  const switched = inbox !== oldInbox || view !== oldView
+  const leftList = switched && !listTickets.value.some(t => t.id === selectedId.value)
+  if (route.query.selected && !leftList) query.selected = route.query.selected
   void router.replace({ query })
 }, { deep: true })
 
