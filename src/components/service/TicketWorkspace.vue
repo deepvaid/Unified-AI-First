@@ -10,6 +10,7 @@ import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpMenuItem from '@/components/MpMenuItem.vue'
 import TicketWorkspaceActions from '@/components/service/TicketWorkspaceActions.vue'
+import MpTagChip from '@/components/MpTagChip.vue'
 import TicketOrdersPanel from '@/components/service/TicketOrdersPanel.vue'
 import { useCommerceStore } from '@/stores/useCommerce'
 import {
@@ -338,18 +339,26 @@ const SEND_AND_SET: TicketStatus[] = ['Pending', 'On Hold', 'Closed']
       <div class="tw-head__title">
         <div class="mp-meta-label text-medium-emphasis">{{ eyebrow }}</div>
         <h2 class="mp-section-title text-truncate">{{ ticket.subject }}</h2>
-        <!-- The order this ticket is about, one click from its details. -->
-        <button
-          v-if="linkedOrder"
-          type="button"
-          class="tw-order-chip"
-          :aria-label="`Open linked order ${linkedOrder.orderNumber}, ${linkedOrder.status}`"
-          @click="openLinkedOrder"
-        >
-          <v-icon size="14">package</v-icon>
-          <span>Order {{ linkedOrder.orderNumber }}</span>
-          <span class="tw-order-chip__status">· {{ linkedOrder.status }}</span>
-        </button>
+        <div v-if="linkedOrder || ticket.tags.length" class="tw-head__meta d-flex align-center flex-wrap">
+          <!-- The order this ticket is about, one click from its details. -->
+          <button
+            v-if="linkedOrder"
+            type="button"
+            class="tw-order-chip"
+            :aria-label="`Open linked order ${linkedOrder.orderNumber}, ${linkedOrder.status}`"
+            @click="openLinkedOrder"
+          >
+            <v-icon size="14">package</v-icon>
+            <span>Order {{ linkedOrder.orderNumber }}</span>
+            <span class="tw-order-chip__status">· {{ linkedOrder.status }}</span>
+          </button>
+          <!-- Every tag, wrapping; colours come from Settings › Tags. -->
+          <ul v-if="ticket.tags.length" class="tw-tags d-flex align-center flex-wrap" aria-label="Tags">
+            <li v-for="tag in ticket.tags" :key="tag" class="d-flex">
+              <MpTagChip :name="tag" :color="settings.tagColor(tag)" />
+            </li>
+          </ul>
+        </div>
       </div>
       <!-- The ticket's actions ride on its title, so the property row never wraps. -->
       <TicketWorkspaceActions
@@ -617,15 +626,28 @@ const SEND_AND_SET: TicketStatus[] = ['Pending', 'On Hold', 'Closed']
             </template>
 
             <template v-else-if="railOpen === 'tags'">
+              <!-- Selected tags render as the same coloured chips as the list and
+                   the title; the wrapper keeps a remove click from opening the menu. -->
               <v-select
                 :model-value="ticket.tags"
                 :items="settings.tagNames"
                 label="Tags"
                 multiple
                 chips
-                closable-chips
                 @update:model-value="setTags"
-              ></v-select>
+              >
+                <template #chip="{ item }">
+                  <span class="d-inline-flex" @mousedown.stop @click.stop>
+                    <MpTagChip
+                      :name="item.title"
+                      :color="settings.tagColor(item.title)"
+                      size="md"
+                      removable
+                      @remove="setTags(ticket.tags.filter(tag => tag !== item.title))"
+                    />
+                  </span>
+                </template>
+              </v-select>
             </template>
 
             <TicketOrdersPanel
@@ -855,11 +877,20 @@ const SEND_AND_SET: TicketStatus[] = ['Pending', 'On Hold', 'Closed']
 }
 
 /* Linked-order chip under the subject: a quiet link-button on the chip ramp. */
+.tw-head__meta {
+  gap: var(--mp-space-6);
+  margin-top: var(--mp-space-6);
+}
+.tw-tags {
+  gap: var(--mp-space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
 .tw-order-chip {
   display: inline-flex;
   align-items: center;
   gap: var(--mp-space-4);
-  margin-top: var(--mp-space-6);
   height: var(--mp-component-chip-height-md);
   padding-inline: var(--mp-component-chip-paddingInline);
   border: 0;

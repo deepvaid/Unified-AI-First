@@ -3,6 +3,7 @@ import { computed, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpTagChip from '@/components/MpTagChip.vue'
 import {
   useTicketsStore,
   TICKET_CHANNELS,
@@ -103,7 +104,14 @@ function addNewContact() {
         <v-select v-model="form.status" :items="TICKET_STATUSES" label="Status"></v-select>
         <v-select v-model="form.priority" :items="TICKET_PRIORITIES" label="Priority"></v-select>
         <v-select v-model="form.assignee" :items="settings.agentNames" label="Agent" clearable></v-select>
-        <v-select v-model="form.tags" :items="settings.tagNames" label="Tags" multiple chips closable-chips></v-select>
+        <v-select v-model="form.tags" :items="settings.tagNames" label="Tags" multiple chips>
+          <template #chip="{ item }">
+            <span class="d-inline-flex" @mousedown.stop @click.stop>
+              <MpTagChip :name="item.title" :color="settings.tagColor(item.title)" size="md" removable
+                @remove="form.tags = form.tags.filter(tag => tag !== item.title)" />
+            </span>
+          </template>
+        </v-select>
         <v-text-field v-model="form.subject" label="Subject *" class="mp-form-grid__full"></v-text-field>
         <v-textarea
           v-model="form.description"

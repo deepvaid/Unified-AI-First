@@ -11,6 +11,8 @@ import {
   sameFilters,
   withoutChip,
   UNASSIGNED,
+  moveView,
+  viewPosition,
 } from '../../src/service/ticketFilters.ts'
 import type { Ticket, TicketFilters } from '../../src/stores/useTickets.ts'
 
@@ -107,4 +109,21 @@ test('removing a chip resets only its field; edited views ignore order and statu
   assert.equal(sameFilters(filters({ status: ['Open'] }), filters()), true, 'status belongs to the tabs')
   assert.equal(sameFilters(filters({ status: ['Open'] }), filters(), { status: true }), false)
   assert.equal(sameFilters(filters({ agent: 'Chris Parker' }), filters()), false)
+})
+
+test('a saved view moves only among its own inbox\'s views', () => {
+  const views = [
+    { name: 'A', inboxId: 'all' }, { name: 'X', inboxId: 'orders' },
+    { name: 'B', inboxId: 'all' }, { name: 'C', inboxId: 'all' },
+  ]
+  const names = (vs: { name: string }[]) => vs.map(v => v.name).join('')
+  assert.equal(names(moveView(views, 'all', 'C', 0)), 'CXAB', 'other inboxes keep their slots')
+  assert.equal(names(moveView(views, 'all', 'A', 1)), 'BXAC')
+  assert.equal(names(moveView(views, 'all', 'A', 99)), 'BXCA', 'clamped to the end')
+  assert.equal(names(moveView(views, 'all', 'B', -5)), 'BXAC', 'clamped to the start')
+  assert.equal(names(moveView(views, 'all', 'Nope', 0)), 'AXBC')
+  assert.equal(names(views), 'AXBC', 'the input is not mutated')
+  assert.deepEqual(viewPosition(views, 'all', 'C'), { index: 2, total: 3 })
+  assert.deepEqual(viewPosition(views, 'orders', 'X'), { index: 0, total: 1 })
+  assert.equal(viewPosition(views, 'all', 'Nope').index, -1)
 })

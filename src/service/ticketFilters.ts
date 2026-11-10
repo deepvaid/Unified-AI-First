@@ -137,3 +137,29 @@ export function matchesSearch(ticket: Ticket, query: string): boolean {
 
 /** Work still to do — what the switcher counts. */
 export const isOpen = (ticket: Pick<Ticket, 'status'>) => ticket.status !== 'Closed'
+
+// ── Saved views: order within an inbox ──────────────────────────────────────
+// Views are one array across inboxes; an inbox's views are its slice of it, in
+// array order. Moving a view reorders only its own inbox's views — every other
+// inbox's views keep their slots.
+
+interface ViewKey { name: string; inboxId: string }
+
+/** Where a view sits among its inbox's views: 0-based `index` of `total`, or -1. */
+export function viewPosition(views: readonly ViewKey[], inboxId: string, name: string): { index: number; total: number } {
+  const own = views.filter(v => v.inboxId === inboxId)
+  return { index: own.findIndex(v => v.name === name), total: own.length }
+}
+
+/** A new array with the view moved to `toIndex` among its inbox's views (clamped). */
+export function moveView<T extends ViewKey>(views: readonly T[], inboxId: string, name: string, toIndex: number): T[] {
+  const own = views.filter(v => v.inboxId === inboxId)
+  const from = own.findIndex(v => v.name === name)
+  if (from === -1) return [...views]
+  const to = Math.max(0, Math.min(toIndex, own.length - 1))
+  const reordered = [...own]
+  const [moved] = reordered.splice(from, 1)
+  reordered.splice(to, 0, moved!)
+  let next = 0
+  return views.map(v => (v.inboxId === inboxId ? reordered[next++]! : v))
+}
