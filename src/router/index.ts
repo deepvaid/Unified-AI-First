@@ -439,7 +439,16 @@ const routes: RouteRecordRaw[] = [
       { path: 'store-profile',       name: 'SettingsStoreProfile',       component: () => import('@/views/Settings/pages/StoreProfilePage.vue') },
       { path: 'sales-channels',      name: 'SettingsSalesChannels',      component: () => import('@/views/Settings/pages/SalesChannelsPage.vue') },
       { path: 'payment-account',     name: 'SettingsPaymentAccount',     component: () => import('@/views/Settings/pages/PaymentAccountPage.vue') },
-      { path: 'service',             name: 'SettingsService',            component: () => import('@/views/Settings/pages/ServicePage.vue') },
+      // Service — one rail group. An inbox opens a detail page (tabs in ?tab=);
+      // creating one is a 2-step wizard. `service` stays as the entry point.
+      { path: 'service',                  name: 'SettingsService',               redirect: to => ({ name: 'SettingsServiceInboxes', params: to.params }) },
+      { path: 'service/inboxes',          name: 'SettingsServiceInboxes',        component: () => import('@/views/Settings/pages/service/ServiceInboxesPage.vue') },
+      { path: 'service/inboxes/new',      name: 'SettingsServiceInboxCreate',    component: () => import('@/views/Settings/pages/service/ServiceInboxCreatePage.vue') },
+      { path: 'service/inboxes/:inboxId', name: 'SettingsServiceInbox',          component: () => import('@/views/Settings/pages/service/ServiceInboxPage.vue') },
+      { path: 'service/reply-templates',  name: 'SettingsServiceReplyTemplates', component: () => import('@/views/Settings/pages/service/ServiceReplyTemplatesPage.vue') },
+      { path: 'service/ticket-types',     name: 'SettingsServiceTicketTypes',    component: () => import('@/views/Settings/pages/service/ServiceTicketTypesPage.vue') },
+      { path: 'service/tags',             name: 'SettingsServiceTags',           component: () => import('@/views/Settings/pages/service/ServiceTagsPage.vue') },
+      { path: 'service/agents',           name: 'SettingsServiceAgents',         component: () => import('@/views/Settings/pages/service/ServiceAgentsPage.vue') },
       { path: 'ai-settings',         name: 'SettingsAiSettings',         component: () => import('@/views/Settings/pages/AiSettingsPage.vue') },
     ],
   },

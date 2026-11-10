@@ -16,6 +16,7 @@
     "test:catalog": "node --experimental-strip-types --test 'tests/davinci-catalog/*.test.ts'",
     "test:pos": "node --experimental-strip-types --test 'tests/pos/*.test.ts'",
     "test:chatbot": "node --experimental-strip-types --test 'tests/chatbot/*.test.ts'",
+    "test:service": "node --experimental-strip-types --test 'tests/service/*.test.ts'",
     "contrast:check": "node scripts/check-contrast.mjs",
     "audit:ui": "node scripts/ui-visibility-audit.mjs",
     "audit:ui:json": "node scripts/ui-visibility-audit.mjs --json",
@@ -36,6 +37,10 @@
   },
   "dependencies": {
     "@mdi/font": "^7.4.47",
+    "@tiptap/extensions": "^3.32.2",
+    "@tiptap/pm": "^3.32.2",
+    "@tiptap/starter-kit": "^3.32.2",
+    "@tiptap/vue-3": "^3.32.2",
     "@types/leaflet": "^1.9.21",
     "apexcharts": "^6.8.0",
     "grid-layout-plus": "^1.1.0",

@@ -3,10 +3,13 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpTagChip from '@/components/MpTagChip.vue'
 import TicketWorkspace from '@/components/service/TicketWorkspace.vue'
 import { useTicketsStore } from '@/stores/useTickets'
+import { useServiceSettingsStore } from '@/stores/useServiceSettings'
 
 const store = useTicketsStore()
+const settings = useServiceSettingsStore()
 const route = useRoute()
 const accountId = computed(() => route.params.accountId as string)
 const ticketId = computed(() => Number(route.params.id))
@@ -24,7 +27,7 @@ const backTo = computed(() => ({
 const listLabel = computed(() => {
   const { inbox, view } = route.query
   if (inbox === 'trash') return 'Trash'
-  const inboxName = typeof inbox === 'string' && inbox ? inbox : 'All Inboxes'
+  const inboxName = typeof inbox === 'string' && inbox ? settings.inboxName(inbox) : 'All Inboxes'
   const viewName = typeof view === 'string' && view ? view : 'All Tickets'
   return `${inboxName} · ${viewName}`
 })
@@ -38,7 +41,16 @@ const listLabel = computed(() => {
         :eyebrow="ticket ? `${listLabel} · ${ticket.number}` : listLabel"
         :title="ticket?.subject ?? 'Ticket'"
         density="compact"
-      />
+      >
+        <!-- The ticket's tags, beside its subject as in the list and the pane. -->
+        <template v-if="ticket?.tags.length" #title-append>
+          <ul class="ticket-tags d-flex align-center flex-wrap" aria-label="Tags">
+            <li v-for="tag in ticket.tags" :key="tag" class="d-flex">
+              <MpTagChip :name="tag" :color="settings.tagColor(tag)" size="md" />
+            </li>
+          </ul>
+        </template>
+      </MpPageHeader>
     </div>
 
     <v-card v-if="ticket" flat border rounded="lg" class="ticket-page">
@@ -56,6 +68,13 @@ const listLabel = computed(() => {
 </template>
 
 <style scoped lang="scss">
+.ticket-tags {
+  gap: var(--mp-space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
 /* Same shell idiom as Tickets.vue: the frame owns the height, the head band and
    the card restate the shell's inset as gutters. */
 .ticket-head {

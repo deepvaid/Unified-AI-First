@@ -134,6 +134,23 @@ Bonus: views become shareable links.
 Priority: **P0** = asked for and blocks parity · **P1** = asked for, polish ·
 **P2** = from the persona, not asked for. Pitch P2s as proposals, not commitments.
 
+> **Status 6 Nov 2026 — Slice 2a built** (branch `feature/service-settings`), after Deepak's review
+> of the live page:
+> - **One container:** list and ticket share one card, with `MpSplitPane` between them. The list
+>   width is dragged or keyboard-moved (←/→, Home/End, Enter resets) and remembered in
+>   `mp.tickets.listWidth.v1`. A narrower window squeezes the list without losing the saved width.
+>   (T11)
+> - **Title-row actions:** history, expand and ⋮ sit on the ticket's title row, so the property row
+>   no longer wraps onto a second line.
+> - **Inbox menu:** `TicketViewSwitcher` (T1). It has search, collapsible inbox groups (remembered),
+>   views that belong to their inbox, open counts, and Spam + Trash pinned at the foot.
+> - **Spam (T3 changed):** agents **can mark a ticket as spam** (⋮ and bulk, with Undo). This is a
+>   proposal for Abhinav, because the call had spam as system-only. Spam is read-only until it's
+>   rescued with *Not spam*.
+> - **Trash (T4):** *Move to trash* is in ⋮ and in bulk, and "Delete" is renamed. The next ticket
+>   opens after any folder move.
+> - **Still open in Slice 2:** view reordering (T2). Filter chips (T5) are built.
+
 ### T1 · Inbox & view selector — restructure (P0)
 
 **Problem.** The sandbox repeats All / My / High-priority + every saved view under every inbox, so
@@ -167,6 +184,25 @@ but would need lifting out of POS.
 [Front — show/hide inboxes in the sidebar](https://mobbin.com/screens/e13eb66b-1190-4f79-a548-778337a22c28)
 
 ### T2 · Custom views — reorder, rename, delete (P0)
+
+> **Status 10 Nov 2026 — built** (branch `feature/views-and-tags`). In the inbox menu, a saved
+> view shows a grip and a ⋯ on hover or focus; both are always visible on touch screens.
+> - **⋯ menu:** Rename · Edit filters · Move up · Move down (with Alt+↑/↓ hints) · Delete view.
+> - **Drag:** a 2px accent drop line shows where the view will land, and the dragged row dims.
+>   A view only drops within its own inbox group.
+> - **Keyboard:** Alt+↑/↓ on a focused row moves it, and focus stays on it.
+> - **Announcements:** every move is announced: "VIP refunds moved to position 2 of 3 in All
+>   inboxes."
+> - **Rename:** inline. Enter saves; Escape cancels without closing the menu; duplicates are
+>   rejected (built-in names included).
+> - **Delete:** asks first, and falls back to All Tickets if that view was open.
+> - **Edit filters:** opens the view with the Filters drawer, so T5's Unsaved-changes strip does the
+>   saving.
+> - **Built-in views** stay fixed at the top.
+> - **Logic:** `moveView` / `viewPosition` in `src/service/ticketFilters.ts`, with tests.
+> - **Note for engineering:** Vuetify closes every parent menu when an item in a nested menu is
+>   clicked. The ⋯ menu is therefore controlled (`close-on-content-click=false` plus a model), so
+>   Rename and Move keep the inbox menu open.
 
 - On hover or focus, a custom view row shows a **drag handle** and a **⋯ menu** (Rename, Edit
   filters, Move up, Move down, Delete). UAT shows pencil + bin + handle on hover. We fold the
@@ -213,6 +249,35 @@ deliberately don't.
 
 ### T5 · Show applied filters and views (P1)
 
+> **Status 6 Nov 2026 — built (uncommitted).**
+>
+> **Drawer.** The fields are grouped as Ticket · People · Activity.
+> - Priority, Channel and Group are one-click toggle chips (`aria-pressed`), not selects.
+> - Type, Tags, Agent and Contact are searchable autocompletes; Agent gains **Unassigned**.
+> - **Created** is Any time · Today · Last 7 days · Last 30 days · Custom range. The presets are
+>   rolling windows (`createdWithin`), so a saved "last 7 days" view stays true tomorrow. Custom
+>   range reveals From/To.
+> - Read status is a segmented Any / Unread / Read.
+> - The primary button previews the result, "Show 6 tickets", instead of a greyed-out Apply. Clear all
+>   and Save as view are disabled when nothing is set.
+>
+> **After Apply:**
+> - Filters shows a count badge, and removable chips sit under the search, one per field
+>   ("Tags: VIP +2"). Clear all and Save as view stay together at the end of the chips.
+> - Screen readers hear "6 tickets shown".
+> - Zero results shows "No tickets match these filters" with **Clear filters**.
+>
+> **Saved views:** a view's criteria show as chips. Changing them shows an "Unsaved changes to
+> '…'" strip with **Reset · Save as new · Save view**. Save as view rejects a name the inbox
+> already uses.
+>
+> The rules (`filterChips`, `withoutChip`, `sameFilters`, `CREATED_WITHIN`, `UNASSIGNED`) live in
+> `src/service/ticketFilters.ts` with tests.
+>
+> **Differences from this spec:**
+> - The switcher trigger has no "· edited" suffix; the strip carries that instead.
+> - The chips don't cap at 3 + "N more", because one chip per field keeps the row short.
+
 Chat: *"When filters are selected, there should be an indication… Same for custom ticket view
 selection."*
 
@@ -228,6 +293,18 @@ selection."*
   are announced politely ("12 tickets").
 
 ### T6 · Colour-coded tags beside the subject (P0)
+
+> **Status 10 Nov 2026 — built** (branch `feature/views-and-tags`). Tags use `MpTagChip` with the
+> colour from Settings › Tags; an unknown name reads as slate.
+> - **List rows:** the subject, up to 2 chips, then "+N". Screen readers hear the rest in full
+>   (", also tagged Refund, Loyalty"), and a hover title lists them.
+> - **Layout:** the subject truncates first. Tags keep their size up to half the line, and only
+>   past that does a chip truncate its name.
+> - **Pane title band:** every tag, wrapping, beside the linked-order chip.
+> - **Full page:** the tags sit in the header, beside the subject.
+> - **Tag pickers** (side panel, New ticket): the selections are the same coloured chips, with a
+>   remove button that doesn't open the menu.
+> - **Not built:** creating a tag from the picker (T7), out of this round by choice.
 
 - **List row:** up to 2 tag chips after the subject, then "+N" with a tooltip listing the rest.
   The subject truncates first; tags never do.
@@ -321,6 +398,22 @@ Found while reviewing the sandbox:
 - Check at 360 / 768 / 1024 / 1440, light and dark.
 
 ### T13 · Orders — link, see items, act (P0)
+
+> **Status 6 Nov 2026 — order detail built (Slice 2b).** The *Customer orders* panel lists the
+> customer's **real Commerce orders**: the linked one on top, then the others, each showing number,
+> date, items, total and status. Clicking one **drills in** inside the panel, so the thread and
+> Reply stay visible. The detail shows status, payment and channel, the line items (they add up to
+> the subtotal), totals, shipping, tracking and recent activity.
+>
+> Pinned at the bottom: **Insert in reply** (a plain-text order summary above the signature),
+> **Link** to the ticket, and ⋮ Open in Commerce · Unlink · **Refund…** (amount + reason) ·
+> **Cancel order**. Cancel's dialog buttons read "Keep order" / "Cancel order". An action that
+> doesn't apply is disabled with its reason ("Already shipped — refund it instead"). Cancels and
+> refunds write to the order's timeline and the ticket's activity. A linked order also shows as an
+> "Order #… · status" chip under the ticket title, which opens it.
+>
+> **Still open:** an Order field on New ticket, and partial refunds (Commerce marks any refund
+> as Refunded).
 
 Chat: *"Order linking UI"* (→ UAT 1549), *"new ticket doesn't have orders dropdown"*, *"couldn't
 confirm orders / order items… UI"*. UAT's Customer orders panel lists the customer's orders
@@ -430,6 +523,32 @@ Nothing exists yet for: resizable panes (T11), a drop-line indicator (T2), a ric
   (the Account details tabs + left rail pattern). Inbox creation is multi-page with 2 steps, so it
   needs its own flow, not a tab. Reply templates stay reachable from the composer (T9); email
   verification is the target of T15's action.
+
+  > **Status 6 Nov 2026: built in the sandbox** (branch `feature/service-settings`, not merged).
+  > **UAT audit (5 Nov):** Reply templates (21, notifications mixed in) · Ticket types (14) · Tags (79)
+  > · Inboxes (create: name/description/CRM, Manual|Round robin, SLA ≥ 70 min, signature with agent
+  > tags; edit adds Acknowledgement) · Support emails per inbox (Verified/Pending/Default) · Agents
+  > (name, email, nickname, job title, phone).
+  >
+  > **What's built:**
+  > - **Navigation:** a **Service** group in the Settings rail: Inboxes · Reply Templates · Ticket Types · Tags · Agents.
+  > - **Inbox detail:** one page with four tabs in `?tab=` (General · Support emails · Replies · Assignment & SLA). Unsaved changes are guarded on tab switch and on leave.
+  > - **Templates:** reply templates are split from **notification** templates.
+  > - **Usage counts:** on types, tags and agents. Renames and deletes carry into tickets and saved views.
+  > - **Editors:** `MpRichTextArea` (Tiptap) for signatures and templates; `MpTagChip` with the 8-colour tag palette (`--tag-<hue>-container` / `-on-container`, contrast-checked in both themes).
+  > - **Onboarding:** "Set up your support inbox" lands on the Inboxes list with each inbox's Live / Pending / Needs setup status (S2).
+  >
+  > **Pattern for multi-step settings** (the call's open question): a setting that needs more than
+  > one page gets its own route **inside** the Settings shell, so the rail stays. The steps sit in the
+  > page header (`MpWizardSteps`), Back/Next sit at the foot, and the flow ends on the new item's detail page,
+  > whose sub-areas are tabs held in `?tab=`. Create inbox = ① Basics ② Support email (skippable).
+  >
+  > **Engineering handoff (current UI first):**
+  > - Keep UAT's separate URLs for now, but add the four inbox sub-areas as tabs on the Edit Inbox page, with Support emails as one of them.
+  > - Move Acknowledgement out of Edit-only into that tab, and disable it with the reason shown until a support email is verified.
+  > - Split notification templates into their own tab.
+  > - Show the SLA's 70-minute minimum as a hint, not only as an error.
+  > - Add a status column (Live / Pending / Needs setup) to the inbox list.
 - **S2 · Onboarding.** Easier "set your support email" in Get Started (links to S1, T15).
 - **S3 · Chatbot module.** A separate call is to be scheduled.
 - **Process.** Design **both** old-UI and new-UI versions for features in Samriti's tickets. Eng

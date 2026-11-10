@@ -2514,6 +2514,19 @@ The register is a touch device (70% iPad, 30% Android tablet), but every action 
 - The payment sheet and the phone cart slide-up are not `PosSheet`s, so they don't drag to close yet.
 - Hold-to-repeat on the quantity buttons and a typed quantity were offered and not picked.
 
+## MpRichTextArea + MpTagChip — 2026-11-05
+
+- [x] Added **MpRichTextArea** (Molecule; Tiptap 3.32 — toolbar, link popover, Insert tag `{{KEY}}`) and **MpTagChip** (Atom; the eight service-desk tag swatches). New tokens: `color.{light,dark}.tag.{sky,green,slate,amber,violet,blue,orange,red}.{container,onContainer}` (16 text pairs in `$contrastPairs`, 6.37–10.07:1), `component.field.borderWidth` (1) / `borderWidthActive` (2) and `component.menu.formWidth` (320). No renames.
+
+## MpSplitPane + inbox one-container layout — 2026-11-06
+
+- [x] Added **MpSplitPane** (Molecule; WAI-ARIA window splitter — pointer drag, ←/→ by 16, Home/End, Enter/double-click reset; renders clamped to `min … container × maxRatio` without overwriting the user's width; `stacked` for narrow screens). New tokens: `layout.inboxListMinWidth` (320), `layout.splitHandleWidth` (12), `component.menu.panelWidth` (360) and `component.menu.panelMaxHeight` (420) for the inbox `TicketViewSwitcher` (Product tier). The Service inbox list and ticket now share one card. No renames; Tickets bulk "Delete" is now "Move to trash" (copy only).
+- [x] 2026-11-06: **MpConfirmDialog** gains `cancelLabel?` (default "Cancel", non-breaking) — a "Cancel" next to "Cancel order" read as two ways to cancel; the ticket's order panel uses "Keep order". New Product component `TicketOrdersPanel` (ticket → Commerce order drill-in).
+
+## MpMenuItem disabled semantics — 2026-11-10
+
+- [x] **MpMenuItem** now sets `aria-disabled="true"` when it is disabled. `v-list-item` only adds a class, so screen readers never heard "dimmed", and axe flagged the greyed label for contrast because nothing marked it as an inactive control (WCAG 1.4.3 exempts those). This fixes every disabled action-menu item, including the orders panel's Refund/Cancel and the new view Move up/down. Non-breaking; no renames.
+- [x] The Service tickets list and title now use **MpTagChip** for ticket tags (T6), and saved views are reorderable in `TicketViewSwitcher` (T2). Both are Product-tier changes with no DS API changes.
 ## Chatbot new-UI gaps — 2026-11-10
 
 From the "Gaps in Chatbot design in the new UI" call. A migration pass: behaviour and content

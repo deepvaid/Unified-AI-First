@@ -3,29 +3,29 @@ import { computed, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpTagChip from '@/components/MpTagChip.vue'
 import {
   useTicketsStore,
-  SUPPORT_INBOXES,
-  TICKET_AGENTS,
   TICKET_CHANNELS,
   TICKET_PRIORITIES,
   TICKET_STATUSES,
-  TICKET_TAGS,
-  TICKET_TYPES,
   type TicketChannel,
   type TicketPriority,
   type TicketStatus,
 } from '@/stores/useTickets'
+import { useServiceSettingsStore } from '@/stores/useServiceSettings'
 import { useToast } from '@/composables/useToast'
 
 const store = useTicketsStore()
+const settings = useServiceSettingsStore()
+const inboxOptions = computed(() => settings.inboxes.map(inbox => ({ title: inbox.name, value: inbox.id })))
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
 const accountId = computed(() => route.params.accountId as string)
 
 const form = reactive({
-  inbox: '',
+  inboxId: '',
   contact: '',
   type: '',
   channel: null as TicketChannel | null,
@@ -42,13 +42,14 @@ function attachFile() {
   attachments.value.push(`attachment-${attachSeq++}.pdf`)
 }
 
+// Spam senders are never offered as contacts.
 const contactOptions = computed(() =>
-  [...new Set(store.tickets.map(t => `${t.customer} - ${t.customerEmail}`))],
+  [...new Set(store.tickets.filter(t => t.folder !== 'spam').map(t => `${t.customer} - ${t.customerEmail}`))],
 )
 
 // Required: who it's for, where it lives, what it says.
 const canCreate = computed(() =>
-  !!form.inbox && !!form.contact && !!form.subject.trim() && !!form.description.trim(),
+  !!form.inboxId && !!form.contact && !!form.subject.trim() && !!form.description.trim(),
 )
 
 function cancel() {
@@ -59,7 +60,7 @@ function create() {
   if (!canCreate.value) return
   const [customer = '', customerEmail = ''] = form.contact.split(' - ')
   const id = store.createTicket({
-    inbox: form.inbox,
+    inboxId: form.inboxId,
     customer,
     customerEmail,
     type: form.type,
@@ -96,14 +97,21 @@ function addNewContact() {
 
     <v-card flat border rounded="lg" class="mt-4 pa-6" style="max-width: 960px;">
       <MpFormGrid :cols="2">
-        <v-select v-model="form.inbox" :items="SUPPORT_INBOXES" label="Inbox *"></v-select>
+        <v-select v-model="form.inboxId" :items="inboxOptions" label="Inbox *"></v-select>
         <v-select v-model="form.contact" :items="contactOptions" label="Contacts *"></v-select>
-        <v-select v-model="form.type" :items="TICKET_TYPES" label="Type" clearable></v-select>
+        <v-select v-model="form.type" :items="settings.typeNames" label="Type" clearable></v-select>
         <v-select v-model="form.channel" :items="TICKET_CHANNELS" label="Channel" clearable></v-select>
         <v-select v-model="form.status" :items="TICKET_STATUSES" label="Status"></v-select>
         <v-select v-model="form.priority" :items="TICKET_PRIORITIES" label="Priority"></v-select>
-        <v-select v-model="form.assignee" :items="TICKET_AGENTS" label="Agent" clearable></v-select>
-        <v-select v-model="form.tags" :items="TICKET_TAGS" label="Tags" multiple chips closable-chips></v-select>
+        <v-select v-model="form.assignee" :items="settings.agentNames" label="Agent" clearable></v-select>
+        <v-select v-model="form.tags" :items="settings.tagNames" label="Tags" multiple chips>
+          <template #chip="{ item }">
+            <span class="d-inline-flex" @mousedown.stop @click.stop>
+              <MpTagChip :name="item.title" :color="settings.tagColor(item.title)" size="md" removable
+                @remove="form.tags = form.tags.filter(tag => tag !== item.title)" />
+            </span>
+          </template>
+        </v-select>
         <v-text-field v-model="form.subject" label="Subject *" class="mp-form-grid__full"></v-text-field>
         <v-textarea
           v-model="form.description"
