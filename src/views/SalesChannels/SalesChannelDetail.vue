@@ -670,7 +670,7 @@ function runAction(target: ProductTarget) {
     return
   }
   if (target === 'chatbot') {
-    router.push({ name: 'ChatbotList', params: { accountId: accountId.value } })
+    router.push({ name: 'StoreChatbot', params: { accountId: accountId.value, channelId: channelId.value } })
     return
   }
   if (target === 'shopping_assistant') {

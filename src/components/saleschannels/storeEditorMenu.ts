@@ -21,6 +21,7 @@ export const STORE_EDITOR_ITEMS: StoreEditorItem[] = [
   { slug: 'campaigns', label: 'Campaigns', icon: 'megaphone', routeName: 'StoreCampaigns', match: ['StoreCampaigns'] },
   { slug: 'assets', label: 'Assets', icon: 'image', routeName: 'StoreAssets', match: ['StoreAssets'] },
   { slug: 'payments', label: 'Payments', icon: 'wallet', routeName: 'StorePayments', match: ['StorePayments', 'StorePaymentsMaropay'] },
+  { slug: 'chatbot', label: 'Chatbot', icon: 'bot-message-square', routeName: 'StoreChatbot', match: ['StoreChatbot'] },
 ]
 
 /** Section root for the current route — used by the store switcher to land on the same section. */

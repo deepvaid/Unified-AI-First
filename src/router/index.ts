@@ -265,6 +265,8 @@ const routes: RouteRecordRaw[] = [
       { path: 'themes', name: 'StoreThemes', component: () => import('@/views/SalesChannels/StoreThemes.vue') },
       // The store's Payments: every provider it has, Maropay sold at the top (the Shopify Payments model).
       { path: 'payments', name: 'StorePayments', component: () => import('@/views/SalesChannels/StorePaymentsPage.vue') },
+      // The store's chatbot: its status and links into the one builder, or the way to add one.
+      { path: 'chatbot', name: 'StoreChatbot', component: () => import('@/views/SalesChannels/StoreChatbotPage.vue') },
       // Maropay on this store: activation checklist, methods, capture and the switch itself.
       { path: 'payments/maropay', name: 'StorePaymentsMaropay', component: () => import('@/views/Maropay/StoreMaropayPage.vue') },
     ],
