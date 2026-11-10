@@ -32,16 +32,18 @@ function toItem(item: (typeof STORE_EDITOR_ITEMS)[number]) {
 }
 
 // Theme is the primary storefront job — surface it under Customize first;
-// Payments is how the store sells, so it gets its own Selling group.
+// Payments and the Chatbot are how the store sells, so they share a Selling group.
 const groups = computed<MpSectionRailGroup[]>(() => {
   const overview = STORE_EDITOR_ITEMS.find((i) => i.slug === 'overview')
   const theme = STORE_EDITOR_ITEMS.find((i) => i.slug === 'themes')
   const payments = STORE_EDITOR_ITEMS.find((i) => i.slug === 'payments')
-  const rest = STORE_EDITOR_ITEMS.filter((i) => i.slug !== 'overview' && i.slug !== 'themes' && i.slug !== 'payments')
+  const chatbot = STORE_EDITOR_ITEMS.find((i) => i.slug === 'chatbot')
+  const selling = [payments, chatbot].filter((i) => !!i)
+  const rest = STORE_EDITOR_ITEMS.filter((i) => !['overview', 'themes', 'payments', 'chatbot'].includes(i.slug))
   return [
     ...(overview ? [{ items: [toItem(overview)] }] : []),
     ...(theme ? [{ title: 'Customize', items: [toItem(theme)] }] : []),
-    ...(payments ? [{ title: 'Selling', items: [toItem(payments)] }] : []),
+    ...(selling.length ? [{ title: 'Selling', items: selling.map(toItem) }] : []),
     { title: 'Store content', items: rest.map(toItem) },
   ]
 })

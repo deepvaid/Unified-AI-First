@@ -2527,3 +2527,39 @@ The register is a touch device (70% iPad, 30% Android tablet), but every action 
 
 - [x] **MpMenuItem** now sets `aria-disabled="true"` when it is disabled. `v-list-item` only adds a class, so screen readers never heard "dimmed", and axe flagged the greyed label for contrast because nothing marked it as an inactive control (WCAG 1.4.3 exempts those). This fixes every disabled action-menu item, including the orders panel's Refund/Cancel and the new view Move up/down. Non-breaking; no renames.
 - [x] The Service tickets list and title now use **MpTagChip** for ticket tags (T6), and saved views are reorderable in `TicketViewSwitcher` (T2). Both are Product-tier changes with no DS API changes.
+## Chatbot new-UI gaps — 2026-11-10
+
+From the "Gaps in Chatbot design in the new UI" call. A migration pass: behaviour and content
+change, the builder's frame, rail and cards do not. Roadmap items (auto-sync / resync,
+merchant-authored FAQs, configurable pre-chat forms, a full test environment) are not built.
+
+- **Conversations** — the list's count is a link and the row menu has "View conversations";
+  both open the new `ChatbotConversations` page (list + transcript, mock data).
+- **Edit lands on Knowledge base** (`?section=knowledge`); creation keeps its Appearance-first flow.
+- **One brand colour** — `src/utils/brandContrast.ts` derives the ink on the brand fill
+  (`onBrand`: black or white) and the brand as text on a surface (`brandInk`: same hue, toned
+  until 4.5:1). The widget preview no longer hardcodes `#fff` on `var(--brand)`.
+- **Chat bubble text** — configurable, or off for a logo-only launcher; the preview shows the launcher.
+- **Knowledge base website source** — `ChatbotSiteCrawl`: find pages → pick → Extract text, with
+  crawling / empty / failed / extracting / done states. Sources land Active.
+- **Preview** — the composer is live in every scenario tab and answers from the knowledge base
+  (`src/chatbot/previewResponder.ts`); order and invoice questions say they need the live store.
+- **Sales Channel › Chatbot** — new store-editor section (`StoreChatbot`): linked chatbot summary,
+  an add-a-chatbot state, and a plan-limit state.
+
+### Renames and breaking changes
+
+- `QuickPrompt.intent` and `QuickPromptIntent` removed (the assistant infers intent); prompts cap
+  at `MAX_QUICK_PROMPTS` (5).
+- `ShoppingConfig.greeting` removed.
+- `Chatbot.channelId` added; `useChatbotStore.create()` takes an optional `channelId`.
+- `KnowledgeSource.entries` added; the builder's "Preview Chatbot" header button and the
+  no-op Re-sync button are deleted.
+- Builder subtitle now names the open section instead of a fixed "appearance & branding".
+- `SalesChannelDetail`'s "Service chatbot" card routes to `StoreChatbot`, not the global list.
+
+### Not done here
+
+- `themeBuilderData.ts` keeps its private `onBrandColor`; it could adopt `brandContrast.ts`.
+- The chatbot widget preview is still inline in `ChatbotBuilder.vue` (builder audit B4).
+- "CRM" on the call was read as the store association (the Sales channel select in General).
