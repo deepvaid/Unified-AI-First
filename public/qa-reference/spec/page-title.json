@@ -1,0 +1,130 @@
+{
+  "key": "page-title",
+  "liquidsky": [
+    "AppPageTitle",
+    "AppBreadcrumb"
+  ],
+  "status": "partial",
+  "reference": "MpPageHeader",
+  "note": "Marobase has no breadcrumb trail: a detail page shows one back link (`backTo`) above the title. AppBreadcrumb has no reference beyond that link.",
+  "stories": [
+    {
+      "id": "molecules-mppageheader--default",
+      "label": "Title + subtitle",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mppageheader--default",
+      "png": {
+        "light": "png/page-title/molecules-mppageheader--default--light.png",
+        "dark": "png/page-title/molecules-mppageheader--default--dark.png"
+      },
+      "parts": [
+        {
+          "part": "title",
+          "props": {
+            "font-size": {
+              "light": "28px",
+              "dark": "28px"
+            },
+            "font-weight": {
+              "light": "750",
+              "dark": "750"
+            },
+            "line-height": {
+              "light": "33.6px",
+              "dark": "33.6px"
+            },
+            "color": {
+              "light": "rgb(26, 24, 20)",
+              "dark": "rgb(236, 236, 236)"
+            },
+            "letter-spacing": {
+              "light": "-0.56px",
+              "dark": "-0.56px"
+            }
+          }
+        },
+        {
+          "part": "subtitle",
+          "props": {
+            "font-size": {
+              "light": "15px",
+              "dark": "15px"
+            },
+            "font-weight": {
+              "light": "450",
+              "dark": "450"
+            },
+            "line-height": {
+              "light": "21px",
+              "dark": "21px"
+            },
+            "color": {
+              "light": "rgb(92, 96, 102)",
+              "dark": "rgb(194, 199, 205)"
+            },
+            "margin-top": {
+              "light": "4px",
+              "dark": "4px"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "molecules-mppageheader--with-back-link",
+      "label": "Detail page with back link",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mppageheader--with-back-link",
+      "png": {
+        "light": "png/page-title/molecules-mppageheader--with-back-link--light.png",
+        "dark": "png/page-title/molecules-mppageheader--with-back-link--dark.png"
+      },
+      "parts": [
+        {
+          "part": "back link",
+          "props": {
+            "font-size": {
+              "light": "16px",
+              "dark": "16px"
+            },
+            "font-weight": {
+              "light": "400",
+              "dark": "400"
+            },
+            "line-height": {
+              "light": "24px",
+              "dark": "24px"
+            },
+            "color": {
+              "light": "rgb(26, 24, 20)",
+              "dark": "rgb(236, 236, 236)"
+            },
+            "column-gap": {
+              "light": "normal",
+              "dark": "normal"
+            }
+          }
+        },
+        {
+          "part": "title",
+          "props": {
+            "font-size": {
+              "light": "28px",
+              "dark": "28px"
+            },
+            "font-weight": {
+              "light": "750",
+              "dark": "750"
+            },
+            "line-height": {
+              "light": "33.6px",
+              "dark": "33.6px"
+            },
+            "color": {
+              "light": "rgb(26, 24, 20)",
+              "dark": "rgb(236, 236, 236)"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

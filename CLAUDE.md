@@ -413,6 +413,7 @@ changelog in `DESIGN_AUDIT.md`.
 | `npm run build-storybook` | Build Storybook to dist-storybook/ |
 | `npm run tokens:build` | Generate SCSS/CSS/TS from tokens.json |
 | `npm run contrast:check` | WCAG 2.1 ratios for every declared surface/foreground token pair |
+| `npm run qa:export` | QA reference for LiquidSky: screenshots + computed-CSS spec per mapped story → `public/qa-reference/` (needs `build-storybook` first) |
 | `npm run test:maropay` | Maropay domain + adapter tests (`node:test` over `tests/maropay/`) |
 | `npm run test:catalog` | Da Vinci Catalog Co-Pilot draft-generator tests (`node:test` over `tests/davinci-catalog/`) |
 | `npm run test:chatbot` | Chatbot brand-colour contrast + builder-preview responder tests (`node:test` over `tests/chatbot/`) |
@@ -442,6 +443,11 @@ Example: `[feat]: add MpDateRangePicker component with story`
   module landing, wizard, builder shell, surface states. Each renders in the real app chrome with
   structural placeholder data and a toggleable spec panel (component tree, source file, the product
   pages that follow it, which token owns each gap). Reference only — never a product surface.
+- **`docs/qa/`** — how LiquidSky QA matches production components against this Storybook (no Figma):
+  `liquidsky-design-qa-process.md` (workflow, severities, baseline rule) and `playwright-example.md`.
+  The `App*` ↔ `Mp*` map and the parts/properties under contract live in
+  `src/stories/qa/liquidskyMap.ts`; Storybook shows them at Foundations › QA Reference. After
+  changing a mapped component's geometry or colour, re-run `qa:export` and commit the diff.
 - **`docs/maropay/`** — Maropay payments prototype: `decisions.md` (locked decisions, limitations,
   production gaps) and `implementation-report.md` (review entry point, M01–M15 scenarios, results).
   Pure modules under `src/maropay/` and `src/services/maropay/` import each other by relative

@@ -1,0 +1,10 @@
+{
+  "key": "tree-dropdown",
+  "liquidsky": [
+    "AppTreeDropdown"
+  ],
+  "status": "no-reference",
+  "reference": "None",
+  "note": "Marobase has no tree dropdown. The closed field follows AppDropdown; the tree panel needs a design decision.",
+  "stories": []
+}

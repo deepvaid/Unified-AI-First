@@ -228,7 +228,7 @@ const preview: Preview = {
           'Introduction',
           'Foundations', [
             'Overview', 'Colors', 'Typography', 'Spacing', 'Radius & Shadows',
-            'Icons', 'Buttons', 'Tooltips',
+            'Icons', 'Buttons', 'Tooltips', 'QA Reference',
           ],
           'Atoms',
           'Molecules',

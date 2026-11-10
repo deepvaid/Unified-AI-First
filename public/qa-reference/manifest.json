@@ -1,0 +1,475 @@
+{
+  "links": {
+    "marobaseStorybook": "https://ai-first-maropost.vercel.app/storybook/",
+    "reference": "https://ai-first-maropost.vercel.app/qa-reference/"
+  },
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "themes": [
+    "light",
+    "dark"
+  ],
+  "components": [
+    {
+      "key": "unified-navigation",
+      "liquidsky": [
+        "TheUnifiedNavigation"
+      ],
+      "status": "matched",
+      "reference": "AppSidebar (Patterns › App Shell)",
+      "spec": "spec/unified-navigation.json",
+      "stories": [
+        {
+          "id": "patterns-app-shell-appsidebar--expanded",
+          "label": "Expanded",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-app-shell-appsidebar--expanded",
+          "png": {
+            "light": "png/unified-navigation/patterns-app-shell-appsidebar--expanded--light.png",
+            "dark": "png/unified-navigation/patterns-app-shell-appsidebar--expanded--dark.png"
+          }
+        },
+        {
+          "id": "patterns-app-shell-appsidebar--collapsed-rail",
+          "label": "Collapsed rail",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-app-shell-appsidebar--collapsed-rail",
+          "png": {
+            "light": "png/unified-navigation/patterns-app-shell-appsidebar--collapsed-rail--light.png",
+            "dark": "png/unified-navigation/patterns-app-shell-appsidebar--collapsed-rail--dark.png"
+          }
+        }
+      ]
+    },
+    {
+      "key": "header",
+      "liquidsky": [
+        "Header",
+        "user / account menu"
+      ],
+      "status": "matched",
+      "reference": "AppBar (Patterns › App Shell), MpNotificationsMenu",
+      "note": "The bar and its controls are covered. The profile and create menus open from a click, so they are checked by eye in the AppBar stories.",
+      "spec": "spec/header.json",
+      "stories": [
+        {
+          "id": "patterns-app-shell-appbar--default",
+          "label": "Default",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-app-shell-appbar--default",
+          "png": {
+            "light": "png/header/patterns-app-shell-appbar--default--light.png",
+            "dark": "png/header/patterns-app-shell-appbar--default--dark.png"
+          }
+        }
+      ]
+    },
+    {
+      "key": "page-title",
+      "liquidsky": [
+        "AppPageTitle",
+        "AppBreadcrumb"
+      ],
+      "status": "partial",
+      "reference": "MpPageHeader",
+      "note": "Marobase has no breadcrumb trail: a detail page shows one back link (`backTo`) above the title. AppBreadcrumb has no reference beyond that link.",
+      "spec": "spec/page-title.json",
+      "stories": [
+        {
+          "id": "molecules-mppageheader--default",
+          "label": "Title + subtitle",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mppageheader--default",
+          "png": {
+            "light": "png/page-title/molecules-mppageheader--default--light.png",
+            "dark": "png/page-title/molecules-mppageheader--default--dark.png"
+          }
+        },
+        {
+          "id": "molecules-mppageheader--with-back-link",
+          "label": "Detail page with back link",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mppageheader--with-back-link",
+          "png": {
+            "light": "png/page-title/molecules-mppageheader--with-back-link--light.png",
+            "dark": "png/page-title/molecules-mppageheader--with-back-link--dark.png"
+          }
+        }
+      ]
+    },
+    {
+      "key": "tooltip",
+      "liquidsky": [
+        "AppTooltip"
+      ],
+      "status": "matched",
+      "reference": "v-tooltip on the global baseline (Foundations › Tooltips)",
+      "spec": "spec/tooltip.json",
+      "stories": [
+        {
+          "id": "foundations-tooltips--placements",
+          "label": "Placements",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/foundations-tooltips--placements",
+          "png": {
+            "light": "png/tooltip/foundations-tooltips--placements--light.png",
+            "dark": "png/tooltip/foundations-tooltips--placements--dark.png"
+          }
+        }
+      ]
+    },
+    {
+      "key": "data-table",
+      "liquidsky": [
+        "AppDataTable"
+      ],
+      "status": "matched",
+      "reference": "Data Table pattern: MpFilterTabs + MpDataTableToolbar + v-data-table + MpFloatingBulkBar",
+      "note": "Cell content (chips, switches) follows its own component; this contract covers the table frame only.",
+      "spec": "spec/data-table.json",
+      "stories": [
+        {
+          "id": "patterns-data-table--default",
+          "label": "Default",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-data-table--default",
+          "png": {
+            "light": "png/data-table/patterns-data-table--default--light.png",
+            "dark": "png/data-table/patterns-data-table--default--dark.png"
+          }
+        },
+        {
+          "id": "patterns-data-table--with-selection",
+          "label": "Rows selected (bulk bar)",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-data-table--with-selection",
+          "png": {
+            "light": "png/data-table/patterns-data-table--with-selection--light.png",
+            "dark": "png/data-table/patterns-data-table--with-selection--dark.png"
+          }
+        },
+        {
+          "id": "patterns-data-table--empty",
+          "label": "Empty",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-data-table--empty",
+          "png": {
+            "light": "png/data-table/patterns-data-table--empty--light.png",
+            "dark": "png/data-table/patterns-data-table--empty--dark.png"
+          }
+        },
+        {
+          "id": "patterns-data-table--loading",
+          "label": "Loading",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-data-table--loading",
+          "png": {
+            "light": "png/data-table/patterns-data-table--loading--light.png",
+            "dark": "png/data-table/patterns-data-table--loading--dark.png"
+          }
+        }
+      ]
+    },
+    {
+      "key": "table-actions",
+      "liquidsky": [
+        "AppTableActionMenu",
+        "AppFilterButton"
+      ],
+      "status": "matched",
+      "reference": "MpRowActionsMenu + MpMenuItem; the Filter button of MpDataTableToolbar",
+      "spec": "spec/table-actions.json",
+      "stories": [
+        {
+          "id": "molecules-mprowactionsmenu--open-menu",
+          "label": "Row actions menu open",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mprowactionsmenu--open-menu",
+          "png": {
+            "light": "png/table-actions/molecules-mprowactionsmenu--open-menu--light.png",
+            "dark": "png/table-actions/molecules-mprowactionsmenu--open-menu--dark.png"
+          }
+        },
+        {
+          "id": "molecules-mpdatatabletoolbar--with-single-filter",
+          "label": "Toolbar with Filter button",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpdatatabletoolbar--with-single-filter",
+          "png": {
+            "light": "png/table-actions/molecules-mpdatatabletoolbar--with-single-filter--light.png",
+            "dark": "png/table-actions/molecules-mpdatatabletoolbar--with-single-filter--dark.png"
+          }
+        }
+      ]
+    },
+    {
+      "key": "dialogs",
+      "liquidsky": [
+        "AppDialogWrapper",
+        "AppConfirmationDialog",
+        "AppDrawerWrapper"
+      ],
+      "status": "matched",
+      "reference": "MpDialog, MpConfirmDialog, MpFormDrawer",
+      "spec": "spec/dialogs.json",
+      "stories": [
+        {
+          "id": "molecules-mpdialog--default",
+          "label": "Dialog",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpdialog--default",
+          "png": {
+            "light": "png/dialogs/molecules-mpdialog--default--light.png",
+            "dark": "png/dialogs/molecules-mpdialog--default--dark.png"
+          }
+        },
+        {
+          "id": "molecules-mpconfirmdialog--default",
+          "label": "Confirm dialog",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpconfirmdialog--default",
+          "png": {
+            "light": "png/dialogs/molecules-mpconfirmdialog--default--light.png",
+            "dark": "png/dialogs/molecules-mpconfirmdialog--default--dark.png"
+          }
+        },
+        {
+          "id": "molecules-mpformdrawer--filter-drawer",
+          "label": "Drawer",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpformdrawer--filter-drawer",
+          "png": {
+            "light": "png/dialogs/molecules-mpformdrawer--filter-drawer--light.png",
+            "dark": "png/dialogs/molecules-mpformdrawer--filter-drawer--dark.png"
+          }
+        }
+      ]
+    },
+    {
+      "key": "alert-modal",
+      "liquidsky": [
+        "AlertModal"
+      ],
+      "status": "matched",
+      "reference": "MpConfirmDialog with `danger`",
+      "spec": "spec/alert-modal.json",
+      "stories": [
+        {
+          "id": "molecules-mpconfirmdialog--danger",
+          "label": "Destructive confirm",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpconfirmdialog--danger",
+          "png": {
+            "light": "png/alert-modal/molecules-mpconfirmdialog--danger--light.png",
+            "dark": "png/alert-modal/molecules-mpconfirmdialog--danger--dark.png"
+          }
+        },
+        {
+          "id": "molecules-mpconfirmdialog--with-consequences",
+          "label": "With consequences list",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpconfirmdialog--with-consequences",
+          "png": {
+            "light": "png/alert-modal/molecules-mpconfirmdialog--with-consequences--light.png",
+            "dark": "png/alert-modal/molecules-mpconfirmdialog--with-consequences--dark.png"
+          }
+        }
+      ]
+    },
+    {
+      "key": "snackbar",
+      "liquidsky": [
+        "AppSnackbar"
+      ],
+      "status": "matched",
+      "reference": "MpToastStack (driven by useToast)",
+      "spec": "spec/snackbar.json",
+      "stories": [
+        {
+          "id": "molecules-mptoaststack--success",
+          "label": "Success",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mptoaststack--success",
+          "png": {
+            "light": "png/snackbar/molecules-mptoaststack--success--light.png",
+            "dark": "png/snackbar/molecules-mptoaststack--success--dark.png"
+          }
+        },
+        {
+          "id": "molecules-mptoaststack--persistent-error",
+          "label": "Error",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mptoaststack--persistent-error",
+          "png": {
+            "light": "png/snackbar/molecules-mptoaststack--persistent-error--light.png",
+            "dark": "png/snackbar/molecules-mptoaststack--persistent-error--dark.png"
+          }
+        },
+        {
+          "id": "molecules-mptoaststack--warning",
+          "label": "Warning",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mptoaststack--warning",
+          "png": {
+            "light": "png/snackbar/molecules-mptoaststack--warning--light.png",
+            "dark": "png/snackbar/molecules-mptoaststack--warning--dark.png"
+          }
+        },
+        {
+          "id": "molecules-mptoaststack--info",
+          "label": "Info",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mptoaststack--info",
+          "png": {
+            "light": "png/snackbar/molecules-mptoaststack--info--light.png",
+            "dark": "png/snackbar/molecules-mptoaststack--info--dark.png"
+          }
+        },
+        {
+          "id": "molecules-mptoaststack--with-action",
+          "label": "With action",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mptoaststack--with-action",
+          "png": {
+            "light": "png/snackbar/molecules-mptoaststack--with-action--light.png",
+            "dark": "png/snackbar/molecules-mptoaststack--with-action--dark.png"
+          }
+        }
+      ]
+    },
+    {
+      "key": "stepper",
+      "liquidsky": [
+        "AppStepper"
+      ],
+      "status": "matched",
+      "reference": "MpWizardSteps",
+      "spec": "spec/stepper.json",
+      "stories": [
+        {
+          "id": "atoms-mpwizardsteps--four-steps-mid-progress",
+          "label": "Four steps, mid progress",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/atoms-mpwizardsteps--four-steps-mid-progress",
+          "png": {
+            "light": "png/stepper/atoms-mpwizardsteps--four-steps-mid-progress--light.png",
+            "dark": "png/stepper/atoms-mpwizardsteps--four-steps-mid-progress--dark.png"
+          }
+        }
+      ]
+    },
+    {
+      "key": "date-picker",
+      "liquidsky": [
+        "AppDatePicker"
+      ],
+      "status": "partial",
+      "reference": "MpDateRangeSelect",
+      "note": "Marobase has a range selector (presets + custom range fields) but no calendar-grid date picker. The trigger and panel are covered; the calendar itself has no reference.",
+      "spec": "spec/date-picker.json",
+      "stories": [
+        {
+          "id": "molecules-mpdaterangeselect--menu-open",
+          "label": "Preset menu open",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpdaterangeselect--menu-open",
+          "png": {
+            "light": "png/date-picker/molecules-mpdaterangeselect--menu-open--light.png",
+            "dark": "png/date-picker/molecules-mpdaterangeselect--menu-open--dark.png"
+          }
+        },
+        {
+          "id": "molecules-mpdaterangeselect--custom-panel-open",
+          "label": "Custom range open",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpdaterangeselect--custom-panel-open",
+          "png": {
+            "light": "png/date-picker/molecules-mpdaterangeselect--custom-panel-open--light.png",
+            "dark": "png/date-picker/molecules-mpdaterangeselect--custom-panel-open--dark.png"
+          }
+        }
+      ]
+    },
+    {
+      "key": "dropdown",
+      "liquidsky": [
+        "AppDropdown"
+      ],
+      "status": "matched",
+      "reference": "v-select / v-autocomplete on the form-field baseline (Patterns › Form Fields)",
+      "spec": "spec/dropdown.json",
+      "stories": [
+        {
+          "id": "patterns-form-fields--selected-with-checkmark",
+          "label": "Select, menu open",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-form-fields--selected-with-checkmark",
+          "png": {
+            "light": "png/dropdown/patterns-form-fields--selected-with-checkmark--light.png",
+            "dark": "png/dropdown/patterns-form-fields--selected-with-checkmark--dark.png"
+          }
+        },
+        {
+          "id": "patterns-form-fields--all-states",
+          "label": "Field states",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-form-fields--all-states",
+          "png": {
+            "light": "png/dropdown/patterns-form-fields--all-states--light.png",
+            "dark": "png/dropdown/patterns-form-fields--all-states--dark.png"
+          }
+        }
+      ]
+    },
+    {
+      "key": "onboarding-banner",
+      "liquidsky": [
+        "TheOnboardingBanner"
+      ],
+      "status": "partial",
+      "reference": "MpBanner (the full-width edge strip)",
+      "note": "There is no onboarding-specific banner in Marobase. Only the strip geometry and tones carry over; the onboarding content needs a design.",
+      "spec": "spec/onboarding-banner.json",
+      "stories": [
+        {
+          "id": "molecules-mpbanner--default",
+          "label": "Banner",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpbanner--default",
+          "png": {
+            "light": "png/onboarding-banner/molecules-mpbanner--default--light.png",
+            "dark": "png/onboarding-banner/molecules-mpbanner--default--dark.png"
+          }
+        }
+      ]
+    },
+    {
+      "key": "onboarding-checklists",
+      "liquidsky": [
+        "TheOnboardingScreenChecklists"
+      ],
+      "status": "partial",
+      "reference": "MpListRow, checklist rows",
+      "note": "Only the row geometry has a reference. The onboarding screen layout around it needs a design.",
+      "spec": "spec/onboarding-checklists.json",
+      "stories": [
+        {
+          "id": "atoms-mplistrow--checklist",
+          "label": "Checklist rows",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/atoms-mplistrow--checklist",
+          "png": {
+            "light": "png/onboarding-checklists/atoms-mplistrow--checklist--light.png",
+            "dark": "png/onboarding-checklists/atoms-mplistrow--checklist--dark.png"
+          }
+        }
+      ]
+    },
+    {
+      "key": "expandable-list",
+      "liquidsky": [
+        "AppExpandableList"
+      ],
+      "status": "no-reference",
+      "reference": "None",
+      "note": "Marobase has no expandable-list component. Needs a design decision before it can be reviewed.",
+      "spec": "spec/expandable-list.json",
+      "stories": []
+    },
+    {
+      "key": "tree-dropdown",
+      "liquidsky": [
+        "AppTreeDropdown"
+      ],
+      "status": "no-reference",
+      "reference": "None",
+      "note": "Marobase has no tree dropdown. The closed field follows AppDropdown; the tree panel needs a design decision.",
+      "spec": "spec/tree-dropdown.json",
+      "stories": []
+    },
+    {
+      "key": "grid-table",
+      "liquidsky": [
+        "AppGridTable"
+      ],
+      "status": "no-reference",
+      "reference": "None",
+      "note": "Marobase has no card-grid table. Needs a design decision before it can be reviewed.",
+      "spec": "spec/grid-table.json",
+      "stories": []
+    }
+  ]
+}

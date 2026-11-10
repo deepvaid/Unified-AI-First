@@ -1,0 +1,291 @@
+{
+  "key": "data-table",
+  "liquidsky": [
+    "AppDataTable"
+  ],
+  "status": "matched",
+  "reference": "Data Table pattern: MpFilterTabs + MpDataTableToolbar + v-data-table + MpFloatingBulkBar",
+  "note": "Cell content (chips, switches) follows its own component; this contract covers the table frame only.",
+  "stories": [
+    {
+      "id": "patterns-data-table--default",
+      "label": "Default",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-data-table--default",
+      "png": {
+        "light": "png/data-table/patterns-data-table--default--light.png",
+        "dark": "png/data-table/patterns-data-table--default--dark.png"
+      },
+      "parts": [
+        {
+          "part": "card",
+          "props": {
+            "border-radius": {
+              "light": "16px",
+              "token": "component.card.radius",
+              "dark": "16px"
+            },
+            "border-top-color": {
+              "light": "rgba(0, 0, 0, 0.12)",
+              "dark": "rgba(255, 255, 255, 0.12)"
+            },
+            "border-top-width": {
+              "light": "1px",
+              "dark": "1px"
+            },
+            "box-shadow": {
+              "light": "rgba(0, 0, 0, 0.2) 0px 0px 0px 0px, rgba(0, 0, 0, 0.14) 0px 0px 0px 0px, rgba(0, 0, 0, 0.12) 0px 0px 0px 0px",
+              "dark": "rgba(0, 0, 0, 0.2) 0px 0px 0px 0px, rgba(0, 0, 0, 0.14) 0px 0px 0px 0px, rgba(0, 0, 0, 0.12) 0px 0px 0px 0px"
+            },
+            "background-color": {
+              "light": "rgb(255, 255, 255)",
+              "dark": "rgb(31, 34, 38)"
+            }
+          }
+        },
+        {
+          "part": "toolbar row",
+          "props": {
+            "min-height": {
+              "light": "64px",
+              "token": "component.toolbar.minHeight",
+              "dark": "64px"
+            },
+            "padding": {
+              "light": "24px 24px 16px",
+              "dark": "24px 24px 16px"
+            },
+            "column-gap": {
+              "light": "24px",
+              "dark": "24px"
+            }
+          }
+        },
+        {
+          "part": "search field",
+          "props": {
+            "height": {
+              "light": "40px",
+              "token": "component.control.height",
+              "dark": "40px"
+            },
+            "border-radius": {
+              "light": "9999px",
+              "dark": "9999px"
+            }
+          }
+        },
+        {
+          "part": "header cell",
+          "props": {
+            "padding-top": {
+              "light": "8px",
+              "token": "component.table.headerPaddingBlock",
+              "dark": "8px"
+            },
+            "padding-left": {
+              "light": "16px",
+              "token": "component.table.cellPaddingInline",
+              "dark": "16px"
+            },
+            "background-color": {
+              "light": "rgba(0, 0, 0, 0)",
+              "dark": "rgba(0, 0, 0, 0)"
+            },
+            "font-size": {
+              "light": "11px",
+              "dark": "11px"
+            },
+            "font-weight": {
+              "light": "600",
+              "dark": "600"
+            },
+            "line-height": {
+              "light": "11.55px",
+              "dark": "11.55px"
+            },
+            "color": {
+              "light": "rgb(90, 101, 115)",
+              "dark": "rgb(155, 163, 172)"
+            }
+          }
+        },
+        {
+          "part": "body cell",
+          "props": {
+            "padding-top": {
+              "light": "14px",
+              "token": "component.table.cellPaddingBlock",
+              "dark": "14px"
+            },
+            "padding-left": {
+              "light": "16px",
+              "token": "component.table.cellPaddingInline",
+              "dark": "16px"
+            },
+            "border-bottom-color": {
+              "light": "rgba(0, 0, 0, 0.12)",
+              "dark": "rgba(255, 255, 255, 0.12)"
+            },
+            "font-size": {
+              "light": "14px",
+              "dark": "14px"
+            },
+            "font-weight": {
+              "light": "400",
+              "dark": "400"
+            },
+            "line-height": {
+              "light": "21px",
+              "dark": "21px"
+            },
+            "color": {
+              "light": "rgba(26, 24, 20, 0.87)",
+              "dark": "rgb(236, 236, 236)"
+            }
+          }
+        },
+        {
+          "part": "body cell (row hover)",
+          "state": "hover",
+          "props": {
+            "background-color": {
+              "light": "rgba(26, 24, 20, 0.02)",
+              "dark": "rgba(236, 236, 236, 0.02)"
+            }
+          }
+        },
+        {
+          "part": "footer",
+          "props": {
+            "padding": {
+              "light": "8px 4px",
+              "dark": "8px 4px"
+            },
+            "font-size": {
+              "light": "14px",
+              "dark": "14px"
+            },
+            "font-weight": {
+              "light": "400",
+              "dark": "400"
+            },
+            "line-height": {
+              "light": "21px",
+              "dark": "21px"
+            },
+            "color": {
+              "light": "rgba(26, 24, 20, 0.87)",
+              "dark": "rgb(236, 236, 236)"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "patterns-data-table--with-selection",
+      "label": "Rows selected (bulk bar)",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-data-table--with-selection",
+      "png": {
+        "light": "png/data-table/patterns-data-table--with-selection--light.png",
+        "dark": "png/data-table/patterns-data-table--with-selection--dark.png"
+      },
+      "parts": [
+        {
+          "part": "bulk bar",
+          "props": {
+            "min-height": {
+              "light": "0px",
+              "dark": "0px"
+            },
+            "padding": {
+              "light": "16px 20px",
+              "dark": "16px 20px"
+            },
+            "column-gap": {
+              "light": "12px",
+              "dark": "12px"
+            },
+            "box-shadow": {
+              "light": "rgba(11, 53, 88, 0.35) 0px 8px 32px -12px",
+              "dark": "rgba(11, 53, 88, 0.35) 0px 8px 32px -12px"
+            },
+            "color": {
+              "light": "rgb(247, 245, 242)",
+              "dark": "rgb(247, 245, 242)"
+            },
+            "background-color": {
+              "light": "rgb(26, 24, 20)",
+              "dark": "rgb(52, 58, 65)"
+            },
+            "border-radius": {
+              "light": "9999px",
+              "dark": "9999px"
+            }
+          }
+        },
+        {
+          "part": "bulk count",
+          "props": {
+            "font-size": {
+              "light": "16px",
+              "dark": "16px"
+            },
+            "font-weight": {
+              "light": "600",
+              "dark": "600"
+            },
+            "line-height": {
+              "light": "24px",
+              "dark": "24px"
+            },
+            "color": {
+              "light": "rgb(44, 196, 255)",
+              "dark": "rgb(44, 196, 255)"
+            }
+          }
+        },
+        {
+          "part": "bulk action",
+          "props": {
+            "height": {
+              "light": "40px",
+              "dark": "40px"
+            },
+            "color": {
+              "light": "rgb(247, 245, 242)",
+              "dark": "rgb(247, 245, 242)"
+            },
+            "font-size": {
+              "light": "14px",
+              "dark": "14px"
+            },
+            "font-weight": {
+              "light": "600",
+              "dark": "600"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "patterns-data-table--empty",
+      "label": "Empty",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-data-table--empty",
+      "png": {
+        "light": "png/data-table/patterns-data-table--empty--light.png",
+        "dark": "png/data-table/patterns-data-table--empty--dark.png"
+      },
+      "parts": []
+    },
+    {
+      "id": "patterns-data-table--loading",
+      "label": "Loading",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-data-table--loading",
+      "png": {
+        "light": "png/data-table/patterns-data-table--loading--light.png",
+        "dark": "png/data-table/patterns-data-table--loading--dark.png"
+      },
+      "parts": []
+    }
+  ]
+}

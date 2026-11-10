@@ -1,0 +1,156 @@
+{
+  "key": "unified-navigation",
+  "liquidsky": [
+    "TheUnifiedNavigation"
+  ],
+  "status": "matched",
+  "reference": "AppSidebar (Patterns › App Shell)",
+  "stories": [
+    {
+      "id": "patterns-app-shell-appsidebar--expanded",
+      "label": "Expanded",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-app-shell-appsidebar--expanded",
+      "png": {
+        "light": "png/unified-navigation/patterns-app-shell-appsidebar--expanded--light.png",
+        "dark": "png/unified-navigation/patterns-app-shell-appsidebar--expanded--dark.png"
+      },
+      "parts": [
+        {
+          "part": "rail",
+          "props": {
+            "width": {
+              "light": "248px",
+              "token": "layout.sidebarWidth",
+              "dark": "248px"
+            },
+            "background-color": {
+              "light": "rgb(240, 240, 240)",
+              "dark": "rgb(31, 34, 38)"
+            }
+          }
+        },
+        {
+          "part": "item",
+          "props": {
+            "min-height": {
+              "light": "40px",
+              "token": "component.listItem.minHeight",
+              "dark": "40px"
+            },
+            "padding": {
+              "light": "8px 28px 8px 16px",
+              "dark": "8px 28px 8px 16px"
+            },
+            "border-radius": {
+              "light": "8px",
+              "token": "component.nav.itemRadius",
+              "dark": "8px"
+            },
+            "color": {
+              "light": "rgb(26, 24, 20)",
+              "dark": "rgb(236, 236, 236)"
+            }
+          }
+        },
+        {
+          "part": "item label",
+          "props": {
+            "font-size": {
+              "light": "14px",
+              "dark": "14px"
+            },
+            "font-weight": {
+              "light": "500",
+              "dark": "500"
+            },
+            "line-height": {
+              "light": "16.8px",
+              "dark": "16.8px"
+            },
+            "color": {
+              "light": "rgb(26, 24, 20)",
+              "dark": "rgb(236, 236, 236)"
+            }
+          }
+        },
+        {
+          "part": "item (hover)",
+          "state": "hover",
+          "props": {
+            "background-color": {
+              "light": "oklch(0.209825 0.0082939 none / 0.05)",
+              "dark": "rgb(39, 43, 48)"
+            },
+            "color": {
+              "light": "rgb(26, 24, 20)",
+              "dark": "rgb(236, 236, 236)"
+            }
+          }
+        },
+        {
+          "part": "active item",
+          "props": {
+            "background-color": {
+              "light": "oklch(0.209825 0.0082939 none / 0.07)",
+              "dark": "rgb(33, 58, 71)"
+            },
+            "color": {
+              "light": "rgb(26, 24, 20)",
+              "dark": "rgb(236, 236, 236)"
+            },
+            "border-radius": {
+              "light": "8px",
+              "dark": "8px"
+            }
+          }
+        },
+        {
+          "part": "active item label",
+          "props": {
+            "font-size": {
+              "light": "14px",
+              "dark": "14px"
+            },
+            "font-weight": {
+              "light": "600",
+              "dark": "600"
+            },
+            "line-height": {
+              "light": "16.8px",
+              "dark": "16.8px"
+            },
+            "color": {
+              "light": "rgb(26, 24, 20)",
+              "dark": "rgb(236, 236, 236)"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "patterns-app-shell-appsidebar--collapsed-rail",
+      "label": "Collapsed rail",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-app-shell-appsidebar--collapsed-rail",
+      "png": {
+        "light": "png/unified-navigation/patterns-app-shell-appsidebar--collapsed-rail--light.png",
+        "dark": "png/unified-navigation/patterns-app-shell-appsidebar--collapsed-rail--dark.png"
+      },
+      "parts": [
+        {
+          "part": "rail",
+          "props": {
+            "width": {
+              "light": "72px",
+              "token": "layout.sidebarRailWidth",
+              "dark": "72px"
+            },
+            "background-color": {
+              "light": "rgb(240, 240, 240)",
+              "dark": "rgb(31, 34, 38)"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

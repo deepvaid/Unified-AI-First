@@ -1,0 +1,241 @@
+{
+  "key": "alert-modal",
+  "liquidsky": [
+    "AlertModal"
+  ],
+  "status": "matched",
+  "reference": "MpConfirmDialog with `danger`",
+  "stories": [
+    {
+      "id": "molecules-mpconfirmdialog--danger",
+      "label": "Destructive confirm",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpconfirmdialog--danger",
+      "png": {
+        "light": "png/alert-modal/molecules-mpconfirmdialog--danger--light.png",
+        "dark": "png/alert-modal/molecules-mpconfirmdialog--danger--dark.png"
+      },
+      "parts": [
+        {
+          "part": "card",
+          "props": {
+            "width": {
+              "light": "440px",
+              "dark": "440px"
+            },
+            "background-color": {
+              "light": "rgb(255, 255, 255)",
+              "dark": "rgb(50, 55, 62)"
+            },
+            "border-radius": {
+              "light": "16px",
+              "token": "component.dialog.radius",
+              "dark": "16px"
+            }
+          }
+        },
+        {
+          "part": "header",
+          "props": {
+            "padding": {
+              "light": "20px",
+              "token": "component.dialog.padding",
+              "dark": "20px"
+            },
+            "min-height": {
+              "light": "88px",
+              "token": "component.dialog.headerMinHeight",
+              "dark": "88px"
+            }
+          }
+        },
+        {
+          "part": "title",
+          "props": {
+            "font-size": {
+              "light": "16px",
+              "dark": "16px"
+            },
+            "font-weight": {
+              "light": "700",
+              "dark": "700"
+            },
+            "line-height": {
+              "light": "20.8px",
+              "dark": "20.8px"
+            },
+            "color": {
+              "light": "rgb(26, 24, 20)",
+              "dark": "rgb(236, 236, 236)"
+            }
+          }
+        },
+        {
+          "part": "body",
+          "props": {
+            "padding": {
+              "light": "20px",
+              "dark": "20px"
+            },
+            "row-gap": {
+              "light": "16px",
+              "token": "component.dialog.gap",
+              "dark": "16px"
+            },
+            "color": {
+              "light": "rgb(26, 24, 20)",
+              "dark": "rgb(236, 236, 236)"
+            },
+            "font-size": {
+              "light": "14px",
+              "dark": "14px"
+            }
+          }
+        },
+        {
+          "part": "footer",
+          "props": {
+            "padding": {
+              "light": "20px",
+              "token": "component.dialog.padding",
+              "dark": "20px"
+            },
+            "column-gap": {
+              "light": "8px",
+              "token": "component.dialog.footerGap",
+              "dark": "8px"
+            }
+          }
+        },
+        {
+          "part": "secondary button",
+          "props": {
+            "height": {
+              "light": "40px",
+              "token": "component.control.height",
+              "dark": "40px"
+            },
+            "border-radius": {
+              "light": "9999px",
+              "dark": "9999px"
+            },
+            "color": {
+              "light": "rgba(26, 24, 20, 0.87)",
+              "dark": "rgb(236, 236, 236)"
+            },
+            "font-size": {
+              "light": "14px",
+              "dark": "14px"
+            },
+            "font-weight": {
+              "light": "600",
+              "dark": "600"
+            }
+          }
+        },
+        {
+          "part": "primary button",
+          "props": {
+            "height": {
+              "light": "40px",
+              "token": "component.control.height",
+              "dark": "40px"
+            },
+            "border-radius": {
+              "light": "9999px",
+              "dark": "9999px"
+            },
+            "background-color": {
+              "light": "rgb(192, 57, 43)",
+              "dark": "rgb(241, 142, 132)"
+            },
+            "color": {
+              "light": "rgb(255, 255, 255)",
+              "dark": "rgb(53, 16, 13)"
+            },
+            "font-size": {
+              "light": "14px",
+              "dark": "14px"
+            },
+            "font-weight": {
+              "light": "600",
+              "dark": "600"
+            }
+          }
+        },
+        {
+          "part": "close button",
+          "props": {
+            "width": {
+              "light": "28px",
+              "dark": "28px"
+            },
+            "height": {
+              "light": "40px",
+              "dark": "40px"
+            },
+            "color": {
+              "light": "rgba(26, 24, 20, 0.87)",
+              "dark": "rgb(236, 236, 236)"
+            }
+          }
+        },
+        {
+          "part": "lead icon",
+          "props": {
+            "width": {
+              "light": "20px",
+              "dark": "20px"
+            },
+            "height": {
+              "light": "20.7969px",
+              "dark": "20.7969px"
+            },
+            "color": {
+              "light": "rgba(26, 24, 20, 0.87)",
+              "dark": "rgb(236, 236, 236)"
+            },
+            "background-color": {
+              "light": "rgba(0, 0, 0, 0)",
+              "dark": "rgba(0, 0, 0, 0)"
+            },
+            "border-radius": {
+              "light": "0px",
+              "dark": "0px"
+            }
+          }
+        },
+        {
+          "part": "message",
+          "props": {
+            "font-size": {
+              "light": "14px",
+              "dark": "14px"
+            },
+            "font-weight": {
+              "light": "400",
+              "dark": "400"
+            },
+            "line-height": {
+              "light": "21px",
+              "dark": "21px"
+            },
+            "color": {
+              "light": "rgb(90, 101, 115)",
+              "dark": "rgb(155, 163, 172)"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "molecules-mpconfirmdialog--with-consequences",
+      "label": "With consequences list",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpconfirmdialog--with-consequences",
+      "png": {
+        "light": "png/alert-modal/molecules-mpconfirmdialog--with-consequences--light.png",
+        "dark": "png/alert-modal/molecules-mpconfirmdialog--with-consequences--dark.png"
+      },
+      "parts": []
+    }
+  ]
+}

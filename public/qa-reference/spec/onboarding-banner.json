@@ -1,0 +1,56 @@
+{
+  "key": "onboarding-banner",
+  "liquidsky": [
+    "TheOnboardingBanner"
+  ],
+  "status": "partial",
+  "reference": "MpBanner (the full-width edge strip)",
+  "note": "There is no onboarding-specific banner in Marobase. Only the strip geometry and tones carry over; the onboarding content needs a design.",
+  "stories": [
+    {
+      "id": "molecules-mpbanner--default",
+      "label": "Banner",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpbanner--default",
+      "png": {
+        "light": "png/onboarding-banner/molecules-mpbanner--default--light.png",
+        "dark": "png/onboarding-banner/molecules-mpbanner--default--dark.png"
+      },
+      "parts": [
+        {
+          "part": "strip",
+          "props": {
+            "min-height": {
+              "light": "44px",
+              "token": "component.banner.minHeight",
+              "dark": "44px"
+            },
+            "padding": {
+              "light": "6px 16px",
+              "dark": "6px 16px"
+            },
+            "column-gap": {
+              "light": "10px",
+              "dark": "10px"
+            },
+            "border-bottom-color": {
+              "light": "color(srgb 0.0156863 0.196078 0.301961 / 0.25)",
+              "dark": "color(srgb 0.870588 0.952941 1 / 0.25)"
+            },
+            "color": {
+              "light": "rgb(4, 50, 77)",
+              "dark": "rgb(222, 243, 255)"
+            },
+            "background-color": {
+              "light": "rgb(222, 243, 255)",
+              "dark": "rgb(4, 50, 77)"
+            },
+            "border-radius": {
+              "light": "0px",
+              "dark": "0px"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
