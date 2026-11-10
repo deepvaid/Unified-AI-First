@@ -11,7 +11,7 @@ import MpWizardShell from '@/components/MpWizardShell.vue'
 import MpWizardStepCard from '@/components/MpWizardStepCard.vue'
 import { useToast } from '@/composables/useToast'
 import { useWizardSteps } from '@/composables/useWizardSteps'
-import { PLAN_CATALOG, planPrice, type BillingCycle, type PlanTier } from '@/stores/usePlg'
+import { ANNUAL_DISCOUNT, PLAN_CATALOG, planPrice, type BillingCycle, type PlanTier } from '@/stores/usePlg'
 import type { UpgradeStepKey } from '@/stores/useTrialLab'
 import { useTrialRun } from './useTrialRun'
 
@@ -94,7 +94,7 @@ const selectedPlan = computed(() => catalog.value.plans.find(p => p.tier === tie
 
 const CYCLE_ITEMS = [
   { value: 'monthly', label: 'Monthly' },
-  { value: 'annual', label: 'Annual · save 10%' },
+  { value: 'annual', label: `Annual · save ${Math.round(ANNUAL_DISCOUNT * 100)}%` },
 ]
 
 function money(n: number) {
