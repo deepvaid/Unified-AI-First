@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import type { TicketFolder } from '@/service/model'
+import { moveView as moveSavedView } from '@/service/ticketFilters'
 
 // ── Vocabulary (mirrors the production service desk) ─────────────────────────
 // Inboxes, ticket types, tags and agents are configured in Settings › Service
@@ -488,6 +489,21 @@ export const useTicketsStore = defineStore('tickets', () => {
     else customViews.value.push({ name, inboxId, filters: { ...filters } })
   }
 
+  /** Reorders a view among its own inbox's views. */
+  function moveView(inboxId: string, name: string, toIndex: number) {
+    customViews.value = moveSavedView(customViews.value, inboxId, name, toIndex)
+  }
+
+  function renameView(inboxId: string, from: string, to: string) {
+    const view = customViews.value.find(v => v.name === from && v.inboxId === inboxId)
+    if (view) view.name = to
+  }
+
+  /** Tickets aren't touched — a view is only a saved filter. */
+  function deleteView(inboxId: string, name: string) {
+    customViews.value = customViews.value.filter(v => !(v.name === name && v.inboxId === inboxId))
+  }
+
   function createTicket(payload: NewTicketPayload): number {
     const id = Math.max(1500, ...tickets.value.map(t => t.id)) + 1
     const now = new Date().toISOString()
@@ -552,6 +568,9 @@ export const useTicketsStore = defineStore('tickets', () => {
     logActivity,
     updateContact,
     saveView,
+    moveView,
+    renameView,
+    deleteView,
     createTicket,
   }
 })

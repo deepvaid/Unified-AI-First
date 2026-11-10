@@ -1,6 +1,10 @@
 <script setup lang="ts">
-import { computed, ref, useId, watch } from 'vue'
+import { computed, nextTick, ref, useId, watch } from 'vue'
 import MpListRow from '@/components/MpListRow.vue'
+import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
+import MpMenuItem from '@/components/MpMenuItem.vue'
+import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import { isDuplicateName } from '@/service/model'
 import { useTicketsStore, type Ticket } from '@/stores/useTickets'
 import { useServiceSettingsStore } from '@/stores/useServiceSettings'
 import {
@@ -10,6 +14,7 @@ import {
   isOpen,
   matchesBuiltInView,
   matchesFilters,
+  viewPosition,
 } from '@/service/ticketFilters'
 
 /**
@@ -19,6 +24,10 @@ import {
  * and let Trash scroll away. Search finds a view across inboxes; each inbox is a
  * collapsible group (open state remembered) with its own custom views and open
  * counts; Spam and Trash are pinned below the scroll.
+ *
+ * Saved (custom) views are managed in place: drag by the row with a drop line,
+ * Alt+↑/↓, or the ⋯ menu (Rename, Edit filters, Move up/down, Delete). Every
+ * move is announced. Built-in views stay fixed at the top of each group.
  */
 const props = defineProps<{
   /** `'all'`, an `Inbox.id`, `'spam'` or `'trash'`. */
@@ -28,7 +37,15 @@ const props = defineProps<{
   currentAgent: string
 }>()
 
-const emit = defineEmits<{ select: [inbox: string, view: string] }>()
+const emit = defineEmits<{
+  select: [inbox: string, view: string]
+  /** A saved view was renamed — the page updates its current view if it was this one. */
+  renamed: [inbox: string, from: string, to: string]
+  /** A saved view was deleted — the page falls back to All Tickets if it was open. */
+  deleted: [inbox: string, name: string]
+  /** Open this view with the Filters drawer, to change its criteria. */
+  editFilters: [inbox: string, name: string]
+}>()
 
 const tickets = useTicketsStore()
 const settings = useServiceSettingsStore()
@@ -39,7 +56,7 @@ const query = ref('')
 const searchBox = ref<HTMLElement | null>(null)
 
 // ── Groups, views, counts ───────────────────────────────────────────────────
-interface ViewRow { inbox: string; name: string; count: number }
+interface ViewRow { inbox: string; name: string; count: number; custom: boolean }
 interface Group { id: string; name: string; icon: string; open: number; views: ViewRow[] }
 
 function countFor(inbox: string, view: string): number {
@@ -57,7 +74,7 @@ const groups = computed<Group[]>(() =>
       views: [
         ...BUILT_IN_VIEWS,
         ...tickets.customViews.filter(v => v.inboxId === group.id).map(v => v.name),
-      ].map(name => ({ inbox: group.id, name, count: countFor(group.id, name) })),
+      ].map(name => ({ inbox: group.id, name, count: countFor(group.id, name), custom: !isBuiltInView(name) })),
     })),
 )
 
@@ -99,6 +116,9 @@ function toggle(id: string) {
 watch(open, opened => {
   if (!opened) {
     query.value = ''
+    moveMessage.value = ''
+    renaming.value = null
+    actionsFor.value = null
     return
   }
   const activeGroup = props.inbox === 'spam' || props.inbox === 'trash' ? null : props.inbox
@@ -117,6 +137,157 @@ function focusSearch() {
 function select(inbox: string, view: string) {
   emit('select', inbox, view)
   open.value = false
+}
+
+// ── Saved views: reorder, rename, delete ────────────────────────────────────
+// The ⋯ menu is controlled here and doesn't close on its own content click:
+// Vuetify closes every parent menu when a nested menu's item is clicked, which
+// would shut the whole switcher on Rename or Move. Each action closes it instead.
+const actionsFor = ref<string | null>(null)
+const keyOf = (inbox: string, name: string) => `${inbox}::${name}`
+function runAction(action: () => void) {
+  actionsFor.value = null
+  action()
+}
+/** The panel is a v-card, so the ref is the component; its root element is `$el`. */
+const panelRef = ref<{ $el: HTMLElement } | null>(null)
+const panelEl = computed(() => panelRef.value?.$el ?? null)
+const moveMessage = ref('')
+const groupName = (inbox: string) => (inbox === 'all' ? 'All inboxes' : settings.inboxName(inbox))
+const positionOf = (inbox: string, name: string) => viewPosition(tickets.customViews, inbox, name)
+
+/** Puts focus back on a view row's button — a moved or re-rendered row loses it. */
+async function focusView(inbox: string, name: string) {
+  await nextTick()
+  panelEl.value
+    ?.querySelector<HTMLElement>(`[data-view-key="${CSS.escape(`${inbox}::${name}`)}"] .mp-list-row__hit`)
+    ?.focus()
+}
+
+function moveTo(inbox: string, name: string, toIndex: number, refocus = true) {
+  tickets.moveView(inbox, name, toIndex)
+  const { index, total } = positionOf(inbox, name)
+  moveMessage.value = `${name} moved to position ${index + 1} of ${total} in ${groupName(inbox)}`
+  if (refocus) void focusView(inbox, name)
+}
+function nudge(inbox: string, name: string, delta: number) {
+  const { index, total } = positionOf(inbox, name)
+  const to = index + delta
+  if (to >= 0 && to < total) moveTo(inbox, name, to)
+}
+function onRowKeydown(event: KeyboardEvent, inbox: string, name: string) {
+  if (!event.altKey || (event.key !== 'ArrowUp' && event.key !== 'ArrowDown')) return
+  event.preventDefault()
+  nudge(inbox, name, event.key === 'ArrowUp' ? -1 : 1)
+}
+
+// Native drag (the StoreLineupCard pattern), only within the view's own inbox.
+// The row under the pointer shows a drop line above or below itself.
+const dragging = ref<{ inbox: string; name: string } | null>(null)
+const dropTarget = ref<{ name: string; place: 'before' | 'after' } | null>(null)
+function onDragStart(event: DragEvent, inbox: string, name: string) {
+  dragging.value = { inbox, name }
+  event.dataTransfer?.setData('text/plain', name)
+  if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move'
+}
+function onDragOver(event: DragEvent, inbox: string, name: string) {
+  const from = dragging.value
+  if (!from || from.inbox !== inbox) return
+  event.preventDefault()
+  if (event.dataTransfer) event.dataTransfer.dropEffect = 'move'
+  if (from.name === name) {
+    dropTarget.value = null
+    return
+  }
+  const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
+  dropTarget.value = { name, place: event.clientY < rect.top + rect.height / 2 ? 'before' : 'after' }
+}
+function onDrop(event: DragEvent, inbox: string) {
+  const from = dragging.value
+  const target = dropTarget.value
+  dragging.value = null
+  dropTarget.value = null
+  if (!from || !target || from.inbox !== inbox) return
+  event.preventDefault()
+  const fromIndex = positionOf(inbox, from.name).index
+  let to = positionOf(inbox, target.name).index + (target.place === 'after' ? 1 : 0)
+  if (fromIndex < to) to -= 1
+  if (to !== fromIndex) moveTo(inbox, from.name, to, false)
+}
+function onDragEnd() {
+  dragging.value = null
+  dropTarget.value = null
+}
+const dropClass = (name: string) =>
+  dropTarget.value?.name === name ? `tvs-row--drop-${dropTarget.value.place}` : ''
+
+// Rename in place: Enter saves, Escape cancels (without closing the menu).
+const renaming = ref<{ inbox: string; name: string } | null>(null)
+const renameValue = ref('')
+const renameError = computed(() => {
+  const target = renaming.value
+  if (!target) return ''
+  const value = renameValue.value.trim()
+  if (!value) return 'Enter a name.'
+  const names = [...BUILT_IN_VIEWS, ...tickets.customViews.filter(v => v.inboxId === target.inbox).map(v => v.name)]
+  return isDuplicateName(names.map(n => ({ id: n, name: n })), value, target.name)
+    ? 'A view with this name already exists here.'
+    : ''
+})
+function startRename(inbox: string, name: string) {
+  renaming.value = { inbox, name }
+  renameValue.value = name
+  // After the ⋯ menu has closed and handed focus back, take it for the field.
+  setTimeout(() => {
+    const input = panelEl.value?.querySelector<HTMLInputElement>('.tvs-rename input')
+    input?.focus()
+    input?.select()
+  }, 150)
+}
+function commitRename() {
+  const target = renaming.value
+  if (!target || renameError.value) return
+  const to = renameValue.value.trim()
+  renaming.value = null
+  if (to !== target.name) {
+    tickets.renameView(target.inbox, target.name, to)
+    emit('renamed', target.inbox, target.name, to)
+  }
+  void focusView(target.inbox, to)
+}
+function cancelRename() {
+  const target = renaming.value
+  renaming.value = null
+  if (target) void focusView(target.inbox, target.name)
+}
+/** Leaving the field keeps a valid change and drops an invalid one. */
+function onRenameBlur() {
+  if (!renaming.value) return
+  if (renameError.value) renaming.value = null
+  else commitRename()
+}
+const isRenaming = (inbox: string, name: string) => renaming.value?.inbox === inbox && renaming.value.name === name
+
+const deleting = ref<{ inbox: string; name: string } | null>(null)
+const deleteOpen = computed({
+  get: () => !!deleting.value,
+  set: value => { if (!value) deleting.value = null },
+})
+function askDelete(inbox: string, name: string) {
+  open.value = false
+  deleting.value = { inbox, name }
+}
+function confirmDelete() {
+  const target = deleting.value
+  if (!target) return
+  tickets.deleteView(target.inbox, target.name)
+  emit('deleted', target.inbox, target.name)
+  deleting.value = null
+}
+
+function editFilters(inbox: string, name: string) {
+  open.value = false
+  emit('editFilters', inbox, name)
 }
 
 // ── Trigger ─────────────────────────────────────────────────────────────────
@@ -154,7 +325,7 @@ const triggerIcon = computed(() =>
       </button>
     </template>
 
-    <v-card flat border rounded="lg" class="tvs-panel d-flex flex-column" role="dialog" aria-label="Inboxes and views">
+    <v-card ref="panelRef" flat border rounded="lg" class="tvs-panel d-flex flex-column" role="dialog" aria-label="Inboxes and views">
       <!-- Chrome, not a form field: placeholder + aria-label, no details row. -->
       <div ref="searchBox" class="tvs-search">
         <v-text-field
@@ -228,33 +399,107 @@ const triggerIcon = computed(() =>
             </MpListRow>
 
             <div v-show="expanded.includes(group.id)" :id="`${uid}-${group.id}`">
-              <MpListRow
-                v-for="view in group.views"
-                :key="view.name"
-                clickable
-                density="compact"
-                :title="view.name"
-                :aria-current="isActive(group.id, view.name) ? 'true' : undefined"
-                class="tvs-row"
-                :class="{ 'tvs-row--active': isActive(group.id, view.name) }"
-                @click="select(group.id, view.name)"
-              >
-                <template #lead>
+              <template v-for="view in group.views" :key="view.name">
+                <!-- Renaming a saved view: the row becomes its name field. -->
+                <div v-if="isRenaming(group.id, view.name)" class="tvs-rename d-flex align-start">
                   <span class="tvs-lead" aria-hidden="true"></span>
-                </template>
-                <template #trailing>
-                  <span class="tvs-trailing">
-                    <span class="tvs-count" :aria-label="`${view.count} open`">{{ view.count }}</span>
-                    <span class="tvs-indicator">
-                      <v-icon v-if="isActive(group.id, view.name)" size="16" class="tvs-check">check</v-icon>
+                  <v-text-field
+                    v-model="renameValue"
+                    aria-label="View name"
+                    density="compact"
+                    :error-messages="renameError"
+                    class="tvs-rename__field"
+                    @keydown.enter.prevent="commitRename"
+                    @keydown.esc.stop.prevent="cancelRename"
+                    @blur="onRenameBlur"
+                  ></v-text-field>
+                </div>
+
+                <!-- Saved view: drag, Alt+↑/↓, or ⋯ to manage it. -->
+                <MpListRow
+                  v-else-if="view.custom"
+                  clickable
+                  density="compact"
+                  :title="view.name"
+                  :aria-current="isActive(group.id, view.name) ? 'true' : undefined"
+                  :data-view-key="`${group.id}::${view.name}`"
+                  draggable="true"
+                  class="tvs-row tvs-row--custom"
+                  :class="[
+                    { 'tvs-row--active': isActive(group.id, view.name), 'tvs-row--dragging': dragging?.name === view.name && dragging?.inbox === group.id },
+                    dropClass(view.name),
+                  ]"
+                  @click="select(group.id, view.name)"
+                  @keydown="onRowKeydown($event, group.id, view.name)"
+                  @dragstart="onDragStart($event, group.id, view.name)"
+                  @dragover="onDragOver($event, group.id, view.name)"
+                  @drop="onDrop($event, group.id)"
+                  @dragend="onDragEnd"
+                >
+                  <template #lead>
+                    <v-icon size="16" class="tvs-lead tvs-grip" aria-hidden="true">grip-vertical</v-icon>
+                  </template>
+                  <template #actions>
+                    <MpRowActionsMenu
+                      ariaLabel="View actions"
+                      :itemLabel="view.name"
+                      :model-value="actionsFor === keyOf(group.id, view.name)"
+                      :close-on-content-click="false"
+                      @update:model-value="(isOpen: boolean) => { actionsFor = isOpen ? keyOf(group.id, view.name) : null }"
+                    >
+                      <MpMenuItem title="Rename" icon="pencil" @click="runAction(() => startRename(group.id, view.name))" />
+                      <MpMenuItem title="Edit filters" icon="list-filter" @click="runAction(() => editFilters(group.id, view.name))" />
+                      <MpMenuItem title="Move up" icon="arrow-up" :disabled="positionOf(group.id, view.name).index === 0"
+                        @click="runAction(() => nudge(group.id, view.name, -1))">
+                        <template #append><kbd class="tvs-kbd">Alt ↑</kbd></template>
+                      </MpMenuItem>
+                      <MpMenuItem title="Move down" icon="arrow-down"
+                        :disabled="positionOf(group.id, view.name).index === positionOf(group.id, view.name).total - 1"
+                        @click="runAction(() => nudge(group.id, view.name, 1))">
+                        <template #append><kbd class="tvs-kbd">Alt ↓</kbd></template>
+                      </MpMenuItem>
+                      <v-divider class="my-1" />
+                      <MpMenuItem title="Delete view" icon="trash-2" danger @click="runAction(() => askDelete(group.id, view.name))" />
+                    </MpRowActionsMenu>
+                  </template>
+                  <template #trailing>
+                    <span class="tvs-trailing">
+                      <span class="tvs-count" :aria-label="`${view.count} open`">{{ view.count }}</span>
+                      <span class="tvs-indicator">
+                        <v-icon v-if="isActive(group.id, view.name)" size="16" class="tvs-check">check</v-icon>
+                      </span>
                     </span>
-                  </span>
-                </template>
-              </MpListRow>
+                  </template>
+                </MpListRow>
+
+                <!-- Built-in view: fixed, no actions. -->
+                <MpListRow
+                  v-else
+                  clickable
+                  density="compact"
+                  :title="view.name"
+                  :aria-current="isActive(group.id, view.name) ? 'true' : undefined"
+                  class="tvs-row"
+                  :class="{ 'tvs-row--active': isActive(group.id, view.name) }"
+                  @click="select(group.id, view.name)"
+                >
+                  <template #lead>
+                    <span class="tvs-lead" aria-hidden="true"></span>
+                  </template>
+                  <template #trailing>
+                    <span class="tvs-trailing">
+                      <span class="tvs-count" :aria-label="`${view.count} open`">{{ view.count }}</span>
+                      <span class="tvs-indicator">
+                        <v-icon v-if="isActive(group.id, view.name)" size="16" class="tvs-check">check</v-icon>
+                      </span>
+                    </span>
+                  </template>
+                </MpListRow>
+              </template>
             </div>
           </section>
         </template>
-        <span class="d-sr-only" aria-live="polite">{{ liveMessage }}</span>
+        <span class="d-sr-only" aria-live="polite">{{ moveMessage || liveMessage }}</span>
       </div>
 
       <!-- System folders: pinned, never scroll away. -->
@@ -288,6 +533,15 @@ const triggerIcon = computed(() =>
       </div>
     </v-card>
   </v-menu>
+
+  <MpConfirmDialog
+    v-model="deleteOpen"
+    danger
+    :title="`Delete “${deleting?.name ?? ''}”?`"
+    message="The view is removed from the inbox menu. Tickets aren’t affected."
+    confirm-label="Delete view"
+    @confirm="confirmDelete"
+  />
 </template>
 
 <style scoped>
@@ -374,4 +628,50 @@ const triggerIcon = computed(() =>
   color: var(--on-surface-muted);
 }
 .tvs-empty { padding: var(--mp-space-12) 0; margin: 0; }
+
+/* ── Saved views: handle, ⋯, drop line ─────────────────────────────────────
+   The grip and the ⋯ stay quiet until the row is hovered or focused; on touch
+   screens (no hover) they're always shown. */
+.tvs-row--custom { cursor: grab; }
+.tvs-grip,
+.tvs-row--custom :deep(.mp-list-row__actions) {
+  opacity: 0;
+  transition: opacity var(--mp-motion-duration-fast) var(--mp-motion-easing-standard);
+}
+.tvs-grip { color: var(--on-surface-muted); }
+.tvs-row--custom:hover .tvs-grip,
+.tvs-row--custom:focus-within .tvs-grip,
+.tvs-row--custom:hover :deep(.mp-list-row__actions),
+.tvs-row--custom:focus-within :deep(.mp-list-row__actions) { opacity: 1; }
+@media (hover: none) {
+  .tvs-grip,
+  .tvs-row--custom :deep(.mp-list-row__actions) { opacity: 1; }
+}
+.tvs-row--dragging { opacity: 0.5; }
+
+/* A 2px accent line between rows shows where the view will land. */
+.tvs-row--drop-before::before,
+.tvs-row--drop-after::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  height: var(--mp-space-2);
+  border-radius: var(--mp-radius-full);
+  background: var(--accent-default);
+  pointer-events: none;
+}
+.tvs-row--drop-before::before { top: calc(-1 * var(--mp-space-2) / 2); }
+.tvs-row--drop-after::after { bottom: calc(-1 * var(--mp-space-2) / 2); }
+
+.tvs-kbd {
+  font: inherit;
+  font-size: var(--mp-fontSize-11);
+  color: var(--on-surface-muted);
+}
+
+.tvs-rename {
+  gap: var(--mp-component-listItem-gap);
+  padding-block: var(--mp-space-4);
+}
+.tvs-rename__field { flex: 1 1 auto; min-width: 0; }
 </style>

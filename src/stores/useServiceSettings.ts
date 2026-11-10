@@ -288,6 +288,8 @@ export const useServiceSettingsStore = defineStore('serviceSettings', () => {
   const typeNames = computed(() => ticketTypes.value.map(t => t.name))
   const tagNames = computed(() => tags.value.map(t => t.name))
   const agentNames = computed(() => agents.value.map(a => a.name))
+  /** A ticket tag's colour from Settings › Tags; a name with no entry there reads as slate. */
+  const tagColor = (name: string): TagColor => tags.value.find(t => t.name === name)?.color ?? 'slate'
 
   return {
     inboxes,
@@ -299,6 +301,7 @@ export const useServiceSettingsStore = defineStore('serviceSettings', () => {
     typeNames,
     tagNames,
     agentNames,
+    tagColor,
     findInbox,
     inboxName,
     emailsFor,

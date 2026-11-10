@@ -185,6 +185,25 @@ but would need lifting out of POS.
 
 ### T2 · Custom views — reorder, rename, delete (P0)
 
+> **Status 10 Nov 2026 — built** (branch `feature/views-and-tags`). In the inbox menu, a saved
+> view shows a grip and a ⋯ on hover or focus; both are always visible on touch screens.
+> - **⋯ menu:** Rename · Edit filters · Move up · Move down (with Alt+↑/↓ hints) · Delete view.
+> - **Drag:** a 2px accent drop line shows where the view will land, and the dragged row dims.
+>   A view only drops within its own inbox group.
+> - **Keyboard:** Alt+↑/↓ on a focused row moves it, and focus stays on it.
+> - **Announcements:** every move is announced: "VIP refunds moved to position 2 of 3 in All
+>   inboxes."
+> - **Rename:** inline. Enter saves; Escape cancels without closing the menu; duplicates are
+>   rejected (built-in names included).
+> - **Delete:** asks first, and falls back to All Tickets if that view was open.
+> - **Edit filters:** opens the view with the Filters drawer, so T5's Unsaved-changes strip does the
+>   saving.
+> - **Built-in views** stay fixed at the top.
+> - **Logic:** `moveView` / `viewPosition` in `src/service/ticketFilters.ts`, with tests.
+> - **Note for engineering:** Vuetify closes every parent menu when an item in a nested menu is
+>   clicked. The ⋯ menu is therefore controlled (`close-on-content-click=false` plus a model), so
+>   Rename and Move keep the inbox menu open.
+
 - On hover or focus, a custom view row shows a **drag handle** and a **⋯ menu** (Rename, Edit
   filters, Move up, Move down, Delete). UAT shows pencil + bin + handle on hover. We fold the
   actions into ⋯ so the row stays calm, with the handle visible alongside.
@@ -274,6 +293,18 @@ selection."*
   are announced politely ("12 tickets").
 
 ### T6 · Colour-coded tags beside the subject (P0)
+
+> **Status 10 Nov 2026 — built** (branch `feature/views-and-tags`). Tags use `MpTagChip` with the
+> colour from Settings › Tags; an unknown name reads as slate.
+> - **List rows:** the subject, up to 2 chips, then "+N". Screen readers hear the rest in full
+>   (", also tagged Refund, Loyalty"), and a hover title lists them.
+> - **Layout:** the subject truncates first. Tags keep their size up to half the line, and only
+>   past that does a chip truncate its name.
+> - **Pane title band:** every tag, wrapping, beside the linked-order chip.
+> - **Full page:** the tags sit in the header, beside the subject.
+> - **Tag pickers** (side panel, New ticket): the selections are the same coloured chips, with a
+>   remove button that doesn't open the menu.
+> - **Not built:** creating a tag from the picker (T7), out of this round by choice.
 
 - **List row:** up to 2 tag chips after the subject, then "+N" with a tooltip listing the rest.
   The subject truncates first; tags never do.

@@ -18,6 +18,7 @@ import MpSplitPane from '@/components/MpSplitPane.vue'
 import MpFormSection from '@/components/MpFormSection.vue'
 import MpFormField from '@/components/MpFormField.vue'
 import MpSegmentedControl from '@/components/MpSegmentedControl.vue'
+import MpTagChip from '@/components/MpTagChip.vue'
 import TicketWorkspace from '@/components/service/TicketWorkspace.vue'
 import TicketViewSwitcher from '@/components/service/TicketViewSwitcher.vue'
 import {
@@ -126,6 +127,20 @@ function selectView(inbox: string, view: string) {
   appliedFilters.value = saved ? { ...saved.filters } : emptyTicketFilters()
   search.value = ''
   checked.value = []
+}
+
+// Managing saved views from the switcher: keep the page on a view that exists.
+function onViewRenamed(inbox: string, from: string, to: string) {
+  if (currentInbox.value === inbox && currentView.value === from) currentView.value = to
+  toast.success(`View renamed to "${to}"`)
+}
+function onViewDeleted(inbox: string, name: string) {
+  if (currentInbox.value === inbox && currentView.value === name) selectView(inbox, 'All Tickets')
+  toast.success(`View "${name}" deleted`)
+}
+function onEditViewFilters(inbox: string, name: string) {
+  selectView(inbox, name)
+  filtersOpen.value = true
 }
 
 // ── Search + sort (list-local, not part of a saved view) ─────────────────────
@@ -343,6 +358,11 @@ function formatListDate(iso: string): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
+/** List rows show two tags; the rest become "+N". */
+const ROW_TAGS = 2
+const rowTags = (t: Ticket) => t.tags.slice(0, ROW_TAGS)
+const moreTags = (t: Ticket) => t.tags.slice(ROW_TAGS)
+
 const snippet = (t: Ticket) => t.thread.find(m => m.role === 'customer')?.body ?? ''
 
 // ── Selection (detail pane) — the selected ticket lives in the URL ────────────
@@ -524,6 +544,9 @@ function newContact() {
                     :view="currentView"
                     :current-agent="CURRENT_AGENT"
                     @select="selectView"
+                    @renamed="onViewRenamed"
+                    @deleted="onViewDeleted"
+                    @edit-filters="onEditViewFilters"
                   />
 
                   <v-menu location="bottom end">
@@ -633,6 +656,15 @@ function newContact() {
                       <span v-if="t.unread" class="tickets-unread-dot flex-shrink-0" role="img" aria-label="Unread"></span>
                       <span class="tickets-row__subject text-body-2 text-truncate" :class="{ 'tickets-row__subject--unread': t.unread }">
                         {{ t.subject }}
+                      </span>
+                      <!-- Tags beside the subject: the subject truncates first; two chips,
+                           then "+N" (spoken in full, since the row itself is the button). -->
+                      <span v-if="t.tags.length" class="tickets-row__tags d-flex align-center ga-1">
+                        <MpTagChip v-for="tag in rowTags(t)" :key="tag" :name="tag" :color="settings.tagColor(tag)" />
+                        <template v-if="moreTags(t).length">
+                          <span class="tickets-row__more text-caption" aria-hidden="true" :title="moreTags(t).join(', ')">+{{ moreTags(t).length }}</span>
+                          <span class="d-sr-only">, also tagged {{ moreTags(t).join(', ') }}</span>
+                        </template>
                       </span>
                       <span class="tickets-row__date text-caption text-medium-emphasis ms-auto flex-shrink-0">{{ formatListDate(t.updatedAt) }}</span>
                     </span>
@@ -951,6 +983,17 @@ function newContact() {
 .tickets-row__body:hover { background: transparent; }
 
 .tickets-row__subject { font-weight: var(--mp-fontWeight-medium); }
+/* The subject gives way first: the tags keep their size up to half the line,
+   and only past that does a chip truncate its name. */
+.tickets-row__tags {
+  flex: 0 0 auto;
+  min-width: 0;
+  max-width: 50%;
+}
+.tickets-row__more {
+  flex-shrink: 0;
+  color: var(--on-surface-muted);
+}
 .tickets-row__subject--unread { font-weight: var(--mp-fontWeight-semibold); }
 .tickets-row__date { font-variant-numeric: tabular-nums; }
 
