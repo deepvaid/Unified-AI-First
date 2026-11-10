@@ -17,6 +17,7 @@
     "test:pos": "node --experimental-strip-types --test 'tests/pos/*.test.ts'",
     "test:chatbot": "node --experimental-strip-types --test 'tests/chatbot/*.test.ts'",
     "test:service": "node --experimental-strip-types --test 'tests/service/*.test.ts'",
+    "test:plg": "node --experimental-strip-types --test 'tests/plg/*.test.ts'",
     "contrast:check": "node scripts/check-contrast.mjs",
     "qa:export": "node --experimental-strip-types scripts/qa-export.mjs",
     "audit:ui": "node scripts/ui-visibility-audit.mjs",

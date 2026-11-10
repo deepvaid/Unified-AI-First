@@ -6,6 +6,7 @@ import MpFormGrid from '@/components/MpFormGrid.vue'
 import Plg3dsDialog from '@/components/plg/Plg3dsDialog.vue'
 import { useAccountsStore } from '@/stores/useAccounts'
 import { useDaVinciSetupStore } from '@/stores/useDaVinciSetup'
+import { activePromo, promoSaving, validateCoupon } from '@/plg/promo'
 import {
   usePlgStore,
   PLAN_CATALOG,
@@ -28,7 +29,11 @@ const accountId = computed(() => {
   return id ?? accountsStore.activeId
 })
 
-const plansRoute = computed(() => ({ name: 'Plans', params: { accountId: accountId.value } }))
+// Back to plans carries the cart with it, so the Plans page can restore it.
+const plansRoute = computed(() => {
+  const { coupon: _coupon, ...query } = route.query
+  return { name: 'Plans', params: { accountId: accountId.value }, query }
+})
 
 const currency = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 })
 function money(n: number) {
@@ -69,6 +74,7 @@ const cloudLineItems = computed(() =>
     const plan = catalog.plans.find(p => p.tier === tier)!
     return {
       cloud,
+      tier,
       label: `${catalog.name} — ${plan.name}`,
       price: planPrice(plan, cycleParam.value),
     }
@@ -89,6 +95,38 @@ const total = computed(
     cloudLineItems.value.reduce((sum, i) => sum + i.price, 0) +
     addOnLineItems.value.reduce((sum, i) => sum + i.price, 0),
 )
+
+// ── Coupon (mirrors Chargebee's hosted checkout) ───────────────────────────
+// The real page hides the field behind an "Apply coupon" link and answers a
+// wrong code with a bare "Invalid coupon code" — kept as-is here so the mock
+// is honest about the paste step. A `coupon` query param is the automatic
+// path: Chargebee opens with the code already applied.
+const promo = activePromo()
+const cartTiers = computed(() => Object.values(selections.value))
+
+function resolveCoupon(code: string) {
+  return promo ? validateCoupon(promo, code, cycleParam.value, cartTiers.value) : null
+}
+
+const queryCoupon = Array.isArray(route.query.coupon) ? route.query.coupon[0] : route.query.coupon
+const appliedCoupon = ref(resolveCoupon(queryCoupon ?? ''))
+const couponOpen = ref(false)
+const couponInput = ref('')
+const couponInvalid = ref(false)
+
+function applyCoupon() {
+  const coupon = resolveCoupon(couponInput.value)
+  couponInvalid.value = !coupon
+  if (!coupon) return
+  appliedCoupon.value = coupon
+  couponOpen.value = false
+  couponInput.value = ''
+}
+
+const discount = computed(() =>
+  promo && appliedCoupon.value ? promoSaving(promo, cloudLineItems.value, cycleParam.value) : 0,
+)
+const totalDue = computed(() => total.value - discount.value)
 
 // ── Mock payment fields (display only — nothing is submitted anywhere) ────
 const cardholderName = ref('Alex Merchant')
@@ -180,7 +218,7 @@ async function onApproved() {
           </div>
 
           <v-btn block color="primary" variant="flat" size="large" class="text-none mt-4" @click="pay">
-            Pay {{ money(total) }}
+            Pay {{ money(totalDue) }}
           </v-btn>
         </v-card>
 
@@ -196,11 +234,33 @@ async function onApproved() {
             <span class="num">{{ money(item.price) }}</span>
           </div>
 
+          <div v-if="appliedCoupon" class="summary-line">
+            <span class="summary-line__label">
+              <span>{{ appliedCoupon.code }}</span>
+              <span class="text-caption text-medium-emphasis">{{ appliedCoupon.description }}</span>
+              <button type="button" class="mp-link plg-checkout__link" @click="appliedCoupon = null">Remove coupon</button>
+            </span>
+            <span class="num">−{{ money(discount) }}</span>
+          </div>
+          <form v-else-if="couponOpen" class="plg-checkout__coupon" @submit.prevent="applyCoupon">
+            <!-- Chrome, not a form field: placeholder + aria-label keep it flush with the Apply button. -->
+            <v-text-field
+              v-model="couponInput"
+              placeholder="Coupon code"
+              aria-label="Coupon code"
+              autofocus
+              :error-messages="couponInvalid ? 'Invalid coupon code' : ''"
+              @update:model-value="couponInvalid = false"
+            />
+            <v-btn type="submit" variant="outlined" color="primary" class="text-none">Apply</v-btn>
+          </form>
+          <button v-else type="button" class="mp-link plg-checkout__link" @click="couponOpen = true">Apply coupon</button>
+
           <v-divider class="my-3" />
 
           <div class="summary-line summary-line--total">
             <span>Total due</span>
-            <span class="num">{{ money(total) }}</span>
+            <span class="num">{{ money(totalDue) }}</span>
           </div>
 
           <div class="text-caption text-medium-emphasis mt-2">
@@ -226,7 +286,7 @@ async function onApproved() {
 
     <Plg3dsDialog
       v-model="dialogOpen"
-      :amount-label="`Maropost purchase — ${money(total)}`"
+      :amount-label="`Maropost purchase — ${money(totalDue)}`"
       @approved="onApproved"
     />
   </div>
@@ -291,7 +351,7 @@ async function onApproved() {
 
 .summary-line {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
   gap: 12px;
   padding: 6px 0;
@@ -302,6 +362,36 @@ async function onApproved() {
 .summary-line--total {
   font-size: 15px;
   font-weight: 700;
+}
+
+.summary-line__label {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--mp-space-2);
+  min-width: 0;
+}
+
+.plg-checkout__link {
+  appearance: none;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: var(--mp-fontSize-13);
+  cursor: pointer;
+}
+
+.plg-checkout__coupon {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--mp-space-8);
+  padding-block: var(--mp-space-6);
+}
+
+.plg-checkout__coupon .v-text-field {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .plg-checkout__back {
