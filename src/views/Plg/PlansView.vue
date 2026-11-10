@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import MpAlert from '@/components/MpAlert.vue'
+import { useDisplay } from 'vuetify'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpFilterTabs from '@/components/MpFilterTabs.vue'
 import MpSectionHeader from '@/components/MpSectionHeader.vue'
+import MpSegmentedControl from '@/components/MpSegmentedControl.vue'
 import { useToast } from '@/composables/useToast'
 import { useAccountsStore } from '@/stores/useAccounts'
 import { activePromo, isEligibleTier, promoSaving } from '@/plg/promo'
@@ -44,7 +45,14 @@ function queryValue(key: string) {
 // ── Cycle + cloud selection ────────────────────────────────────────────────
 // Checkout's "Back to plans" hands the cart back in the query, so a customer
 // who returns (wrong coupon, second thoughts) finds it as they left it.
-const cycle = ref<BillingCycle>(queryValue('cycle') === 'annual' ? 'annual' : 'monthly')
+// Otherwise annual leads — it is the better deal — except for a paying customer,
+// who opens on the cycle they are already billed on rather than being switched.
+function initialCycle(): BillingCycle {
+  const fromQuery = queryValue('cycle')
+  if (fromQuery === 'annual' || fromQuery === 'monthly') return fromQuery
+  return plg.active.mode === 'paid' ? plg.active.cycle : 'annual'
+}
+const cycle = ref<BillingCycle>(initialCycle())
 const cloudKey = ref<PlgCloud>(PLAN_CATALOG[0]!.cloud)
 
 const tabs = computed(() => PLAN_CATALOG.map(c => ({ label: c.name, key: c.cloud })))
@@ -52,6 +60,11 @@ const activeCatalog = computed(() => PLAN_CATALOG.find(c => c.cloud === cloudKey
 
 function currentTierFor(cloud: PlgCloud): PlanTier | undefined {
   return plg.active.mode === 'paid' ? plg.active.tiers[cloud] : undefined
+}
+
+/** The recommended tier carries the page's one accent — unless the customer already has it. */
+function isFeatured(cloud: PlgCloud, plan: PlanDef) {
+  return plan.badge === 'Most popular' && currentTierFor(cloud) !== plan.tier
 }
 
 function badgeColor(badge: string) {
@@ -190,6 +203,39 @@ const offerSmallPrint = computed(() =>
     .join(' '),
 )
 
+// The switcher says what each cycle is worth, so the choice is made on the deal.
+// On a phone the two long labels do not fit one row; the band above carries them.
+const { smAndDown } = useDisplay()
+const cycleItems = computed(() =>
+  smAndDown.value
+    ? [
+        { value: 'annual', label: 'Annual' },
+        { value: 'monthly', label: 'Monthly' },
+      ]
+    : promo
+    ? [
+        { value: 'annual', label: `Annual · ${promo.headlinePercent}% off for 12 months` },
+        { value: 'monthly', label: `Monthly · ${promo.headlinePercent}% off ${promo.coupons.monthly.invoices} invoices` },
+      ]
+    : [
+        { value: 'annual', label: `Annual · save ${annualPercent}%` },
+        { value: 'monthly', label: 'Monthly' },
+      ],
+)
+
+function setCycle(value: string | null) {
+  if (value === 'annual' || value === 'monthly') cycle.value = value
+}
+
+const dueNow = computed(() => (autoApply.value ? offerTotal.value : total.value))
+const savingLine = computed(() => {
+  if (!coupon.value || !offerApplies.value) return ''
+  const amount = money(saving.value * coupon.value.invoices)
+  return cycle.value === 'annual'
+    ? `You save ${amount} in your first year.`
+    : `You save ${amount} over your first ${coupon.value.invoices} invoices.`
+})
+
 const copied = ref(false)
 const copyFailed = ref(false)
 let copiedTimer: ReturnType<typeof setTimeout> | undefined
@@ -223,9 +269,10 @@ function removeCloud(cloud: PlgCloud) {
   delete selections[cloud]
 }
 
-const checkoutLabel = computed(() =>
-  showCode.value && !copyFailed.value ? 'Copy code and continue' : 'Continue to checkout',
-)
+const checkoutLabel = computed(() => {
+  if (showCode.value && !copyFailed.value) return 'Copy code and continue'
+  return hasSelections.value ? `Continue to checkout · ${money(dueNow.value)}` : 'Continue to checkout'
+})
 
 // Leaving is the moment the clipboard has to be right, so the button copies the
 // current code itself. If the browser refuses, the customer stays here with the
@@ -263,32 +310,36 @@ function talkToSales() {
     <MpPageHeader
       title="Subscription plans"
       subtitle="Choose the tools and plan that fit your business today — upgrade anytime as you grow."
-    >
-      <template #actions>
-        <div class="d-flex align-center ga-3">
-          <v-btn-toggle v-model="cycle" mandatory class="plans-cycle-toggle">
-            <v-btn value="monthly" class="text-none">Monthly</v-btn>
-            <v-btn value="annual" class="text-none">Annual</v-btn>
-          </v-btn-toggle>
-          <v-chip size="small" color="success" variant="tonal">Save {{ annualPercent }}% annually</v-chip>
-        </div>
-      </template>
-    </MpPageHeader>
+    />
 
-    <MpAlert
-      v-if="promo"
-      icon="tag"
-      live="off"
-      :title="`${promo.name}: ${promo.headlinePercent}% off`"
-      class="mb-4"
-    >
-      Yearly plans: {{ promo.headlinePercent }}% off your first year, up from the usual {{ annualPercent }}%.
-      Monthly plans: {{ promo.headlinePercent }}% off your first {{ promo.coupons.monthly.invoices }} invoices.
-      Free onboarding included. Essential and above, until {{ promo.endsLabel }}.
-      {{ autoApply ? 'Applied automatically at checkout.' : 'Your code appears in the order summary when you pick a plan.' }}
-    </MpAlert>
+    <section v-if="promo" class="promo-band" :aria-label="promo.name">
+      <div class="promo-band__lead">
+        <div class="promo-band__eyebrow">{{ promo.name }}</div>
+        <div class="promo-band__figure">{{ promo.headlinePercent }}% off</div>
+      </div>
+      <ul class="promo-band__terms">
+        <li><strong>Annual</strong> {{ promo.headlinePercent }}% off your first 12 months, up from {{ annualPercent }}%</li>
+        <li><strong>Monthly</strong> {{ promo.headlinePercent }}% off your first {{ promo.coupons.monthly.invoices }} invoices</li>
+        <li>Free onboarding included · Essential and above</li>
+      </ul>
+      <div class="promo-band__meta">
+        <span class="promo-band__deadline">
+          <v-icon size="14">clock</v-icon>
+          Ends {{ promo.endsLabel }}
+        </span>
+        <span>{{ autoApply ? 'Applied automatically at checkout' : 'Your code appears when you pick a plan' }}</span>
+      </div>
+    </section>
 
-    <MpFilterTabs v-model="cloudKey" :tabs="tabs" aria-label="Plan clouds" />
+    <div class="plans-controls">
+      <MpFilterTabs v-model="cloudKey" :tabs="tabs" aria-label="Plan clouds" class="plans-controls__tabs" />
+      <MpSegmentedControl
+        :model-value="cycle"
+        :items="cycleItems"
+        ariaLabel="Billing period"
+        @update:model-value="setCycle"
+      />
+    </div>
 
     <v-row>
       <!-- Main column -->
@@ -311,7 +362,10 @@ function talkToSales() {
               border
               rounded="lg"
               class="plan-card d-flex flex-column"
-              :class="{ 'plan-card--current': currentTierFor(cloudKey) === plan.tier }"
+              :class="{
+                'plan-card--current': currentTierFor(cloudKey) === plan.tier,
+                'plan-card--featured': isFeatured(cloudKey, plan),
+              }"
             >
               <div v-if="currentTierFor(cloudKey) === plan.tier" class="plan-card__ribbon">Current plan</div>
 
@@ -476,13 +530,17 @@ function talkToSales() {
               </div>
               <v-divider class="my-3" />
               <div class="summary-line summary-line--total">
-                <span>Total due</span>
-                <span class="num">{{ money(autoApply ? offerTotal : total) }}</span>
+                <span>{{ cycle === 'annual' ? 'Total due today' : 'Total due' }}</span>
+                <span class="num">{{ money(dueNow) }}</span>
+              </div>
+              <div v-if="cycle === 'annual'" class="text-caption text-medium-emphasis">
+                For 12 months · {{ money(dueNow / 12) }}/mo
               </div>
               <div class="text-caption text-medium-emphasis mt-2">
                 Prices shown are exclusive of applicable taxes.
               </div>
               <div v-if="offerApplies && autoApply" class="text-caption text-medium-emphasis mt-2">
+                <strong class="text-success">{{ savingLine }}</strong>
                 Applied automatically at checkout. {{ offerAfter }}
                 <template v-if="hasUndiscounted">Build plans and add-ons aren't discounted.</template>
               </div>
@@ -493,7 +551,7 @@ function talkToSales() {
               <div v-if="promo && coupon && showCode" class="offer-block">
                 <div class="offer-block__eyebrow">{{ promo.name }}</div>
                 <div class="offer-block__headline">{{ offerHeadline }}</div>
-                <div class="offer-block__note">{{ offerAfter }} Plus free onboarding.</div>
+                <div class="offer-block__note">{{ savingLine }} {{ offerAfter }} Plus free onboarding.</div>
                 <div class="offer-block__code">
                   <code>{{ coupon.code }}</code>
                   <v-btn
@@ -521,6 +579,10 @@ function talkToSales() {
             >
               {{ checkoutLabel }}
             </v-btn>
+            <div class="plans-secure text-caption text-medium-emphasis">
+              <v-icon size="14">lock</v-icon>
+              Secure payment via Chargebee
+            </div>
           </v-card>
 
           <v-card flat border rounded="lg" class="pa-4">
@@ -563,6 +625,102 @@ function talkToSales() {
   min-width: 0;
 }
 
+/* ── Promo band ─────────────────────────────────────────────── */
+/* A promotion, not a notice: the ink panel pair, one accent for the figure. */
+.promo-band {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--mp-space-16) var(--mp-space-32);
+  margin-bottom: var(--mp-space-20);
+  padding: var(--mp-space-20) var(--mp-space-24);
+  border-radius: var(--mp-component-card-radius);
+  background: var(--ink-panel-bg);
+  color: var(--ink-panel-fg);
+}
+
+.promo-band__eyebrow {
+  font-size: var(--mp-fontSize-11);
+  font-weight: var(--mp-fontWeight-semibold);
+  letter-spacing: var(--mp-letterSpacing-eyebrow);
+  text-transform: uppercase;
+  color: var(--ink-panel-muted-fg);
+}
+
+.promo-band__figure {
+  font-size: var(--mp-fontSize-32);
+  font-weight: var(--mp-fontWeight-bold);
+  line-height: 1.1;
+  letter-spacing: var(--mp-letterSpacing-tight);
+  color: var(--ink-panel-accent);
+}
+
+.promo-band__terms {
+  flex: 1 1 320px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--mp-fontSize-14);
+}
+
+.promo-band__terms strong {
+  display: inline-block;
+  min-width: 64px;
+  font-weight: var(--mp-fontWeight-semibold);
+}
+
+.promo-band__terms li:last-child {
+  color: var(--ink-panel-muted-fg);
+}
+
+.promo-band__meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--mp-space-6);
+  font-size: var(--mp-fontSize-12);
+  color: var(--ink-panel-muted-fg);
+}
+
+.promo-band__deadline {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mp-space-6);
+  padding: var(--mp-space-4) var(--mp-space-10);
+  border: 1px solid var(--ink-panel-border);
+  border-radius: var(--mp-radius-full);
+  font-weight: var(--mp-fontWeight-semibold);
+  color: var(--ink-panel-fg);
+}
+
+/* ── Cloud tabs + billing period ────────────────────────────── */
+/* The period applies to every cloud, so it shares the tab row and sits right
+   above the prices it changes. */
+.plans-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mp-space-12) var(--mp-space-24);
+  margin-bottom: var(--mp-space-16);
+}
+
+.plans-controls__tabs {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.plans-secure {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--mp-space-6);
+  margin-top: var(--mp-space-12);
+}
+
 .cloud-header__name {
   font-size: 16px;
   font-weight: 700;
@@ -591,13 +749,15 @@ function talkToSales() {
   letter-spacing: 0.03em;
   text-transform: uppercase;
   text-align: center;
-  color: rgb(var(--v-theme-primary));
-  background: rgba(var(--v-theme-primary), 0.1);
-  border-bottom: 1px solid rgba(var(--v-theme-primary), 0.2);
+  color: rgb(var(--v-theme-on-surface-variant));
+  background: rgba(var(--v-theme-on-surface), 0.05);
+  border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
 }
 
-.plan-card--current {
+/* The accent belongs to the plan worth choosing, not the one already owned. */
+.plan-card--featured {
   border-color: rgb(var(--v-theme-primary));
+  box-shadow: inset 0 0 0 1px rgb(var(--v-theme-primary));
 }
 
 .plan-card__body {
