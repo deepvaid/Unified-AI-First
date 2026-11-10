@@ -1,10 +1,14 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, nextTick, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useChatbotStore } from '@/stores/useChatbot'
+import { useTheme } from 'vuetify'
+import { MAX_QUICK_PROMPTS, useChatbotStore } from '@/stores/useChatbot'
+import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import { useAccountsStore } from '@/stores/useAccounts'
 import { useToast } from '@/composables/useToast'
-import type { PreChatFieldType, QuickPromptIntent } from '@/stores/useChatbot'
+import type { KnowledgeEntry, PreChatFieldType } from '@/stores/useChatbot'
+import { brandInk, isValidHex, onBrand } from '@/utils/brandContrast'
+import { respond, type PreviewEntry } from '@/chatbot/previewResponder'
 import type { SubscriptionKey } from '@/stores/useAccounts'
 import MpBuilderShell from '@/components/MpBuilderShell.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
@@ -18,6 +22,7 @@ import MpSectionHeader from '@/components/MpSectionHeader.vue'
 import MpOptionCard from '@/components/MpOptionCard.vue'
 import MpSegmentedControl from '@/components/MpSegmentedControl.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
+import ChatbotSiteCrawl from '@/components/chatbot/ChatbotSiteCrawl.vue'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
 
 const route = useRoute()
@@ -27,6 +32,8 @@ const id = computed(() => Number(route.params.id))
 
 const cb = useChatbotStore()
 const accounts = useAccountsStore()
+const salesChannels = useSalesChannelsStore()
+const theme = useTheme()
 const toast = useToast()
 const chatbot = computed(() => cb.getById(id.value))
 const cfg = computed(() => chatbot.value!.config)
@@ -34,12 +41,7 @@ const cfg = computed(() => chatbot.value!.config)
 // Static UI config (not reactive state)
 const storeTypes = ['Fashion & Apparel', 'Electronics', 'Home & Living', 'Health & Beauty', 'Food & Beverage', 'Other']
 const swatches = ['#1F2933', '#2563EB', '#6D28D9', '#7CB9D6', '#7BC67B', '#E9C74A', '#DD7A3B', '#C0559A']
-const INTENTS: { title: string; value: QuickPromptIntent }[] = [
-  { title: 'Shopping', value: 'shopping' },
-  { title: 'Order tracking', value: 'track' },
-  { title: 'Support', value: 'support' },
-  { title: 'FAQ', value: 'faq' },
-]
+const FALLBACK_BRAND = '#2563EB'
 
 type Section = 'general' | 'appearance' | 'hours' | 'prompts' | 'shopping' | 'tracking' | 'knowledge' | 'prechat'
 const section = ref<Section>('appearance')
@@ -74,6 +76,24 @@ const NAV_GROUPS: NavGroup[] = [
   },
 ]
 const NAV = NAV_GROUPS.flatMap(g => g.items)
+const sectionLabel = computed(() => NAV.find(n => n.key === section.value)?.label ?? '')
+
+// The store (sales channel) this chatbot serves.
+const channelOptions = computed(() =>
+  salesChannels.webStoreChannels(accountId.value).map(c => ({ title: c.name, value: c.id })),
+)
+
+// ── Brand colour ───────────────────────────────────────────────────────────
+// The merchant picks one colour; ink on it and its tone as text are derived
+// (src/utils/brandContrast.ts). A half-typed hex keeps the last usable colour.
+const hexRule = (v: string) => isValidHex(v) || 'Enter a hex colour, like #2563EB'
+const brand = computed(() => (isValidHex(cfg.value.primaryColor) ? cfg.value.primaryColor.trim() : FALLBACK_BRAND))
+const widgetVars = computed(() => ({
+  '--brand': brand.value,
+  '--on-brand': onBrand(brand.value),
+  '--brand-ink': brandInk(brand.value, theme.current.value.colors.surface),
+}))
+const bubbleTextRule = (v: string) => v.length <= 40 || 'Keep it to 40 characters or fewer'
 const catalogSources = [
   { title: 'Full product catalog', value: 'catalog' },
   { title: 'Featured products only', value: 'featured' },
@@ -120,10 +140,6 @@ const {
   message: 'You have unsaved changes. Leaving now will discard them.',
 })
 
-function focusPreview() {
-  document.getElementById('cb-preview')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-}
-
 onMounted(() => {
   if (!chatbot.value) {
     router.replace({ name: 'ChatbotList', params: { accountId: accountId.value } })
@@ -150,7 +166,11 @@ const enabledPrompts = computed(() => cfg.value?.quickPrompts.filter(p => p.enab
 
 // Quick prompt ops
 let promptSeq = 100
-function addPrompt() { cfg.value.quickPrompts.push({ id: ++promptSeq, text: 'New prompt', intent: 'support', enabled: true }) }
+const promptLimitReached = computed(() => cfg.value.quickPrompts.length >= MAX_QUICK_PROMPTS)
+function addPrompt() {
+  if (promptLimitReached.value) return
+  cfg.value.quickPrompts.push({ id: ++promptSeq, text: 'New prompt', enabled: true })
+}
 function removePrompt(pid: number) { cfg.value.quickPrompts = cfg.value.quickPrompts.filter(p => p.id !== pid) }
 function movePrompt(i: number, dir: -1 | 1) {
   const j = i + dir
@@ -185,16 +205,11 @@ const activeSourceCount = computed(() =>
   cfg.value.knowledgeSources.filter(s => s.enabled && s.status === 'Active').length
 )
 
-const newUrl = ref('')
-function addUrlSource() {
-  const url = newUrl.value.trim()
-  if (!url) return
-  const label = url.replace(/^https?:\/\//, '').replace(/\/$/, '')
+function onSiteExtracted({ domain, entries }: { domain: string; entries: KnowledgeEntry[] }) {
   const nextId = Math.max(0, ...cfg.value.knowledgeSources.map(s => s.id)) + 1
   cfg.value.knowledgeSources.push({
-    id: nextId, name: label, icon: 'globe', items: 0, meta: 'Added just now', status: 'Indexing', enabled: true,
+    id: nextId, name: domain, icon: 'globe', items: entries.length, meta: 'Added just now', status: 'Active', enabled: true, entries,
   })
-  newUrl.value = ''
 }
 
 // KB questionnaire
@@ -217,7 +232,10 @@ function submitQuestionnaire() {
   const nextId = Math.max(0, ...cfg.value.knowledgeSources.map(s => s.id)) + 1
   cfg.value.knowledgeSources.push({
     id: nextId, name: 'Business questionnaire', icon: 'clipboard-list',
-    items: kbAnsweredCount.value, meta: 'Added just now', status: 'Indexing', enabled: true,
+    items: kbAnsweredCount.value, meta: 'Added just now', status: 'Active', enabled: true,
+    entries: kbQuestions
+      .filter(q => kbAnswers.value[q.key]?.trim())
+      .map(q => ({ title: q.label, text: kbAnswers.value[q.key]!.trim() })),
   })
   kbAnswers.value = emptyAnswers()
   kbDrawer.value = false
@@ -293,7 +311,7 @@ watch(scenarioTabs, tabs => {
   if (!tabs.some(t => t.key === previewScenario.value)) previewScenario.value = 'welcome'
 })
 // Reset transient demo state when switching scenarios.
-watch(previewScenario, () => { cartAdded.value = false; chatResult.value = null })
+watch(previewScenario, () => restartPreview())
 
 const cbProducts = computed(() => cb.previewProducts)
 const money = (n: number) => `$${n.toFixed(2)}`
@@ -302,28 +320,67 @@ const money = (n: number) => `$${n.toFixed(2)}`
 const cartAdded = ref(false)
 function addToCart() { cartAdded.value = true }
 
-// Open-chat intent routing demo
+// ── Live conversation ──────────────────────────────────────────────────────
+// Each scenario tab is a starting point; the composer is live in all of them and
+// answers from this chatbot's knowledge base (src/chatbot/previewResponder.ts).
+interface PreviewMessage {
+  id: number
+  role: 'shopper' | 'bot'
+  text: string
+  /** Bot message followed by the quick-prompt chips. */
+  prompts?: boolean
+  /** Bot message followed by product cards. */
+  products?: boolean
+  /** Knowledge source the answer came from. */
+  source?: string
+}
+const seedThread = computed<PreviewMessage[]>(() => {
+  if (previewScenario.value === 'welcome') return [{ id: -1, role: 'bot', text: cfg.value.welcomeMessage, prompts: true }]
+  if (previewScenario.value === 'shopping') {
+    return [
+      { id: -1, role: 'shopper', text: 'red boots size 11' },
+      { id: -2, role: 'bot', text: 'Here are a few great matches:', products: true },
+    ]
+  }
+  if (previewScenario.value === 'openchat') return [{ id: -1, role: 'bot', text: 'Ask me anything — I’ll answer from your knowledge base.' }]
+  return []
+})
+const liveThread = ref<PreviewMessage[]>([])
+const thread = computed(() => [...seedThread.value, ...liveThread.value])
+let liveSeq = 0
+
+const previewEntries = computed<PreviewEntry[]>(() =>
+  isSectionLocked('knowledge')
+    ? []
+    : cfg.value.knowledgeSources
+        .filter(s => s.enabled && s.status === 'Active')
+        .flatMap(s => (s.entries ?? []).map(e => ({ title: e.title, text: e.text, source: s.name }))),
+)
+
 const chatInput = ref('')
-const chatResult = ref<{ text: string; intent: QuickPromptIntent } | null>(null)
-const intentLabel: Record<QuickPromptIntent, string> = { shopping: 'Shopping', track: 'Order tracking', support: 'Support', faq: 'FAQ' }
-const intentReply: Record<QuickPromptIntent, string> = {
-  shopping: 'Looking for something to buy? I can find it and add it to your cart.',
-  track: "Let's find your order — I can pull up its status right here.",
-  support: 'I can help with that. Connecting you to the right support flow…',
-  faq: "Here's what I found in our help center to answer that.",
-}
-function classify(text: string): QuickPromptIntent {
-  const t = text.toLowerCase()
-  if (/track|order|where|deliver|shipment|arriv|parcel/.test(t)) return 'track'
-  if (/buy|shop|product|boot|shoe|size|price|cart|looking for|red|dress/.test(t)) return 'shopping'
-  if (/refund|return|invoice|cancel|agent|human|complain/.test(t)) return 'support'
-  return 'faq'
-}
-function sendChat() {
-  const t = chatInput.value.trim()
+const previewBody = ref<HTMLElement | null>(null)
+function sendChat(text: string = chatInput.value) {
+  const t = text.trim()
   if (!t) return
-  chatResult.value = { text: t, intent: classify(t) }
+  const reply = respond(t, {
+    shoppingEnabled: cfg.value.shopping.enabled && !isSectionLocked('shopping'),
+    trackingEnabled: cfg.value.orderTracking.enabled && !isSectionLocked('tracking'),
+    entries: previewEntries.value,
+  })
+  liveThread.value.push(
+    { id: ++liveSeq, role: 'shopper', text: t },
+    {
+      id: ++liveSeq, role: 'bot', text: reply.text,
+      products: reply.kind === 'products',
+      source: reply.kind === 'answer' ? reply.source : undefined,
+    },
+  )
   chatInput.value = ''
+  nextTick(() => previewBody.value?.scrollTo({ top: previewBody.value.scrollHeight }))
+}
+function restartPreview() {
+  liveThread.value = []
+  cartAdded.value = false
 }
 </script>
 
@@ -331,14 +388,13 @@ function sendChat() {
   <MpBuilderShell
     v-if="chatbot && cfg"
     title="Customize your widget"
-    :subtitle="`${chatbot.store} · appearance & branding`"
+    :subtitle="`${chatbot.store} · ${sectionLabel}`"
     back-label="Back to Chatbots"
     :dirty="isDirty"
     persistence-mode="live"
     @back="goBack"
   >
     <template #actions>
-      <v-btn variant="text" class="text-none text-medium-emphasis" size="small" prepend-icon="eye" @click="focusPreview">Preview Chatbot</v-btn>
       <v-btn color="primary" variant="flat" size="small" class="text-none" prepend-icon="rocket" @click="publishOpen = true">Publish Chatbot</v-btn>
     </template>
 
@@ -403,6 +459,15 @@ function sendChat() {
               <v-card flat border rounded="lg" class="pa-6">
                 <MpFormSection title="Storefront">
                   <MpFormGrid>
+                    <v-select
+                      v-model="chatbot.channelId"
+                      label="Sales channel"
+                      :items="channelOptions"
+                      placeholder="Not linked to a sales channel"
+                      hint="The web store this chatbot serves. It also appears under that sales channel."
+                      persistent-hint
+                      clearable
+                    />
                     <v-select v-model="cfg.storeType" label="Store type" :items="storeTypes" />
                     <v-text-field v-model="cfg.storeUrl" label="Store URL" placeholder="https://mystore.com" prepend-inner-icon="link" />
                   </MpFormGrid>
@@ -413,7 +478,7 @@ function sendChat() {
             <!-- APPEARANCE -->
             <template v-else-if="section === 'appearance'">
               <v-card flat border rounded="lg" class="pa-6 mb-5">
-                <MpFormSection title="Brand logo" description="Upload your logo and set your brand colors.">
+                <MpFormSection title="Brand logo" description="Shown in the chat header and on the launcher.">
                   <div>
                     <button type="button" class="cb-upload d-flex align-center justify-center ga-3 mb-2 w-100" @click="cfg.logoName = 'logo.png'">
                       <v-icon size="20">upload</v-icon>
@@ -425,7 +490,7 @@ function sendChat() {
 
                 <v-divider class="my-5" />
 
-                <MpFormSection title="Primary color" description="Set your brand color.">
+                <MpFormSection title="Brand colour" description="Pick one colour. Text and icons on it switch between black and white automatically, so they always stay readable.">
                   <div class="d-flex flex-wrap ga-2">
                     <button
                       v-for="c in swatches"
@@ -437,19 +502,19 @@ function sendChat() {
                       :aria-label="`Use ${c}`"
                       @click="cfg.primaryColor = c"
                     >
-                      <v-icon v-if="cfg.primaryColor.toLowerCase() === c.toLowerCase()" size="16" color="white">check</v-icon>
+                      <v-icon v-if="cfg.primaryColor.toLowerCase() === c.toLowerCase()" size="16" :color="onBrand(c)">check</v-icon>
                     </button>
                   </div>
-                  <MpFormField label="Custom color">
+                  <MpFormField label="Custom colour">
                     <MpFormGrid :cols="2">
                       <div class="d-flex align-center ga-2">
                       <v-menu :close-on-content-click="false" location="bottom start">
                         <template #activator="{ props }">
-                          <button v-bind="props" class="cb-swatch cb-swatch--sm" :style="{ background: cfg.primaryColor }" aria-label="Pick custom color" />
+                          <button v-bind="props" class="cb-swatch cb-swatch--sm" :style="{ background: cfg.primaryColor }" aria-label="Pick custom colour" />
                         </template>
-                        <v-color-picker v-model="cfg.primaryColor" mode="hex" :modes="['hex']" />
+                        <v-color-picker :model-value="brand" mode="hex" :modes="['hex']" @update:model-value="(v: string) => (cfg.primaryColor = v)" />
                       </v-menu>
-                      <v-text-field v-model="cfg.primaryColor" aria-label="Custom color hex value" />
+                      <v-text-field v-model="cfg.primaryColor" aria-label="Custom colour hex value" placeholder="#2563EB" :rules="[hexRule]" />
                       </div>
                     </MpFormGrid>
                   </MpFormField>
@@ -464,6 +529,17 @@ function sendChat() {
                       <MpOptionCard title="Bottom right" icon="panel-bottom-dashed" :selected="cfg.position === 'right'" @click="cfg.position = 'right'" />
                     </MpFormGrid>
                   </MpFormField>
+                  <v-switch v-model="cfg.launcherTextEnabled" label="Show text beside the launcher" />
+                  <v-text-field
+                    v-model="cfg.launcherText"
+                    label="Chat bubble text"
+                    placeholder="Need help?"
+                    counter="40"
+                    :rules="[bubbleTextRule]"
+                    :disabled="!cfg.launcherTextEnabled"
+                    :hint="cfg.launcherTextEnabled ? undefined : 'Off — the launcher shows your logo on its own.'"
+                    persistent-hint
+                  />
                   <v-text-field v-model="cfg.welcomeMessage" label="Welcome message *" />
                 </MpFormSection>
               </v-card>
@@ -492,16 +568,16 @@ function sendChat() {
             <!-- QUICK PROMPTS -->
             <template v-else-if="section === 'prompts'">
               <v-card flat border rounded="lg" class="pa-6">
-                <MpSectionHeader title="Quick prompts" description="Predefined options shown when a customer starts a chat. The intent routes the reply to shopping, order tracking, support, or FAQ.">
+                <MpSectionHeader title="Quick prompts" description="Shortcuts shown when a customer starts a chat. The chatbot works out what each one means, so there is nothing to categorise.">
                   <template #actions>
-                    <v-btn size="small" variant="tonal" color="primary" prepend-icon="plus" class="text-none" @click="addPrompt">Add prompt</v-btn>
+                    <span class="text-caption text-medium-emphasis">{{ cfg.quickPrompts.length }} of {{ MAX_QUICK_PROMPTS }} prompts</span>
+                    <v-btn size="small" variant="tonal" color="primary" prepend-icon="plus" class="text-none" :disabled="promptLimitReached" @click="addPrompt">Add prompt</v-btn>
                   </template>
                 </MpSectionHeader>
                 <div class="d-flex flex-column ga-2">
                   <div v-for="(p, i) in cfg.quickPrompts" :key="p.id" class="cb-prompt">
                     <div class="d-flex align-center ga-2">
                       <v-text-field v-model="p.text" hide-details class="flex-grow-1" aria-label="Prompt text" />
-                      <v-select v-model="p.intent" :items="INTENTS" hide-details class="cb-prompt__intent" aria-label="Intent" />
                       <v-tooltip text="Move up" location="top">
                         <template #activator="{ props }">
                           <v-btn v-bind="props" icon="chevron-up" variant="text" size="small" :disabled="i === 0" aria-label="Move up" @click="movePrompt(i, -1)" />
@@ -538,7 +614,6 @@ function sendChat() {
               <v-card flat border rounded="lg" class="pa-6" :class="{ 'cb-dim': !cfg.shopping.enabled }">
                 <MpFormSection title="Assistant behaviour">
                   <MpFormGrid>
-                    <v-textarea v-model="cfg.shopping.greeting" label="Shopping greeting" rows="2" auto-grow :disabled="!cfg.shopping.enabled" />
                     <v-select v-model="cfg.shopping.source" :items="catalogSources" label="Product source" :disabled="!cfg.shopping.enabled" />
                     <v-switch v-model="cfg.shopping.showPrices" label="Show prices on product cards" :disabled="!cfg.shopping.enabled" />
                     <v-switch v-model="cfg.shopping.allowAddToCart" label="Allow add to cart from the chat" :disabled="!cfg.shopping.enabled" />
@@ -616,11 +691,6 @@ function sendChat() {
                     :aria-label="`Enable ${s.name}`"
                   />
                   <div class="cb-source__actions d-flex align-center flex-shrink-0">
-                    <v-tooltip text="Re-sync" location="top">
-                      <template #activator="{ props }">
-                        <v-btn v-bind="props" icon="refresh-cw" variant="text" size="small" class="text-medium-emphasis" aria-label="Re-sync source" />
-                      </template>
-                    </v-tooltip>
                     <v-tooltip text="Remove" location="top">
                       <template #activator="{ props }">
                         <v-btn v-bind="props" icon="trash-2" variant="text" size="small" color="error" aria-label="Remove source" @click="askRemoveSource(s.id)" />
@@ -647,28 +717,7 @@ function sendChat() {
                     class="align-self-start"
                   />
 
-                  <div v-if="addSourceTab === 'url'">
-                    <div class="d-flex align-start ga-2">
-                      <v-text-field
-                        v-model="newUrl"
-                        placeholder="https://mystore.com/faq"
-                        prepend-inner-icon="globe"
-                        hide-details
-                        class="flex-grow-1"
-                        aria-label="Website URL"
-                        @keyup.enter="addUrlSource"
-                      />
-                      <v-btn
-                        color="primary"
-                        variant="flat"
-                        class="text-none"
-                        prepend-icon="plus"
-                        :disabled="!newUrl.trim()"
-                        @click="addUrlSource"
-                      >Add source</v-btn>
-                    </div>
-                    <div class="text-caption text-medium-emphasis mt-2">We'll crawl the page and index its text — this can take a minute.</div>
-                  </div>
+                  <ChatbotSiteCrawl v-if="addSourceTab === 'url'" :initial-url="cfg.storeUrl" @extracted="onSiteExtracted" />
 
                   <template v-else-if="addSourceTab === 'questionnaire'">
                     <div class="text-body-2 text-medium-emphasis">
@@ -783,8 +832,9 @@ function sendChat() {
 
         <!-- Live preview -->
         <div id="cb-preview" class="cb__preview bg-background d-flex flex-column align-center pa-6 flex-shrink-0" tabindex="-1">
-          <div class="d-flex align-center justify-space-between w-100 mb-3">
+          <div class="cb__preview-head d-flex align-center justify-space-between w-100 mb-3">
             <span class="mp-meta-label text-medium-emphasis">Preview</span>
+            <v-btn v-if="liveThread.length" variant="text" size="x-small" class="text-none" prepend-icon="rotate-ccw" @click="restartPreview">Restart</v-btn>
           </div>
           <div class="cb-scenarios d-flex flex-wrap ga-1 mb-3 align-self-start">
             <button
@@ -798,44 +848,74 @@ function sendChat() {
             >{{ t.label }}</button>
           </div>
 
-          <div class="cb-widget" :style="{ '--brand': cfg.primaryColor }">
-            <div class="cb-widget__head">
-              <div class="cb-widget__avatar"><v-icon size="18" color="white">message-circle</v-icon></div>
-              <div class="min-width-0">
-                <div class="cb-widget__name text-truncate">{{ cfg.brandName }}</div>
-                <div class="cb-widget__sub">{{ cfg.brandSubtitle }}</div>
+          <div class="cb-stage" :style="widgetVars">
+            <div class="cb-widget">
+              <div class="cb-widget__head">
+                <div class="cb-widget__avatar"><v-icon size="18">message-circle</v-icon></div>
+                <div class="min-width-0">
+                  <div class="cb-widget__name text-truncate">{{ cfg.brandName }}</div>
+                  <div class="cb-widget__sub">{{ cfg.brandSubtitle }}</div>
+                </div>
+                <v-icon size="18" class="cb-widget__x">x</v-icon>
               </div>
-              <v-icon size="18" color="white" class="cb-widget__x">x</v-icon>
-            </div>
 
-            <div class="cb-widget__body">
-              <!-- WELCOME -->
-              <template v-if="previewScenario === 'welcome'">
-                <div class="cb-b">{{ cfg.welcomeMessage }}</div>
-                <div class="cb-chips">
-                  <span v-for="p in enabledPrompts" :key="p.id" class="cb-chip">{{ p.text }}</span>
-                </div>
-              </template>
-
-              <!-- SHOPPING -->
-              <template v-else-if="previewScenario === 'shopping'">
-                <div class="cb-b">{{ cfg.shopping.greeting }}</div>
-                <div class="cb-u">red boots size 11</div>
-                <div class="cb-b">Here are a few great matches:</div>
-                <div class="cb-products">
-                  <div v-for="p in cbProducts" :key="p.id" class="cb-product">
-                    <div class="cb-product__thumb">
-                      <v-icon size="22">{{ p.icon }}</v-icon>
-                      <span v-if="p.salePrice" class="cb-product__sale">SALE</span>
-                    </div>
-                    <div class="cb-product__name">{{ p.name }}</div>
-                    <div v-if="cfg.shopping.showPrices" class="cb-product__price">
-                      <span v-if="p.salePrice" class="cb-product__was">{{ money(p.price) }}</span>
-                      <span class="cb-product__now">{{ money(p.salePrice ?? p.price) }}</span>
-                    </div>
-                    <button v-if="cfg.shopping.allowAddToCart" type="button" class="cb-product__add" @click="addToCart">Add to cart</button>
+              <div ref="previewBody" class="cb-widget__body" aria-live="polite">
+                <!-- ORDER TRACKING (illustrative: a real lookup needs the live store) -->
+                <template v-if="previewScenario === 'tracking'">
+                  <div class="cb-b">Sure — do you have an account with us?</div>
+                  <div class="cb-u">{{ cfg.orderTracking.allowGuest ? 'No, I checked out as guest' : 'Yes, I have an account' }}</div>
+                  <div class="cb-b">Here's your latest order:</div>
+                  <div class="cb-order">
+                    <div class="cb-order__row"><span>Order</span><strong>#88592</strong></div>
+                    <div class="cb-order__row"><span>Status</span><span class="cb-order__status">Out for delivery</span></div>
+                    <div class="cb-order__row"><span>ETA</span><strong>Fri, 21 Dec</strong></div>
                   </div>
-                </div>
+                  <div v-if="cfg.orderTracking.allowGuest" class="cb-links">
+                    <div class="cb-link"><v-icon size="13">external-link</v-icon> Open guest tracking portal</div>
+                    <div v-if="cfg.orderTracking.resendEmail" class="cb-link"><v-icon size="13">mail</v-icon> Resend confirmation email</div>
+                  </div>
+                  <div class="cb-chips">
+                    <span class="cb-chip">My order hasn't arrived</span>
+                    <span class="cb-chip">Change delivery address</span>
+                  </div>
+                </template>
+
+                <!-- PRE-CHAT -->
+                <template v-else-if="previewScenario === 'prechat'">
+                  <div class="cb-pc__title">Welcome to {{ cfg.storeName }}</div>
+                  <div class="cb-pc__sub">Share a few details so we can help you faster.</div>
+                  <div v-for="f in cfg.preChatFields" :key="f.id" class="cb-pc__field">
+                    <div class="cb-pc__label">{{ f.label }}{{ f.required ? ' *' : '' }}</div>
+                    <div class="cb-pc__input" :class="{ 'cb-pc__input--area': f.type === 'Text Area' }">{{ f.placeholder }}</div>
+                  </div>
+                  <div class="cb-widget__cta">Start chat</div>
+                </template>
+
+                <!-- CONVERSATION: the scenario's opening, then whatever is typed -->
+                <template v-for="m in thread" :key="m.id">
+                  <div v-if="m.role === 'shopper'" class="cb-u">{{ m.text }}</div>
+                  <template v-else>
+                    <div v-if="m.source" class="cb-route"><v-icon size="12">book-open</v-icon> From {{ m.source }}</div>
+                    <div class="cb-b">{{ m.text }}</div>
+                    <div v-if="m.prompts && enabledPrompts.length" class="cb-chips">
+                      <button v-for="p in enabledPrompts" :key="p.id" type="button" class="cb-chip" @click="sendChat(p.text)">{{ p.text }}</button>
+                    </div>
+                    <div v-if="m.products" class="cb-products">
+                      <div v-for="p in cbProducts" :key="p.id" class="cb-product">
+                        <div class="cb-product__thumb">
+                          <v-icon size="22">{{ p.icon }}</v-icon>
+                          <span v-if="p.salePrice" class="cb-product__sale">SALE</span>
+                        </div>
+                        <div class="cb-product__name">{{ p.name }}</div>
+                        <div v-if="cfg.shopping.showPrices" class="cb-product__price">
+                          <span v-if="p.salePrice" class="cb-product__was">{{ money(p.price) }}</span>
+                          <span class="cb-product__now">{{ money(p.salePrice ?? p.price) }}</span>
+                        </div>
+                        <button v-if="cfg.shopping.allowAddToCart" type="button" class="cb-product__add" @click="addToCart">Add to cart</button>
+                      </div>
+                    </div>
+                  </template>
+                </template>
                 <template v-if="cartAdded">
                   <div class="cb-b">Added <strong>{{ cbProducts[0]?.name }}</strong> to your cart 🛒</div>
                   <div class="cb-chips">
@@ -843,62 +923,31 @@ function sendChat() {
                     <span class="cb-chip">Keep shopping</span>
                   </div>
                 </template>
-              </template>
+              </div>
 
-              <!-- ORDER TRACKING -->
-              <template v-else-if="previewScenario === 'tracking'">
-                <div class="cb-b">Sure — do you have an account with us?</div>
-                <div class="cb-u">{{ cfg.orderTracking.allowGuest ? 'No, I checked out as guest' : 'Yes, I have an account' }}</div>
-                <div class="cb-b">Here's your latest order:</div>
-                <div class="cb-order">
-                  <div class="cb-order__row"><span>Order</span><strong>#88592</strong></div>
-                  <div class="cb-order__row"><span>Status</span><span class="cb-order__status">Out for delivery</span></div>
-                  <div class="cb-order__row"><span>ETA</span><strong>Fri, 21 Dec</strong></div>
-                </div>
-                <div v-if="cfg.orderTracking.allowGuest" class="cb-links">
-                  <div class="cb-link"><v-icon size="13">external-link</v-icon> Open guest tracking portal</div>
-                  <div v-if="cfg.orderTracking.resendEmail" class="cb-link"><v-icon size="13">mail</v-icon> Resend confirmation email</div>
-                </div>
-                <div class="cb-chips">
-                  <span class="cb-chip">My order hasn't arrived</span>
-                  <span class="cb-chip">Change delivery address</span>
-                </div>
-              </template>
-
-              <!-- OPEN CHAT (intent routing) -->
-              <template v-else-if="previewScenario === 'openchat'">
-                <div class="cb-b">Ask me anything — I'll understand and route you to the right place.</div>
-                <template v-if="chatResult">
-                  <div class="cb-u">{{ chatResult.text }}</div>
-                  <div class="cb-route"><v-icon size="12">git-branch</v-icon> Routed to {{ intentLabel[chatResult.intent] }}</div>
-                  <div class="cb-b">{{ intentReply[chatResult.intent] }}</div>
+              <div class="cb-widget__input">
+                <template v-if="previewScenario !== 'prechat'">
+                  <input v-model="chatInput" class="cb-widget__field" placeholder="Ask a question to try it…" aria-label="Message" @keyup.enter="sendChat()" />
+                  <button type="button" class="cb-widget__send" aria-label="Send" @click="sendChat()"><v-icon size="16">send</v-icon></button>
                 </template>
-              </template>
-
-              <!-- PRE-CHAT -->
-              <template v-else>
-                <div class="cb-pc__title">Welcome to {{ cfg.storeName }}</div>
-                <div class="cb-pc__sub">Share a few details so we can help you faster.</div>
-                <div v-for="f in cfg.preChatFields" :key="f.id" class="cb-pc__field">
-                  <div class="cb-pc__label">{{ f.label }}{{ f.required ? ' *' : '' }}</div>
-                  <div class="cb-pc__input" :class="{ 'cb-pc__input--area': f.type === 'Text Area' }">{{ f.placeholder }}</div>
-                </div>
-                <div class="cb-widget__cta">Start chat</div>
-              </template>
+                <template v-else>
+                  <span class="text-medium-emphasis">Write a message…</span>
+                  <v-icon size="16" class="text-medium-emphasis">send</v-icon>
+                </template>
+              </div>
+              <div class="cb-widget__foot">Powered by Maropost</div>
             </div>
 
-            <div class="cb-widget__input">
-              <template v-if="previewScenario === 'openchat'">
-                <input v-model="chatInput" class="cb-widget__field" placeholder="Try: where is my order?" aria-label="Message" @keyup.enter="sendChat" />
-                <button type="button" class="cb-widget__send" aria-label="Send" @click="sendChat"><v-icon size="16">send</v-icon></button>
-              </template>
-              <template v-else>
-                <span class="text-medium-emphasis">Write a message…</span>
-                <v-icon size="16" class="text-medium-emphasis">send</v-icon>
-              </template>
+            <!-- Launcher, as it sits in the corner of the store -->
+            <div class="cb-launcher" :class="`cb-launcher--${cfg.position}`">
+              <span v-if="cfg.launcherTextEnabled && cfg.launcherText.trim()" class="cb-launcher__text">{{ cfg.launcherText }}</span>
+              <span class="cb-launcher__btn"><v-icon size="20">{{ cfg.logoName ? 'image' : 'message-circle' }}</v-icon></span>
             </div>
-            <div class="cb-widget__foot">Powered by Maropost</div>
           </div>
+
+          <p class="cb__preview-note text-caption text-medium-emphasis">
+            Answers come from this chatbot’s knowledge base. Order and store lookups work once it is live on your store.
+          </p>
         </div>
       </div>
 
@@ -1020,8 +1069,6 @@ function sendChat() {
 .cb-hour__day { width: 108px; flex-shrink: 0; }
 .cb-hour__time { max-width: 130px; }
 
-.cb-prompt__intent { max-width: 130px; }
-
 .cb-source {
   border: 1px solid var(--border-subtle);
   border-radius: var(--mp-radius-12);
@@ -1121,20 +1168,22 @@ function sendChat() {
   display: flex;
   flex-direction: column;
 }
-/* #fff on var(--brand) surfaces is deliberate throughout the widget preview:
-   --brand is the merchant-picked widget color (swatch palette), not an app
-   theme surface, so theme tokens don't apply. */
+/* --brand is the merchant-picked widget colour, not an app theme surface, so theme
+   tokens don't apply to it. Its pair is derived instead (src/utils/brandContrast.ts):
+   --on-brand is the ink ON a brand fill, --brand-ink is the brand AS text or a border
+   on the widget's own surface. Never a literal #fff on var(--brand). */
+.cb-stage { display: flex; flex-direction: column; gap: var(--mp-space-12); width: 320px; }
 .cb-widget__head {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 14px 16px;
   background: var(--brand);
-  color: #fff;
+  color: var(--on-brand);
 }
 .cb-widget__avatar {
   width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
-  background: rgba(255, 255, 255, 0.2);
+  background: color-mix(in oklch, var(--on-brand) 20%, transparent);
   display: inline-flex; align-items: center; justify-content: center;
 }
 .cb-widget__name { font-weight: 700; font-size: 0.875rem; }
@@ -1167,7 +1216,7 @@ function sendChat() {
   align-self: flex-end;
   max-width: 90%;
   background: var(--brand);
-  color: #fff;
+  color: var(--on-brand);
   border-radius: 12px 12px 4px 12px;
   padding: 9px 12px;
   font-size: 0.8125rem;
@@ -1177,15 +1226,18 @@ function sendChat() {
 /* Quick-reply chips */
 .cb-chips { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
 .cb-chip {
-  border: 1px solid var(--brand);
-  color: var(--brand);
+  border: 1px solid var(--brand-ink);
+  color: var(--brand-ink);
   border-radius: 999px;
   padding: 6px 12px;
+  font: inherit;
   font-size: 0.75rem;
   font-weight: 600;
   background: var(--surface-primary);
 }
-.cb-chip--solid { background: var(--brand); color: #fff; }
+button.cb-chip { cursor: pointer; }
+button.cb-chip:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.cb-chip--solid { background: var(--brand); border-color: var(--brand); color: var(--on-brand); }
 
 /* Product carousel */
 .cb-products { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
@@ -1201,7 +1253,7 @@ function sendChat() {
   height: 74px;
   border-radius: 7px;
   background: color-mix(in oklch, var(--brand) 10%, transparent);
-  color: var(--brand);
+  color: var(--brand-ink);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1235,7 +1287,7 @@ function sendChat() {
 .cb-product__add {
   width: 100%;
   background: var(--brand);
-  color: #fff;
+  color: var(--on-brand);
   border: 0;
   border-radius: 6px;
   padding: 5px;
@@ -1280,7 +1332,7 @@ function sendChat() {
   font-size: 0.625rem;
   font-weight: 700;
   letter-spacing: 0.02em;
-  color: var(--brand);
+  color: var(--brand-ink);
   background: color-mix(in oklch, var(--brand) 12%, transparent);
   border-radius: 999px;
   padding: 2px 8px;
@@ -1320,7 +1372,7 @@ function sendChat() {
   border: 0;
   padding: 0;
   background: transparent;
-  color: var(--brand);
+  color: var(--brand-ink);
   cursor: pointer;
 }
 .cb-widget__send:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
@@ -1352,11 +1404,41 @@ function sendChat() {
 .cb-widget__cta {
   margin-top: 6px;
   background: var(--brand);
-  color: #fff;
+  color: var(--on-brand);
   border-radius: 8px;
   padding: 10px;
   text-align: center;
   font-size: 0.8125rem;
   font-weight: 600;
 }
+
+/* Launcher: the closed state of the widget, in the corner the merchant chose. */
+.cb-launcher { display: flex; align-items: center; gap: var(--mp-space-8); }
+.cb-launcher--left { flex-direction: row-reverse; justify-content: flex-end; }
+.cb-launcher--right { justify-content: flex-end; }
+.cb-launcher__btn {
+  width: var(--mp-space-48);
+  height: var(--mp-space-48);
+  border-radius: var(--mp-radius-full);
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--brand);
+  color: var(--on-brand);
+  box-shadow: var(--mp-shadow-md);
+}
+.cb-launcher__text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  padding: var(--mp-space-8) var(--mp-space-12);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--mp-radius-full);
+  background: var(--surface-primary);
+  color: var(--on-surface);
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-medium);
+  box-shadow: var(--mp-shadow-sm);
+}
+.cb__preview-note { width: 320px; margin-top: var(--mp-space-12); }
 </style>
