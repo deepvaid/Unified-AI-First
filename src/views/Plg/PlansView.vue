@@ -9,6 +9,7 @@ import MpSegmentedControl from '@/components/MpSegmentedControl.vue'
 import { useToast } from '@/composables/useToast'
 import { useAccountsStore } from '@/stores/useAccounts'
 import { activePromo, isEligibleTier, promoSaving } from '@/plg/promo'
+import { PLG_CURRENCIES, formatMoney, resolveCurrency } from '@/plg/currency'
 import {
   usePlgStore,
   PLAN_CATALOG,
@@ -32,14 +33,16 @@ const accountId = computed(() => {
   return id ?? accountsStore.activeId
 })
 
-const currency = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 })
-function money(n: number) {
-  return currency.format(n)
-}
-
 function queryValue(key: string) {
   const raw = route.query[key]
   return (Array.isArray(raw) ? raw[0] : raw) ?? undefined
+}
+
+// Prices live in USD; the chosen currency only changes how they are shown.
+const currencyCode = ref(resolveCurrency(queryValue('currency')).code)
+const currencyItems = PLG_CURRENCIES.map(c => ({ title: c.label, value: c.code }))
+function money(n: number) {
+  return formatMoney(n, currencyCode.value)
 }
 
 // ── Cycle + cloud selection ────────────────────────────────────────────────
@@ -77,9 +80,9 @@ function effectiveMonthly(plan: PlanDef) {
   return cycle.value === 'annual' ? plan.monthly * (1 - ANNUAL_DISCOUNT) : plan.monthly
 }
 
-/** Self-serve tiers a customer can put in the cart (Enterprise goes through sales). */
+/** Any tier but the one the customer is already on can go in the cart. */
 function canSelect(cloud: PlgCloud, tier: PlanTier) {
-  return tier !== 'enterprise' && currentTierFor(cloud) !== tier
+  return currentTierFor(cloud) !== tier
 }
 
 // ── Cart state (local — nothing persisted until checkout) ─────────────────
@@ -285,6 +288,7 @@ async function onCheckout() {
 
 function continueToCheckout() {
   const query: Record<string, string> = { cycle: cycle.value }
+  if (currencyCode.value !== 'USD') query.currency = currencyCode.value
   for (const [cloud, tier] of Object.entries(selections)) {
     if (tier) query[cloud] = tier
   }
@@ -329,6 +333,15 @@ function talkToSales() {
 
     <div class="plans-controls">
       <MpFilterTabs v-model="cloudKey" :tabs="tabs" aria-label="Plan clouds" class="plans-controls__tabs" />
+      <!-- Chrome, not a form field: aria-label and no visible label keep it flush
+           with the switcher, so hide-details is deliberate (nothing to validate). -->
+      <v-select
+        v-model="currencyCode"
+        :items="currencyItems"
+        aria-label="Currency"
+        hide-details
+        class="plans-controls__currency"
+      />
       <MpSegmentedControl
         :model-value="cycle"
         :items="cycleItems"
@@ -349,6 +362,8 @@ function talkToSales() {
             <div class="text-body-2 text-medium-emphasis">{{ activeCatalog.tagline }}</div>
           </div>
         </div>
+
+        <MpSectionHeader title="Choose a plan" :heading-level="3" class="mb-3" />
 
         <div class="plan-grid">
             <v-card
@@ -414,16 +429,6 @@ function talkToSales() {
                   class="text-none"
                 >
                   Current plan
-                </v-btn>
-                <v-btn
-                  v-else-if="plan.tier === 'enterprise'"
-                  variant="outlined"
-                  color="primary"
-                  block
-                  class="text-none"
-                  @click="talkToSales"
-                >
-                  Talk to Sales
                 </v-btn>
                 <v-btn
                   v-else
@@ -740,6 +745,13 @@ function talkToSales() {
   justify-content: space-between;
   gap: var(--mp-space-12) var(--mp-space-24);
   margin-bottom: var(--mp-space-16);
+}
+
+.plans-controls__currency {
+  flex: 0 0 auto;
+  width: calc(var(--mp-space-80) + var(--mp-space-32));
+  /* Hugs the billing switcher rather than floating mid-row. */
+  margin-left: auto;
 }
 
 .plans-controls__tabs {
