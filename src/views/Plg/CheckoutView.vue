@@ -7,6 +7,7 @@ import Plg3dsDialog from '@/components/plg/Plg3dsDialog.vue'
 import { useAccountsStore } from '@/stores/useAccounts'
 import { useDaVinciSetupStore } from '@/stores/useDaVinciSetup'
 import { activePromo, promoSaving, validateCoupon } from '@/plg/promo'
+import { formatMoney } from '@/plg/currency'
 import {
   usePlgStore,
   PLAN_CATALOG,
@@ -35,9 +36,10 @@ const plansRoute = computed(() => {
   return { name: 'Plans', params: { accountId: accountId.value }, query }
 })
 
-const currency = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 })
+// The Plans page hands over the display currency; amounts stay in USD underneath.
 function money(n: number) {
-  return currency.format(n)
+  const code = route.query.currency
+  return formatMoney(n, Array.isArray(code) ? code[0] : code)
 }
 
 // ── Parse + validate the Plans → Checkout query contract ──────────────────
