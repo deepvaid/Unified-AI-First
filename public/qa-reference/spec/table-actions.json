@@ -1,0 +1,172 @@
+{
+  "key": "table-actions",
+  "liquidsky": [
+    "AppTableActionMenu",
+    "AppFilterButton"
+  ],
+  "status": "matched",
+  "reference": "MpRowActionsMenu + MpMenuItem; the Filter button of MpDataTableToolbar",
+  "stories": [
+    {
+      "id": "molecules-mprowactionsmenu--open-menu",
+      "label": "Row actions menu open",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mprowactionsmenu--open-menu",
+      "png": {
+        "light": "png/table-actions/molecules-mprowactionsmenu--open-menu--light.png",
+        "dark": "png/table-actions/molecules-mprowactionsmenu--open-menu--dark.png"
+      },
+      "parts": [
+        {
+          "part": "trigger",
+          "props": {
+            "width": {
+              "light": "32px",
+              "dark": "32px"
+            },
+            "height": {
+              "light": "40px",
+              "dark": "40px"
+            },
+            "border-radius": {
+              "light": "9999px",
+              "dark": "9999px"
+            },
+            "color": {
+              "light": "rgba(26, 24, 20, 0.6)",
+              "dark": "rgba(236, 236, 236, 0.7)"
+            }
+          }
+        },
+        {
+          "part": "panel",
+          "props": {
+            "min-width": {
+              "light": "180px",
+              "token": "component.menu.minWidth",
+              "dark": "180px"
+            },
+            "padding": {
+              "light": "4px",
+              "dark": "4px"
+            },
+            "box-shadow": {
+              "light": "rgba(0, 0, 0, 0.2) 0px 0px 0px 0px, rgba(0, 0, 0, 0.14) 0px 0px 0px 0px, rgba(0, 0, 0, 0.12) 0px 0px 0px 0px",
+              "dark": "rgba(0, 0, 0, 0.2) 0px 0px 0px 0px, rgba(0, 0, 0, 0.14) 0px 0px 0px 0px, rgba(0, 0, 0, 0.12) 0px 0px 0px 0px"
+            },
+            "background-color": {
+              "light": "rgb(255, 255, 255)",
+              "dark": "rgb(50, 55, 62)"
+            },
+            "border-radius": {
+              "light": "12px",
+              "token": "component.menu.radius",
+              "dark": "12px"
+            }
+          }
+        },
+        {
+          "part": "item",
+          "props": {
+            "min-height": {
+              "light": "36px",
+              "token": "component.menu.itemHeight",
+              "dark": "36px"
+            },
+            "padding": {
+              "light": "6px 12px",
+              "dark": "6px 12px"
+            },
+            "border-radius": {
+              "light": "8px",
+              "dark": "8px"
+            },
+            "color": {
+              "light": "rgba(26, 24, 20, 0.87)",
+              "dark": "rgb(236, 236, 236)"
+            }
+          }
+        },
+        {
+          "part": "item label",
+          "props": {
+            "font-size": {
+              "light": "16px",
+              "dark": "16px"
+            },
+            "font-weight": {
+              "light": "400",
+              "dark": "400"
+            },
+            "line-height": {
+              "light": "24px",
+              "dark": "24px"
+            },
+            "color": {
+              "light": "rgba(26, 24, 20, 0.87)",
+              "dark": "rgb(236, 236, 236)"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "molecules-mpdatatabletoolbar--with-single-filter",
+      "label": "Toolbar with Filter button",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpdatatabletoolbar--with-single-filter",
+      "png": {
+        "light": "png/table-actions/molecules-mpdatatabletoolbar--with-single-filter--light.png",
+        "dark": "png/table-actions/molecules-mpdatatabletoolbar--with-single-filter--dark.png"
+      },
+      "parts": [
+        {
+          "part": "filter button",
+          "props": {
+            "height": {
+              "light": "40px",
+              "token": "component.control.height",
+              "dark": "40px"
+            },
+            "padding": {
+              "light": "0px 14px",
+              "dark": "0px 14px"
+            },
+            "border-radius": {
+              "light": "9999px",
+              "dark": "9999px"
+            },
+            "border-top-color": {
+              "light": "rgb(138, 138, 138)",
+              "dark": "rgb(124, 132, 143)"
+            },
+            "color": {
+              "light": "rgba(26, 24, 20, 0.87)",
+              "dark": "rgb(236, 236, 236)"
+            },
+            "font-size": {
+              "light": "14px",
+              "dark": "14px"
+            },
+            "font-weight": {
+              "light": "600",
+              "dark": "600"
+            }
+          }
+        },
+        {
+          "part": "filter button (hover)",
+          "state": "hover",
+          "props": {
+            "background-color": {
+              "light": "rgba(0, 0, 0, 0)",
+              "dark": "rgba(0, 0, 0, 0)"
+            },
+            "border-top-color": {
+              "light": "rgb(138, 138, 138)",
+              "dark": "rgb(124, 132, 143)"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

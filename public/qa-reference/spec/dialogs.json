@@ -1,0 +1,531 @@
+{
+  "key": "dialogs",
+  "liquidsky": [
+    "AppDialogWrapper",
+    "AppConfirmationDialog",
+    "AppDrawerWrapper"
+  ],
+  "status": "matched",
+  "reference": "MpDialog, MpConfirmDialog, MpFormDrawer",
+  "stories": [
+    {
+      "id": "molecules-mpdialog--default",
+      "label": "Dialog",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpdialog--default",
+      "png": {
+        "light": "png/dialogs/molecules-mpdialog--default--light.png",
+        "dark": "png/dialogs/molecules-mpdialog--default--dark.png"
+      },
+      "parts": [
+        {
+          "part": "card",
+          "props": {
+            "width": {
+              "light": "640px",
+              "dark": "640px"
+            },
+            "background-color": {
+              "light": "rgb(255, 255, 255)",
+              "dark": "rgb(50, 55, 62)"
+            },
+            "border-radius": {
+              "light": "16px",
+              "token": "component.dialog.radius",
+              "dark": "16px"
+            }
+          }
+        },
+        {
+          "part": "header",
+          "props": {
+            "padding": {
+              "light": "20px",
+              "token": "component.dialog.padding",
+              "dark": "20px"
+            },
+            "min-height": {
+              "light": "88px",
+              "token": "component.dialog.headerMinHeight",
+              "dark": "88px"
+            }
+          }
+        },
+        {
+          "part": "title",
+          "props": {
+            "font-size": {
+              "light": "16px",
+              "dark": "16px"
+            },
+            "font-weight": {
+              "light": "700",
+              "dark": "700"
+            },
+            "line-height": {
+              "light": "20.8px",
+              "dark": "20.8px"
+            },
+            "color": {
+              "light": "rgb(26, 24, 20)",
+              "dark": "rgb(236, 236, 236)"
+            }
+          }
+        },
+        {
+          "part": "body",
+          "props": {
+            "padding": {
+              "light": "20px",
+              "dark": "20px"
+            },
+            "row-gap": {
+              "light": "16px",
+              "token": "component.dialog.gap",
+              "dark": "16px"
+            },
+            "color": {
+              "light": "rgb(26, 24, 20)",
+              "dark": "rgb(236, 236, 236)"
+            },
+            "font-size": {
+              "light": "14px",
+              "dark": "14px"
+            }
+          }
+        },
+        {
+          "part": "footer",
+          "props": {
+            "padding": {
+              "light": "20px",
+              "token": "component.dialog.padding",
+              "dark": "20px"
+            },
+            "column-gap": {
+              "light": "8px",
+              "token": "component.dialog.footerGap",
+              "dark": "8px"
+            }
+          }
+        },
+        {
+          "part": "secondary button",
+          "props": {
+            "height": {
+              "light": "40px",
+              "token": "component.control.height",
+              "dark": "40px"
+            },
+            "border-radius": {
+              "light": "9999px",
+              "dark": "9999px"
+            },
+            "color": {
+              "light": "rgba(26, 24, 20, 0.87)",
+              "dark": "rgb(236, 236, 236)"
+            },
+            "font-size": {
+              "light": "14px",
+              "dark": "14px"
+            },
+            "font-weight": {
+              "light": "600",
+              "dark": "600"
+            }
+          }
+        },
+        {
+          "part": "primary button",
+          "props": {
+            "height": {
+              "light": "40px",
+              "token": "component.control.height",
+              "dark": "40px"
+            },
+            "border-radius": {
+              "light": "9999px",
+              "dark": "9999px"
+            },
+            "background-color": {
+              "light": "rgb(0, 113, 168)",
+              "dark": "rgb(44, 196, 255)"
+            },
+            "color": {
+              "light": "rgb(255, 255, 255)",
+              "dark": "rgb(6, 33, 44)"
+            },
+            "font-size": {
+              "light": "14px",
+              "dark": "14px"
+            },
+            "font-weight": {
+              "light": "600",
+              "dark": "600"
+            }
+          }
+        },
+        {
+          "part": "close button",
+          "props": {
+            "width": {
+              "light": "28px",
+              "dark": "28px"
+            },
+            "height": {
+              "light": "40px",
+              "dark": "40px"
+            },
+            "color": {
+              "light": "rgba(26, 24, 20, 0.87)",
+              "dark": "rgb(236, 236, 236)"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "molecules-mpconfirmdialog--default",
+      "label": "Confirm dialog",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpconfirmdialog--default",
+      "png": {
+        "light": "png/dialogs/molecules-mpconfirmdialog--default--light.png",
+        "dark": "png/dialogs/molecules-mpconfirmdialog--default--dark.png"
+      },
+      "parts": [
+        {
+          "part": "card",
+          "props": {
+            "width": {
+              "light": "440px",
+              "dark": "440px"
+            },
+            "background-color": {
+              "light": "rgb(255, 255, 255)",
+              "dark": "rgb(50, 55, 62)"
+            },
+            "border-radius": {
+              "light": "16px",
+              "token": "component.dialog.radius",
+              "dark": "16px"
+            }
+          }
+        },
+        {
+          "part": "header",
+          "props": {
+            "padding": {
+              "light": "20px",
+              "token": "component.dialog.padding",
+              "dark": "20px"
+            },
+            "min-height": {
+              "light": "88px",
+              "token": "component.dialog.headerMinHeight",
+              "dark": "88px"
+            }
+          }
+        },
+        {
+          "part": "title",
+          "props": {
+            "font-size": {
+              "light": "16px",
+              "dark": "16px"
+            },
+            "font-weight": {
+              "light": "700",
+              "dark": "700"
+            },
+            "line-height": {
+              "light": "20.8px",
+              "dark": "20.8px"
+            },
+            "color": {
+              "light": "rgb(26, 24, 20)",
+              "dark": "rgb(236, 236, 236)"
+            }
+          }
+        },
+        {
+          "part": "body",
+          "props": {
+            "padding": {
+              "light": "20px",
+              "dark": "20px"
+            },
+            "row-gap": {
+              "light": "16px",
+              "token": "component.dialog.gap",
+              "dark": "16px"
+            },
+            "color": {
+              "light": "rgb(26, 24, 20)",
+              "dark": "rgb(236, 236, 236)"
+            },
+            "font-size": {
+              "light": "14px",
+              "dark": "14px"
+            }
+          }
+        },
+        {
+          "part": "footer",
+          "props": {
+            "padding": {
+              "light": "20px",
+              "token": "component.dialog.padding",
+              "dark": "20px"
+            },
+            "column-gap": {
+              "light": "8px",
+              "token": "component.dialog.footerGap",
+              "dark": "8px"
+            }
+          }
+        },
+        {
+          "part": "secondary button",
+          "props": {
+            "height": {
+              "light": "40px",
+              "token": "component.control.height",
+              "dark": "40px"
+            },
+            "border-radius": {
+              "light": "9999px",
+              "dark": "9999px"
+            },
+            "color": {
+              "light": "rgba(26, 24, 20, 0.87)",
+              "dark": "rgb(236, 236, 236)"
+            },
+            "font-size": {
+              "light": "14px",
+              "dark": "14px"
+            },
+            "font-weight": {
+              "light": "600",
+              "dark": "600"
+            }
+          }
+        },
+        {
+          "part": "primary button",
+          "props": {
+            "height": {
+              "light": "40px",
+              "token": "component.control.height",
+              "dark": "40px"
+            },
+            "border-radius": {
+              "light": "9999px",
+              "dark": "9999px"
+            },
+            "background-color": {
+              "light": "rgb(0, 113, 168)",
+              "dark": "rgb(44, 196, 255)"
+            },
+            "color": {
+              "light": "rgb(255, 255, 255)",
+              "dark": "rgb(6, 33, 44)"
+            },
+            "font-size": {
+              "light": "14px",
+              "dark": "14px"
+            },
+            "font-weight": {
+              "light": "600",
+              "dark": "600"
+            }
+          }
+        },
+        {
+          "part": "close button",
+          "props": {
+            "width": {
+              "light": "28px",
+              "dark": "28px"
+            },
+            "height": {
+              "light": "40px",
+              "dark": "40px"
+            },
+            "color": {
+              "light": "rgba(26, 24, 20, 0.87)",
+              "dark": "rgb(236, 236, 236)"
+            }
+          }
+        },
+        {
+          "part": "message",
+          "props": {
+            "font-size": {
+              "light": "14px",
+              "dark": "14px"
+            },
+            "font-weight": {
+              "light": "400",
+              "dark": "400"
+            },
+            "line-height": {
+              "light": "21px",
+              "dark": "21px"
+            },
+            "color": {
+              "light": "rgb(90, 101, 115)",
+              "dark": "rgb(155, 163, 172)"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "molecules-mpformdrawer--filter-drawer",
+      "label": "Drawer",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpformdrawer--filter-drawer",
+      "png": {
+        "light": "png/dialogs/molecules-mpformdrawer--filter-drawer--light.png",
+        "dark": "png/dialogs/molecules-mpformdrawer--filter-drawer--dark.png"
+      },
+      "parts": [
+        {
+          "part": "drawer",
+          "props": {
+            "width": {
+              "light": "480px",
+              "token": "component.drawer.width.md",
+              "dark": "480px"
+            },
+            "background-color": {
+              "light": "rgb(255, 255, 255)",
+              "dark": "rgb(31, 34, 38)"
+            }
+          }
+        },
+        {
+          "part": "header",
+          "props": {
+            "padding": {
+              "light": "20px",
+              "token": "component.dialog.padding",
+              "dark": "20px"
+            },
+            "min-height": {
+              "light": "88px",
+              "dark": "88px"
+            }
+          }
+        },
+        {
+          "part": "title",
+          "props": {
+            "font-size": {
+              "light": "16px",
+              "dark": "16px"
+            },
+            "font-weight": {
+              "light": "700",
+              "dark": "700"
+            },
+            "line-height": {
+              "light": "20.8px",
+              "dark": "20.8px"
+            },
+            "color": {
+              "light": "rgba(26, 24, 20, 0.87)",
+              "dark": "rgb(236, 236, 236)"
+            }
+          }
+        },
+        {
+          "part": "subtitle",
+          "props": {
+            "font-size": {
+              "light": "13px",
+              "dark": "13px"
+            },
+            "font-weight": {
+              "light": "400",
+              "dark": "400"
+            },
+            "line-height": {
+              "light": "18.2px",
+              "dark": "18.2px"
+            },
+            "color": {
+              "light": "rgb(90, 101, 115)",
+              "dark": "rgb(155, 163, 172)"
+            }
+          }
+        },
+        {
+          "part": "body",
+          "props": {
+            "padding": {
+              "light": "20px",
+              "dark": "20px"
+            },
+            "row-gap": {
+              "light": "16px",
+              "token": "component.dialog.gap",
+              "dark": "16px"
+            }
+          }
+        },
+        {
+          "part": "footer",
+          "props": {
+            "padding": {
+              "light": "20px",
+              "token": "component.dialog.padding",
+              "dark": "20px"
+            },
+            "column-gap": {
+              "light": "8px",
+              "dark": "8px"
+            },
+            "border-top-color": {
+              "light": "rgba(26, 24, 20, 0.87)",
+              "dark": "rgb(236, 236, 236)"
+            }
+          }
+        },
+        {
+          "part": "primary button",
+          "props": {
+            "height": {
+              "light": "40px",
+              "token": "component.control.height",
+              "dark": "40px"
+            },
+            "border-radius": {
+              "light": "9999px",
+              "dark": "9999px"
+            },
+            "background-color": {
+              "light": "rgb(0, 113, 168)",
+              "dark": "rgb(44, 196, 255)"
+            },
+            "color": {
+              "light": "rgb(255, 255, 255)",
+              "dark": "rgb(6, 33, 44)"
+            }
+          }
+        },
+        {
+          "part": "scrim",
+          "props": {
+            "background-color": {
+              "light": "rgb(0, 0, 0)",
+              "dark": "rgb(0, 0, 0)"
+            },
+            "opacity": {
+              "light": "0.2",
+              "dark": "0.2"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,332 @@
+{
+  "key": "snackbar",
+  "liquidsky": [
+    "AppSnackbar"
+  ],
+  "status": "matched",
+  "reference": "MpToastStack (driven by useToast)",
+  "stories": [
+    {
+      "id": "molecules-mptoaststack--success",
+      "label": "Success",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mptoaststack--success",
+      "png": {
+        "light": "png/snackbar/molecules-mptoaststack--success--light.png",
+        "dark": "png/snackbar/molecules-mptoaststack--success--dark.png"
+      },
+      "parts": [
+        {
+          "part": "toast",
+          "props": {
+            "padding": {
+              "light": "12px",
+              "dark": "12px"
+            },
+            "min-height": {
+              "light": "0px",
+              "dark": "0px"
+            },
+            "border-top-color": {
+              "light": "rgba(0, 0, 0, 0.12)",
+              "dark": "rgba(255, 255, 255, 0.12)"
+            },
+            "box-shadow": {
+              "light": "none",
+              "dark": "none"
+            },
+            "background-color": {
+              "light": "rgb(255, 255, 255)",
+              "dark": "rgb(31, 34, 38)"
+            },
+            "border-radius": {
+              "light": "16px",
+              "dark": "16px"
+            }
+          }
+        },
+        {
+          "part": "icon",
+          "props": {
+            "width": {
+              "light": "18px",
+              "dark": "18px"
+            },
+            "height": {
+              "light": "18px",
+              "dark": "18px"
+            },
+            "color": {
+              "light": "rgb(25, 122, 81)",
+              "dark": "rgb(76, 194, 138)"
+            }
+          }
+        },
+        {
+          "part": "message",
+          "props": {
+            "font-size": {
+              "light": "13px",
+              "dark": "13px"
+            },
+            "font-weight": {
+              "light": "400",
+              "dark": "400"
+            },
+            "line-height": {
+              "light": "18.2px",
+              "dark": "18.2px"
+            },
+            "color": {
+              "light": "rgb(26, 24, 20)",
+              "dark": "rgb(236, 236, 236)"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "molecules-mptoaststack--persistent-error",
+      "label": "Error",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mptoaststack--persistent-error",
+      "png": {
+        "light": "png/snackbar/molecules-mptoaststack--persistent-error--light.png",
+        "dark": "png/snackbar/molecules-mptoaststack--persistent-error--dark.png"
+      },
+      "parts": [
+        {
+          "part": "toast",
+          "props": {
+            "padding": {
+              "light": "12px",
+              "dark": "12px"
+            },
+            "min-height": {
+              "light": "0px",
+              "dark": "0px"
+            },
+            "border-top-color": {
+              "light": "rgba(0, 0, 0, 0.12)",
+              "dark": "rgba(255, 255, 255, 0.12)"
+            },
+            "box-shadow": {
+              "light": "none",
+              "dark": "none"
+            },
+            "background-color": {
+              "light": "rgb(255, 255, 255)",
+              "dark": "rgb(31, 34, 38)"
+            },
+            "border-radius": {
+              "light": "16px",
+              "dark": "16px"
+            }
+          }
+        },
+        {
+          "part": "icon",
+          "props": {
+            "width": {
+              "light": "18px",
+              "dark": "18px"
+            },
+            "height": {
+              "light": "18px",
+              "dark": "18px"
+            },
+            "color": {
+              "light": "rgb(192, 57, 43)",
+              "dark": "rgb(241, 142, 132)"
+            }
+          }
+        },
+        {
+          "part": "message",
+          "props": {
+            "font-size": {
+              "light": "13px",
+              "dark": "13px"
+            },
+            "font-weight": {
+              "light": "400",
+              "dark": "400"
+            },
+            "line-height": {
+              "light": "18.2px",
+              "dark": "18.2px"
+            },
+            "color": {
+              "light": "rgb(26, 24, 20)",
+              "dark": "rgb(236, 236, 236)"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "molecules-mptoaststack--warning",
+      "label": "Warning",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mptoaststack--warning",
+      "png": {
+        "light": "png/snackbar/molecules-mptoaststack--warning--light.png",
+        "dark": "png/snackbar/molecules-mptoaststack--warning--dark.png"
+      },
+      "parts": [
+        {
+          "part": "toast",
+          "props": {
+            "padding": {
+              "light": "12px",
+              "dark": "12px"
+            },
+            "min-height": {
+              "light": "0px",
+              "dark": "0px"
+            },
+            "border-top-color": {
+              "light": "rgba(0, 0, 0, 0.12)",
+              "dark": "rgba(255, 255, 255, 0.12)"
+            },
+            "box-shadow": {
+              "light": "none",
+              "dark": "none"
+            },
+            "background-color": {
+              "light": "rgb(255, 255, 255)",
+              "dark": "rgb(31, 34, 38)"
+            },
+            "border-radius": {
+              "light": "16px",
+              "dark": "16px"
+            }
+          }
+        },
+        {
+          "part": "icon",
+          "props": {
+            "width": {
+              "light": "18px",
+              "dark": "18px"
+            },
+            "height": {
+              "light": "18px",
+              "dark": "18px"
+            },
+            "color": {
+              "light": "rgb(155, 92, 14)",
+              "dark": "rgb(225, 160, 74)"
+            }
+          }
+        },
+        {
+          "part": "message",
+          "props": {
+            "font-size": {
+              "light": "13px",
+              "dark": "13px"
+            },
+            "font-weight": {
+              "light": "400",
+              "dark": "400"
+            },
+            "line-height": {
+              "light": "18.2px",
+              "dark": "18.2px"
+            },
+            "color": {
+              "light": "rgb(26, 24, 20)",
+              "dark": "rgb(236, 236, 236)"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "molecules-mptoaststack--info",
+      "label": "Info",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mptoaststack--info",
+      "png": {
+        "light": "png/snackbar/molecules-mptoaststack--info--light.png",
+        "dark": "png/snackbar/molecules-mptoaststack--info--dark.png"
+      },
+      "parts": [
+        {
+          "part": "toast",
+          "props": {
+            "padding": {
+              "light": "12px",
+              "dark": "12px"
+            },
+            "min-height": {
+              "light": "0px",
+              "dark": "0px"
+            },
+            "border-top-color": {
+              "light": "rgba(0, 0, 0, 0.12)",
+              "dark": "rgba(255, 255, 255, 0.12)"
+            },
+            "box-shadow": {
+              "light": "none",
+              "dark": "none"
+            },
+            "background-color": {
+              "light": "rgb(255, 255, 255)",
+              "dark": "rgb(31, 34, 38)"
+            },
+            "border-radius": {
+              "light": "16px",
+              "dark": "16px"
+            }
+          }
+        },
+        {
+          "part": "icon",
+          "props": {
+            "width": {
+              "light": "18px",
+              "dark": "18px"
+            },
+            "height": {
+              "light": "18px",
+              "dark": "18px"
+            },
+            "color": {
+              "light": "rgb(0, 115, 171)",
+              "dark": "rgb(44, 196, 255)"
+            }
+          }
+        },
+        {
+          "part": "message",
+          "props": {
+            "font-size": {
+              "light": "13px",
+              "dark": "13px"
+            },
+            "font-weight": {
+              "light": "400",
+              "dark": "400"
+            },
+            "line-height": {
+              "light": "18.2px",
+              "dark": "18.2px"
+            },
+            "color": {
+              "light": "rgb(26, 24, 20)",
+              "dark": "rgb(236, 236, 236)"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "molecules-mptoaststack--with-action",
+      "label": "With action",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mptoaststack--with-action",
+      "png": {
+        "light": "png/snackbar/molecules-mptoaststack--with-action--light.png",
+        "dark": "png/snackbar/molecules-mptoaststack--with-action--dark.png"
+      },
+      "parts": []
+    }
+  ]
+}

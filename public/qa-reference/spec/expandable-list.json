@@ -1,0 +1,10 @@
+{
+  "key": "expandable-list",
+  "liquidsky": [
+    "AppExpandableList"
+  ],
+  "status": "no-reference",
+  "reference": "None",
+  "note": "Marobase has no expandable-list component. Needs a design decision before it can be reviewed.",
+  "stories": []
+}

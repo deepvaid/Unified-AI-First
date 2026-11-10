@@ -1,0 +1,57 @@
+{
+  "key": "onboarding-checklists",
+  "liquidsky": [
+    "TheOnboardingScreenChecklists"
+  ],
+  "status": "partial",
+  "reference": "MpListRow, checklist rows",
+  "note": "Only the row geometry has a reference. The onboarding screen layout around it needs a design.",
+  "stories": [
+    {
+      "id": "atoms-mplistrow--checklist",
+      "label": "Checklist rows",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/atoms-mplistrow--checklist",
+      "png": {
+        "light": "png/onboarding-checklists/atoms-mplistrow--checklist--light.png",
+        "dark": "png/onboarding-checklists/atoms-mplistrow--checklist--dark.png"
+      },
+      "parts": [
+        {
+          "part": "row",
+          "props": {
+            "padding": {
+              "light": "4px 0px",
+              "dark": "4px 0px"
+            },
+            "column-gap": {
+              "light": "12px",
+              "token": "component.listItem.gap",
+              "dark": "12px"
+            }
+          }
+        },
+        {
+          "part": "row title",
+          "props": {
+            "font-size": {
+              "light": "13px",
+              "dark": "13px"
+            },
+            "font-weight": {
+              "light": "500",
+              "dark": "500"
+            },
+            "line-height": {
+              "light": "16.9px",
+              "dark": "16.9px"
+            },
+            "color": {
+              "light": "rgb(26, 24, 20)",
+              "dark": "rgb(236, 236, 236)"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

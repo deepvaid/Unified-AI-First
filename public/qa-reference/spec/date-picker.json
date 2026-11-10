@@ -1,0 +1,133 @@
+{
+  "key": "date-picker",
+  "liquidsky": [
+    "AppDatePicker"
+  ],
+  "status": "partial",
+  "reference": "MpDateRangeSelect",
+  "note": "Marobase has a range selector (presets + custom range fields) but no calendar-grid date picker. The trigger and panel are covered; the calendar itself has no reference.",
+  "stories": [
+    {
+      "id": "molecules-mpdaterangeselect--menu-open",
+      "label": "Preset menu open",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpdaterangeselect--menu-open",
+      "png": {
+        "light": "png/date-picker/molecules-mpdaterangeselect--menu-open--light.png",
+        "dark": "png/date-picker/molecules-mpdaterangeselect--menu-open--dark.png"
+      },
+      "parts": [
+        {
+          "part": "trigger",
+          "props": {
+            "height": {
+              "light": "40px",
+              "token": "component.control.height",
+              "dark": "40px"
+            },
+            "padding": {
+              "light": "0px 12px",
+              "dark": "0px 12px"
+            },
+            "border-radius": {
+              "light": "12px",
+              "dark": "12px"
+            },
+            "border-top-color": {
+              "light": "rgb(0, 113, 168)",
+              "dark": "rgb(44, 196, 255)"
+            },
+            "background-color": {
+              "light": "rgb(255, 255, 255)",
+              "dark": "rgb(31, 34, 38)"
+            },
+            "font-size": {
+              "light": "14px",
+              "dark": "14px"
+            },
+            "font-weight": {
+              "light": "500",
+              "dark": "500"
+            },
+            "line-height": {
+              "light": "21px",
+              "dark": "21px"
+            },
+            "color": {
+              "light": "rgb(26, 24, 20)",
+              "dark": "rgb(236, 236, 236)"
+            }
+          }
+        },
+        {
+          "part": "panel",
+          "props": {
+            "min-width": {
+              "light": "240px",
+              "dark": "240px"
+            },
+            "padding": {
+              "light": "0px",
+              "dark": "0px"
+            },
+            "box-shadow": {
+              "light": "rgba(11, 53, 88, 0.08) 0px 2px 16px -8px",
+              "dark": "rgba(0, 0, 0, 0.55) 0px 8px 24px -6px"
+            },
+            "background-color": {
+              "light": "rgb(255, 255, 255)",
+              "dark": "rgb(50, 55, 62)"
+            },
+            "border-radius": {
+              "light": "12px",
+              "dark": "12px"
+            }
+          }
+        },
+        {
+          "part": "option",
+          "props": {
+            "min-height": {
+              "light": "36px",
+              "dark": "36px"
+            },
+            "padding": {
+              "light": "6px 12px",
+              "dark": "6px 12px"
+            },
+            "border-radius": {
+              "light": "8px",
+              "dark": "8px"
+            },
+            "color": {
+              "light": "rgba(26, 24, 20, 0.87)",
+              "dark": "rgb(236, 236, 236)"
+            }
+          }
+        },
+        {
+          "part": "active option",
+          "props": {
+            "background-color": {
+              "light": "rgba(0, 0, 0, 0)",
+              "dark": "rgba(0, 0, 0, 0)"
+            },
+            "color": {
+              "light": "rgba(26, 24, 20, 0.87)",
+              "dark": "rgb(236, 236, 236)"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "molecules-mpdaterangeselect--custom-panel-open",
+      "label": "Custom range open",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpdaterangeselect--custom-panel-open",
+      "png": {
+        "light": "png/date-picker/molecules-mpdaterangeselect--custom-panel-open--light.png",
+        "dark": "png/date-picker/molecules-mpdaterangeselect--custom-panel-open--dark.png"
+      },
+      "parts": []
+    }
+  ]
+}

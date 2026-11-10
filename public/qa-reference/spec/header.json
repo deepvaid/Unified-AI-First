@@ -1,0 +1,88 @@
+{
+  "key": "header",
+  "liquidsky": [
+    "Header",
+    "user / account menu"
+  ],
+  "status": "matched",
+  "reference": "AppBar (Patterns › App Shell), MpNotificationsMenu",
+  "note": "The bar and its controls are covered. The profile and create menus open from a click, so they are checked by eye in the AppBar stories.",
+  "stories": [
+    {
+      "id": "patterns-app-shell-appbar--default",
+      "label": "Default",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-app-shell-appbar--default",
+      "png": {
+        "light": "png/header/patterns-app-shell-appbar--default--light.png",
+        "dark": "png/header/patterns-app-shell-appbar--default--dark.png"
+      },
+      "parts": [
+        {
+          "part": "bar",
+          "props": {
+            "height": {
+              "light": "57px",
+              "dark": "57px"
+            },
+            "background-color": {
+              "light": "rgb(234, 237, 242)",
+              "dark": "rgb(31, 34, 38)"
+            }
+          }
+        },
+        {
+          "part": "search field",
+          "props": {
+            "height": {
+              "light": "40px",
+              "dark": "40px"
+            },
+            "border-radius": {
+              "light": "9999px",
+              "dark": "9999px"
+            },
+            "background-color": {
+              "light": "rgb(255, 255, 255)",
+              "dark": "rgb(31, 34, 38)"
+            }
+          }
+        },
+        {
+          "part": "icon button",
+          "props": {
+            "width": {
+              "light": "40px",
+              "dark": "40px"
+            },
+            "height": {
+              "light": "40px",
+              "dark": "40px"
+            },
+            "border-radius": {
+              "light": "9999px",
+              "dark": "9999px"
+            },
+            "color": {
+              "light": "rgb(26, 24, 20)",
+              "dark": "rgb(236, 236, 236)"
+            }
+          }
+        },
+        {
+          "part": "icon button (hover)",
+          "state": "hover",
+          "props": {
+            "background-color": {
+              "light": "rgb(236, 236, 236)",
+              "dark": "rgb(39, 43, 48)"
+            },
+            "color": {
+              "light": "rgb(26, 24, 20)",
+              "dark": "rgb(236, 236, 236)"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

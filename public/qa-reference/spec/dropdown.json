@@ -1,0 +1,145 @@
+{
+  "key": "dropdown",
+  "liquidsky": [
+    "AppDropdown"
+  ],
+  "status": "matched",
+  "reference": "v-select / v-autocomplete on the form-field baseline (Patterns › Form Fields)",
+  "stories": [
+    {
+      "id": "patterns-form-fields--selected-with-checkmark",
+      "label": "Select, menu open",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-form-fields--selected-with-checkmark",
+      "png": {
+        "light": "png/dropdown/patterns-form-fields--selected-with-checkmark--light.png",
+        "dark": "png/dropdown/patterns-form-fields--selected-with-checkmark--dark.png"
+      },
+      "parts": [
+        {
+          "part": "field",
+          "props": {
+            "height": {
+              "light": "40px",
+              "token": "component.field.height.md",
+              "dark": "40px"
+            },
+            "border-radius": {
+              "light": "10px",
+              "token": "component.input.radius",
+              "dark": "10px"
+            },
+            "background-color": {
+              "light": "rgba(0, 0, 0, 0)",
+              "dark": "rgba(0, 0, 0, 0)"
+            }
+          }
+        },
+        {
+          "part": "label",
+          "props": {
+            "font-size": {
+              "light": "16px",
+              "dark": "16px"
+            },
+            "font-weight": {
+              "light": "400",
+              "dark": "400"
+            },
+            "line-height": {
+              "light": "24px",
+              "dark": "24px"
+            },
+            "color": {
+              "light": "rgb(26, 24, 20)",
+              "dark": "rgb(236, 236, 236)"
+            }
+          }
+        },
+        {
+          "part": "menu panel",
+          "props": {
+            "border-radius": {
+              "light": "12px",
+              "token": "component.menu.radius",
+              "dark": "12px"
+            },
+            "box-shadow": {
+              "light": "rgba(11, 53, 88, 0.08) 0px 2px 16px -8px",
+              "dark": "rgba(0, 0, 0, 0.55) 0px 8px 24px -6px"
+            },
+            "background-color": {
+              "light": "rgb(255, 255, 255)",
+              "dark": "rgb(50, 55, 62)"
+            }
+          }
+        },
+        {
+          "part": "option",
+          "props": {
+            "min-height": {
+              "light": "36px",
+              "token": "component.menu.itemHeight",
+              "dark": "36px"
+            },
+            "padding": {
+              "light": "6px 12px",
+              "dark": "6px 12px"
+            },
+            "border-radius": {
+              "light": "8px",
+              "dark": "8px"
+            },
+            "color": {
+              "light": "rgba(26, 24, 20, 0.87)",
+              "dark": "rgb(236, 236, 236)"
+            }
+          }
+        },
+        {
+          "part": "option label",
+          "props": {
+            "font-size": {
+              "light": "16px",
+              "dark": "16px"
+            },
+            "font-weight": {
+              "light": "400",
+              "dark": "400"
+            },
+            "line-height": {
+              "light": "24px",
+              "dark": "24px"
+            },
+            "color": {
+              "light": "rgba(26, 24, 20, 0.87)",
+              "dark": "rgb(236, 236, 236)"
+            }
+          }
+        },
+        {
+          "part": "selected option",
+          "props": {
+            "background-color": {
+              "light": "rgba(0, 0, 0, 0)",
+              "dark": "rgba(0, 0, 0, 0)"
+            },
+            "color": {
+              "light": "rgb(0, 113, 168)",
+              "dark": "rgb(44, 196, 255)"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "patterns-form-fields--all-states",
+      "label": "Field states",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-form-fields--all-states",
+      "png": {
+        "light": "png/dropdown/patterns-form-fields--all-states--light.png",
+        "dark": "png/dropdown/patterns-form-fields--all-states--dark.png"
+      },
+      "parts": []
+    }
+  ]
+}

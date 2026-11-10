@@ -1,0 +1,10 @@
+{
+  "key": "grid-table",
+  "liquidsky": [
+    "AppGridTable"
+  ],
+  "status": "no-reference",
+  "reference": "None",
+  "note": "Marobase has no card-grid table. Needs a design decision before it can be reviewed.",
+  "stories": []
+}

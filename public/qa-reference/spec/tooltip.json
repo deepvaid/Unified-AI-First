@@ -1,0 +1,58 @@
+{
+  "key": "tooltip",
+  "liquidsky": [
+    "AppTooltip"
+  ],
+  "status": "matched",
+  "reference": "v-tooltip on the global baseline (Foundations › Tooltips)",
+  "stories": [
+    {
+      "id": "foundations-tooltips--placements",
+      "label": "Placements",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/foundations-tooltips--placements",
+      "png": {
+        "light": "png/tooltip/foundations-tooltips--placements--light.png",
+        "dark": "png/tooltip/foundations-tooltips--placements--dark.png"
+      },
+      "parts": [
+        {
+          "part": "tooltip",
+          "props": {
+            "padding": {
+              "light": "5px 16px",
+              "dark": "5px 16px"
+            },
+            "max-width": {
+              "light": "none",
+              "dark": "none"
+            },
+            "background-color": {
+              "light": "rgb(236, 236, 236)",
+              "dark": "rgb(39, 43, 48)"
+            },
+            "border-radius": {
+              "light": "4px",
+              "dark": "4px"
+            },
+            "font-size": {
+              "light": "14px",
+              "dark": "14px"
+            },
+            "font-weight": {
+              "light": "400",
+              "dark": "400"
+            },
+            "line-height": {
+              "light": "22.4px",
+              "dark": "22.4px"
+            },
+            "color": {
+              "light": "rgb(92, 96, 102)",
+              "dark": "rgb(155, 163, 172)"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
