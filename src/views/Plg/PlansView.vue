@@ -165,10 +165,11 @@ function offerMonthly(plan: PlanDef) {
 function offerLine(plan: PlanDef) {
   if (!coupon.value) return ''
   const annual = cycle.value === 'annual'
+  const invoices = coupon.value.invoices
   if (autoApply.value) {
-    return `${annual ? 'year one' : `first ${coupon.value.invoices} invoices`}, then ${money(effectiveMonthly(plan))}/mo`
+    return `${annual ? 'First year' : `First ${invoices} invoices`} · then ${money(effectiveMonthly(plan))}/mo`
   }
-  return `${money(offerMonthly(plan))}/mo ${annual ? 'in year one' : `for ${coupon.value.invoices} invoices`}`
+  return `${money(offerMonthly(plan))}/mo with code · ${annual ? 'first year' : `${invoices} invoices`}`
 }
 
 const saving = computed(() => (promo ? promoSaving(promo, cloudLineItems.value, cycle.value) : 0))
@@ -180,62 +181,58 @@ const hasUndiscounted = computed(
 )
 const showCode = computed(() => offerApplies.value && !autoApply.value)
 
+// The offer in numbers: what it costs now, what it costs afterwards, what it saves.
 const offerHeadline = computed(() => {
-  if (!promo || !coupon.value) return ''
-  return cycle.value === 'annual'
-    ? `Pay ${money(offerTotal.value)} for your first year (${promo.headlinePercent}% off, up from ${annualPercent}%)`
-    : `Pay ${money(offerTotal.value)} for each of your first ${coupon.value.invoices} invoices`
-})
-const offerAfter = computed(() => {
   if (!coupon.value) return ''
   return cycle.value === 'annual'
-    ? `Renews at ${money(total.value)}/yr.`
-    : `Then ${money(total.value)}/mo from invoice ${coupon.value.invoices + 1}.`
+    ? `${money(offerTotal.value)} for your first year`
+    : `${money(offerTotal.value)} × first ${coupon.value.invoices} invoices`
 })
-
-const offerSmallPrint = computed(() =>
+const afterLabel = computed(() =>
+  cycle.value === 'annual' ? 'Renews at' : `Then, from invoice ${(coupon.value?.invoices ?? 0) + 1}`,
+)
+const afterValue = computed(() => `${money(total.value)}/${cycle.value === 'annual' ? 'yr' : 'mo'}`)
+const saveAmount = computed(() => money(saving.value * (coupon.value?.invoices ?? 1)))
+const EXCLUDED_NOTE = 'Build and add-ons excluded'
+const summaryFootnote = computed(() =>
   [
-    'Paste this code into Apply coupon at checkout.',
-    cycle.value === 'monthly' && 'Your first invoice may cover only part of a month.',
-    hasUndiscounted.value && "Build plans and add-ons aren't discounted.",
+    'Excl. taxes',
+    autoApply.value && offerApplies.value && 'Discount applied at checkout',
+    autoApply.value && offerApplies.value && hasUndiscounted.value && EXCLUDED_NOTE,
   ]
     .filter(Boolean)
-    .join(' '),
+    .join(' · '),
+)
+const pasteNote = computed(() =>
+  ['Paste in Apply coupon at checkout', hasUndiscounted.value && EXCLUDED_NOTE].filter(Boolean).join(' · '),
 )
 
 // The switcher says what each cycle is worth, so the choice is made on the deal.
-// On a phone the two long labels do not fit one row; the band above carries them.
+// On a phone the badges drop to the figure alone; the band above has the terms.
 const { smAndDown } = useDisplay()
-const cycleItems = computed(() =>
-  smAndDown.value
-    ? [
-        { value: 'annual', label: 'Annual' },
-        { value: 'monthly', label: 'Monthly' },
-      ]
-    : promo
-    ? [
-        { value: 'annual', label: `Annual · ${promo.headlinePercent}% off for 12 months` },
-        { value: 'monthly', label: `Monthly · ${promo.headlinePercent}% off ${promo.coupons.monthly.invoices} invoices` },
-      ]
-    : [
-        { value: 'annual', label: `Annual · save ${annualPercent}%` },
-        { value: 'monthly', label: 'Monthly' },
-      ],
-)
+const cycleItems = computed(() => {
+  if (!promo) {
+    return [
+      { value: 'annual', label: 'Annual', badge: `−${annualPercent}%` },
+      { value: 'monthly', label: 'Monthly' },
+    ]
+  }
+  const off = `−${promo.headlinePercent}%`
+  return [
+    { value: 'annual', label: 'Annual', badge: smAndDown.value ? off : `${off} · 12 mo` },
+    {
+      value: 'monthly',
+      label: 'Monthly',
+      badge: smAndDown.value ? off : `${off} · ${promo.coupons.monthly.invoices} invoices`,
+    },
+  ]
+})
 
 function setCycle(value: string | null) {
   if (value === 'annual' || value === 'monthly') cycle.value = value
 }
 
 const dueNow = computed(() => (autoApply.value ? offerTotal.value : total.value))
-const savingLine = computed(() => {
-  if (!coupon.value || !offerApplies.value) return ''
-  const amount = money(saving.value * coupon.value.invoices)
-  return cycle.value === 'annual'
-    ? `You save ${amount} in your first year.`
-    : `You save ${amount} over your first ${coupon.value.invoices} invoices.`
-})
-
 const copied = ref(false)
 const copyFailed = ref(false)
 let copiedTimer: ReturnType<typeof setTimeout> | undefined
@@ -309,7 +306,7 @@ function talkToSales() {
   <div class="plans-view">
     <MpPageHeader
       title="Subscription plans"
-      subtitle="Choose the tools and plan that fit your business today — upgrade anytime as you grow."
+      subtitle="Pick the plan that fits. Upgrade anytime."
     />
 
     <section v-if="promo" class="promo-band" :aria-label="promo.name">
@@ -318,16 +315,15 @@ function talkToSales() {
         <div class="promo-band__figure">{{ promo.headlinePercent }}% off</div>
       </div>
       <ul class="promo-band__terms">
-        <li><strong>Annual</strong> {{ promo.headlinePercent }}% off your first 12 months, up from {{ annualPercent }}%</li>
-        <li><strong>Monthly</strong> {{ promo.headlinePercent }}% off your first {{ promo.coupons.monthly.invoices }} invoices</li>
-        <li>Free onboarding included · Essential and above</li>
+        <li><strong>Annual</strong> 12 months <span class="promo-band__aside">usually {{ annualPercent }}%</span></li>
+        <li><strong>Monthly</strong> {{ promo.coupons.monthly.invoices }} invoices</li>
       </ul>
       <div class="promo-band__meta">
         <span class="promo-band__deadline">
           <v-icon size="14">clock</v-icon>
           Ends {{ promo.endsLabel }}
         </span>
-        <span>{{ autoApply ? 'Applied automatically at checkout' : 'Your code appears when you pick a plan' }}</span>
+        <span>{{ autoApply ? 'Applied at checkout' : 'Code in your order summary' }}</span>
       </div>
     </section>
 
@@ -380,15 +376,22 @@ function talkToSales() {
                   <template v-if="autoApply && hasOffer(cloudKey, plan)">
                     <s class="plan-card__was"><span class="d-sr-only">Regular price </span>{{ money(effectiveMonthly(plan)) }}</s>
                     {{ money(offerMonthly(plan)) }}<span class="plan-card__unit">/mo</span>
+                    <v-chip v-if="promo" size="small" color="success" variant="tonal" class="ml-2">
+                      Save {{ promo.headlinePercent }}%
+                    </v-chip>
                   </template>
                   <template v-else>
                     {{ money(effectiveMonthly(plan)) }}<span class="plan-card__unit">/mo</span>
                   </template>
                 </div>
                 <div v-if="cycle === 'annual'" class="plan-card__caption">billed annually</div>
-                <div v-if="hasOffer(cloudKey, plan)" class="plan-card__offer text-primary">
-                  <v-icon size="14">tag</v-icon>
-                  <span>Black Friday: {{ offerLine(plan) }}</span>
+                <div
+                  v-if="hasOffer(cloudKey, plan)"
+                  class="plan-card__offer"
+                  :class="autoApply ? 'text-medium-emphasis' : 'text-primary'"
+                >
+                  <v-icon v-if="!autoApply" size="14">tag</v-icon>
+                  <span>{{ offerLine(plan) }}</span>
                 </div>
 
                 <v-divider class="my-3" />
@@ -491,8 +494,8 @@ function talkToSales() {
             </div>
 
             <div v-if="!hasSelections" class="plans-summary__empty text-medium-emphasis text-body-2">
-              Products you choose will appear here.
-              <template v-if="promo && !autoApply">Pick a plan to see your Black Friday code.</template>
+              Your plan appears here.
+              <template v-if="promo && !autoApply">Pick a plan to see your code.</template>
             </div>
 
             <template v-else>
@@ -525,33 +528,44 @@ function talkToSales() {
                 <span class="num">{{ money(item.price) }}</span>
               </div>
               <div v-if="promo && offerApplies && autoApply" class="summary-line text-primary">
-                <span>{{ promo.name }}</span>
+                <span>Black Friday −{{ promo.headlinePercent }}%</span>
                 <span class="num">−{{ money(saving) }}</span>
               </div>
               <v-divider class="my-3" />
               <div class="summary-line summary-line--total">
-                <span>{{ cycle === 'annual' ? 'Total due today' : 'Total due' }}</span>
+                <span>Due today</span>
                 <span class="num">{{ money(dueNow) }}</span>
               </div>
-              <div v-if="cycle === 'annual'" class="text-caption text-medium-emphasis">
-                For 12 months · {{ money(dueNow / 12) }}/mo
+              <div v-if="cycle === 'annual'" class="summary-line summary-line--meta">
+                <span>Per month</span>
+                <span class="num">{{ money(dueNow / 12) }}</span>
               </div>
-              <div class="text-caption text-medium-emphasis mt-2">
-                Prices shown are exclusive of applicable taxes.
-              </div>
-              <div v-if="offerApplies && autoApply" class="text-caption text-medium-emphasis mt-2">
-                <strong class="text-success">{{ savingLine }}</strong>
-                Applied automatically at checkout. {{ offerAfter }}
-                <template v-if="hasUndiscounted">Build plans and add-ons aren't discounted.</template>
-              </div>
+              <template v-if="offerApplies && autoApply">
+                <div class="summary-line summary-line--meta">
+                  <span>{{ afterLabel }}</span>
+                  <span class="num">{{ afterValue }}</span>
+                </div>
+                <div class="summary-line summary-line--meta text-success">
+                  <span>You save</span>
+                  <span class="num">{{ saveAmount }}</span>
+                </div>
+              </template>
+              <div class="text-caption text-medium-emphasis mt-2">{{ summaryFootnote }}</div>
               <div v-if="offerMissed" class="text-caption text-medium-emphasis mt-2">
-                The Black Friday offer applies to Essential and above.
+                Offer applies to Essential and above.
               </div>
 
               <div v-if="promo && coupon && showCode" class="offer-block">
                 <div class="offer-block__eyebrow">{{ promo.name }}</div>
                 <div class="offer-block__headline">{{ offerHeadline }}</div>
-                <div class="offer-block__note">{{ savingLine }} {{ offerAfter }} Plus free onboarding.</div>
+                <div class="offer-block__row">
+                  <span>You save</span>
+                  <span>{{ saveAmount }}</span>
+                </div>
+                <div class="offer-block__row">
+                  <span>{{ afterLabel }}</span>
+                  <span>{{ afterValue }}</span>
+                </div>
                 <div class="offer-block__code">
                   <code>{{ coupon.code }}</code>
                   <v-btn
@@ -565,7 +579,25 @@ function talkToSales() {
                     {{ copied ? 'Copied' : 'Copy' }}
                   </v-btn>
                 </div>
-                <div class="offer-block__note">{{ offerSmallPrint }}</div>
+                <div class="offer-block__note">
+                  <span>{{ pasteNote }}</span>
+                  <v-tooltip
+                    v-if="cycle === 'monthly'"
+                    text="Your first invoice may cover only part of a month."
+                    location="top"
+                  >
+                    <template #activator="{ props: tip }">
+                      <button
+                        v-bind="tip"
+                        type="button"
+                        class="offer-block__info"
+                        aria-label="Your first invoice may cover only part of a month."
+                      >
+                        <v-icon size="14">info</v-icon>
+                      </button>
+                    </template>
+                  </v-tooltip>
+                </div>
               </div>
             </template>
 
@@ -589,13 +621,13 @@ function talkToSales() {
             <div class="text-body-2 font-weight-bold mb-3">What happens next?</div>
             <ol v-if="coupon && showCode" class="next-steps">
               <li>Continue to checkout.</li>
-              <li>Paste <strong>{{ coupon.code }}</strong> into Apply coupon, in the order summary.</li>
-              <li>Complete your secure payment via Chargebee.</li>
+              <li>Paste <strong>{{ coupon.code }}</strong> in Apply coupon.</li>
+              <li>Pay securely via Chargebee.</li>
             </ol>
             <ul v-else class="next-steps">
-              <li>Review and confirm your billing details.</li>
-              <li>Complete your secure payment via Chargebee.</li>
-              <li>Your new limits apply instantly — upgrade anytime.</li>
+              <li>Review billing details.</li>
+              <li>Pay securely via Chargebee.</li>
+              <li>New limits apply instantly.</li>
             </ul>
           </v-card>
         </div>
@@ -672,7 +704,9 @@ function talkToSales() {
   font-weight: var(--mp-fontWeight-semibold);
 }
 
-.promo-band__terms li:last-child {
+.promo-band__aside {
+  margin-left: var(--mp-space-8);
+  font-size: var(--mp-fontSize-12);
   color: var(--ink-panel-muted-fg);
 }
 
@@ -893,6 +927,16 @@ function talkToSales() {
   font-weight: 700;
 }
 
+.summary-line--meta {
+  padding: var(--mp-space-2) 0;
+  font-size: var(--mp-fontSize-13);
+  color: rgb(var(--v-theme-on-surface-variant));
+}
+
+.summary-line--meta.text-success {
+  font-weight: var(--mp-fontWeight-semibold);
+}
+
 .summary-line__label {
   display: flex;
   flex-direction: column;
@@ -939,9 +983,33 @@ function talkToSales() {
   line-height: 1.4;
 }
 
+.offer-block__row,
 .offer-block__note {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-6);
   font-size: var(--mp-fontSize-12);
   line-height: 1.5;
+}
+
+.offer-block__row {
+  justify-content: space-between;
+}
+
+.offer-block__info {
+  display: inline-flex;
+  appearance: none;
+  padding: 0;
+  border: 0;
+  border-radius: var(--mp-radius-full);
+  background: transparent;
+  color: inherit;
+  cursor: help;
+}
+
+.offer-block__info:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }
 
 .offer-block__code {

@@ -199,6 +199,30 @@ export const States: Story = {
 // ── Scenarios ────────────────────────────────────────────────────────────────
 
 /**
+ * A `badge` qualifies a segment without lengthening its label — the billing-period
+ * switcher on the Plans page says "Annual" and lets the pill carry the saving.
+ */
+export const WithBadge: Story = {
+  render: () => ({
+    components: { MpSegmentedControl },
+    setup() {
+      const cycle = ref('annual')
+      const items = [
+        { value: 'annual', label: 'Annual', badge: '−20%' },
+        { value: 'monthly', label: 'Monthly' },
+      ]
+      return { cycle, items }
+    },
+    template: `
+      <div class="pa-4">
+        <MpSegmentedControl v-model="cycle" :items="items" ariaLabel="Billing period" />
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/**
  * Icon-only segments — the builder device switcher. Each segment's `label` becomes its
  * `aria-label` and doubles as the tooltip.
  */
