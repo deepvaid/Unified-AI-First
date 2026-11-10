@@ -390,6 +390,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/accounts/:accountId/service', redirect: (to) => ({ name: 'Tickets', params: { accountId: to.params.accountId } }) },
   { path: '/accounts/:accountId/chatbot', name: 'ChatbotList', component: () => import('@/views/Service/ChatbotList.vue') },
   { path: '/accounts/:accountId/chatbot/archived', name: 'ChatbotArchived', component: () => import('@/views/Service/ChatbotArchived.vue') },
+  { path: '/accounts/:accountId/chatbot/:id/conversations', name: 'ChatbotConversations', component: () => import('@/views/Service/ChatbotConversations.vue') },
   { path: '/accounts/:accountId/chatbot/:id', name: 'ChatbotBuilder', component: () => import('@/views/Service/ChatbotBuilder.vue'), meta: { builderShell: true } },
 
   // 8. Da Vinci

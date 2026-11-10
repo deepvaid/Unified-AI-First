@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useChatbotStore } from '@/stores/useChatbot'
 import { useAccountsStore } from '@/stores/useAccounts'
 import { usePlgStore } from '@/stores/usePlg'
@@ -72,9 +72,12 @@ const headers = [
 ]
 const { visibleHeaders } = useResponsiveTableHeaders(headers)
 
+// Editing lands on the Knowledge base — the part merchants keep coming back to.
+// Appearance is set once, during creation, which keeps its own flow (doCreate).
 function openBuilder(c: Chatbot) {
-  router.push({ name: 'ChatbotBuilder', params: { accountId: accountId.value, id: c.id } })
+  router.push({ name: 'ChatbotBuilder', params: { accountId: accountId.value, id: c.id }, query: { section: 'knowledge' } })
 }
+const conversationsRoute = (c: Chatbot) => ({ name: 'ChatbotConversations', params: { accountId: accountId.value, id: c.id } })
 function toggleActive(c: Chatbot, on: boolean) {
   cb.setStatus(c.id, on ? 'Active' : 'Inactive')
 }
@@ -194,12 +197,18 @@ function doCreate() {
           </div>
         </template>
         <template #item.conversations="{ item }">
-          <span class="num">{{ item.conversations.toLocaleString() }}</span>
+          <RouterLink
+            :to="conversationsRoute(item)"
+            class="mp-link num"
+            :aria-label="`View ${item.conversations.toLocaleString()} conversations for ${item.store}`"
+            @click.stop
+          >{{ item.conversations.toLocaleString() }}</RouterLink>
         </template>
         <template #item.actions="{ item }">
           <div @click.stop>
             <MpRowActionsMenu ariaLabel="Chatbot actions" :itemLabel="item.store">
               <MpMenuItem icon="pencil" title="Edit" @click="openBuilder(item)" />
+              <MpMenuItem icon="messages-square" title="View conversations" @click="router.push(conversationsRoute(item))" />
               <MpMenuItem
                 v-if="item.status === 'Active'"
                 icon="pause"
