@@ -104,10 +104,9 @@ const total = computed(
 // is honest about the paste step. A `coupon` query param is the automatic
 // path: Chargebee opens with the code already applied.
 const promo = activePromo()
-const cartTiers = computed(() => Object.values(selections.value))
 
 function resolveCoupon(code: string) {
-  return promo ? validateCoupon(promo, code, cycleParam.value, cartTiers.value) : null
+  return promo ? validateCoupon(promo, code, cycleParam.value, cloudLineItems.value) : null
 }
 
 const queryCoupon = Array.isArray(route.query.coupon) ? route.query.coupon[0] : route.query.coupon

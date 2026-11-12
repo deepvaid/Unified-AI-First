@@ -8,7 +8,7 @@ import MpSectionHeader from '@/components/MpSectionHeader.vue'
 import MpSegmentedControl from '@/components/MpSegmentedControl.vue'
 import { useToast } from '@/composables/useToast'
 import { useAccountsStore } from '@/stores/useAccounts'
-import { activePromo, isEligibleTier, promoSaving } from '@/plg/promo'
+import { activePromo, isEligible, promoSaving } from '@/plg/promo'
 import { PLG_CURRENCIES, formatMoney, resolveCurrency } from '@/plg/currency'
 import {
   usePlgStore,
@@ -156,8 +156,27 @@ const autoApply = computed(() => queryValue('promo') === 'auto')
 const coupon = computed(() => promo?.coupons[cycle.value] ?? null)
 
 function hasOffer(cloud: PlgCloud, plan: PlanDef) {
-  return !!promo && isEligibleTier(promo, plan.tier) && canSelect(cloud, plan.tier)
+  return !!promo && isEligible(promo, { cloud, tier: plan.tier }) && canSelect(cloud, plan.tier)
 }
+
+// The exclusions are said where the customer is looking: on the tab of a cloud
+// the codes don't cover, and on the one tier they skip in a cloud they do.
+const cloudInOffer = computed(() => !!promo && promo.eligibleClouds.includes(cloudKey.value))
+function isExcludedTier(cloud: PlgCloud, plan: PlanDef) {
+  return cloudInOffer.value && !!promo && promo.excludedTiers.includes(plan.tier) && canSelect(cloud, plan.tier)
+}
+
+// Both codes are on show from arrival, each on its own period's line. Only the
+// selected period's code is emphasised and copyable, so there is still exactly
+// one code to act on.
+const bandTerms = computed(() =>
+  promo
+    ? [
+        { cycle: 'annual', label: 'Annual', term: '12 months', aside: `usually ${annualPercent}%`, code: promo.coupons.annual.code },
+        { cycle: 'monthly', label: 'Monthly', term: `${promo.coupons.monthly.invoices} invoices`, aside: '', code: promo.coupons.monthly.code },
+      ]
+    : [],
+)
 
 function offerMonthly(plan: PlanDef) {
   return effectiveMonthly(plan) * (1 - (coupon.value?.percentOff ?? 0))
@@ -180,7 +199,7 @@ const offerApplies = computed(() => saving.value > 0)
 const offerTotal = computed(() => total.value - saving.value)
 const offerMissed = computed(() => !!promo && hasSelections.value && !offerApplies.value)
 const hasUndiscounted = computed(
-  () => !!promo && (cloudLineItems.value.some(i => !isEligibleTier(promo, i.tier)) || addOnLineItems.value.length > 0),
+  () => !!promo && (cloudLineItems.value.some(i => !isEligible(promo, i)) || addOnLineItems.value.length > 0),
 )
 const showCode = computed(() => offerApplies.value && !autoApply.value)
 
@@ -196,7 +215,7 @@ const afterLabel = computed(() =>
 )
 const afterValue = computed(() => `${money(total.value)}/${cycle.value === 'annual' ? 'yr' : 'mo'}`)
 const saveAmount = computed(() => money(saving.value * (coupon.value?.invoices ?? 1)))
-const EXCLUDED_NOTE = 'Build and add-ons excluded'
+const EXCLUDED_NOTE = 'Build, Retail and add-ons excluded'
 const summaryFootnote = computed(() =>
   [
     'Excl. taxes',
@@ -319,15 +338,41 @@ function talkToSales() {
         <div class="promo-band__figure">{{ promo.headlinePercent }}% off</div>
       </div>
       <ul class="promo-band__terms">
-        <li><strong>Annual</strong> 12 months <span class="promo-band__aside">usually {{ annualPercent }}%</span></li>
-        <li><strong>Monthly</strong> {{ promo.coupons.monthly.invoices }} invoices</li>
+        <li
+          v-for="t in bandTerms"
+          :key="t.cycle"
+          class="promo-band__term"
+          :class="{ 'promo-band__term--active': t.cycle === cycle }"
+        >
+          <strong>{{ t.label }}</strong>
+          <span>
+            {{ t.term }}
+            <span v-if="t.aside" class="promo-band__aside">{{ t.aside }}</span>
+          </span>
+          <span v-if="!autoApply" class="promo-band__code">
+            <span class="d-sr-only">{{ t.label }} code: </span>
+            <code>{{ t.code }}</code>
+            <v-btn
+              v-if="t.cycle === cycle"
+              variant="text"
+              size="small"
+              class="text-none"
+              :prepend-icon="copied ? 'check' : 'copy'"
+              :aria-label="copied ? `Code ${t.code} copied` : `Copy code ${t.code}`"
+              @click="copyFromBlock"
+            >
+              {{ copied ? 'Copied' : 'Copy' }}
+            </v-btn>
+          </span>
+        </li>
       </ul>
       <div class="promo-band__meta">
         <span class="promo-band__deadline">
           <v-icon size="14">clock</v-icon>
           Ends {{ promo.endsLabel }}
         </span>
-        <span>{{ autoApply ? 'Applied at checkout' : 'Code in your order summary' }}</span>
+        <span>Not on Build, Retail Cloud or add-ons</span>
+        <span v-if="autoApply">Applied at checkout</span>
       </div>
     </section>
 
@@ -361,6 +406,10 @@ function talkToSales() {
             <div class="cloud-header__name">{{ activeCatalog.name }}</div>
             <div class="text-body-2 text-medium-emphasis">{{ activeCatalog.tagline }}</div>
           </div>
+        </div>
+
+        <div v-if="promo && !cloudInOffer" class="text-body-2 text-medium-emphasis mb-4">
+          The {{ promo.name }} doesn't apply to {{ activeCatalog.name }}.
         </div>
 
         <MpSectionHeader title="Choose a plan" :heading-level="3" class="mb-3" />
@@ -407,6 +456,9 @@ function talkToSales() {
                 >
                   <v-icon v-if="!autoApply" size="14">tag</v-icon>
                   <span>{{ offerLine(plan) }}</span>
+                </div>
+                <div v-else-if="isExcludedTier(cloudKey, plan)" class="plan-card__offer text-medium-emphasis">
+                  <span>Offer not included</span>
                 </div>
 
                 <v-divider class="my-3" />
@@ -500,7 +552,6 @@ function talkToSales() {
 
             <div v-if="!hasSelections" class="plans-summary__empty text-medium-emphasis text-body-2">
               Your plan appears here.
-              <template v-if="promo && !autoApply">Pick a plan to see your code.</template>
             </div>
 
             <template v-else>
@@ -557,7 +608,7 @@ function talkToSales() {
               </template>
               <div class="text-caption text-medium-emphasis mt-2">{{ summaryFootnote }}</div>
               <div v-if="offerMissed" class="text-caption text-medium-emphasis mt-2">
-                Offer applies to Essential and above.
+                Offer applies to Essential and above on Marketing, Commerce and Service Cloud.
               </div>
 
               <div v-if="promo && coupon && showCode" class="offer-block">
@@ -692,21 +743,57 @@ function talkToSales() {
   color: var(--ink-panel-accent);
 }
 
+/* Period | terms | code: a grid so the two codes line up. Each <li> is
+   display: contents, so its cells are the grid items. */
 .promo-band__terms {
   flex: 1 1 320px;
-  display: flex;
-  flex-direction: column;
-  gap: var(--mp-space-4);
+  display: grid;
+  grid-template-columns: max-content max-content max-content;
+  align-items: center;
+  justify-content: start;
+  gap: var(--mp-space-4) var(--mp-space-20);
   margin: 0;
   padding: 0;
   list-style: none;
   font-size: var(--mp-fontSize-14);
 }
 
+.promo-band__term {
+  display: contents;
+  color: var(--ink-panel-muted-fg);
+}
+
+.promo-band__term--active {
+  color: var(--ink-panel-fg);
+}
+
 .promo-band__terms strong {
-  display: inline-block;
-  min-width: 64px;
   font-weight: var(--mp-fontWeight-semibold);
+}
+
+/* Fixed row height, so the Copy button moving between rows shifts nothing. */
+.promo-band__code {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mp-space-4);
+  min-height: var(--mp-space-32);
+}
+
+.promo-band__code code {
+  font-family: var(--mp-fontFamily-mono);
+  font-weight: var(--mp-fontWeight-semibold);
+  letter-spacing: var(--mp-letterSpacing-wide);
+  user-select: all;
+}
+
+@media (max-width: 720px) {
+  .promo-band__terms {
+    grid-template-columns: max-content minmax(0, 1fr);
+  }
+
+  .promo-band__code {
+    grid-column: 2;
+  }
 }
 
 .promo-band__aside {
