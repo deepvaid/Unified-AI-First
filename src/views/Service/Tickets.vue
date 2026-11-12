@@ -488,7 +488,9 @@ function newContact() {
 
 <template>
   <div class="mp-frame-fill tickets-shell d-flex flex-column">
-    <div class="tickets-head flex-shrink-0">
+    <!-- In the one-pane layout an open ticket takes the whole height: the page
+         header steps aside, and the ticket's own back button returns to the list. -->
+    <div v-show="stacked !== 'end'" class="tickets-head flex-shrink-0">
       <MpPageHeader title="Tickets" density="compact">
         <template #actions>
           <v-badge

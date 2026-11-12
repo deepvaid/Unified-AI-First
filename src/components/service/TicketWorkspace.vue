@@ -431,8 +431,9 @@ const SEND_AND_SET: TicketStatus[] = ['Pending', 'On Hold', 'Closed']
         @click="emit('back')"
       ></v-btn>
       <div class="tw-head__title">
-        <div class="mp-meta-label text-medium-emphasis">{{ eyebrow }}</div>
-        <h2 class="mp-section-title text-truncate">{{ ticket.subject }}</h2>
+        <div class="tw-eyebrow mp-meta-label text-medium-emphasis">{{ eyebrow }}</div>
+        <!-- A short title column (compact) gets two lines before the subject is cut. -->
+        <h2 class="mp-section-title" :class="compact ? 'tw-subject--clamp' : 'text-truncate'">{{ ticket.subject }}</h2>
         <div v-if="linkedOrder || ticket.tags.length" class="tw-head__meta d-flex align-center flex-wrap">
           <!-- The order this ticket is about, one click from its details. -->
           <button
@@ -458,7 +459,7 @@ const SEND_AND_SET: TicketStatus[] = ['Pending', 'On Hold', 'Closed']
       <TicketWorkspaceActions
         v-model:show-activities="showActivities"
         :folder="ticket.folder"
-        can-expand
+        :can-expand="mdAndUp"
         @expand="expandToPage"
         @edit="openEditDetails"
         @unread="markUnread"
@@ -467,7 +468,7 @@ const SEND_AND_SET: TicketStatus[] = ['Pending', 'On Hold', 'Closed']
     </header>
 
     <!-- Property row (the full page, which has no title band, ends it with the actions) -->
-    <div class="tw-props border-b d-flex align-center flex-wrap ga-2">
+    <div class="tw-props border-b d-flex align-center ga-2" :class="compact ? 'flex-nowrap' : 'flex-wrap'">
       <v-menu v-for="menu in propertyMenus" :key="menu.key" location="bottom start">
         <template #activator="{ props: activator }">
           <button
@@ -1056,6 +1057,7 @@ const SEND_AND_SET: TicketStatus[] = ['Pending', 'On Hold', 'Closed']
   display: inline-flex;
   align-items: center;
   gap: var(--mp-space-4);
+  white-space: nowrap;
   height: var(--mp-component-chip-height-md);
   padding-inline: var(--mp-component-chip-paddingInline);
   border: 0;
@@ -1100,6 +1102,28 @@ const SEND_AND_SET: TicketStatus[] = ['Pending', 'On Hold', 'Closed']
   .tw-props { padding-inline: var(--mp-space-16); }
   .tw-feed { padding: var(--mp-space-16); }
   .tw-actions { padding-inline: var(--mp-space-16); }
+
+  /* Height is the scarce thing here, so the chrome above the thread stays short:
+     a one-line eyebrow, a subject of at most two lines, and one row of
+     properties that scrolls sideways instead of wrapping onto three. */
+  .tw-head { padding-block: var(--mp-space-12); }
+  .tw-eyebrow {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .tw-subject--clamp {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
+  .tw-props {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .tw-props::-webkit-scrollbar { display: none; }
+  .tw-prop { flex-shrink: 0; }
 
   /* A 2×2 grid — feed | rail strip over footer | rail strip — so an open rail
      panel takes the feed's cell and the reply bar stays visible beneath it.

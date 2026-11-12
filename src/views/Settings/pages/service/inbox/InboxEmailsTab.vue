@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
+import { useDisplay } from 'vuetify'
 import MpAlert from '@/components/MpAlert.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
@@ -24,9 +25,12 @@ const emails = computed(() => settings.emailsFor(props.inbox.id))
 const replyState = computed(() => inboxReplyState(emails.value))
 const pending = computed(() => emails.value.filter(e => e.status === 'Pending'))
 
+// On a phone the address folds under the sender name, so Status and the row
+// menu stay on screen instead of scrolling off to the right.
+const { xs } = useDisplay()
 const headers: ResponsiveHeader[] = [
   { title: 'Sender name', key: 'name' },
-  { title: 'Email address', key: 'address' },
+  { title: 'Email address', key: 'address', hideBelow: 'sm' },
   { title: 'Status', key: 'status' },
   { title: 'Actions', key: 'actions', sortable: false, align: 'end', width: 56, headerProps: { class: 'mp-th-sr' } },
 ]
@@ -128,6 +132,16 @@ function add() {
         hide-default-footer
         :aria-label="`Support emails for ${inbox.name}`"
       >
+        <template #item.name="{ item }">
+          <div class="py-1">
+            <span class="d-inline-flex align-center flex-wrap ga-2">
+              {{ item.name }}
+              <MpStatusChip v-if="xs && item.isDefault" status="Default" type="general" size="sm" />
+            </span>
+            <div v-if="xs" class="email-address text-caption text-medium-emphasis">{{ item.address }}</div>
+          </div>
+        </template>
+
         <template #item.address="{ item }">
           <span class="d-inline-flex align-center ga-2 text-no-wrap">
             {{ item.address }}
@@ -205,5 +219,9 @@ function add() {
 }
 .emails-head p {
   margin-top: var(--mp-space-4);
+}
+/* A long address wraps inside its cell rather than widening the table. */
+.email-address {
+  overflow-wrap: anywhere;
 }
 </style>
