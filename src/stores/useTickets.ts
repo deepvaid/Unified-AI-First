@@ -24,6 +24,10 @@ export interface TicketMessage {
   to?: string
   time: string
   body: string
+  /** Internal notes only: when the author last changed the text. */
+  editedAt?: string
+  /** Internal notes only: pinned to the top of the ticket for the whole team. */
+  pinned?: boolean
 }
 
 export interface TicketActivity {
@@ -138,7 +142,7 @@ interface TicketSeed {
   unread?: boolean
   createdAt: string
   body: string
-  replies?: { author: string; body: string; note?: boolean }[]
+  replies?: { author: string; body: string; note?: boolean; pinned?: boolean }[]
   linkedOrderId?: number
 }
 
@@ -181,6 +185,7 @@ function seedTicket(seed: TicketSeed): Ticket {
       to: reply.note ? undefined : seed.email,
       time: new Date(last).toISOString(),
       body: reply.body,
+      ...(reply.note && reply.pinned ? { pinned: true } : {}),
     })
   }
   return {
@@ -232,7 +237,10 @@ export const useTicketsStore = defineStore('tickets', () => {
       status: 'Open', priority: 'Medium', channel: 'Email', type: 'Payment', assignee: 'Chris Parker', tags: ['Refund'],
       linkedOrderId: 19, // #10018 — already refunded
       createdAt: '2026-08-31T07:02:00Z', body: 'I returned my order ten days ago and still have no refund on my card.',
-      replies: [{ author: 'Chris Parker', body: 'Hi Rajan — your refund was issued today and should appear within 3–5 business days.' }],
+      replies: [
+        { author: 'Chris Parker', body: 'Hi Rajan — your refund was issued today and should appear within 3–5 business days.' },
+        { author: 'Deepak Vaidya', body: 'Refund approved by finance on 30 Aug. Waiting on the bank, 5–7 days.', note: true, pinned: true },
+      ],
     }),
     seedTicket({
       id: 1522, subject: 'Help with cancellation', customer: 'Rajan Bhanot', email: 'rjbhanot38@gmail.com',
@@ -381,6 +389,30 @@ export const useTicketsStore = defineStore('tickets', () => {
       pushActivity(t, author, `Status updated to ${message.setStatus}`)
     }
     touch(t)
+  }
+
+  // ── Internal notes: edit, delete, pin ───────────────────────────────────────
+  const findNote = (ticketId: number, messageId: number) =>
+    find(ticketId)?.thread.find(m => m.id === messageId && m.role === 'note')
+
+  function editNote(ticketId: number, messageId: number, body: string) {
+    const note = findNote(ticketId, messageId)
+    if (!note || note.body === body) return
+    note.body = body
+    note.editedAt = new Date().toISOString()
+  }
+
+  /** Notes carry handover context, so deleting one leaves a trail. */
+  function deleteNote(ticketId: number, messageId: number, actor = 'Deepak Vaidya') {
+    const t = find(ticketId)
+    if (!t || !findNote(ticketId, messageId)) return
+    t.thread = t.thread.filter(m => m.id !== messageId)
+    pushActivity(t, actor, 'Deleted an internal note')
+  }
+
+  function pinNote(ticketId: number, messageId: number, pinned: boolean) {
+    const note = findNote(ticketId, messageId)
+    if (note) note.pinned = pinned
   }
 
   function assignMany(ids: number[], agent: string, actor = 'Deepak Vaidya') {
@@ -555,6 +587,9 @@ export const useTicketsStore = defineStore('tickets', () => {
     markUnread,
     updateTicket,
     sendMessage,
+    editNote,
+    deleteNote,
+    pinNote,
     assignMany,
     closeMany,
     trashMany,

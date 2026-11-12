@@ -26,9 +26,13 @@ const slots = useSlots()
       <slot name="avatar" />
     </div>
     <div class="mp-chat-bubble__content">
-      <div v-if="props.author || props.time" class="mp-chat-bubble__meta">
+      <div v-if="props.author || props.time || slots.actions" class="mp-chat-bubble__meta">
         <span v-if="props.author" class="mp-chat-bubble__author">{{ props.author }}</span>
         <time v-if="props.time" class="mp-chat-bubble__time">{{ props.time }}</time>
+        <!-- Per-message actions (a ⋯ menu): the end of the meta row, after the time. -->
+        <span v-if="slots.actions" class="mp-chat-bubble__actions">
+          <slot name="actions" />
+        </span>
       </div>
       <div class="mp-chat-bubble__bubble">
         <div v-if="props.loading" class="mp-chat-bubble__loading">
@@ -89,6 +93,20 @@ const slots = useSlots()
 .mp-chat-bubble__time {
   margin-left: auto;
   color: var(--text-muted);
+}
+
+/* Actions close the meta row. The negative block margin lets an icon button
+   sit there without making the row taller than its one line of text. */
+.mp-chat-bubble__actions {
+  display: inline-flex;
+  align-items: center;
+  align-self: center;
+  flex-shrink: 0;
+  margin-block: calc(-1 * var(--mp-space-6));
+  margin-left: auto;
+}
+.mp-chat-bubble__time + .mp-chat-bubble__actions {
+  margin-left: 0;
 }
 
 /* Tone = internal custom properties: the documented re-skin seam for product
