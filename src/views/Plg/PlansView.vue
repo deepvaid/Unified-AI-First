@@ -344,26 +344,26 @@ function talkToSales() {
           class="promo-band__term"
           :class="{ 'promo-band__term--active': t.cycle === cycle }"
         >
-          <strong>{{ t.label }}</strong>
-          <span>
-            {{ t.term }}
-            <span v-if="t.aside" class="promo-band__aside">{{ t.aside }}</span>
-          </span>
-          <span v-if="!autoApply" class="promo-band__code">
-            <span class="d-sr-only">{{ t.label }} code: </span>
-            <code>{{ t.code }}</code>
-            <v-btn
-              v-if="t.cycle === cycle"
-              variant="text"
-              size="small"
-              class="text-none"
-              :prepend-icon="copied ? 'check' : 'copy'"
-              :aria-label="copied ? `Code ${t.code} copied` : `Copy code ${t.code}`"
-              @click="copyFromBlock"
-            >
-              {{ copied ? 'Copied' : 'Copy' }}
-            </v-btn>
-          </span>
+          <div class="promo-band__term-text">
+            <div>
+              <strong>{{ t.label }}</strong> · {{ t.term }}
+              <span v-if="t.aside" class="promo-band__aside">· {{ t.aside }}</span>
+            </div>
+            <div v-if="!autoApply">
+              <span class="d-sr-only">{{ t.label }} code: </span>
+              <code>{{ t.code }}</code>
+            </div>
+          </div>
+          <v-btn
+            v-if="!autoApply && t.cycle === cycle"
+            variant="flat"
+            class="text-none promo-band__copy"
+            :prepend-icon="copied ? 'check' : 'copy'"
+            :aria-label="copied ? `Code ${t.code} copied` : `Copy code ${t.code}`"
+            @click="copyFromBlock"
+          >
+            {{ copied ? 'Copied' : 'Copy' }}
+          </v-btn>
         </li>
       </ul>
       <div class="promo-band__meta">
@@ -736,69 +736,81 @@ function talkToSales() {
 }
 
 .promo-band__figure {
-  font-size: var(--mp-fontSize-32);
+  font-size: var(--mp-fontSize-40);
   font-weight: var(--mp-fontWeight-bold);
-  line-height: 1.1;
+  line-height: 1.05;
   letter-spacing: var(--mp-letterSpacing-tight);
   color: var(--ink-panel-accent);
 }
 
-/* Period | terms | code: a grid so the two codes line up. Each <li> is
-   display: contents, so its cells are the grid items. */
+/* One tile per billing period, side by side. The selected period's tile is
+   outlined in the accent and carries Copy; the other stays readable but quiet,
+   so there is one code to act on. Tiles are tints of the panel's own ink, so
+   they follow the panel in either theme. */
 .promo-band__terms {
-  flex: 1 1 320px;
+  flex: 1 1 480px;
   display: grid;
-  grid-template-columns: max-content max-content max-content;
-  align-items: center;
-  justify-content: start;
-  gap: var(--mp-space-4) var(--mp-space-20);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--mp-space-12);
   margin: 0;
   padding: 0;
   list-style: none;
-  font-size: var(--mp-fontSize-14);
 }
 
 .promo-band__term {
-  display: contents;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mp-space-12);
+  min-height: var(--mp-space-64);
+  padding: var(--mp-space-10) var(--mp-space-12) var(--mp-space-10) var(--mp-space-16);
+  border: 1px solid var(--ink-panel-border);
+  border-radius: var(--mp-radius-12);
+  background: color-mix(in srgb, var(--ink-panel-fg) 4%, transparent);
   color: var(--ink-panel-muted-fg);
+  font-size: var(--mp-fontSize-13);
 }
 
 .promo-band__term--active {
+  border-color: var(--ink-panel-accent);
+  background: color-mix(in srgb, var(--ink-panel-fg) 10%, transparent);
   color: var(--ink-panel-fg);
 }
 
-.promo-band__terms strong {
+.promo-band__term-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-2);
+  min-width: 0;
+}
+
+.promo-band__term strong {
   font-weight: var(--mp-fontWeight-semibold);
 }
 
-/* Fixed row height, so the Copy button moving between rows shifts nothing. */
-.promo-band__code {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--mp-space-4);
-  min-height: var(--mp-space-32);
-}
-
-.promo-band__code code {
+.promo-band__term code {
   font-family: var(--mp-fontFamily-mono);
+  font-size: var(--mp-fontSize-16);
   font-weight: var(--mp-fontWeight-semibold);
   letter-spacing: var(--mp-letterSpacing-wide);
   user-select: all;
 }
 
+/* The one filled control on the panel: the accent as surface, the panel's own
+   ground as its ink. */
+.promo-band__copy {
+  flex-shrink: 0;
+  background: var(--ink-panel-accent);
+  color: var(--ink-panel-bg);
+}
+
 @media (max-width: 720px) {
   .promo-band__terms {
-    grid-template-columns: max-content minmax(0, 1fr);
-  }
-
-  .promo-band__code {
-    grid-column: 2;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
 .promo-band__aside {
-  margin-left: var(--mp-space-8);
-  font-size: var(--mp-fontSize-12);
   color: var(--ink-panel-muted-fg);
 }
 
