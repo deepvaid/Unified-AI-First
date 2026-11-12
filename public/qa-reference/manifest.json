@@ -237,8 +237,9 @@
       "liquidsky": [
         "AlertModal"
       ],
-      "status": "matched",
-      "reference": "MpConfirmDialog with `danger`",
+      "status": "partial",
+      "reference": "MpConfirmDialog with `danger` (shell only)",
+      "note": "AlertModal is a corner notice with a call to action, not a confirm prompt. Marobase has no such surface; only the card, type and button styling of the dialog shell carry over.",
       "spec": "spec/alert-modal.json",
       "stories": [
         {

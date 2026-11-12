@@ -17,14 +17,12 @@ import fs from 'node:fs'
 import http from 'node:http'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { chromium } from 'playwright-core'
 import { QA_COMPONENTS, QA_LINKS } from '../src/stories/qa/liquidskyMap.ts'
+import { THEMES, VIEWPORT, launchPage, measure, settle } from './qa-lib.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const storybookDir = path.join(root, 'dist-storybook')
 const outDir = path.join(root, 'public', 'qa-reference')
-const THEMES = ['light', 'dark']
-const VIEWPORT = { width: 1280, height: 800 }
 const PORT = 6111
 
 if (!fs.existsSync(path.join(storybookDir, 'index.json'))) {
@@ -44,9 +42,7 @@ const server = http.createServer((req, res) => {
 })
 await new Promise((resolve) => server.listen(PORT, resolve))
 
-const browser = await chromium.launch({ channel: process.env.QA_BROWSER_CHANNEL ?? 'chrome' })
-const context = await browser.newContext({ viewport: VIEWPORT, deviceScaleFactor: 1, reducedMotion: 'reduce' })
-const page = await context.newPage()
+const { browser, page } = await launchPage()
 
 const tokenVar = (token) => `--mp-${token.replaceAll('.', '-')}`
 const problems = []
@@ -54,31 +50,7 @@ const problems = []
 async function openStory(id, theme, selectors) {
   await page.goto(`http://localhost:${PORT}/iframe.html?id=${id}&viewMode=story&globals=theme:${theme}`)
   await page.waitForSelector('[data-visual-root]')
-  // A resting frame: no transitions, fonts loaded, play functions finished.
-  await page.addStyleTag({ content: '*,*::before,*::after{transition:none!important;animation:none!important;caret-color:transparent!important}' })
-  await page.evaluate(() => document.fonts.ready)
-  await page.waitForTimeout(600)
-  // Stories that open a menu from a play function settle later than the first paint.
-  for (const selector of selectors) await page.locator(selector).first().waitFor({ state: 'attached', timeout: 4000 }).catch(() => {})
-  await page.mouse.move(0, 0)
-}
-
-async function measure(part) {
-  const target = page.locator(part.selector).first()
-  if ((await target.count()) === 0) return null
-  const stateTarget = part.stateTarget ? page.locator(part.stateTarget).first() : target
-  if (part.state === 'hover') await stateTarget.hover()
-  if (part.state === 'focus') await stateTarget.focus()
-  const values = await target.evaluate((el, { props, tokens }) => {
-    const style = getComputedStyle(el)
-    const rootStyle = getComputedStyle(document.documentElement)
-    return Object.fromEntries(props.map((prop) => [prop, {
-      value: style.getPropertyValue(prop),
-      tokenValue: tokens[prop] ? rootStyle.getPropertyValue(tokens[prop]).trim() : undefined,
-    }]))
-  }, { props: part.props, tokens: Object.fromEntries(Object.entries(part.tokens ?? {}).map(([prop, token]) => [prop, tokenVar(token)])) })
-  if (part.state) await page.mouse.move(0, 0)
-  return values
+  await settle(page, selectors)
 }
 
 fs.rmSync(outDir, { recursive: true, force: true })
@@ -100,7 +72,7 @@ for (const component of QA_COMPONENTS) {
       png[theme] = file
 
       for (const [index, part] of story.parts.entries()) {
-        const values = await measure(part)
+        const values = await measure(page, part, Object.fromEntries(Object.entries(part.tokens ?? {}).map(([prop, token]) => [prop, tokenVar(token)])))
         if (!values) { problems.push(`${component.key} › ${story.id} › "${part.part}": selector matched nothing (${theme})`); continue }
         for (const [prop, { value, tokenValue }] of Object.entries(values)) {
           const entry = (parts[index].props[prop] ??= {})

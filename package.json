@@ -20,6 +20,7 @@
     "test:plg": "node --experimental-strip-types --test 'tests/plg/*.test.ts'",
     "contrast:check": "node scripts/check-contrast.mjs",
     "qa:export": "node --experimental-strip-types scripts/qa-export.mjs",
+    "qa:compare": "node --env-file-if-exists=.env.local --experimental-strip-types scripts/qa-compare.mjs",
     "audit:ui": "node scripts/ui-visibility-audit.mjs",
     "audit:ui:json": "node scripts/ui-visibility-audit.mjs --json",
     "design-kit:dev": "cd design-kit && npm run dev",

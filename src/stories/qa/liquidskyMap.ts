@@ -2,11 +2,12 @@
  * LiquidSky ↔ Marobase component map, and the spec contract for each pair.
  *
  * LiquidSky (`@maropost-ui/liquidsky-ui`, `App*` names) implements this design system for
- * production. Its QA has no Figma file, so this file is what they match against: which `Mp*` story
- * is the reference for each LiquidSky component, and which parts and CSS properties matter.
+ * production. There is no Figma file, so this file is the reference: which `Mp*` story stands for
+ * each LiquidSky component, and which parts and CSS properties are checked.
  *
  * `scripts/qa-export.mjs` reads it, measures every part in the built Storybook and writes
- * `public/qa-reference/` (the values QA asserts). `QaReference.stories.ts` renders the same data.
+ * `public/qa-reference/`. `scripts/qa-compare.mjs` then measures the LiquidSky build against
+ * those values. `QaReference.stories.ts` renders the same data.
  *
  * Pure data, no imports — Node loads this file directly with type stripping.
  */
@@ -14,7 +15,7 @@
 export type QaStatus = 'matched' | 'partial' | 'no-reference'
 
 export interface QaPart {
-  /** Part name — the stable key QA maps to its own selector. */
+  /** Part name — the key liquidskyPairs.ts maps to the same part in the LiquidSky build. */
   part: string
   /** Playwright selector inside the reference story; the first match is measured. */
   selector: string
@@ -248,8 +249,9 @@ export const QA_COMPONENTS: QaComponent[] = [
   {
     key: 'alert-modal',
     liquidsky: ['AlertModal'],
-    status: 'matched',
-    reference: 'MpConfirmDialog with `danger`',
+    status: 'partial',
+    reference: 'MpConfirmDialog with `danger` (shell only)',
+    note: 'AlertModal is a corner notice with a call to action, not a confirm prompt. Marobase has no such surface; only the card, type and button styling of the dialog shell carry over.',
     stories: [
       {
         id: 'molecules-mpconfirmdialog--danger',
@@ -328,7 +330,7 @@ export const QA_COMPONENTS: QaComponent[] = [
         label: 'Select, menu open',
         parts: [
           { part: 'field', selector: '.mp-story-canvas .v-field', props: ['height', 'border-radius', 'background-color'], tokens: { height: 'component.field.height.md', 'border-radius': 'component.input.radius' } },
-          { part: 'label', selector: '.mp-story-canvas .v-field-label', props: TEXT },
+          { part: 'label', selector: '.mp-story-canvas .v-field-label--floating', props: TEXT },
           { part: 'menu panel', selector: '.v-select__content > .v-sheet', props: ['border-radius', 'box-shadow', 'background-color'], tokens: { 'border-radius': 'component.menu.radius' } },
           { part: 'option', selector: '.v-menu .v-list-item:not(.v-list-item--active)', props: ['min-height', 'padding', 'border-radius', 'color'], tokens: { 'min-height': 'component.menu.itemHeight' } },
           { part: 'option label', selector: '.v-menu .v-list-item:not(.v-list-item--active) .v-list-item-title', props: TEXT },
