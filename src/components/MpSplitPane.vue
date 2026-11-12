@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import MpSplitHandle from './MpSplitHandle.vue'
 
 /**
  * MpSplitPane — two panes side by side with a draggable, keyboard-operable
- * separator (WAI-ARIA window splitter). The start pane has a fixed width the
- * user controls (`v-model:size`); the end pane takes the rest.
+ * separator (`MpSplitHandle`, a WAI-ARIA window splitter). The start pane has a
+ * fixed width the user controls (`v-model:size`); the end pane takes the rest.
  *
  * The rendered width is clamped to `min … container × maxRatio`, but the model
  * value only changes when the user moves the separator — so a narrower window
@@ -62,40 +63,9 @@ function setSize(value: number) {
   if (next !== props.size) emit('update:size', next)
 }
 
-// ── Pointer drag ────────────────────────────────────────────────────────────
+// The handle owns the drag and the keys; the root only needs to know a drag is
+// on, to stop text selection across both panes.
 const dragging = ref(false)
-let startX = 0
-let startSize = 0
-
-function onPointerDown(event: PointerEvent) {
-  if (event.button !== 0) return
-  dragging.value = true
-  startX = event.clientX
-  startSize = renderedSize.value
-  ;(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId)
-  event.preventDefault()
-}
-function onPointerMove(event: PointerEvent) {
-  if (dragging.value) setSize(startSize + (event.clientX - startX))
-}
-function endDrag() {
-  dragging.value = false
-}
-
-// ── Keyboard ────────────────────────────────────────────────────────────────
-function onKeydown(event: KeyboardEvent) {
-  const now = renderedSize.value
-  const target = {
-    ArrowLeft: now - props.step,
-    ArrowRight: now + props.step,
-    Home: props.min,
-    End: max.value,
-    Enter: props.defaultSize,
-  }[event.key]
-  if (target === undefined) return
-  event.preventDefault()
-  setSize(target)
-}
 </script>
 
 <template>
@@ -109,27 +79,20 @@ function onKeydown(event: KeyboardEvent) {
       <slot name="start" />
     </div>
 
-    <div
+    <!-- Passed the rendered (clamped) width, so its aria values match what is on screen. -->
+    <MpSplitHandle
       v-if="!stacked"
       class="mp-split-pane__handle"
-      role="separator"
-      aria-orientation="vertical"
-      tabindex="0"
-      :aria-label="ariaLabel"
-      :aria-valuenow="renderedSize"
-      :aria-valuemin="min"
-      :aria-valuemax="max"
-      :aria-controls="controls"
-      @pointerdown="onPointerDown"
-      @pointermove="onPointerMove"
-      @pointerup="endDrag"
-      @pointercancel="endDrag"
-      @lostpointercapture="endDrag"
-      @keydown="onKeydown"
-      @dblclick="setSize(defaultSize)"
-    >
-      <span class="mp-split-pane__grip" aria-hidden="true"></span>
-    </div>
+      :size="renderedSize"
+      :min="min"
+      :max="max"
+      :default-size="defaultSize"
+      :step="step"
+      :ariaLabel="ariaLabel"
+      :controls="controls"
+      @update:size="setSize"
+      @dragging="active => { dragging = active }"
+    />
 
     <div v-show="stacked !== 'start'" class="mp-split-pane__end">
       <slot name="end" />
@@ -158,53 +121,4 @@ function onKeydown(event: KeyboardEvent) {
 .mp-split-pane__start { flex: 0 0 var(--mp-split-pane-start); }
 .mp-split-pane__end { flex: 1 1 0; }
 .mp-split-pane--stacked-start .mp-split-pane__start { flex: 1 1 0; }
-
-/* The handle is a gutter with a hairline down its middle; the grip pill only
-   appears on hover, focus and drag, so a resting split reads as one card. */
-.mp-split-pane__handle {
-  position: relative;
-  flex: 0 0 var(--mp-layout-splitHandleWidth);
-  cursor: col-resize;
-  touch-action: none;
-}
-.mp-split-pane__handle::before {
-  content: '';
-  position: absolute;
-  inset-block: 0;
-  left: 50%;
-  width: var(--mp-component-field-borderWidth);
-  transform: translateX(-50%);
-  background: var(--border-subtle);
-}
-.mp-split-pane__grip {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: var(--mp-space-4);
-  height: var(--mp-space-32);
-  border-radius: var(--mp-radius-full);
-  background: var(--accent-default);
-  transform: translate(-50%, -50%);
-  opacity: 0;
-  transition: opacity var(--mp-motion-duration-fast) var(--mp-motion-easing-standard);
-}
-.mp-split-pane__handle:hover .mp-split-pane__grip,
-.mp-split-pane__handle:focus-visible .mp-split-pane__grip,
-.mp-split-pane--dragging .mp-split-pane__grip {
-  opacity: 1;
-}
-
-/* Keyboard focus: the line itself takes the focus colour at 2px, plus the grip. */
-.mp-split-pane__handle:focus-visible {
-  outline: none;
-}
-.mp-split-pane__handle:focus-visible::before,
-.mp-split-pane--dragging .mp-split-pane__handle::before {
-  width: var(--mp-component-field-borderWidthActive);
-  background: var(--focus-ring);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .mp-split-pane__grip { transition: none; }
-}
 </style>
