@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, reactive, ref, useId, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useDisplay } from 'vuetify'
 import MpChatBubble from '@/components/MpChatBubble.vue'
@@ -12,6 +12,16 @@ import MpMenuItem from '@/components/MpMenuItem.vue'
 import TicketWorkspaceActions from '@/components/service/TicketWorkspaceActions.vue'
 import MpTagChip from '@/components/MpTagChip.vue'
 import TicketOrdersPanel from '@/components/service/TicketOrdersPanel.vue'
+import TicketNote from '@/components/service/TicketNote.vue'
+import MpSplitHandle from '@/components/MpSplitHandle.vue'
+import {
+  mp_layout_inboxRailPanelMinWidth,
+  mp_layout_inboxRailPanelWidth,
+  mp_layout_inboxThreadMinWidth,
+  mp_layout_splitHandleWidth,
+  mp_space_48,
+} from '@/design-tokens/generated/tokens'
+import { canManageNote, pinnedNotes } from '@/service/notes'
 import { useCommerceStore } from '@/stores/useCommerce'
 import {
   useTicketsStore,
@@ -87,6 +97,32 @@ const feed = computed<FeedItem[]>(() => {
   return items.sort((a, b) => a.time.localeCompare(b.time))
 })
 
+// ── Internal notes: edit, delete, pin ───────────────────────────────────────
+// The signed-in agent (the prototype has one); only a note's author manages it.
+const CURRENT_AGENT = 'Deepak Vaidya'
+const pinned = computed(() => (ticket.value ? pinnedNotes(ticket.value.thread) : []))
+
+function saveNote(messageId: number, body: string) {
+  store.editNote(props.ticketId, messageId, body)
+  toast.success('Note updated')
+}
+function deleteNote(messageId: number) {
+  store.deleteNote(props.ticketId, messageId, CURRENT_AGENT)
+  toast.success('Note deleted')
+}
+function pinNote(messageId: number, value: boolean) {
+  store.pinNote(props.ticketId, messageId, value)
+  toast.success(value ? 'Note pinned to the top of this ticket' : 'Note unpinned')
+}
+/** From the pinned strip: bring the note into view in the thread and focus it. */
+function jumpToNote(messageId: number) {
+  const note = feedEl.value?.querySelector<HTMLElement>(`[data-note-id="${messageId}"]`)
+  if (!note) return
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  note.scrollIntoView({ block: 'center', behavior: reduce ? 'auto' : 'smooth' })
+  note.focus({ preventScroll: true })
+}
+
 // The thread scrolls on its own; the composer is docked below it, so the
 // latest message has to be brought into view explicitly.
 const feedEl = ref<HTMLElement | null>(null)
@@ -128,19 +164,76 @@ function setProperty(key: string, value: string) {
   }
 }
 
+// ── Room for the side panel ──────────────────────────────────────────────────
+// The layout follows the ticket area's own width, not the window's: a ticket
+// beside a wide list on a laptop is as cramped as one on a phone. When the area
+// can't fit the icon strip, the narrowest panel and a readable thread, the
+// workspace goes compact and an open panel overlays the thread instead of
+// squeezing it. Until the area is measured, the window width stands in.
+const { mdAndUp } = useDisplay()
+const RAIL_STRIP = parseFloat(mp_space_48)
+const SPLIT_HANDLE = parseFloat(mp_layout_splitHandleWidth)
+const PANEL_DEFAULT = parseFloat(mp_layout_inboxRailPanelWidth)
+const PANEL_MIN = parseFloat(mp_layout_inboxRailPanelMinWidth)
+const THREAD_MIN = parseFloat(mp_layout_inboxThreadMinWidth)
+
+const bodyEl = ref<HTMLElement | null>(null)
+const bodyWidth = ref(0)
+let bodyObserver: ResizeObserver | undefined
+// The body only exists while there is a ticket, so follow the element itself.
+watch(bodyEl, el => {
+  bodyObserver?.disconnect()
+  if (!el) return
+  bodyWidth.value = el.clientWidth
+  bodyObserver = new ResizeObserver(([entry]) => {
+    if (entry) bodyWidth.value = entry.contentRect.width
+  })
+  bodyObserver.observe(el)
+}, { flush: 'post' })
+onBeforeUnmount(() => bodyObserver?.disconnect())
+
+/** The widest the panel may be while the thread keeps its minimum. */
+const railMax = computed(() => bodyWidth.value - RAIL_STRIP - SPLIT_HANDLE - THREAD_MIN)
+const compact = computed(() => (bodyWidth.value ? railMax.value < PANEL_MIN : !mdAndUp.value))
+
+// The panel's width is the agent's: dragged, remembered, and only clamped for
+// display — a narrower window never overwrites what they chose.
+const RAIL_WIDTH_KEY = 'mp.tickets.railWidth.v1'
+function readRailWidth(): number {
+  try {
+    const saved = Number(localStorage.getItem(RAIL_WIDTH_KEY))
+    return Number.isFinite(saved) && saved >= PANEL_MIN ? saved : PANEL_DEFAULT
+  } catch {
+    return PANEL_DEFAULT
+  }
+}
+const railWidth = ref(readRailWidth())
+watch(railWidth, width => {
+  try { localStorage.setItem(RAIL_WIDTH_KEY, String(width)) } catch { /* private mode */ }
+})
+const renderedRailWidth = computed(() =>
+  bodyWidth.value ? Math.min(Math.max(PANEL_MIN, railMax.value), Math.max(PANEL_MIN, railWidth.value)) : railWidth.value)
+const railDragging = ref(false)
+const railPanelId = useId()
+
 // ── Right rail panels ────────────────────────────────────────────────────────
 type RailPanel = 'contact' | 'tags' | 'orders'
-// Below the split breakpoint (Vuetify md = layout.breakpointSplit, 960) an open
-// panel takes the thread's place, so it never opens by itself there.
-const { mdAndUp } = useDisplay()
-const initialRail = () => (mdAndUp.value ? props.defaultRail : null)
+// In compact mode an open panel covers the thread, so it never opens by itself
+// there — and one that opened by itself closes if the area turns compact.
+const initialRail = () => (compact.value ? null : props.defaultRail)
 const railOpen = ref<RailPanel | null>(initialRail())
+let railOpenedByDefault = true
 watch(() => props.ticketId, () => {
   railOpen.value = initialRail()
+  railOpenedByDefault = true
   closeComposer()
   scrollFeedToEnd(false)
 })
+watch(compact, isCompact => {
+  if (isCompact && railOpenedByDefault) railOpen.value = null
+})
 function toggleRail(panel: RailPanel) {
+  railOpenedByDefault = false
   railOpen.value = railOpen.value === panel ? null : panel
 }
 const railButtons: { panel: RailPanel; icon: string; label: string }[] = [
@@ -161,6 +254,7 @@ const linkedOrder = computed(() =>
 async function openLinkedOrder() {
   if (!linkedOrder.value) return
   orderDetailId.value = linkedOrder.value.id
+  railOpenedByDefault = false
   railOpen.value = 'orders'
   // Same as opening it from the list: focus lands on the order's heading.
   await nextTick()
@@ -324,7 +418,7 @@ const SEND_AND_SET: TicketStatus[] = ['Pending', 'On Hold', 'Closed']
 </script>
 
 <template>
-  <div v-if="ticket" class="tw d-flex flex-column h-100">
+  <div v-if="ticket" class="tw d-flex flex-column h-100" :class="{ 'tw--compact': compact, 'tw--resizing': railDragging }">
     <!-- Title band (the full page already renders the subject in its page header) -->
     <header v-if="variant === 'pane'" class="tw-head border-b d-flex align-center ga-3">
       <v-btn
@@ -337,8 +431,9 @@ const SEND_AND_SET: TicketStatus[] = ['Pending', 'On Hold', 'Closed']
         @click="emit('back')"
       ></v-btn>
       <div class="tw-head__title">
-        <div class="mp-meta-label text-medium-emphasis">{{ eyebrow }}</div>
-        <h2 class="mp-section-title text-truncate">{{ ticket.subject }}</h2>
+        <div class="tw-eyebrow mp-meta-label text-medium-emphasis">{{ eyebrow }}</div>
+        <!-- A short title column (compact) gets two lines before the subject is cut. -->
+        <h2 class="mp-section-title" :class="compact ? 'tw-subject--clamp' : 'text-truncate'">{{ ticket.subject }}</h2>
         <div v-if="linkedOrder || ticket.tags.length" class="tw-head__meta d-flex align-center flex-wrap">
           <!-- The order this ticket is about, one click from its details. -->
           <button
@@ -364,7 +459,7 @@ const SEND_AND_SET: TicketStatus[] = ['Pending', 'On Hold', 'Closed']
       <TicketWorkspaceActions
         v-model:show-activities="showActivities"
         :folder="ticket.folder"
-        can-expand
+        :can-expand="mdAndUp"
         @expand="expandToPage"
         @edit="openEditDetails"
         @unread="markUnread"
@@ -373,7 +468,7 @@ const SEND_AND_SET: TicketStatus[] = ['Pending', 'On Hold', 'Closed']
     </header>
 
     <!-- Property row (the full page, which has no title band, ends it with the actions) -->
-    <div class="tw-props border-b d-flex align-center flex-wrap ga-2">
+    <div class="tw-props border-b d-flex align-center ga-2" :class="compact ? 'flex-nowrap' : 'flex-wrap'">
       <v-menu v-for="menu in propertyMenus" :key="menu.key" location="bottom start">
         <template #activator="{ props: activator }">
           <button
@@ -415,8 +510,28 @@ const SEND_AND_SET: TicketStatus[] = ['Pending', 'On Hold', 'Closed']
       />
     </div>
 
+    <!-- Pinned notes stay in view on every visit; a line jumps to its note in the thread. -->
+    <section v-if="pinned.length" class="tw-pinned border-b" aria-label="Pinned notes">
+      <ul class="tw-pinned__list">
+        <li v-for="note in pinned" :key="note.id" class="tw-pinned__item d-flex align-center ga-1">
+          <v-icon size="16" aria-hidden="true">pin</v-icon>
+          <button type="button" class="tw-pinned__jump text-truncate" @click="jumpToNote(note.id)">
+            <span class="tw-pinned__author">{{ note.author }}:</span> {{ note.body }}
+          </button>
+          <v-btn
+            v-if="ticket.folder === 'inbox'"
+            icon="x"
+            variant="text"
+            size="x-small"
+            :aria-label="`Unpin ${note.author}'s note`"
+            @click="pinNote(note.id, false)"
+          ></v-btn>
+        </li>
+      </ul>
+    </section>
+
     <!-- Body: thread column (feed + docked footer) beside the right rail -->
-    <div class="tw-body flex-grow-1">
+    <div ref="bodyEl" class="tw-body flex-grow-1">
       <div class="tw-thread flex-grow-1">
         <!-- Focusable so the thread can be scrolled from the keyboard (WCAG 2.1.1). -->
         <div
@@ -427,14 +542,23 @@ const SEND_AND_SET: TicketStatus[] = ['Pending', 'On Hold', 'Closed']
           :aria-label="`Conversation: ${ticket.subject}`"
         >
           <template v-for="item in feed" :key="item.kind === 'message' ? `m${item.message.id}` : `a${item.activity.id}`">
+            <TicketNote
+              v-if="item.kind === 'message' && item.message.role === 'note'"
+              :message="item.message"
+              :time="formatAt(item.message.time)"
+              :can-manage="canManageNote(item.message, CURRENT_AGENT)"
+              :readonly="ticket.folder !== 'inbox'"
+              @save="body => saveNote(item.message.id, body)"
+              @delete="deleteNote(item.message.id)"
+              @pin="value => pinNote(item.message.id, value)"
+            />
             <MpChatBubble
-              v-if="item.kind === 'message'"
+              v-else-if="item.kind === 'message'"
               side="start"
               :tone="item.message.role === 'customer' ? 'accent' : 'neutral'"
               :author="item.message.author"
               :time="formatAt(item.message.time)"
               class="tw-bubble"
-              :class="{ 'tw-bubble--note': item.message.role === 'note' }"
             >
               <template #avatar>
                 <v-avatar v-if="item.message.role === 'customer'" size="28" color="primary">
@@ -443,22 +567,14 @@ const SEND_AND_SET: TicketStatus[] = ['Pending', 'On Hold', 'Closed']
                 <v-avatar v-else-if="item.message.role === 'agent'" size="28" color="secondary">
                   <span class="text-caption tw-strong">{{ initials(item.message.author) }}</span>
                 </v-avatar>
-                <v-avatar v-else-if="item.message.role === 'bot'" size="28" color="surface-variant">
+                <v-avatar v-else size="28" color="surface-variant">
                   <v-icon size="16">bot</v-icon>
-                </v-avatar>
-                <v-avatar v-else size="28" color="warning" variant="tonal">
-                  <v-icon size="16">sticky-note</v-icon>
                 </v-avatar>
               </template>
               <span class="tw-bubble__meta d-block text-caption">
                 {{ sentence(item.message.action) }}<template v-if="item.message.to"> · To: {{ item.message.to }}</template>
               </span>
               {{ item.message.body }}
-              <template v-if="item.message.role === 'note'" #footer>
-                <span class="d-inline-flex align-center ga-1">
-                  <v-icon size="16">lock</v-icon> Internal note — not visible to the customer
-                </span>
-              </template>
             </MpChatBubble>
 
             <MpListRow
@@ -591,7 +707,28 @@ const SEND_AND_SET: TicketStatus[] = ['Pending', 'On Hold', 'Closed']
 
       <!-- Right rail: optional panel + icon strip -->
       <div class="tw-aside flex-shrink-0">
-        <section v-if="railOpen && activeRail" class="tw-rail-panel border-l d-flex flex-column" :aria-label="activeRail.label">
+        <!-- Beside the thread the panel is resizable; the handle draws its left hairline.
+             In compact mode the panel overlays the thread and has no handle. -->
+        <MpSplitHandle
+          v-if="railOpen && activeRail && !compact"
+          side="end"
+          :size="renderedRailWidth"
+          :min="PANEL_MIN"
+          :max="railMax"
+          :default-size="PANEL_DEFAULT"
+          ariaLabel="Resize side panel"
+          :controls="railPanelId"
+          @update:size="width => { railWidth = width }"
+          @dragging="active => { railDragging = active }"
+        />
+        <section
+          v-if="railOpen && activeRail"
+          :id="railPanelId"
+          class="tw-rail-panel d-flex flex-column"
+          :class="{ 'border-l': compact }"
+          :style="compact ? undefined : { width: `${renderedRailWidth}px` }"
+          :aria-label="activeRail.label"
+        >
           <div class="tw-rail-panel__head d-flex align-center ga-2 border-b">
             <v-icon size="18" class="text-medium-emphasis">{{ activeRail.icon }}</v-icon>
             <span class="text-body-2 tw-strong text-truncate">{{ activeRail.label }}</span>
@@ -812,13 +949,37 @@ const SEND_AND_SET: TicketStatus[] = ['Pending', 'On Hold', 'Closed']
   margin-bottom: var(--mp-space-4);
 }
 
-/* Internal notes carry a warm tint through MpChatBubble's documented re-skin seam. */
-.tw-bubble.tw-bubble--note {
-  --mp-bubble-bg: var(--warn-soft);
-  --mp-bubble-fg: var(--warn-ink);
-  --mp-bubble-border: transparent;
+/* Pinned notes: a slim warm strip under the properties, one line per note. */
+.tw-pinned {
+  flex-shrink: 0;
+  padding: var(--mp-space-4) var(--mp-space-12);
+  background: var(--warn-soft);
+  color: var(--warn-ink);
 }
-.tw-bubble.tw-bubble--note .tw-bubble__meta { color: inherit; }
+.tw-pinned__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.tw-pinned__item { min-width: 0; }
+.tw-pinned__jump {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: var(--mp-component-chip-height-lg);
+  padding: 0 var(--mp-space-4);
+  border: 0;
+  border-radius: var(--mp-radius-4);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: var(--mp-fontSize-13);
+  text-align: left;
+  cursor: pointer;
+}
+.tw-pinned__jump:hover { text-decoration: underline; }
+.tw-pinned__jump:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
+.tw-pinned__author { font-weight: var(--mp-fontWeight-semibold); }
+.tw-pinned .v-btn { color: var(--warn-ink); }
 
 /* Docked footer: the thread keeps at least 40% of the pane. */
 .tw-foot { max-height: 60%; }
@@ -858,10 +1019,15 @@ const SEND_AND_SET: TicketStatus[] = ['Pending', 'On Hold', 'Closed']
   padding-block: var(--mp-space-8);
 }
 
+/* Width comes from the inline style (the agent's dragged width, clamped). */
 .tw-rail-panel {
-  width: var(--mp-layout-inboxRailPanelWidth);
   min-width: 0;
   min-height: 0;
+}
+/* While the handle is dragged, nothing in the ticket gets selected. */
+.tw--resizing {
+  cursor: col-resize;
+  user-select: none;
 }
 .tw-rail-panel__head {
   flex-shrink: 0;
@@ -891,6 +1057,7 @@ const SEND_AND_SET: TicketStatus[] = ['Pending', 'On Hold', 'Closed']
   display: inline-flex;
   align-items: center;
   gap: var(--mp-space-4);
+  white-space: nowrap;
   height: var(--mp-component-chip-height-md);
   padding-inline: var(--mp-component-chip-paddingInline);
   border: 0;
@@ -922,13 +1089,41 @@ const SEND_AND_SET: TicketStatus[] = ['Pending', 'On Hold', 'Closed']
 .tw-dl dd { margin: 0; margin-top: var(--mp-space-2); }
 
 /* ── Below the split breakpoint: back control appears, the panel overlays the thread ── */
+/* The back control belongs to the one-pane layout, which follows the window. */
 @media (max-width: ($mp-layout-breakpointSplit - 0.02px)) {
   .tw-back { display: inline-flex; }
+}
 
+/* ── Compact: the ticket area can't fit the strip, a panel and a readable thread.
+   Set from the area's measured width (see `compact`), so it also covers a
+   ticket beside a wide list on a laptop, not only phones. ── */
+.tw--compact {
   .tw-head,
   .tw-props { padding-inline: var(--mp-space-16); }
   .tw-feed { padding: var(--mp-space-16); }
   .tw-actions { padding-inline: var(--mp-space-16); }
+
+  /* Height is the scarce thing here, so the chrome above the thread stays short:
+     a one-line eyebrow, a subject of at most two lines, and one row of
+     properties that scrolls sideways instead of wrapping onto three. */
+  .tw-head { padding-block: var(--mp-space-12); }
+  .tw-eyebrow {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .tw-subject--clamp {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
+  .tw-props {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .tw-props::-webkit-scrollbar { display: none; }
+  .tw-prop { flex-shrink: 0; }
 
   /* A 2×2 grid — feed | rail strip over footer | rail strip — so an open rail
      panel takes the feed's cell and the reply bar stays visible beneath it.

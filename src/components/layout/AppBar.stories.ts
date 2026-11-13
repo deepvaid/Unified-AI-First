@@ -184,6 +184,23 @@ export const ProfileMenuOpen: Story = {
   },
 }
 
+/**
+ * The user menu's Language panel: the quick switch for a user's own language. It is the same
+ * setting as Settings › General › Preferred Language, so the two always agree. Languages are
+ * listed under their own names. The prototype stores the choice; it does not translate its copy.
+ */
+export const LanguageMenuOpen: Story = {
+  name: 'Language Menu (Open)',
+  render: appBarStory(),
+  play: async ({ canvasElement }) => {
+    await new Promise(resolve => setTimeout(resolve, 500))
+    canvasElement.querySelector<HTMLElement>('.user-pill')?.click()
+    await new Promise(resolve => setTimeout(resolve, 300))
+    // The menu is teleported out of the canvas.
+    document.querySelector<HTMLElement>('.um-language-trigger')?.click()
+  },
+}
+
 /** The quick-create menu opened — grouped create targets with single-key shortcuts (D/W/E/S/A/L). */
 export const CreateMenuOpen: Story = {
   name: 'Create Menu (Open)',

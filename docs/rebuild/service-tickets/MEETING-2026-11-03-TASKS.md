@@ -378,6 +378,20 @@ what it gets wrong:
 
 ### T11 · Resizable list/detail split, remembered (P0)
 
+> **Status 12 Nov 2026 — the side panel resizes too** (Abhinav's review: "Contact, Order, Tags
+> column should be resizeable"; branch `feature/ticket-notes-order-rail`).
+> - **Drag or keyboard:** the panel beside the thread (Customer info / Customer orders / Tags) has
+>   the same separator as the list. ←/→ move it 16px, Home/End jump to the limits, Enter or
+>   double-click resets to 300px.
+> - **Limits:** from 260px up to whatever leaves the thread 360px. The width is remembered
+>   (`mp.tickets.railWidth.v1`), and a narrower window clamps it without overwriting it.
+> - **When it doesn't fit:** if the ticket area can't hold the icon strip, a 260px panel and a
+>   360px thread, the panel overlays the thread and Reply stays visible. There is no handle then.
+> - **Why this is measured on the ticket area, not the window:** at 1024px the old rule (overlay
+>   below a 960px window) left the thread 122px wide beside an open panel.
+> - **DS:** the separator is now its own atom, `MpSplitHandle`, which `MpSplitPane` composes.
+>   Tokens `layout.inboxRailPanelMinWidth` (260) and `layout.inboxThreadMinWidth` (360).
+
 - Separator between list and detail: `role="separator" aria-orientation="vertical"`, focusable,
   `aria-valuenow/min/max` in px. ←/→ move 16px, Home/End jump to min/max, double-click resets to
   `layout.inboxListWidth` (380).
@@ -389,6 +403,21 @@ what it gets wrong:
 
 ### T12 · Responsive & touch gaps (P1)
 
+> **Status 12 Nov 2026 — responsive pass on the inbox and Settings › Service** (measured at 375,
+> 768, 1024 and 1280px; branch `feature/ticket-notes-order-rail`).
+> - **Laptop:** an open side panel no longer crushes the thread (see T11).
+> - **Phone, open ticket:** the conversation gets 485px of an 812px screen, up from 270px.
+>   - The page header steps aside while a ticket is open in the one-pane layout.
+>   - The subject wraps to two lines, and the properties sit on one row that scrolls sideways.
+> - **Settings menu (900px and below):** it used to render 0px tall, leaving only the search box.
+>   It is now one row, "Settings / Inboxes", that opens the full list. This is `MpSectionRail`, so
+>   Retail, Merchandising, Maropay, Templates and the store editor get the same menu.
+> - **Tables on phones:**
+>   - Support emails folds the address under the sender name, so Status and ⋮ stay on screen.
+>   - Agents drops "Open tickets" and lets a long address wrap.
+> - **Still open from the list below:** touch checkboxes, the composer sheet, and the bulk bar's
+>   ⋯ overflow.
+
 Found while reviewing the sandbox:
 - **Row checkboxes are invisible on touch.** They only appear on hover or focus. Under
   `@media (hover: none)`, always show them at a 44px target.
@@ -399,6 +428,14 @@ Found while reviewing the sandbox:
 
 ### T13 · Orders — link, see items, act (P0)
 
+> **Status 12 Nov 2026 — Order field on New ticket built** (Abhinav's review; branch
+> `feature/ticket-notes-order-rail`). The form has an **Order** field after Contacts.
+> - It lists the chosen contact's Commerce orders: number · date · total, then status · products.
+> - It is disabled with a hint until a contact is picked ("Choose a contact first") or when the
+>   contact has none ("No orders for this contact"). Changing the contact clears it.
+> - Creating the ticket links the order, so it opens with the order chip under its title.
+> - *Edit ticket details* has no Order field: the Orders panel already links, changes and unlinks.
+>
 > **Status 6 Nov 2026 — order detail built (Slice 2b).** The *Customer orders* panel lists the
 > customer's **real Commerce orders**: the linked one on top, then the others, each showing number,
 > date, items, total and status. Clicking one **drills in** inside the panel, so the thread and
@@ -447,6 +484,20 @@ duplicating order data in `useTickets`.
 [Klaviyo Helpdesk — "2 orders" in the ticket overview](https://mobbin.com/screens/ccdbfba0-03ae-4d3d-8fa6-775af9df52bd)
 
 ### T14 · Sticky (internal) notes (P0)
+
+> **Status 12 Nov 2026 — built** from the UAT 1549 notes, ahead of Abhinav's reference ticket
+> (branch `feature/ticket-notes-order-rail`). Adjust if his reference differs.
+> - **Note card:** the warm note bubble with a ⋯ menu, "Only visible to your team", and "Edited" /
+>   "Pinned" marks in its footer.
+> - **Edit** (author only): in place, with Save / Cancel. Escape cancels; ⌘/Ctrl+Enter saves.
+> - **Delete** (author only): asks first, and leaves "Deleted an internal note" in the activity.
+> - **Pin to top** (anyone): pinned notes show in a strip under the ticket's properties. A line
+>   jumps to its note in the thread and has its own Unpin.
+> - **Read-only:** Spam and Trash tickets have no note actions.
+> - **For Abhinav (Q9):** author-only edit and delete, pinning by anyone, and more than one pinned
+>   note are our proposals.
+> - **Code:** `TicketNote.vue`, rules in `src/service/notes.ts` (tested), store `editNote` /
+>   `deleteNote` / `pinNote`; `MpChatBubble` gained an `#actions` slot.
 
 UAT 1549 shows what Abhinav means. An internal note is a yellow card headed "Rahul Rawat added an
 internal note – Nov 03, 2026, 4:21 AM", with **edit** and **delete** icons. The sandbox renders

@@ -30,7 +30,7 @@ const headers: (ResponsiveHeader & { title: string })[] = [
   { title: 'Open tickets', key: 'open', align: 'end', hideBelow: 'sm' },
   { title: 'Actions', key: 'actions', sortable: false, align: 'end', width: 56, headerProps: { class: 'mp-th-sr' } },
 ]
-const { visibleHeaders } = useResponsiveTableHeaders(headers)
+const { visibleHeaders, isVisible } = useResponsiveTableHeaders(headers)
 
 const rows = computed(() =>
   settings.inboxes.map(inbox => {
@@ -134,6 +134,10 @@ function performDelete() {
           <div class="py-2">
             <router-link :to="inboxRoute(item.id)" class="mp-link font-weight-medium">{{ item.name }}</router-link>
             <div v-if="item.description" class="text-caption text-medium-emphasis inbox-description">{{ item.description }}</div>
+            <!-- When the Support emails column has no room, the address folds in here. -->
+            <div v-if="!isVisible('emails') && item.defaultAddress" class="text-caption inbox-address">
+              {{ item.defaultAddress }}<span v-if="item.moreEmails" class="text-medium-emphasis"> +{{ item.moreEmails }} more</span>
+            </div>
           </div>
         </template>
 
@@ -207,6 +211,10 @@ function performDelete() {
 <style scoped>
 .inbox-description {
   max-width: var(--mp-component-pageHeader-titleMinWidth);
+}
+/* A long address wraps inside the cell rather than widening the table. */
+.inbox-address {
+  overflow-wrap: anywhere;
 }
 .inbox-count {
   font-variant-numeric: tabular-nums;

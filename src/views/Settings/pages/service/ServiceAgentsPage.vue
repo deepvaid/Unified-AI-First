@@ -60,7 +60,7 @@ const headers = [
   { title: 'Nickname', key: 'nickname', hideBelow: 'lg' as const },
   { title: 'Job title', key: 'jobTitle', hideBelow: 'md' as const },
   { title: 'Phone', key: 'phone', sortable: false, hideBelow: 'lg' as const },
-  { title: 'Open tickets', key: 'open', align: 'end' as const },
+  { title: 'Open tickets', key: 'open', align: 'end' as const, hideBelow: 'sm' as const },
   { title: 'Actions', key: 'actions', sortable: false, align: 'end' as const, headerProps: { class: 'mp-th-sr' } },
 ]
 const hiddenColumns = ref<string[]>([])
@@ -164,7 +164,7 @@ const signaturePreview = computed(() =>
             </v-avatar>
             <div class="agent-identity">
               <button type="button" class="mp-link text-start" @click="openEdit(item.id)">{{ item.name }}</button>
-              <div class="text-caption text-medium-emphasis text-truncate">{{ item.email }}</div>
+              <div class="agent-identity__email text-caption text-medium-emphasis">{{ item.email }}</div>
             </div>
           </div>
         </template>
@@ -282,6 +282,11 @@ const signaturePreview = computed(() =>
 <style scoped>
 .agent-identity {
   min-width: 0;
+}
+/* On a phone a long address wraps inside the name cell; truncating it kept the
+   cell at the address's full width and pushed Open tickets and ⋮ off-screen. */
+.agent-identity__email {
+  overflow-wrap: anywhere;
 }
 
 .agent-signature {

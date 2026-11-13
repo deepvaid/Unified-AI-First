@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpChatBubble from './MpChatBubble.vue'
+import MpRowActionsMenu from './MpRowActionsMenu.vue'
+import MpMenuItem from './MpMenuItem.vue'
 import { MESSAGES } from '@/stories/fixtures'
 
 const meta = {
@@ -72,7 +74,8 @@ accent) sets those on a host class applied to the component tag. Never \`:deep\`
 
 ### API
 Props \`side\` · \`tone\` · \`author?\` · \`time?\` · \`loading?\`. Slots: \`#avatar\`, default
-(body; also the loading label), \`#footer\`.
+(body; also the loading label), \`#footer\`, \`#actions\` (a per-message ⋯ menu at the end of the
+meta row — the Tickets thread uses it on internal notes).
         `,
       },
     },
@@ -98,6 +101,7 @@ Props \`side\` · \`tone\` · \`author?\` · \`time?\` · \`loading?\`. Slots: \
     avatar: { control: false, description: 'Slot — the avatar column (consumer supplies a v-avatar).', table: { category: 'slots' } },
     default: { control: false, description: 'Slot — the message body (pre-wrap). Doubles as the loading label.', table: { category: 'slots' } },
     footer: { control: false, description: 'Slot — in-bubble meta under the body: delivery stamps, source tags.', table: { category: 'slots' } },
+    actions: { control: false, description: 'Slot — per-message actions (a ⋯ menu) at the end of the meta row, after the time.', table: { category: 'slots' } },
   },
 } satisfies Meta<typeof MpChatBubble>
 
@@ -136,10 +140,10 @@ export const Variants: Story = {
   args: {} as never,
 }
 
-/** Avatar, meta row, in-bubble footer, and the loading (typing) state. */
+/** Avatar, meta row, in-bubble footer, per-message actions, and the loading (typing) state. */
 export const States: Story = {
   render: () => ({
-    components: { MpChatBubble },
+    components: { MpChatBubble, MpRowActionsMenu, MpMenuItem },
     template: `
       <div class="d-flex flex-column ga-4" style="max-width: 560px;">
         <MpChatBubble side="start" tone="accent" author="Maya (Support)" time="09:30">
@@ -149,6 +153,15 @@ export const States: Story = {
         </MpChatBubble>
         <MpChatBubble side="end" tone="solid" time="09:32">
           Amazing, thank you!
+        </MpChatBubble>
+        <MpChatBubble side="start" tone="neutral" author="Sam (Support)" time="09:34">
+          Customer prefers a phone call after 5pm.
+          <template #actions>
+            <MpRowActionsMenu ariaLabel="Message actions" itemLabel="Sam's message">
+              <MpMenuItem title="Edit" icon="pencil" />
+              <MpMenuItem title="Delete" icon="trash-2" danger />
+            </MpRowActionsMenu>
+          </template>
         </MpChatBubble>
         <MpChatBubble side="start" tone="neutral" loading>Reading the docs…</MpChatBubble>
       </div>
