@@ -447,7 +447,8 @@ Example: `[feat]: add MpDateRangePicker component with story`
   pages that follow it, which token owns each gap). Reference only — never a product surface.
 - **`docs/qa/`** — LiquidSky design QA without Figma, as three steps: **Compare** (`qa:compare`
   lists design-vs-build differences), **Approve** (designer tags Blocker / Must-fix / Nice-to-have),
-  **Lock** (QA's Playwright baseline comes from the LiquidSky Storybook at approval).
+  **Lock** (QA's Playwright baseline comes from the LiquidSky Storybook at approval, with a few
+  full-page baselines so a component update cannot break a page unnoticed).
   `liquidsky-design-qa-process.md` is the process, `playwright-example.md` the two files QA needs.
   Reference parts live in `src/stories/qa/liquidskyMap.ts`, the matching LiquidSky stories and
   selectors in `liquidskyPairs.ts` (like-for-like parts only); Storybook shows the reference at

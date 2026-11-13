@@ -1,7 +1,8 @@
 # The Playwright files QA needs
 
-Two small files guard the look of every approved component. There are no selectors and no
-per-component tests: approving a component is one line in a list.
+Two small files guard the look of every approved component, and of a few full pages so that a
+component update cannot break a page unnoticed. There are no selectors and no per-component tests:
+approving a component is one line in a list.
 
 Baselines come from the LiquidSky Storybook itself, taken when design approves a component.
 
@@ -15,6 +16,10 @@ import { test, expect } from '@playwright/test'
 const APPROVED: (string | { id: string; open: string })[] = [
   'components-apppagetitle--default',
   { id: 'components-appdrawerwrapper--default', open: "button:has-text('Open Drawer')" },
+
+  // Full pages. They catch a component update that breaks a page.
+  'components-genericindexwrapper--marobase',
+  'components-genericindexwrapper--bulk-actions-functionality',
 ]
 
 const STORYBOOK = process.env.STORYBOOK_URL // the Storybook under test
@@ -59,5 +64,9 @@ export default defineConfig({
 
 Re-saving a baseline is a design decision: it needs the designer's approval on the ticket.
 
-Tried on 2026-11-12 against three pages of the LiquidSky Storybook, in light and dark: the first
-run saved six baselines and the second matched all six.
+Tried on 2026-11-13 against the LiquidSky Storybook, in light and dark: three components and the
+two full pages above. Ten baselines were saved, and a second run matched all ten.
+
+The full pages are the page examples in the LiquidSky Storybook, which need no login. Pages of the
+real app on staging can be added the same way once the Playwright project signs in (a `baseURL`
+and a saved session in the config); that has not been tried here.

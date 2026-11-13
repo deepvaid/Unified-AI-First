@@ -24,6 +24,14 @@ Two rules:
 | Must-fix | A value differs from the design: size, spacing, colour or type | Fixed in the same sprint. QA carries on |
 | Nice-to-have | A matter of taste, or something the design does not cover | Goes to the backlog |
 
+## Checking that a component update does not break a page
+
+Review is component by component, because the same components appear on every page. To make sure
+an update to one of them does not break a page, QA also keeps screenshots of a few full pages in
+the same Playwright run. If a page looks different after a component update, its test fails. A
+change that was expected is confirmed by design and that page's baseline is saved again; a change
+that was not expected goes back to the developer.
+
 ## Where the baseline comes from
 
 From the LiquidSky Storybook, on the day design approves. A screenshot of an `Mp*` story cannot be

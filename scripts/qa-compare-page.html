@@ -171,14 +171,16 @@
         </tbody>
       </table>
     </div>
+    <h3>Checking that a component update does not break a page</h3>
+    <p>Review is component by component, because the same components appear on every page. To make sure an update to one of them does not break a page, QA also keeps screenshots of a few full pages. If a page looks different after a component update, its test fails. A change that was expected is confirmed by design and that page's baseline is saved again. A change that was not expected goes back to the developer.</p>
   </section>
 
   <section aria-labelledby="who">
     <h2 id="who">Who does what</h2>
     <div class="roles">
       <div><h3>Developer</h3><p class="muted">Before asking for review, open your component in the comparison below and fix what is listed.</p></div>
-      <div><h3>Designer</h3><p class="muted">Review from this page. Tag what is left. Approve when no Blocker remains.</p></div>
-      <div><h3>QA</h3><p class="muted">Add the approved page to the list in one file and run Playwright. From then on it guards the look.</p></div>
+      <div><h3>Designer</h3><p class="muted">Review from this page. Tag what is left. Approve when no Blocker remains. Confirm page changes that were expected.</p></div>
+      <div><h3>QA</h3><p class="muted">Add each approved component to the list in one file, plus a few full pages, and run Playwright. From then on it guards the look.</p></div>
     </div>
   </section>
 
@@ -194,6 +196,10 @@
 const APPROVED: (string | { id: string; open: string })[] = [
   'components-apppagetitle--default',
   { id: 'components-appdrawerwrapper--default', open: "button:has-text('Open Drawer')" },
+
+  // Full pages. They catch a component update that breaks a page.
+  'components-genericindexwrapper--marobase',
+  'components-genericindexwrapper--bulk-actions-functionality',
 ]
 
 const STORYBOOK = process.env.STORYBOOK_URL // the Storybook under test
@@ -233,7 +239,8 @@ export default defineConfig({
         </tbody>
       </table>
     </div>
-    <p class="small muted">Tried for real: this file ran twice against three pages of the developers' Storybook, in light and dark. The first run saved six baselines and the second matched all six.</p>
+    <p class="small muted">Tried for real against the developers' Storybook, in light and dark: three components and the two full pages above. Ten baselines were saved, and a second run matched all ten.</p>
+    <p class="small muted">The full pages here are the page examples in the developers' Storybook, which need no login. Pages of the real app on staging can be added the same way once the Playwright project signs in; that part has not been tried yet.</p>
   </section>
 
   <section aria-labelledby="comparison">
@@ -255,6 +262,7 @@ export default defineConfig({
       <details class="faq"><summary>Where do the baseline screenshots come from?</summary><p>From the developers' own Storybook, taken by Playwright on the day design approves a component. Approval is what makes a screenshot a baseline.</p></details>
       <details class="faq"><summary>Why not use screenshots of the design as the baseline?</summary><p>The design and the build are two separate codebases. The same component is shown with different sample content and a different frame, so a pixel comparison between them would always fail. That is why the design is compared by numbers and side by side, and the pixel baseline comes from the build itself.</p></details>
       <details class="faq"><summary>What happens when the design changes later?</summary><p>The design reference is updated and this page is run again. The change shows up as a new difference. The developer updates the component, design approves it, and QA re-saves that one baseline with the command above.</p></details>
+      <details class="faq"><summary>How do we know a component update did not break a page?</summary><p>QA keeps screenshots of a few full pages next to the component ones. After any component update the same Playwright run checks them. A page that changed fails, and design decides whether the change was expected.</p></details>
       <details class="faq"><summary>What about components with no design yet?</summary><p>They are marked "No design yet" below. They cannot be reviewed for design until a design decision is made, so they should not sit in the review queue. Functional QA on them carries on as normal.</p></details>
       <details class="faq"><summary>Does this replace functional testing?</summary><p>No. It only covers how a component looks. Behaviour is tested the way it is today.</p></details>
     </div>
