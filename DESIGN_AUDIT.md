@@ -2534,6 +2534,17 @@ The register is a touch device (70% iPad, 30% Android tablet), but every action 
 - [x] **MpSectionRail** collapses to a one-row disclosure at 900px and below ("Settings / Inboxes"), opening the same search, links and footer in a 320px scroll box. Before, its nav list rendered 0px tall there (`flex: 1 1 0` in an auto-height column), so every rail shell lost its navigation on tablets and phones. Wide screens are unchanged.
 - [x] New tokens: `layout.inboxRailPanelMinWidth` (260) and `layout.inboxThreadMinWidth` (360). No renames.
 
+## Settings tables fit their own width — 2026-11-13
+
+Measured all nine Settings tables at 375, 768, 901, 1024, 1100, 1280 and 1440px. Before: 23 of 63
+table-and-width combinations scrolled sideways, including Inboxes, Users and Audit log at 1440px
+(Inboxes squeezed its first column to 112px and hid the row menu off-screen). After: none.
+
+- [x] **`useResponsiveTableHeaders`** can measure the table's own width instead of the window's. A shell provides `TABLE_FITS_CONTAINER`; its tables then drop `hideBelow` columns at `layout.tableColumns{Sm,Md,Lg}` (480 / 720 / 900). `SettingsLayout` provides it: a Settings table is about 800px wide on a 1440px window, so window breakpoints kept every column. Tables outside Settings are unchanged. Also returns `isVisible(key)` so a page can fold a dropped column's content into another cell. Non-breaking.
+- [x] Dropped columns fold into the first cell so nothing is lost: Inboxes (default address), Users (roles, status), Audit log (details), Support emails (address, now by table width rather than `xs`).
+- [x] One-line ellipses that pinned a column's width now wrap: role description, audit details (two-line clamp, tooltip keeps the full text), user name and email, role chips.
+- [x] New tokens: `layout.tableColumnsSm` (480), `layout.tableColumnsMd` (720), `layout.tableColumnsLg` (900). No renames.
+
 ## Chatbot new-UI gaps — 2026-11-10
 
 From the "Gaps in Chatbot design in the new UI" call. A migration pass: behaviour and content

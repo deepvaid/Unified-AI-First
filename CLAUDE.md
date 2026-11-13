@@ -371,6 +371,11 @@ Reach for a role token when the system has already made the decision, a primitiv
 - Shadows: sm (1px), md (4px), lg (8px) — use sparingly, prefer border
 - Layout: sidebar 248px, rail 72px, section rail 260px, appbar 60px, drawer 480px, content max 1280px,
   shopper preview 360px (`layout.previewPanelWidth`; side by side from a 840px page, `previewSplitWidth`)
+- **Table column stops** `layout.tableColumns{Sm,Md,Lg}` → 480 / 720 / 900. The *table's own* width
+  below which `hideBelow: 'sm' | 'md' | 'lg'` columns drop, for shells that provide
+  `TABLE_FITS_CONTAINER` (Settings does: its tables are ~800px on a 1440px window, so window
+  breakpoints kept columns that did not fit). `useResponsiveTableHeaders` also returns
+  `isVisible(key)`: fold a dropped column's content into the first cell rather than lose it
 
 ### Colour pairing (non-negotiable)
 
