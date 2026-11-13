@@ -1139,3 +1139,6 @@ export const mp_layout_previewPanelWidth = `360px`
 export const mp_layout_previewSplitWidth = `840px`
 export const mp_layout_breakpointSplit = `960px`
 export const mp_layout_breakpointCompact = `640px`
+export const mp_layout_tableColumnsSm = `480px`
+export const mp_layout_tableColumnsMd = `720px`
+export const mp_layout_tableColumnsLg = `900px`

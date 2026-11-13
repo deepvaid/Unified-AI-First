@@ -101,14 +101,14 @@ const filteredUsers = computed<UserRow[]>(() =>
 // Table
 const headers = [
   { title: 'User', key: 'name', sortable: true },
-  { title: 'Roles', key: 'roleNames', sortable: false },
+  { title: 'Roles', key: 'roleNames', sortable: false, hideBelow: 'md' as const },
   { title: 'Products', key: 'products', sortable: false, hideBelow: 'md' as const },
-  { title: 'Status', key: 'status' },
+  { title: 'Status', key: 'status', hideBelow: 'sm' as const },
   { title: 'Last active', key: 'lastActiveAt', align: 'end' as const, hideBelow: 'lg' as const },
   { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, align: 'end' as const, sortable: false, width: '48px' },
 ]
 const hiddenColumns = ref<string[]>([])
-const { visibleHeaders } = useResponsiveTableHeaders(headers, hiddenColumns)
+const { visibleHeaders, isVisible } = useResponsiveTableHeaders(headers, hiddenColumns)
 
 function roleChips(user: UserAccount) {
   const names = user.roleIds.map(id => rbac.roleById(id)?.name ?? '').filter(Boolean)
@@ -337,12 +337,23 @@ function bulkDeactivate() {
                 </v-tooltip>
               </div>
               <div class="user-identity__email">{{ (item as UserRow).email }}</div>
+              <!-- Roles and Status fold in here when the table has no room for their columns. -->
+              <div v-if="!isVisible('roleNames') && (item as UserRow).roleNames" class="user-identity__roles">
+                {{ (item as UserRow).roleNames }}
+              </div>
+              <MpStatusChip
+                v-if="!isVisible('status')"
+                :status="statusLabel((item as UserRow).status)"
+                type="general"
+                size="sm"
+                class="mt-1"
+              />
             </div>
           </div>
         </template>
 
         <template v-slot:item.roleNames="{ item }">
-          <div class="d-flex align-center gap-1 text-no-wrap">
+          <div class="d-flex align-center flex-wrap gap-1">
             <v-chip
               v-for="name in roleChips(item as UserRow).visible"
               :key="name"
@@ -547,12 +558,19 @@ function bulkDeactivate() {
   font-size: var(--mp-fontSize-14);
   font-weight: var(--mp-fontWeight-semibold);
   color: var(--text-primary);
-  white-space: nowrap;
+  /* Wraps when the table is narrow: a no-wrap name kept this column at 250px on a phone. */
 }
 
 .user-identity__email {
   font-size: var(--mp-fontSize-12);
   color: var(--muted);
+  /* A long address wraps inside the cell rather than widening the table. */
+  overflow-wrap: anywhere;
+}
+
+.user-identity__roles {
+  font-size: var(--mp-fontSize-12);
+  color: var(--text-secondary);
 }
 
 /* 24px disc around a 16px row icon (recipe D1). */
