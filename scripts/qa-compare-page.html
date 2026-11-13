@@ -1,0 +1,374 @@
+<title>LiquidSky Design Check</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+  /* Layout: one reading column. Explainer first (three steps, who does what, the one file QA needs),
+     then the comparison as a scannable status list that opens into side-by-side screenshots. */
+  :root {
+    --bg: #f4f6fa;
+    --surface: #ffffff;
+    --ink: #1a1814;
+    --muted: #5a6573;
+    --line: rgba(26, 24, 20, 0.12);
+    --accent: #0073ab;
+    --accent-ink: #ffffff;
+    --good: #1b7f4b;
+    --good-soft: #e3f4ea;
+    --warn: #8a5200;
+    --warn-soft: #fdf0d9;
+    --neutral-soft: #e6eaf1;
+    --code-bg: #edf0f5;
+    --font-text: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    --radius: 12px;
+    --radius-small: 8px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #16181b; --surface: #1f2226; --ink: #ececec; --muted: #9ba3ac; --line: rgba(255, 255, 255, 0.14);
+      --accent: #2cc4ff; --accent-ink: #06212c; --good: #6fd49c; --good-soft: #163324; --warn: #f2c26b;
+      --warn-soft: #3a2c10; --neutral-soft: #2a2e34; --code-bg: #262a30; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #16181b; --surface: #1f2226; --ink: #ececec; --muted: #9ba3ac; --line: rgba(255, 255, 255, 0.14);
+    --accent: #2cc4ff; --accent-ink: #06212c; --good: #6fd49c; --good-soft: #163324; --warn: #f2c26b;
+    --warn-soft: #3a2c10; --neutral-soft: #2a2e34; --code-bg: #262a30; color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 400 15px/1.55 var(--font-text);
+    padding-block: 40px 72px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  .page { max-width: 1040px; margin-inline: auto; display: flex; flex-direction: column; gap: 56px; }
+  section { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+  h1, h2, h3 { margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+  h1 { font-size: 32px; line-height: 1.15; font-weight: 700; letter-spacing: -0.02em; }
+  h2 { font-size: 22px; line-height: 1.25; font-weight: 700; }
+  h3 { font-size: 16px; line-height: 1.35; font-weight: 600; }
+  p { margin: 0; max-width: 68ch; }
+  a { color: var(--accent); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+  .lede { font-size: 17px; color: var(--muted); }
+  .muted { color: var(--muted); }
+  .small { font-size: 13px; }
+  .eyebrow { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+  header.top { display: flex; flex-direction: column; gap: 12px; }
+
+  /* The three steps are a real sequence, so they are numbered. */
+  .steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; counter-reset: step; }
+  .steps li { counter-increment: step; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .steps li::before { content: counter(step); font-size: 40px; line-height: 1; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .steps .who { font-size: 13px; color: var(--muted); }
+
+  .rules { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  .rule { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 20px; font-weight: 500; }
+
+  .scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 10px 16px; vertical-align: top; border-bottom: 1px solid var(--line); }
+  tr:last-child > td { border-bottom: 0; }
+  th { font-size: 12px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+  td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td.value { font-family: var(--font-mono); font-size: 13px; white-space: nowrap; }
+
+  .roles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; }
+  .roles > div { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+
+  .pill { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 600; white-space: nowrap; }
+  .pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .pill.matches { background: var(--good-soft); color: var(--good); }
+  .pill.differs { background: var(--warn-soft); color: var(--warn); }
+  .pill.by-eye, .pill.no-design { background: var(--neutral-soft); color: var(--muted); }
+  .pill.no-design::before { background: transparent; border: 1.5px solid currentColor; }
+
+  .code { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: var(--radius); background: var(--code-bg); min-width: 0; }
+  .code-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 8px 8px 16px; border-bottom: 1px solid var(--line); font: 600 13px/1.4 var(--font-mono); }
+  .code pre { margin: 0; padding: 16px; overflow-x: auto; font: 400 13px/1.6 var(--font-mono); }
+  button { font: 600 13px/1 var(--font-text); color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 8px 14px; cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+
+  .toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+  .segmented { display: inline-flex; gap: 4px; padding: 4px; border-radius: 999px; background: var(--neutral-soft); }
+  .segmented button { border-color: transparent; background: transparent; }
+  .segmented button[aria-pressed="true"] { background: var(--surface); color: var(--ink); border-color: var(--line); }
+  .tally { display: flex; flex-wrap: wrap; gap: 8px 24px; font-size: 14px; }
+  .tally b { font-variant-numeric: tabular-nums; }
+
+  .components { display: flex; flex-direction: column; gap: 12px; }
+  details.component { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); min-width: 0; }
+  details.component > summary { list-style: none; cursor: pointer; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 14px 20px; }
+  details.component > summary::-webkit-details-marker { display: none; }
+  details.component > summary::after { content: "Show"; margin-left: auto; font-size: 13px; font-weight: 600; color: var(--accent); }
+  details.component[open] > summary::after { content: "Hide"; }
+  details.component > summary h3 { min-width: 0; overflow-wrap: anywhere; }
+  .component-body { display: flex; flex-direction: column; gap: 28px; padding: 4px 20px 24px; border-top: 1px solid var(--line); padding-top: 20px; }
+  .story { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+  .pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
+  .pair.stack { grid-template-columns: minmax(0, 1fr); }
+  figure { margin: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 0; }
+  figure img { display: block; width: auto; max-width: 100%; height: auto; border: 1px solid var(--line); border-radius: var(--radius-small); }
+  .swatch { display: inline-block; width: 11px; height: 11px; margin-right: 6px; border-radius: 3px; border: 1px solid var(--line); vertical-align: -1px; }
+  .tag { font-family: var(--font-text); font-size: 11.5px; font-weight: 600; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 0 7px; margin-left: 8px; white-space: nowrap; }
+
+  details.faq { border-bottom: 1px solid var(--line); padding-block: 14px; }
+  details.faq > summary { cursor: pointer; font-weight: 600; }
+  details.faq > p { margin-top: 8px; color: var(--muted); }
+
+  @media (max-width: 760px) {
+    h1 { font-size: 26px; }
+    .steps, .roles, .rules, .pair { grid-template-columns: minmax(0, 1fr); }
+    .steps { gap: 24px; }
+    body { padding-block: 24px 56px; }
+    .page { gap: 44px; }
+  }
+  @media (prefers-reduced-motion: no-preference) { button { transition: border-color 120ms; } }
+</style>
+
+<div class="page">
+  <header class="top">
+    <span class="eyebrow">Design QA · updated __DATE__</span>
+    <h1>LiquidSky design check</h1>
+    <p class="lede">How we check that the components developers build match the design, without Figma. Three steps, and this one page.</p>
+  </header>
+
+  <section aria-labelledby="how">
+    <h2 id="how">How it works</h2>
+    <ol class="steps">
+      <li>
+        <h3>Compare</h3>
+        <p>This page puts the design and the build side by side and lists what differs. It is produced automatically. Nobody writes tests for it.</p>
+        <span class="who">Design runs it. The developer reads it and fixes what is listed.</span>
+      </li>
+      <li>
+        <h3>Approve</h3>
+        <p>The designer reviews the list and the screenshots, and tags anything still open as Blocker, Must-fix or Nice-to-have. With no Blocker left, the component is approved.</p>
+        <span class="who">The designer closes the Design Review ticket.</span>
+      </li>
+      <li>
+        <h3>Lock</h3>
+        <p>QA's Playwright run takes a screenshot of the approved component in the developers' Storybook. That screenshot is the baseline. If the look changes later, the test fails until design approves the change.</p>
+        <span class="who">QA adds one line per approved component.</span>
+      </li>
+    </ol>
+    <div class="rules">
+      <div class="rule">Functional QA does not wait for design review. Both run at the same time.</div>
+      <div class="rule">Only a Blocker holds a release.</div>
+    </div>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Tag</th><th>What it means</th><th>What happens</th></tr></thead>
+        <tbody>
+          <tr><td><b>Blocker</b></td><td>The wrong component, a missing or broken state, or an accessibility failure</td><td>Holds the release</td></tr>
+          <tr><td><b>Must-fix</b></td><td>A value differs from the design: size, spacing, colour or type</td><td>Fixed in the same sprint. QA carries on</td></tr>
+          <tr><td><b>Nice-to-have</b></td><td>A matter of taste, or something the design does not cover</td><td>Goes to the backlog</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>Checking that a component update does not break a page</h3>
+    <p>Review is component by component, because the same components appear on every page. To make sure an update to one of them does not break a page, QA also keeps screenshots of a few full pages. If a page looks different after a component update, its test fails. A change that was expected is confirmed by design and that page's baseline is saved again. A change that was not expected goes back to the developer.</p>
+  </section>
+
+  <section aria-labelledby="who">
+    <h2 id="who">Who does what</h2>
+    <div class="roles">
+      <div><h3>Developer</h3><p class="muted">Before asking for review, open your component in the comparison below and fix what is listed.</p></div>
+      <div><h3>Designer</h3><p class="muted">Review from this page. Tag what is left. Approve when no Blocker remains. Confirm page changes that were expected.</p></div>
+      <div><h3>QA</h3><p class="muted">Add each approved component to the list in one file, plus a few full pages, and run Playwright. From then on it guards the look.</p></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="qa">
+    <h2 id="qa">What QA sets up, once</h2>
+    <p>Baseline screenshots come from the developers' own Storybook, taken on the day design approves. QA needs nothing from design to start. Two small files cover every component: there are no selectors and no per-component tests.</p>
+    <div class="code">
+      <div class="code-head"><span>visual.spec.ts</span><button type="button" data-copy="spec">Copy</button></div>
+      <pre id="spec">import { test, expect } from '@playwright/test'
+
+// Pages that design has approved. Add one line per approval.
+// A page that opens from a button names that button in `open`.
+const APPROVED: (string | { id: string; open: string })[] = [
+  'components-apppagetitle--default',
+  { id: 'components-appdrawerwrapper--default', open: "button:has-text('Open Drawer')" },
+
+  // Full pages. They catch a component update that breaks a page.
+  'components-genericindexwrapper--marobase',
+  'components-genericindexwrapper--bulk-actions-functionality',
+]
+
+const STORYBOOK = process.env.STORYBOOK_URL // the Storybook under test
+const THEMES = ['marobaseLight', 'marobaseDark']
+
+for (const entry of APPROVED) {
+  const { id, open } = typeof entry === 'string' ? { id: entry, open: undefined } : entry
+  for (const theme of THEMES) {
+    test(`${id} · ${theme}`, async ({ page }) =&gt; {
+      await page.goto(`${STORYBOOK}/iframe.html?id=${id}&amp;viewMode=story&amp;globals=theme:${theme}`)
+      await page.locator('#storybook-root &gt; *').first().waitFor({ state: 'attached' })
+      await page.evaluate(() =&gt; document.fonts.ready)
+      if (open) await page.locator(open).first().click()
+      await expect(page).toHaveScreenshot(`${id}--${theme}.png`, { animations: 'disabled' })
+    })
+  }
+}</pre>
+    </div>
+    <div class="code">
+      <div class="code-head"><span>playwright.config.ts</span><button type="button" data-copy="config">Copy</button></div>
+      <pre id="config">import { defineConfig } from '@playwright/test'
+
+export default defineConfig({
+  testDir: '.',
+  // One folder of approved screenshots, named after the Storybook page.
+  snapshotPathTemplate: '{testDir}/baselines/{arg}{ext}',
+  use: { viewport: { width: 1280, height: 800 } },
+  expect: { toHaveScreenshot: { maxDiffPixelRatio: 0.01 } },
+})</pre>
+    </div>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>When</th><th>Run</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td>Design approves a component</td><td class="value">npx playwright test -g "&lt;page id&gt;" --update-snapshots</td><td>Saves that page's screenshots as the baseline</td></tr>
+          <tr><td>Every build</td><td class="value">npx playwright test</td><td>Fails if an approved page no longer looks like its baseline</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="small muted">Tried for real against the developers' Storybook, in light and dark: three components and the two full pages above. Ten baselines were saved, and a second run matched all ten.</p>
+    <p class="small muted">The full pages here are the page examples in the developers' Storybook, which need no login. Pages of the real app on staging can be added the same way once the Playwright project signs in; that part has not been tried yet.</p>
+  </section>
+
+  <section aria-labelledby="comparison">
+    <h2 id="comparison">Comparison</h2>
+    <p>Each component below shows the design next to the build. The automatic check covers size, spacing, corner radius, colour and type, at rest, in light and dark. Hover, focus and layout are checked by eye from the screenshots. A listed difference is a starting point for the designer, not a verdict.</p>
+    <div class="toolbar">
+      <div class="tally" id="tally"></div>
+      <div class="segmented" role="group" aria-label="Screenshot theme">
+        <button type="button" id="theme-light" aria-pressed="true">Light</button>
+        <button type="button" id="theme-dark" aria-pressed="false">Dark</button>
+      </div>
+    </div>
+    <div class="components" id="components"></div>
+  </section>
+
+  <section aria-labelledby="questions">
+    <h2 id="questions">Questions</h2>
+    <div>
+      <details class="faq"><summary>Where do the baseline screenshots come from?</summary><p>From the developers' own Storybook, taken by Playwright on the day design approves a component. Approval is what makes a screenshot a baseline.</p></details>
+      <details class="faq"><summary>Why not use screenshots of the design as the baseline?</summary><p>The design and the build are two separate codebases. The same component is shown with different sample content and a different frame, so a pixel comparison between them would always fail. That is why the design is compared by numbers and side by side, and the pixel baseline comes from the build itself.</p></details>
+      <details class="faq"><summary>What happens when the design changes later?</summary><p>The design reference is updated and this page is run again. The change shows up as a new difference. The developer updates the component, design approves it, and QA re-saves that one baseline with the command above.</p></details>
+      <details class="faq"><summary>How do we know a component update did not break a page?</summary><p>QA keeps screenshots of a few full pages next to the component ones. After any component update the same Playwright run checks them. A page that changed fails, and design decides whether the change was expected.</p></details>
+      <details class="faq"><summary>What about components with no design yet?</summary><p>They are marked "No design yet" below. They cannot be reviewed for design until a design decision is made, so they should not sit in the review queue. Functional QA on them carries on as normal.</p></details>
+      <details class="faq"><summary>Does this replace functional testing?</summary><p>No. It only covers how a component looks. Behaviour is tested the way it is today.</p></details>
+    </div>
+  </section>
+</div>
+
+<script>
+  const REPORT = /*__REPORT__*/null
+
+  const RESULT = {
+    matches: 'Matches the design',
+    differs: (n) => `${n} ${n === 1 ? 'difference' : 'differences'}`,
+    'by-eye': 'Check by eye',
+    'no-design': 'No design yet',
+  }
+  const esc = (text) => String(text).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c])
+  const label = (c) => (c.result === 'differs' ? RESULT.differs(c.differences) : RESULT[c.result])
+  const pill = (c) => `<span class="pill ${c.result}">${esc(label(c))}</span>`
+  const name = (c) => esc(c.liquidsky.join(', '))
+  const list = (items) => items.map(esc).join(', ')
+  let theme = 'light'
+  try { theme = localStorage.getItem('qa-theme') === 'dark' ? 'dark' : 'light' } catch {}
+
+  const count = (result) => REPORT.components.filter((c) => c.result === result).length
+  document.getElementById('tally').innerHTML = [
+    [REPORT.components.length, 'components'],
+    [count('matches'), 'match the design'],
+    [count('differs'), 'have differences'],
+    [count('by-eye'), 'to check by eye'],
+    [count('no-design'), 'have no design yet'],
+  ].map(([n, text]) => `<span><b>${n}</b> ${text}</span>`).join('')
+
+  const value = (text, colour) => `${colour ? `<span class="swatch" style="background:${esc(colour)}"></span>` : ''}${esc(text)}`
+  const figure = (caption, png) => png
+    ? `<figure><span class="eyebrow">${caption}</span><img loading="lazy" alt="${caption} screenshot" data-light="${esc(png.light)}" data-dark="${esc(png.dark)}" src="${esc(png[theme])}"></figure>`
+    : ''
+
+  function story(s) {
+    const differing = s.rows.filter((row) => !row.same)
+    const table = differing.length ? `
+      <div class="scroll"><table>
+        <thead><tr><th>Part</th><th>What differs</th><th>Design</th><th>Build</th></tr></thead>
+        <tbody>${differing.map((row) => `
+          <tr>
+            <td>${esc(row.part)}</td>
+            <td>${esc(row.property)}${row.theme === 'both' ? '' : `<span class="tag">${row.theme} only</span>`}</td>
+            <td class="value">${value(row.design, row.swatch?.[0])}</td>
+            <td class="value">${value(row.build, row.swatch?.[1])}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table></div>` : ''
+    const same = s.rows.length - differing.length
+    const notes = [
+      s.rows.length ? `${same} of ${s.rows.length} checks match.` : 'Nothing here is checked automatically. Compare the two screenshots by eye.',
+      s.unchecked.length ? `Not found on the build's page: ${list(s.unchecked)}.` : '',
+      s.rows.length && s.skipped.length ? `Left to the eye: ${list(s.skipped)}.` : '',
+    ].filter(Boolean).join(' ')
+    return `
+      <div class="story">
+        <h3>${esc(s.label)}</h3>
+        <div class="pair">${figure('Design', s.png.design)}${figure('Build', s.png.build)}</div>
+        ${table}
+        <p class="small muted">${notes}</p>
+      </div>`
+  }
+
+  document.getElementById('components').innerHTML = REPORT.components.map((c) => `
+    <details class="component" id="c-${c.key}">
+      <summary><h3>${name(c)}</h3>${pill(c)}${c.checked ? `<span class="small muted">${c.checked - c.differences} of ${c.checked} checks match</span>` : ''}</summary>
+      <div class="component-body">
+        <p class="muted">${c.result === 'no-design' ? '' : `Design reference: ${esc(c.reference.replaceAll('`', ''))}. `}${c.note ? esc(c.note.replaceAll('`', '')) : ''}</p>
+        ${c.stories.map(story).join('')}
+        ${c.buildOnly ? `<div class="story"><h3>What the build looks like today</h3><div class="pair">${figure('Build', c.buildOnly.png)}</div></div>` : ''}
+      </div>
+    </details>`).join('')
+
+  function setTheme(next) {
+    theme = next
+    document.getElementById('theme-light').setAttribute('aria-pressed', String(next === 'light'))
+    document.getElementById('theme-dark').setAttribute('aria-pressed', String(next === 'dark'))
+    for (const img of document.querySelectorAll('img[data-light]')) img.src = img.dataset[next]
+    try { localStorage.setItem('qa-theme', next) } catch {}
+  }
+  document.getElementById('theme-light').addEventListener('click', () => setTheme('light'))
+  document.getElementById('theme-dark').addEventListener('click', () => setTheme('dark'))
+  setTheme(theme)
+
+  // Screenshots are cropped to the component, so they are shown at their real size. A wide pair stacks.
+  document.getElementById('components').addEventListener('load', (event) => {
+    if (event.target.naturalWidth > 480) event.target.closest('.pair')?.classList.add('stack')
+  }, true)
+
+  for (const button of document.querySelectorAll('[data-copy]')) {
+    button.addEventListener('click', async () => {
+      const block = document.getElementById(button.dataset.copy)
+      try {
+        await navigator.clipboard.writeText(block.textContent)
+        button.textContent = 'Copied'
+      } catch {
+        const range = document.createRange()
+        range.selectNodeContents(block)
+        getSelection().removeAllRanges()
+        getSelection().addRange(range)
+        button.textContent = 'Selected, press Ctrl/Cmd + C'
+      }
+      setTimeout(() => { button.textContent = 'Copy' }, 2000)
+    })
+  }
+</script>

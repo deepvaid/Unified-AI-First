@@ -30,23 +30,24 @@ const meta = {
       description: {
         component: `
 ### Overview
-What LiquidSky QA matches against. LiquidSky (\`App*\` components) implements this design system
+The design reference for LiquidSky. LiquidSky (\`App*\` components) implements this design system
 for production, and there is no Figma file — this Storybook is the reference.
 
+### Compare, Approve, Lock
+1. **Compare** — \`npm run qa:compare\` puts each reference story next to the LiquidSky build and
+   lists what differs. Nobody writes tests for it.
+2. **Approve** — the designer reviews the list and tags what is left Blocker, Must-fix or
+   Nice-to-have. Only a Blocker holds a release, and functional QA never waits for the review.
+3. **Lock** — QA's Playwright run screenshots the approved component in the LiquidSky Storybook.
+   That screenshot is the baseline from then on.
+
+### On this page
 - **Component map** — which \`Mp*\` story is the reference for each LiquidSky component in
   design review, and where there is none.
-- **Spec contract** — the computed CSS of every part that matters, in light and dark. These are
-  the numbers a Playwright test asserts with \`toHaveCSS\`.
+- **Spec contract** — the values the comparison checks, per part, in light and dark.
 
-### How it is produced
-\`npm run build-storybook && npm run qa:export\` measures the stories listed in
-\`src/stories/qa/liquidskyMap.ts\` and writes \`public/qa-reference/\` — a manifest, one JSON spec
-per component and a screenshot per story and theme. The deploy serves it at \`/qa-reference/\`.
-
-### What it is not
-A pixel baseline. A screenshot of an \`Mp*\` story cannot be diffed against an \`App*\` component.
-The pixel baseline is captured from the LiquidSky Storybook when design signs a component off.
-Process: \`docs/qa/liquidsky-design-qa-process.md\`.
+\`npm run build-storybook && npm run qa:export\` writes them to \`public/qa-reference/\` from
+\`src/stories/qa/liquidskyMap.ts\`. Process and the Playwright files: \`docs/qa/\`.
         `,
       },
     },
@@ -91,7 +92,7 @@ export const ComponentMap: Story = {
   }),
 }
 
-/** The exported values per part. A row with a token is owned by that token; change the token, not the number. */
+/** The values the comparison checks. A row with a token is owned by that token; change the token, not the number. */
 export const SpecContract: Story = {
   render: () => ({
     setup: () => ({ specs }),
