@@ -44,6 +44,9 @@ output/playwright/
 output/qa-compare/
 .playwright-cli/
 
+# BKM report infographics and Confluence body (scripts/bkm-report) — rebuildable
+output/bkm-figs/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
