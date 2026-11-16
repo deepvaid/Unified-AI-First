@@ -2581,3 +2581,31 @@ merchant-authored FAQs, configurable pre-chat forms, a full test environment) ar
 - `themeBuilderData.ts` keeps its private `onBrandColor`; it could adopt `brandContrast.ts`.
 - The chatbot widget preview is still inline in `ChatbotBuilder.vue` (builder audit B4).
 - "CRM" on the call was read as the store association (the Sales channel select in General).
+
+## BKM demo store seed (BKM build S0) — 2026-11-16
+
+First slice of `docs/store-builder/bkm-build-prompt.md`; progress lives in
+`docs/store-builder/bkm-build-tracker.md`. The storefront is out of system (P4-8), so nothing
+here touches a design-system component.
+
+- **BKM (demo)** sales channel (`bkm-demo`) seeded from one module, `src/storefront/bkmDemo.ts`:
+  eight products with variants and generated pack shots, five collections, menus, pages, policies,
+  three blog posts and the "BKM" theme.
+- **Pure storefront rules** in `src/storefront/` with `npm run test:storefront`.
+- **Theme Styles tab** gains a Badges group (sale, custom, sold out).
+
+### Renames and breaking changes
+
+- `ThemeStyles` gains required `saleBadgeColor`, `customBadgeColor`, `soldOutBadgeColor`;
+  `storefrontThemeVars` emits `--sf-badge-{sale,custom,sold-out}` and `--sf-on-badge-*`.
+- `themeFonts` gains `Figtree` and `Inconsolata` (loaded by the Google Fonts import in `global.scss`).
+- `storefrontProducts`, `collectionsOf`, `collectionByHandle`, `productFromHandle` and
+  `relatedProducts` (`views/Storefront/storefrontCatalog.ts`) now take a `channelId`.
+- `StorefrontContext` gains `formatMoney`; `currency` is the store's own when it has one.
+- `Product` gains optional `channelIds` and `imageUrls`; `ProductVariant` gains optional
+  `compareAtPrice` and `weight`; `SalesChannel.webStore` gains optional `currency` and `locale`.
+
+### Not done here
+
+- The Styles tab still offers preset swatches only; a custom hex colour cannot be picked.
+- `ThemeStyles` has no border colour or accent font yet.

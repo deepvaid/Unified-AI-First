@@ -13,8 +13,10 @@ export interface StorefrontContext {
   chrome: ComputedRef<StorefrontChrome>
   /** A storefront href ("/page/about-us", "example.com/contact_us") → the prototype path that serves it. */
   link: (href: string) => string
-  /** Prices are shown in the store's Maropay settlement currency. */
+  /** The store's own currency when it has one, else the account's Maropay settlement currency. */
   currency: ComputedRef<string>
+  /** A price as this store's shoppers read it: "$94.19", or "399 kr" for a store with a locale. */
+  formatMoney: (amount: Money) => string
   /** How the store takes payment for an amount: the merchant's methods, express buttons and instalments. */
   offerFor: (amount: Money) => StorefrontOffer
 }

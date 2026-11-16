@@ -9,6 +9,7 @@ import { useStorefrontCartStore } from '@/stores/useStorefrontCart'
 import { money } from '@/maropay/money'
 import type { Money } from '@/maropay/money'
 import { storefrontOffer } from '@/maropay/storefront'
+import { formatStorePrice } from '@/storefront/price'
 import { storefrontThemeVars } from '@/stores/themeBuilderData'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import StorefrontAnchor from './StorefrontAnchor.vue'
@@ -51,13 +52,14 @@ function link(href: string): string {
 const channel = computed(() => found.value!)
 const theme = computed(() => (found.value ? themes.themeForChannel(found.value.id) : undefined))
 const chrome = computed(() => storefronts.chromeFor(channel.value))
-const currency = computed(() => maropay.account?.currency ?? 'USD')
+const currency = computed(() => found.value?.webStore?.currency ?? maropay.account?.currency ?? 'USD')
+const formatMoney = (amount: Money) => formatStorePrice(amount, found.value?.webStore?.locale)
 
 function offerFor(amount: Money) {
   return storefrontOffer(maropay.state, channelId.value, amount)
 }
 
-provide(STOREFRONT, { channel, theme, chrome, link, currency, offerFor })
+provide(STOREFRONT, { channel, theme, chrome, link, currency, formatMoney, offerFor })
 
 const minimal = computed(() => route.meta.minimalChrome === true)
 const cartCount = computed(() => (found.value ? cart.count(found.value.id) : 0))

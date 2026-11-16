@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
+import { BKM_BLOG_SEO, BKM_CHANNEL_ID, BKM_CONTENT } from '@/storefront/bkmDemo'
 
 // Storefront pages & blog posts (store editor ▸ Pages / Blogs).
 // Legacy parity notes (sandbox crawl 2026-07-10, docs/uat-parity/parity-tracker.md A06b):
@@ -210,9 +211,10 @@ function seedEntries(): ContentEntry[] {
 }
 
 export const useStoreContentStore = defineStore('storeContent', () => {
-  const entries = ref<ContentEntry[]>(seedEntries())
+  const entries = ref<ContentEntry[]>([...seedEntries(), ...BKM_CONTENT.map((entry) => ({ ...entry }))])
   const blogSeoByChannel = ref<Record<string, BlogSeoSettings>>({
     'retest-sales-notification': { title: 'Atlas Outfitters Journal', metaDescription: 'Guides and stories from the Atlas Outfitters team.' },
+    [BKM_CHANNEL_ID]: { ...BKM_BLOG_SEO },
   })
 
   function entriesForChannel(channelId: string, kind: ContentKind): ContentEntry[] {

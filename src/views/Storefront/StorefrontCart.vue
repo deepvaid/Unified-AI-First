@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, inject } from 'vue'
 import { useRouter } from 'vue-router'
-import { formatMoney } from '@/maropay/money'
 import { useCommerceStore } from '@/stores/useCommerce'
 import { MAX_QTY, lineTotal, useStorefrontCartStore } from '@/stores/useStorefrontCart'
 import type { CartLine } from '@/stores/useStorefrontCart'
@@ -26,9 +25,15 @@ const lines = computed(() => cart.linesFor(channelId.value))
 const subtotal = computed(() => cart.subtotal(channelId.value, currency.value))
 const offer = computed(() => storefront.offerFor(subtotal.value))
 
+const formatMoney = storefront.formatMoney
+
 function iconFor(line: CartLine): string {
   const category = commerce.products.find((p) => p.id === line.productId)?.category
   return (category && CATEGORY_ICONS[category]) || 'package'
+}
+
+function imageFor(line: CartLine): string | undefined {
+  return commerce.products.find((p) => p.id === line.productId)?.imageUrls?.[0]
 }
 
 function setQty(line: CartLine, value: number): void {
@@ -53,7 +58,10 @@ function checkout(express?: string): void {
       <section class="sf-cart__lines" aria-label="Items in your cart">
         <ul>
           <li v-for="line in lines" :key="line.productId" class="sf-cart__line">
-            <span class="sf-cart__thumb" aria-hidden="true"><v-icon size="28">{{ iconFor(line) }}</v-icon></span>
+            <span class="sf-cart__thumb" aria-hidden="true">
+              <img v-if="imageFor(line)" :src="imageFor(line)" alt="" class="sf-cart__image">
+              <v-icon v-else size="28">{{ iconFor(line) }}</v-icon>
+            </span>
             <div class="sf-cart__item">
               <StorefrontAnchor :href="`/products/${productHandle({ name: line.name, id: line.productId })}`" class="sf-cart__name">{{ line.name }}</StorefrontAnchor>
               <span class="sf-muted">{{ formatMoney(lineTotal({ price: line.price, qty: 1 }, currency)) }} each</span>
@@ -166,6 +174,13 @@ function checkout(express?: string): void {
   border-radius: 6px;
   background: linear-gradient(160deg, #f4f4f2 0%, #e6e5e1 100%);
   color: #8a8780;
+}
+
+.sf-cart__image {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
 }
 
 .sf-cart__item {

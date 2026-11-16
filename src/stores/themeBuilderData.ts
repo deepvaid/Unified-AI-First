@@ -6,6 +6,7 @@
 import {
   mp_radius_12,
   mp_color_blue_500,
+  mp_color_light_error,
   mp_color_light_primary,
   mp_color_light_surface,
   mp_color_light_textPrimary,
@@ -76,6 +77,11 @@ export interface ThemeStyles {
   bodyFont: string
   cornerRadius: number
   buttonStyle: 'solid' | 'outline' | 'pill'
+  /** Badge fills on product cards and galleries. Each badge's text colour follows from its fill. */
+  saleBadgeColor: string
+  /** The merchant's own badges ("New", "Bestseller"). */
+  customBadgeColor: string
+  soldOutBadgeColor: string
 }
 
 export interface StoreTheme {
@@ -103,7 +109,7 @@ export const TEMPLATE_TYPE_LABELS: Record<TemplateType, string> = {
 }
 
 /** Fonts offered by the theme styles panel. */
-export const themeFonts = ['Inter', 'Georgia', 'Space Grotesk', 'DM Sans', 'system-ui']
+export const themeFonts = ['Inter', 'Figtree', 'Inconsolata', 'Georgia', 'Space Grotesk', 'DM Sans', 'system-ui']
 
 /** Default global theme styles, sourced from design tokens. */
 export function defaultThemeStyles(): ThemeStyles {
@@ -116,6 +122,10 @@ export function defaultThemeStyles(): ThemeStyles {
     bodyFont: 'Inter',
     cornerRadius: Number.parseInt(mp_radius_12, 10),
     buttonStyle: 'solid',
+    saleBadgeColor: mp_color_light_error,
+    customBadgeColor: mp_color_blue_500,
+    // The sold-out tag's colour before badges were a theme setting.
+    soldOutBadgeColor: '#121011',
   }
 }
 
@@ -161,6 +171,13 @@ export function storefrontThemeVars(styles?: Partial<ThemeStyles> | null): Recor
   if (styles.cornerRadius !== undefined) vars['--sf-radius'] = `${styles.cornerRadius}px`
   if (styles.headingFont) vars['--sf-heading-font'] = styles.headingFont
   if (styles.bodyFont) vars['--sf-body-font'] = styles.bodyFont
+  const badges = { sale: styles.saleBadgeColor, custom: styles.customBadgeColor, 'sold-out': styles.soldOutBadgeColor }
+  for (const [name, fill] of Object.entries(badges)) {
+    if (!fill) continue
+    vars[`--sf-badge-${name}`] = fill
+    const ink = onBrandColor(fill)
+    if (ink) vars[`--sf-on-badge-${name}`] = ink
+  }
   return vars
 }
 

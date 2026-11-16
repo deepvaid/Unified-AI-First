@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, inject, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { formatMoney, sum } from '@/maropay/money'
+import { sum } from '@/maropay/money'
 import type { CheckoutLineItem } from '@/maropay/model'
 import { isEmail } from '@/maropay/onboarding'
 import { MAROPAY_STORE_ROUTE } from '@/maropay/readiness'
@@ -38,6 +38,8 @@ const cart = useStorefrontCartStore()
 const channelId = computed(() => storefront.channel.value.id)
 const accountId = computed(() => String(route.params.accountId ?? '2000290'))
 const currency = computed(() => storefront.currency.value)
+/** The order summary reads like the rest of the store. The pay button and payment sheets keep Maropay's own wording. */
+const formatMoney = storefront.formatMoney
 const storeName = computed(() => storefront.chrome.value.wordmark)
 
 function query(key: string): string | null {

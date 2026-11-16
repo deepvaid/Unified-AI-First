@@ -7,6 +7,8 @@ import { useCommerceStore, PRODUCT_TYPES, type Product, type ProductView } from 
 import { useProductExtrasStore } from '@/stores/useProductExtras'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import { downloadCsv } from '@/utils/exportCsv'
+import { parseDecimal } from '@/maropay/money'
+import { formatStorePrice } from '@/storefront/price'
 import { useToast } from '@/composables/useToast'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpFilterTabs from '@/components/MpFilterTabs.vue'
@@ -197,7 +199,12 @@ const headers = [
 ]
 const { visibleHeaders } = useResponsiveTableHeaders(headers)
 
-const money = (value: string) => `$${(parseFloat(value) || 0).toFixed(2)}`
+/** A product of a store with its own currency reads in that currency ("399 kr"); the shared catalogue stays in dollars. */
+function money(item: Product): string {
+  const store = item.channelIds?.length ? salesChannels.getChannel(accountId.value, item.channelIds[0]!)?.webStore : undefined
+  const amount = store?.currency ? parseDecimal(item.price, store.currency) : null
+  return amount ? formatStorePrice(amount, store?.locale) : `$${(parseFloat(item.price) || 0).toFixed(2)}`
+}
 
 // ── Navigation ──────────────────────────────────────────────────────
 function openNewProduct() { router.push({ name: 'ProductNew', params: { accountId: accountId.value } }) }
@@ -515,7 +522,8 @@ onMounted(() => {
         <template #item.name="{ item }">
           <div class="d-flex align-center ga-3 py-2">
             <v-avatar :size="36" rounded="lg" class="border flex-shrink-0">
-              <div class="prod-thumb"><v-icon size="16">image</v-icon></div>
+              <v-img v-if="item.imageUrls?.length" :src="item.imageUrls[0]" alt="" cover />
+              <div v-else class="prod-thumb"><v-icon size="16">image</v-icon></div>
             </v-avatar>
             <div>
               <RouterLink
@@ -536,7 +544,7 @@ onMounted(() => {
           <MpStatusChip :status="item.status" type="general" size="sm" />
         </template>
         <template #item.price="{ item }">
-          <span class="text-body-2">{{ money(item.price) }}</span>
+          <span class="text-body-2">{{ money(item) }}</span>
         </template>
         <template #item.collections="{ item }">
           <div v-if="item.collections.length" class="d-flex flex-wrap ga-1">

@@ -13,6 +13,7 @@ import {
   type ThemeStyles,
 } from './themeBuilderData'
 import { useSalesChannelsStore } from './useSalesChannels'
+import { BKM_CHANNEL_ID, BKM_THEME_STYLES } from '@/storefront/bkmDemo'
 
 function nowIso() {
   return new Date().toISOString()
@@ -155,6 +156,56 @@ function seedThemes(): StoreTheme[] {
       styles: defaultThemeStyles(),
       templates: { home: [], product: [], collection: [], cart: [] },
     },
+    // BKM (demo): the reference store for the BKM Health build (docs/store-builder/bkm-build-prompt.md).
+    // Built from the section kinds that exist today; slices S2, S3 and S6 swap in BKM's own sections.
+    {
+      id: 'theme-bkm',
+      channelId: BKM_CHANNEL_ID,
+      name: 'BKM',
+      status: 'Published',
+      publishedAt: '2026-11-16T09:00:00Z',
+      updatedAt: '2026-11-16T09:00:00Z',
+      styles: { ...BKM_THEME_STYLES },
+      templates: {
+        home: [
+          createSection('announcement-bar', { text: 'Free shipping over 549 kr · Made in Sweden · 30-day money-back guarantee on Tranquil' }, 'bkm-home-announcement'),
+          createSection('header', { menuStyle: 'Centered' }, 'bkm-home-header'),
+          {
+            ...createSection('image-banner', { headline: 'Supplements that do one job well', height: 'Medium' }, 'bkm-home-banner'),
+            blocks: [createBlock('button', { label: 'Shop all products', link: '/collections/all' }, 'bkm-banner-button')],
+          },
+          createSection('featured-products', { title: 'Our range', productCount: 8 }, 'bkm-home-featured'),
+          {
+            ...createSection('collection-grid', { title: 'Shop by goal', columns: 3 }, 'bkm-home-collections'),
+            blocks: [
+              createBlock('collection', { label: 'Sleep', link: '/collections/sleep' }, 'bkm-collection-sleep'),
+              createBlock('collection', { label: 'Sport', link: '/collections/sport' }, 'bkm-collection-sport'),
+              createBlock('collection', { label: 'Longevity', link: '/collections/longevity' }, 'bkm-collection-longevity'),
+              createBlock('collection', { label: 'Hydrate', link: '/collections/hydrate' }, 'bkm-collection-hydrate'),
+            ],
+          },
+          createSection('rich-text', { heading: 'Subscribe and save 20%', body: 'Most of our customers subscribe. You get every delivery for less, and you can skip, pause or cancel whenever you like.', alignment: 'Center' }, 'bkm-home-subscribe'),
+          createSection('newsletter', { headline: 'Get the BKM letter' }, 'bkm-home-newsletter'),
+          createSection('footer', { showSocial: false, columns: 3 }, 'bkm-home-footer'),
+        ],
+        product: [
+          createSection('header', { menuStyle: 'Centered' }, 'bkm-product-header'),
+          createSection('product-detail', {}, 'bkm-product-detail'),
+          createSection('featured-products', { title: 'You may also like' }, 'bkm-product-related'),
+          createSection('footer', { showSocial: false, columns: 3 }, 'bkm-product-footer'),
+        ],
+        collection: [
+          createSection('header', { menuStyle: 'Centered' }, 'bkm-collection-header'),
+          createSection('collection-grid', {}, 'bkm-collection-grid'),
+          createSection('footer', { showSocial: false, columns: 3 }, 'bkm-collection-footer'),
+        ],
+        cart: [
+          createSection('header', { menuStyle: 'Centered' }, 'bkm-cart-header'),
+          createSection('cart-summary', {}, 'bkm-cart-summary'),
+          createSection('footer', { showSocial: false, columns: 3 }, 'bkm-cart-footer'),
+        ],
+      },
+    },
   ]
 }
 
@@ -168,6 +219,9 @@ const AURORA_STYLES: ThemeStyles = {
   bodyFont: 'system-ui',
   cornerRadius: 6,
   buttonStyle: 'solid',
+  saleBadgeColor: '#121011',
+  customBadgeColor: '#373842',
+  soldOutBadgeColor: '#121011',
 }
 
 // ── Store ─────────────────────────────────────────────────────────────────────

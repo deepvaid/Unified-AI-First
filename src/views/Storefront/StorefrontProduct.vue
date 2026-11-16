@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, inject, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { formatMoney } from '@/maropay/money'
 import { useCommerceStore } from '@/stores/useCommerce'
 import { toHandle } from '@/stores/useProductExtras'
 import { MAX_QTY, useStorefrontCartStore } from '@/stores/useStorefrontCart'
+import { hasPriceRange } from '@/storefront/catalog'
 import StorefrontAnchor from './StorefrontAnchor.vue'
 import StorefrontExpressButtons from './StorefrontExpressButtons.vue'
 import StorefrontNotFound from './StorefrontNotFound.vue'
@@ -23,13 +23,17 @@ const storefront = inject(STOREFRONT)!
 const commerce = useCommerceStore()
 const cart = useStorefrontCartStore()
 
-const product = computed(() => productFromHandle(commerce.products, String(route.params.handle ?? '')))
 const channelId = computed(() => storefront.channel.value.id)
+const product = computed(() => productFromHandle(commerce.products, channelId.value, String(route.params.handle ?? '')))
 const unit = computed(() => (product.value ? priceOf(product.value, storefront.currency.value) : null))
 // Instalments are quoted on one item, as stores do.
 const offer = computed(() => (unit.value ? storefront.offerFor(unit.value) : null))
+const formatMoney = storefront.formatMoney
+/** Until the variant picker (slice S5) the page sells the lowest-priced variant, so a range reads "From". */
+const priceRange = computed(() => (product.value ? hasPriceRange(product.value) : false))
+const subtitle = computed(() => product.value?.detail?.subtitle.trim())
 const collection = computed(() => product.value?.collections[0] ?? null)
-const related = computed(() => (product.value ? relatedProducts(commerce.products, product.value) : []))
+const related = computed(() => (product.value ? relatedProducts(commerce.products, channelId.value, product.value) : []))
 const available = computed(() => (product.value ? inStock(product.value) : false))
 const description = computed(() => {
   const p = product.value
@@ -74,15 +78,19 @@ function buyNow(methodId: string): void {
     </nav>
 
     <div class="sf-pdp__main">
+      <div v-if="product.imageUrls?.length" class="sf-pdp__media">
+        <img :src="product.imageUrls[0]" :alt="product.name" class="sf-pdp__image">
+      </div>
       <!-- Stands in for the product photographs. -->
-      <div class="sf-pdp__media" aria-hidden="true">
+      <div v-else class="sf-pdp__media" aria-hidden="true">
         <v-icon size="112">{{ CATEGORY_ICONS[product.category] ?? 'package' }}</v-icon>
       </div>
 
       <div class="sf-pdp__info">
         <p class="sf-pdp__vendor">{{ product.vendor }}</p>
         <h1 class="sf-pdp__title sf-heading-font">{{ product.name }}</h1>
-        <p class="sf-pdp__price">{{ formatMoney(unit) }}</p>
+        <p v-if="subtitle" class="sf-pdp__subtitle">{{ subtitle }}</p>
+        <p class="sf-pdp__price"><template v-if="priceRange">From </template>{{ formatMoney(unit) }}</p>
 
         <p v-if="offer.payIn4.labels.length" class="sf-pdp__instalments">
           <span>or 4 interest-free payments of <strong>{{ formatMoney(offer.payIn4.amount) }}</strong> with</span>
@@ -202,6 +210,19 @@ function buyNow(methodId: string): void {
   font-size: 34px;
   line-height: 1.2;
   font-weight: 700;
+}
+
+.sf-pdp__image {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+}
+
+.sf-pdp__subtitle {
+  margin: -8px 0 0;
+  color: var(--sf-muted, #5f5f5f);
+  font-size: 16px;
 }
 
 .sf-pdp__price {

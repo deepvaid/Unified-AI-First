@@ -1,5 +1,6 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
+import { BKM_CHANNEL } from '@/storefront/bkmDemo'
 
 export type SalesChannelType = 'web_store' | 'offline_store'
 export type SalesChannelStatus = 'connected' | 'needs_setup' | 'draft' | 'sync_issue'
@@ -36,6 +37,10 @@ export interface SalesChannel {
     storeBuilderEnabled: boolean
     published: boolean
     merchandiseConnected: boolean
+    /** The currency this store's prices are in (ISO 4217). Absent: the account's Maropay settlement currency. */
+    currency?: string
+    /** The locale its storefront formats prices in (BCP 47), e.g. "sv-SE" for "399 kr". Absent: "$399.00"-style. */
+    locale?: string
   }
   offlineStore?: {
     locationIds: string[]
@@ -289,6 +294,8 @@ const seedChannels: SalesChannel[] = [
       merchandiseConnected: true,
     },
   },
+  // Last on purpose: earlier positions decide the "primary store" in the Maropay scenarios and story indexes.
+  BKM_CHANNEL,
 ]
 
 function slugify(value: string): string {

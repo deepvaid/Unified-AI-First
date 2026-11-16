@@ -17,7 +17,7 @@ const commerce = useCommerceStore()
 
 function featured(section: ThemeSection) {
   const count = Number(section.settings.productCount) || 4
-  return storefrontProducts(commerce.products).filter(inStock).slice(0, count)
+  return storefrontProducts(commerce.products, storefront.channel.value.id).filter(inStock).slice(0, count)
 }
 
 const sections = computed<ThemeSection[]>(() =>

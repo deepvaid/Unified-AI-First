@@ -1,7 +1,9 @@
 /* ═══════════════════════════════════════════════════════════════
    Maropost Global Styles
    ═══════════════════════════════════════════════════════════════ */
-@import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&display=swap');
+// Inter is the admin's face. Figtree and Inconsolata are store theme fonts (themeFonts in themeBuilderData.ts);
+// the browser only downloads a face once a storefront or the builder canvas uses it.
+@import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&family=Figtree:wght@400;500;600;700&family=Inconsolata:wght@400;500&display=swap');
 
 /* ─── Display type utility classes (Inter, tightened for size) ─ */
 .mp-display-sm,

@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { useOnboardingStore } from '@/stores/useOnboarding'
 import { useMaropayStore } from '@/stores/useMaropay'
 import type { MaropayProvider, OrderPaymentStatusLabel } from '@/maropay/model'
+import { bkmProducts } from '@/storefront/bkmDemo'
 
 const productNames = [
   'Nike Air Max 270 - Black/White', 'Patagonia Better Sweater Fleece Vest', 'Apple iPhone 15 Pro Case - Clear',
@@ -75,6 +76,10 @@ export interface ProductVariant {
   allowBackorder: boolean
   costPrice: string
   price: string
+  /** The crossed-out "was" price, when this variant is on offer. */
+  compareAtPrice?: string
+  /** Shipping weight in kg. */
+  weight?: string
   /** Per-location on-hand counts, keyed by location name. */
   stock: Record<string, number>
 }
@@ -140,6 +145,14 @@ export interface Product {
   collections: string[]
   /** Storefront channels the product is published to. */
   salesChannelNames: string[]
+  /**
+   * Sales channel ids this product is assigned to. A store with assigned products
+   * sells only those; a product without assignments is in the shared catalogue
+   * (src/storefront/catalog.ts).
+   */
+  channelIds?: string[]
+  /** Product pictures, first one leading. Without any, the storefront and lists draw a placeholder. */
+  imageUrls?: string[]
   /** Merchandising type used by the Products filter drawer. */
   productType: string
   detail?: ProductDetail
@@ -742,7 +755,7 @@ function buildPosOrders(): Order[] {
 }
 
 export const useCommerceStore = defineStore('commerce', () => {
-  const products = ref<Product[]>(productNames.map((name, i) => {
+  const products = ref<Product[]>([...productNames.map((name, i): Product => {
     const inv = i < 3 ? 0 : Math.floor(Math.random() * 500) + 5
     // Deterministic, so the storefront's product pages, cart and orders agree across reloads.
     const price = (15 + ((i * 7919) % 45000) / 100).toFixed(2)
@@ -764,7 +777,10 @@ export const useCommerceStore = defineStore('commerce', () => {
       salesChannelNames: i % 4 === 0 ? [] : ['Online Store'],
       productType: PRODUCT_TYPES[i % PRODUCT_TYPES.length]!,
     }
-  }))
+  }),
+  // The BKM (demo) store's own catalogue, after the shared one so nothing above shifts.
+  ...bkmProducts().map((p): Product => ({ ...p, status: stockStatus(p.inventory) })),
+  ])
 
   // ── Product CRUD (mock-persistent) ───────────────────────────────
   function nextProductId(): number {

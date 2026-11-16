@@ -76,7 +76,7 @@ const meta = {
   rich-text, testimonials, newsletter, product-detail, cart-summary, footer.
 
 \`styles\` applies \`ThemeStyles\` as CSS vars (\`--sf-brand\`, \`--sf-accent\`, \`--sf-bg\`, \`--sf-text\`,
-\`--sf-radius\`, fonts) consumed by the section mocks. \`interactive\` adds hover outlines and click/keyboard
+\`--sf-radius\`, fonts, \`--sf-badge-*\`) consumed by the section mocks. \`interactive\` adds hover outlines and click/keyboard
 selection (\`select\` + \`hover\` emits); \`selectedId\` shows a labeled ring. \`device\` constrains the inner
 viewport (desktop full, tablet ~768px, mobile ~390px).
 

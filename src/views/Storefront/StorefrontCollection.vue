@@ -1,17 +1,19 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, inject } from 'vue'
 import { useRoute } from 'vue-router'
 import { useCommerceStore } from '@/stores/useCommerce'
 import StorefrontAnchor from './StorefrontAnchor.vue'
 import StorefrontNotFound from './StorefrontNotFound.vue'
 import StorefrontProductCard from './StorefrontProductCard.vue'
+import { STOREFRONT } from './storefrontContext'
 import { collectionByHandle } from './storefrontCatalog'
 
 // A collection (/collections/:handle; `all` is every product). Unknown handles get the 404 page.
 
 const route = useRoute()
+const storefront = inject(STOREFRONT)!
 const commerce = useCommerceStore()
-const collection = computed(() => collectionByHandle(commerce.products, String(route.params.handle ?? '')))
+const collection = computed(() => collectionByHandle(commerce.products, storefront.channel.value.id, String(route.params.handle ?? '')))
 </script>
 
 <template>
