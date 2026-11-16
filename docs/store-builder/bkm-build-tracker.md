@@ -12,7 +12,7 @@ The slices and their rules are in [bkm-build-prompt.md](bkm-build-prompt.md).
 
 | Slice | Name | Status | Branch | Commit | Date | Notes |
 |---|---|---|---|---|---|---|
-| S0 | Tracker and demo store seed | done | `feature/bkm-s0-demo-seed` | see `git log` on the branch | 2026-11-16 | See "S0 notes" below |
+| S0 | Tracker and demo store seed | done | `feature/bkm-s0-demo-seed` | `9257609f` | 2026-11-16 | See "S0 notes" below |
 | S1 | Section engine and named templates | pending | | | | |
 | S2 | Global chrome | pending | | | | |
 | S3 | Content sections | pending | | | | |
