@@ -64,7 +64,16 @@ The slices and their rules are in [bkm-build-prompt.md](bkm-build-prompt.md).
 - The sale and custom badge colours are theme settings but nothing draws those badges yet (S5). The sold-out tag uses its setting.
 - The storefront still shows a search box (BKM has none) and a single product image without a gallery (S2, S5).
 
+**Sales-demo pass (added 2026-11-16, after the audience was confirmed as sales people showing prospects):**
+
+- The header's search, account and wishlist are hidden on BKM (demo) until their pages exist (`headerTools` on the store's chrome). S13 turns search on, S8 the account.
+- The footer signup now confirms ("Thank you. You are on the list.").
+- The store's description in Sales channels no longer uses internal wording.
+- Still visible to a prospect, and owned by later slices: the checkout's "Test cards for this prototype" helper and "Pay SEK 399.00" button, and no Sweden in the checkout's country list (S9); the product editor's "$" variant prices (S9); the eight preset swatches in the Styles tab, none of which is BKM's navy (see decisions).
+
 **Decisions for the human:**
+
+- **BKM's name in front of other prospects.** The store uses BKM's real name, product names and prices. If sales people show it to other companies, that needs BKM's agreement, or the demo should carry a fictional brand. The seed is one file, so a rename is cheap now and gets more expensive with every slice.
 
 - **Custom colours.** The Styles tab only offers eight preset swatches, so a merchant cannot pick BKM's navy or badge colours by hand; the seed sets them. A hex field is needed before S16 can "rebuild the theme through the builder UI". Which slice should own it?
 - **Border colour and accent font.** BKM's `#d3d3d3` border and Inconsolata accent face are not in `ThemeStyles`. S2 (chrome) is the natural place to add them.

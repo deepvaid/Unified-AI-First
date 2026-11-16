@@ -14,6 +14,9 @@
 //
 // The catalogue structure (names, variants, SEK prices, collections) is BKM's. The
 // copy is written for this prototype, and the pictures are generated pack shots.
+//
+// Sales people show this store to prospects. Everything a visitor can see or click
+// must read like a real store: no internal wording, and no link to a missing page.
 // SKUs and weights are placeholders. Type-only imports keep this file runnable in
 // Node: `npm run test:storefront` checks it against the reference tables.
 
@@ -38,7 +41,7 @@ export const BKM_CHANNEL: SalesChannel = {
   provider: 'maropost_store_builder',
   status: 'connected',
   health: 'healthy',
-  description: 'Reference store for the BKM Health build: supplements sold mostly on subscription, priced in SEK.',
+  description: 'Swedish supplements store. Most orders are subscriptions, and prices are in SEK.',
   connectedClouds: ['commerce', 'store_builder'],
   createdAt: '2026-11-16T09:00:00Z',
   updatedAt: '2026-11-16T09:00:00Z',
@@ -306,6 +309,8 @@ const COLLECTION_LINKS = [
 export const BKM_CHROME: StorefrontChrome = {
   wordmark: 'BKM',
   wordmarkIcon: null,
+  // No search, account or wishlist until their pages exist (search S13, account S8): a demo must not hit a 404.
+  headerTools: [],
   social: [],
   searchPlaceholder: 'Search...',
   nav: [
@@ -358,6 +363,7 @@ export const BKM_CHROME: StorefrontChrome = {
     ],
     button: 'Sign up',
     busy: 'Signing up...',
+    success: 'Thank you. You are on the list.',
   },
   copyright: '© 2026 BKM (demo store). Made in Sweden.',
 }

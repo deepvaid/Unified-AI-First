@@ -27,12 +27,19 @@ export interface StorefrontNewsletter {
   consent: Array<string | StorefrontLink>
   button: string
   busy: string
+  /** Shown once the shopper has signed up. Absent: the form just clears. */
+  success?: string
 }
+
+/** The header's tools beside the cart. */
+export type StorefrontHeaderTool = 'search' | 'account' | 'wishlist'
 
 export interface StorefrontChrome {
   /** Stands in for the logo image: its wordmark, with an icon for the artwork. */
   wordmark: string
   wordmarkIcon: string | null
+  /** Which tools the header shows. A store leaves out the ones it has no page for, so none leads to a 404. */
+  headerTools: StorefrontHeaderTool[]
   social: Array<StorefrontLink & { icon: string }>
   searchPlaceholder: string
   nav: StorefrontLink[]
@@ -45,6 +52,7 @@ export interface StorefrontChrome {
 const NEELAM_STORE: StorefrontChrome = {
   wordmark: 'AUTO CAR',
   wordmarkIcon: 'car',
+  headerTools: ['search', 'account', 'wishlist'],
   social: [
     { label: 'Facebook', href: '/facebookUrl', icon: 'facebook' },
     { label: 'Instagram', href: '/instaUrl', icon: 'instagram' },
@@ -110,6 +118,7 @@ export const useStorefrontStore = defineStore('storefront', () => {
     return CHROME_BY_CHANNEL[channel.id] ?? {
       wordmark: channel.name,
       wordmarkIcon: null,
+      headerTools: ['search', 'account', 'wishlist'],
       social: [],
       searchPlaceholder: 'Search...',
       nav: [],

@@ -82,6 +82,7 @@ function search(): void {
 const email = ref('')
 const consent = ref(false)
 const subscribing = ref(false)
+const subscribed = ref(false)
 const canSubscribe = computed(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim()) && consent.value && !subscribing.value)
 
 function subscribe(): void {
@@ -89,6 +90,7 @@ function subscribe(): void {
   subscribing.value = true
   window.setTimeout(() => {
     subscribing.value = false
+    subscribed.value = true
     email.value = ''
     consent.value = false
   }, 600)
@@ -125,16 +127,16 @@ function subscribe(): void {
         </StorefrontAnchor>
 
         <div class="sf-tools">
-          <form class="sf-search" role="search" @submit.prevent="search">
+          <form v-if="chrome.headerTools.includes('search')" class="sf-search" role="search" @submit.prevent="search">
             <input v-model="query" type="search" :placeholder="chrome.searchPlaceholder" :aria-label="chrome.searchPlaceholder">
             <button type="submit" class="sf-search__go" aria-label="Search">
               <v-icon size="16">search</v-icon>
             </button>
           </form>
-          <StorefrontAnchor href="/user/login" class="sf-icon-btn" aria-label="Account">
+          <StorefrontAnchor v-if="chrome.headerTools.includes('account')" href="/user/login" class="sf-icon-btn" aria-label="Account">
             <v-icon size="20">user-round</v-icon>
           </StorefrontAnchor>
-          <StorefrontAnchor href="/wishlist-page" class="sf-icon-btn" aria-label="Wishlist">
+          <StorefrontAnchor v-if="chrome.headerTools.includes('wishlist')" href="/wishlist-page" class="sf-icon-btn" aria-label="Wishlist">
             <v-icon size="20">heart</v-icon>
           </StorefrontAnchor>
           <StorefrontAnchor href="/cart-page" class="sf-icon-btn sf-cart-link" :aria-label="cartCount ? `Cart, ${cartCount} ${cartCount === 1 ? 'item' : 'items'}` : 'Cart'">
@@ -183,6 +185,7 @@ function subscribe(): void {
           <button type="submit" class="sf-button" :disabled="!canSubscribe">
             {{ subscribing ? chrome.newsletter.busy : chrome.newsletter.button }}
           </button>
+          <p v-if="subscribed && chrome.newsletter.success" class="sf-newsletter__done" role="status">{{ chrome.newsletter.success }}</p>
         </form>
       </div>
       <ul v-if="footerMarks.length" class="sf-foot__marks" aria-label="Ways to pay">
@@ -429,6 +432,12 @@ function subscribe(): void {
   background: var(--sf-bg, var(--sf-bg-fallback));
   color: inherit;
   font: inherit;
+}
+
+.sf-newsletter__done {
+  margin: 0;
+  font-size: 13px;
+  line-height: 18px;
 }
 
 .sf-newsletter__consent {

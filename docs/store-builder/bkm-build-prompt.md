@@ -39,6 +39,9 @@ This is a Vue 3 + Vuetify prototype with mock data and no backend. "Build" means
 working, demo-able prototype with real interactions and deterministic mock data. It does not mean
 production services.
 
+**Who sees it.** Sales people show this store, storefront and admin, to prospective clients. Every
+slice must leave it in a state a sales person can click through in front of a prospect.
+
 You work in **slices**. Each run of this prompt does exactly one slice (section 7), then stops.
 
 ## 2. Read first, every run
@@ -99,6 +102,15 @@ The same report, rendered: https://ai-first-maropost.vercel.app/bkm-health-requi
   third-party scripts in the storefront. Pixels and chat are simulated: log what would fire.
 - **Accessibility.** Every interactive element works from the keyboard and has a name. Storefront
   motion respects `prefers-reduced-motion`. Builder-only UI never leaks into the live storefront.
+- **Demo-ready for sales.** A prospect is watching, so in the BKM store and its admin screens:
+  - nothing a visitor can click leads to a 404 or does nothing. Hide a control until its page exists
+    (the header's search, account and wishlist are `headerTools` on the store's chrome);
+  - every action gives visible feedback;
+  - no internal wording on screen: no slice numbers, "reference store", "TODO", "mock" or "prototype"
+    in the BKM store's names, descriptions, copy or empty states;
+  - data looks real: plausible names, dates, amounts and stock, and no "Lorem ipsum";
+  - walk the slice as a sales person would before you stop, and list anything that would embarrass a
+    demo in your report.
 - **BKM content.** BKM is the reference customer:
   - its catalog structure is fine as seed data (product names, variants, prices, plan rules, markets);
   - write your own short copy;
@@ -564,6 +576,8 @@ and a story. Where a section fits a Da Vinci phrasing, add it to `useThemeGenera
    - Check desktop and 375px.
    - For every new section, compare the builder canvas against the live storefront.
    - Check keyboard use and focus on new controls.
+   - Walk the BKM store as a sales person would: click every new link and control, and look for dead
+     ends and internal wording (section 3, "Demo-ready for sales").
 5. **Document.**
    - Stories for new reusable components and new storefront sections.
    - Update the tracker: slice status, branch, commit, and the per-requirement status for every ID in the slice.

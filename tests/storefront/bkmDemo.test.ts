@@ -92,6 +92,10 @@ test('the content is the pages, policies and posts the store needs', () => {
   }
 })
 
+test('the header offers no tool whose page does not exist yet', () => {
+  assert.deepEqual(BKM_CHROME.headerTools, [])
+})
+
 test('every header, footer, menu and in-copy link leads somewhere', () => {
   const known = new Set<string>([
     '/', '/cart-page', '/collections/all',
