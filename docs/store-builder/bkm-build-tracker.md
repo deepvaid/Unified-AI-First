@@ -83,8 +83,8 @@ The slices and their rules are in [bkm-build-prompt.md](bkm-build-prompt.md).
 - The name "Vitaheal" was chosen by the human (2026-11-17; the first pick, "Tallvik", was replaced).
   A web search found real supplement sellers with this name or one close to it: "VitaHeal"
   (vitaheals.com) and "VitaHealth" (Vita Life Sciences, sold across Southeast Asia). So the name is
-  not clearly fictional. **Open decision:** keep it, or pick a name with no match, before the store
-  is shown to a prospect. No trademark check has been done.
+  not clearly fictional. **Decided by the human (2026-11-17): keep Vitaheal**, knowing this. No
+  trademark check has been done.
 
 **Decisions for the human:**
 
