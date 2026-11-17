@@ -2,22 +2,19 @@ import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 import { money, sum, parseDecimal } from '@/maropay/money'
 import type { Money } from '@/maropay/money'
+import { MAX_QTY, addLine, lineKey } from '@/storefront/cart'
+import type { CartLine } from '@/storefront/cart'
+import type { LinePlan } from '@/subscriptions/plans'
 import type { Product } from './useCommerce'
 
 // A shopper's cart on a storefront, one per store. It lives for the browser tab
 // (sessionStorage), like a guest cart, and keeps each line's price as it was added.
+// The line rules are in src/storefront/cart.ts.
 
-export interface CartLine {
-  productId: number
-  name: string
-  sku: string
-  /** Unit price as a decimal string, as added. */
-  price: string
-  qty: number
-}
+export { MAX_QTY, lineKey }
+export type { CartLine }
 
 const KEY = 'mp.storefront.cart.v1'
-export const MAX_QTY = 99
 
 function read(): Record<string, CartLine[]> {
   try {
@@ -48,21 +45,27 @@ export const useStorefrontCartStore = defineStore('storefrontCart', () => {
     return carts.value[channelId] ?? []
   }
 
-  function add(channelId: string, product: Product, qty = 1): void {
-    const lines = linesFor(channelId)
-    const line = lines.find((l) => l.productId === product.id)
-    if (line) line.qty = Math.min(MAX_QTY, line.qty + qty)
-    else carts.value[channelId] = [...lines, { productId: product.id, name: product.name, sku: product.sku, price: product.price, qty: Math.min(MAX_QTY, qty) }]
+  /** Adds a product, bought once at its own price, or on a plan at the plan's price per delivery. */
+  function add(channelId: string, product: Product, qty = 1, subscription?: { plan: LinePlan; price: string }): void {
+    carts.value[channelId] = addLine(linesFor(channelId), {
+      productId: product.id,
+      name: product.name,
+      sku: product.sku,
+      price: subscription?.price ?? product.price,
+      qty,
+      ...(subscription ? { plan: subscription.plan } : {}),
+    })
   }
 
-  function setQty(channelId: string, productId: number, qty: number): void {
-    if (qty < 1) return remove(channelId, productId)
-    const line = linesFor(channelId).find((l) => l.productId === productId)
+  /** `key` is the line's `lineKey`. */
+  function setQty(channelId: string, key: string, qty: number): void {
+    if (qty < 1) return remove(channelId, key)
+    const line = linesFor(channelId).find((l) => lineKey(l) === key)
     if (line) line.qty = Math.min(MAX_QTY, Math.floor(qty))
   }
 
-  function remove(channelId: string, productId: number): void {
-    carts.value[channelId] = linesFor(channelId).filter((l) => l.productId !== productId)
+  function remove(channelId: string, key: string): void {
+    carts.value[channelId] = linesFor(channelId).filter((l) => lineKey(l) !== key)
   }
 
   function clear(channelId: string): void {

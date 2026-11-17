@@ -2661,3 +2661,25 @@ prospects, so BKM's name is off the screen:
   "Oxford Warehouse"), no longer by its own "testing" / "Oxford warehouse".
 - `vitahealDemo.ts`: seeded products are filed under the category "Beauty & Health" in
   `detail.categories` (it held their collections).
+
+**Demo pass, part 3 (2026-11-17) — subscription plans: edited in the admin, bought in the store.**
+
+- New page Commerce › Subscriptions › Plans (`src/views/Commerce/SubscriptionPlans.vue`, route
+  `SubscriptionPlans`), following the list archetype: `MpPageHeader`, `MpDataTableToolbar` with a
+  status quick filter, `v-data-table`, `MpEmptyState`, `MpFormDrawer`, `MpConfirmDialog`. The
+  Commerce sidebar gains a "Subscriptions" sub-group with "Plans".
+- New pure module `src/subscriptions/plans.ts` and script `npm run test:subscriptions`.
+- New store `useSubscriptions`; new `src/stores/demoKeep.ts` (`keepInBrowser`), which the commerce
+  store now uses for the demo products instead of its own watcher.
+- Storefront: new `StorefrontPurchaseOptions.vue` on the product page; cart lines are keyed by
+  product and plan (`src/storefront/cart.ts`); checkout has a consent box and repeat-charge rows.
+- Product editor: a "Purchase options" card (uses `MpListRow` and `MpStatusChip`), shown for a
+  product of a store with its own catalogue or a product that is on a plan.
+
+### Renames and breaking changes
+
+- `useStorefrontCartStore().setQty` and `.remove` take a line key (`lineKey(line)`), no longer a
+  product id. `add` takes an optional plan and price as its fourth argument.
+- `CheckoutLineItem` (`src/maropay/model.ts`) and `OrderLineItem` gain an optional `plan`.
+- A storefront in kronor rounds every amount it shows to whole kronor (`roundForDisplay`).
+  Stores in other currencies are unchanged.

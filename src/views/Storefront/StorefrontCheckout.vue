@@ -10,6 +10,7 @@ import type { CardInput, ShopperMethod } from '@/maropay/storefront'
 import { useCommerceStore } from '@/stores/useCommerce'
 import { useMaropayStore } from '@/stores/useMaropay'
 import { MAX_QTY, lineTotal, useStorefrontCartStore } from '@/stores/useStorefrontCart'
+import { deliverySummary, nextChargeDate, recurringCharges } from '@/subscriptions/plans'
 import StorefrontAnchor from './StorefrontAnchor.vue'
 import StorefrontCardFields from './StorefrontCardFields.vue'
 import StorefrontCheckoutSheet from './StorefrontCheckoutSheet.vue'
@@ -61,7 +62,7 @@ const buyNow = computed(() => {
 
 const lineItems = computed<CheckoutLineItem[]>(() => (buyNow.value
   ? [{ product: buyNow.value.product.name, sku: buyNow.value.product.sku, qty: buyNow.value.qty, price: buyNow.value.product.price }]
-  : cart.linesFor(channelId.value).map((l) => ({ product: l.name, sku: l.sku, qty: l.qty, price: l.price }))))
+  : cart.linesFor(channelId.value).map((l) => ({ product: l.name, sku: l.sku, qty: l.qty, price: l.price, ...(l.plan ? { plan: l.plan } : {}) }))))
 
 // ── The payment under way (persisted, so a reload resumes it) ──────
 
@@ -77,6 +78,23 @@ const shownLines = computed(() => (done.value && session.value ? session.value.l
 const total = computed(() => sum(shownLines.value.map((l) => lineTotal(l, currency.value)), currency.value))
 const itemCount = computed(() => shownLines.value.reduce((n, l) => n + l.qty, 0))
 const offer = computed(() => storefront.offerFor(total.value))
+
+// ── Subscriptions ────────────────────────────────────────────────────
+// A line bought on a plan is charged again each interval, so the shopper has to
+// agree to that here. Express buttons skip this form, so they are not offered.
+
+/** What is charged again, and how often. */
+const recurring = computed(() => recurringCharges(shownLines.value, (line) => lineTotal(line, currency.value)))
+const recurringText = computed(() => recurring.value.map((c) => `${formatMoney(c.amount)} ${c.interval}`).join(' and '))
+const consent = ref(false)
+const expressMethods = computed(() => (recurring.value.length ? [] : offer.value.express))
+/** The next charge of the soonest plan, for the confirmation. */
+const nextCharge = computed(() => {
+  const s = session.value
+  if (!s?.order) return null
+  const dates = s.lineItems.flatMap((l) => (l.plan ? [nextChargeDate(s.order!.date, l.plan)] : [])).sort()
+  return dates[0] ? new Date(`${dates[0]}T00:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : null
+})
 
 function iconFor(line: CheckoutLineItem): string {
   const category = commerce.products.find((p) => p.sku === line.sku)?.category
@@ -123,6 +141,7 @@ const errors = computed<Record<string, string>>(() => {
   if (isCard.value) {
     for (const [key, message] of Object.entries(cardErrors(card.value, Date.now()))) e[`card.${key}`] = message
   }
+  if (recurring.value.length && !consent.value) e.consent = 'Tick the box to agree to the repeat charges.'
   return e
 })
 function errorFor(key: string): string | null {
@@ -188,7 +207,7 @@ async function submit(): Promise<void> {
 /** Express buttons skip the form: the wallet or PayPal supplies the shopper's details. */
 async function express(id: string): Promise<void> {
   if (busy.value) return
-  const chosen = offer.value.express.find((m) => m.id === id)
+  const chosen = expressMethods.value.find((m) => m.id === id)
   if (!chosen) return
   problem.value = null
   if (chosen.redirects) await pay(chosen)
@@ -294,6 +313,10 @@ const storePaymentsHref = computed(() => router.resolve({ name: MAROPAY_STORE_RO
         :store-name="storefront.chrome.value.wordmark"
         :home-href="storefront.link('/')"
       />
+      <p v-if="nextCharge" class="sf-co__subscribed">
+        <v-icon size="18">repeat</v-icon>
+        <span>Your subscription has started. The next charge is on {{ nextCharge }}.</span>
+      </p>
       <p v-if="adminLinks" class="sf-co__demo">
         <strong>Prototype</strong> — what the merchant sees:
         <a :href="adminLinks.order" target="_blank" rel="noopener">the order in Commerce</a> ·
@@ -312,9 +335,9 @@ const storePaymentsHref = computed(() => router.resolve({ name: MAROPAY_STORE_RO
       <h1 class="sr-only">Checkout</h1>
       <div class="sf-co__layout">
         <form class="sf-co__form" novalidate @submit.prevent="submit">
-          <section v-if="offer.express.length" class="sf-co__express" aria-labelledby="sf-co-express">
+          <section v-if="expressMethods.length" class="sf-co__express" aria-labelledby="sf-co-express">
             <h2 id="sf-co-express" class="sf-co__express-title">Express checkout</h2>
-            <StorefrontExpressButtons :methods="offer.express" :disabled="busy" @pick="express" />
+            <StorefrontExpressButtons :methods="expressMethods" :disabled="busy" @pick="express" />
             <p class="sf-or">OR</p>
           </section>
 
@@ -412,6 +435,23 @@ const storePaymentsHref = computed(() => router.resolve({ name: MAROPAY_STORE_RO
             </div>
           </fieldset>
 
+          <div v-if="recurring.length" class="sf-co__consent">
+            <label class="sf-co__check sf-co__check--top">
+              <input
+                id="sf-co-consent"
+                v-model="consent"
+                type="checkbox"
+                :aria-invalid="!!errorFor('consent')"
+                :aria-describedby="errorFor('consent') ? 'sf-co-consent-err' : undefined"
+              >
+              <span>
+                I agree that {{ storeName }} charges my payment method {{ recurringText }} until I cancel.
+                My payment method is saved for these charges.
+              </span>
+            </label>
+            <span v-if="errorFor('consent')" id="sf-co-consent-err" class="sf-field__error">{{ errorFor('consent') }}</span>
+          </div>
+
           <div v-if="message" class="sf-co__alert" role="alert">
             <v-icon size="18">circle-alert</v-icon>
             <span>{{ message }}</span>
@@ -433,13 +473,16 @@ const storePaymentsHref = computed(() => router.resolve({ name: MAROPAY_STORE_RO
             <StorefrontAnchor :href="editHref" class="sf-co__edit">{{ buyNow ? 'Edit' : 'Edit cart' }}</StorefrontAnchor>
           </div>
           <ul class="sf-co__lines">
-            <li v-for="line in shownLines" :key="line.sku">
+            <li v-for="line in shownLines" :key="line.sku + (line.plan?.id ?? '')">
               <span class="sf-co__thumb" aria-hidden="true">
                 <img v-if="imageFor(line)" :src="imageFor(line)" alt="" class="sf-co__thumb-image">
                 <v-icon v-else size="22">{{ iconFor(line) }}</v-icon>
                 <span class="sf-co__qty">{{ line.qty }}</span>
               </span>
-              <span class="sf-co__line-name">{{ line.product }}<span class="sr-only">, quantity {{ line.qty }}</span></span>
+              <span class="sf-co__line-name">
+                {{ line.product }}<span class="sr-only">, quantity {{ line.qty }}</span>
+                <span v-if="line.plan" class="sf-co__line-plan">{{ line.plan.name }} · {{ deliverySummary(line.plan) }}</span>
+              </span>
               <span>{{ formatMoney(lineTotal(line, currency)) }}</span>
             </li>
           </ul>
@@ -447,6 +490,9 @@ const storePaymentsHref = computed(() => router.resolve({ name: MAROPAY_STORE_RO
             <div><dt>Subtotal · {{ itemCount }} {{ itemCount === 1 ? 'item' : 'items' }}</dt><dd>{{ formatMoney(total) }}</dd></div>
             <div><dt>Shipping</dt><dd>Free</dd></div>
             <div class="sf-co__grand"><dt>Total</dt><dd><span class="sf-muted sf-co__currency">{{ currency }}</span> {{ formatMoney(total) }}</dd></div>
+            <div v-for="charge in recurring" :key="charge.interval" class="sf-co__recurring">
+              <dt>Then {{ charge.interval }}</dt><dd>{{ formatMoney(charge.amount) }}</dd>
+            </div>
           </dl>
         </aside>
       </div>
@@ -756,6 +802,44 @@ legend.sf-co__step-title {
 .sf-co__currency {
   font-size: 12px;
   font-weight: 500;
+}
+
+/* A line bought on a plan says so under its name. */
+.sf-co__line-plan {
+  display: block;
+  font-size: 12px;
+  color: var(--sf-muted, #5f5f5f);
+}
+
+.sf-co__recurring {
+  color: var(--sf-muted, #5f5f5f);
+}
+
+.sf-co__consent {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* A label of several lines keeps its box level with the first one. */
+.sf-co__check--top {
+  align-items: flex-start;
+}
+
+.sf-co__check--top input {
+  width: 18px;
+  height: 18px;
+  margin: 1px 0 0;
+  flex-shrink: 0;
+  accent-color: var(--sf-brand, #121011);
+}
+
+.sf-co__subscribed {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 14px;
 }
 
 .sf-co__done,

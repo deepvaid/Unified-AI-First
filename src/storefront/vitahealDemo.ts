@@ -12,6 +12,7 @@
 //   useStoreContent     VITAHEAL_CONTENT, VITAHEAL_BLOG_SEO
 //   useStoreNavigation  VITAHEAL_MENUS
 //   useStorefront       VITAHEAL_CHROME
+//   useSubscriptions    VITAHEAL_PLANS
 //
 // The catalogue has the shape of BKM's (variants, SEK prices, collections), which
 // is what the requirements test. The brand, product and flavour names are made up,
@@ -29,6 +30,7 @@ import type { SalesChannel } from '../stores/useSalesChannels.ts'
 import type { ContentEntry, BlogSeoSettings } from '../stores/useStoreContent.ts'
 import type { StoreMenu } from '../stores/useStoreNavigation.ts'
 import type { StorefrontChrome } from '../stores/useStorefront.ts'
+import type { SubscriptionPlan } from '../subscriptions/plans.ts'
 
 export const VITAHEAL_CHANNEL_ID = 'vitaheal-demo'
 export const VITAHEAL_CHANNEL_NAME = 'Vitaheal (demo)'
@@ -298,6 +300,43 @@ export const VITAHEAL_COLLECTIONS: { title: VitahealCollection; productCount: nu
   title,
   productCount: PRODUCT_SEEDS.filter((p) => p.collections.includes(title)).length,
 }))
+
+// ── Subscription plans ───────────────────────────────────────────────────────
+
+/** The products sold on a plan: the ones in the Subscription collection. */
+const SUBSCRIPTION_PRODUCT_IDS = PRODUCT_SEEDS.filter((p) => p.collections.includes('Subscription')).map((p) => p.id)
+
+/** The reference store's two plans: a prepaid 3-month supply (preselected) and a monthly delivery. */
+export const VITAHEAL_PLANS: SubscriptionPlan[] = [
+  {
+    id: 'plan-3-month',
+    channelId: VITAHEAL_CHANNEL_ID,
+    name: '3-month supply',
+    intervalCount: 3,
+    intervalUnit: 'month',
+    unitsPerDelivery: 3,
+    discountPct: 30,
+    freeShipping: true,
+    benefits: ['Our best price per pack', 'Skip or cancel anytime'],
+    productIds: [...SUBSCRIPTION_PRODUCT_IDS],
+    isDefault: true,
+    status: 'Active',
+  },
+  {
+    id: 'plan-monthly',
+    channelId: VITAHEAL_CHANNEL_ID,
+    name: 'Monthly subscription',
+    intervalCount: 1,
+    intervalUnit: 'month',
+    unitsPerDelivery: 1,
+    discountPct: 20,
+    freeShipping: false,
+    benefits: ['A fresh pack every month', 'Skip or cancel anytime'],
+    productIds: [...SUBSCRIPTION_PRODUCT_IDS],
+    isDefault: false,
+    status: 'Active',
+  },
+]
 
 // ── Storefront header and footer ─────────────────────────────────────────────
 

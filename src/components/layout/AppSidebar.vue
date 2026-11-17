@@ -182,6 +182,13 @@ function buildNavGroups(accountId: string): NavGroup[] {
           ],
         },
         {
+          title: 'Subscriptions',
+          isSubGroup: true,
+          items: [
+            { title: 'Plans', route: `/commerce/${accountId}/subscriptions/plans` },
+          ],
+        },
+        {
           title: 'Promotions',
           isSubGroup: true,
           items: [

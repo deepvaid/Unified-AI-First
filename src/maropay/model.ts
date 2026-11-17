@@ -13,6 +13,7 @@ import { money, zero } from './money.ts'
 import type { Money, RateCard } from './money.ts'
 import { DEFAULT_PROVIDERS_SINCE, PROVIDER_SPECS, cardGateway, isOwnProviderKind } from './providers.ts'
 import type { ManualMethodSettings, ProviderConnection, ProviderKind, ProviderMethod, StoreProviderSetup } from './providers.ts'
+import type { LinePlan } from '../subscriptions/plans.ts'
 
 // ── Vocabulary ────────────────────────────────────────────────────────────
 
@@ -680,6 +681,8 @@ export interface CheckoutLineItem {
   sku: string
   qty: number
   price: string
+  /** The subscription plan the line was bought on; `price` is then the price of one delivery. */
+  plan?: LinePlan
 }
 
 /** Enough of a checkout-created order to rebuild it after reload (Commerce is not persisted). */

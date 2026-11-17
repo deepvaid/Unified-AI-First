@@ -4,12 +4,16 @@ import { useRoute, useRouter } from 'vue-router'
 import { useCommerceStore } from '@/stores/useCommerce'
 import { toHandle } from '@/stores/useProductExtras'
 import { MAX_QTY, useStorefrontCartStore } from '@/stores/useStorefrontCart'
+import { useSubscriptionsStore } from '@/stores/useSubscriptions'
+import { toDecimal } from '@/maropay/money'
 import { hasPriceRange } from '@/storefront/catalog'
+import { ONE_TIME, defaultOptionId, linePlan, purchaseOptions } from '@/subscriptions/plans'
 import StorefrontAnchor from './StorefrontAnchor.vue'
 import StorefrontExpressButtons from './StorefrontExpressButtons.vue'
 import StorefrontNotFound from './StorefrontNotFound.vue'
 import StorefrontPayMark from './StorefrontPayMark.vue'
 import StorefrontProductCard from './StorefrontProductCard.vue'
+import StorefrontPurchaseOptions from './StorefrontPurchaseOptions.vue'
 import { STOREFRONT } from './storefrontContext'
 import { CATEGORY_ICONS, inStock, priceOf, productFromHandle, relatedProducts } from './storefrontCatalog'
 
@@ -22,6 +26,7 @@ const router = useRouter()
 const storefront = inject(STOREFRONT)!
 const commerce = useCommerceStore()
 const cart = useStorefrontCartStore()
+const subscriptions = useSubscriptionsStore()
 
 const channelId = computed(() => storefront.channel.value.id)
 const product = computed(() => productFromHandle(commerce.products, channelId.value, String(route.params.handle ?? '')))
@@ -49,14 +54,31 @@ const description = computed(() => {
   return vendor.value ? `${p.name} from ${vendor.value}, part of our ${p.category} range. Free shipping on every order.` : ''
 })
 
+// How to buy it: on one of its subscription plans, or once. A product on no plan
+// has only "once", and then the page shows no options at all.
+const options = computed(() => (product.value && unit.value
+  ? purchaseOptions(unit.value, subscriptions.offeredFor(channelId.value, product.value.id))
+  : []))
+const optionId = ref(ONE_TIME)
+const option = computed(() => options.value.find((o) => o.id === optionId.value) ?? null)
+// The chosen plan can go while the page is open (the merchant pauses it): fall back to the default.
+watch(() => options.value.map((o) => o.id).join(), () => {
+  if (!option.value) optionId.value = defaultOptionId(options.value)
+})
+
 const qty = ref(1)
 const added = ref(false)
 /** Which of the product's pictures the gallery shows large. */
 const shown = ref(0)
-watch(product, () => {
+// A product page opens on its preselected plan, with one item and its first picture.
+watch(() => product.value?.id, () => {
   qty.value = 1
   added.value = false
   shown.value = 0
+  optionId.value = defaultOptionId(options.value)
+}, { immediate: true })
+watch(optionId, () => {
+  added.value = false
 })
 watch(qty, (value) => {
   if (!Number.isFinite(value) || value < 1) qty.value = 1
@@ -65,7 +87,8 @@ watch(qty, (value) => {
 
 function addToCart(): void {
   if (!product.value || !available.value) return
-  cart.add(channelId.value, product.value, qty.value)
+  const chosen = option.value
+  cart.add(channelId.value, product.value, qty.value, chosen?.plan ? { plan: linePlan(chosen.plan), price: toDecimal(chosen.price) } : undefined)
   added.value = true
 }
 
@@ -136,6 +159,8 @@ function buyNow(methodId: string): void {
           {{ available ? 'In stock, ready to ship' : 'Sold out' }}
         </p>
 
+        <StorefrontPurchaseOptions v-if="options.length > 1" v-model="optionId" :options="options" :format-money="formatMoney" />
+
         <div class="sf-pdp__buy">
           <div class="sf-qty" role="group" :aria-label="`Quantity of ${product.name}`">
             <button type="button" aria-label="Decrease quantity" :disabled="qty <= 1 || !available" @click="qty--">
@@ -147,7 +172,7 @@ function buyNow(methodId: string): void {
             </button>
           </div>
           <button type="button" class="sf-button sf-pdp__add" :disabled="!available" @click="addToCart">
-            {{ available ? 'Add to cart' : 'Sold out' }}
+            {{ !available ? 'Sold out' : option?.plan ? 'Add subscription to cart' : 'Add to cart' }}
           </button>
         </div>
         <p v-if="added" class="sf-pdp__added" role="status">
@@ -156,7 +181,8 @@ function buyNow(methodId: string): void {
           <StorefrontAnchor href="/cart-page">View cart ({{ cart.count(channelId) }})</StorefrontAnchor>
         </p>
 
-        <div v-if="offer.express.length && available" class="sf-pdp__express">
+        <!-- Express buttons skip the checkout form, and with it the consent a subscription needs. -->
+        <div v-if="offer.express.length && available && !option?.plan" class="sf-pdp__express">
           <p class="sf-or">or buy now with</p>
           <StorefrontExpressButtons :methods="offer.express" @pick="buyNow" />
         </div>

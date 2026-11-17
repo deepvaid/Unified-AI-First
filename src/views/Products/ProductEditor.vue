@@ -12,6 +12,8 @@ import MpFormField from '@/components/MpFormField.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpAlert from '@/components/MpAlert.vue'
+import MpListRow from '@/components/MpListRow.vue'
+import MpStatusChip from '@/components/MpStatusChip.vue'
 import { useDisplay } from 'vuetify'
 import DvCatalogCta from '@/components/copilot/DvCatalogCta.vue'
 import ProductMediaField from '@/components/products/ProductMediaField.vue'
@@ -21,6 +23,8 @@ import { parseDecimal } from '@/maropay/money'
 import { withPrimaryCollection } from '@/storefront/catalog'
 import { formatStorePrice } from '@/storefront/price'
 import { useCopilotStore } from '@/stores/useCopilot'
+import { useSubscriptionsStore } from '@/stores/useSubscriptions'
+import { deliverySummary, pricePerDelivery, roundForDisplay } from '@/subscriptions/plans'
 import { useCatalogCopilotStore, type CatalogApplyPayload } from '@/stores/useCatalogCopilot'
 import type { CatalogField } from '@/composables/catalogCopilotConfig'
 import type { ProductSnapshot } from '@/composables/useCatalogGenerator'
@@ -68,6 +72,22 @@ const collectionOptions = computed(() => {
   // What the product is already in stays selectable, whatever the list offers.
   return [...new Set([...offered.map((c) => c.title), ...form.value.collections])]
 })
+
+// The subscription plans this product is sold on. Plans are edited on their own page.
+const subscriptions = useSubscriptionsStore()
+const purchasePlans = computed(() => {
+  const p = product.value
+  if (!p) return []
+  return subscriptions.plansWithProduct(p.id).map((plan) => {
+    const store = productStores.stores.value.find((s) => s.id === plan.channelId)?.webStore
+    const unit = store?.currency ? parseDecimal(p.price, store.currency) : null
+    return {
+      plan,
+      price: unit ? formatStorePrice(roundForDisplay(pricePerDelivery(unit, plan)), store?.locale) : null,
+    }
+  })
+})
+const plansRoute = computed(() => ({ name: 'SubscriptionPlans', params: { accountId: accountId.value } }))
 
 /** A variant's price in its store's currency ("419 kr"); dollars for the shared catalogue. */
 function money(price: string): string {
@@ -440,6 +460,29 @@ function openVariantsWizard() {
         <v-card variant="flat" border rounded="lg" class="ped-card">
           <MpFormSection :heading-level="2" title="Product status" />
           <v-select v-model="form.publishStatus" :items="['Draft', 'Published']" label="Status" />
+        </v-card>
+
+        <v-card v-if="storefrontLink || purchasePlans.length" variant="flat" border rounded="lg" class="ped-card">
+          <MpFormSection
+            :heading-level="2"
+            title="Purchase options"
+            description="Shoppers can buy this product once, or subscribe on a plan."
+          />
+          <div v-if="purchasePlans.length">
+            <MpListRow
+              v-for="{ plan, price } in purchasePlans"
+              :key="plan.id"
+              variant="divided"
+              :title="plan.name"
+              :subtitle="`${deliverySummary(plan)}${plan.discountPct ? ` · ${plan.discountPct}% off` : ''}${price ? ` · ${price} per delivery` : ''}`"
+            >
+              <template #trailing>
+                <MpStatusChip :status="plan.status" type="general" size="sm" />
+              </template>
+            </MpListRow>
+          </div>
+          <p v-else class="text-body-2 text-medium-emphasis mb-0">This product is not on a subscription plan.</p>
+          <RouterLink :to="plansRoute" class="mp-link text-body-2 align-self-start">Manage plans</RouterLink>
         </v-card>
 
         <v-card variant="flat" border rounded="lg" class="ped-card">

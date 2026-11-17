@@ -2,7 +2,8 @@
 import { computed, inject } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCommerceStore } from '@/stores/useCommerce'
-import { MAX_QTY, lineTotal, useStorefrontCartStore } from '@/stores/useStorefrontCart'
+import { MAX_QTY, lineKey, lineTotal, useStorefrontCartStore } from '@/stores/useStorefrontCart'
+import { deliverySummary, recurringCharges } from '@/subscriptions/plans'
 import type { CartLine } from '@/stores/useStorefrontCart'
 import StorefrontAnchor from './StorefrontAnchor.vue'
 import StorefrontExpressButtons from './StorefrontExpressButtons.vue'
@@ -24,6 +25,8 @@ const currency = computed(() => storefront.currency.value)
 const lines = computed(() => cart.linesFor(channelId.value))
 const subtotal = computed(() => cart.subtotal(channelId.value, currency.value))
 const offer = computed(() => storefront.offerFor(subtotal.value))
+/** What a subscription line charges again, and how often. */
+const recurring = computed(() => recurringCharges(lines.value, (line) => lineTotal(line, currency.value)))
 
 const formatMoney = storefront.formatMoney
 
@@ -37,7 +40,7 @@ function imageFor(line: CartLine): string | undefined {
 }
 
 function setQty(line: CartLine, value: number): void {
-  if (Number.isFinite(value)) cart.setQty(channelId.value, line.productId, value)
+  if (Number.isFinite(value)) cart.setQty(channelId.value, lineKey(line), value)
 }
 
 function checkout(express?: string): void {
@@ -57,14 +60,15 @@ function checkout(express?: string): void {
     <div v-else class="sf-cart__layout">
       <section class="sf-cart__lines" aria-label="Items in your cart">
         <ul>
-          <li v-for="line in lines" :key="line.productId" class="sf-cart__line">
+          <li v-for="line in lines" :key="lineKey(line)" class="sf-cart__line">
             <span class="sf-cart__thumb" aria-hidden="true">
               <img v-if="imageFor(line)" :src="imageFor(line)" alt="" class="sf-cart__image">
               <v-icon v-else size="28">{{ iconFor(line) }}</v-icon>
             </span>
             <div class="sf-cart__item">
               <StorefrontAnchor :href="`/products/${productHandle({ name: line.name, id: line.productId })}`" class="sf-cart__name">{{ line.name }}</StorefrontAnchor>
-              <span class="sf-muted">{{ formatMoney(lineTotal({ price: line.price, qty: 1 }, currency)) }} each</span>
+              <span v-if="line.plan" class="sf-cart__plan">{{ line.plan.name }} · {{ deliverySummary(line.plan) }}</span>
+              <span class="sf-muted">{{ formatMoney(lineTotal({ price: line.price, qty: 1 }, currency)) }} {{ line.plan ? 'per delivery' : 'each' }}</span>
             </div>
             <div class="sf-qty sf-qty--sm" role="group" :aria-label="`Quantity of ${line.name}`">
               <button type="button" :aria-label="`Decrease quantity of ${line.name}`" @click="setQty(line, line.qty - 1)">
@@ -84,7 +88,7 @@ function checkout(express?: string): void {
               </button>
             </div>
             <span class="sf-cart__total">{{ formatMoney(lineTotal(line, currency)) }}</span>
-            <button type="button" class="sf-icon-btn" :aria-label="`Remove ${line.name}`" @click="cart.remove(channelId, line.productId)">
+            <button type="button" class="sf-icon-btn" :aria-label="`Remove ${line.name}`" @click="cart.remove(channelId, lineKey(line))">
               <v-icon size="18">trash-2</v-icon>
             </button>
           </li>
@@ -99,6 +103,9 @@ function checkout(express?: string): void {
           <div><dt>Subtotal</dt><dd>{{ formatMoney(subtotal) }}</dd></div>
           <div><dt>Shipping</dt><dd>Free</dd></div>
           <div class="sf-cart__grand"><dt>Total</dt><dd>{{ formatMoney(subtotal) }}</dd></div>
+          <div v-for="charge in recurring" :key="charge.interval" class="sf-cart__recurring">
+            <dt>Then {{ charge.interval }}</dt><dd>{{ formatMoney(charge.amount) }}</dd>
+          </div>
         </dl>
         <p v-if="offer.payIn4.labels.length" class="sf-cart__instalments sf-muted">
           or 4 interest-free payments of {{ formatMoney(offer.payIn4.amount) }} with {{ offer.payIn4.labels.join(' or ') }}
@@ -106,7 +113,8 @@ function checkout(express?: string): void {
         <button type="button" class="sf-button sf-button--block" @click="checkout()">
           <v-icon size="16">lock</v-icon> Checkout
         </button>
-        <template v-if="offer.express.length">
+        <!-- Express buttons skip the checkout form, and with it the consent a subscription needs. -->
+        <template v-if="offer.express.length && !recurring.length">
           <p class="sf-or">or</p>
           <StorefrontExpressButtons :methods="offer.express" @pick="checkout" />
         </template>
@@ -196,6 +204,11 @@ function checkout(express?: string): void {
   font-weight: 600;
 }
 
+.sf-cart__plan {
+  font-size: 13px;
+  font-weight: 500;
+}
+
 .sf-cart__total {
   text-align: right;
   font-weight: 600;
@@ -239,6 +252,11 @@ function checkout(express?: string): void {
   border-top: 1px solid #e3e3e0;
   font-size: 18px;
   font-weight: 700;
+}
+
+.sf-cart__recurring {
+  font-size: 14px;
+  color: var(--sf-muted, #5f5f5f);
 }
 
 .sf-cart__instalments {

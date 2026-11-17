@@ -117,7 +117,36 @@ here already exists when those slices start.
     own and falls back to the shared catalogue until it is restored. A new product without a
     category has no "You may also like" row. The wizard's footer is cramped at phone width
     (as before this pass). The ProductMediaField story was type-checked, not opened in Storybook.
-- **Part 3 (subscription plans) and Part 4 (the shopper journey end to end):** not started.
+- **Part 3, subscription plans (done).** This is the plans half of S7, pulled forward. Contracts,
+  renewals, skip and cancel, and the subscriber's own page stay with S8.
+  - **Rules** in `src/subscriptions/plans.ts`, tested by `npm run test:subscriptions` (17 tests,
+    including the build prompt's cases: Electrolytes at 279 kr is 223,20 kr monthly and
+    3 × 195,30 = 585,90 kr as a 3-month supply, shown as "223 kr" and "586 kr").
+  - **Seed:** "3-month supply" (3 units every 3 months, 30% off, free shipping, preselected) and
+    "Monthly subscription" (20% off), on the five products of the Subscription collection.
+  - **Admin:** Commerce › Subscriptions › Plans (`/commerce/:accountId/subscriptions/plans`):
+    list, create and edit in a drawer with a live example price, pause, delete. The product editor
+    has a read-only "Purchase options" card with a link to the plans. Plans are attached to
+    products in the plan's drawer, not per variant.
+  - **Storefront:** the product page offers each plan and "One-time purchase" as cards with
+    "Save 30%" and "Free shipping" badges in the theme's badge colours, the price per delivery and
+    the benefits. Cart lines carry their plan; the same product bought once and on a plan are two
+    lines. Checkout shows the plan, a "Then every 3 months" row, and a consent box the shopper
+    must tick. Express pay buttons are hidden for a subscription, because they skip that box.
+    The confirmation says when the next charge is.
+  - **Order:** tagged `Subscription`; the line names the plan and the timeline records that the
+    payment method was saved and when the next charge is due.
+  - **Kept and restored** with the store's products (`mp.vitaheal-demo.plans.v1`).
+  - **Display rule:** a store in kronor shows whole kronor everywhere on its storefront
+    ("586 kr"). The order and the payment keep the exact amount (585,90).
+  - **Known limits.** Shipping is free on every order until rates exist (S10), so a plan's free
+    shipping is a badge only. There is no variant picker yet (S5), so plan prices are based on the
+    lowest-priced variant. Nothing renews: the next charge is a date in the order's timeline.
+    "Skip or cancel anytime" is a seeded benefit line; the place to do it comes with S8. A total
+    of rounded lines can differ from the rounded total by one krona.
+- **Part 4 (the shopper journey end to end):** not started. Also noted for it while testing
+  Part 3: the pay button and the confirmation read "SEK 585.90", the checkout total reads
+  "SEK 586 kr", and a Vitaheal order in the admin says its sales channel is "Online Store".
   Noted for Part 4 while testing Part 2: the store's Settings tab shows another company's
   business details ("Atlas Outfitters Ltd.", Brooklyn) and an "Edit" button that answers with
   internal wording, and the overview's revenue is in dollars.
@@ -195,7 +224,7 @@ here already exists when those slices start.
 | T35 | Rating stars | S5 | not started | |
 | T36 | Subtitle, badges, chips | S5 | partial | Subtitle shows on the card and the product page (S0) |
 | T37 | Button variant picker | S5 | not started | Variants seeded; the page sells the lowest-priced one |
-| T38 | Purchase options | S7 | not started | |
+| T38 | Purchase options | S7 | partial | Plan and one-time cards with savings and free-shipping badges, price per delivery, benefits, a preselected plan (demo pass, part 3). Open: per-variant prices (S5) |
 | T39 | Add to cart and express pay | S5 | not started | Existing add to cart and express buttons work for the demo store |
 | T40 | Payment icons | S5 | not started | |
 | T41 | Delivery estimator | S10 | not started | |
@@ -212,10 +241,10 @@ here already exists when those slices start.
 | T52 | Curated reviews grid | S6 | not started | |
 | T53 | Related products | S6 | not started | |
 | T54 | Product card | S5 | partial | Photo, second photo on hover, subtitle and "From" price. Open: rating, badge |
-| P01 | Subscription plans | S7 | not started | |
+| P01 | Subscription plans | S7 | partial | Plans with interval, units per delivery and discount, edited in Commerce › Subscriptions › Plans; bought through checkout with consent; order tagged (demo pass, part 3). Open: per-variant attachment, contracts (S8) |
 | P02 | Recurring billing | S8 | not started | |
 | P03 | Subscriber portal | S8 | not started | |
-| P04 | Subscription pricing rules | S7 | not started | |
+| P04 | Subscription pricing rules | S7 | partial | Percentage discount per plan and a free-shipping flag shown as a badge (demo pass, part 3). Open: the flag changing a shipping charge (needs rates, S10) |
 | P05 | Subscription messages | S8 | not started | |
 | P06 | Market currencies and prices | S9 | not started | Groundwork in S0: one currency and locale per store |
 | P07 | Market URLs | S9 | not started | |

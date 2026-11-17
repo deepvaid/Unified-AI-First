@@ -1,11 +1,14 @@
 import { defineStore } from 'pinia'
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { useOnboardingStore } from '@/stores/useOnboarding'
 import { useMaropayStore } from '@/stores/useMaropay'
 import { useStorefrontCartStore } from '@/stores/useStorefrontCart'
-import { useToast } from '@/composables/useToast'
+import { useSubscriptionsStore } from '@/stores/useSubscriptions'
+import { browserStorage, keepInBrowser } from '@/stores/demoKeep'
 import type { MaropayProvider, OrderPaymentStatusLabel } from '@/maropay/model'
 import { demoSlot } from '@/storefront/demoStorage'
+import { deliverySummary, nextChargeDate } from '@/subscriptions/plans'
+import type { LinePlan } from '@/subscriptions/plans'
 import { VITAHEAL_CHANNEL_ID, vitahealProducts } from '@/storefront/vitahealDemo'
 
 const productNames = [
@@ -423,6 +426,8 @@ export interface OrderLineItem {
   status: string
   coupon: string | null
   discountPct: number
+  /** The subscription plan the line was bought on; `price` is then the price of one delivery. */
+  plan?: LinePlan
 }
 
 export interface OrderTimelineEvent {
@@ -522,7 +527,7 @@ export interface CheckoutOrderInput {
   date: string
   channelId: string
   customer: { name: string; email: string }
-  lineItems: Array<{ product: string; sku: string; qty: number; price: string }>
+  lineItems: Array<{ product: string; sku: string; qty: number; price: string; plan?: LinePlan }>
   shipping: string
   total: string
   currency: string
@@ -763,15 +768,6 @@ function buildPosOrders(): Order[] {
   })
 }
 
-/** localStorage, or nothing where the browser blocks it. */
-function browserStorage(): Storage | undefined {
-  try {
-    return typeof localStorage === 'undefined' ? undefined : localStorage
-  } catch {
-    return undefined
-  }
-}
-
 /** Saved demo products are only read back when they still look like products. */
 function isProductList(value: unknown): value is Product[] {
   return Array.isArray(value) && value.every((p: Partial<Product> | null) =>
@@ -822,44 +818,26 @@ export const useCommerceStore = defineStore('commerce', () => {
   }), demoProducts.load() ?? seededDemoProducts()))
 
   // ── The demo store's products: kept, followed across tabs, restorable ──
-  /**
-   * The demo products as last loaded, saved or restored. Only a real change to
-   * them is saved: a change to another store's product, or taking the list from
-   * storage or the seed, leaves the browser's copy alone. So a store nobody has
-   * changed keeps following the seed.
-   */
-  let knownDemoProducts = JSON.stringify(products.value.filter(inDemoStore))
-  let warnedStorageFull = false
-
-  watch(() => products.value.filter(inDemoStore), (list) => {
-    const current = JSON.stringify(list)
-    if (current === knownDemoProducts) return
-    knownDemoProducts = current
-    if (demoProducts.save(list) || warnedStorageFull) return
-    warnedStorageFull = true
-    useToast().warning('This browser has no room left, so changes to the demo store will be gone after a reload. Remove a few product pictures, or restore the store.', { title: 'Changes not kept' })
-  }, { deep: true })
-
   function setDemoProducts(list: Product[]): void {
     products.value = withDemoProducts(products.value.filter((p) => !inDemoStore(p)), list)
-    knownDemoProducts = JSON.stringify(products.value.filter(inDemoStore))
   }
 
-  /** Puts the demo store's products back as seeded and empties its cart. Orders already placed stay. */
+  const keptDemoProducts = keepInBrowser(demoProducts, () => products.value.filter(inDemoStore), (fromOtherTab) => {
+    setDemoProducts(fromOtherTab ?? seededDemoProducts())
+    // No saved products means that tab restored the store: its cart goes too.
+    if (!fromOtherTab) useStorefrontCartStore().clear(VITAHEAL_CHANNEL_ID)
+  })
+
+  /**
+   * Puts the demo store back as seeded: its products and subscription plans,
+   * and an empty cart. Orders already placed stay.
+   */
   function restoreDemoStore(): void {
     demoProducts.clear()
     setDemoProducts(seededDemoProducts())
+    keptDemoProducts.adopt()
+    useSubscriptionsStore().restore()
     useStorefrontCartStore().clear(VITAHEAL_CHANNEL_ID)
-  }
-
-  // Another tab changed the demo store (the admin, beside an open storefront): follow it.
-  if (typeof window !== 'undefined') {
-    window.addEventListener('storage', (event) => {
-      if (event.key !== demoProducts.key) return
-      const saved = demoProducts.load()
-      setDemoProducts(saved ?? seededDemoProducts())
-      if (!saved) useStorefrontCartStore().clear(VITAHEAL_CHANNEL_ID)
-    })
   }
 
   // ── Product CRUD (mock-persistent) ───────────────────────────────
@@ -1406,6 +1384,7 @@ export const useCommerceStore = defineStore('commerce', () => {
     const city = cities[input.id % cities.length]!
     const address = buildAddress(input.customer.name, city, input.id)
     const nameParts = input.customer.name.trim().split(/\s+/)
+    const subscribed = input.lineItems.filter((li): li is typeof li & { plan: LinePlan } => !!li.plan)
     const order: Order = {
       id: input.id,
       orderNumber: input.orderNumber,
@@ -1428,7 +1407,8 @@ export const useCommerceStore = defineStore('commerce', () => {
       date: input.date,
       lineItems: input.lineItems.map((li): OrderLineItem => ({ ...li, status: 'Processing', coupon: null, discountPct: 0 })),
       notes: null,
-      tags: [],
+      // A line bought on a plan makes it a subscription order, findable by its tag.
+      tags: subscribed.length ? ['Subscription'] : [],
       salesChannel: 'Online Store',
       currency: input.currency,
       region: address.region || '—',
@@ -1438,7 +1418,14 @@ export const useCommerceStore = defineStore('commerce', () => {
       billingAddress: { ...address },
       fulfillmentStage: 'Picked',
       fulfilledFromLocation: WAREHOUSE_LOCATIONS[input.id % WAREHOUSE_LOCATIONS.length]!,
-      timeline: input.timeline.map((e, i): OrderTimelineEvent => ({ id: i + 1, kind: 'event', text: e.text, date: e.date })),
+      timeline: [
+        ...input.timeline,
+        // Renewals themselves come with contracts (S8); the order records what was agreed.
+        ...subscribed.map((li) => ({
+          text: `Subscription started: ${li.product}, ${li.plan.name} (${deliverySummary(li.plan)}). Payment method saved; next charge ${new Date(`${nextChargeDate(input.date, li.plan)}T00:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`,
+          date: input.date,
+        })),
+      ].map((e, i): OrderTimelineEvent => ({ id: i + 1, kind: 'event', text: e.text, date: e.date })),
       channelType: 'web_store',
       channelId: input.channelId,
     }

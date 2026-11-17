@@ -10,6 +10,7 @@ import { money } from '@/maropay/money'
 import type { Money } from '@/maropay/money'
 import { storefrontOffer } from '@/maropay/storefront'
 import { formatStorePrice } from '@/storefront/price'
+import { roundForDisplay } from '@/subscriptions/plans'
 import { storefrontThemeVars } from '@/stores/themeBuilderData'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import StorefrontAnchor from './StorefrontAnchor.vue'
@@ -53,7 +54,8 @@ const channel = computed(() => found.value!)
 const theme = computed(() => (found.value ? themes.themeForChannel(found.value.id) : undefined))
 const chrome = computed(() => storefronts.chromeFor(channel.value))
 const currency = computed(() => found.value?.webStore?.currency ?? maropay.account?.currency ?? 'USD')
-const formatMoney = (amount: Money) => formatStorePrice(amount, found.value?.webStore?.locale)
+// Kronor are shown whole ("586 kr" for 585,90): only the display is rounded, the order keeps the exact amount.
+const formatMoney = (amount: Money) => formatStorePrice(roundForDisplay(amount), found.value?.webStore?.locale)
 
 function offerFor(amount: Money) {
   return storefrontOffer(maropay.state, channelId.value, amount)

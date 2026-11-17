@@ -19,6 +19,7 @@ import { formatMoney, isPositive } from '@/maropay/money'
 import { PROVIDER_LABELS } from '@/maropay/model'
 import { isManualKind } from '@/maropay/providers'
 import { formatDay } from '@/maropay/readiness'
+import { deliverySummary } from '@/subscriptions/plans'
 import type { RefundResult } from '@/services/maropay/mockAdapter'
 
 const route = useRoute()
@@ -283,10 +284,14 @@ function timelineIcon(entry: { kind: string; text: string }): string {
               </tr>
             </thead>
             <tbody>
-              <tr v-for="li in order.lineItems" :key="li.sku + li.product">
+              <tr v-for="li in order.lineItems" :key="li.sku + li.product + (li.plan?.id ?? '')">
                 <td>
                   <div class="text-body-2 font-weight-medium">{{ li.product }}</div>
                   <div class="text-caption text-medium-emphasis">{{ li.sku }}</div>
+                  <div v-if="li.plan" class="text-caption d-flex align-center ga-1">
+                    <v-icon size="12">repeat</v-icon>
+                    Subscription: {{ li.plan.name }} ({{ deliverySummary(li.plan) }})
+                  </div>
                 </td>
                 <td><MpStatusChip :status="li.status" type="fulfillment" size="sm" /></td>
                 <td class="text-right text-medium-emphasis text-no-wrap"><span class="mp-money">{{ money(li.price).symbol }}{{ money(li.price).integer }}<span class="mp-money__cents">.{{ money(li.price).cents }}</span></span></td>
