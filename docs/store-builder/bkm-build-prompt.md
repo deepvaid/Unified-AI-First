@@ -176,17 +176,17 @@ These are settled. Do not reopen them in a slice; if one blocks you, stop and as
 
 ## 6. The demo store, and the end state
 
-S0 seeds a new sales channel **"Tallvik (demo)"**, id `tallvik-demo`, with a theme called **"Tallvik"**.
+S0 seeds a new sales channel **"Vitaheal (demo)"**, id `vitaheal-demo`, with a theme called **"Vitaheal"**.
 
-**Tallvik is a fictional brand** (decided 2026-11-17). Sales people show this store to other
+**Vitaheal is a fictional brand** (decided 2026-11-17). Sales people show this store to other
 prospects, so it must not carry BKM's name, product names or flavour names. It keeps the shape of
 BKM's catalog, prices, plans, markets and offers, because that is what the requirements test.
 When the report or the live site names something of BKM's, use the demo name:
 
 | BKM (report, live site) | Demo store |
 |---|---|
-| BKM | Tallvik |
-| BKM Electrolytes | Tallvik Electrolytes |
+| BKM | Vitaheal |
+| BKM Electrolytes | Vitaheal Electrolytes |
 | Elderflower & Lime · Swedish Berries | Lemon & Ginger · Wild Berries |
 | Tranquil | Unwind |
 | Ultra Focused | Clear Focus |
@@ -201,7 +201,7 @@ Use this reference data. It was crawled from bkm.health on 2026-11-13 and is wri
 
 | Product | Variants | Price (SEK) | Notes |
 |---|---|---|---|
-| Tallvik Electrolytes | Lemon & Ginger · Wild Berries · Starter Pack (both flavours) | 279 · 279 · 499 | Starter Pack compare-at 558 |
+| Vitaheal Electrolytes | Lemon & Ginger · Wild Berries · Starter Pack (both flavours) | 279 · 279 · 499 | Starter Pack compare-at 558 |
 | Unwind | Can · Bag | 419 · 399 | Covered by the 30-day money-back guarantee |
 | Clear Focus | Original · Refill | 409 · 389 | |
 | Collagen+ | Original · Refill | 429 · 409 | |
@@ -240,7 +240,7 @@ the currency label. Delivery goes to 33 countries (EU, UK, NO, CH, IS, US, AE).
 - delivery estimate of 3 to 7 working days, with "Duties and taxes may apply" outside the EU;
 - the 30-day money-back guarantee applies to Unwind only.
 
-**Theme "Tallvik":** Figtree for headings and body, Inconsolata as an accent face; navy `#0a2240`
+**Theme "Vitaheal":** Figtree for headings and body, Inconsolata as an accent face; navy `#0a2240`
 primary on white; black text; border `#d3d3d3`; 8px button radius, solid buttons; sale badge
 `#6d52ff`; custom badge `#e4ff52`; sections fade in on scroll; product cards swap to a second image on hover.
 
@@ -295,7 +295,7 @@ Run them in order. S11 to S15 depend only on S0 to S6, so the human may reorder 
 - Create `docs/store-builder/bkm-build-tracker.md` with two tables:
   - **Slices:** slice, status (`pending` / `in progress` / `done`), branch, commit, date, notes.
   - **Requirements:** one row per requirement ID (all 82), with slice, prototype status (`not started` / `partial` / `done` / `out of scope`) and a note.
-- Seed the `tallvik-demo` sales channel with the catalog, collections, menus and theme from section 6:
+- Seed the `vitaheal-demo` sales channel with the catalog, collections, menus and theme from section 6:
   - pages: About, Contact, Ambassadors, Money-back guarantee terms, Cookies;
   - policies: refund, privacy, terms;
   - one blog with three short original articles.
@@ -571,8 +571,8 @@ and a story. Where a section fits a Da Vinci phrasing, add it to `useThemeGenera
 
 ### S16. Assemble the BKM demo and walkthrough
 
-- Rebuild the Tallvik theme through the builder UI so the seed matches what a merchant would produce. Fix whatever the walk-through exposes.
-- Write `docs/store-builder/tallvik-demo-script.md`: the 10-minute walkthrough from section 6, with the exact clicks and URLs.
+- Rebuild the Vitaheal theme through the builder UI so the seed matches what a merchant would produce. Fix whatever the walk-through exposes.
+- Write `docs/store-builder/vitaheal-demo-script.md`: the 10-minute walkthrough from section 6, with the exact clicks and URLs.
 - Run every test script and `npm run type-check`, and do a full browser pass at desktop and 375px.
 - Mark agentic-commerce endpoints (P26) and anything else not built as `out of scope` in the tracker, with a reason.
 

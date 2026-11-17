@@ -7,11 +7,11 @@ import { money } from '../../src/maropay/money.ts'
 const shared = (name: string, publishStatus = 'Published') => ({ name, publishStatus, price: '10.00' })
 const owned = (name: string, channelIds: string[], publishStatus = 'Published') => ({ ...shared(name, publishStatus), channelIds })
 
-const products = [shared('Kettle'), shared('Draft lamp', 'Draft'), owned('Unwind', ['tallvik-demo']), owned('Collagen+', ['tallvik-demo'])]
+const products = [shared('Kettle'), shared('Draft lamp', 'Draft'), owned('Unwind', ['vitaheal-demo']), owned('Collagen+', ['vitaheal-demo'])]
 const names = (list: { name: string }[]) => list.map((p) => p.name)
 
 test('a store with assigned products sells only those', () => {
-  assert.deepEqual(names(catalogFor(products, 'tallvik-demo')), ['Unwind', 'Collagen+'])
+  assert.deepEqual(names(catalogFor(products, 'vitaheal-demo')), ['Unwind', 'Collagen+'])
 })
 
 test('a store with none sells the shared catalogue, never another store\'s products', () => {
@@ -19,8 +19,8 @@ test('a store with none sells the shared catalogue, never another store\'s produ
 })
 
 test('drafts are never listed', () => {
-  const list = [...products, owned('Unreleased', ['tallvik-demo'], 'Draft')]
-  assert.deepEqual(names(catalogFor(list, 'tallvik-demo')), ['Unwind', 'Collagen+'])
+  const list = [...products, owned('Unreleased', ['vitaheal-demo'], 'Draft')]
+  assert.deepEqual(names(catalogFor(list, 'vitaheal-demo')), ['Unwind', 'Collagen+'])
 })
 
 test('a store whose only assigned product is a draft does not fall back to the shared catalogue', () => {

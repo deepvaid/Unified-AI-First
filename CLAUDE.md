@@ -57,7 +57,7 @@ This is NOT a production app — it uses mock data and has no backend API.
 │   │   └── settings/          ← SettingsSection, SettingsPlaceholder, settingsMenu (rail = MpSectionRail)
 │   ├── maropay/               ← Maropay domain logic — pure TS, node:test-importable (see docs/maropay/)
 │   ├── services/maropay/      ← Deterministic mock adapter for the payments partner
-│   ├── storefront/            ← Storefront rules — pure TS, node:test-importable: store catalogue, price format, pack-shot art, and the Tallvik (demo) store seed (see docs/store-builder/)
+│   ├── storefront/            ← Storefront rules — pure TS, node:test-importable: store catalogue, price format, pack-shot art, and the Vitaheal (demo) store seed (see docs/store-builder/)
 │   ├── design-tokens/
 │   │   ├── tokens.json        ← SOURCE OF TRUTH for all design values
 │   │   ├── build.mjs          ← Generates SCSS/CSS/TS from tokens.json
@@ -426,7 +426,7 @@ changelog in `DESIGN_AUDIT.md`.
 | `npm run test:catalog` | Da Vinci Catalog Co-Pilot draft-generator tests (`node:test` over `tests/davinci-catalog/`) |
 | `npm run test:chatbot` | Chatbot brand-colour contrast + builder-preview responder tests (`node:test` over `tests/chatbot/`) |
 | `npm run test:plg` | PLG promotion tests — coupon maths and code validation in `src/plg/promo.ts` (`node:test` over `tests/plg/`) |
-| `npm run test:storefront` | Storefront rules — which products a store sells, store price formatting — and the Tallvik (demo) seed checked against its reference tables (`node:test` over `tests/storefront/`) |
+| `npm run test:storefront` | Storefront rules — which products a store sells, store price formatting — and the Vitaheal (demo) seed checked against its reference tables (`node:test` over `tests/storefront/`) |
 | `npm run tokens:watch` | Watch tokens.json and regenerate on save |
 | `npm run type-check` | Run vue-tsc type checking |
 | `npm run preview` | Preview production build locally |
@@ -469,8 +469,8 @@ Example: `[feat]: add MpDateRangePicker component with story`
 - **`docs/store-builder/`** — the BKM Health build: `bkm-health-requirements.md` (requirements and gap
   report for the real MCC; never edit its statuses), `bkm-build-prompt.md` (the slice-by-slice build
   prompt) and `bkm-build-tracker.md` (prototype progress per slice and requirement). The demo store is
-  sales channel `tallvik-demo` ("Tallvik", a fictional brand that stands in for BKM so sales can show it to any
-  prospect), seeded from `src/storefront/tallvikDemo.ts`.
+  sales channel `vitaheal-demo` ("Vitaheal", a fictional brand that stands in for BKM so sales can show it to any
+  prospect), seeded from `src/storefront/vitahealDemo.ts`.
 - **`docs/davinci-catalog/decisions.md`** — Da Vinci Catalog Co-Pilot in the Products module
   (PRD: Da Vinci Catalog Management): decisions, PRD → prototype map, demo guide with the
   `?catalog=` entitlement scenarios, analytics, limitations. Da Vinci drafts, Apply fills the form

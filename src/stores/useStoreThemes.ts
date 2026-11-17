@@ -13,7 +13,7 @@ import {
   type ThemeStyles,
 } from './themeBuilderData'
 import { useSalesChannelsStore } from './useSalesChannels'
-import { TALLVIK_CHANNEL_ID, TALLVIK_THEME_STYLES } from '@/storefront/tallvikDemo'
+import { VITAHEAL_CHANNEL_ID, VITAHEAL_THEME_STYLES } from '@/storefront/vitahealDemo'
 
 function nowIso() {
   return new Date().toISOString()
@@ -156,53 +156,53 @@ function seedThemes(): StoreTheme[] {
       styles: defaultThemeStyles(),
       templates: { home: [], product: [], collection: [], cart: [] },
     },
-    // Tallvik (demo): the fictional store that stands in for BKM Health (docs/store-builder/bkm-build-prompt.md).
+    // Vitaheal (demo): the fictional store that stands in for BKM Health (docs/store-builder/bkm-build-prompt.md).
     // Built from the section kinds that exist today; slices S2, S3 and S6 add the sections that build needs.
     {
-      id: 'theme-tallvik',
-      channelId: TALLVIK_CHANNEL_ID,
-      name: 'Tallvik',
+      id: 'theme-vitaheal',
+      channelId: VITAHEAL_CHANNEL_ID,
+      name: 'Vitaheal',
       status: 'Published',
       publishedAt: '2026-11-16T09:00:00Z',
       updatedAt: '2026-11-16T09:00:00Z',
-      styles: { ...TALLVIK_THEME_STYLES },
+      styles: { ...VITAHEAL_THEME_STYLES },
       templates: {
         home: [
-          createSection('announcement-bar', { text: 'Free shipping over 549 kr · Made in Sweden · 30-day money-back guarantee on Unwind' }, 'tallvik-home-announcement'),
-          createSection('header', { menuStyle: 'Centered' }, 'tallvik-home-header'),
+          createSection('announcement-bar', { text: 'Free shipping over 549 kr · Made in Sweden · 30-day money-back guarantee on Unwind' }, 'vitaheal-home-announcement'),
+          createSection('header', { menuStyle: 'Centered' }, 'vitaheal-home-header'),
           {
-            ...createSection('image-banner', { headline: 'Supplements that do one job well', height: 'Medium' }, 'tallvik-home-banner'),
-            blocks: [createBlock('button', { label: 'Shop all products', link: '/collections/all' }, 'tallvik-banner-button')],
+            ...createSection('image-banner', { headline: 'Supplements that do one job well', height: 'Medium' }, 'vitaheal-home-banner'),
+            blocks: [createBlock('button', { label: 'Shop all products', link: '/collections/all' }, 'vitaheal-banner-button')],
           },
-          createSection('featured-products', { title: 'Our range', productCount: 8 }, 'tallvik-home-featured'),
+          createSection('featured-products', { title: 'Our range', productCount: 8 }, 'vitaheal-home-featured'),
           {
-            ...createSection('collection-grid', { title: 'Shop by goal', columns: 3 }, 'tallvik-home-collections'),
+            ...createSection('collection-grid', { title: 'Shop by goal', columns: 3 }, 'vitaheal-home-collections'),
             blocks: [
-              createBlock('collection', { label: 'Sleep', link: '/collections/sleep' }, 'tallvik-collection-sleep'),
-              createBlock('collection', { label: 'Sport', link: '/collections/sport' }, 'tallvik-collection-sport'),
-              createBlock('collection', { label: 'Longevity', link: '/collections/longevity' }, 'tallvik-collection-longevity'),
-              createBlock('collection', { label: 'Hydrate', link: '/collections/hydrate' }, 'tallvik-collection-hydrate'),
+              createBlock('collection', { label: 'Sleep', link: '/collections/sleep' }, 'vitaheal-collection-sleep'),
+              createBlock('collection', { label: 'Sport', link: '/collections/sport' }, 'vitaheal-collection-sport'),
+              createBlock('collection', { label: 'Longevity', link: '/collections/longevity' }, 'vitaheal-collection-longevity'),
+              createBlock('collection', { label: 'Hydrate', link: '/collections/hydrate' }, 'vitaheal-collection-hydrate'),
             ],
           },
-          createSection('rich-text', { heading: 'Subscribe and save 20%', body: 'Most of our customers subscribe. You get every delivery for less, and you can skip, pause or cancel whenever you like.', alignment: 'Center' }, 'tallvik-home-subscribe'),
-          createSection('newsletter', { headline: 'Get the Tallvik letter' }, 'tallvik-home-newsletter'),
-          createSection('footer', { showSocial: false, columns: 3 }, 'tallvik-home-footer'),
+          createSection('rich-text', { heading: 'Subscribe and save 20%', body: 'Most of our customers subscribe. You get every delivery for less, and you can skip, pause or cancel whenever you like.', alignment: 'Center' }, 'vitaheal-home-subscribe'),
+          createSection('newsletter', { headline: 'Get the Vitaheal letter' }, 'vitaheal-home-newsletter'),
+          createSection('footer', { showSocial: false, columns: 3 }, 'vitaheal-home-footer'),
         ],
         product: [
-          createSection('header', { menuStyle: 'Centered' }, 'tallvik-product-header'),
-          createSection('product-detail', {}, 'tallvik-product-detail'),
-          createSection('featured-products', { title: 'You may also like' }, 'tallvik-product-related'),
-          createSection('footer', { showSocial: false, columns: 3 }, 'tallvik-product-footer'),
+          createSection('header', { menuStyle: 'Centered' }, 'vitaheal-product-header'),
+          createSection('product-detail', {}, 'vitaheal-product-detail'),
+          createSection('featured-products', { title: 'You may also like' }, 'vitaheal-product-related'),
+          createSection('footer', { showSocial: false, columns: 3 }, 'vitaheal-product-footer'),
         ],
         collection: [
-          createSection('header', { menuStyle: 'Centered' }, 'tallvik-collection-header'),
-          createSection('collection-grid', {}, 'tallvik-collection-grid'),
-          createSection('footer', { showSocial: false, columns: 3 }, 'tallvik-collection-footer'),
+          createSection('header', { menuStyle: 'Centered' }, 'vitaheal-collection-header'),
+          createSection('collection-grid', {}, 'vitaheal-collection-grid'),
+          createSection('footer', { showSocial: false, columns: 3 }, 'vitaheal-collection-footer'),
         ],
         cart: [
-          createSection('header', { menuStyle: 'Centered' }, 'tallvik-cart-header'),
-          createSection('cart-summary', {}, 'tallvik-cart-summary'),
-          createSection('footer', { showSocial: false, columns: 3 }, 'tallvik-cart-footer'),
+          createSection('header', { menuStyle: 'Centered' }, 'vitaheal-cart-header'),
+          createSection('cart-summary', {}, 'vitaheal-cart-summary'),
+          createSection('footer', { showSocial: false, columns: 3 }, 'vitaheal-cart-footer'),
         ],
       },
     },

@@ -4,7 +4,7 @@ import type { Product } from '@/stores/useCommerce'
 import { toHandle } from '@/stores/useProductExtras'
 import { catalogFor } from '@/storefront/catalog'
 
-// What a storefront sells. A store with products assigned to it (Tallvik (demo)) sells
+// What a storefront sells. A store with products assigned to it (Vitaheal (demo)) sells
 // those. The others share the account's published Commerce products: a stand-in,
 // because the real store's catalogue couldn't be crawled (its product search was
 // down), listed in docs/rebuild/neelam-store/GAPS.md. The rule is catalogFor.

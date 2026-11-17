@@ -1,6 +1,6 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
-import { TALLVIK_CHANNEL } from '@/storefront/tallvikDemo'
+import { VITAHEAL_CHANNEL } from '@/storefront/vitahealDemo'
 
 export type SalesChannelType = 'web_store' | 'offline_store'
 export type SalesChannelStatus = 'connected' | 'needs_setup' | 'draft' | 'sync_issue'
@@ -295,7 +295,7 @@ const seedChannels: SalesChannel[] = [
     },
   },
   // Last on purpose: earlier positions decide the "primary store" in the Maropay scenarios and story indexes.
-  TALLVIK_CHANNEL,
+  VITAHEAL_CHANNEL,
 ]
 
 function slugify(value: string): string {

@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
-import { TALLVIK_BLOG_SEO, TALLVIK_CHANNEL_ID, TALLVIK_CONTENT } from '@/storefront/tallvikDemo'
+import { VITAHEAL_BLOG_SEO, VITAHEAL_CHANNEL_ID, VITAHEAL_CONTENT } from '@/storefront/vitahealDemo'
 
 // Storefront pages & blog posts (store editor ▸ Pages / Blogs).
 // Legacy parity notes (sandbox crawl 2026-07-10, docs/uat-parity/parity-tracker.md A06b):
@@ -211,10 +211,10 @@ function seedEntries(): ContentEntry[] {
 }
 
 export const useStoreContentStore = defineStore('storeContent', () => {
-  const entries = ref<ContentEntry[]>([...seedEntries(), ...TALLVIK_CONTENT.map((entry) => ({ ...entry }))])
+  const entries = ref<ContentEntry[]>([...seedEntries(), ...VITAHEAL_CONTENT.map((entry) => ({ ...entry }))])
   const blogSeoByChannel = ref<Record<string, BlogSeoSettings>>({
     'retest-sales-notification': { title: 'Atlas Outfitters Journal', metaDescription: 'Guides and stories from the Atlas Outfitters team.' },
-    [TALLVIK_CHANNEL_ID]: { ...TALLVIK_BLOG_SEO },
+    [VITAHEAL_CHANNEL_ID]: { ...VITAHEAL_BLOG_SEO },
   })
 
   function entriesForChannel(channelId: string, kind: ContentKind): ContentEntry[] {

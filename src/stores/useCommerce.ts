@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 import { useOnboardingStore } from '@/stores/useOnboarding'
 import { useMaropayStore } from '@/stores/useMaropay'
 import type { MaropayProvider, OrderPaymentStatusLabel } from '@/maropay/model'
-import { tallvikProducts } from '@/storefront/tallvikDemo'
+import { vitahealProducts } from '@/storefront/vitahealDemo'
 
 const productNames = [
   'Nike Air Max 270 - Black/White', 'Patagonia Better Sweater Fleece Vest', 'Apple iPhone 15 Pro Case - Clear',
@@ -778,8 +778,8 @@ export const useCommerceStore = defineStore('commerce', () => {
       productType: PRODUCT_TYPES[i % PRODUCT_TYPES.length]!,
     }
   }),
-  // The Tallvik (demo) store's own catalogue, after the shared one so nothing above shifts.
-  ...tallvikProducts().map((p): Product => ({ ...p, status: stockStatus(p.inventory) })),
+  // The Vitaheal (demo) store's own catalogue, after the shared one so nothing above shifts.
+  ...vitahealProducts().map((p): Product => ({ ...p, status: stockStatus(p.inventory) })),
   ])
 
   // ── Product CRUD (mock-persistent) ───────────────────────────────
