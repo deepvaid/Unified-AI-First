@@ -80,6 +80,10 @@ The slices and their rules are in [bkm-build-prompt.md](bkm-build-prompt.md).
 - Kept, because the requirements test them: the shape of the catalogue, the SEK prices, the five
   collections, and the theme's fonts and colours.
 - `npm run test:storefront` fails if a real name comes back into the seed.
+- **Branches.** The rename is on `feature/bkm-s0-vitaheal-brand`, on top of S0.
+  `feature/bkm-s0-demo-seed` keeps the BKM-named store. **Decided by the human (2026-11-17): later
+  slices build on the Vitaheal store.** Until that branch is on `master`, S1 branches from
+  `feature/bkm-s0-vitaheal-brand`, not from `master` as the build prompt says.
 - The name "Vitaheal" was chosen by the human (2026-11-17; the first pick, "Tallvik", was replaced).
   A web search found real supplement sellers with this name or one close to it: "VitaHeal"
   (vitaheals.com) and "VitaHealth" (Vita Life Sciences, sold across Southeast Asia). So the name is
