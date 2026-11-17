@@ -2,7 +2,7 @@ import { parseDecimal, zero } from '@/maropay/money'
 import type { Money } from '@/maropay/money'
 import type { Product } from '@/stores/useCommerce'
 import { toHandle } from '@/stores/useProductExtras'
-import { catalogFor } from '@/storefront/catalog'
+import { catalogFor, isAvailable } from '@/storefront/catalog'
 
 // What a storefront sells. A store with products assigned to it (Vitaheal (demo)) sells
 // those. The others share the account's published Commerce products: a stand-in,
@@ -50,7 +50,7 @@ export function priceOf(product: Product, currency: string): Money {
 }
 
 export function inStock(product: Product): boolean {
-  return product.inventory > 0
+  return isAvailable(product)
 }
 
 /** Stands in for the product photograph. */

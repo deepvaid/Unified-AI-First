@@ -35,10 +35,18 @@ const subtitle = computed(() => product.value?.detail?.subtitle.trim())
 const collection = computed(() => product.value?.collections[0] ?? null)
 const related = computed(() => (product.value ? relatedProducts(commerce.products, channelId.value, product.value) : []))
 const available = computed(() => (product.value ? inStock(product.value) : false))
+/** A product saved without a brand has "—" for one in the admin; shoppers see no brand line. */
+const vendor = computed(() => {
+  const name = product.value?.vendor.trim()
+  return name && name !== '—' ? name : ''
+})
 const description = computed(() => {
   const p = product.value
   if (!p) return ''
-  return p.detail?.description?.trim() || `${p.name} from ${p.vendor}, part of our ${p.category} range. Free shipping on every order.`
+  const written = p.detail?.description?.trim()
+  if (written) return written
+  // The stand-in line needs a brand to read as a sentence; without one the section is left out.
+  return vendor.value ? `${p.name} from ${vendor.value}, part of our ${p.category} range. Free shipping on every order.` : ''
 })
 
 const qty = ref(1)
@@ -106,7 +114,7 @@ function buyNow(methodId: string): void {
       </div>
 
       <div class="sf-pdp__info">
-        <p class="sf-pdp__vendor">{{ product.vendor }}</p>
+        <p v-if="vendor" class="sf-pdp__vendor">{{ vendor }}</p>
         <h1 class="sf-pdp__title sf-heading-font">{{ product.name }}</h1>
         <p v-if="subtitle" class="sf-pdp__subtitle">{{ subtitle }}</p>
         <p class="sf-pdp__price"><template v-if="priceRange">From </template>{{ formatMoney(unit) }}</p>
@@ -160,7 +168,7 @@ function buyNow(methodId: string): void {
           </ul>
         </div>
 
-        <section class="sf-pdp__desc" aria-labelledby="sf-pdp-desc">
+        <section v-if="description" class="sf-pdp__desc" aria-labelledby="sf-pdp-desc">
           <h2 id="sf-pdp-desc" class="sf-pdp__desc-title">Description</h2>
           <p>{{ description }}</p>
         </section>

@@ -10,6 +10,7 @@ import { downloadCsv } from '@/utils/exportCsv'
 import { parseDecimal } from '@/maropay/money'
 import { formatStorePrice } from '@/storefront/price'
 import { useToast } from '@/composables/useToast'
+import { useProductStores } from '@/composables/useProductStores'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpFilterTabs from '@/components/MpFilterTabs.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
@@ -356,12 +357,25 @@ const flashMessages: Record<string, string> = {
   'import-complete': 'Import complete',
 }
 
+// A product of a store with its own catalogue links to its page on that storefront.
+const productStores = useProductStores(accountId)
+
 onMounted(() => {
   if (catalog.ctaVisible) catalog.ctaViewed('index')
   const flash = route.query.flash
   const key = Array.isArray(flash) ? flash[0] : flash
   if (key && flashMessages[key]) {
-    toast.success(flashMessages[key]!)
+    // The wizards name the product they saved, so the message can say where shoppers find it.
+    const saved = store.products.find((p) => p.id === Number(route.query.product))
+    const link = saved ? productStores.storefrontLink(saved) : null
+    if (link) {
+      toast.success(`${flashMessages[key]!}. Shoppers can see it in ${link.storeName}.`, {
+        action: { label: 'View in store', onClick: () => window.open(link.href, '_blank', 'noopener') },
+        durationMs: 10000,
+      })
+    } else {
+      toast.success(flashMessages[key]!)
+    }
     router.replace({ query: {} })
   }
 })
@@ -563,6 +577,14 @@ onMounted(() => {
         <template #item.actions="{ item }">
           <MpRowActionsMenu ariaLabel="Product actions" :item-label="item.name">
             <MpMenuItem icon="pencil" title="Edit" @click="openEdit(item)" />
+            <MpMenuItem
+              v-if="productStores.storefrontLink(item)"
+              icon="external-link"
+              title="View in store"
+              :href="productStores.storefrontLink(item)!.href"
+              target="_blank"
+              rel="noopener"
+            />
             <v-divider class="my-1" />
             <MpMenuItem icon="trash-2" title="Delete" danger @click="askDelete(item)" />
           </MpRowActionsMenu>

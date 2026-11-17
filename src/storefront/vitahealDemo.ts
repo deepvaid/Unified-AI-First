@@ -271,7 +271,7 @@ export function vitahealProducts(): Omit<Product, 'status'>[] {
         brand: 'Vitaheal',
         tag: 'Supplements',
         collection: seed.collections[0] ?? '',
-        categories: [...seed.collections],
+        categories: ['Beauty & Health'],
         width: '',
         length: '',
         height: '',

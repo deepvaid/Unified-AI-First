@@ -85,8 +85,42 @@ here already exists when those slices start.
   - Cart and checkout summary lines show the product photo.
   - Other stores: Neelam-Store's home and "All" collection measured identical before and after
     (position, size, colour and font size of every element).
-- **Part 2 (add a product, keep changes with a restore), Part 3 (subscription plans) and Part 4
-  (the shopper journey end to end):** not started.
+- **Part 2, add a product and keep changes with a restore (done).**
+  - **Kept in the browser.** The demo store's products are saved in this browser's `localStorage`
+    (key `mp.vitaheal-demo.products.v1`, `src/storefront/demoStorage.ts`), so an added or edited
+    product is still there after a reload and in the storefront tab that "View store" opens. Other
+    open tabs follow a change at once. Only a real change is saved: a store nobody has touched
+    keeps following the seed. If the browser runs out of room, a warning says changes will not be
+    kept. No other store's data is kept.
+  - **Restore.** The store's Settings tab has a "Store data" card with "Restore original store":
+    it removes added products, undoes edits and empties the cart. Orders already placed stay.
+    Part 3 adds the subscription plans to what is kept and restored.
+  - **A product goes to a store.** On the product forms, Sales channels also offers each store
+    that has products of its own (today: Vitaheal). Picking one assigns the product to it
+    (`channelIds`), shows prices in the store's currency ("kr"), and offers that store's
+    collections. "Add product" on the store's overview opens the form with the store picked.
+    From the Products page the default stays "Online Store" (the shared catalogue).
+  - **Pictures.** `ProductMediaField` replaces the two upload mock-ups: up to four PNG, JPG or
+    WEBP pictures, shrunk in the browser to 720px. Nothing is uploaded. A store product saved
+    without a picture gets a drawn pack shot in the store's colours (`packShot.ts`).
+  - **Collections.** The single "Collection" field is now "Collections" (several), so a product
+    can be in "Sleep" and "Subscription", and an edit no longer drops the others.
+  - **After saving.** The message says where shoppers find the product, with "View in store"; the
+    Products list's row menu and the product editor's header have the same link.
+  - **Product form bugs fixed for every store:** an edit no longer zeroes the stock (the form used
+    different location names from the rest of the admin); a variant keeps its compare-at price
+    and weight; the product's price is its lowest variant's; the last step warns when there is no
+    price or no stock. On the storefront, a product with no brand shows no brand line and no
+    made-up description, and a variant sold without stock tracking or on backorder counts as
+    in stock.
+  - **Known limits.** If every product of the demo store is deleted, the store has none of its
+    own and falls back to the shared catalogue until it is restored. A new product without a
+    category has no "You may also like" row. The wizard's footer is cramped at phone width
+    (as before this pass). The ProductMediaField story was type-checked, not opened in Storybook.
+- **Part 3 (subscription plans) and Part 4 (the shopper journey end to end):** not started.
+  Noted for Part 4 while testing Part 2: the store's Settings tab shows another company's
+  business details ("Atlas Outfitters Ltd.", Brooklyn) and an "Edit" button that answers with
+  internal wording, and the overview's revenue is in dollars.
 
 **Sales-demo pass (added 2026-11-16, after the audience was confirmed as sales people showing prospects):**
 
@@ -191,7 +225,7 @@ here already exists when those slices start.
 | P11 | Payment methods | S9 | not started | |
 | P12 | Checkout | S9 | not started | |
 | P13 | Structured product content | S4 | not started | |
-| P14 | Catalog basics | S0 | done | Eight products, 14 variants with SKU, weight and one compare-at price, five collections, all in the admin and on the Vitaheal storefront only |
+| P14 | Catalog basics | S0 | done | A product can be added to the store from the admin, with pictures, and is kept across reloads (demo pass, part 2). Eight products, 14 variants with SKU, weight and one compare-at price, five collections, all in the admin and on the Vitaheal storefront only |
 | P15 | Add-on discount | S5 | not started | |
 | P16 | Returns and guarantee | S14 | not started | Guarantee terms page seeded |
 | P17 | Reviews | S11 | not started | |

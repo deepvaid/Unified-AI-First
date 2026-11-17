@@ -34,3 +34,44 @@ export function lowestPrice(product: CatalogProduct): string {
   const prices = (product.detail?.variantsList ?? []).map((v) => Number.parseFloat(v.price)).filter(Number.isFinite)
   return prices.length ? Math.min(...prices).toFixed(2) : product.price
 }
+
+// ── Product form rules ───────────────────────────────────────────────────────
+
+/** The stores that have products of their own, by sales channel id, in the order they first appear. */
+export function storesWithOwnCatalogue(products: Pick<CatalogProduct, 'channelIds'>[]): string[] {
+  return [...new Set(products.flatMap((p) => p.channelIds ?? []))]
+}
+
+/**
+ * The stores behind the sales channels picked on a product form. None: the
+ * product stays in the shared catalogue, as every product did before.
+ */
+export function channelIdsFor(picked: string[], stores: { id: string; name: string }[]): string[] {
+  return stores.filter((store) => picked.includes(store.name)).map((store) => store.id)
+}
+
+/** The fields the stock rules read. A commerce `ProductVariant` satisfies it. */
+export interface StockVariant {
+  manageInventory: boolean
+  allowBackorder: boolean
+  /** On-hand counts by location name. */
+  stock: Record<string, number>
+}
+
+/** Units on hand across every location, counting only the variants whose stock is tracked. */
+export function totalStock(variants: StockVariant[]): number {
+  return variants
+    .filter((v) => v.manageInventory)
+    .reduce((total, v) => total + Object.values(v.stock).reduce((sum, qty) => sum + (Number(qty) || 0), 0), 0)
+}
+
+/** A shopper can buy it: there is stock, or a variant is sold without tracking stock or on backorder. */
+export function isAvailable(product: { inventory: number; detail?: { variantsList: StockVariant[] } }): boolean {
+  if (product.inventory > 0) return true
+  return (product.detail?.variantsList ?? []).some((v) => !v.manageInventory || v.allowBackorder)
+}
+
+/** `primary` leads and the product's other collections stay. Without a primary nothing changes. */
+export function withPrimaryCollection(collections: string[], primary: string): string[] {
+  return primary ? [primary, ...collections.filter((c) => c !== primary)] : collections
+}

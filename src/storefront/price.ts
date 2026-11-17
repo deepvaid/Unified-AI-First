@@ -19,3 +19,14 @@ export function formatStorePrice(m: Money, locale?: string): string {
     maximumFractionDigits: whole ? 0 : exp,
   }).format(m.amount / 10 ** exp)
 }
+
+/**
+ * Where a price field shows its currency: before the amount ("$") or after it
+ * ("kr"), as the store's locale writes it. Without a store it is the dollar sign.
+ */
+export function currencyAffix(currency = 'USD', locale = 'en-US'): { prefix?: string; suffix?: string } {
+  const parts = new Intl.NumberFormat(locale, { style: 'currency', currency }).formatToParts(1)
+  const at = parts.findIndex((part) => part.type === 'currency')
+  const symbol = parts[at]?.value ?? currency
+  return at < parts.findIndex((part) => part.type === 'integer') ? { prefix: symbol } : { suffix: symbol }
+}

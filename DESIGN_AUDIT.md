@@ -2635,3 +2635,29 @@ prospects, so BKM's name is off the screen:
 - `vitahealDemo.ts`: products name stock photos instead of generated pack shots (`ProductSeed.shape`
   and `accent` are gone; `photo` replaces them); new exports `VITAHEAL_PHOTO_DIR`, `VITAHEAL_PHOTOS`.
   `src/storefront/packShot.ts` is unused until part 2 (the picture for a product added without one).
+
+**Demo pass, part 2 (2026-11-17) — a sales person can add a product to the demo store, and changes are kept.**
+
+- New component `ProductMediaField` (`src/components/products/`, story `Product/Products/ProductMediaField`):
+  the pictures of a product on the product forms. It composes `MpFormField`; tiles are sized from
+  `space.48`, and the remove button is the existing `mp-btn--icon`. It replaces two hand-rolled
+  upload mock-ups (`.pw-dropzone` in the wizard, `.ped-media` in the editor, which used raw `96px`).
+- Product forms: the "Collection" select is now "Collections" (multiple). `ProductDetail.collection`
+  stays as the first one. Price fields take their currency affix from the picked store
+  (`currencyAffix` in `src/storefront/price.ts`) instead of a fixed `$`.
+- `ProductDraftInput` gains optional `collections`, `channelIds` and `imageUrls`.
+  `updateProductDraft` no longer replaces a product's collections with `detail.collection`.
+- New pure modules and rules: `src/storefront/demoStorage.ts` (`demoSlot`), and in
+  `src/storefront/catalog.ts` `storesWithOwnCatalogue`, `channelIdsFor`, `totalStock`,
+  `isAvailable`, `withPrimaryCollection`. `inStock` on the storefront now follows `isAvailable`.
+- New composable `useProductStores` (stores with their own catalogue, for the product forms and
+  the Products list). `useCommerceStore` gains `restoreDemoStore`.
+- Sales channel detail: an "Add product" quick action on a store with its own catalogue, and a
+  "Store data" card with a restore on the demo store's Settings tab.
+
+### Renames and breaking changes
+
+- The product wizard's stock fields are keyed by `INVENTORY_LOCATIONS` ("Testing",
+  "Oxford Warehouse"), no longer by its own "testing" / "Oxford warehouse".
+- `vitahealDemo.ts`: seeded products are filed under the category "Beauty & Health" in
+  `detail.categories` (it held their collections).

@@ -1,9 +1,12 @@
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useOnboardingStore } from '@/stores/useOnboarding'
 import { useMaropayStore } from '@/stores/useMaropay'
+import { useStorefrontCartStore } from '@/stores/useStorefrontCart'
+import { useToast } from '@/composables/useToast'
 import type { MaropayProvider, OrderPaymentStatusLabel } from '@/maropay/model'
-import { vitahealProducts } from '@/storefront/vitahealDemo'
+import { demoSlot } from '@/storefront/demoStorage'
+import { VITAHEAL_CHANNEL_ID, vitahealProducts } from '@/storefront/vitahealDemo'
 
 const productNames = [
   'Nike Air Max 270 - Black/White', 'Patagonia Better Sweater Fleece Vest', 'Apple iPhone 15 Pro Case - Clear',
@@ -191,6 +194,12 @@ export interface ProductDraftInput {
   publishStatus: PublishStatus
   detail?: ProductDetail
   components?: KitComponent[]
+  /** Every collection the product is in, the first one leading. Absent: unchanged (on create, `detail.collection` alone). */
+  collections?: string[]
+  /** The stores with their own catalogue that sell it (src/storefront/catalog.ts). Empty: the shared catalogue. Absent: unchanged. */
+  channelIds?: string[]
+  /** Product pictures, the first one leading. Absent: unchanged. */
+  imageUrls?: string[]
 }
 
 export interface InventoryItem {
@@ -754,8 +763,41 @@ function buildPosOrders(): Order[] {
   })
 }
 
+/** localStorage, or nothing where the browser blocks it. */
+function browserStorage(): Storage | undefined {
+  try {
+    return typeof localStorage === 'undefined' ? undefined : localStorage
+  } catch {
+    return undefined
+  }
+}
+
+/** Saved demo products are only read back when they still look like products. */
+function isProductList(value: unknown): value is Product[] {
+  return Array.isArray(value) && value.every((p: Partial<Product> | null) =>
+    !!p && typeof p.id === 'number' && typeof p.name === 'string' && typeof p.price === 'string'
+    && Array.isArray(p.collections) && Array.isArray(p.channelIds))
+}
+
+const inDemoStore = (product: Product): boolean => !!product.channelIds?.includes(VITAHEAL_CHANNEL_ID)
+
+/**
+ * The product list with the demo store's products in place: the ones a sales
+ * person added lead it, as they did when they were created, and its seeded
+ * ones follow the shared catalogue, so nothing above them shifts.
+ */
+function withDemoProducts(shared: Product[], demo: Product[]): Product[] {
+  const seeded = new Set(vitahealProducts().map((p) => p.id))
+  return [...demo.filter((p) => !seeded.has(p.id)), ...shared, ...demo.filter((p) => seeded.has(p.id))]
+}
+
 export const useCommerceStore = defineStore('commerce', () => {
-  const products = ref<Product[]>([...productNames.map((name, i): Product => {
+  // What the Vitaheal (demo) store sells is kept in this browser, so a sales person's
+  // changes survive a reload and reach the storefront tab (src/storefront/demoStorage.ts).
+  const demoProducts = demoSlot('products', 1, browserStorage(), isProductList)
+  const seededDemoProducts = (): Product[] => vitahealProducts().map((p) => ({ ...p, status: stockStatus(p.inventory) }))
+
+  const products = ref<Product[]>(withDemoProducts(productNames.map((name, i): Product => {
     const inv = i < 3 ? 0 : Math.floor(Math.random() * 500) + 5
     // Deterministic, so the storefront's product pages, cart and orders agree across reloads.
     const price = (15 + ((i * 7919) % 45000) / 100).toFixed(2)
@@ -777,10 +819,48 @@ export const useCommerceStore = defineStore('commerce', () => {
       salesChannelNames: i % 4 === 0 ? [] : ['Online Store'],
       productType: PRODUCT_TYPES[i % PRODUCT_TYPES.length]!,
     }
-  }),
-  // The Vitaheal (demo) store's own catalogue, after the shared one so nothing above shifts.
-  ...vitahealProducts().map((p): Product => ({ ...p, status: stockStatus(p.inventory) })),
-  ])
+  }), demoProducts.load() ?? seededDemoProducts()))
+
+  // ── The demo store's products: kept, followed across tabs, restorable ──
+  /**
+   * The demo products as last loaded, saved or restored. Only a real change to
+   * them is saved: a change to another store's product, or taking the list from
+   * storage or the seed, leaves the browser's copy alone. So a store nobody has
+   * changed keeps following the seed.
+   */
+  let knownDemoProducts = JSON.stringify(products.value.filter(inDemoStore))
+  let warnedStorageFull = false
+
+  watch(() => products.value.filter(inDemoStore), (list) => {
+    const current = JSON.stringify(list)
+    if (current === knownDemoProducts) return
+    knownDemoProducts = current
+    if (demoProducts.save(list) || warnedStorageFull) return
+    warnedStorageFull = true
+    useToast().warning('This browser has no room left, so changes to the demo store will be gone after a reload. Remove a few product pictures, or restore the store.', { title: 'Changes not kept' })
+  }, { deep: true })
+
+  function setDemoProducts(list: Product[]): void {
+    products.value = withDemoProducts(products.value.filter((p) => !inDemoStore(p)), list)
+    knownDemoProducts = JSON.stringify(products.value.filter(inDemoStore))
+  }
+
+  /** Puts the demo store's products back as seeded and empties its cart. Orders already placed stay. */
+  function restoreDemoStore(): void {
+    demoProducts.clear()
+    setDemoProducts(seededDemoProducts())
+    useStorefrontCartStore().clear(VITAHEAL_CHANNEL_ID)
+  }
+
+  // Another tab changed the demo store (the admin, beside an open storefront): follow it.
+  if (typeof window !== 'undefined') {
+    window.addEventListener('storage', (event) => {
+      if (event.key !== demoProducts.key) return
+      const saved = demoProducts.load()
+      setDemoProducts(saved ?? seededDemoProducts())
+      if (!saved) useStorefrontCartStore().clear(VITAHEAL_CHANNEL_ID)
+    })
+  }
 
   // ── Product CRUD (mock-persistent) ───────────────────────────────
   function nextProductId(): number {
@@ -801,15 +881,17 @@ export const useCommerceStore = defineStore('commerce', () => {
       category: input.category,
       status: stockStatus(input.inventory),
       vendor: input.vendor || '—',
-      images: 1,
+      images: input.imageUrls?.length || 1,
       variants: input.variants,
       type: input.type,
       publishStatus: input.publishStatus,
-      collections: input.detail?.collection ? [input.detail.collection] : [],
+      collections: input.collections ?? (input.detail?.collection ? [input.detail.collection] : []),
       salesChannelNames: input.detail?.salesChannels ?? [],
       productType: PRODUCT_TYPES[0]!,
       detail: input.detail,
       components: input.components,
+      ...(input.channelIds?.length ? { channelIds: input.channelIds } : {}),
+      ...(input.imageUrls?.length ? { imageUrls: input.imageUrls } : {}),
     }
     products.value.unshift(product)
     useOnboardingStore().complete('first-product')
@@ -831,9 +913,12 @@ export const useCommerceStore = defineStore('commerce', () => {
     product.variants = input.variants
     product.type = input.type
     product.publishStatus = input.publishStatus
-    if (input.detail) {
-      product.collections = input.detail.collection ? [input.detail.collection] : product.collections
-      product.salesChannelNames = input.detail.salesChannels
+    if (input.detail) product.salesChannelNames = input.detail.salesChannels
+    if (input.collections) product.collections = input.collections
+    if (input.channelIds) product.channelIds = input.channelIds.length ? input.channelIds : undefined
+    if (input.imageUrls) {
+      product.imageUrls = input.imageUrls.length ? input.imageUrls : undefined
+      product.images = input.imageUrls.length || 1
     }
     product.detail = input.detail
     product.components = input.components
@@ -1808,7 +1893,7 @@ export const useCommerceStore = defineStore('commerce', () => {
   return {
     products, orders, promotions, fulfillments, draftOrders, customGiftCards, purchasableGiftCards,
     inventory,
-    createProduct, updateProductDraft, duplicateProduct, deleteProduct, deleteProducts,
+    createProduct, updateProductDraft, duplicateProduct, deleteProduct, deleteProducts, restoreDemoStore,
     setProductsPublishStatus, setProductsCategory, setProductsCollection, addProductsSalesChannel,
     productViews, addProductView, removeProductView,
     adjustStock, transferStock, inventoryImports,

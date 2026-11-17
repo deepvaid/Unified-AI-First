@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpDialog from '@/components/MpDialog.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFilterTabs from '@/components/MpFilterTabs.vue'
@@ -29,11 +30,14 @@ import { activeConnections, connectionOfferedMethods } from '@/maropay/providers
 import { useRetailStore } from '@/stores/useRetail'
 import { useStoreThemesStore } from '@/stores/useStoreThemes'
 import { useStorefrontStore } from '@/stores/useStorefront'
+import { storesWithOwnCatalogue } from '@/storefront/catalog'
+import { VITAHEAL_CHANNEL_ID } from '@/storefront/vitahealDemo'
 
 type MetricColor = 'primary' | 'retail' | 'commerce' | 'analytics' | 'contacts' | 'success' | 'warning'
 type DetailTab = 'overview' | 'settings' | 'apps' | 'ai' | 'activity'
 type ProductTarget =
   | ConnectedCloud
+  | 'add_product'
   | 'apps'
   | 'dashboard'
   | 'davinci'
@@ -160,6 +164,17 @@ const channelId = computed(() => {
 
 const channel = computed(() => salesChannelsStore.getChannel(accountId.value, channelId.value))
 const isWebStore = computed(() => channel.value?.type === 'web_store')
+/** This store sells products of its own, so a product can be added straight to it. */
+const hasOwnCatalogue = computed(() => storesWithOwnCatalogue(commerceStore.products).includes(channelId.value))
+
+// The demo store keeps what is changed in it in this browser, and can be put back.
+const keepsChanges = computed(() => channelId.value === VITAHEAL_CHANNEL_ID)
+const confirmRestore = ref(false)
+
+function restoreStore() {
+  commerceStore.restoreDemoStore()
+  toast.success(`${channel.value?.name ?? 'The store'} is back to its original products`)
+}
 
 const maropay = useMaropayStore()
 const maropayBinding = computed(() => maropay.bindingFor(channelId.value))
@@ -292,6 +307,9 @@ const quickActions = computed<QuickAction[]>(() => {
         color: 'commerce',
         target: 'products',
       },
+      ...(hasOwnCatalogue.value
+        ? [{ id: 'add-product', title: 'Add product', description: 'Sell it in this store', icon: 'package-plus', color: 'commerce' as const, target: 'add_product' as const }]
+        : []),
       {
         id: 'merchandise',
         title: 'Merchandising',
@@ -729,6 +747,10 @@ function runAction(target: ProductTarget) {
     router.push({ name: 'Products', params: { accountId: accountId.value } })
     return
   }
+  if (target === 'add_product') {
+    router.push({ name: 'ProductNew', params: { accountId: accountId.value }, query: { store: channelId.value } })
+    return
+  }
   if (target === 'apps' || target === 'commerce' || target === 'davinci' || target === 'merchandise' || target === 'retail' || target === 'store_builder') {
     openConnectedProduct(target)
   }
@@ -995,6 +1017,24 @@ function locationRoleText(locationId: string) {
             </div>
           </div>
         </v-card>
+
+        <v-card v-if="keepsChanges" flat border rounded="lg" class="retail-widget-card">
+          <div class="retail-widget-header">
+            <div>
+              <div class="retail-widget-header__title">Store data</div>
+              <div class="retail-widget-header__sub">Kept in this browser</div>
+            </div>
+            <v-btn size="small" variant="outlined" prepend-icon="rotate-ccw" class="text-none" @click="confirmRestore = true">
+              Restore original store
+            </v-btn>
+          </div>
+          <div class="retail-widget-body">
+            <p class="text-body-2 text-medium-emphasis mb-0">
+              Products you add or edit in this store stay after a reload, in this browser only.
+              Restoring puts the original products back.
+            </p>
+          </div>
+        </v-card>
       </section>
 
       <section v-else-if="activeTab === 'apps'" id="sc-tab-panel" class="sc-tab-panel" role="tabpanel">
@@ -1143,6 +1183,21 @@ function locationRoleText(locationId: string) {
           <StorefrontPreview :sections="previewSections" :styles="previewStyles" :brand="previewHeader.brand" :menu="previewHeader.menu" :device="previewDevice" />
         </div>
       </MpDialog>
+
+      <MpConfirmDialog
+        v-model="confirmRestore"
+        title="Restore the original store?"
+        :message="`${channel.name} goes back to the products it started with.`"
+        :consequences="[
+          'Products you added to this store are removed.',
+          'Your edits to its products are undone.',
+          'The cart is emptied.',
+          'Orders already placed stay.',
+        ]"
+        confirm-label="Restore store"
+        danger
+        @confirm="restoreStore"
+      />
     </template>
 
     <template v-else>
