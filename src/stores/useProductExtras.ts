@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { BKM_CHANNEL_ID, BKM_COLLECTIONS } from '@/storefront/bkmDemo'
+import { TALLVIK_CHANNEL_ID, TALLVIK_COLLECTIONS } from '@/storefront/tallvikDemo'
 
 /**
  * Mock-persistent data for the Products satellite pages that don't live in the
@@ -543,8 +543,8 @@ export const useProductExtrasStore = defineStore('productExtras', () => {
     seedCollection(20, 'All Products', 'Automated', '2025-10-10T19:06:00Z', 45),
     { ...seedCollection(21, 'Summer Feature Picks', 'Manual', '2026-07-12T09:15:00Z', 3), productItemIds: ['ring1', 'pbd', 'bbsm'], rules: [] },
     { ...seedCollection(22, 'Clearance — Inactive', 'Manual', '2026-03-02T11:00:00Z', 0, 'Inactive'), productItemIds: [], rules: [] },
-    // The BKM (demo) store's collections. Its storefront reads them from the products' own `collections`.
-    ...BKM_COLLECTIONS.map((c, i) => ({ ...seedCollection(23 + i, c.title, 'Manual', '2026-11-16T09:00:00Z', c.productCount), salesChannels: [BKM_CHANNEL_ID] })),
+    // The Tallvik (demo) store's collections. Its storefront reads them from the products' own `collections`.
+    ...TALLVIK_COLLECTIONS.map((c, i) => ({ ...seedCollection(23 + i, c.title, 'Manual', '2026-11-16T09:00:00Z', c.productCount), salesChannels: [TALLVIK_CHANNEL_ID] })),
   ])
 
   function nextCollectionId(): number {

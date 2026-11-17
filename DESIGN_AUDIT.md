@@ -2609,3 +2609,14 @@ here touches a design-system component.
 
 - The Styles tab still offers preset swatches only; a custom hex colour cannot be picked.
 - `ThemeStyles` has no border colour or accent font yet.
+
+**Renamed 2026-11-17 — the demo store carries a fictional brand.** Sales people show it to other
+prospects, so BKM's name is off the screen:
+
+- channel `bkm-demo` "BKM (demo)" → `tallvik-demo` "Tallvik (demo)"; theme `theme-bkm` "BKM" →
+  `theme-tallvik` "Tallvik";
+- `src/storefront/bkmDemo.ts` → `tallvikDemo.ts`; exports `BKM_*` → `TALLVIK_*`, `bkmProducts()` →
+  `tallvikProducts()`; `tests/storefront/bkmDemo.test.ts` → `tallvikDemo.test.ts`;
+- products: Tranquil → Unwind, Ultra Focused → Clear Focus, Life NAD+ → Daily NAD+, Glow+ →
+  Collagen+, Harmonized → Balance, BKM Electrolytes → Tallvik Electrolytes (flavours Lemon & Ginger,
+  Wild Berries); SKUs `BKM-…` → `TVK-…`. Prices, collections and theme values are unchanged.

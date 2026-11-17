@@ -34,13 +34,13 @@ The slices and their rules are in [bkm-build-prompt.md](bkm-build-prompt.md).
 
 **Plan (as built).**
 
-1. One typed seed module, `src/storefront/bkmDemo.ts`, holds everything for the `bkm-demo` channel; each Pinia store spreads its part into its own seed. No new store.
+1. One typed seed module, `src/storefront/tallvikDemo.ts`, holds everything for the `tallvik-demo` channel; each Pinia store spreads its part into its own seed. No new store.
 2. Pure rules under `src/storefront/` with tests (`npm run test:storefront`): which products a store sells (`catalog.ts`), how a store formats a price (`price.ts`), the generated pack shots (`packShot.ts`). The test also checks the seed against the reference tables in the prompt and that every seeded link leads somewhere.
 3. Products can be assigned to stores (`Product.channelIds`). A store with assigned products sells only those; the others keep the shared catalogue exactly as before.
-4. A web store can have its own currency and locale (`webStore.currency`, `webStore.locale`). BKM (demo) is SEK / `sv-SE`, so prices read "399 kr".
+4. A web store can have its own currency and locale (`webStore.currency`, `webStore.locale`). Tallvik (demo) is SEK / `sv-SE`, so prices read "399 kr".
 5. `ThemeStyles` gains the three badge colours; Figtree and Inconsolata join the theme fonts and load through the existing Google Fonts import.
 6. The storefront card and product page show a product's picture, subtitle and a "From" price when it has them. Products without them look as they did.
-7. The "BKM" theme is seeded from the section kinds that exist today.
+7. The "Tallvik" theme is seeded from the section kinds that exist today.
 
 **Where the prompt and the code disagreed** (the code won, as the prompt says):
 
@@ -62,18 +62,28 @@ The slices and their rules are in [bkm-build-prompt.md](bkm-build-prompt.md).
 - The pay button, payment sheets and receipt still format money the Maropay way ("Pay SEK 399.00"); checkout countries do not include Sweden. Both are S9.
 - The product editor's variant grid shows "$" prices; the Products list shows the store's currency. S9.
 - The sale and custom badge colours are theme settings but nothing draws those badges yet (S5). The sold-out tag uses its setting.
-- The storefront still shows a search box (BKM has none) and a single product image without a gallery (S2, S5).
+- The storefront still shows a search box (the reference site has none) and a single product image without a gallery (S2, S5).
 
 **Sales-demo pass (added 2026-11-16, after the audience was confirmed as sales people showing prospects):**
 
-- The header's search, account and wishlist are hidden on BKM (demo) until their pages exist (`headerTools` on the store's chrome). S13 turns search on, S8 the account.
+- The header's search, account and wishlist are hidden on Tallvik (demo) until their pages exist (`headerTools` on the store's chrome). S13 turns search on, S8 the account.
 - The footer signup now confirms ("Thank you. You are on the list.").
 - The store's description in Sales channels no longer uses internal wording.
 - Still visible to a prospect, and owned by later slices: the checkout's "Test cards for this prototype" helper and "Pay SEK 399.00" button, and no Sweden in the checkout's country list (S9); the product editor's "$" variant prices (S9); the eight preset swatches in the Styles tab, none of which is BKM's navy (see decisions).
 
-**Decisions for the human:**
+**Fictional brand (2026-11-17, decided by the human: "Use a fictional brand").**
 
-- **BKM's name in front of other prospects.** The store uses BKM's real name, product names and prices. If sales people show it to other companies, that needs BKM's agreement, or the demo should carry a fictional brand. The seed is one file, so a rename is cheap now and gets more expensive with every slice.
+- The store is now **Tallvik (demo)**, channel `tallvik-demo`, theme "Tallvik", seeded from
+  `src/storefront/tallvikDemo.ts`. BKM's name, product names and flavour names no longer appear on
+  screen, in a URL, in a SKU or in the seed. The mapping from BKM's names to the demo names is in
+  section 6 of the build prompt.
+- Kept, because the requirements test them: the shape of the catalogue, the SEK prices, the five
+  collections, and the theme's fonts and colours.
+- `npm run test:storefront` fails if a real name comes back into the seed.
+- "Tallvik" was checked with a web search: no supplements brand of that name came up. That is not a
+  trademark check; ask legal before the name is used outside a demo.
+
+**Decisions for the human:**
 
 - **Custom colours.** The Styles tab only offers eight preset swatches, so a merchant cannot pick BKM's navy or badge colours by hand; the seed sets them. A hex field is needed before S16 can "rebuild the theme through the builder UI". Which slice should own it?
 - **Border colour and accent font.** BKM's `#d3d3d3` border and Inconsolata accent face are not in `ThemeStyles`. S2 (chrome) is the natural place to add them.
@@ -83,7 +93,7 @@ The slices and their rules are in [bkm-build-prompt.md](bkm-build-prompt.md).
 
 | ID | Requirement | Slice | Prototype status | Note |
 |---|---|---|---|---|
-| T01 | Announcement bar | S2 | not started | Existing single-message bar is used by the BKM theme |
+| T01 | Announcement bar | S2 | not started | Existing single-message bar is used by the Tallvik theme |
 | T02 | Header over hero | S2 | not started | |
 | T03 | Dropdown navigation | S2 | not started | Menus seeded flat |
 | T04 | Cart drawer | S10 | not started | |
@@ -115,13 +125,13 @@ The slices and their rules are in [bkm-build-prompt.md](bkm-build-prompt.md).
 | T30 | FAQ accordion | S3 | not started | |
 | T31 | Mosaic and quote grid | S3 | not started | |
 | T32 | Instagram feed | S3 | not started | |
-| T33 | Newsletter signup | S1 | not started | Section seeded on the BKM home; the storefront does not draw it yet |
+| T33 | Newsletter signup | S1 | not started | Section seeded on the Tallvik home; the storefront does not draw it yet |
 | T34 | Media gallery | S5 | not started | One generated image shows; two are seeded per product |
 | T35 | Rating stars | S5 | not started | |
 | T36 | Subtitle, badges, chips | S5 | partial | Subtitle shows on the card and the product page (S0) |
 | T37 | Button variant picker | S5 | not started | Variants seeded; the page sells the lowest-priced one |
 | T38 | Purchase options | S7 | not started | |
-| T39 | Add to cart and express pay | S5 | not started | Existing add to cart and express buttons work for BKM |
+| T39 | Add to cart and express pay | S5 | not started | Existing add to cart and express buttons work for the demo store |
 | T40 | Payment icons | S5 | not started | |
 | T41 | Delivery estimator | S10 | not started | |
 | T42 | Guarantee callout | S5 | not started | |
@@ -150,7 +160,7 @@ The slices and their rules are in [bkm-build-prompt.md](bkm-build-prompt.md).
 | P11 | Payment methods | S9 | not started | |
 | P12 | Checkout | S9 | not started | |
 | P13 | Structured product content | S4 | not started | |
-| P14 | Catalog basics | S0 | done | Eight products, 14 variants with SKU, weight and one compare-at price, five collections, all in the admin and on the BKM storefront only |
+| P14 | Catalog basics | S0 | done | Eight products, 14 variants with SKU, weight and one compare-at price, five collections, all in the admin and on the Tallvik storefront only |
 | P15 | Add-on discount | S5 | not started | |
 | P16 | Returns and guarantee | S14 | not started | Guarantee terms page seeded |
 | P17 | Reviews | S11 | not started | |

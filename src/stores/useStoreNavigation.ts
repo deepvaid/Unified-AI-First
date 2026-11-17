@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
-import { BKM_MENUS } from '@/storefront/bkmDemo'
+import { TALLVIK_MENUS } from '@/storefront/tallvikDemo'
 
 // Storefront navigation menus (store editor ▸ Navigation).
 // Legacy parity notes (sandbox crawl 2026-07-10, docs/uat-parity/parity-tracker.md A06b):
@@ -246,7 +246,7 @@ function seedMenus(): StoreMenu[] {
 }
 
 export const useStoreNavigationStore = defineStore('storeNavigation', () => {
-  const menus = ref<StoreMenu[]>([...seedMenus(), ...BKM_MENUS.map((menu) => ({ ...menu, items: menu.items.map((item) => ({ ...item })) }))])
+  const menus = ref<StoreMenu[]>([...seedMenus(), ...TALLVIK_MENUS.map((menu) => ({ ...menu, items: menu.items.map((item) => ({ ...item })) }))])
 
   function menusForChannel(channelId: string): StoreMenu[] {
     return menus.value.filter((menu) => menu.channelId === channelId)

@@ -102,17 +102,19 @@ The same report, rendered: https://ai-first-maropost.vercel.app/bkm-health-requi
   third-party scripts in the storefront. Pixels and chat are simulated: log what would fire.
 - **Accessibility.** Every interactive element works from the keyboard and has a name. Storefront
   motion respects `prefers-reduced-motion`. Builder-only UI never leaks into the live storefront.
-- **Demo-ready for sales.** A prospect is watching, so in the BKM store and its admin screens:
+- **Demo-ready for sales.** A prospect is watching, so in the demo store and its admin screens:
   - nothing a visitor can click leads to a 404 or does nothing. Hide a control until its page exists
     (the header's search, account and wishlist are `headerTools` on the store's chrome);
   - every action gives visible feedback;
   - no internal wording on screen: no slice numbers, "reference store", "TODO", "mock" or "prototype"
-    in the BKM store's names, descriptions, copy or empty states;
+    in the demo store's names, descriptions, copy or empty states;
   - data looks real: plausible names, dates, amounts and stock, and no "Lorem ipsum";
   - walk the slice as a sales person would before you stop, and list anything that would embarrass a
     demo in your report.
-- **BKM content.** BKM is the reference customer:
-  - its catalog structure is fine as seed data (product names, variants, prices, plan rules, markets);
+- **BKM content.** BKM is the reference customer, and the demo store carries a fictional brand:
+  - BKM's name, product names and flavour names never appear in the demo store, on screen or in a
+    URL. Use the demo names in section 6 (`npm run test:storefront` fails if a real one comes back);
+  - its catalog structure is fine as seed data (variants, prices, plan rules, markets);
   - write your own short copy;
   - never copy BKM's long-form text, and never hotlink or download its images;
   - product imagery is generated placeholder art in the theme palette, for example SVG pack shots.
@@ -137,7 +139,7 @@ These are settled. Do not reopen them in a slice; if one blocks you, stop and as
    From S1 on, a section exists once and looks identical in the builder and on the storefront.
 3. **Templates are named and per type.** Each template type (home, product, collection, page, blog,
    article, search, cart, account) can hold several named templates (`product.default`,
-   `product.tranquil`). Products and pages pick one. The builder edits one at a time.
+   `product.unwind`). Products and pages pick one. The builder edits one at a time.
 4. **Sections read product data through bindings.** A section or block setting is either a static
    value or bound to a product field or product content field (S4). On a product template, bound
    values come from the product being viewed. In the builder they come from a chosen preview product.
@@ -174,20 +176,38 @@ These are settled. Do not reopen them in a slice; if one blocks you, stop and as
 
 ## 6. The demo store, and the end state
 
-S0 seeds a new sales channel **"BKM (demo)"**, id `bkm-demo`, with a theme called **"BKM"**.
-Use this reference data; it was crawled from bkm.health on 2026-11-13.
+S0 seeds a new sales channel **"Tallvik (demo)"**, id `tallvik-demo`, with a theme called **"Tallvik"**.
+
+**Tallvik is a fictional brand** (decided 2026-11-17). Sales people show this store to other
+prospects, so it must not carry BKM's name, product names or flavour names. It keeps the shape of
+BKM's catalog, prices, plans, markets and offers, because that is what the requirements test.
+When the report or the live site names something of BKM's, use the demo name:
+
+| BKM (report, live site) | Demo store |
+|---|---|
+| BKM | Tallvik |
+| BKM Electrolytes | Tallvik Electrolytes |
+| Elderflower & Lime · Swedish Berries | Lemon & Ginger · Wild Berries |
+| Tranquil | Unwind |
+| Ultra Focused | Clear Focus |
+| Glow+ | Collagen+ |
+| Life NAD+ | Daily NAD+ |
+| Harmonized · Harmonized Refill | Balance · Balance Refill |
+| Nasal Strips | Nasal Strips (a generic name, kept) |
+
+Use this reference data. It was crawled from bkm.health on 2026-11-13 and is written with the demo names.
 
 **Catalog (SEK, prices include VAT).** Every variant has a SKU and a weight; none has a barcode.
 
 | Product | Variants | Price (SEK) | Notes |
 |---|---|---|---|
-| BKM Electrolytes | Elderflower & Lime · Swedish Berries · Starter Pack (both flavours) | 279 · 279 · 499 | Starter Pack compare-at 558 |
-| Tranquil | Can · Bag | 419 · 399 | Covered by the 30-day money-back guarantee |
-| Ultra Focused | Original · Refill | 409 · 389 | |
-| Glow+ | Original · Refill | 429 · 409 | |
-| Life NAD+ | Original · Refill | 669 · 649 | |
-| Harmonized | single variant | 419 | "Specially made for women" |
-| Harmonized Refill | single variant | 419 | Separate product |
+| Tallvik Electrolytes | Lemon & Ginger · Wild Berries · Starter Pack (both flavours) | 279 · 279 · 499 | Starter Pack compare-at 558 |
+| Unwind | Can · Bag | 419 · 399 | Covered by the 30-day money-back guarantee |
+| Clear Focus | Original · Refill | 409 · 389 | |
+| Collagen+ | Original · Refill | 429 · 409 | |
+| Daily NAD+ | Original · Refill | 669 · 649 | |
+| Balance | single variant | 419 | Made for women |
+| Balance Refill | single variant | 419 | Separate product |
 | Nasal Strips | single variant | 199 | Used as the discounted add-on |
 
 **Collections:** All, Subscription (5 products), Sport, Longevity, Sleep, Hydrate.
@@ -200,11 +220,11 @@ Use this reference data; it was crawled from bkm.health on 2026-11-13.
 | 3-month supply | every 3 months | 3 | 30% | free shipping |
 | One-time purchase | once | 1 | none | |
 
-On Tranquil the 3-month plan ships 1 can + 2 refills. Tranquil also has a "Preorder" plan with no discount.
+On Unwind the 3-month plan ships 1 can + 2 refills. Unwind also has a "Preorder" plan with no discount.
 
 **Markets:**
 
-| Market | URL prefix | Currency | Tranquil Can | Tranquil Bag |
+| Market | URL prefix | Currency | Unwind Can | Unwind Bag |
 |---|---|---|---|---|
 | Sweden | none | SEK | 419 | 399 |
 | United Kingdom | `/en-gb` | GBP | 33.99 | 33.99 |
@@ -218,9 +238,9 @@ the currency label. Delivery goes to 33 countries (EU, UK, NO, CH, IS, US, AE).
 - free shipping over 549 kr;
 - dispatch the same day for orders before 10:00 CET on weekdays;
 - delivery estimate of 3 to 7 working days, with "Duties and taxes may apply" outside the EU;
-- the 30-day money-back guarantee applies to Tranquil only.
+- the 30-day money-back guarantee applies to Unwind only.
 
-**Theme "BKM":** Figtree for headings and body, Inconsolata as an accent face; navy `#0a2240`
+**Theme "Tallvik":** Figtree for headings and body, Inconsolata as an accent face; navy `#0a2240`
 primary on white; black text; border `#d3d3d3`; 8px button radius, solid buttons; sale badge
 `#6d52ff`; custom badge `#e4ff52`; sections fade in on scroll; product cards swap to a second image on hover.
 
@@ -234,9 +254,9 @@ primary on white; black text; border `#d3d3d3`; 8px button radius, solid buttons
    - tabbed collections;
    - logo marquee;
    - two overlapping-image story sections.
-2. They open the `product.tranquil` template and arrange the full storytelling stack: buy box, USP
+2. They open the `product.unwind` template and arrange the full storytelling stack: buy box, USP
    marquee, benefit pillars, comparison, curated reviews, ingredient cards, dosing steps, athlete
-   grid, FAQ, reviews, related products, sticky bar. The ingredient cards fill themselves from Tranquil's content fields.
+   grid, FAQ, reviews, related products, sticky bar. The ingredient cards fill themselves from Unwind's content fields.
 3. A shopper on `/en-gb` adds Electrolytes as a 3-month supply, sees the free-shipping bar, accepts
    cookies, and checks out in GBP with a local payment method.
 4. In the admin, the merchant sees the order tagged as a subscription and the new subscription
@@ -275,7 +295,7 @@ Run them in order. S11 to S15 depend only on S0 to S6, so the human may reorder 
 - Create `docs/store-builder/bkm-build-tracker.md` with two tables:
   - **Slices:** slice, status (`pending` / `in progress` / `done`), branch, commit, date, notes.
   - **Requirements:** one row per requirement ID (all 82), with slice, prototype status (`not started` / `partial` / `done` / `out of scope`) and a note.
-- Seed the `bkm-demo` sales channel with the catalog, collections, menus and theme from section 6:
+- Seed the `tallvik-demo` sales channel with the catalog, collections, menus and theme from section 6:
   - pages: About, Contact, Ambassadors, Money-back guarantee terms, Cookies;
   - policies: refund, privacy, terms;
   - one blog with three short original articles.
@@ -300,8 +320,8 @@ Run them in order. S11 to S15 depend only on S0 to S6, so the human may reorder 
 - Extend `TemplateType` to: home, product, collection, page, blog, article, search, cart, account.
 - The Add Section dialog lists only the sections allowed in the current template type.
 - **Acceptance:**
-  - create `product.tranquil`, assign it to Tranquil, and add a section only there;
-  - Tranquil shows the section and other products don't;
+  - create `product.unwind`, assign it to Unwind, and add a section only there;
+  - Unwind shows the section and other products don't;
   - canvas and storefront render identically;
   - existing stores are unchanged.
 
@@ -341,12 +361,12 @@ and a story. Where a section fits a Da Vinci phrasing, add it to `useThemeGenera
   - steps (title, body);
   - comparison rows (feature, us, them).
 - A "Content" card in the product editor to fill values.
-- Seed values for Tranquil and Electrolytes: subtitle, chips (No added sugar, Vegan, Made in Sweden, Gut-friendly), ingredients, supplement facts, FAQs, comparison rows, steps.
+- Seed values for Unwind and Electrolytes: subtitle, chips (No added sugar, Vegan, Made in Sweden, Gut-friendly), ingredients, supplement facts, FAQs, comparison rows, steps.
 - **Bindings (decision 4):**
   - a "Connect to product data" control in the inspector for compatible settings;
   - a preview-product picker in the builder for product templates;
   - on the storefront, a bound section with no value hides itself; in the builder it shows a hint instead.
-- **Acceptance:** one ingredient-list section on `product.default` shows different ingredients for Tranquil and Electrolytes.
+- **Acceptance:** one ingredient-list section on `product.default` shows different ingredients for Unwind and Electrolytes.
 
 ### S5. Product buy box and product card
 
@@ -386,7 +406,7 @@ and a story. Where a section fits a Da Vinci phrasing, add it to `useThemeGenera
 - Curated reviews grid (static quotes for now; bound to real reviews in S11).
 - Related products: source is same collection, manual pick, or a Merchandising recommendation engine.
 - Sticky add-to-cart bar: appears once the buy box scrolls out of view, with title, USPs and the button.
-- **Acceptance:** build `product.tranquil` and `product.electrolytes` in BKM's section order (see the report's "Section order by template"). They differ, and both work at desktop and 375px.
+- **Acceptance:** build `product.unwind` and `product.electrolytes` in BKM's section order (see the report's "Section order by template"). They differ, and both work at desktop and 375px.
 
 ### S7. Subscriptions I: plans, purchase options, checkout
 
@@ -452,7 +472,7 @@ and a story. Where a section fits a Da Vinci phrasing, add it to `useThemeGenera
   - Maropay's settlement currencies are a locked decision: ask before changing them.
 - **Checkout (P12):** discount code field, terms checkbox, marketing opt-in, an "incl. VAT" line.
 - **Acceptance:**
-  - Tranquil Can shows 419 kr on `/`, £33.99 on `/en-gb` and 159.00 PLN on `/en-pl`;
+  - Unwind Can shows 419 kr on `/`, £33.99 on `/en-gb` and 159.00 PLN on `/en-pl`;
   - the cart re-prices when the country changes;
   - a UK checkout offers the UK method set.
 
@@ -488,7 +508,7 @@ and a story. Where a section fits a Da Vinci phrasing, add it to `useThemeGenera
   - a reviews section with summary histogram, list, pagination, and a write-a-review form for verified buyers (mock);
   - the curated reviews grid (S6) binds to chosen published reviews;
   - product pages carry AggregateRating JSON-LD.
-- **Seed:** sample reviews with clearly fictional names and original text, for example 36 on Tranquil averaging 4.6.
+- **Seed:** sample reviews with clearly fictional names and original text, for example 36 on Unwind averaging 4.6.
 - **Acceptance:** hiding a 1-star review changes the average on the storefront.
 
 ### S12. Consent, pixels, app embeds, custom code
@@ -530,14 +550,14 @@ and a story. Where a section fits a Da Vinci phrasing, add it to `useThemeGenera
 ### S14. Retention and service
 
 - **Back in stock (P19):** "Notify me" on sold-out variants feeds a Marketing journey trigger; the admin can see requests per variant.
-- **Pre-orders (P28):** a variant setting "Pre-order" with a ship-date message; Tranquil's no-discount "Preorder" plan.
+- **Pre-orders (P28):** a variant setting "Pre-order" with a ship-date message; Unwind's no-discount "Preorder" plan.
 - **Storefront events into Marketing (P20):** viewed product, added to cart, started checkout and placed order feed a seeded abandoned-cart journey. The footer signup adds a contact to a list with its consent.
 - **Chat and help (T08, P23):**
   - a storefront chat bubble backed by the store's Chatbot page;
   - Service tickets show the customer's orders and subscriptions (extend `TicketOrdersPanel`).
 - **Returns and guarantee (P16):**
   - a "Start return / money-back refund" flow on the order;
-  - eligibility rule: Tranquil only, within 30 days of delivery.
+  - eligibility rule: Unwind only, within 30 days of delivery.
 
 ### S15. Import from Shopify
 
@@ -551,8 +571,8 @@ and a story. Where a section fits a Da Vinci phrasing, add it to `useThemeGenera
 
 ### S16. Assemble the BKM demo and walkthrough
 
-- Rebuild the BKM theme through the builder UI so the seed matches what a merchant would produce. Fix whatever the walk-through exposes.
-- Write `docs/store-builder/bkm-demo-script.md`: the 10-minute walkthrough from section 6, with the exact clicks and URLs.
+- Rebuild the Tallvik theme through the builder UI so the seed matches what a merchant would produce. Fix whatever the walk-through exposes.
+- Write `docs/store-builder/tallvik-demo-script.md`: the 10-minute walkthrough from section 6, with the exact clicks and URLs.
 - Run every test script and `npm run type-check`, and do a full browser pass at desktop and 375px.
 - Mark agentic-commerce endpoints (P26) and anything else not built as `out of scope` in the tracker, with a reason.
 
@@ -576,7 +596,7 @@ and a story. Where a section fits a Da Vinci phrasing, add it to `useThemeGenera
    - Check desktop and 375px.
    - For every new section, compare the builder canvas against the live storefront.
    - Check keyboard use and focus on new controls.
-   - Walk the BKM store as a sales person would: click every new link and control, and look for dead
+   - Walk the demo store as a sales person would: click every new link and control, and look for dead
      ends and internal wording (section 3, "Demo-ready for sales").
 5. **Document.**
    - Stories for new reusable components and new storefront sections.

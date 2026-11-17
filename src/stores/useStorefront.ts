@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import type { SalesChannel } from './useSalesChannels'
-import { BKM_CHANNEL_ID, BKM_CHROME } from '@/storefront/bkmDemo'
+import { TALLVIK_CHANNEL_ID, TALLVIK_CHROME } from '@/storefront/tallvikDemo'
 
 // The shopper-facing storefront's chrome — header, menus and footer — as the store
 // renders it. Neelam-Store's comes from the UAT crawl (docs/rebuild/neelam-store/
@@ -109,7 +109,7 @@ const NEELAM_STORE: StorefrontChrome = {
 
 const CHROME_BY_CHANNEL: Record<string, StorefrontChrome> = {
   'neelam-store': NEELAM_STORE,
-  [BKM_CHANNEL_ID]: BKM_CHROME,
+  [TALLVIK_CHANNEL_ID]: TALLVIK_CHROME,
 }
 
 export const useStorefrontStore = defineStore('storefront', () => {
