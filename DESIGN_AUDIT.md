@@ -2620,3 +2620,18 @@ prospects, so BKM's name is off the screen:
 - products: Tranquil → Unwind, Ultra Focused → Clear Focus, Life NAD+ → Daily NAD+, Glow+ →
   Collagen+, Harmonized → Balance, BKM Electrolytes → Vitaheal Electrolytes (flavours Lemon & Ginger,
   Wild Berries); SKUs `BKM-…` → `VTH-…`. Prices, collections and theme values are unchanged.
+
+**Demo pass, part 1 (2026-11-17) — the demo store looks like the reference store, with photos.**
+
+- New theme section kind `image-with-text` (heading, body, button label and link, image side);
+  `image-banner` gains a `subheadline` field. Sections and the `collection` block may carry an
+  `image` setting (a path under `/public`); there is no builder field for it yet.
+- `StorefrontChrome.announcementAboveHeader` (optional): the theme's announcement bar is drawn by
+  `StorefrontLayout` above the header on every page, and the home page no longer repeats it.
+- Storefront header: `.sf-logo` is pinned to the middle grid column and `.sf-tools` to the last,
+  so a store with no social links no longer shows its logo at the start and its cart in the middle.
+- Product card shows `imageUrls[1]` on hover and focus; the product page has a thumbnail gallery;
+  the checkout summary shows the product photo.
+- `vitahealDemo.ts`: products name stock photos instead of generated pack shots (`ProductSeed.shape`
+  and `accent` are gone; `photo` replaces them); new exports `VITAHEAL_PHOTO_DIR`, `VITAHEAL_PHOTOS`.
+  `src/storefront/packShot.ts` is unused until part 2 (the picture for a product added without one).

@@ -47,6 +47,8 @@ export interface StorefrontChrome {
   footerColumns: StorefrontFooterColumn[]
   newsletter: StorefrontNewsletter | null
   copyright: string
+  /** Show the theme's announcement bar above the header on every page, not in the home page's flow. */
+  announcementAboveHeader?: boolean
 }
 
 const NEELAM_STORE: StorefrontChrome = {

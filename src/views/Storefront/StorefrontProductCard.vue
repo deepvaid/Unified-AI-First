@@ -8,8 +8,9 @@ import { STOREFRONT } from './storefrontContext'
 import { CATEGORY_ICONS, inStock, priceOf, productHandle } from './storefrontCatalog'
 
 // A product in a grid (home, collections, "You may also like"). A product with
-// pictures shows its first; one whose variants differ in price shows the lowest
-// after "From". Products without either look as they always did.
+// pictures shows its first, and its second while the card is hovered or focused;
+// one whose variants differ in price shows the lowest after "From". Products
+// without either look as they always did.
 
 const props = defineProps<{ product: Product }>()
 const storefront = inject(STOREFRONT)!
@@ -19,6 +20,7 @@ const price = computed(() => {
   return storefront.formatMoney(parseDecimal(lowestPrice(props.product), currency) ?? priceOf(props.product, currency))
 })
 const image = computed(() => props.product.imageUrls?.[0])
+const secondImage = computed(() => props.product.imageUrls?.[1])
 const subtitle = computed(() => props.product.detail?.subtitle.trim())
 </script>
 
@@ -26,6 +28,7 @@ const subtitle = computed(() => props.product.detail?.subtitle.trim())
   <StorefrontAnchor :href="`/products/${productHandle(product)}`" class="sf-card">
     <span class="sf-card__media" aria-hidden="true">
       <img v-if="image" :src="image" alt="" class="sf-card__image" loading="lazy">
+      <img v-if="image && secondImage" :src="secondImage" alt="" class="sf-card__image sf-card__image--second" loading="lazy">
       <v-icon v-else size="44">{{ CATEGORY_ICONS[product.category] ?? 'package' }}</v-icon>
       <span v-if="!inStock(product)" class="sf-card__tag">Sold out</span>
     </span>
@@ -82,6 +85,24 @@ const subtitle = computed(() => props.product.detail?.subtitle.trim())
   height: 100%;
   border-radius: inherit;
   object-fit: cover;
+}
+
+.sf-card__image--second {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.sf-card:hover .sf-card__image--second,
+.sf-card:focus-visible .sf-card__image--second {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sf-card__image--second {
+    transition: none;
+  }
 }
 
 .sf-card__subtitle {

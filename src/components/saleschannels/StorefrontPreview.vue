@@ -198,6 +198,15 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
             <strong>{{ text(section, 'headline', 'Image banner') }}</strong>
           </div>
 
+          <div v-else-if="section.kind === 'image-with-text'" class="sf-story" :class="{ 'sf-story--flip': section.settings.imageSide === 'Right' }">
+            <span class="sf-story__media" aria-hidden="true" />
+            <div class="sf-story__copy">
+              <strong class="sf-heading">{{ text(section, 'heading', 'Image with text') }}</strong>
+              <p>{{ text(section, 'body', 'Add a short paragraph beside the photograph.') }}</p>
+              <span v-if="text(section, 'buttonLabel')" class="sf-btn">{{ text(section, 'buttonLabel') }}</span>
+            </div>
+          </div>
+
           <div v-else-if="section.kind === 'rich-text'" class="sf-richtext" :class="{ 'sf-richtext--center': section.settings.alignment === 'Center' }">
             <strong class="sf-heading">{{ text(section, 'heading', 'Rich text heading') }}</strong>
             <p>{{ text(section, 'body', 'Add body copy to tell your brand story.') }}</p>
@@ -1002,6 +1011,34 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
 .sf-banner strong {
   font-family: var(--sf-heading-font);
   font-size: 16px;
+}
+
+.sf-story {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 16px;
+}
+
+.sf-story__media {
+  aspect-ratio: 4 / 3;
+  border-radius: var(--sf-radius);
+  background: var(--sf-soft-fill);
+}
+
+.sf-story--flip .sf-story__media {
+  order: 2;
+}
+
+.sf-story__copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.sf-story__copy p {
+  margin: 0;
 }
 
 .sf-richtext {

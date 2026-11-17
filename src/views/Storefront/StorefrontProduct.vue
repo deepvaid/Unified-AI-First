@@ -43,9 +43,12 @@ const description = computed(() => {
 
 const qty = ref(1)
 const added = ref(false)
+/** Which of the product's pictures the gallery shows large. */
+const shown = ref(0)
 watch(product, () => {
   qty.value = 1
   added.value = false
+  shown.value = 0
 })
 watch(qty, (value) => {
   if (!Number.isFinite(value) || value < 1) qty.value = 1
@@ -78,8 +81,24 @@ function buyNow(methodId: string): void {
     </nav>
 
     <div class="sf-pdp__main">
-      <div v-if="product.imageUrls?.length" class="sf-pdp__media">
-        <img :src="product.imageUrls[0]" :alt="product.name" class="sf-pdp__image">
+      <div v-if="product.imageUrls?.length" class="sf-pdp__gallery">
+        <div class="sf-pdp__media">
+          <img :src="product.imageUrls[shown] ?? product.imageUrls[0]" :alt="product.name" class="sf-pdp__image">
+        </div>
+        <ul v-if="product.imageUrls.length > 1" class="sf-pdp__thumbs" :aria-label="`Pictures of ${product.name}`">
+          <li v-for="(url, index) in product.imageUrls" :key="url">
+            <button
+              type="button"
+              class="sf-pdp__thumb"
+              :class="{ 'sf-pdp__thumb--on': shown === index }"
+              :aria-label="`Show picture ${index + 1} of ${product.imageUrls.length}`"
+              :aria-current="shown === index ? 'true' : undefined"
+              @click="shown = index"
+            >
+              <img :src="url" alt="">
+            </button>
+          </li>
+        </ul>
       </div>
       <!-- Stands in for the product photographs. -->
       <div v-else class="sf-pdp__media" aria-hidden="true">
@@ -184,6 +203,58 @@ function buyNow(methodId: string): void {
   border-radius: 8px;
   background: linear-gradient(160deg, #f4f4f2 0%, #e6e5e1 100%);
   color: #8a8780;
+}
+
+/* A product with pictures: the large one, then a thumbnail for each. The pair stays in view together. */
+.sf-pdp__gallery {
+  position: sticky;
+  top: 24px;
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.sf-pdp__gallery .sf-pdp__media {
+  position: static;
+}
+
+.sf-pdp__thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sf-pdp__thumb {
+  display: block;
+  width: 72px;
+  aspect-ratio: 1;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background: none;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.sf-pdp__thumb--on {
+  border-color: var(--sf-text, #121011);
+}
+
+.sf-pdp__thumb:focus-visible {
+  outline: 2px solid var(--sf-accent, #2563eb);
+  outline-offset: 2px;
+}
+
+.sf-pdp__thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .sf-pdp__info {
@@ -328,7 +399,8 @@ function buyNow(methodId: string): void {
     gap: 24px;
   }
 
-  .sf-pdp__media {
+  .sf-pdp__media,
+  .sf-pdp__gallery {
     position: static;
   }
 

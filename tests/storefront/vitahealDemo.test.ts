@@ -1,7 +1,8 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { existsSync } from 'node:fs'
 import {
-  VITAHEAL_BLOG_SEO, VITAHEAL_CHANNEL, VITAHEAL_CHANNEL_ID, VITAHEAL_CHROME, VITAHEAL_COLLECTIONS, VITAHEAL_CONTENT, VITAHEAL_MENUS, VITAHEAL_THEME_STYLES, vitahealProducts,
+  VITAHEAL_BLOG_SEO, VITAHEAL_CHANNEL, VITAHEAL_CHANNEL_ID, VITAHEAL_CHROME, VITAHEAL_COLLECTIONS, VITAHEAL_CONTENT, VITAHEAL_MENUS, VITAHEAL_PHOTOS, VITAHEAL_THEME_STYLES, vitahealProducts,
 } from '../../src/storefront/vitahealDemo.ts'
 import { catalogFor, hasPriceRange } from '../../src/storefront/catalog.ts'
 
@@ -89,6 +90,15 @@ test('the content is the pages, policies and posts the store needs', () => {
     assert.equal(e.channelId, VITAHEAL_CHANNEL_ID)
     assert.equal(e.status, 'Active')
     assert.ok(e.body.length > 80 && e.seoDescription, `${e.title} has a body and a description`)
+  }
+})
+
+test('every photo the store names is a file in public/, so nothing is loaded from another site', () => {
+  const photos = [...Object.values(VITAHEAL_PHOTOS), ...products.flatMap((p) => p.imageUrls!)]
+  assert.equal(photos.length, 7 + 8 * 2)
+  for (const photo of photos) {
+    assert.match(photo, /^\/storefront\/vitaheal\/[a-z0-9-]+\.jpg$/)
+    assert.ok(existsSync(new URL(`../../public${photo}`, import.meta.url)), `${photo} exists`)
   }
 })
 

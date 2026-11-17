@@ -117,7 +117,11 @@ The same report, rendered: https://ai-first-maropost.vercel.app/bkm-health-requi
   - its catalog structure is fine as seed data (variants, prices, plan rules, markets);
   - write your own short copy;
   - never copy BKM's long-form text, and never hotlink or download its images;
-  - product imagery is generated placeholder art in the theme palette, for example SVG pack shots.
+  - imagery is free-licence stock photography kept in the repo under `public/storefront/vitaheal/`,
+    with each photo's source in that folder's `CREDITS.md` (decided by the human, 2026-11-17). Check
+    every photo before adding it: no other brand's name or logo in shot. The storefront never loads
+    a picture from another site. A product added without a photo gets a drawn pack shot
+    (`src/storefront/packShot.ts`).
 - **npm only** (no pnpm). Keep `npm run type-check` clean.
 
 ## 4. Locked architecture decisions

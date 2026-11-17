@@ -57,7 +57,7 @@ This is NOT a production app — it uses mock data and has no backend API.
 │   │   └── settings/          ← SettingsSection, SettingsPlaceholder, settingsMenu (rail = MpSectionRail)
 │   ├── maropay/               ← Maropay domain logic — pure TS, node:test-importable (see docs/maropay/)
 │   ├── services/maropay/      ← Deterministic mock adapter for the payments partner
-│   ├── storefront/            ← Storefront rules — pure TS, node:test-importable: store catalogue, price format, pack-shot art, and the Vitaheal (demo) store seed (see docs/store-builder/)
+│   ├── storefront/            ← Storefront rules — pure TS, node:test-importable: store catalogue, price format, pack-shot art, and the Vitaheal (demo) store seed, whose photos are in `public/storefront/vitaheal/` (see docs/store-builder/)
 │   ├── design-tokens/
 │   │   ├── tokens.json        ← SOURCE OF TRUTH for all design values
 │   │   ├── build.mjs          ← Generates SCSS/CSS/TS from tokens.json

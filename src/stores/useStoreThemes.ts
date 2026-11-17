@@ -13,7 +13,7 @@ import {
   type ThemeStyles,
 } from './themeBuilderData'
 import { useSalesChannelsStore } from './useSalesChannels'
-import { VITAHEAL_CHANNEL_ID, VITAHEAL_THEME_STYLES } from '@/storefront/vitahealDemo'
+import { VITAHEAL_CHANNEL_ID, VITAHEAL_PHOTOS, VITAHEAL_THEME_STYLES } from '@/storefront/vitahealDemo'
 
 function nowIso() {
   return new Date().toISOString()
@@ -158,6 +158,7 @@ function seedThemes(): StoreTheme[] {
     },
     // Vitaheal (demo): the fictional store that stands in for BKM Health (docs/store-builder/bkm-build-prompt.md).
     // Built from the section kinds that exist today; slices S2, S3 and S6 add the sections that build needs.
+    // The home page follows the reference store's order: hero, range, a story, goals, a second story.
     {
       id: 'theme-vitaheal',
       channelId: VITAHEAL_CHANNEL_ID,
@@ -171,19 +172,40 @@ function seedThemes(): StoreTheme[] {
           createSection('announcement-bar', { text: 'Free shipping over 549 kr · Made in Sweden · 30-day money-back guarantee on Unwind' }, 'vitaheal-home-announcement'),
           createSection('header', { menuStyle: 'Centered' }, 'vitaheal-home-header'),
           {
-            ...createSection('image-banner', { headline: 'Supplements that do one job well', height: 'Medium' }, 'vitaheal-home-banner'),
+            ...createSection('image-banner', {
+              headline: 'Supplements that do one job well',
+              subheadline: 'Sleep, focus and recovery, made in Sweden and delivered to your door.',
+              height: 'Large',
+              image: VITAHEAL_PHOTOS.hero,
+            }, 'vitaheal-home-banner'),
             blocks: [createBlock('button', { label: 'Shop all products', link: '/collections/all' }, 'vitaheal-banner-button')],
           },
           createSection('featured-products', { title: 'Our range', productCount: 8 }, 'vitaheal-home-featured'),
+          createSection('image-with-text', {
+            heading: 'Unwind helps you switch off, sleep deeply and wake up ready',
+            body: 'One warm cup about an hour before bed. Nothing in it knocks you out; it helps your body do what it already knows how to do.',
+            buttonLabel: 'Shop Unwind',
+            buttonLink: '/products/unwind-2001',
+            imageSide: 'Left',
+            image: VITAHEAL_PHOTOS.storyUnwind,
+          }, 'vitaheal-home-story-unwind'),
           {
             ...createSection('collection-grid', { title: 'Shop by goal', columns: 3 }, 'vitaheal-home-collections'),
             blocks: [
-              createBlock('collection', { label: 'Sleep', link: '/collections/sleep' }, 'vitaheal-collection-sleep'),
-              createBlock('collection', { label: 'Sport', link: '/collections/sport' }, 'vitaheal-collection-sport'),
-              createBlock('collection', { label: 'Longevity', link: '/collections/longevity' }, 'vitaheal-collection-longevity'),
-              createBlock('collection', { label: 'Hydrate', link: '/collections/hydrate' }, 'vitaheal-collection-hydrate'),
+              createBlock('collection', { label: 'Sleep', link: '/collections/sleep', image: VITAHEAL_PHOTOS.tileSleep }, 'vitaheal-collection-sleep'),
+              createBlock('collection', { label: 'Sport', link: '/collections/sport', image: VITAHEAL_PHOTOS.tileSport }, 'vitaheal-collection-sport'),
+              createBlock('collection', { label: 'Longevity', link: '/collections/longevity', image: VITAHEAL_PHOTOS.tileLongevity }, 'vitaheal-collection-longevity'),
+              createBlock('collection', { label: 'Hydrate', link: '/collections/hydrate', image: VITAHEAL_PHOTOS.tileHydrate }, 'vitaheal-collection-hydrate'),
             ],
           },
+          createSection('image-with-text', {
+            heading: 'Clear Focus keeps your mind sharp and your energy steady',
+            body: 'Two capsules with breakfast, for long days at a desk or a long session on the road. No jitters, no afternoon dip.',
+            buttonLabel: 'Shop Clear Focus',
+            buttonLink: '/products/clear-focus-2002',
+            imageSide: 'Right',
+            image: VITAHEAL_PHOTOS.storyFocus,
+          }, 'vitaheal-home-story-focus'),
           createSection('rich-text', { heading: 'Subscribe and save 20%', body: 'Most of our customers subscribe. You get every delivery for less, and you can skip, pause or cancel whenever you like.', alignment: 'Center' }, 'vitaheal-home-subscribe'),
           createSection('newsletter', { headline: 'Get the Vitaheal letter' }, 'vitaheal-home-newsletter'),
           createSection('footer', { showSocial: false, columns: 3 }, 'vitaheal-home-footer'),

@@ -64,6 +64,30 @@ The slices and their rules are in [bkm-build-prompt.md](bkm-build-prompt.md).
 - The sale and custom badge colours are theme settings but nothing draws those badges yet (S5). The sold-out tag uses its setting.
 - The storefront still shows a search box (the reference site has none) and a single product image without a gallery (S2, S5).
 
+**Demo pass (2026-11-17, asked for by the human; branch `feature/vitaheal-demo-pass`).** Not a
+slice: the human asked for four things so sales people can show the store now, delivered in parts
+with a review after each. Each part pulls small pieces forward from later slices; what is listed
+here already exists when those slices start.
+
+- **Part 1, the look with photos (done).** The human chose free stock photos over drawn or
+  AI-made pictures.
+  - 23 Unsplash photos in `public/storefront/vitaheal/` (2 MB), credited in its `CREDITS.md`;
+    `VITAHEAL_PHOTOS` and each product's two pictures name them, and a test checks every file exists.
+  - From S2: the announcement bar sits above the header on every page of a store that asks for it
+    (`announcementAboveHeader` on the store's chrome); the logo is centred and the cart at the end
+    for a store with no social links; a product card shows its second photo on hover and focus.
+  - From S3: `image-banner` and `hero` draw a photo from an `image` setting, and `image-banner`
+    has a subheadline; the `collection` block draws a photo; new section kind `image-with-text`
+    (storefront, plus a placeholder in the builder canvas). There is no image picker in the
+    builder yet: the `image` setting is seeded. S3 adds the picker, and S1 still has to move these
+    into the section registry.
+  - From S5: the product page has a gallery with thumbnails (no zoom yet).
+  - Cart and checkout summary lines show the product photo.
+  - Other stores: Neelam-Store's home and "All" collection measured identical before and after
+    (position, size, colour and font size of every element).
+- **Part 2 (add a product, keep changes with a restore), Part 3 (subscription plans) and Part 4
+  (the shopper journey end to end):** not started.
+
 **Sales-demo pass (added 2026-11-16, after the audience was confirmed as sales people showing prospects):**
 
 - The header's search, account and wishlist are hidden on Vitaheal (demo) until their pages exist (`headerTools` on the store's chrome). S13 turns search on, S8 the account.
@@ -100,7 +124,7 @@ The slices and their rules are in [bkm-build-prompt.md](bkm-build-prompt.md).
 
 | ID | Requirement | Slice | Prototype status | Note |
 |---|---|---|---|---|
-| T01 | Announcement bar | S2 | not started | Existing single-message bar is used by the Vitaheal theme |
+| T01 | Announcement bar | S2 | partial | Single-message bar, above the header on every page of the Vitaheal store (demo pass). Open: rotating messages, link, dismiss |
 | T02 | Header over hero | S2 | not started | |
 | T03 | Dropdown navigation | S2 | not started | Menus seeded flat |
 | T04 | Cart drawer | S10 | not started | |
@@ -108,7 +132,7 @@ The slices and their rules are in [bkm-build-prompt.md](bkm-build-prompt.md).
 | T06 | Country and currency selector | S9 | not started | |
 | T07 | Cookie consent banner | S12 | not started | Cookies page seeded |
 | T08 | Chat bubble and help centre | S14 | not started | |
-| T09 | Motion | S2 | not started | |
+| T09 | Motion | S2 | partial | Second photo on card hover and focus, off for reduced motion (demo pass). Open: scroll reveal, the motion setting |
 | T10 | Search | S13 | not started | |
 | T11 | Template per product | S1 | not started | |
 | T12 | Custom sections in code | S12 | not started | |
@@ -121,8 +145,8 @@ The slices and their rules are in [bkm-build-prompt.md](bkm-build-prompt.md).
 | T19 | Collection page | S1 | not started | |
 | T20 | Account pages | S8 | not started | |
 | T21 | Theme settings | S0 | partial | Figtree and Inconsolata, navy scheme, 8px buttons and the three badge colours are theme settings, with a Badges group in the Styles tab. Open: custom hex colours, border colour, accent font |
-| T22 | Video hero | S3 | not started | |
-| T23 | Image with text | S3 | not started | |
+| T22 | Video hero | S3 | partial | A photo hero with headline, subheadline and button (demo pass). Open: video, poster, overlay setting |
+| T23 | Image with text | S3 | partial | Section drawn on the storefront with a seeded photo, placeholder in the builder (demo pass). Open: image picker, registry (S1) |
 | T24 | Tabbed collections | S3 | not started | |
 | T25 | Logo slider | S3 | not started | |
 | T26 | Overlapping images story | S3 | not started | |
@@ -133,7 +157,7 @@ The slices and their rules are in [bkm-build-prompt.md](bkm-build-prompt.md).
 | T31 | Mosaic and quote grid | S3 | not started | |
 | T32 | Instagram feed | S3 | not started | |
 | T33 | Newsletter signup | S1 | not started | Section seeded on the Vitaheal home; the storefront does not draw it yet |
-| T34 | Media gallery | S5 | not started | One generated image shows; two are seeded per product |
+| T34 | Media gallery | S5 | partial | Large photo with a thumbnail strip, two photos per product (demo pass). Open: zoom lightbox, badge over the image, video |
 | T35 | Rating stars | S5 | not started | |
 | T36 | Subtitle, badges, chips | S5 | partial | Subtitle shows on the card and the product page (S0) |
 | T37 | Button variant picker | S5 | not started | Variants seeded; the page sells the lowest-priced one |
@@ -153,7 +177,7 @@ The slices and their rules are in [bkm-build-prompt.md](bkm-build-prompt.md).
 | T51 | Athlete grid | S6 | not started | |
 | T52 | Curated reviews grid | S6 | not started | |
 | T53 | Related products | S6 | not started | |
-| T54 | Product card | S5 | partial | Picture, subtitle and "From" price (S0). Open: hover image, rating, badge |
+| T54 | Product card | S5 | partial | Photo, second photo on hover, subtitle and "From" price. Open: rating, badge |
 | P01 | Subscription plans | S7 | not started | |
 | P02 | Recurring billing | S8 | not started | |
 | P03 | Subscriber portal | S8 | not started | |

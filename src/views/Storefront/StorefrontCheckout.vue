@@ -83,6 +83,11 @@ function iconFor(line: CheckoutLineItem): string {
   return (category && CATEGORY_ICONS[category]) || 'package'
 }
 
+/** The product's first picture, for a line whose product has one. */
+function imageFor(line: CheckoutLineItem): string | undefined {
+  return commerce.products.find((p) => p.sku === line.sku)?.imageUrls?.[0]
+}
+
 const editHref = computed(() => (buyNow.value ? `/products/${productHandle(buyNow.value.product)}` : '/cart-page'))
 
 // ── Form ─────────────────────────────────────────────────────────────
@@ -430,7 +435,8 @@ const storePaymentsHref = computed(() => router.resolve({ name: MAROPAY_STORE_RO
           <ul class="sf-co__lines">
             <li v-for="line in shownLines" :key="line.sku">
               <span class="sf-co__thumb" aria-hidden="true">
-                <v-icon size="22">{{ iconFor(line) }}</v-icon>
+                <img v-if="imageFor(line)" :src="imageFor(line)" alt="" class="sf-co__thumb-image">
+                <v-icon v-else size="22">{{ iconFor(line) }}</v-icon>
                 <span class="sf-co__qty">{{ line.qty }}</span>
               </span>
               <span class="sf-co__line-name">{{ line.product }}<span class="sr-only">, quantity {{ line.qty }}</span></span>
@@ -683,6 +689,13 @@ legend.sf-co__step-title {
   align-items: center;
   gap: 12px;
   font-size: 14px;
+}
+
+.sf-co__thumb-image {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
 }
 
 .sf-co__thumb {

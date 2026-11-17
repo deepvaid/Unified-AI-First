@@ -15,7 +15,8 @@
 //
 // The catalogue has the shape of BKM's (variants, SEK prices, collections), which
 // is what the requirements test. The brand, product and flavour names are made up,
-// the copy is written for this prototype, and the pictures are generated pack shots.
+// the copy is written for this prototype, and the pictures are free-licence stock
+// photos kept in public/storefront/vitaheal (credits in its CREDITS.md), never BKM's.
 //
 // Everything a visitor can see or click must read like a real store: no internal
 // wording, no link to a missing page, and never BKM's name (the test checks that).
@@ -28,8 +29,6 @@ import type { SalesChannel } from '../stores/useSalesChannels.ts'
 import type { ContentEntry, BlogSeoSettings } from '../stores/useStoreContent.ts'
 import type { StoreMenu } from '../stores/useStoreNavigation.ts'
 import type { StorefrontChrome } from '../stores/useStorefront.ts'
-import { packShot } from './packShot.ts'
-import type { PackShape } from './packShot.ts'
 
 export const VITAHEAL_CHANNEL_ID = 'vitaheal-demo'
 export const VITAHEAL_CHANNEL_NAME = 'Vitaheal (demo)'
@@ -75,8 +74,19 @@ export const VITAHEAL_THEME_STYLES: ThemeStyles = {
   soldOutBadgeColor: '#000000',
 }
 
-/** The pale backdrop the pack shots sit on. */
-const PACK_BACKDROP = '#f2f4f7'
+/** Where the store's photos live, as the browser asks for them (the files are in public/). */
+export const VITAHEAL_PHOTO_DIR = '/storefront/vitaheal'
+
+/** The photos the theme's home page uses. Product photos are named on each product. */
+export const VITAHEAL_PHOTOS = {
+  hero: `${VITAHEAL_PHOTO_DIR}/hero.jpg`,
+  storyUnwind: `${VITAHEAL_PHOTO_DIR}/story-unwind.jpg`,
+  storyFocus: `${VITAHEAL_PHOTO_DIR}/story-focus.jpg`,
+  tileSleep: `${VITAHEAL_PHOTO_DIR}/tile-sleep.jpg`,
+  tileSport: `${VITAHEAL_PHOTO_DIR}/tile-sport.jpg`,
+  tileLongevity: `${VITAHEAL_PHOTO_DIR}/tile-longevity.jpg`,
+  tileHydrate: `${VITAHEAL_PHOTO_DIR}/tile-hydrate.jpg`,
+} as const
 
 // ── Catalogue ────────────────────────────────────────────────────────────────
 
@@ -98,9 +108,8 @@ interface ProductSeed {
   name: string
   subtitle: string
   description: string
-  shape: PackShape
-  /** The stripe on the pack shot. */
-  accent: string
+  /** Its two photos are `<photo>-1.jpg` (the pack) and `<photo>-2.jpg` in VITAHEAL_PHOTO_DIR. */
+  photo: string
   /** The option the variants differ by; absent for a single-variant product. */
   option?: string
   variants: VariantSeed[]
@@ -115,8 +124,7 @@ const PRODUCT_SEEDS: ProductSeed[] = [
     name: 'Unwind',
     subtitle: 'Sleep and calm',
     description: 'An evening drink mix for winding down. Stir one scoop into warm water about an hour before bed. Covered by our 30-day money-back guarantee.',
-    shape: 'can',
-    accent: '#6d52ff',
+    photo: 'unwind',
     option: 'Format',
     variants: [
       { title: 'Can', sku: 'VTH-UNW-CAN', price: 419, weightKg: 0.32, stock: 140 },
@@ -129,8 +137,7 @@ const PRODUCT_SEEDS: ProductSeed[] = [
     name: 'Clear Focus',
     subtitle: 'Focus and steady energy',
     description: 'A daily capsule for long working days and hard training blocks. Take two with breakfast.',
-    shape: 'can',
-    accent: '#ff9d5c',
+    photo: 'clear-focus',
     option: 'Format',
     variants: [
       { title: 'Original', sku: 'VTH-FOC-ORG', price: 409, weightKg: 0.12, stock: 120 },
@@ -143,8 +150,7 @@ const PRODUCT_SEEDS: ProductSeed[] = [
     name: 'Daily NAD+',
     subtitle: 'Longevity and cellular energy',
     description: 'Our longevity formula, built around an NAD+ precursor. One capsule each morning.',
-    shape: 'can',
-    accent: '#7fd0ff',
+    photo: 'daily-nad',
     option: 'Format',
     variants: [
       { title: 'Original', sku: 'VTH-NAD-ORG', price: 669, weightKg: 0.11, stock: 74 },
@@ -157,8 +163,7 @@ const PRODUCT_SEEDS: ProductSeed[] = [
     name: 'Nasal Strips',
     subtitle: 'Easier breathing, day or night',
     description: 'Drug-free strips that gently open the nose. Thirty in a box, for sleep and for training.',
-    shape: 'strips',
-    accent: '#9db7d9',
+    photo: 'nasal-strips',
     variants: [{ title: 'Default', sku: 'VTH-NSL-30', price: 199, weightKg: 0.04, stock: 210 }],
     collections: ['Sleep', 'Sport'],
   },
@@ -167,8 +172,7 @@ const PRODUCT_SEEDS: ProductSeed[] = [
     name: 'Vitaheal Electrolytes',
     subtitle: 'Daily hydration, no added sugar',
     description: 'Sodium, potassium and magnesium in a single stick. Mix with half a litre of water before, during or after training.',
-    shape: 'box',
-    accent: '#e4ff52',
+    photo: 'electrolytes',
     option: 'Flavour',
     variants: [
       { title: 'Lemon & Ginger', sku: 'VTH-ELE-LEM', price: 279, weightKg: 0.18, stock: 180 },
@@ -182,8 +186,7 @@ const PRODUCT_SEEDS: ProductSeed[] = [
     name: 'Collagen+',
     subtitle: 'Skin, hair and joints',
     description: 'Collagen with vitamin C in an unflavoured powder. One scoop a day, in coffee, a smoothie or water.',
-    shape: 'can',
-    accent: '#f4c6dd',
+    photo: 'collagen',
     option: 'Format',
     variants: [
       { title: 'Original', sku: 'VTH-COL-ORG', price: 429, weightKg: 0.3, stock: 110 },
@@ -196,8 +199,7 @@ const PRODUCT_SEEDS: ProductSeed[] = [
     name: 'Balance Refill',
     subtitle: 'Made for women',
     description: 'The refill bag for Balance. Pour it into the can you already own.',
-    shape: 'bag',
-    accent: '#f2b8a0',
+    photo: 'balance-refill',
     variants: [{ title: 'Default', sku: 'VTH-BAL-REF', price: 419, weightKg: 0.26, stock: 68 }],
     collections: ['Longevity'],
   },
@@ -206,8 +208,7 @@ const PRODUCT_SEEDS: ProductSeed[] = [
     name: 'Balance',
     subtitle: 'Made for women',
     description: 'A daily blend for steady energy through the month. One scoop in water, any time of day.',
-    shape: 'can',
-    accent: '#f2b8a0',
+    photo: 'balance',
     variants: [{ title: 'Default', sku: 'VTH-BAL-CAN', price: 419, weightKg: 0.3, stock: 90 }],
     collections: ['Longevity'],
   },
@@ -239,7 +240,6 @@ function toVariant(seed: ProductSeed, v: VariantSeed, index: number): ProductVar
 export function vitahealProducts(): Omit<Product, 'status'>[] {
   return PRODUCT_SEEDS.map((seed) => {
     const lowest = seed.variants.reduce((min, v) => (v.price < min.price ? v : min))
-    const art = { name: seed.name, shape: seed.shape, ink: VITAHEAL_THEME_STYLES.brandColor, surface: PACK_BACKDROP, accent: seed.accent }
     const multi = seed.variants.length > 1
     return {
       id: seed.id,
@@ -258,7 +258,7 @@ export function vitahealProducts(): Omit<Product, 'status'>[] {
       salesChannelNames: [VITAHEAL_CHANNEL_NAME],
       productType: 'Physical',
       channelIds: [VITAHEAL_CHANNEL_ID],
-      imageUrls: [packShot({ ...art, view: 'front' }), packShot({ ...art, view: 'angle' })],
+      imageUrls: [`${VITAHEAL_PHOTO_DIR}/${seed.photo}-1.jpg`, `${VITAHEAL_PHOTO_DIR}/${seed.photo}-2.jpg`],
       detail: {
         subtitle: seed.subtitle,
         url: handleOf(seed.name),
@@ -311,6 +311,7 @@ const COLLECTION_LINKS = [
 export const VITAHEAL_CHROME: StorefrontChrome = {
   wordmark: 'Vitaheal',
   wordmarkIcon: null,
+  announcementAboveHeader: true,
   // No search, account or wishlist until their pages exist (search S13, account S8): a demo must not hit a 404.
   headerTools: [],
   social: [],

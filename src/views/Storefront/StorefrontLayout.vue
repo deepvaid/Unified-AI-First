@@ -67,6 +67,13 @@ const footerMarks = computed(() => offerFor(money(0, currency.value)).acceptedMa
 
 const themeVars = computed(() => storefrontThemeVars(theme.value?.styles))
 
+/** The theme's announcement, for a store that shows it above the header on every page. */
+const announcement = computed(() => {
+  if (!chrome.value.announcementAboveHeader) return ''
+  const bar = theme.value?.templates.home.find((s) => s.kind === 'announcement-bar' && !s.hidden)
+  return typeof bar?.settings.text === 'string' ? bar.settings.text : ''
+})
+
 // ── Header ──────────────────────────────────────────────────────────────
 const menuOpen = ref(false)
 watch(() => route.fullPath, () => { menuOpen.value = false })
@@ -99,6 +106,7 @@ function subscribe(): void {
 
 <template>
   <div v-if="found" class="storefront sf-surface" :style="themeVars">
+    <p v-if="announcement && !minimal" class="sf-announce">{{ announcement }}</p>
     <header v-if="minimal" class="sf-top sf-top--minimal">
       <StorefrontAnchor href="/" class="sf-logo" aria-label="Logo">
         <v-icon v-if="chrome.wordmarkIcon" size="28">{{ chrome.wordmarkIcon }}</v-icon>
@@ -244,6 +252,17 @@ function subscribe(): void {
 }
 
 /* Header */
+.sf-announce {
+  margin: 0;
+  padding: 8px 24px;
+  background: var(--sf-brand, #373842);
+  color: var(--sf-on-brand, #ffffff);
+  text-align: center;
+  font-size: 13px;
+  line-height: 18px;
+  letter-spacing: 0.02em;
+}
+
 .sf-top {
   border-bottom: 1px solid var(--sf-divider);
 }
@@ -311,7 +330,10 @@ function subscribe(): void {
   list-style: none;
 }
 
+/* The logo sits in the middle column and the tools at the end, also for a store
+   with no social links to fill the first column. */
 .sf-logo {
+  grid-column: 2;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -326,6 +348,7 @@ function subscribe(): void {
 }
 
 .sf-tools {
+  grid-column: 3;
   display: flex;
   align-items: center;
   justify-content: flex-end;
