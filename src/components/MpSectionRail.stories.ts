@@ -5,6 +5,7 @@ import MpPageHeader from './MpPageHeader.vue'
 import MpSectionHeader from './MpSectionHeader.vue'
 import type { MpSectionRailGroup, MpSectionRailSwitchOption } from './MpSectionRail.vue'
 import { railFrame } from '@/stories/decorators'
+import { liquidskyDocs } from '@/stories/storyTemplate'
 
 // The Storybook memory router resolves every path to the catch-all route named
 // "StorybookRoute" — items with match: ['StorybookRoute'] render as active.
@@ -56,12 +57,12 @@ const settingsGroups: MpSectionRailGroup[] = [
 const meta: Meta<typeof MpSectionRail> = {
   title: 'Molecules/MpSectionRail',
   component: MpSectionRail,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'liquidsky'],
   parameters: {
     canvas: 'full',
     docs: {
       description: {
-        component: `
+        component: liquidskyDocs('molecules-mpsectionrail') + `
 ### Overview
 \`MpSectionRail\` is the in-content 260px section rail for shell layouts (store editor,
 Settings-style workspaces) — sits beside the global \`AppSidebar\`, never replaces it. Two

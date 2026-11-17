@@ -1,15 +1,16 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import { ref } from 'vue'
 import MpBanner from './MpBanner.vue'
+import { liquidskyDocs } from '@/stories/storyTemplate'
 
 const meta = {
   title: 'Molecules/MpBanner',
   component: MpBanner,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'liquidsky'],
   parameters: {
     docs: {
       description: {
-        component: `
+        component: liquidskyDocs('molecules-mpbanner') + `
 ### Overview
 \`MpBanner\` is the full-width announcement strip that spans the app frame (or a whole page
 region): square corners, a soft tone fill, and a bottom hairline as its boundary against the

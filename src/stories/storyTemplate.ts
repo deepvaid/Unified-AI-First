@@ -10,6 +10,8 @@
  * labelled so a reviewer can read the grid without opening the controls panel.
  */
 
+import { QA_COMPONENTS } from './qa/liquidskyMap'
+
 export interface Specimen {
   /** Caption shown above the specimen. */
   label: string
@@ -69,4 +71,24 @@ export function grid(
  */
 export function stack(component: Record<string, unknown>, specimens: Specimen[]) {
   return grid(component, specimens, { columns: '1fr' })
+}
+
+/**
+ * The "In LiquidSky" line at the top of a reference component's docs page: the LiquidSky
+ * (`App*` / `The*` / `MpV*`) names whose design is this component, read from
+ * `qa/liquidskyMap.ts` so the names are kept in one place.
+ *
+ * Prepend it to `parameters.docs.description.component` and give the file the `liquidsky` tag.
+ *
+ * @param componentId  the Storybook id before `--`, e.g. `molecules-mpdialog`
+ */
+export function liquidskyDocs(componentId: string): string {
+  const names = [...new Set(
+    QA_COMPONENTS
+      .filter((entry) => entry.stories.some((story) => story.id.startsWith(`${componentId}--`)))
+      .flatMap((entry) => entry.liquidsky),
+  )]
+  if (!names.length) return ''
+  const list = names.map((name) => `\`${name}\``).join(' · ')
+  return `> **In LiquidSky:** ${list} — these take their design from this page. [Every LiquidSky name](?path=/docs/liquidsky--docs)\n\n`
 }

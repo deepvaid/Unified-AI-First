@@ -29,14 +29,15 @@ import { nextTick, onMounted, ref } from 'vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpFormSection from '@/components/MpFormSection.vue'
 import MpFormField from '@/components/MpFormField.vue'
+import { liquidskyDocs } from '@/stories/storyTemplate'
 
 const meta: Meta = {
   title: 'Patterns/Form Fields',
-  tags: ['autodocs'],
+  tags: ['autodocs', 'liquidsky'],
   parameters: {
     docs: {
       description: {
-        component: `
+        component: liquidskyDocs('patterns-form-fields') + `
 ## Unified Field Baseline — static top label
 
 Every outlined form control in the app shares a single visual style — a **static

@@ -2,15 +2,16 @@ import { ref, watch } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpDateRangeSelect from './MpDateRangeSelect.vue'
 import { dateRangeLabel, type DateRangePreset, type DateRangeValue } from '@/stores/useAnalytics'
+import { liquidskyDocs } from '@/stories/storyTemplate'
 
 const meta = {
   title: 'Molecules/MpDateRangeSelect',
   component: MpDateRangeSelect,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'liquidsky'],
   parameters: {
     docs: {
       description: {
-        component: `
+        component: liquidskyDocs('molecules-mpdaterangeselect') + `
 ### Overview
 \`MpDateRangeSelect\` is the shared report date-range control used across every Analytics report
 view (Sales Summary, Campaign Reports, Orders Report, Website Reports, and more — 14 usages).

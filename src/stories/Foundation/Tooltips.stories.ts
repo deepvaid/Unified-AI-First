@@ -6,14 +6,15 @@
  *   • src/plugins/maropostTheme.ts → VTooltip defaults (location: 'top', openDelay: 150, closeDelay: 0)
  */
 import type { Meta, StoryObj } from '@storybook/vue3'
+import { liquidskyDocs } from '@/stories/storyTemplate'
 
 const meta: Meta = {
   title: 'Foundations/Tooltips',
-  tags: ['autodocs'],
+  tags: ['autodocs', 'liquidsky'],
   parameters: {
     docs: {
       description: {
-        component: `
+        component: liquidskyDocs('foundations-tooltips') + `
 ### Overview
 Tooltips in this app are **stock Vuetify \`v-tooltip\`s** — there is no \`MpTooltip\` wrapper.
 Their timing comes entirely from the shared \`VTooltip\` defaults in

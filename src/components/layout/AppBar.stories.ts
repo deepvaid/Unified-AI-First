@@ -7,6 +7,7 @@ import AppSidebar from './AppSidebar.vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpKpiCard from '@/components/MpKpiCard.vue'
 import { sidebarSkin } from '@/stories/decorators'
+import { liquidskyDocs } from '@/stories/storyTemplate'
 
 /**
  * The nav skin lives on `<html data-sidebar>` and paints both navs through the shared
@@ -83,14 +84,14 @@ function navSeamStory() {
 const meta = {
   title: 'Patterns/App Shell/AppBar',
   component: AppBar,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'liquidsky'],
   decorators: [sidebarSkin],
   parameters: {
     canvas: 'full',
     sidebarSkin: 'gray',
     docs: {
       description: {
-        component: `
+        component: liquidskyDocs('patterns-app-shell-appbar') + `
 ### Overview
 \`AppBar\` is the main top navigation bar of the Maropost platform (56px). It provides the
 universal AI search menu, the quick-create menu (with single-key shortcuts while open), the

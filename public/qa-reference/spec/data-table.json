@@ -1,7 +1,11 @@
 {
   "key": "data-table",
   "liquidsky": [
-    "AppDataTable"
+    "AppDataTable",
+    "MpVDataTable",
+    "MpVDataTableServer",
+    "MpVDataTableVirtual",
+    "MpVPagination"
   ],
   "status": "matched",
   "reference": "Data Table pattern: MpFilterTabs + MpDataTableToolbar + v-data-table + MpFloatingBulkBar",

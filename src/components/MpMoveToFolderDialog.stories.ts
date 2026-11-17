@@ -5,15 +5,16 @@ import MpRowActionsMenu from './MpRowActionsMenu.vue'
 import MpStatusChip from './MpStatusChip.vue'
 import { CAMPAIGNS } from '@/stories/fixtures'
 import { useFoldersStore } from '@/stores/useFolders'
+import { liquidskyDocs } from '@/stories/storyTemplate'
 
 const meta = {
   title: 'Molecules/MpMoveToFolderDialog',
   component: MpMoveToFolderDialog,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'liquidsky'],
   parameters: {
     docs: {
       description: {
-        component: `
+        component: liquidskyDocs('molecules-mpmovetofolderdialog') + `
 ### Overview
 \`MpMoveToFolderDialog\` is a small centered picker for filing a single item into a folder.
 Open it from a row or card's 3-dot actions menu ("Move to folder"). It preselects the item's

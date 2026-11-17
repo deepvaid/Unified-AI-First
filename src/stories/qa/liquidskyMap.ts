@@ -9,6 +9,11 @@
  * `public/qa-reference/`. `scripts/qa-compare.mjs` then measures the LiquidSky build against
  * those values. `QaReference.stories.ts` renders the same data.
  *
+ * It is also the name bridge for LiquidSky developers: the "For LiquidSky developers" page
+ * (`src/stories/LiquidSky.mdx`) lists every entry, and `liquidskyDocs()` in `storyTemplate.ts`
+ * prints the LiquidSky names on each reference component's docs page. A story with `parts: []`
+ * is a link and a screenshot only, nothing is measured on it.
+ *
  * Pure data, no imports — Node loads this file directly with type stripping.
  */
 
@@ -72,7 +77,7 @@ const toastParts: QaPart[] = [
 export const QA_COMPONENTS: QaComponent[] = [
   {
     key: 'unified-navigation',
-    liquidsky: ['TheUnifiedNavigation'],
+    liquidsky: ['TheUnifiedNavigation', 'TheAppSidebar', 'MarobaseSidebar'],
     status: 'matched',
     reference: 'AppSidebar (Patterns › App Shell)',
     stories: [
@@ -99,7 +104,7 @@ export const QA_COMPONENTS: QaComponent[] = [
   },
   {
     key: 'header',
-    liquidsky: ['Header', 'user / account menu'],
+    liquidsky: ['TheHeader', 'TheUserDropdown'],
     status: 'matched',
     reference: 'AppBar (Patterns › App Shell), MpNotificationsMenu',
     note: 'The bar and its controls are covered. The profile and create menus open from a click, so they are checked by eye in the AppBar stories.',
@@ -143,7 +148,7 @@ export const QA_COMPONENTS: QaComponent[] = [
   },
   {
     key: 'tooltip',
-    liquidsky: ['AppTooltip'],
+    liquidsky: ['AppTooltip', 'MpVTooltip'],
     status: 'matched',
     reference: 'v-tooltip on the global baseline (Foundations › Tooltips)',
     stories: [
@@ -158,7 +163,7 @@ export const QA_COMPONENTS: QaComponent[] = [
   },
   {
     key: 'data-table',
-    liquidsky: ['AppDataTable'],
+    liquidsky: ['AppDataTable', 'MpVDataTable', 'MpVDataTableServer', 'MpVDataTableVirtual', 'MpVPagination'],
     status: 'matched',
     reference: 'Data Table pattern: MpFilterTabs + MpDataTableToolbar + v-data-table + MpFloatingBulkBar',
     note: 'Cell content (chips, switches) follows its own component; this contract covers the table frame only.',
@@ -191,7 +196,7 @@ export const QA_COMPONENTS: QaComponent[] = [
   },
   {
     key: 'table-actions',
-    liquidsky: ['AppTableActionMenu', 'AppFilterButton'],
+    liquidsky: ['AppTableActionMenu', 'AppFilterButton', 'MpVMenu', 'MpVList', 'MpVListItem'],
     status: 'matched',
     reference: 'MpRowActionsMenu + MpMenuItem; the Filter button of MpDataTableToolbar',
     stories: [
@@ -217,7 +222,7 @@ export const QA_COMPONENTS: QaComponent[] = [
   },
   {
     key: 'dialogs',
-    liquidsky: ['AppDialogWrapper', 'AppConfirmationDialog', 'AppDrawerWrapper'],
+    liquidsky: ['AppDialogWrapper', 'AppConfirmationDialog', 'AppDrawerWrapper', 'MpVDialog', 'MpVNavigationDrawer'],
     status: 'matched',
     reference: 'MpDialog, MpConfirmDialog, MpFormDrawer',
     stories: [
@@ -267,7 +272,7 @@ export const QA_COMPONENTS: QaComponent[] = [
   },
   {
     key: 'snackbar',
-    liquidsky: ['AppSnackbar'],
+    liquidsky: ['AppSnackbar', 'MpVSnackbar'],
     status: 'matched',
     reference: 'MpToastStack (driven by useToast)',
     stories: [
@@ -280,7 +285,7 @@ export const QA_COMPONENTS: QaComponent[] = [
   },
   {
     key: 'stepper',
-    liquidsky: ['AppStepper'],
+    liquidsky: ['AppStepper', 'MpVStepper'],
     status: 'matched',
     reference: 'MpWizardSteps',
     stories: [
@@ -301,7 +306,7 @@ export const QA_COMPONENTS: QaComponent[] = [
   },
   {
     key: 'date-picker',
-    liquidsky: ['AppDatePicker'],
+    liquidsky: ['AppDatePicker', 'MpVDatePicker'],
     status: 'partial',
     reference: 'MpDateRangeSelect',
     note: 'Marobase has a range selector (presets + custom range fields) but no calendar-grid date picker. The trigger and panel are covered; the calendar itself has no reference.',
@@ -321,7 +326,7 @@ export const QA_COMPONENTS: QaComponent[] = [
   },
   {
     key: 'dropdown',
-    liquidsky: ['AppDropdown'],
+    liquidsky: ['AppDropdown', 'MpVSelect', 'MpVAutocomplete', 'MpVCombobox'],
     status: 'matched',
     reference: 'v-select / v-autocomplete on the form-field baseline (Patterns › Form Fields)',
     stories: [
@@ -374,8 +379,188 @@ export const QA_COMPONENTS: QaComponent[] = [
     ],
   },
   {
+    key: 'buttons',
+    liquidsky: ['AppButton', 'MpVBtn'],
+    status: 'matched',
+    reference: 'v-btn on the global baseline (Foundations › Buttons)',
+    stories: [
+      { id: 'foundations-buttons--variants', label: 'Variants', parts: [] },
+      { id: 'foundations-buttons--sizes', label: 'Sizes', parts: [] },
+      { id: 'foundations-buttons--interaction-states', label: 'Interaction states', parts: [] },
+    ],
+  },
+  {
+    key: 'segmented-control',
+    liquidsky: ['MpVBtnToggle'],
+    status: 'matched',
+    reference: 'MpSegmentedControl',
+    stories: [
+      { id: 'atoms-mpsegmentedcontrol--default', label: 'Default', parts: [] },
+      { id: 'atoms-mpsegmentedcontrol--sizes', label: 'Sizes', parts: [] },
+    ],
+  },
+  {
+    key: 'text-fields',
+    liquidsky: ['MpVTextField', 'MpVTextarea', 'MpVMaskInput', 'MpVFileInput', 'MpVDateInput', 'AppNumberInput', 'MpVForm'],
+    status: 'matched',
+    reference: 'Vuetify fields on the form-field baseline (Patterns › Form Fields)',
+    note: 'One label style (static top label), one size ramp (32 / 40 / 48 from the density prop). A number input is a text field with a suffix.',
+    stories: [
+      { id: 'patterns-form-fields--all-states', label: 'Field states', parts: [] },
+      { id: 'patterns-form-fields--sizes', label: 'Sizes', parts: [] },
+      { id: 'patterns-form-fields--prefix-suffix', label: 'Prefix and suffix', parts: [] },
+      { id: 'patterns-form-fields--form-layout', label: 'Form layout', parts: [] },
+    ],
+  },
+  {
+    key: 'selection-controls',
+    liquidsky: ['MpVCheckbox', 'MpVCheckboxBtn', 'MpVRadio', 'MpVRadioGroup', 'MpVSwitch'],
+    status: 'partial',
+    reference: 'Vuetify selection controls on the theme defaults; MpFormField labels a group',
+    note: 'There is no dedicated story for checkbox, radio or switch yet. A radio group with its label is shown in MpFormField.',
+    stories: [
+      { id: 'molecules-mpformfield--default', label: 'Radio group with label', parts: [] },
+    ],
+  },
+  {
+    key: 'tabs',
+    liquidsky: ['MpVTabs', 'MpVTab'],
+    status: 'matched',
+    reference: 'MpFilterTabs',
+    stories: [
+      { id: 'atoms-mpfiltertabs--default', label: 'Default', parts: [] },
+      { id: 'atoms-mpfiltertabs--states', label: 'States', parts: [] },
+    ],
+  },
+  {
+    key: 'status-chip',
+    liquidsky: ['MpVStatusChip', 'MpVChip'],
+    status: 'matched',
+    reference: 'MpStatusChip',
+    stories: [
+      { id: 'atoms-mpstatuschip--variants', label: 'Variants', parts: [] },
+      { id: 'atoms-mpstatuschip--sizes', label: 'Sizes', parts: [] },
+      { id: 'atoms-mpstatuschip--all-types', label: 'All status types', parts: [] },
+    ],
+  },
+  {
+    key: 'alert',
+    liquidsky: ['MpVAlert'],
+    status: 'matched',
+    reference: 'MpAlert',
+    stories: [
+      { id: 'molecules-mpalert--variants', label: 'Tones', parts: [] },
+      { id: 'molecules-mpalert--states', label: 'States', parts: [] },
+    ],
+  },
+  {
+    key: 'search-bar',
+    liquidsky: ['TheSearchBar'],
+    status: 'partial',
+    reference: 'The search in AppBar (Patterns › App Shell)',
+    note: 'In Marobase the search field opens a command palette with grouped results. The field in the bar is covered by the header entry.',
+    stories: [
+      { id: 'patterns-app-shell-appbar--search-open', label: 'Search open', parts: [] },
+      { id: 'patterns-app-shell-appbar--search-open-with-type-tabs', label: 'Search with type tabs', parts: [] },
+    ],
+  },
+  {
+    key: 'user-menu',
+    liquidsky: ['TheAccountDropdown', 'TheThemeSwitcher'],
+    status: 'matched',
+    reference: 'The profile menu in AppBar (Patterns › App Shell)',
+    note: 'As in LiquidSky, switching account and the light / dark theme both live in the profile menu.',
+    stories: [
+      { id: 'patterns-app-shell-appbar--profile-menu-open', label: 'Profile menu open', parts: [] },
+    ],
+  },
+  {
+    key: 'notifications',
+    liquidsky: ['MpNotificationsMenu', 'TheNotificationIcon', 'TheNotificationDrawer'],
+    status: 'partial',
+    reference: 'MpNotificationsMenu',
+    note: 'The bell opens a menu panel in Marobase, not a side drawer. The bell, badge and rows carry over to TheNotificationDrawer; the drawer frame follows MpFormDrawer.',
+    stories: [
+      { id: 'molecules-mpnotificationsmenu--open-panel', label: 'Panel open', parts: [] },
+      { id: 'molecules-mpnotificationsmenu--empty', label: 'Nothing new', parts: [] },
+    ],
+  },
+  {
+    key: 'section-rail',
+    liquidsky: ['MpSectionRail', 'StoreSectionRail', 'TheSecondaryNavigation'],
+    status: 'matched',
+    reference: 'MpSectionRail',
+    stories: [
+      { id: 'molecules-mpsectionrail--settings-flavor', label: 'Settings', parts: [] },
+      { id: 'molecules-mpsectionrail--store-editor', label: 'Store editor', parts: [] },
+    ],
+  },
+  {
+    key: 'app-shell',
+    liquidsky: ['TheAppShell', 'TheNavigation'],
+    status: 'matched',
+    reference: 'AppBar + AppSidebar together (Patterns › App Shell)',
+    stories: [
+      { id: 'patterns-app-shell-appsidebar--in-context-app-shell', label: 'Sidebar in the shell', parts: [] },
+      { id: 'patterns-app-shell-appbar--in-context-app-shell', label: 'App bar in the shell', parts: [] },
+    ],
+  },
+  {
+    key: 'index-page',
+    liquidsky: ['GenericIndexWrapper', 'GenericIndexPage'],
+    status: 'matched',
+    reference: 'Data Table pattern + MpFolderSelect, MpManageFoldersDrawer, MpMoveToFolderDialog',
+    note: 'The page frame is MpPageHeader above the Data Table pattern. Folders are a menu in the toolbar, managed in a drawer.',
+    stories: [
+      { id: 'patterns-data-table--default', label: 'List page', parts: [] },
+      { id: 'molecules-mpfolderselect--open-menu', label: 'Folder menu', parts: [] },
+      { id: 'molecules-mpmanagefoldersdrawer--campaigns', label: 'Manage folders', parts: [] },
+      { id: 'molecules-mpmovetofolderdialog--default', label: 'Move to folder', parts: [] },
+    ],
+  },
+  {
+    key: 'apps-dropdown',
+    liquidsky: ['TheAppsDropdown'],
+    status: 'no-reference',
+    reference: 'None',
+    note: 'Marobase has no product switcher in the bar; the clouds are sections of one sidebar. Needs a design decision if LiquidSky keeps it.',
+    stories: [],
+  },
+  {
+    key: 'timezone',
+    liquidsky: ['TheTimezone'],
+    status: 'no-reference',
+    reference: 'None',
+    note: 'Marobase shows no live clock in the bar. Needs a design decision if LiquidSky keeps it.',
+    stories: [],
+  },
+  {
+    key: 'split-button',
+    liquidsky: ['AppSplitButton'],
+    status: 'no-reference',
+    reference: 'None',
+    note: 'No split button in Marobase. The button follows Foundations › Buttons and the menu follows MpRowActionsMenu; the joined shape needs a design decision.',
+    stories: [],
+  },
+  {
+    key: 'folder-tree',
+    liquidsky: ['ClassicFolderTree', 'SlVueTreeNext'],
+    status: 'no-reference',
+    reference: 'None',
+    note: 'Marobase files items through a folder menu (MpFolderSelect), not a tree. These stay Classic-only unless a tree is designed.',
+    stories: [],
+  },
+  {
+    key: 'value-display',
+    liquidsky: ['AppNumber', 'AppPriceDisplay', 'AppMultiCellValue', 'AppClipboard'],
+    status: 'no-reference',
+    reference: 'None',
+    note: 'Formatting helpers with no design of their own: text follows the body or table-cell type around them.',
+    stories: [],
+  },
+  {
     key: 'expandable-list',
-    liquidsky: ['AppExpandableList'],
+    liquidsky: ['AppExpandableList', 'MpVExpansionPanels', 'MpVExpansionPanel'],
     status: 'no-reference',
     reference: 'None',
     note: 'Marobase has no expandable-list component. Needs a design decision before it can be reviewed.',

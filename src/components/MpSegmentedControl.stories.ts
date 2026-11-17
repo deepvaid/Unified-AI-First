@@ -1,15 +1,16 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import { ref } from 'vue'
 import MpSegmentedControl from './MpSegmentedControl.vue'
+import { liquidskyDocs } from '@/stories/storyTemplate'
 
 const meta = {
   title: 'Atoms/MpSegmentedControl',
   component: MpSegmentedControl,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'liquidsky'],
   parameters: {
     docs: {
       description: {
-        component: `
+        component: liquidskyDocs('atoms-mpsegmentedcontrol') + `
 ### Overview
 \`MpSegmentedControl\` is the one segmented toggle: a padded track with pill segments, for
 switching between 2–5 mutually exclusive views or modes (preview device, light/dark, widget

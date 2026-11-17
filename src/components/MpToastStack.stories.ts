@@ -1,11 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpToastStack from './MpToastStack.vue'
 import { useToast } from '@/composables/useToast'
+import { liquidskyDocs } from '@/stories/storyTemplate'
 
 const meta = {
   title: 'Molecules/MpToastStack',
   component: MpToastStack,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'liquidsky'],
   parameters: {
     canvas: 'full',
     // The stack teleports to <body> and positions fixed at the bottom-right of
@@ -15,7 +16,7 @@ const meta = {
     docs: {
       story: { inline: false, height: '300px' },
       description: {
-        component: `
+        component: liquidskyDocs('molecules-mptoaststack') + `
 ### Overview
 \`MpToastStack\` is the single shared toast host for the app (WP-C1 — the one approved
 exception to the "no new wrapper components" rule). It renders the queue produced by the

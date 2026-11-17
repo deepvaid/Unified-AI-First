@@ -4,6 +4,7 @@ import MpDataTableToolbar from './MpDataTableToolbar.vue'
 import MpStatusChip from './MpStatusChip.vue'
 import { CAMPAIGNS, CAMPAIGN_HEADERS, FOLDERS, FOLDER_COUNTS } from '@/stories/fixtures'
 import type { Folder } from '@/stores/useFolders'
+import { liquidskyDocs } from '@/stories/storyTemplate'
 
 const sampleFolders: Folder[] = [
   { id: 'promotions', name: 'Promotions', parentId: null, scope: 'campaigns' },
@@ -18,11 +19,11 @@ const sampleCounts = { promotions: 7, seasonal: 5, 'black-friday': 2, automated:
 const meta = {
   title: 'Molecules/MpFolderSelect',
   component: MpFolderSelect,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'liquidsky'],
   parameters: {
     docs: {
       description: {
-        component: `
+        component: liquidskyDocs('molecules-mpfolderselect') + `
 ### Overview
 \`MpFolderSelect\` is a toolbar dropdown that filters a table or grid by folder — the traditional
 replacement for a persistent folder-tree side panel. Folders are treated as **metadata filtering**,

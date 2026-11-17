@@ -226,6 +226,7 @@ const preview: Preview = {
       storySort: {
         order: [
           'Introduction',
+          'LiquidSky',
           'Foundations', [
             'Overview', 'Colors', 'Typography', 'Spacing', 'Radius & Shadows',
             'Icons', 'Buttons', 'Tooltips', 'QA Reference',

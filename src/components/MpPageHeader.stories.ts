@@ -1,15 +1,16 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpPageHeader from './MpPageHeader.vue'
 import MpStatusChip from './MpStatusChip.vue'
+import { liquidskyDocs } from '@/stories/storyTemplate'
 
 const meta = {
   title: 'Molecules/MpPageHeader',
   component: MpPageHeader,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'liquidsky'],
   parameters: {
     docs: {
       description: {
-        component: `
+        component: liquidskyDocs('molecules-mppageheader') + `
 ### Overview
 The \`MpPageHeader\` sits at the very top of main application views. It provides context with a compact title/subtitle area, an optional back link for detail pages, and houses the primary page-level actions.
 

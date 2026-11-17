@@ -1,14 +1,15 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpWizardSteps from './MpWizardSteps.vue'
+import { liquidskyDocs } from '@/stories/storyTemplate'
 
 const meta = {
   title: 'Atoms/MpWizardSteps',
   component: MpWizardSteps,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'liquidsky'],
   parameters: {
     docs: {
       description: {
-        component: `
+        component: liquidskyDocs('atoms-mpwizardsteps') + `
 ### Overview
 \`MpWizardSteps\` renders the compact step chips used in wizard toolbars (numbered circles,
 check icon for completed steps, rail separators). \`current\` is 1-based. Below 700px viewport

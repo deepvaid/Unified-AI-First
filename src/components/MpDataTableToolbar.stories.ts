@@ -7,15 +7,16 @@ import MpRowActionsMenu from './MpRowActionsMenu.vue'
 import MpEmptyState from './MpEmptyState.vue'
 import { ORDERS, ORDER_HEADERS, ORDER_FILTERS, ORDER_TABS } from '@/stories/fixtures'
 import { ref, computed } from 'vue'
+import { liquidskyDocs } from '@/stories/storyTemplate'
 
 const meta = {
   title: 'Molecules/MpDataTableToolbar',
   component: MpDataTableToolbar,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'liquidsky'],
   parameters: {
     docs: {
       description: {
-        component: `
+        component: liquidskyDocs('molecules-mpdatatabletoolbar') + `
 ### Overview
 The \`MpDataTableToolbar\` is the primary control surface above Data Tables. It handles the table
 title + record count, instant search, a filter drawer (\`#filter-content\` slot rendered inside an

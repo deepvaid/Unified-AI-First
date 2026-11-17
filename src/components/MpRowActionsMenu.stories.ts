@@ -3,15 +3,16 @@ import MpMenuItem from './MpMenuItem.vue'
 import MpRowActionsMenu from './MpRowActionsMenu.vue'
 import MpStatusChip from './MpStatusChip.vue'
 import { ORDERS } from '@/stories/fixtures'
+import { liquidskyDocs } from '@/stories/storyTemplate'
 
 const meta = {
   title: 'Molecules/MpRowActionsMenu',
   component: MpRowActionsMenu,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'liquidsky'],
   parameters: {
     docs: {
       description: {
-        component: `
+        component: liquidskyDocs('molecules-mprowactionsmenu') + `
 ### Overview
 \`MpRowActionsMenu\` is the kebab ("more-vertical") actions menu used in the trailing column of
 data-table rows. The component owns the trigger button and the compact list container; the view

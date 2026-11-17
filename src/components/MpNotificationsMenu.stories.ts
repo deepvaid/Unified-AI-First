@@ -2,15 +2,16 @@ import type { Meta, StoryObj } from '@storybook/vue3'
 import MpNotificationsMenu from './MpNotificationsMenu.vue'
 import { useNotifications, type AppNotification } from '@/stores/useNotifications'
 import { NOTIFICATIONS } from '@/stories/fixtures'
+import { liquidskyDocs } from '@/stories/storyTemplate'
 
 const meta = {
   title: 'Molecules/MpNotificationsMenu',
   component: MpNotificationsMenu,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'liquidsky'],
   parameters: {
     docs: {
       description: {
-        component: `
+        component: liquidskyDocs('molecules-mpnotificationsmenu') + `
 ### Overview
 \`MpNotificationsMenu\` is the app bar's notification centre, aligned with the real product's
 feed: a bell trigger whose unread badge **wraps** the button (the app's \`v-badge\` convention,

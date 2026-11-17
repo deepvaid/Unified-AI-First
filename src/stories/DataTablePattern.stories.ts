@@ -17,14 +17,15 @@ import MpEmptyState from '../components/MpEmptyState.vue'
 import MpFloatingBulkBar from '../components/MpFloatingBulkBar.vue'
 import MpTableSkeleton from '../components/MpTableSkeleton.vue'
 import MpRowActionsMenu from '../components/MpRowActionsMenu.vue'
+import { liquidskyDocs } from '@/stories/storyTemplate'
 
 const meta: Meta = {
   title: 'Patterns/Data Table',
-  tags: ['autodocs'],
+  tags: ['autodocs', 'liquidsky'],
   parameters: {
     docs: {
       description: {
-        component: `
+        component: liquidskyDocs('patterns-data-table') + `
 ### Overview
 The **Data Table pattern** is the canonical list-view composition used by every table page in
 the platform — Sales Orders, Campaigns, Contacts, Tickets, Products, Coupons. Copy this

@@ -3,7 +3,9 @@
   "liquidsky": [
     "AppDialogWrapper",
     "AppConfirmationDialog",
-    "AppDrawerWrapper"
+    "AppDrawerWrapper",
+    "MpVDialog",
+    "MpVNavigationDrawer"
   ],
   "status": "matched",
   "reference": "MpDialog, MpConfirmDialog, MpFormDrawer",

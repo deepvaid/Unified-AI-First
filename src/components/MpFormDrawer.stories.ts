@@ -5,15 +5,16 @@ import MpFormGrid from './MpFormGrid.vue'
 import MpFormSection from './MpFormSection.vue'
 import MpFormField from './MpFormField.vue'
 import MpStatusChip from './MpStatusChip.vue'
+import { liquidskyDocs } from '@/stories/storyTemplate'
 
 const meta = {
   title: 'Molecules/MpFormDrawer',
   component: MpFormDrawer,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'liquidsky'],
   parameters: {
     docs: {
       description: {
-        component: `
+        component: liquidskyDocs('molecules-mpformdrawer') + `
 ### Overview
 \`MpFormDrawer\` is the right-side drawer used for every create/edit form (\`size="md"\`, 480px, by default). It's a
 floating rounded shell: \`--mp-component-dialog-radius\` (16px) on all corners, a 1px

@@ -1,0 +1,31 @@
+{
+  "key": "search-bar",
+  "liquidsky": [
+    "TheSearchBar"
+  ],
+  "status": "partial",
+  "reference": "The search in AppBar (Patterns › App Shell)",
+  "note": "In Marobase the search field opens a command palette with grouped results. The field in the bar is covered by the header entry.",
+  "stories": [
+    {
+      "id": "patterns-app-shell-appbar--search-open",
+      "label": "Search open",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-app-shell-appbar--search-open",
+      "png": {
+        "light": "png/search-bar/patterns-app-shell-appbar--search-open--light.png",
+        "dark": "png/search-bar/patterns-app-shell-appbar--search-open--dark.png"
+      },
+      "parts": []
+    },
+    {
+      "id": "patterns-app-shell-appbar--search-open-with-type-tabs",
+      "label": "Search with type tabs",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-app-shell-appbar--search-open-with-type-tabs",
+      "png": {
+        "light": "png/search-bar/patterns-app-shell-appbar--search-open-with-type-tabs--light.png",
+        "dark": "png/search-bar/patterns-app-shell-appbar--search-open-with-type-tabs--dark.png"
+      },
+      "parts": []
+    }
+  ]
+}

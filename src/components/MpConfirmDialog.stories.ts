@@ -5,15 +5,16 @@ import MpRowActionsMenu from './MpRowActionsMenu.vue'
 import MpStatusChip from './MpStatusChip.vue'
 import MpEmptyState from './MpEmptyState.vue'
 import { CAMPAIGNS, CAMPAIGN_HEADERS } from '@/stories/fixtures'
+import { liquidskyDocs } from '@/stories/storyTemplate'
 
 const meta = {
   title: 'Molecules/MpConfirmDialog',
   component: MpConfirmDialog,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'liquidsky'],
   parameters: {
     docs: {
       description: {
-        component: `
+        component: liquidskyDocs('molecules-mpconfirmdialog') + `
 ### Overview
 \`MpConfirmDialog\` is a small confirm/cancel dialog for one-shot decisions (delete a node,
 discard a draft). It closes itself on Cancel, Escape, backdrop click, and after emitting

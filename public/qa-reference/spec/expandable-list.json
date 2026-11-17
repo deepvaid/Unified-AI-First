@@ -1,7 +1,9 @@
 {
   "key": "expandable-list",
   "liquidsky": [
-    "AppExpandableList"
+    "AppExpandableList",
+    "MpVExpansionPanels",
+    "MpVExpansionPanel"
   ],
   "status": "no-reference",
   "reference": "None",

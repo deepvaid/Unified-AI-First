@@ -2581,3 +2581,35 @@ merchant-authored FAQs, configurable pre-chat forms, a full test environment) ar
 - `themeBuilderData.ts` keeps its private `onBrandColor`; it could adopt `brandContrast.ts`.
 - The chatbot widget preview is still inline in `ChatbotBuilder.vue` (builder audit B4).
 - "CRM" on the call was read as the store association (the Sales channel select in General).
+
+## Storybook for LiquidSky developers — 2026-11-17
+
+LiquidSky (`@maropost-ui/liquidsky-ui`) rebuilds its `App*` / `The*` / `MpV*` components to this
+design and uses this Storybook as the reference. Nothing here used their names, so finding the
+design for, say, `AppDialogWrapper` meant already knowing it is `MpDialog`.
+
+- **New page `LiquidSky`** (`src/stories/LiquidSky.mdx`), sorted right after Introduction. It is
+  one docs page like Introduction, not a new bucket. It lists every LiquidSky name with its design
+  here, grouped Matched / Partial / Not designed yet, with links to the stories, and explains the
+  naming, theme and icon differences.
+- **"In LiquidSky" line** at the top of the 27 reference docs pages, from the new
+  `liquidskyDocs()` in `src/stories/storyTemplate.ts`. Those files also carry a `liquidsky` tag, so
+  the sidebar tag filter shows only the reference pages.
+- **`liquidskyMap.ts` now covers all of LiquidSky's exported components** (17 → 35 entries, 84 names).
+  New entries without measured parts use `parts: []`, as the map already did for empty and
+  loading states, so `qa:export` screenshots them and measures nothing.
+
+### Renames and breaking changes
+
+- `liquidskyMap.ts` LiquidSky names corrected to their exported names: `Header` →
+  `TheHeader`, `user / account menu` → `TheUserDropdown`. `MpV*` wrapper names were added to the
+  existing entries they belong to.
+
+### Not done here
+
+- No per-component spec table on the docs pages (the values are on Foundations › QA Reference).
+- No full Lucide → MDI icon map, and no "copy-safe" marker on components.
+- Eight groups of LiquidSky components still have no design: `TheAppsDropdown`, `TheTimezone`,
+  `AppSplitButton`, `ClassicFolderTree` / `SlVueTreeNext`, `AppNumber` / `AppPriceDisplay` /
+  `AppMultiCellValue` / `AppClipboard` (formatting only), `AppExpandableList`, `AppTreeDropdown`,
+  `AppGridTable`.

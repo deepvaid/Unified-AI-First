@@ -6,15 +6,16 @@ import MpDataTableToolbar from './MpDataTableToolbar.vue'
 import MpStatusChip from './MpStatusChip.vue'
 import { CAMPAIGNS, CAMPAIGN_HEADERS, FOLDERS, FOLDER_COUNTS } from '@/stories/fixtures'
 import { useFoldersStore } from '@/stores/useFolders'
+import { liquidskyDocs } from '@/stories/storyTemplate'
 
 const meta = {
   title: 'Molecules/MpManageFoldersDrawer',
   component: MpManageFoldersDrawer,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'liquidsky'],
   parameters: {
     docs: {
       description: {
-        component: `
+        component: liquidskyDocs('molecules-mpmanagefoldersdrawer') + `
 ### Overview
 \`MpManageFoldersDrawer\` is a right-side drawer (480px, wraps \`MpFormDrawer\`) for full folder
 CRUD within a scope: create (with optional one-level nesting under a parent), inline rename, and

@@ -1,7 +1,9 @@
 {
   "key": "unified-navigation",
   "liquidsky": [
-    "TheUnifiedNavigation"
+    "TheUnifiedNavigation",
+    "TheAppSidebar",
+    "MarobaseSidebar"
   ],
   "status": "matched",
   "reference": "AppSidebar (Patterns › App Shell)",

@@ -1,6 +1,7 @@
 import { ref, watch } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpFilterTabs from './MpFilterTabs.vue'
+import { liquidskyDocs } from '@/stories/storyTemplate'
 
 const orderTabs = [
   { label: 'All', key: 'all', count: 1471 },
@@ -37,11 +38,11 @@ const manyTabs = [
 const meta = {
   title: 'Atoms/MpFilterTabs',
   component: MpFilterTabs,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'liquidsky'],
   parameters: {
     docs: {
       description: {
-        component: `
+        component: liquidskyDocs('atoms-mpfiltertabs') + `
 ### Overview
 \`MpFilterTabs\` is the tab strip that filters a list or table by status, placed between \`MpPageHeader\` and the table card. Each tab carries a key, a label, and an optional count badge; the active key is bound via \`v-model\`.
 

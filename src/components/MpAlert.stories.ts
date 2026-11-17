@@ -1,15 +1,16 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import { ref } from 'vue'
 import MpAlert from './MpAlert.vue'
+import { liquidskyDocs } from '@/stories/storyTemplate'
 
 const meta = {
   title: 'Molecules/MpAlert',
   component: MpAlert,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'liquidsky'],
   parameters: {
     docs: {
       description: {
-        component: `
+        component: liquidskyDocs('molecules-mpalert') + `
 ### Overview
 \`MpAlert\` is the one in-page feedback block: a rounded, borderless soft-fill callout in four
 semantic tones, with an optional title, actions row and dismiss button. It enforces the

@@ -1,14 +1,15 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpListRow from './MpListRow.vue'
+import { liquidskyDocs } from '@/stories/storyTemplate'
 
 const meta = {
   title: 'Atoms/MpListRow',
   component: MpListRow,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'liquidsky'],
   parameters: {
     docs: {
       description: {
-        component: `
+        component: liquidskyDocs('atoms-mplistrow') + `
 ### Overview
 \`MpListRow\` is the one row geometry for every list in the system. Before it, a single
 file (\`ModuleLandingPage\`) hand-rolled three different rows at three different heights,

@@ -3,15 +3,16 @@ import MpFormField from './MpFormField.vue'
 import MpFormGrid from './MpFormGrid.vue'
 import MpFormSection from './MpFormSection.vue'
 import { constrain } from '@/stories/decorators'
+import { liquidskyDocs } from '@/stories/storyTemplate'
 
 const meta = {
   title: 'Molecules/MpFormField',
   component: MpFormField,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'liquidsky'],
   parameters: {
     docs: {
       description: {
-        component: `
+        component: liquidskyDocs('molecules-mpformfield') + `
 ### Overview
 \`MpFormField\` gives a label, an optional hint or error, and the aria wiring to a control that
 has none of its own.

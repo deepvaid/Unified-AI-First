@@ -1,7 +1,8 @@
 {
   "key": "date-picker",
   "liquidsky": [
-    "AppDatePicker"
+    "AppDatePicker",
+    "MpVDatePicker"
   ],
   "status": "partial",
   "reference": "MpDateRangeSelect",

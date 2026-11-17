@@ -5,15 +5,16 @@ import MpConfirmDialog from './MpConfirmDialog.vue'
 import MpFormGrid from './MpFormGrid.vue'
 import MpFormSection from './MpFormSection.vue'
 import MpFormField from './MpFormField.vue'
+import { liquidskyDocs } from '@/stories/storyTemplate'
 
 const meta = {
   title: 'Molecules/MpDialog',
   component: MpDialog,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'liquidsky'],
   parameters: {
     docs: {
       description: {
-        component: `
+        component: liquidskyDocs('molecules-mpdialog') + `
 ### Overview
 \`MpDialog\` is the one modal shell. Before it, eight components built dialogs from a raw
 \`v-dialog\` + \`v-card-title/text/actions\` with five different header/body/footer rhythms

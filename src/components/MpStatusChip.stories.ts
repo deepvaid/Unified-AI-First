@@ -1,14 +1,15 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpStatusChip from './MpStatusChip.vue'
+import { liquidskyDocs } from '@/stories/storyTemplate'
 
 const meta = {
   title: 'Atoms/MpStatusChip',
   component: MpStatusChip,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'liquidsky'],
   parameters: {
     docs: {
       description: {
-        component: `
+        component: liquidskyDocs('atoms-mpstatuschip') + `
 ### Overview
 The \`MpStatusChip\` displays the current state of an entity. It automatically applies appropriate Maropost semantic colors based on the text string matching known statuses in the business logic (lookup is case-insensitive).
 

@@ -1,7 +1,10 @@
 {
   "key": "dropdown",
   "liquidsky": [
-    "AppDropdown"
+    "AppDropdown",
+    "MpVSelect",
+    "MpVAutocomplete",
+    "MpVCombobox"
   ],
   "status": "matched",
   "reference": "v-select / v-autocomplete on the form-field baseline (Patterns › Form Fields)",

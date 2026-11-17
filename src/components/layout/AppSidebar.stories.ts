@@ -7,6 +7,7 @@ import MpStatusChip from '@/components/MpStatusChip.vue'
 import { ORDERS, ORDER_HEADERS } from '@/stories/fixtures'
 import { ref } from 'vue'
 import { sidebarSkin } from '@/stories/decorators'
+import { liquidskyDocs } from '@/stories/storyTemplate'
 
 /**
  * The skin axis lives on `<html data-sidebar>` (App.vue sets it from the account).
@@ -17,14 +18,14 @@ import { sidebarSkin } from '@/stories/decorators'
 const meta = {
   title: 'Patterns/App Shell/AppSidebar',
   component: AppSidebar,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'liquidsky'],
   decorators: [sidebarSkin],
   parameters: {
     canvas: 'full',
     sidebarSkin: 'gray',
     docs: {
       description: {
-        component: `
+        component: liquidskyDocs('patterns-app-shell-appsidebar') + `
 ### Overview
 \`AppSidebar\` is the primary left-hand navigation of the Maropost platform. It supports two
 modes: expanded (240px, labels + expandable module groups) and rail (64px, icons with hover

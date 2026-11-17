@@ -1,0 +1,31 @@
+{
+  "key": "app-shell",
+  "liquidsky": [
+    "TheAppShell",
+    "TheNavigation"
+  ],
+  "status": "matched",
+  "reference": "AppBar + AppSidebar together (Patterns › App Shell)",
+  "stories": [
+    {
+      "id": "patterns-app-shell-appsidebar--in-context-app-shell",
+      "label": "Sidebar in the shell",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-app-shell-appsidebar--in-context-app-shell",
+      "png": {
+        "light": "png/app-shell/patterns-app-shell-appsidebar--in-context-app-shell--light.png",
+        "dark": "png/app-shell/patterns-app-shell-appsidebar--in-context-app-shell--dark.png"
+      },
+      "parts": []
+    },
+    {
+      "id": "patterns-app-shell-appbar--in-context-app-shell",
+      "label": "App bar in the shell",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-app-shell-appbar--in-context-app-shell",
+      "png": {
+        "light": "png/app-shell/patterns-app-shell-appbar--in-context-app-shell--light.png",
+        "dark": "png/app-shell/patterns-app-shell-appbar--in-context-app-shell--dark.png"
+      },
+      "parts": []
+    }
+  ]
+}

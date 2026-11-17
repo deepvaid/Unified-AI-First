@@ -1,8 +1,8 @@
 {
   "key": "header",
   "liquidsky": [
-    "Header",
-    "user / account menu"
+    "TheHeader",
+    "TheUserDropdown"
   ],
   "status": "matched",
   "reference": "AppBar (Patterns › App Shell), MpNotificationsMenu",
