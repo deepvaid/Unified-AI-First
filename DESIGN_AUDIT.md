@@ -2741,3 +2741,23 @@ prospects, so BKM's name is off the screen:
 - `StorefrontChrome` gains an optional `accountHref`. Vitaheal's header now has the account
   tool (`headerTools: ['account']`); its footer and phone menu gain "My subscription".
 - `vitahealDemo.ts` now imports the pure rule modules, not only types.
+
+**Demo pass, part 6 (2026-11-18) — the store's chatbot answers shoppers on the store.**
+
+- New storefront component `StorefrontChat.vue` (out of system, like the storefront; it takes
+  the chatbot's own colour with `onBrand` from `src/utils/brandContrast.ts` for the text on it).
+- New pure module `src/chatbot/storeAssistant.ts`. `previewResponder.ts` now exports `keywords`
+  and `hits` for it; the builder's preview is unchanged.
+- `useChatbot` seeds the Vitaheal chatbot (fixed id 101, first in the list) and keeps its
+  settings and live chats in the browser. No admin page changed.
+- No new design-system component, token or story.
+
+### Renames and breaking changes
+
+- `useChatbotStore` gains `recordConversation` and `restoreDemo`; `conversationsFor(101)`
+  returns the store's live chats, then the Vitaheal seed.
+- The Chatbots list has one more chatbot, first. Other chatbots keep their ids.
+- A checkout on a store whose chrome has `accountHref` signs its shopper in (was: only a
+  checkout with a subscription line).
+- `StorefrontReceipt`'s "Continue shopping" links to "/" through `StorefrontAnchor` (its
+  `homeHref` prop is kept for the countdown).

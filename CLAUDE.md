@@ -78,7 +78,7 @@ This is NOT a production app — it uses mock data and has no backend API.
 │   │   ├── Products/          ← ProductsList, Inventory, Recommendations, TaxCategories
 │   │   ├── Service/           ← Tickets
 │   │   ├── Settings/          ← Settings, Billing, Users, Profile
-│   │   ├── Storefront/        ← Shopper storefront of a web store: home, collections, product, cart, checkout, account (the shopper's subscriptions) (P4-8, out of system)
+│   │   ├── Storefront/        ← Shopper storefront of a web store: home, collections, product, cart, checkout, account (the shopper's subscriptions), and the store's chatbot widget (`StorefrontChat.vue`) (P4-8, out of system)
 │   │   └── Templates/         ← /templates page-archetype gallery (engineer reference, placeholder data)
 │   ├── stores/                ← 6 Pinia stores with mock data
 │   ├── plugins/vuetify.ts     ← Vuetify theme (light + dark) + global defaults
@@ -426,7 +426,7 @@ changelog in `DESIGN_AUDIT.md`.
 | `npm run qa:compare` | Design vs LiquidSky build: side-by-side screenshots + a plain list of differences → `output/qa-compare/` (git-ignored; needs `LIQUIDSKY_STORYBOOK` in `.env.local`) |
 | `npm run test:maropay` | Maropay domain + adapter tests (`node:test` over `tests/maropay/`) |
 | `npm run test:catalog` | Da Vinci Catalog Co-Pilot draft-generator tests (`node:test` over `tests/davinci-catalog/`) |
-| `npm run test:chatbot` | Chatbot brand-colour contrast + builder-preview responder tests (`node:test` over `tests/chatbot/`) |
+| `npm run test:chatbot` | Chatbot brand-colour contrast, the builder-preview responder, and the store assistant that answers shoppers on the Vitaheal (demo) storefront (`src/chatbot/storeAssistant.ts`: orders, subscriptions, a product for a wellness need, store questions) (`node:test` over `tests/chatbot/`) |
 | `npm run test:plg` | PLG promotion tests — coupon maths and code validation in `src/plg/promo.ts` (`node:test` over `tests/plg/`) |
 | `npm run test:subscriptions` | Subscription rules in `src/subscriptions/` — plans (price per delivery, display rounding, charge dates, what a shopper is offered) and subscriptions (skip, pause, change plan, cancel, renewals) — and the Vitaheal (demo) plans and subscribers (`node:test` over `tests/subscriptions/`) |
 | `npm run test:storefront` | Storefront rules — which products a store sells, the product form's stock and collection rules, cart lines, store price formatting, a store's checkout countries and sample shopper, what the demo store keeps in the browser — and the Vitaheal (demo) seed checked against its reference tables (`node:test` over `tests/storefront/`) |
@@ -473,7 +473,7 @@ Example: `[feat]: add MpDateRangePicker component with story`
   report for the real MCC; never edit its statuses), `bkm-build-prompt.md` (the slice-by-slice build
   prompt) and `bkm-build-tracker.md` (prototype progress per slice and requirement). The demo store is
   sales channel `vitaheal-demo` ("Vitaheal", a fictional brand that stands in for BKM so sales can show it to any
-  prospect), seeded from `src/storefront/vitahealDemo.ts`. Its products, subscription plans and subscribers are kept in this browser
+  prospect), seeded from `src/storefront/vitahealDemo.ts`. Its products, subscription plans, subscribers, chatbot settings and chats are kept in this browser
   (`mp.vitaheal-demo.*` in localStorage) and put back from the store's Settings tab ("Restore original store").
   The store carries `webStore.demo`: its checkout uses plain words where another store shows a prototype note, and amounts
   that are charged read "585,90 kr" (the product pages and cart show whole kronor).

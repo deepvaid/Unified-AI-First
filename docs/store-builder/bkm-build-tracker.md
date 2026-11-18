@@ -263,6 +263,71 @@ here already exists when those slices start.
     tab, not with two tabs side by side. A restore leaves an order's "View subscription" link out
     for subscriptions it removed.
 
+- **Part 6, a chatbot on the store (done, 2026-11-18).** Asked for by the human: a chatbot demo
+  on the Vitaheal store that answers order and subscription questions and suggests products for
+  a wellness need. Not a slice of the build prompt.
+  - **Scripted, by the human's choice.** `src/chatbot/storeAssistant.ts` recognises a question
+    by its wording and answers from the store's real orders, subscriptions, products and pages.
+    No language model, nothing leaves the browser, the same question always gets the same
+    answer. 26 tests in `tests/chatbot/storeAssistant.test.ts`, against the demo store's seed.
+  - **What it answers:** an order (number, date, items, total, whether it has shipped); a
+    subscription (next delivery, price, plan; paused, failed and cancelled each say so); a
+    wellness need (sleep, calm, focus, energy, hydration and training, skin, healthy ageing,
+    breathing, women's balance) with product cards; store questions from its knowledge base
+    (delivery, countries, returns, guarantee, how subscriptions work, contact), with the page
+    they come from. A greeting or an unknown question says what it can do.
+  - **Wellness matching reads the products.** The shopper's words are widened by a small
+    vocabulary and scored against each product's name, subtitle, description and collections,
+    so a product added in the admin can be suggested. A question about pregnancy, medication,
+    illness or a child gets "ask your doctor or pharmacist", never a product.
+  - **Who is asking:** the shopper signed in on the store (the account page, or any checkout
+    there). Otherwise an email, then a code (mocked: any six digits). An order number with its
+    email needs no code.
+  - **It acts:** "Add to cart" on a suggestion, and "Skip next delivery" on a subscription, in
+    the chat. Pause, change plan and cancel link to the account page.
+  - **Widget:** `StorefrontChat.vue`, mounted by the layout for a demo store with an Active
+    linked chatbot. Launcher, panel (full screen on a phone), quick prompts, typing pause. It
+    takes its name, colour, corner, welcome message and prompts from the chatbot's settings.
+    Hidden, not removed, on the checkout, so the conversation is still there afterwards.
+  - **Admin:** a seeded chatbot "Vitaheal (demo)" (id 101) under Service › Chatbots, linked to
+    the store, so the store's Chatbot page shows it connected. Its settings and the chats
+    shoppers have on the store are kept in the browser (`mp.vitaheal-demo.chatbot.v1`,
+    `mp.vitaheal-demo.conversations.v1`): a change in the builder reaches the store's tab, a
+    chat shows under Conversations, and "Restore original store" puts both back.
+  - **The walk** (desktop 1280px, then phone 375px; no page scrolled sideways, console clean):
+    1. Store home: navy launcher "Need help?"; the panel opens on the welcome message and five
+       prompts, with focus in the message field.
+    2. "I can't sleep" → Unwind, "Add to cart" → the cart shows 1.
+    3. "I need more focus at work", "I get cramps when I train", "something for my skin" →
+       Clear Focus, Vitaheal Electrolytes, Collagen+.
+    4. "Can I take this while pregnant?" → the doctor answer.
+    5. "Where is my order?" → asks for an email → a code → "I can't find an order for
+       nobody@example.com", with a link to the contact page.
+    6. Bought Electrolytes on the 3-month supply → "Where is my order?" → order #20010 with
+       its items and total.
+    7. "When is my next delivery?" → the subscription card, 18 Feb 2027 → "Skip next delivery"
+       → 18 May 2027 on the card and in the admin's Subscribers.
+    8. "What is your return policy?", "Do you ship to Norway?", "How do subscriptions work?" →
+       the store's own answers, each with its page.
+    9. "asdf" → what it can help with, and the prompts again.
+    10. Admin: Store › Chatbot shows it Active; Conversations lists the two chats just had,
+        above four earlier ones. A new welcome message typed in the builder showed on the store
+        after a reload.
+    11. Phone: the panel fills the screen; a link out of the chat closes it; Esc closes it and
+        focus returns to the launcher.
+    12. Restore original store → the welcome message and the chats are back as seeded.
+    13. Neelam-Store: no widget on its storefront; its Chatbot page and chatbot id unchanged.
+  - **Fixed on the way (a part 4 mistake):** "Continue shopping" on the confirmation led to the
+    store's not-found page. Part 4 turned the countdown off on the demo store, which made that
+    link always show, and its address was resolved twice. It now opens the store's home.
+  - **Changed from part 5:** any checkout on a store with an account page signs its shopper in,
+    not only a subscription checkout, so the chat can find the order just placed.
+  - **Known limits.** It understands the wordings it was written for, not every phrasing. A
+    typed email with a typo is not caught. The chat is lost on a page reload (the saved copy in
+    the admin stays). The builder's own preview still uses its older stand-in answers. The
+    pre-chat form and business hours from the builder are not applied on the store. Only
+    Vitaheal's storefront has the widget.
+
 **Sales-demo pass (added 2026-11-16, after the audience was confirmed as sales people showing prospects):**
 
 - The header's search, account and wishlist are hidden on Vitaheal (demo) until their pages exist (`headerTools` on the store's chrome). S13 turns search on, S8 the account.

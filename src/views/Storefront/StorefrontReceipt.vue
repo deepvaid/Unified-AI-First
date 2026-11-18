@@ -150,7 +150,8 @@ defineExpose({ focus: () => heading.value?.focus() })
         Please keep this tab open. <button type="button" class="sf-receipt__now" @click="goHome">Go now</button> · <button type="button" class="sf-receipt__now" @click="cancel">Stay here</button>
       </p>
     </div>
-    <StorefrontAnchor v-else :href="homeHref" class="sf-button sf-receipt__continue">Continue shopping</StorefrontAnchor>
+    <!-- "/" is the store's own home: StorefrontAnchor resolves it. `homeHref` is already resolved, for the countdown's router push. -->
+    <StorefrontAnchor v-else href="/" class="sf-button sf-receipt__continue">Continue shopping</StorefrontAnchor>
   </div>
 </template>
 

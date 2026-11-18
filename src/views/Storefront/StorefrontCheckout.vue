@@ -291,8 +291,9 @@ watch(sheet, async (now, before) => {
 watch(done, async (isDone) => {
   if (!isDone) return
   if (!buyNow.value) cart.clear(channelId.value)
-  // Whoever just bought a subscription is signed in, so "Manage your subscription" opens it without asking who they are.
-  if (session.value?.lineItems.some((l) => l.plan)) shopper.signIn(channelId.value, session.value.customer.email)
+  // On a store with an account page, whoever just paid is signed in: "Manage your subscription" opens
+  // without asking who they are, and the store's chatbot can find the order they just placed.
+  if (session.value && storefront.chrome.value.accountHref) shopper.signIn(channelId.value, session.value.customer.email)
   await nextTick()
   receipt.value?.focus()
 }, { immediate: true })

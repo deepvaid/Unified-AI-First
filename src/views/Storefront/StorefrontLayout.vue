@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, provide, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useChatbotStore } from '@/stores/useChatbot'
 import { useMaropayStore } from '@/stores/useMaropay'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import { useStoreThemesStore } from '@/stores/useStoreThemes'
@@ -15,6 +16,7 @@ import { roundForDisplay } from '@/subscriptions/plans'
 import { storefrontThemeVars } from '@/stores/themeBuilderData'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import StorefrontAnchor from './StorefrontAnchor.vue'
+import StorefrontChat from './StorefrontChat.vue'
 import StorefrontPayMark from './StorefrontPayMark.vue'
 import { STOREFRONT } from './storefrontContext'
 
@@ -75,6 +77,14 @@ watch(() => [route.fullPath, demo.value], () => {
 }, { immediate: true, flush: 'post' })
 
 const minimal = computed(() => route.meta.minimalChrome === true)
+
+// The store's chatbot, on its pages. Only a store shown to prospects has the widget so far; other
+// stores keep their chatbot in the admin alone. It stays off the checkout, which is distraction-free.
+const chatbots = useChatbotStore()
+const chatbot = computed(() => {
+  const linked = demo.value ? chatbots.getByChannel(channelId.value) : undefined
+  return linked?.status === 'Active' ? linked : undefined
+})
 const cartCount = computed(() => (found.value ? cart.count(found.value.id) : 0))
 const footerMarks = computed(() => offerFor(money(0, currency.value)).acceptedMarks)
 
@@ -214,6 +224,9 @@ function subscribe(): void {
       </ul>
       <p v-if="chrome.copyright" class="sf-foot__copyright">{{ chrome.copyright }}</p>
     </footer>
+
+    <!-- Hidden, not removed, on the checkout: the conversation is still there when the shopper comes back. -->
+    <StorefrontChat v-if="chatbot" v-show="!minimal" :chatbot="chatbot" />
   </div>
 
   <MpEmptyState

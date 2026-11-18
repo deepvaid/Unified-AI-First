@@ -13,6 +13,7 @@
 //   useStoreNavigation  VITAHEAL_MENUS
 //   useStorefront       VITAHEAL_CHROME
 //   useSubscriptions    VITAHEAL_PLANS, vitahealSubscriptions()
+//   useChatbot          VITAHEAL_CHATBOT, VITAHEAL_CONVERSATIONS
 //
 // The catalogue has the shape of BKM's (variants, SEK prices, collections), which
 // is what the requirements test. The brand, product and flavour names are made up,
@@ -30,6 +31,7 @@ import type { SalesChannel } from '../stores/useSalesChannels.ts'
 import type { ContentEntry, BlogSeoSettings } from '../stores/useStoreContent.ts'
 import type { StoreMenu } from '../stores/useStoreNavigation.ts'
 import type { StorefrontChrome } from '../stores/useStorefront.ts'
+import type { ChatbotConfig, ChatbotConversation } from '../stores/useChatbot.ts'
 import { money, toDecimal } from '../maropay/money.ts'
 import { linePlan, nextChargeDate, pricePerDelivery } from '../subscriptions/plans.ts'
 import type { SubscriptionPlan } from '../subscriptions/plans.ts'
@@ -456,6 +458,90 @@ export function vitahealSubscriptions(today: string): SubscriptionContract[] {
     }
   })
 }
+
+// ── Chatbot ──────────────────────────────────────────────────────────────────
+// The assistant on the store's pages (Service › Chatbots in the admin, and the
+// store's own Chatbot page). What it knows about the store is written here in
+// short answers, each agreeing with the page it names. Orders, subscriptions and
+// products it reads live (src/chatbot/storeAssistant.ts).
+
+/** What differs from a new chatbot's settings. */
+export const VITAHEAL_CHATBOT: Partial<ChatbotConfig> = {
+  storeName: 'Vitaheal',
+  storeType: 'Health & wellness',
+  brandName: 'Vitaheal assistant',
+  brandSubtitle: 'Orders, subscriptions and product advice',
+  primaryColor: '#0a2240',
+  position: 'right',
+  launcherText: 'Need help?',
+  launcherTextEnabled: true,
+  welcomeMessage: 'Hi! I’m the Vitaheal assistant. I can look up your order or subscription, or help you find the right product. What can I do for you?',
+  preChatEnabled: false,
+  quickPrompts: [
+    { id: 1, text: 'Where is my order?', enabled: true },
+    { id: 2, text: 'When is my next delivery?', enabled: true },
+    { id: 3, text: 'Help me sleep better', enabled: true },
+    { id: 4, text: 'What helps with focus?', enabled: true },
+    { id: 5, text: 'What is your return policy?', enabled: true },
+  ],
+  knowledgeSources: [
+    {
+      id: 1, name: 'Store policies', icon: 'file-text', items: 4, meta: 'Added 16 Nov 2026', status: 'Active', enabled: true,
+      entries: [
+        { title: 'Returns and refunds', url: '/policies/refund-policy', text: 'You can return unopened products within 14 days of delivery for a full refund. Write to us first and we will send a return label. We refund to your original payment method within 5 working days of receiving the return.' },
+        { title: 'Money-back guarantee on Unwind', url: '/page/money-back-guarantee', text: 'If Unwind is not right for you, tell us within 30 days of delivery and we will refund your first can or bag. The guarantee covers your first order of Unwind, once per household.' },
+        { title: 'Privacy and your data', url: '/policies/privacy-policy', text: 'We keep only what we need to deliver your order and look after your subscription: your name, address, email and order history. Your card details go straight to our payment provider and never reach us.' },
+        { title: 'Prices, VAT and payment', url: '/policies/terms-of-service', text: 'Prices are in Swedish kronor and include VAT. You can pay by card, Apple Pay or Google Pay.' },
+      ],
+    },
+    {
+      id: 2, name: 'Help pages', icon: 'globe', items: 5, meta: 'Added 16 Nov 2026', status: 'Active', enabled: true,
+      entries: [
+        { title: 'Delivery times and shipping cost', url: '/page/contact', text: 'Orders placed before 10:00 CET on a weekday leave our warehouse the same day. Delivery takes 3 to 7 working days, and shipping is free on orders over 549 kr.' },
+        { title: 'Which countries we ship to', url: '/policies/terms-of-service', text: 'We ship to Sweden, Norway, Denmark, Finland and Iceland, and to the rest of the EU. Duties and taxes may apply outside the EU.' },
+        { title: 'How subscriptions work', url: '/page/about', text: 'A subscription sends your product at the interval you choose and saves 20% to 30% on every delivery. You can skip a delivery, pause or cancel at any time from your account page, before the next charge date.' },
+        { title: 'Contact and opening hours', url: '/page/contact', text: 'Write to hello@vitaheal.example and we answer within one working day. We are here Monday to Friday, 09:00 to 17:00 CET.' },
+        { title: 'Where our products are made and tested', url: '/page/about', text: 'Everything is blended and packed in Sweden, and every batch is tested before it ships. Refills come in bags, so one can lasts for years.' },
+      ],
+    },
+  ],
+}
+
+/** Earlier chats, so the admin's Conversations page has this store's own history. */
+export const VITAHEAL_CONVERSATIONS: Omit<ChatbotConversation, 'id' | 'chatbotId'>[] = [
+  {
+    visitor: 'astrid.lindqvist@example.com', startedAt: 'Today, 8:12 AM', topic: 'Subscription', resolved: true,
+    messages: [
+      { from: 'shopper', text: 'When is my next delivery?', time: '8:12 AM' },
+      { from: 'bot', text: 'Your Unwind subscription is active on the 3-month supply. The next delivery date is below, and you can skip it right here if you have enough at home.', time: '8:12 AM' },
+      { from: 'shopper', text: 'No, that is fine. Thanks!', time: '8:13 AM' },
+      { from: 'bot', text: 'You’re welcome. Is there anything else I can help with?', time: '8:13 AM' },
+    ],
+  },
+  {
+    visitor: 'Guest visitor', startedAt: 'Yesterday, 9:47 PM', topic: 'Product advice', resolved: true,
+    messages: [
+      { from: 'shopper', text: 'I keep waking up at night. What do you recommend?', time: '9:47 PM' },
+      { from: 'bot', text: 'For better sleep, these are the ones we make for it: Unwind and Nasal Strips.', time: '9:47 PM' },
+      { from: 'shopper', text: 'Is Unwind covered by the guarantee?', time: '9:48 PM' },
+      { from: 'bot', text: 'If Unwind is not right for you, tell us within 30 days of delivery and we will refund your first can or bag.', time: '9:48 PM' },
+    ],
+  },
+  {
+    visitor: 'Guest visitor', startedAt: 'Yesterday, 2:05 PM', topic: 'Delivery', resolved: true,
+    messages: [
+      { from: 'shopper', text: 'Do you ship to Norway?', time: '2:05 PM' },
+      { from: 'bot', text: 'We ship to Sweden, Norway, Denmark, Finland and Iceland, and to the rest of the EU. Duties and taxes may apply outside the EU.', time: '2:05 PM' },
+    ],
+  },
+  {
+    visitor: 'Guest visitor', startedAt: 'Mon, 11:30 AM', topic: 'Health question', resolved: false,
+    messages: [
+      { from: 'shopper', text: 'Can I take Clear Focus with my blood pressure medication?', time: '11:30 AM' },
+      { from: 'bot', text: 'I can’t give medical advice. Please check with your doctor or pharmacist before starting a supplement.', time: '11:30 AM' },
+    ],
+  },
+]
 
 // ── Storefront header and footer ─────────────────────────────────────────────
 
