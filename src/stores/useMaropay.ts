@@ -85,6 +85,7 @@ import type { ChannelFacts, MaropayTarget, PaymentFilter } from '@/maropay/readi
 import { isManualKind, storeProvidersFor as providersOf } from '@/maropay/providers'
 import type { ManualMethodSettings, OwnProviderKind, ProviderKind } from '@/maropay/providers'
 import { storefrontOffer } from '@/maropay/storefront'
+import { storesWithOwnCatalogue } from '@/storefront/catalog'
 import type { StorefrontOfferOptions } from '@/maropay/storefront'
 import type { BankAccountInput, OnboardingPatch } from '@/maropay/onboarding'
 import { deriveRequirements, rulesForState } from '@/maropay/requirements'
@@ -187,6 +188,8 @@ export const useMaropayStore = defineStore('maropay', () => {
     commerce.createCheckoutOrder({
       ...session.order,
       channelId: session.channelId,
+      // A store with products of its own is its own channel on the order; the rest sell the shared "Online Store" catalogue.
+      ...(storesWithOwnCatalogue(commerce.products).includes(session.channelId) ? { salesChannel: channelName(session.channelId) } : {}),
       currency: payment.amount.currency,
       payment: orderSummary(payment),
       timeline: [

@@ -237,7 +237,7 @@ function setRefundOutcome(value: string | null): void {
                 {{ methodCaption(payment.methodId, payment.methodLabel) }}
               </dd>
             </div>
-            <div><dt>Amount</dt><dd><MaropayMoney :amount="payment.amount" /> {{ payment.amount.currency }}</dd></div>
+            <div><dt>Amount</dt><dd><MaropayMoney :amount="payment.amount" /><template v-if="!formatMoney(payment.amount).includes(payment.amount.currency)"> {{ payment.amount.currency }}</template></dd></div>
             <div>
               <dt>Taken by</dt>
               <dd class="maropay-payment__stack">

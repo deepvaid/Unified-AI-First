@@ -2,7 +2,7 @@
 import { computed, inject, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { sum } from '@/maropay/money'
-import type { CheckoutLineItem } from '@/maropay/model'
+import type { CheckoutCustomer, CheckoutLineItem } from '@/maropay/model'
 import { isEmail } from '@/maropay/onboarding'
 import { MAROPAY_STORE_ROUTE } from '@/maropay/readiness'
 import { cardErrors, cardLabel, flowForMethod, payButtonText } from '@/maropay/storefront'
@@ -39,8 +39,9 @@ const cart = useStorefrontCartStore()
 const channelId = computed(() => storefront.channel.value.id)
 const accountId = computed(() => String(route.params.accountId ?? '2000290'))
 const currency = computed(() => storefront.currency.value)
-/** The order summary reads like the rest of the store. The pay button and payment sheets keep Maropay's own wording. */
-const formatMoney = storefront.formatMoney
+/** Every amount here is what is charged, to the last cent, written the store's way ("585,90 kr"). */
+const formatMoney = storefront.formatExact
+const profile = storefront.checkout.value
 const storeName = computed(() => storefront.chrome.value.wordmark)
 
 function query(key: string): string | null {
@@ -109,12 +110,13 @@ function imageFor(line: CheckoutLineItem): string | undefined {
 const editHref = computed(() => (buyNow.value ? `/products/${productHandle(buyNow.value.product)}` : '/cart-page'))
 
 // ── Form ─────────────────────────────────────────────────────────────
-// A sample shopper is filled in so a test payment is one press away.
+// A sample shopper is filled in so a test payment is one press away. Who that is and
+// where the store delivers follow the store (src/storefront/checkoutProfile.ts).
 
-const contact = reactive({ email: 'ava.brown@example.com', news: false })
+const { email: sampleEmail, ...sampleAddress } = profile.shopper
+const contact = reactive({ email: sampleEmail, news: false })
 const delivery = ref<'ship' | 'pickup'>('ship')
-const address = reactive({ firstName: 'Ava', lastName: 'Brown', address1: '200 Market Street', city: 'San Francisco', region: 'CA', postcode: '94105', country: 'United States' })
-const COUNTRIES = ['United States', 'Canada', 'Australia', 'New Zealand', 'United Kingdom']
+const address = reactive({ ...sampleAddress })
 const card = ref<CardInput>({ number: '4242 4242 4242 4242', expiry: '12 / 30', cvc: '123' })
 
 /** Every provider's methods, in the store's lineup order — Maropay's beside the merchant's own and the manual ones. */
@@ -149,7 +151,18 @@ function errorFor(key: string): string | null {
 }
 
 const shipTo = computed(() => (delivery.value === 'pickup' ? 'Collect in store' : `${address.address1}, ${address.city}`))
-const customer = computed(() => ({ name: `${address.firstName} ${address.lastName}`.trim(), email: contact.email.trim() }))
+/** The address goes with the order for a store that keeps it; "Collect in store" stands in for the street on a pickup. */
+const customer = computed<CheckoutCustomer>(() => ({
+  name: `${address.firstName} ${address.lastName}`.trim(),
+  email: contact.email.trim(),
+  ...(profile.keepsAddress
+    ? {
+        address: delivery.value === 'pickup'
+          ? { line1: 'Collect in store', city: '', region: '', postalCode: '', country: address.country }
+          : { line1: address.address1.trim(), city: address.city.trim(), region: address.region.trim(), postalCode: address.postcode.trim(), country: address.country },
+      }
+    : {}),
+}))
 
 // ── Paying ───────────────────────────────────────────────────────────
 
@@ -312,15 +325,20 @@ const storePaymentsHref = computed(() => router.resolve({ name: MAROPAY_STORE_RO
         :instructions="instructions"
         :store-name="storefront.chrome.value.wordmark"
         :home-href="storefront.link('/')"
+        :auto-return="!storefront.demo.value"
       />
       <p v-if="nextCharge" class="sf-co__subscribed">
         <v-icon size="18">repeat</v-icon>
         <span>Your subscription has started. The next charge is on {{ nextCharge }}.</span>
       </p>
       <p v-if="adminLinks" class="sf-co__demo">
-        <strong>Prototype</strong> — what the merchant sees:
-        <a :href="adminLinks.order" target="_blank" rel="noopener">the order in Commerce</a> ·
-        <a :href="adminLinks.payment" target="_blank" rel="noopener">the payment in Maropay</a>
+        <strong>{{ storefront.demo.value ? 'What the merchant sees:' : 'Prototype' }}</strong>
+        {{ storefront.demo.value ? '' : '— what the merchant sees:' }}
+        <a :href="adminLinks.order" target="_blank" rel="noopener">the order in Commerce</a>
+        <!-- A store shown to prospects links to Maropay only for a payment Maropay took. -->
+        <template v-if="!storefront.demo.value || payment?.provider === 'maropay'">
+          · <a :href="adminLinks.payment" target="_blank" rel="noopener">the payment in Maropay</a>
+        </template>
       </p>
     </section>
 
@@ -383,7 +401,7 @@ const storePaymentsHref = computed(() => router.resolve({ name: MAROPAY_STORE_RO
                 <label class="sf-field sf-co__full">
                   Country
                   <select v-model="address.country" class="sf-input" autocomplete="country-name">
-                    <option v-for="country in COUNTRIES" :key="country">{{ country }}</option>
+                    <option v-for="country in profile.countries" :key="country">{{ country }}</option>
                   </select>
                 </label>
                 <div class="sf-field sf-co__full">
@@ -396,9 +414,9 @@ const storePaymentsHref = computed(() => router.resolve({ name: MAROPAY_STORE_RO
                   <input id="sf-co-city" v-model="address.city" class="sf-input" autocomplete="address-level2" :aria-invalid="!!errorFor('city')" :aria-describedby="errorFor('city') ? 'sf-co-city-err' : undefined">
                   <span v-if="errorFor('city')" id="sf-co-city-err" class="sf-field__error">{{ errorFor('city') }}</span>
                 </div>
-                <div class="sf-co__pair">
-                  <label class="sf-field">
-                    State
+                <div :class="{ 'sf-co__pair': profile.regionLabel }">
+                  <label v-if="profile.regionLabel" class="sf-field">
+                    {{ profile.regionLabel }}
                     <input v-model="address.region" class="sf-input" autocomplete="address-level1">
                   </label>
                   <div class="sf-field">
@@ -429,7 +447,7 @@ const storePaymentsHref = computed(() => router.resolve({ name: MAROPAY_STORE_RO
             <div v-else class="sf-co__none">
               <p><strong>{{ storeName }} isn’t taking online payments yet.</strong></p>
               <p class="sf-muted sf-co__none-note">
-                Prototype: connect a provider or activate Maropay on the store’s
+                <template v-if="!storefront.demo.value">Prototype: connect</template><template v-else>Connect</template> a provider or activate Maropay on the store’s
                 <a :href="storePaymentsHref" target="_blank" rel="noopener">Payments page</a> and this checkout follows.
               </p>
             </div>
@@ -460,7 +478,7 @@ const storePaymentsHref = computed(() => router.resolve({ name: MAROPAY_STORE_RO
           <StorefrontPayButton
             v-if="options.length"
             ref="payButton"
-            :label="busy ? 'Processing…' : payButtonText(method, offer.payButton, total)"
+            :label="busy ? 'Processing…' : payButtonText(method, offer.payButton, total, formatMoney)"
             :busy="busy"
             :secured="method?.providerId === 'maropay'"
           />
@@ -489,7 +507,7 @@ const storePaymentsHref = computed(() => router.resolve({ name: MAROPAY_STORE_RO
           <dl class="sf-co__sums">
             <div><dt>Subtotal · {{ itemCount }} {{ itemCount === 1 ? 'item' : 'items' }}</dt><dd>{{ formatMoney(total) }}</dd></div>
             <div><dt>Shipping</dt><dd>Free</dd></div>
-            <div class="sf-co__grand"><dt>Total</dt><dd><span class="sf-muted sf-co__currency">{{ currency }}</span> {{ formatMoney(total) }}</dd></div>
+            <div class="sf-co__grand"><dt>Total</dt><dd><span v-if="!storefront.ownMoneyFormat.value" class="sf-muted sf-co__currency">{{ currency }}</span> {{ formatMoney(total) }}</dd></div>
             <div v-for="charge in recurring" :key="charge.interval" class="sf-co__recurring">
               <dt>Then {{ charge.interval }}</dt><dd>{{ formatMoney(charge.amount) }}</dd>
             </div>

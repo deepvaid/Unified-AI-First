@@ -686,11 +686,18 @@ export interface CheckoutLineItem {
 }
 
 /** Enough of a checkout-created order to rebuild it after reload (Commerce is not persisted). */
+/** Who is buying. The address is the one typed at checkout, for a store whose orders keep it. */
+export interface CheckoutCustomer {
+  name: string
+  email: string
+  address?: { line1: string; city: string; region: string; postalCode: string; country: string }
+}
+
 export interface CheckoutOrderSnapshot {
   id: number
   orderNumber: string
   date: string
-  customer: { name: string; email: string }
+  customer: CheckoutCustomer
   lineItems: CheckoutLineItem[]
   shipping: string
   total: string
@@ -711,7 +718,7 @@ export interface CheckoutSession {
   state: 'open' | 'requires_action' | 'redirected' | 'processing' | 'complete' | 'failed'
   paymentId: string | null
   order: CheckoutOrderSnapshot | null
-  customer: { name: string; email: string }
+  customer: CheckoutCustomer
   lineItems: CheckoutLineItem[]
   createdAt: string
 }

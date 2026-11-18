@@ -41,6 +41,8 @@ export interface SalesChannel {
     currency?: string
     /** The locale its storefront formats prices in (BCP 47), e.g. "sv-SE" for "399 kr". Absent: "$399.00"-style. */
     locale?: string
+    /** A store shown to prospects. Its checkout says "demo" in plain words where a prototype note would be, and its admin page has no button that leads nowhere. */
+    demo?: boolean
   }
   offlineStore?: {
     locationIds: string[]

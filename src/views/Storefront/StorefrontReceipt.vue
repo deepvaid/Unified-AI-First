@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, inject, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { formatMoney, moneyParts } from '@/maropay/money'
 import type { CheckoutSession, Payment } from '@/maropay/model'
 import { isManualKind } from '@/maropay/providers'
 import { paidWithText, shopperReference } from '@/maropay/storefront'
 import StorefrontAnchor from './StorefrontAnchor.vue'
+import { STOREFRONT } from './storefrontContext'
 
 // The order's receipt, the moment the payment goes through: a till slip — the
 // amount, who it thanks, then order · paid with · date · reference — and a
@@ -21,6 +22,8 @@ const props = defineProps<{
   instructions: string | null
   storeName: string
   homeHref: string
+  /** Count down and go back to the store. Off where someone is presenting the store: the page must not leave while they talk. */
+  autoReturn?: boolean
 }>()
 
 const router = useRouter()
@@ -30,9 +33,12 @@ const delayed = computed(() => !manual.value && props.session.state === 'process
 const paid = computed(() => !manual.value && !delayed.value)
 const firstName = computed(() => props.session.customer.name.split(' ')[0] ?? '')
 const parts = computed(() => moneyParts(props.session.amount))
+/** A store that writes amounts its own way shows the amount whole ("585,90 kr"), and its dates day first. */
+const storefront = inject(STOREFRONT, null)
+const ownAmount = computed(() => (storefront?.ownMoneyFormat.value ? storefront.formatExact(props.session.amount) : null))
 const paidWith = computed(() => (props.payment ? paidWithText(props.payment) : props.session.methodLabel))
 const reference = computed(() => shopperReference(props.payment?.id ?? props.session.id))
-const DATE = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
+const DATE = new Intl.DateTimeFormat(storefront?.ownMoneyFormat.value ? 'en-GB' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
 const when = computed(() => DATE.format(new Date(props.payment?.capturedAt ?? props.payment?.createdAt ?? props.session.createdAt)))
 
 const title = computed(() => (paid.value ? 'Payment received' : manual.value ? 'Order placed' : 'Payment processing'))
@@ -56,7 +62,7 @@ const cancelled = ref(false)
 let timer: ReturnType<typeof setInterval> | null = null
 const reducedMotion = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 const seenKey = computed(() => `sf-receipt-seen-${props.session.id}`)
-const countdownOn = computed(() => paid.value && !reducedMotion && !cancelled.value)
+const countdownOn = computed(() => props.autoReturn !== false && paid.value && !reducedMotion && !cancelled.value)
 
 function goHome(): void {
   stop()
@@ -109,8 +115,9 @@ defineExpose({ focus: () => heading.value?.focus() })
         </span>
         <p class="sf-receipt__status sf-muted">{{ title }}</p>
         <h1 id="sf-co-done" ref="heading" tabindex="-1" class="sf-receipt__amount">
-          <span class="sf-receipt__symbol">{{ parts.symbol }}</span>{{ parts.integer }}<span v-if="parts.fraction" class="sf-receipt__cents">.{{ parts.fraction }}</span>
-          <span class="d-sr-only"> {{ formatMoney(session.amount) }} — {{ title }}</span>
+          <template v-if="ownAmount">{{ ownAmount }}</template>
+          <template v-else><span class="sf-receipt__symbol">{{ parts.symbol }}</span>{{ parts.integer }}<span v-if="parts.fraction" class="sf-receipt__cents">.{{ parts.fraction }}</span></template>
+          <span class="d-sr-only"> {{ ownAmount ? '' : formatMoney(session.amount) }} — {{ title }}</span>
         </h1>
         <p class="sf-receipt__lead">{{ lead }}</p>
       </div>

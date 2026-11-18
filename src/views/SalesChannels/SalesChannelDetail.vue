@@ -31,7 +31,7 @@ import { useRetailStore } from '@/stores/useRetail'
 import { useStoreThemesStore } from '@/stores/useStoreThemes'
 import { useStorefrontStore } from '@/stores/useStorefront'
 import { storesWithOwnCatalogue } from '@/storefront/catalog'
-import { VITAHEAL_CHANNEL_ID } from '@/storefront/vitahealDemo'
+import { VITAHEAL_ADMIN, VITAHEAL_CHANNEL_ID } from '@/storefront/vitahealDemo'
 
 type MetricColor = 'primary' | 'retail' | 'commerce' | 'analytics' | 'contacts' | 'success' | 'warning'
 type DetailTab = 'overview' | 'settings' | 'apps' | 'ai' | 'activity'
@@ -169,6 +169,11 @@ const hasOwnCatalogue = computed(() => storesWithOwnCatalogue(commerceStore.prod
 
 // The demo store keeps what is changed in it in this browser, and can be put back.
 const keepsChanges = computed(() => channelId.value === VITAHEAL_CHANNEL_ID)
+/** The demo store's own company, figures and theme name, in place of the placeholders other web stores share. */
+const demoFacts = computed(() => (channelId.value === VITAHEAL_CHANNEL_ID ? VITAHEAL_ADMIN : null))
+/** A store shown to prospects has no button that only answers "not built yet". */
+const isDemoStore = computed(() => channel.value?.webStore?.demo === true)
+const ownProductCount = computed(() => commerceStore.products.filter((p) => p.channelIds?.includes(channelId.value)).length)
 const confirmRestore = ref(false)
 
 function restoreStore() {
@@ -267,7 +272,7 @@ const headerMeta = computed(() => {
 const kpiCards = computed<KpiCard[]>(() => {
   if (isWebStore.value) {
     return [
-      { label: 'Revenue', value: '$842K', icon: 'trending-up', color: 'commerce', period: 'Last 30 days', trend: '+12%', trendPositive: true },
+      { label: 'Revenue', value: demoFacts.value?.revenue ?? '$842K', icon: 'trending-up', color: 'commerce', period: 'Last 30 days', trend: '+12%', trendPositive: true },
       { label: 'Orders', value: '1,284', icon: 'shopping-bag', color: 'primary', period: 'Last 30 days', trend: '+8%', trendPositive: true },
       { label: 'Conversion', value: formatPercent(3.42), icon: 'mouse-pointer-click', color: 'analytics', period: 'Storefront sessions', trend: '+0.3%', trendPositive: true },
       { label: 'Sessions', value: '37.6K', icon: 'users', color: 'contacts', period: 'Last 30 days', trend: '+4%', trendPositive: true },
@@ -400,7 +405,10 @@ const setupChecklist = computed<SetupItem[]>(() => {
       { id: 'domain', title: 'Store URL', description: current.webStore?.domain ?? 'Add a storefront domain', done: Boolean(current.webStore?.domain), target: 'preview' },
       { id: 'theme', title: 'Theme ready', description: current.webStore?.published ? 'Published theme is live' : 'Publish the draft theme', done: Boolean(current.webStore?.published), target: 'store_builder' },
       { id: 'merchandise', title: 'Merchandising connected', description: 'Search and recommendations are active', done: Boolean(current.webStore?.merchandiseConnected), target: 'merchandise' },
-      { id: 'legal', title: 'Legal pages', description: 'Review privacy and returns', done: false, target: 'settings' },
+      // The demo store's policies are written (Store content › Pages), so its item opens them instead of a tab with nothing to review.
+      isDemoStore.value
+        ? { id: 'legal', title: 'Legal pages', description: 'Privacy, refunds and terms are published', done: true, target: 'pages' }
+        : { id: 'legal', title: 'Legal pages', description: 'Review privacy and returns', done: false, target: 'settings' },
       paymentsSetupItem(),
     ]
   }
@@ -429,6 +437,14 @@ const setupProgress = computed(() => {
 const activityItems = computed<ActivityItem[]>(() => {
   const current = channel.value
   if (!current) return []
+
+  if (current.type === 'web_store' && demoFacts.value) {
+    return [
+      { id: 'theme', icon: 'rocket', title: 'Theme published', meta: demoFacts.value.themeName, time: formatRelative(current.lastActivityAt), color: 'primary' },
+      { id: 'inventory', icon: 'package', title: 'Catalog synced', meta: `${ownProductCount.value} products from Commerce Cloud`, time: '2 h ago', color: 'commerce' },
+      { id: 'plans', icon: 'repeat', title: 'Subscription plans updated', meta: '3-month supply, Monthly subscription', time: 'Yesterday', color: 'analytics' },
+    ]
+  }
 
   if (current.type === 'web_store') {
     return [
@@ -475,6 +491,8 @@ const connectedApps = computed<ConnectedApp[]>(() => {
 })
 
 const businessInfoFields = computed<BusinessInfoField[]>(() => {
+  if (demoFacts.value) return [...demoFacts.value.business]
+
   if (isWebStore.value) {
     return [
       { label: 'Legal name', value: 'Atlas Outfitters Ltd.' },
@@ -992,7 +1010,7 @@ function locationRoleText(locationId: string) {
               <div class="retail-widget-header__title">Business information</div>
               <div class="retail-widget-header__sub">Legal, contact, and channel details</div>
             </div>
-            <v-btn size="small" variant="text" prepend-icon="pencil" class="text-none" @click="showNotice('Business information edit prototype entry point.')">
+            <v-btn v-if="!isDemoStore" size="small" variant="text" prepend-icon="pencil" class="text-none" @click="showNotice('Business information edit prototype entry point.')">
               Edit
             </v-btn>
           </div>
@@ -1003,7 +1021,7 @@ function locationRoleText(locationId: string) {
                 <dd>{{ field.value }}</dd>
               </div>
             </dl>
-            <div v-if="isWebStore" class="sc-favicon-row">
+            <div v-if="isWebStore && !isDemoStore" class="sc-favicon-row">
               <div class="sc-favicon-row__thumb">
                 <v-icon size="20">image</v-icon>
               </div>

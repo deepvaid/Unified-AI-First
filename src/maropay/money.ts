@@ -171,5 +171,7 @@ export function moneyParts(m: Money, locale = 'en-US'): MoneyDisplayParts {
     else if (part.type === 'fraction') fraction += part.value
     else if (part.type === 'integer' || part.type === 'group') integer += part.value
   }
+  // A currency written as its code ("SEK") keeps the space before the amount: "SEK 585.90", not "SEK585.90".
+  if (/[A-Za-z]$/.test(symbol)) symbol += '\u00a0'
   return { negative: m.amount < 0, symbol, integer, fraction, formatted: formatter.format(value) }
 }

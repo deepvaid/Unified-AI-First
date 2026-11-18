@@ -52,3 +52,9 @@ test('formatting puts the sign before the symbol and omits fractions for JPY', (
   assert.deepEqual({ negative: parts.negative, symbol: parts.symbol, integer: parts.integer, fraction: parts.fraction }, { negative: true, symbol: '$', integer: '1,234', fraction: '56' })
   assert.equal(moneyParts(money(1290, 'JPY')).fraction, '')
 })
+
+test('a currency written as its code keeps a space before the amount', () => {
+  const parts = moneyParts(money(58590, 'SEK'))
+  assert.equal(`${parts.symbol}${parts.integer}.${parts.fraction}`, 'SEK\u00a0585.90')
+  assert.equal(moneyParts(money(58590, 'USD')).symbol, '$')
+})

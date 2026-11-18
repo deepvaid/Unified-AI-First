@@ -56,8 +56,32 @@ export const VITAHEAL_CHANNEL: SalesChannel = {
     merchandiseConnected: false,
     currency: 'SEK',
     locale: 'sv-SE',
+    demo: true,
   },
 }
+
+/**
+ * What the store's own page in the admin says about the store, where other web
+ * stores show one placeholder company and dollar figures. The company and its
+ * details are made up, like the brand.
+ */
+export const VITAHEAL_ADMIN = {
+  /** Revenue of the last 30 days, in the store's currency. */
+  revenue: '1.9M kr',
+  themeName: 'Vitaheal 1.0',
+  business: [
+    { label: 'Legal name', value: 'Vitaheal AB' },
+    { label: 'Business type', value: 'Limited company (aktiebolag)' },
+    { label: 'Reg. number', value: '559999-0000' },
+    { label: 'Phone', value: '+46 8 465 004 12' },
+    { label: 'Public email', value: 'hello@vitaheal.example' },
+    { label: 'Support email', value: 'hello@vitaheal.example' },
+    { label: 'Website', value: '2000290-12.uat.maropost.store' },
+    { label: 'Street', value: 'Hantverkargatan 8' },
+    { label: 'City / region', value: '112 21 Stockholm' },
+    { label: 'Country', value: 'Sweden' },
+  ],
+} as const
 
 // ── Theme ────────────────────────────────────────────────────────────────────
 

@@ -9,6 +9,7 @@ import { useStorefrontCartStore } from '@/stores/useStorefrontCart'
 import { money } from '@/maropay/money'
 import type { Money } from '@/maropay/money'
 import { storefrontOffer } from '@/maropay/storefront'
+import { checkoutProfile } from '@/storefront/checkoutProfile'
 import { formatStorePrice } from '@/storefront/price'
 import { roundForDisplay } from '@/subscriptions/plans'
 import { storefrontThemeVars } from '@/stores/themeBuilderData'
@@ -56,12 +57,22 @@ const chrome = computed(() => storefronts.chromeFor(channel.value))
 const currency = computed(() => found.value?.webStore?.currency ?? maropay.account?.currency ?? 'USD')
 // Kronor are shown whole ("586 kr" for 585,90): only the display is rounded, the order keeps the exact amount.
 const formatMoney = (amount: Money) => formatStorePrice(roundForDisplay(amount), found.value?.webStore?.locale)
+// What is charged is never rounded: the checkout, the pay button and the receipt read "585,90 kr".
+const formatExact = (amount: Money) => formatStorePrice(amount, found.value?.webStore?.locale)
+const ownMoneyFormat = computed(() => Boolean(found.value?.webStore?.locale))
+const checkout = computed(() => checkoutProfile(found.value?.webStore?.currency))
+const demo = computed(() => found.value?.webStore?.demo === true)
 
 function offerFor(amount: Money) {
-  return storefrontOffer(maropay.state, channelId.value, amount)
+  return storefrontOffer(maropay.state, channelId.value, amount, { format: formatExact })
 }
 
-provide(STOREFRONT, { channel, theme, chrome, link, currency, formatMoney, offerFor })
+provide(STOREFRONT, { channel, theme, chrome, link, currency, formatMoney, formatExact, ownMoneyFormat, checkout, demo, offerFor })
+
+// A store shown to prospects names itself in the browser tab, where the router's fallback reads "Storefront home · Maropost".
+watch(() => [route.fullPath, demo.value], () => {
+  if (demo.value) document.title = chrome.value.wordmark
+}, { immediate: true, flush: 'post' })
 
 const minimal = computed(() => route.meta.minimalChrome === true)
 const cartCount = computed(() => (found.value ? cart.count(found.value.id) : 0))

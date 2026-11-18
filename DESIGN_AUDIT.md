@@ -2683,3 +2683,33 @@ prospects, so BKM's name is off the screen:
 - `CheckoutLineItem` (`src/maropay/model.ts`) and `OrderLineItem` gain an optional `plan`.
 - A storefront in kronor rounds every amount it shows to whole kronor (`roundForDisplay`).
   Stores in other currencies are unchanged.
+
+**Demo pass, part 4 (2026-11-18) — the shopper journey holds from "View store" to the order in the admin.**
+
+- New pure module `src/storefront/checkoutProfile.ts`: the countries, the region field and the
+  sample shopper of a store's checkout, chosen by the store's currency.
+- The storefront context (`storefrontContext.ts`) gains `formatExact`, `ownMoneyFormat`,
+  `checkout` and `demo`, plus `useExactMoney()` and `useDemoStore()` for the parts the checkout
+  shares with the admin's "What shoppers see" preview.
+- New store flag `webStore.demo` (Vitaheal only): plain wording in place of prototype notes on
+  the checkout, no countdown on the confirmation, the store's name in the browser tab, and no
+  "Edit" / "Upload" placeholder buttons on the store's Settings tab.
+- Order page (`OrderDetail.vue`): a product photo on each line whose product has one (the
+  Products list's `v-avatar` pattern); the address line no longer leaves a stray comma when
+  there is no region.
+- No new component, token or story.
+
+### Renames and breaking changes
+
+- `payButtonText` takes an optional fourth argument, the store's money format;
+  `StorefrontOfferOptions` gains `format` for the instalment captions.
+- `CheckoutSession.customer` and `CheckoutOrderSnapshot.customer` are now `CheckoutCustomer`
+  (`src/maropay/model.ts`), which adds an optional `address`. The payment's own `customer` stays
+  name and email.
+- `CheckoutOrderInput` (`useCommerce`) gains an optional `salesChannel`.
+- `formatMoneyParts` and Maropay's `moneyParts` add a no-break space to a symbol that is a
+  currency code ("SEK "). Dollar amounts are unchanged.
+- The order page and orders list no longer print a fixed "$" for subtotal and shipping: they use
+  the order's currency.
+- A store in kronor now shows exact amounts at checkout ("585,90 kr"); whole kronor stay on the
+  product pages and the cart. This narrows part 3's rounding rule.

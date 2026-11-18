@@ -5,7 +5,7 @@ import { useMaropayStore } from '@/stores/useMaropay'
 import { useStorefrontCartStore } from '@/stores/useStorefrontCart'
 import { useSubscriptionsStore } from '@/stores/useSubscriptions'
 import { browserStorage, keepInBrowser } from '@/stores/demoKeep'
-import type { MaropayProvider, OrderPaymentStatusLabel } from '@/maropay/model'
+import type { CheckoutCustomer, MaropayProvider, OrderPaymentStatusLabel } from '@/maropay/model'
 import { demoSlot } from '@/storefront/demoStorage'
 import { deliverySummary, nextChargeDate } from '@/subscriptions/plans'
 import type { LinePlan } from '@/subscriptions/plans'
@@ -526,7 +526,9 @@ export interface CheckoutOrderInput {
   orderNumber: string
   date: string
   channelId: string
-  customer: { name: string; email: string }
+  /** The store's own name, for a store with products of its own. Absent: "Online Store", the shared catalogue's channel. */
+  salesChannel?: string
+  customer: CheckoutCustomer
   lineItems: Array<{ product: string; sku: string; qty: number; price: string; plan?: LinePlan }>
   shipping: string
   total: string
@@ -1381,8 +1383,10 @@ export const useCommerceStore = defineStore('commerce', () => {
   function createCheckoutOrder(input: CheckoutOrderInput): Order {
     const existing = getOrderById(input.id)
     if (existing) return existing
-    const city = cities[input.id % cities.length]!
-    const address = buildAddress(input.customer.name, city, input.id)
+    // The address typed at checkout when the store keeps it; otherwise a made-up one, as for seeded orders.
+    const typed = input.customer.address
+    const city = typed ? [typed.city, typed.region].filter(Boolean).join(', ') || '—' : cities[input.id % cities.length]!
+    const address: OrderAddress = typed ? { name: input.customer.name, ...typed } : buildAddress(input.customer.name, city, input.id)
     const nameParts = input.customer.name.trim().split(/\s+/)
     const subscribed = input.lineItems.filter((li): li is typeof li & { plan: LinePlan } => !!li.plan)
     const order: Order = {
@@ -1409,7 +1413,7 @@ export const useCommerceStore = defineStore('commerce', () => {
       notes: null,
       // A line bought on a plan makes it a subscription order, findable by its tag.
       tags: subscribed.length ? ['Subscription'] : [],
-      salesChannel: 'Online Store',
+      salesChannel: input.salesChannel ?? 'Online Store',
       currency: input.currency,
       region: address.region || '—',
       country: address.country,

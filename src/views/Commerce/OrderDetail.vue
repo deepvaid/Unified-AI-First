@@ -159,6 +159,16 @@ function lineTotal(qty: number, price: string, discountPct: number): string {
   return (qty * parseFloat(price) * (1 - discountPct / 100)).toFixed(2)
 }
 
+/** The line's product photo, when its product has one. */
+function lineImage(sku: string): string | undefined {
+  return store.products.find((p) => p.sku === sku)?.imageUrls?.[0]
+}
+
+/** City, region and postcode on one line; an address without a region (Sweden) leaves no stray comma. */
+function placeLine(address: OrderAddress): string {
+  return [address.city, [address.region, address.postalCode].filter(Boolean).join(' ')].filter(Boolean).join(', ')
+}
+
 // ── Money formatting (symbol / integer / demoted cents) ───────────
 function money(value: string) {
   return formatMoneyParts(parseFloat(value || '0'), order.value?.currency ?? 'USD')
@@ -257,7 +267,7 @@ function timelineIcon(entry: { kind: string; text: string }): string {
                 <dt>Address</dt>
                 <dd>
                   {{ (kind === 'shipping' ? order.shippingAddress : order.billingAddress).line1 }}<br>
-                  {{ (kind === 'shipping' ? order.shippingAddress : order.billingAddress).city }}, {{ (kind === 'shipping' ? order.shippingAddress : order.billingAddress).region }} {{ (kind === 'shipping' ? order.shippingAddress : order.billingAddress).postalCode }}
+                  {{ placeLine(kind === 'shipping' ? order.shippingAddress : order.billingAddress) }}
                 </dd>
               </div>
               <div>
@@ -286,11 +296,18 @@ function timelineIcon(entry: { kind: string; text: string }): string {
             <tbody>
               <tr v-for="li in order.lineItems" :key="li.sku + li.product + (li.plan?.id ?? '')">
                 <td>
-                  <div class="text-body-2 font-weight-medium">{{ li.product }}</div>
-                  <div class="text-caption text-medium-emphasis">{{ li.sku }}</div>
-                  <div v-if="li.plan" class="text-caption d-flex align-center ga-1">
-                    <v-icon size="12">repeat</v-icon>
-                    Subscription: {{ li.plan.name }} ({{ deliverySummary(li.plan) }})
+                  <div class="d-flex align-center ga-3">
+                    <v-avatar v-if="lineImage(li.sku)" :size="36" rounded="lg" class="border flex-shrink-0">
+                      <v-img :src="lineImage(li.sku)" alt="" cover />
+                    </v-avatar>
+                    <div>
+                      <div class="text-body-2 font-weight-medium">{{ li.product }}</div>
+                      <div class="text-caption text-medium-emphasis">{{ li.sku }}</div>
+                      <div v-if="li.plan" class="text-caption d-flex align-center ga-1">
+                        <v-icon size="12">repeat</v-icon>
+                        Subscription: {{ li.plan.name }} ({{ deliverySummary(li.plan) }})
+                      </div>
+                    </div>
                   </div>
                 </td>
                 <td><MpStatusChip :status="li.status" type="fulfillment" size="sm" /></td>
@@ -303,8 +320,8 @@ function timelineIcon(entry: { kind: string; text: string }): string {
             </tbody>
           </v-table>
           <div class="pa-5 pt-4 d-flex flex-column gap-2 od-totals">
-            <div class="d-flex justify-space-between text-body-2"><span class="text-medium-emphasis">Subtotal</span><span class="mp-money">${{ order.subtotal }}</span></div>
-            <div class="d-flex justify-space-between text-body-2"><span class="text-medium-emphasis">Shipping</span><span class="mp-money">${{ order.shipping }}</span></div>
+            <div class="d-flex justify-space-between text-body-2"><span class="text-medium-emphasis">Subtotal</span><span class="mp-money">{{ money(order.subtotal).formatted }}</span></div>
+            <div class="d-flex justify-space-between text-body-2"><span class="text-medium-emphasis">Shipping</span><span class="mp-money">{{ money(order.shipping).formatted }}</span></div>
             <div class="d-flex justify-space-between align-baseline pt-3 mt-1 od-total-row">
               <span class="text-body-2 text-medium-emphasis">Net payable</span>
               <span class="od-total-amount mp-money">{{ money(order.total).symbol }}{{ money(order.total).integer }}<span class="mp-money__cents">.{{ money(order.total).cents }}</span></span>

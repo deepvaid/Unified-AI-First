@@ -59,7 +59,7 @@ The slices and their rules are in [bkm-build-prompt.md](bkm-build-prompt.md).
 
 **Left for later slices, on purpose:**
 
-- The pay button, payment sheets and receipt still format money the Maropay way ("Pay SEK 399.00"); checkout countries do not include Sweden. Both are S9.
+- ~~The pay button, payment sheets and receipt still format money the Maropay way ("Pay SEK 399.00"); checkout countries do not include Sweden.~~ Fixed in the demo pass, part 4: the checkout follows the store's currency. Markets and VAT are still S9.
 - The product editor's variant grid shows "$" prices; the Products list shows the store's currency. S9.
 - The sale and custom badge colours are theme settings but nothing draws those badges yet (S5). The sold-out tag uses its setting.
 - The storefront still shows a search box (the reference site has none) and a single product image without a gallery (S2, S5).
@@ -144,19 +144,70 @@ here already exists when those slices start.
     lowest-priced variant. Nothing renews: the next charge is a date in the order's timeline.
     "Skip or cancel anytime" is a seeded benefit line; the place to do it comes with S8. A total
     of rounded lines can differ from the rounded total by one krona.
-- **Part 4 (the shopper journey end to end):** not started. Also noted for it while testing
-  Part 3: the pay button and the confirmation read "SEK 585.90", the checkout total reads
-  "SEK 586 kr", and a Vitaheal order in the admin says its sales channel is "Online Store".
-  Noted for Part 4 while testing Part 2: the store's Settings tab shows another company's
-  business details ("Atlas Outfitters Ltd.", Brooklyn) and an "Edit" button that answers with
-  internal wording, and the overview's revenue is in dollars.
+- **Part 4, the shopper journey end to end (done, 2026-11-18).** Small pieces of S9 (the
+  checkout's countries and money format), pulled forward. Markets, VAT and per-market prices stay
+  with S9.
+  - **The walk** (account 2000290, "Main App" preview; desktop 1280px, then phone 375px; no page
+    scrolled sideways, the console was clean on the last pass, and no shopper page showed "prototype", "Maropost",
+    "Maropay", "SEK" or a dollar price):
+    1. Admin `/accounts/2000290/sales_channels/vitaheal-demo`: revenue "1.9M kr", the company is
+       Vitaheal AB in Stockholm, 4 of 5 setup items done. "View store" opens the storefront in a
+       new tab.
+    2. Home `…/storefront`: the tab reads "Vitaheal". "Shop all products" opens the "All" collection.
+    3. Collection `…/collections/all`: eight products with photos. On the phone the menu button
+       opens the same links, and "Sleep" opens `…/collections/sleep`.
+    4. Product `…/products/vitaheal-electrolytes-2005`: "3-month supply" is preselected; "Add
+       subscription to cart" answers "Added to your cart" with a "View cart (1)" link.
+    5. Cart `…/cart-page`: the plan under the line, "586 kr", "Then every 3 months".
+    6. Checkout `…/checkout`: Linnea Berg, Storgatan 12, Stockholm, Sweden first of 15 countries,
+       no State field. Total, repeat charge, consent text and pay button all read "585,90 kr".
+       Paying without the consent box is stopped with a message and focus on the box.
+    7. Bank check (sample card ending 3155): "This is a demo store, so any 6 digits work."
+    8. Confirmation: "585,90 kr", order number, "18 Nov 2026", the next charge date, and
+       "What the merchant sees: the order in Commerce". The page stays until the presenter leaves it.
+    9. Admin order `/commerce/2000290/orders/900003`: channel "Vitaheal (demo)", the Stockholm
+       address, the product photo on the line, "SEK 585.90", the Subscription tag and the timeline.
+       The orders list shows "SEK 585.90" too.
+    10. Phone, one-time purchase: Unwind at "399 kr" → Apple Pay from the cart → "Deliver to
+        Storgatan 12, Stockholm" → confirmation "399 kr" → order #20004.
+    11. Click & collect: the address fields go, and the order's address reads "Collect in store".
+  - **Checkout follows the store** (`src/storefront/checkoutProfile.ts`, 4 tests): a store that
+    sells in kronor delivers to Sweden, the Nordics and ten EU countries, has no State field, and
+    is filled in with a Swedish sample shopper. Other stores keep the checkout they had.
+  - **What is charged is never rounded.** Product pages and the cart show whole kronor
+    ("586 kr"). The checkout, pay button, payment sheets and confirmation show the exact amount
+    the store's way ("585,90 kr"), so the shopper agrees to the amount that is taken. This
+    replaces part 3's "whole kronor everywhere on the storefront".
+  - **A store flag, `webStore.demo`,** set on Vitaheal only. With it: "Sample cards" instead of
+    "Test cards for this prototype"; the bank and provider sheets say "demo store"; the
+    confirmation says "What the merchant sees" and links to Maropay only for a payment Maropay
+    took; the confirmation does not count down and leave; the browser tab reads "Vitaheal"; and
+    the store's Settings tab has no "Edit" or "Upload" button that only answers "not built yet".
+  - **The order matches the checkout.** An order from a store with its own checkout profile
+    keeps the address the shopper typed (a pickup shows "Collect in store"). An order from a
+    store with products of its own names that store as its sales channel.
+  - **Admin money.** The order page's subtotal and shipping, and every amount on the orders list,
+    are in the order's currency (they had a fixed "$"). A currency shown as its code keeps its
+    space ("SEK 585.90", was "SEK585.90") on Commerce and Maropay pages.
+  - **Store page.** Vitaheal's own company details, revenue in kronor and recent activity
+    (`VITAHEAL_ADMIN` in the seed). Its "Legal pages" setup item is done and opens Pages.
+  - **Other stores, checked:** Neelam-Store's checkout still offers the five original countries,
+    Ava Brown in San Francisco, "Pay $119.33", "Total USD $119.33", its prototype notes and the
+    countdown; its order still reads "Online Store" with a made-up US address.
+  - **Known limits.** The cart says "586 kr" and the checkout "585,90 kr" for the same line.
+    "Click & collect" is offered though the store has no shop. Shipping is free on every order,
+    so "Free shipping over 549 kr" is not enforced (S10). The order is "Fulfilled from" a US
+    location, because locations belong to the account. The Maropay pages still show the
+    account's own name ("Atlas Outfitters LLC") and a "Demo controls" panel; the order page's
+    "View in Maropay" leads there. The overview's "Storefront preview" is the builder's drawing
+    without photos. The walk's test orders (#20001 to #20006, one of them Neelam-Store's) stay in this browser's Maropay data.
 
 **Sales-demo pass (added 2026-11-16, after the audience was confirmed as sales people showing prospects):**
 
 - The header's search, account and wishlist are hidden on Vitaheal (demo) until their pages exist (`headerTools` on the store's chrome). S13 turns search on, S8 the account.
 - The footer signup now confirms ("Thank you. You are on the list.").
 - The store's description in Sales channels no longer uses internal wording.
-- Still visible to a prospect, and owned by later slices: the checkout's "Test cards for this prototype" helper and "Pay SEK 399.00" button, and no Sweden in the checkout's country list (S9); the product editor's "$" variant prices (S9); the eight preset swatches in the Styles tab, none of which is BKM's navy (see decisions).
+- Still visible to a prospect, and owned by later slices: the eight preset swatches in the Styles tab, none of which is BKM's navy (see decisions).
 
 **Fictional brand (2026-11-17, decided by the human: "Use a fictional brand").**
 
@@ -252,7 +303,7 @@ here already exists when those slices start.
 | P09 | Shipping zones and rates | S10 | not started | |
 | P10 | VAT per country | S9 | not started | |
 | P11 | Payment methods | S9 | not started | |
-| P12 | Checkout | S9 | not started | |
+| P12 | Checkout | S9 | not started | Groundwork in the demo pass, part 4: countries, sample shopper and money format follow the store's currency (`checkoutProfile.ts`) |
 | P13 | Structured product content | S4 | not started | |
 | P14 | Catalog basics | S0 | done | A product can be added to the store from the admin, with pictures, and is kept across reloads (demo pass, part 2). Eight products, 14 variants with SKU, weight and one compare-at price, five collections, all in the admin and on the Vitaheal storefront only |
 | P15 | Add-on discount | S5 | not started | |
