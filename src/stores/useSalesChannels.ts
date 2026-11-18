@@ -1,6 +1,8 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
-import { VITAHEAL_CHANNEL } from '@/storefront/vitahealDemo'
+import { browserStorage, keepInBrowser } from '@/stores/demoKeep'
+import { demoSlot } from '@/storefront/demoStorage'
+import { VITAHEAL_CHANNEL, VITAHEAL_CHANNEL_ID } from '@/storefront/vitahealDemo'
 
 export type SalesChannelType = 'web_store' | 'offline_store'
 export type SalesChannelStatus = 'connected' | 'needs_setup' | 'draft' | 'sync_issue'
@@ -324,6 +326,14 @@ function nowIso() {
   return new Date().toISOString()
 }
 
+/** When the demo store was connected to Merchandise Cloud, or null while it is not. */
+interface KeptConnection { connectedAt: string | null }
+
+function isKeptConnection(value: unknown): value is KeptConnection {
+  const at = (value as Partial<KeptConnection> | null)?.connectedAt
+  return at === null || typeof at === 'string'
+}
+
 export const useSalesChannelsStore = defineStore('salesChannels', () => {
   const channels = ref<SalesChannel[]>(seedChannels.map((channel) => ({ ...channel })))
 
@@ -421,7 +431,54 @@ export const useSalesChannelsStore = defineStore('salesChannels', () => {
     channel.lastActivityAt = channel.updatedAt
   }
 
+  // ── Merchandise Cloud connection ─────────────────────────────────────
+  // One switch sets the three fields the admin reads (the checklist, the quick
+  // action and the cloud card each read a different one), so they always agree.
+  function setMerchandising(channel: SalesChannel, connectedAt: string | null): void {
+    if (!channel.webStore) return
+    // A new object: the seed's own is shared with the file it comes from.
+    channel.webStore = { ...channel.webStore, merchandiseConnected: !!connectedAt }
+    channel.connectedClouds = [...channel.connectedClouds.filter((cloud) => cloud !== 'merchandise'), ...(connectedAt ? ['merchandise' as const] : [])]
+    channel.merchandising = connectedAt ? { status: 'connected', health: 'healthy', lastSyncAt: connectedAt, lastActivityAt: connectedAt } : undefined
+  }
+
+  /** Connects a web store to Merchandise Cloud: its products are searchable from now. */
+  function connectMerchandising(accountId: string, channelId: string): void {
+    const channel = getChannel(accountId, channelId)
+    if (!channel?.webStore) return
+    setMerchandising(channel, nowIso())
+    channel.updatedAt = channel.merchandising!.lastSyncAt!
+  }
+
+  function disconnectMerchandising(accountId: string, channelId: string): void {
+    const channel = getChannel(accountId, channelId)
+    if (!channel?.webStore) return
+    setMerchandising(channel, null)
+    channel.updatedAt = nowIso()
+  }
+
+  // The demo store's connection is kept in the browser with the rest of its data,
+  // so the storefront tab has a search box as soon as the admin tab connects.
+  const demoChannel = (): SalesChannel => channels.value.find((channel) => channel.id === VITAHEAL_CHANNEL_ID)!
+  const keptConnection = demoSlot('merchandise', 1, browserStorage(), isKeptConnection)
+  setMerchandising(demoChannel(), keptConnection.load()?.connectedAt ?? null)
+  const keptDemo = keepInBrowser(
+    keptConnection,
+    () => ({ connectedAt: demoChannel().merchandising?.lastSyncAt ?? null }),
+    (fromOtherTab) => setMerchandising(demoChannel(), fromOtherTab?.connectedAt ?? null),
+  )
+
+  /** Disconnects the demo store again. Called by its restore (useCommerce). */
+  function restoreDemo(): void {
+    keptConnection.clear()
+    setMerchandising(demoChannel(), null)
+    keptDemo.adopt()
+  }
+
   return {
+    connectMerchandising,
+    disconnectMerchandising,
+    restoreDemo,
     channels,
     allChannels,
     channelsForAccount,

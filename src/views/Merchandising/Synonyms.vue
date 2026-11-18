@@ -128,19 +128,34 @@ function removeEditLeadsTo(t: string) {
   editLeadsTo.value = editLeadsTo.value.filter((x) => x !== t)
 }
 
+/** "Add new" uses the same drawer, with nothing in it and no synonym to update. */
+function openCreate() {
+  editTarget.value = null
+  editType.value = 'one_way'
+  editQueries.value = []
+  editLeadsTo.value = []
+  editQueryInput.value = ''
+  editLeadsToInput.value = ''
+  editDrawer.value = true
+}
+
 function submitEdit() {
-  if (!editTarget.value) return
+  // A word typed but not yet turned into a chip still counts.
+  addEditQuery()
+  addEditLeadsTo()
   if (editQueries.value.length === 0) {
     toast.error('Add at least one query.')
     return
   }
-  store.saveSynonym(editTarget.value.id, {
+  const payload = {
     type: editType.value,
     queries: [...editQueries.value],
     leadsTo: editType.value === 'two_way' ? [] : [...editLeadsTo.value],
-  })
+  }
+  if (editTarget.value) store.saveSynonym(editTarget.value.id, payload)
+  else store.createSynonym(payload)
   editDrawer.value = false
-  toast.info('Synonym updated')
+  toast.info(editTarget.value ? 'Synonym updated' : 'Synonym added')
 }
 
 /* ── Delete confirm ────────────────────────────────────────────── */
@@ -176,7 +191,7 @@ function doDelete() {
           variant="flat"
           class="text-none"
           prepend-icon="plus"
-          @click="toast.info('Add new synonym — coming soon')"
+          @click="openCreate"
         >
           Add new
         </v-btn>
@@ -332,7 +347,7 @@ function doDelete() {
             :description="search ? 'Try a different keyword or clear filters.' : 'Add your first synonym to improve search recall.'"
             :action-label="!search ? 'Add new' : undefined"
             action-icon="plus"
-            @action="toast.info('Add new synonym — coming soon')"
+            @action="openCreate"
           />
         </template>
       </v-data-table>
@@ -350,7 +365,7 @@ function doDelete() {
     </MpFloatingBulkBar>
 
     <!-- Edit synonym drawer -->
-    <MpFormDrawer v-model="editDrawer" title="Edit synonym" subtitle="Update this synonym mapping">
+    <MpFormDrawer v-model="editDrawer" :title="editTarget ? 'Edit synonym' : 'Add synonym'" :subtitle="editTarget ? 'Update this synonym mapping' : 'Words shoppers type, and the words your products use'">
       <MpFormGrid>
         <v-select
           v-model="editType"
@@ -415,10 +430,10 @@ function doDelete() {
           color="primary"
           variant="flat"
           class="text-none"
-          :disabled="editQueries.length === 0"
+          :disabled="editQueries.length === 0 && !editQueryInput.trim()"
           @click="submitEdit"
         >
-          Save changes
+          {{ editTarget ? 'Save changes' : 'Add synonym' }}
         </v-btn>
       </template>
     </MpFormDrawer>

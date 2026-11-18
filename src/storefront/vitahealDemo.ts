@@ -15,6 +15,7 @@
 //   useSubscriptions    VITAHEAL_PLANS, vitahealSubscriptions()
 //   useChatbot          VITAHEAL_CHATBOT, VITAHEAL_CONVERSATIONS
 //   useStoreCampaigns   vitahealCampaigns()
+//   useMerchandising    VITAHEAL_MERCHANDISING
 //
 // The catalogue has the shape of BKM's (variants, SEK prices, collections), which
 // is what the requirements test. The brand, product and flavour names are made up,
@@ -38,6 +39,7 @@ import { linePlan, nextChargeDate, pricePerDelivery } from '../subscriptions/pla
 import type { SubscriptionPlan } from '../subscriptions/plans.ts'
 import type { ContractEvent, ContractStatus, SubscriptionContract } from '../subscriptions/contracts.ts'
 import type { StoreCampaign } from './campaigns.ts'
+import type { PageRedirect, RecommendationEngine, SearchPin, Synonym } from '../stores/useMerchandising.ts'
 
 export const VITAHEAL_CHANNEL_ID = 'vitaheal-demo'
 export const VITAHEAL_CHANNEL_NAME = 'Vitaheal (demo)'
@@ -505,6 +507,43 @@ export function vitahealCampaigns(today: string): StoreCampaign[] {
       revenue: 5_936_000,
     },
   ]
+}
+
+// ── Merchandising ────────────────────────────────────────────────────────────
+// The store's search rules and recommendation engines (Merchandising, once the
+// store is connected). Each one changes something a shopper can see: what a
+// search finds (src/storefront/search.ts) or the row under a product.
+
+const STORE_URL = `https://${VITAHEAL_CHANNEL.webStore!.domain}`
+const MERCH_UPDATED = 'Nov 16, 2026'
+
+export const VITAHEAL_MERCHANDISING: {
+  synonyms: Synonym[]
+  redirects: PageRedirect[]
+  searchPins: SearchPin[]
+  engines: RecommendationEngine[]
+} = {
+  synonyms: [
+    { id: 'vh-syn-tired', channelId: VITAHEAL_CHANNEL_ID, status: 'active', type: 'one_way', queries: ['tired', 'fatigue', 'exhausted'], leadsTo: ['energy', 'focus'], updatedAt: MERCH_UPDATED },
+    { id: 'vh-syn-insomnia', channelId: VITAHEAL_CHANNEL_ID, status: 'active', type: 'one_way', queries: ['insomnia', 'jet lag', 'restless'], leadsTo: ['sleep'], updatedAt: MERCH_UPDATED },
+    { id: 'vh-syn-ageing', channelId: VITAHEAL_CHANNEL_ID, status: 'active', type: 'one_way', queries: ['ageing', 'aging', 'anti-ageing'], leadsTo: ['longevity'], updatedAt: MERCH_UPDATED },
+    { id: 'vh-syn-hydration', channelId: VITAHEAL_CHANNEL_ID, status: 'active', type: 'two_way', queries: ['hydration', 'electrolytes', 'rehydrate'], leadsTo: [], updatedAt: MERCH_UPDATED },
+  ],
+  redirects: [
+    { id: 'vh-red-returns', channelId: VITAHEAL_CHANNEL_ID, queries: ['returns', 'refund', 'return policy'], leadsTo: `${STORE_URL}/policies/refund-policy`, updatedAt: MERCH_UPDATED },
+    { id: 'vh-red-guarantee', channelId: VITAHEAL_CHANNEL_ID, queries: ['guarantee', 'money back'], leadsTo: `${STORE_URL}/page/money-back-guarantee`, updatedAt: MERCH_UPDATED },
+  ],
+  searchPins: [
+    // Unwind is the store's best seller, so it leads a search for sleep.
+    { id: 'vh-pin-sleep', channelId: VITAHEAL_CHANNEL_ID, query: 'sleep', pinnedProductIds: ['2001'], updatedAt: MERCH_UPDATED },
+    // Electrolytes does not say "energy" anywhere: the pin is why it is found.
+    { id: 'vh-pin-energy', channelId: VITAHEAL_CHANNEL_ID, query: 'energy', pinnedProductIds: ['2005'], updatedAt: MERCH_UPDATED },
+  ],
+  engines: [
+    { id: 'vh-engine-goes-with', channelId: VITAHEAL_CHANNEL_ID, name: 'Goes well with', page: 'product', type: 'frequently_purchased_together', status: 'active', minProducts: 2, maxProducts: 4, fallbacks: ['Popular products'], updatedAt: `${MERCH_UPDATED} at 10:15 AM` },
+    // Switched off: turn it on, and the first one off, and the row under a product changes to the newest products.
+    { id: 'vh-engine-new-in', channelId: VITAHEAL_CHANNEL_ID, name: 'New in', page: 'product', type: 'newest_products', status: 'inactive', minProducts: 2, maxProducts: 4, fallbacks: ['Popular products'], updatedAt: `${MERCH_UPDATED} at 10:20 AM` },
+  ],
 }
 
 // ── Chatbot ──────────────────────────────────────────────────────────────────

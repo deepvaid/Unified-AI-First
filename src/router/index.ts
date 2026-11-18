@@ -288,6 +288,7 @@ const routes: RouteRecordRaw[] = [
       { path: 'policies/:handle', name: 'StorefrontPolicy', component: () => import('@/views/Storefront/StorefrontContent.vue'), meta: { contentKind: 'policy' } },
       { path: 'collections/:handle', name: 'StorefrontCollection', component: () => import('@/views/Storefront/StorefrontCollection.vue') },
       { path: 'products/:handle', name: 'StorefrontProduct', component: () => import('@/views/Storefront/StorefrontProduct.vue') },
+      { path: 'search', name: 'StorefrontSearch', component: () => import('@/views/Storefront/StorefrontSearch.vue') },
       { path: 'cart-page', name: 'StorefrontCart', component: () => import('@/views/Storefront/StorefrontCart.vue') },
       // The shopper's own page: sign in (mocked), then their subscriptions.
       { path: 'account', name: 'StorefrontAccount', component: () => import('@/views/Storefront/StorefrontAccount.vue') },

@@ -1,6 +1,15 @@
 import { defineStore } from 'pinia'
 import { computed, ref, type Ref } from 'vue'
+import { parseDecimal } from '@/maropay/money'
+import { browserStorage, keepInBrowser } from '@/stores/demoKeep'
+import { useCommerceStore } from '@/stores/useCommerce'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
+import { catalogFor, lowestPrice, storesWithOwnCatalogue } from '@/storefront/catalog'
+import { demoSlot } from '@/storefront/demoStorage'
+import { formatStorePrice } from '@/storefront/price'
+import type { SearchRules } from '@/storefront/search'
+import { VITAHEAL_CHANNEL_ID, VITAHEAL_MERCHANDISING } from '@/storefront/vitahealDemo'
+import { roundForDisplay } from '@/subscriptions/plans'
 
 /* ── Types ─────────────────────────────────────────────────────── */
 
@@ -66,6 +75,9 @@ export interface MerchProduct {
   image: string
   price: number
   compareAt?: number
+  /** The prices as the product's own store writes them ("399 kr"). Absent: dollars. */
+  priceLabel?: string
+  compareAtLabel?: string
   qty: number
   brand: string
   color: string
@@ -683,6 +695,14 @@ const moduleAnalyticsByChannel: Record<string, MerchModuleAnalytics> = {
   },
 }
 
+/** The demo store's rows by list name, as saved in the browser. */
+type KeptRows = Record<string, unknown[]>
+
+function isKeptRows(value: unknown): value is KeptRows {
+  return !!value && typeof value === 'object' && Object.values(value).every((list) =>
+    Array.isArray(list) && list.every((row: { channelId?: unknown } | null) => row?.channelId === VITAHEAL_CHANNEL_ID))
+}
+
 /* ── Store ────────────────────────────────────────────────────── */
 
 export const useMerchandisingStore = defineStore('merchandising', () => {
@@ -700,12 +720,56 @@ export const useMerchandisingStore = defineStore('merchandising', () => {
   /** Channel stamped onto newly created rows. */
   const seedChannelId = () => activeChannelId.value || DEFAULT_CHANNEL_ID
 
-  /** Channel-filtered view; falls back to all rows when unscoped or the channel has no data. */
+  const commerce = useCommerceStore()
+  const salesChannelsStore = useSalesChannelsStore()
+
+  /**
+   * A store with products of its own (Vitaheal (demo)) has its own merchandising
+   * too: its lists hold only what was made for it, and its products are its
+   * Commerce products. The others share the sample data below.
+   */
+  const ownData = computed(() => storesWithOwnCatalogue(commerce.products).includes(activeChannelId.value))
+
+  /**
+   * Channel-filtered view; falls back to all rows when unscoped or the channel has
+   * no data. A store with its own data never borrows: an empty list is empty.
+   */
   function channelView<T extends { channelId: string }>(rows: Ref<T[]>) {
     return computed(() => {
       if (!activeChannelId.value) return rows.value
       const filtered = rows.value.filter((row) => row.channelId === activeChannelId.value)
-      return filtered.length > 0 ? filtered : rows.value
+      return filtered.length > 0 || ownData.value ? filtered : rows.value
+    })
+  }
+
+  /** A store's Commerce products as Merchandising lists them, in the store's order and with its prices. */
+  function catalogueProducts(channelId: string): MerchProduct[] {
+    const store = salesChannelsStore.channels.find((c) => c.id === channelId)?.webStore
+    const label = (decimal: string): string | undefined => {
+      const amount = parseDecimal(decimal, store?.currency ?? 'USD')
+      return amount ? formatStorePrice(roundForDisplay(amount), store?.locale) : undefined
+    }
+    return catalogFor(commerce.products, channelId).map((product, index, all) => {
+      const price = lowestPrice(product)
+      const compareAt = Number.parseFloat(product.compareAtPrice) > Number.parseFloat(price) ? product.compareAtPrice : ''
+      return {
+        id: String(product.id),
+        channelId,
+        title: product.name,
+        image: product.imageUrls?.[0] ?? '',
+        price: Number.parseFloat(price) || 0,
+        priceLabel: label(price),
+        ...(compareAt ? { compareAt: Number.parseFloat(compareAt), compareAtLabel: label(compareAt) } : {}),
+        qty: product.inventory,
+        brand: product.vendor,
+        color: '',
+        size: '',
+        category: product.collections[0] ?? product.category,
+        tags: [...product.collections],
+        // The store's own order stands for popularity, and a later product has a higher number.
+        popularity: all.length - index,
+        createdAt: String(product.id).padStart(10, '0'),
+      }
     })
   }
 
@@ -731,7 +795,8 @@ export const useMerchandisingStore = defineStore('merchandising', () => {
   const synonymList = channelView(allSynonyms)
   const redirectList = channelView(allRedirects)
   const collectionList = channelView(allCollections)
-  const merchProductList = channelView(allMerchProducts)
+  const sampleProductList = channelView(allMerchProducts)
+  const merchProductList = computed(() => (ownData.value ? catalogueProducts(activeChannelId.value) : sampleProductList.value))
   const pinningRuleList = channelView(allPinningRules)
   const merchRuleList = channelView(allMerchRules)
   const engineList = channelView(allEngines)
@@ -751,14 +816,74 @@ export const useMerchandisingStore = defineStore('merchandising', () => {
     moduleAnalyticsByChannel[activeChannelId.value] ?? moduleAnalyticsByChannel[DEFAULT_CHANNEL_ID]!,
   )
 
-  const syncInfo = computed<SyncInfo>(() =>
-    syncInfoByChannel[activeChannelId.value] ?? syncInfoByChannel[DEFAULT_CHANNEL_ID]!,
-  )
+  const syncInfo = computed<SyncInfo>(() => {
+    if (!ownData.value) return syncInfoByChannel[activeChannelId.value] ?? syncInfoByChannel[DEFAULT_CHANNEL_ID]!
+    // Its sync is the one that ran when the store was connected.
+    const at = salesChannelsStore.channels.find((c) => c.id === activeChannelId.value)?.merchandising?.lastSyncAt
+    const when = at ? new Date(at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'Not synced yet'
+    return { channelId: activeChannelId.value, catalogCount: catalogFor(commerce.products, activeChannelId.value).length, lastFullSync: when, lastDeltaSync: when, feedStatus: 'healthy' }
+  })
+
+  // ── What a connected store's storefront reads ─────────────────────────
+  /** The store's search rules, for its search page and the Search preview (src/storefront/search.ts). */
+  function searchRulesFor(channelId: string): SearchRules {
+    const mine = <T extends { channelId: string }>(rows: T[]): T[] => rows.filter((row) => row.channelId === channelId)
+    return {
+      synonyms: mine(allSynonyms.value),
+      redirects: mine(allRedirects.value),
+      pins: mine(allSearchPins.value),
+      hiddenProductIds: mine(allBlacklistedProducts.value).filter((row) => row.active).map((row) => row.productId),
+    }
+  }
+
+  /** The engine that fills the row under a product: the store's first active one for product pages. */
+  function productEngineFor(channelId: string): RecommendationEngine | undefined {
+    return allEngines.value.find((engine) => engine.channelId === channelId && engine.page === 'product' && engine.status === 'active')
+  }
+
+  // ── The demo store's rows, kept in the browser ────────────────────────
+  // Everything made for Vitaheal (demo) in this workspace survives a reload and
+  // reaches the storefront tab, like the rest of that store's data.
+  function demoRows<T extends { channelId: string }>(rows: Ref<T[]>, seed: T[] = []) {
+    return {
+      read: (): T[] => rows.value.filter((row) => row.channelId === VITAHEAL_CHANNEL_ID),
+      put: (saved: unknown[] | undefined): void => {
+        const mine = (saved as T[] | undefined) ?? (JSON.parse(JSON.stringify(seed)) as T[])
+        rows.value = [...rows.value.filter((row) => row.channelId !== VITAHEAL_CHANNEL_ID), ...mine]
+      },
+    }
+  }
+  const demoLists = {
+    synonyms: demoRows(allSynonyms, VITAHEAL_MERCHANDISING.synonyms),
+    redirects: demoRows(allRedirects, VITAHEAL_MERCHANDISING.redirects),
+    searchPins: demoRows(allSearchPins, VITAHEAL_MERCHANDISING.searchPins),
+    engines: demoRows(allEngines, VITAHEAL_MERCHANDISING.engines),
+    collections: demoRows(allCollections),
+    pinningRules: demoRows(allPinningRules),
+    merchRules: demoRows(allMerchRules),
+    fields: demoRows(allFields),
+    searchRules: demoRows(allSearchRules),
+    promoCards: demoRows(allPromoCards),
+    banners: demoRows(allBanners),
+    blacklistTerms: demoRows(allBlacklistTerms),
+    blacklistedProducts: demoRows(allBlacklistedProducts),
+  }
+  const keptRows = demoSlot('merchandising', 1, browserStorage(), isKeptRows)
+  const putDemo = (saved: KeptRows | null): void => {
+    for (const [name, list] of Object.entries(demoLists)) list.put(saved?.[name])
+  }
+  putDemo(keptRows.load())
+  const keptDemo = keepInBrowser(keptRows, () => Object.fromEntries(Object.entries(demoLists).map(([name, list]) => [name, list.read()])), putDemo)
+
+  /** Puts the demo store's merchandising back as seeded. Called by its restore (useCommerce). */
+  function restoreDemo(): void {
+    keptRows.clear()
+    putDemo(null)
+    keptDemo.adopt()
+  }
 
   // When a sales channel is active (channel-scoped workspace), activeStore
   // mirrors that channel so view subtitles show the right domain/platform.
-  const salesChannelsStore = useSalesChannelsStore()
-
   const activeStore = computed<MerchStore>(() => {
     const base = merchStores.value.find((s) => s.id === activeStoreId.value) ?? merchStores.value[0]!
     if (!activeChannelId.value) return base
@@ -800,6 +925,12 @@ export const useMerchandisingStore = defineStore('merchandising', () => {
     row.queries = [...payload.queries]
     row.leadsTo = [...payload.leadsTo]
     row.updatedAt = todayLabel()
+  }
+
+  function createSynonym(payload: { type: SynonymType; queries: string[]; leadsTo: string[] }): Synonym {
+    const row: Synonym = { id: `s${Date.now()}`, channelId: seedChannelId(), status: 'active', type: payload.type, queries: [...payload.queries], leadsTo: [...payload.leadsTo], updatedAt: todayLabel() }
+    allSynonyms.value.unshift(row)
+    return row
   }
 
   function duplicateSynonym(id: string): Synonym | undefined {
@@ -1256,6 +1387,11 @@ export const useMerchandisingStore = defineStore('merchandising', () => {
     merchStores,
     activeStoreId,
     activeChannelId,
+    ownData,
+    createSynonym,
+    searchRulesFor,
+    productEngineFor,
+    restoreDemo,
     // channel-scoped list views
     synonymList,
     redirectList,

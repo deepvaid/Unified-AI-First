@@ -222,7 +222,7 @@ function addProduct(id: string | null) {
                   {{ item.product?.title ?? item.productId }}
                 </div>
                 <div v-if="item.product" class="text-caption text-medium-emphasis">
-                  ${{ item.product.price.toFixed(2) }}
+                  {{ item.product.priceLabel ?? `$${item.product.price.toFixed(2)}` }}
                 </div>
               </div>
             </template>

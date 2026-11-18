@@ -2785,6 +2785,33 @@ prospects, so BKM's name is off the screen:
 - The Campaigns page's subtitle, empty text and delete warning are reworded for every store,
   and its table has Offer, Orders and Email columns on every store.
 
+**Demo pass, part 8 (2026-11-18) — Merchandise Cloud connects for real and reaches the store.**
+
+- `MerchandisingLayout.vue`: the connect card connects (progress line, then a toast) instead of
+  routing to itself; its copy names the product count.
+- `MerchandisingChannelSetup.vue`: a Disconnect button behind `MpConfirmDialog`. On a store shown
+  to prospects, the "Solutions status" switch (which changed nothing) and the prototype note are
+  not drawn.
+- `SearchPreview.vue` is a working page for a store with its own products (`MpAlert` for a
+  redirect, `MpEmptyState` for no query and no results, `MerchProductCard` read-only for results);
+  other stores keep the "coming soon" panel.
+- `MerchandisingAnalytics.vue`: `MpEmptyState` for a store with its own data.
+- `MerchProductCard` and the blacklisting table print the store's own price when the product has
+  one, and dollars otherwise.
+- New storefront page `StorefrontSearch.vue` (out of system, like the storefront).
+- New pure module `src/storefront/search.ts`. No new design-system component or token.
+
+### Renames and breaking changes
+
+- `useSalesChannelsStore` gains `connectMerchandising`, `disconnectMerchandising`, `restoreDemo`.
+- `useMerchandisingStore` gains `ownData`, `createSynonym`, `searchRulesFor`, `productEngineFor`,
+  `restoreDemo`. `merchProductList` is the store's Commerce products for a store with its own
+  catalogue. `MerchProduct` gains optional `priceLabel` and `compareAtLabel`.
+- The storefront context gains `searchable`. New route `StorefrontSearch` (`search`); a store
+  that is not searchable still gets its not-found page there.
+- Every store: the Merchandising connect card's button now connects, and "Add new" on Synonyms
+  opens the drawer (both did nothing before).
+
 **Preview test pass (2026-11-18) — four fixes from testing the deployed preview.**
 
 - `StorefrontCardFields` keeps every field when several change in the same instant (browser

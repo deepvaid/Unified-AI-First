@@ -15,7 +15,9 @@ import StorefrontPayMark from './StorefrontPayMark.vue'
 import StorefrontProductCard from './StorefrontProductCard.vue'
 import StorefrontPurchaseOptions from './StorefrontPurchaseOptions.vue'
 import { STOREFRONT } from './storefrontContext'
-import { CATEGORY_ICONS, inStock, priceOf, productFromHandle, relatedProducts } from './storefrontCatalog'
+import { CATEGORY_ICONS, inStock, priceOf, productFromHandle, relatedProducts, storefrontProducts } from './storefrontCatalog'
+import { useMerchandisingStore } from '@/stores/useMerchandising'
+import { recommendFor, recommendationHeading } from '@/storefront/search'
 
 // A product page (/products/:handle). Everything below the price follows the
 // store's payment setup in Store › Payments: instalment lines for approved buy
@@ -38,7 +40,17 @@ const formatMoney = storefront.formatMoney
 const priceRange = computed(() => (product.value ? hasPriceRange(product.value) : false))
 const subtitle = computed(() => product.value?.detail?.subtitle.trim())
 const collection = computed(() => product.value?.collections[0] ?? null)
-const related = computed(() => (product.value ? relatedProducts(commerce.products, channelId.value, product.value) : []))
+// The row under the product. Once the store is connected to Merchandise Cloud, its
+// product-page recommendation engine chooses and names it; otherwise it is the first
+// products of the same category, as before.
+const engine = computed(() => (storefront.searchable.value ? useMerchandisingStore().productEngineFor(channelId.value) : undefined))
+const related = computed(() => {
+  if (!product.value) return []
+  return engine.value
+    ? recommendFor(product.value, storefrontProducts(commerce.products, channelId.value), engine.value)
+    : relatedProducts(commerce.products, channelId.value, product.value)
+})
+const relatedHeading = computed(() => (engine.value && product.value ? recommendationHeading(engine.value.type, product.value.name) : 'You may also like'))
 const available = computed(() => (product.value ? inStock(product.value) : false))
 /** A product saved without a brand has "—" for one in the admin; shoppers see no brand line. */
 const vendor = computed(() => {
@@ -202,7 +214,7 @@ function buyNow(methodId: string): void {
     </div>
 
     <section v-if="related.length" class="sf-pdp__related" aria-labelledby="sf-pdp-related">
-      <h2 id="sf-pdp-related" class="sf-section-title">You may also like</h2>
+      <h2 id="sf-pdp-related" class="sf-section-title">{{ relatedHeading }}</h2>
       <div class="sf-grid">
         <StorefrontProductCard v-for="item in related" :key="item.id" :product="item" />
       </div>

@@ -380,6 +380,59 @@ here already exists when those slices start.
     nothing is sent until they press Send. Campaign targets on stores without their own
     products still come from the shared link catalogue.
 
+- **Part 8, Merchandise Cloud on the store (done, 2026-11-18).** Asked for by the human
+  ("integrate merchandise cloud"), working in the demo. Before this, the Connect button led back
+  to its own card, nothing marked a store as connected, Vitaheal's lists would have shown another
+  store's rules, and no storefront used any of it.
+  - **Connecting:** `useSalesChannels.connectMerchandising` / `disconnectMerchandising` set the
+    three fields the admin reads together, so the store page's checklist, quick action and cloud
+    card agree. The connect card (`MerchandisingLayout.vue`) syncs the store's published products
+    with a short progress line, then opens the workspace. Connection & sync has "Check product
+    sync" and "Disconnect" (with a confirm that says what shoppers lose).
+  - **The store's own data** (`useMerchandising.ts`): a store with products of its own has its own
+    rows and never borrows another store's, so an empty list shows its empty state. Its
+    merchandising products are its Commerce products, with photos and prices in kronor. Product
+    sync shows its real count and sync time. Analytics says "Nothing to report yet" rather than
+    another store's numbers.
+  - **Rules** in `src/storefront/search.ts` (10 tests in `tests/storefront/search.test.ts`):
+    a redirect sends the whole query to a page; synonyms widen it; results are scored on name,
+    collections, subtitle and description; pinned products lead; a blacklisted product is never
+    found; sort by relevance or price. `recommendFor` picks the row under a product by the
+    engine's strategy.
+  - **On the store:** a search box in the header (a Search link in the phone menu) and a search
+    page at `/search`, only once the store is connected. The row under a product is chosen and
+    named by the store's active product-page engine ("Goes well with Unwind").
+  - **Admin:** Merchandising › Search › Preview runs the same search as the store. "Add new" on
+    Synonyms works (it said "coming soon"). A redirect's link opens the page in the demo store.
+  - **Seeded and kept:** four synonyms, two redirects, two search pins, two engines (one on, one
+    off). Everything made for Vitaheal in the workspace is kept in the browser
+    (`mp.vitaheal-demo.merchandising.v1`), and so is the connection
+    (`mp.vitaheal-demo.merchandise.v1`). "Restore original store" disconnects the store and puts
+    the seeded rules back.
+  - **The walk** (desktop 1280px and phone 375px, store and admin in two tabs, console clean):
+    1. Before connecting: the store has no search box and `/search` is its not-found page.
+    2. Merchandising › Connect: "Syncing products: 3 of 8", then the workspace opens with
+       "8 products are synced". Overview: 1 active engine, 4 synonyms, 2 redirects, 0 collections.
+    3. Store: "sleep" lists Unwind (pinned) then Nasal Strips; "tired" lists Clear Focus first,
+       "including results for energy and focus"; "returns" opens the refund policy; "blorp" gets
+       "Nothing matches" with links to the five collections and all products.
+    4. Unwind's page: "Goes well with Unwind", led by Nasal Strips. Switching the engines in the
+       admin changes the row to "New in"; with none on it is "You may also like" again.
+    5. Search preview in the admin gives the same lists, with prices in kronor, and says when a
+       query is redirected.
+    6. Adding the synonym knackered → energy in the admin: the open store tab's search for
+       "knackered" fills in without a reload.
+    7. Disconnect: the store tab loses the search box and `/search` is the not-found page again.
+    8. Restore: disconnected, four synonyms again, nothing left in the browser.
+    9. Neelam-Store: its header search still leads to its not-found page. Atlas Outfitters still
+       lists its 16 synonyms, its pins, its analytics and the "coming soon" Search preview.
+  - **Known limits.** Search has no filters, no suggestions while typing and no typo tolerance.
+    Search rules (boost, bury), promo cards, banners, smart collections and field
+    transformations are not applied on the store. Only product-page engines show on the store,
+    and an engine's include and exclude filters are not applied. Recommendations use what the
+    store knows (shared collections, newest, the store's own order), not shopper behaviour. A
+    store on the shared catalogue can now be connected, but its storefront gets no search.
+
 - **Preview test pass (2026-11-18).** Asked for by the human: test every flow on the deployed
   Vercel preview, as a shopper and as a merchant, and fix what breaks. Run on the branch's
   preview (commit `0ab0631c`) in a browser with nothing stored, at 1280px and 375px, with the

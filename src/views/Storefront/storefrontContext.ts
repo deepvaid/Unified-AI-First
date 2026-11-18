@@ -28,6 +28,8 @@ export interface StorefrontContext {
   checkout: ComputedRef<CheckoutProfile>
   /** A store shown to prospects: its shopper pages say "demo" in plain words where a prototype note would be. */
   demo: ComputedRef<boolean>
+  /** The store has a search of its own: it is connected to Merchandise Cloud and sells its own products. */
+  searchable: ComputedRef<boolean>
   /** The message of the store's running campaign, for its announcement bar; empty when none runs. */
   campaignMessage: ComputedRef<string>
   /** How the store takes payment for an amount: the merchant's methods, express buttons and instalments. */

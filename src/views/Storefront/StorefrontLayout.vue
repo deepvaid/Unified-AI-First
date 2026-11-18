@@ -2,6 +2,7 @@
 import { computed, provide, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useChatbotStore } from '@/stores/useChatbot'
+import { useCommerceStore } from '@/stores/useCommerce'
 import { useMaropayStore } from '@/stores/useMaropay'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import { useStoreCampaignsStore } from '@/stores/useStoreCampaigns'
@@ -12,6 +13,8 @@ import { money } from '@/maropay/money'
 import type { Money } from '@/maropay/money'
 import { storefrontOffer } from '@/maropay/storefront'
 import { activeCampaign } from '@/storefront/campaigns'
+import { storesWithOwnCatalogue } from '@/storefront/catalog'
+import { merchandisingStatus } from '@/utils/merchandisingChannels'
 import { checkoutProfile } from '@/storefront/checkoutProfile'
 import { formatStorePrice } from '@/storefront/price'
 import { roundForDisplay } from '@/subscriptions/plans'
@@ -74,7 +77,13 @@ function offerFor(amount: Money) {
 // A running campaign's message takes the store's announcement bar for as long as it runs.
 const campaignMessage = computed(() => activeCampaign(useStoreCampaignsStore().campaigns, channelId.value)?.offer?.message.trim() ?? '')
 
-provide(STOREFRONT, { channel, theme, chrome, link, currency, formatMoney, formatExact, ownMoneyFormat, checkout, demo, campaignMessage, offerFor })
+// Search is Merchandise Cloud's: a store has it once it is connected. It runs on the store's own
+// products, so a store on the shared catalogue keeps the header it had.
+const searchable = computed(() => !!found.value
+  && merchandisingStatus(found.value) === 'connected'
+  && storesWithOwnCatalogue(useCommerceStore().products).includes(found.value.id))
+
+provide(STOREFRONT, { channel, theme, chrome, link, currency, formatMoney, formatExact, ownMoneyFormat, checkout, demo, searchable, campaignMessage, offerFor })
 
 // A store shown to prospects names itself in the browser tab, where the router's fallback reads "Storefront home · Maropost".
 watch(() => [route.fullPath, demo.value], () => {
@@ -164,7 +173,7 @@ function subscribe(): void {
         </StorefrontAnchor>
 
         <div class="sf-tools">
-          <form v-if="chrome.headerTools.includes('search')" class="sf-search" role="search" @submit.prevent="search">
+          <form v-if="chrome.headerTools.includes('search') || searchable" class="sf-search" role="search" @submit.prevent="search">
             <input v-model="query" type="search" :placeholder="chrome.searchPlaceholder" :aria-label="chrome.searchPlaceholder">
             <button type="submit" class="sf-search__go" aria-label="Search">
               <v-icon size="16">search</v-icon>
@@ -188,6 +197,8 @@ function subscribe(): void {
       </nav>
 
       <nav v-if="menuOpen && chrome.mobileNav.length" class="sf-mobile-nav" aria-label="Menu">
+        <!-- The header's search box does not fit a phone: the menu leads to the search page instead. -->
+        <StorefrontAnchor v-if="searchable" href="/search">Search</StorefrontAnchor>
         <StorefrontAnchor v-for="item in chrome.mobileNav" :key="item.label" :href="item.href">{{ item.label }}</StorefrontAnchor>
       </nav>
     </header>

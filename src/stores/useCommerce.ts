@@ -7,6 +7,8 @@ import { useSubscriptionsStore } from '@/stores/useSubscriptions'
 import { useChatbotStore } from '@/stores/useChatbot'
 import { useStoreCampaignsStore } from '@/stores/useStoreCampaigns'
 import { useCampaignsStore } from '@/stores/useCampaigns'
+import { useMerchandisingStore } from '@/stores/useMerchandising'
+import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import { browserStorage, keepInBrowser } from '@/stores/demoKeep'
 import type { CheckoutCustomer, MaropayProvider, OrderPaymentStatusLabel } from '@/maropay/model'
 import { demoSlot } from '@/storefront/demoStorage'
@@ -847,6 +849,8 @@ export const useCommerceStore = defineStore('commerce', () => {
     useChatbotStore().restoreDemo()
     useStoreCampaignsStore().restoreDemo()
     useCampaignsStore().restoreDemo()
+    useSalesChannelsStore().restoreDemo()
+    useMerchandisingStore().restoreDemo()
     useStorefrontCartStore().clear(VITAHEAL_CHANNEL_ID)
   }
 

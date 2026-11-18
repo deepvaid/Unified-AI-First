@@ -59,7 +59,7 @@ This is NOT a production app — it uses mock data and has no backend API.
 │   ├── maropay/               ← Maropay domain logic — pure TS, node:test-importable (see docs/maropay/)
 │   ├── services/maropay/      ← Deterministic mock adapter for the payments partner
 │   ├── subscriptions/         ← Subscription rules — pure TS, node:test-importable: plans (price per delivery, display rounding, charge dates, purchase options) and the subscriptions shoppers hold on them (`contracts.ts`: skip, pause, change plan, cancel, renewals)
-│   ├── storefront/            ← Storefront rules — pure TS, node:test-importable: store catalogue and product form rules, cart lines, price format, which countries and sample shopper a store's checkout has (`checkoutProfile.ts`), a store's campaigns and what their discount code takes off (`campaigns.ts`), pack-shot art, what the demo store keeps in the browser (`demoStorage.ts`), and the Vitaheal (demo) store seed, whose photos are in `public/storefront/vitaheal/` (see docs/store-builder/)
+│   ├── storefront/            ← Storefront rules — pure TS, node:test-importable: store catalogue and product form rules, cart lines, price format, which countries and sample shopper a store's checkout has (`checkoutProfile.ts`), a store's campaigns and what their discount code takes off (`campaigns.ts`), what a connected store's search finds and what a product page recommends (`search.ts`), pack-shot art, what the demo store keeps in the browser (`demoStorage.ts`), and the Vitaheal (demo) store seed, whose photos are in `public/storefront/vitaheal/` (see docs/store-builder/)
 │   ├── design-tokens/
 │   │   ├── tokens.json        ← SOURCE OF TRUTH for all design values
 │   │   ├── build.mjs          ← Generates SCSS/CSS/TS from tokens.json
@@ -78,7 +78,7 @@ This is NOT a production app — it uses mock data and has no backend API.
 │   │   ├── Products/          ← ProductsList, Inventory, Recommendations, TaxCategories
 │   │   ├── Service/           ← Tickets
 │   │   ├── Settings/          ← Settings, Billing, Users, Profile
-│   │   ├── Storefront/        ← Shopper storefront of a web store: home, collections, product, cart, checkout, account (the shopper's subscriptions), and the store's chatbot widget (`StorefrontChat.vue`) (P4-8, out of system)
+│   │   ├── Storefront/        ← Shopper storefront of a web store: home, collections, product, search (once the store is connected to Merchandise Cloud), cart, checkout, account (the shopper's subscriptions), and the store's chatbot widget (`StorefrontChat.vue`) (P4-8, out of system)
 │   │   └── Templates/         ← /templates page-archetype gallery (engineer reference, placeholder data)
 │   ├── stores/                ← 6 Pinia stores with mock data
 │   ├── plugins/vuetify.ts     ← Vuetify theme (light + dark) + global defaults
@@ -429,7 +429,7 @@ changelog in `DESIGN_AUDIT.md`.
 | `npm run test:chatbot` | Chatbot brand-colour contrast, the builder-preview responder, and the store assistant that answers shoppers on the Vitaheal (demo) storefront (`src/chatbot/storeAssistant.ts`: orders, subscriptions, a product for a wellness need, store questions) (`node:test` over `tests/chatbot/`) |
 | `npm run test:plg` | PLG promotion tests — coupon maths and code validation in `src/plg/promo.ts` (`node:test` over `tests/plg/`) |
 | `npm run test:subscriptions` | Subscription rules in `src/subscriptions/` — plans (price per delivery, display rounding, charge dates, what a shopper is offered) and subscriptions (skip, pause, change plan, cancel, renewals) — and the Vitaheal (demo) plans and subscribers (`node:test` over `tests/subscriptions/`) |
-| `npm run test:storefront` | Storefront rules — which products a store sells, the product form's stock and collection rules, cart lines, store price formatting, a store's checkout countries and sample shopper, store campaigns and discount codes, what the demo store keeps in the browser — and the Vitaheal (demo) seed checked against its reference tables (`node:test` over `tests/storefront/`) |
+| `npm run test:storefront` | Storefront rules — which products a store sells, the product form's stock and collection rules, cart lines, store price formatting, a store's checkout countries and sample shopper, store campaigns and discount codes, store search (pins, synonyms, redirects, blacklisted products) and product recommendations, what the demo store keeps in the browser — and the Vitaheal (demo) seed checked against its reference tables (`node:test` over `tests/storefront/`) |
 | `npm run tokens:watch` | Watch tokens.json and regenerate on save |
 | `npm run type-check` | Run vue-tsc type checking |
 | `npm run preview` | Preview production build locally |
@@ -473,7 +473,7 @@ Example: `[feat]: add MpDateRangePicker component with story`
   report for the real MCC; never edit its statuses), `bkm-build-prompt.md` (the slice-by-slice build
   prompt) and `bkm-build-tracker.md` (prototype progress per slice and requirement). The demo store is
   sales channel `vitaheal-demo` ("Vitaheal", a fictional brand that stands in for BKM so sales can show it to any
-  prospect), seeded from `src/storefront/vitahealDemo.ts`. Its products, subscription plans, subscribers, campaigns, chatbot settings and chats are kept in this browser
+  prospect), seeded from `src/storefront/vitahealDemo.ts`. Its products, subscription plans, subscribers, campaigns, chatbot settings and chats, and its Merchandise Cloud connection and rules, are kept in this browser
   (`mp.vitaheal-demo.*` in localStorage) and put back from the store's Settings tab ("Restore original store").
   The store carries `webStore.demo`: its checkout uses plain words where another store shows a prototype note, and amounts
   that are charged read "585,90 kr" (the product pages and cart show whole kronor).
