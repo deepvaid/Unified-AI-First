@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpWizardStepCard from './MpWizardStepCard.vue'
+import { constrain } from '@/stories/decorators'
 
 const fields = `
   <div class="d-flex flex-column ga-4">
@@ -34,7 +35,9 @@ shell's measure.
     description: { control: 'text', description: 'One line under the heading. Omitting it tightens the preamble.' },
     headingLevel: { control: 'select', options: [2, 3], description: 'h2 by default — the step title sits directly under the page h1. Use 3 for a second card on the same step.' },
     divider: { control: 'boolean', description: 'Divider between preamble and content (default true). Skip for dense gallery cards.' },
+    headless: { control: 'boolean', description: 'Renders only the fields: use it when the wizard shell\'s header already shows the step\'s title and description. `title` is still read out as the card\'s heading.' },
   },
+  decorators: [constrain('section')],
 } satisfies Meta<typeof MpWizardStepCard>
 
 export default meta
@@ -48,18 +51,41 @@ export const Default: Story = {
   render: (args) => ({
     components: { MpWizardStepCard },
     setup: () => ({ args }),
-    template: `<div style="max-width:780px"><MpWizardStepCard v-bind="args">${fields}</MpWizardStepCard></div>`,
+    template: `<MpWizardStepCard v-bind="args">${fields}</MpWizardStepCard>`,
   }),
 }
 
-/** Preamble variants: with/without description, without divider, title-append chip, h3 for a second card. */
+/**
+ * The two structures. With its own **preamble** (heading, description, divider) the card names
+ * the step. **Headless** drops the preamble because the wizard shell's header already shows the
+ * step's title and description; the heading stays in the DOM for assistive tech.
+ */
 export const Variants: Story = {
   args: { title: '' },
   render: () => ({
     components: { MpWizardStepCard },
     template: `
-      <div class="d-flex flex-column ga-6" style="max-width:780px">
-        <MpWizardStepCard title="With description" description="The canonical preamble — heading, one line, divider.">${fields}</MpWizardStepCard>
+      <div class="d-flex flex-column ga-6">
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">with a preamble (default)</div>
+          <MpWizardStepCard title="Campaign details" description="Name your campaign and write the subject line recipients will see.">${fields}</MpWizardStepCard>
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">headless — the shell's header carries the title</div>
+          <MpWizardStepCard title="Campaign details" headless>${fields}</MpWizardStepCard>
+        </div>
+      </div>
+    `,
+  }),
+}
+
+/** What the preamble can hold: no description, no divider, a chip beside the title, and an h3 for a second card on one step. */
+export const States: Story = {
+  args: { title: '' },
+  render: () => ({
+    components: { MpWizardStepCard },
+    template: `
+      <div class="d-flex flex-column ga-6">
         <MpWizardStepCard title="No description">${fields}</MpWizardStepCard>
         <MpWizardStepCard title="No divider" description="Dense gallery cards skip the rule." :divider="false">${fields}</MpWizardStepCard>
         <MpWizardStepCard title="Title append" description="A chip rides beside the heading.">

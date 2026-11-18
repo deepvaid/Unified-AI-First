@@ -34,13 +34,7 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {}
 
-/** No variant prop — the layout follows the card's width. */
-export const Variants: Story = {
-  render: grid({ MaropayBalanceSummary }, [
-    { label: 'Wide — side by side', args: {} },
-  ], { columns: '1fr' }),
-}
-
+/** No size prop — the layout follows the card's width: side by side when wide (Default), stacked when narrow. */
 export const Sizes: Story = {
   render: grid({ MaropayBalanceSummary }, [
     { label: 'Narrow — stacked', args: {} },

@@ -1,0 +1,13 @@
+{
+  "key": "value-display",
+  "liquidsky": [
+    "AppNumber",
+    "AppPriceDisplay",
+    "AppMultiCellValue",
+    "AppClipboard"
+  ],
+  "status": "no-reference",
+  "reference": "None",
+  "note": "Formatting helpers with no design of their own: text follows the body or table-cell type around them.",
+  "stories": []
+}

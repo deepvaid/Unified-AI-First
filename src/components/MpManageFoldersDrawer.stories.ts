@@ -1,20 +1,30 @@
-import { onBeforeUnmount, ref } from 'vue'
+import { onBeforeUnmount, ref, watch } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpManageFoldersDrawer from './MpManageFoldersDrawer.vue'
 import MpFolderSelect from './MpFolderSelect.vue'
 import MpDataTableToolbar from './MpDataTableToolbar.vue'
 import MpStatusChip from './MpStatusChip.vue'
 import { CAMPAIGNS, CAMPAIGN_HEADERS, FOLDERS, FOLDER_COUNTS } from '@/stories/fixtures'
-import { useFoldersStore } from '@/stores/useFolders'
+import { useFoldersStore, type FolderScope } from '@/stores/useFolders'
+import { liquidskyDocs } from '@/stories/storyTemplate'
+import { overlayDocs } from '@/stories/decorators'
+
+/** Every `FolderScope` in `src/stores/useFolders.ts`. */
+const FOLDER_SCOPES: FolderScope[] = [
+  'campaigns', 'contents', 'images', 'forms', 'landing_pages', 'content_templates', 'content_feeds', 'image_groups',
+]
+
+/** Item counts for the seeded campaigns scope. */
+const CAMPAIGN_COUNTS = { 'cmp-promotions': 7, 'cmp-seasonal': 5, 'cmp-black-friday': 2, 'cmp-automated': 5 }
 
 const meta = {
   title: 'Molecules/MpManageFoldersDrawer',
   component: MpManageFoldersDrawer,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'liquidsky'],
   parameters: {
     docs: {
       description: {
-        component: `
+        component: liquidskyDocs('molecules-mpmanagefoldersdrawer') + `
 ### Overview
 \`MpManageFoldersDrawer\` is a right-side drawer (480px, wraps \`MpFormDrawer\`) for full folder
 CRUD within a scope: create (with optional one-level nesting under a parent), inline rename, and
@@ -64,23 +74,32 @@ folder (\`MpFolderSelect\`).
       },
     },
   },
+  args: {
+    modelValue: false,
+    scope: 'campaigns',
+    counts: CAMPAIGN_COUNTS,
+  },
   argTypes: {
     modelValue: { control: 'boolean', description: 'v-model — drawer visibility.' },
-    scope: { control: 'select', options: ['campaigns', 'contents', 'images'], description: 'Folder scope read from (and written to) the global useFolders store.' },
+    scope: { control: 'select', options: FOLDER_SCOPES, description: 'Folder scope read from (and written to) the global useFolders store — one of the eight `FolderScope` values.' },
     counts: { control: 'object', description: 'Item counts per folder id, shown next to each folder name.' },
     deleted: { control: false, description: 'Event — fired with the folder id after deletion so the view can re-file its items.', table: { category: 'events' } },
+    onDeleted: { action: 'deleted', table: { disable: true } },
   },
   render: (args) => ({
     components: { MpManageFoldersDrawer },
     setup() {
-      const open = ref(true)
+      // Follows the `modelValue` control, so the drawer can be closed and reopened from Controls
+      // as well as from the trigger button.
+      const open = ref(args.modelValue ?? false)
+      watch(() => args.modelValue, (value) => { open.value = value ?? false })
       return { args, open }
     },
     template: `
-      <section style="min-height:640px;background:rgb(var(--v-theme-background));padding:24px;">
+      <div>
         <v-btn variant="outlined" prepend-icon="folder-cog" @click="open = true">Manage folders</v-btn>
         <MpManageFoldersDrawer v-bind="args" v-model="open" />
-      </section>
+      </div>
     `,
   }),
 } satisfies Meta<typeof MpManageFoldersDrawer>
@@ -88,122 +107,54 @@ folder (\`MpFolderSelect\`).
 export default meta
 type Story = StoryObj<typeof meta>
 
+/**
+ * Starts closed behind its trigger, bound to the Controls panel: press **Manage folders**, or
+ * switch `modelValue` on. Change `scope` to manage another folder tree; `deleted` is logged in
+ * the Actions panel.
+ */
+export const Default: Story = {}
+
+/**
+ * The drawer open on the campaigns scope, whose seed data includes a nested child ("Black
+ * Friday" under "Seasonal"). It opens on load, so it gets its own frame on the docs page.
+ */
 export const Campaigns: Story = {
-  args: {
-    modelValue: true,
-    scope: 'campaigns',
-    counts: { 'cmp-promotions': 7, 'cmp-seasonal': 5, 'cmp-black-friday': 2, 'cmp-automated': 5 },
-  },
+  args: { modelValue: true },
+  parameters: overlayDocs(),
 }
 
-export const Images: Story = {
-  args: {
-    modelValue: true,
-    scope: 'images',
-    counts: { 'img-banners': 3, 'img-products': 3, 'img-lifestyle': 2, 'img-logos': 2 },
-  },
-}
-
-/** The contents scope, whose seed data includes a nested child ("Holiday 2026" under "Campaigns"). */
-export const NestedFolders: Story = {
-  args: {
-    modelValue: true,
-    scope: 'contents',
-    counts: { 'cnt-templates': 4, 'cnt-campaigns': 6, 'cnt-holiday': 2, 'cnt-automation': 3 },
-  },
-}
+// ── Template: States ─────────────────────────────────────────────────────────
 
 /**
- * Zero folders in the scope — the list shows the "No folders yet" hint and the create form
- * becomes the only affordance.
+ * A populated tree with a nested child, and a scope with no folders yet — the list shows the
+ * "No folders yet" hint and the create form is the only affordance.
  *
- * The story temporarily empties the images scope in the shared folders store and restores it on
- * unmount; it is excluded from the docs page so it can't race the other stories' seeded state.
+ * There is no `size` prop and no structural variant: this composes `MpFormDrawer` at its
+ * default `md` (480px) and inherits its header/body/footer rhythm and its full-bleed collapse
+ * below 640px.
+ *
+ * The story empties the `image_groups` scope in the shared folders store while it is mounted and
+ * puts it back on unmount.
  */
-export const EmptyFolderList: Story = {
-  args: {
-    modelValue: true,
-    scope: 'images',
-    counts: {},
-  },
-  parameters: { docs: { disable: true } },
-  render: (args) => ({
-    components: { MpManageFoldersDrawer },
-    setup() {
-      const store = useFoldersStore()
-      const removed = store.folders.filter(f => f.scope === 'images')
-      store.folders = store.folders.filter(f => f.scope !== 'images')
-      onBeforeUnmount(() => {
-        store.folders = [...store.folders, ...removed]
-      })
-      const open = ref(true)
-      return { args, open }
-    },
-    template: `
-      <section style="min-height:640px;background:rgb(var(--v-theme-background));padding:24px;">
-        <v-btn variant="outlined" prepend-icon="folder-cog" @click="open = true">Manage folders</v-btn>
-        <MpManageFoldersDrawer v-bind="args" v-model="open" />
-      </section>
-    `,
-  }),
-}
-
-// ── Template: Variants · Sizes · States ──────────────────────────────────────
-
-/**
- * One structure — a folder CRUD panel — instantiated per `scope`. Each scope has its own tree,
- * read from `useFoldersStore`, so the same drawer manages campaigns, images and everything
- * else that is foldered.
- */
-export const Variants: Story = {
-  render: () => ({
-    components: { MpManageFoldersDrawer },
-    data: () => ({ which: 'campaigns' as string }),
-    template: `
-      <div class="d-flex ga-2 flex-wrap">
-        <v-btn variant="outlined" class="text-none" @click="which = 'campaigns'">scope="campaigns"</v-btn>
-        <v-btn variant="outlined" class="text-none" @click="which = 'images'">scope="images"</v-btn>
-
-        <MpManageFoldersDrawer :model-value="which === 'campaigns'" scope="campaigns" @update:model-value="which = ''" />
-        <MpManageFoldersDrawer :model-value="which === 'images'" scope="images" @update:model-value="which = ''" />
-      </div>
-    `,
-  }),
-  args: {} as never,
-}
-
-/**
- * There is no `size` prop. This composes `MpFormDrawer` and inherits its 480px default
- * (`layout.drawerWidth`), its 20px header/body/footer rhythm and its full-bleed collapse below
- * 640px. That inheritance is the reason Phase 4 changed nothing in this file: fixing the
- * drawer fixed this too.
- */
-export const Sizes: Story = {
-  render: () => ({
-    components: { MpManageFoldersDrawer },
-    data: () => ({ open: true }),
-    template: `
-      <div>
-        <v-btn variant="outlined" class="text-none" @click="open = true">Manage folders</v-btn>
-        <MpManageFoldersDrawer v-model="open" scope="campaigns" />
-      </div>
-    `,
-  }),
-  args: {} as never,
-}
-
-/** A populated tree, a nested tree, and an empty scope with only the create affordance. */
 export const States: Story = {
   render: () => ({
     components: { MpManageFoldersDrawer },
-    data: () => ({ which: '' as string }),
+    setup() {
+      const store = useFoldersStore()
+      const removed = store.folders.filter(f => f.scope === 'image_groups')
+      store.folders = store.folders.filter(f => f.scope !== 'image_groups')
+      onBeforeUnmount(() => {
+        store.folders = [...store.folders.filter(f => f.scope !== 'image_groups'), ...removed]
+      })
+      return { which: ref(''), counts: CAMPAIGN_COUNTS }
+    },
     template: `
       <div class="d-flex ga-2 flex-wrap">
-        <v-btn variant="outlined" class="text-none" @click="which = 'full'">Populated</v-btn>
-        <v-btn variant="outlined" class="text-none" @click="which = 'empty'">Empty scope</v-btn>
+        <v-btn variant="outlined" @click="which = 'full'">Populated</v-btn>
+        <v-btn variant="outlined" @click="which = 'empty'">Empty scope</v-btn>
 
-        <MpManageFoldersDrawer :model-value="which === 'full'" scope="campaigns" @update:model-value="which = ''" />
-        <MpManageFoldersDrawer :model-value="which === 'empty'" scope="forms" @update:model-value="which = ''" />
+        <MpManageFoldersDrawer :model-value="which === 'full'" scope="campaigns" :counts="counts" @update:model-value="which = ''" />
+        <MpManageFoldersDrawer :model-value="which === 'empty'" scope="image_groups" @update:model-value="which = ''" />
       </div>
     `,
   }),

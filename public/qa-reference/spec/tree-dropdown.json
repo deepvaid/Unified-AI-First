@@ -3,8 +3,39 @@
   "liquidsky": [
     "AppTreeDropdown"
   ],
-  "status": "no-reference",
-  "reference": "None",
-  "note": "Marobase has no tree dropdown. The closed field follows AppDropdown; the tree panel needs a design decision.",
-  "stories": []
+  "status": "partial",
+  "reference": "No dedicated design yet. Build from these parts",
+  "note": "The closed field and the menu panel are the dropdown in Patterns › Form Fields. A tree row is a menu row at the menu density (`component.menu.itemHeight`, `component.menu.itemPaddingBlock`) with a checkbox from the selection controls. The expand arrow, the indent of a child level and the child count have no design yet.",
+  "stories": [
+    {
+      "id": "patterns-form-fields--selected-with-checkmark",
+      "label": "Field and menu panel",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-form-fields--selected-with-checkmark",
+      "png": {
+        "light": "png/tree-dropdown/patterns-form-fields--selected-with-checkmark--light.png",
+        "dark": "png/tree-dropdown/patterns-form-fields--selected-with-checkmark--dark.png"
+      },
+      "parts": []
+    },
+    {
+      "id": "molecules-mpformfield--default",
+      "label": "Selection control with its label",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpformfield--default",
+      "png": {
+        "light": "png/tree-dropdown/molecules-mpformfield--default--light.png",
+        "dark": "png/tree-dropdown/molecules-mpformfield--default--dark.png"
+      },
+      "parts": []
+    },
+    {
+      "id": "molecules-mprowactionsmenu--open-menu",
+      "label": "Menu row density",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mprowactionsmenu--open-menu",
+      "png": {
+        "light": "png/tree-dropdown/molecules-mprowactionsmenu--open-menu--light.png",
+        "dark": "png/tree-dropdown/molecules-mprowactionsmenu--open-menu--dark.png"
+      },
+      "parts": []
+    }
+  ]
 }

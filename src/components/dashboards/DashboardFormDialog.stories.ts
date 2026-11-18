@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 import type { Dashboard } from '@/stores/dashboards/types'
+import { overlayDocs } from '@/stories/decorators'
 import DashboardFormDialog from './DashboardFormDialog.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 
@@ -51,11 +52,11 @@ const meta = {
       return { args, open, savedId }
     },
     template: `
-      <section style="min-height:640px;background:rgb(var(--v-theme-background));padding:24px;">
+      <div>
         <v-btn color="primary" prepend-icon="plus" @click="open = true">Open dialog</v-btn>
         <div v-if="savedId" class="text-body-2 text-medium-emphasis mt-3">Saved dashboard: {{ savedId }}</div>
         <DashboardFormDialog v-bind="args" v-model="open" @saved="savedId = $event" />
-      </section>
+      </div>
     `,
   }),
 } satisfies Meta<typeof DashboardFormDialog>
@@ -63,12 +64,15 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-export const Create: Story = {}
+export const Create: Story = {
+  parameters: overlayDocs(),
+}
 
 export const Edit: Story = {
   args: {
     dashboard: makeDashboard(),
   },
+  parameters: overlayDocs(),
 }
 
 export const EditLongContent: Story = {
@@ -82,75 +86,34 @@ export const EditLongContent: Story = {
       accent: 'warning',
     }),
   },
+  parameters: overlayDocs(),
 }
 
-// ── Template: Variants · Sizes · States ──────────────────────────────────────
+// ── Variants ────────────────────────────────────────────────────────────────
 
 /**
  * Two structures, driven by whether a `dashboard` is passed: **create** and **edit**. The
  * mode label rides on `MpDialog`'s `eyebrow` and the live name on its `title`, so the header
- * narrates what is about to happen without a second heading.
+ * narrates what is about to happen without a second heading. Both start closed; in create
+ * mode the submit button stays disabled until the name is filled.
  */
 export const Variants: Story = {
   render: () => ({
     components: { DashboardFormDialog },
-    data: () => ({ which: 'create' as string }),
+    setup() {
+      const which = ref('')
+      return { which, dashboard: makeDashboard() }
+    },
     template: `
       <div class="d-flex ga-2 flex-wrap">
-        <v-btn variant="outlined" class="text-none" @click="which = 'create'">Create</v-btn>
-        <v-btn variant="outlined" class="text-none" @click="which = 'edit'">Edit</v-btn>
+        <v-btn variant="outlined" @click="which = 'create'">Create</v-btn>
+        <v-btn variant="outlined" @click="which = 'edit'">Edit</v-btn>
 
         <DashboardFormDialog :model-value="which === 'create'" account-id="2000290" @update:model-value="which = ''" />
         <DashboardFormDialog
           :model-value="which === 'edit'"
           account-id="2000290"
-          :dashboard="{ id: 'd1', name: 'Lifecycle Health', description: 'Retention and winback at a glance.', accent: 'violet', icon: 'activity' } as never"
-          @update:model-value="which = ''"
-        />
-      </div>
-    `,
-  }),
-  args: {} as never,
-}
-
-/**
- * There is no `size` prop — this is `MpDialog`'s `sm` (440px). Two fields do not need a wide
- * measure, and a name field stretched to 880px reads worse, not better. Phase 4 replaced this
- * component's own `max-width="560"` plus `pa-5 / pa-5 / pa-4` bands with the shell's ramp and
- * its one 20px inset.
- */
-export const Sizes: Story = {
-  render: () => ({
-    components: { DashboardFormDialog },
-    data: () => ({ open: true }),
-    template: `
-      <div>
-        <v-btn variant="outlined" class="text-none" @click="open = true">New dashboard</v-btn>
-        <DashboardFormDialog v-model="open" account-id="2000290" />
-      </div>
-    `,
-  }),
-  args: {} as never,
-}
-
-/**
- * Empty (submit disabled), typed, and the counter/validation states on both fields. The
- * dialog is `persistent`, so the scrim and Esc will not discard a half-typed name.
- */
-export const States: Story = {
-  render: () => ({
-    components: { DashboardFormDialog },
-    data: () => ({ which: '' as string }),
-    template: `
-      <div class="d-flex ga-2 flex-wrap">
-        <v-btn variant="outlined" class="text-none" @click="which = 'empty'">Empty — submit disabled</v-btn>
-        <v-btn variant="outlined" class="text-none" @click="which = 'filled'">Filled</v-btn>
-
-        <DashboardFormDialog :model-value="which === 'empty'" account-id="2000290" @update:model-value="which = ''" />
-        <DashboardFormDialog
-          :model-value="which === 'filled'"
-          account-id="2000290"
-          :dashboard="{ id: 'd2', name: 'Revenue Watch', description: 'Daily revenue, channel mix and refunds.', accent: 'emerald', icon: 'dollar-sign' } as never"
+          :dashboard="dashboard"
           @update:model-value="which = ''"
         />
       </div>

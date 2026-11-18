@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpEmptyState from './MpEmptyState.vue'
+import { stack } from '@/stories/storyTemplate'
 
 const meta = {
   title: 'Molecules/MpEmptyState',
@@ -79,6 +80,7 @@ The \`MpEmptyState\` component is used when a container (like a table, list, or 
     actionLabel: { control: 'text', description: 'CTA button label. Omit to render no button.' },
     actionIcon: { control: 'text', description: 'Lucide icon prepended to the CTA button.' },
     action: { control: false, description: 'Event — emitted when the CTA button is clicked.', table: { category: 'events' } },
+    onAction: { action: 'action', table: { disable: true } },
   },
 } satisfies Meta<typeof MpEmptyState>
 
@@ -129,120 +131,48 @@ export const Variants: Story = {
  * The emphasis ramp. There is no `size` prop — an empty state fills its container,
  * so weight (not width) is the axis that varies.
  */
-export const Sizes: Story = {
-  render: () => ({
-    components: { MpEmptyState },
-    template: `
-      <div class="d-flex flex-column ga-8">
-        <div>
-          <div class="text-caption text-medium-emphasis mb-2">emphasis="default" — 240px floor, 32px inset</div>
-          <MpEmptyState icon="package" title="No orders yet" description="Once customers start placing orders, they will appear here." />
-        </div>
-        <div>
-          <div class="text-caption text-medium-emphasis mb-2">emphasis="prominent" — 320px floor, 48px inset</div>
-          <MpEmptyState
-            emphasis="prominent"
-            illustration="empty-campaigns"
-            title="Launch your first campaign"
-            description="Reach your audience with a broadcast email."
-            action-label="Create campaign"
-            action-icon="plus"
-          />
-        </div>
-      </div>
-    `,
-  }),
+export const Emphasis: Story = {
+  render: stack({ MpEmptyState }, [
+    {
+      label: 'emphasis="default" — 240px floor, 32px inset',
+      args: { icon: 'package', title: 'No orders yet', description: 'Once customers start placing orders, they will appear here.' },
+    },
+    {
+      label: 'emphasis="prominent" — 320px floor, 48px inset',
+      args: {
+        emphasis: 'prominent',
+        illustration: 'empty-campaigns',
+        title: 'Launch your first campaign',
+        description: 'Reach your audience with a broadcast email.',
+        actionLabel: 'Create campaign',
+        actionIcon: 'plus',
+      },
+    },
+  ]),
   args: {} as never,
 }
 
 /** Every state the component renders: with and without a CTA, with a description or bare, and the error tone MpErrorState composes. */
 export const States: Story = {
-  render: () => ({
-    components: { MpEmptyState },
-    template: `
-      <div class="d-flex flex-column ga-8">
-        <div>
-          <div class="text-caption text-medium-emphasis mb-2">with CTA</div>
-          <MpEmptyState icon="package" title="No orders yet" description="Once customers start placing orders, they will appear here." action-label="Create Draft Order" action-icon="plus" />
-        </div>
-        <div>
-          <div class="text-caption text-medium-emphasis mb-2">no CTA — filtered result, nothing to create</div>
-          <MpEmptyState icon="search" title="No results found" description="Try adjusting your search or filter criteria." />
-        </div>
-        <div>
-          <div class="text-caption text-medium-emphasis mb-2">title only</div>
-          <MpEmptyState icon="inbox" title="Nothing here yet" />
-        </div>
-        <div>
-          <div class="text-caption text-medium-emphasis mb-2">tone="error" — the shape MpErrorState wraps</div>
-          <MpEmptyState tone="error" icon="alert-triangle" title="Something went wrong" description="We could not load your orders." action-label="Try again" action-icon="refresh-cw" />
-        </div>
-      </div>
-    `,
-  }),
+  render: stack({ MpEmptyState }, [
+    {
+      label: 'with CTA',
+      args: { icon: 'package', title: 'No orders yet', description: 'Once customers start placing orders, they will appear here.', actionLabel: 'Create Draft Order', actionIcon: 'plus' },
+    },
+    {
+      label: 'no CTA — filtered result, nothing to create',
+      args: { icon: 'search', title: 'No results found', description: 'Try adjusting your search or filter criteria.' },
+    },
+    { label: 'title only', args: { icon: 'inbox', title: 'Nothing here yet' } },
+    {
+      label: 'tone="error" — the shape MpErrorState wraps',
+      args: { tone: 'error', icon: 'alert-triangle', title: 'Something went wrong', description: 'We could not load your orders.', actionLabel: 'Try again', actionIcon: 'refresh-cw' },
+    },
+  ]),
   args: {} as never,
 }
 
 // ── Scenarios ───────────────────────────────────────────────────────────────
-
-export const Campaigns: Story = {
-  args: {
-    icon: 'mail',
-    title: 'No campaigns yet',
-    description: 'Create your first email campaign to engage your audience.',
-    actionLabel: 'New Campaign',
-    actionIcon: 'plus',
-  },
-}
-
-export const SearchNoResults: Story = {
-  args: {
-    icon: 'search',
-    title: 'No results found',
-    description: 'Try adjusting your search or filter criteria.',
-  },
-}
-
-export const Contacts: Story = {
-  args: {
-    icon: 'users',
-    title: 'No contacts yet',
-    description: 'Import contacts or add them manually to start building your audience.',
-    actionLabel: 'Import Contacts',
-    actionIcon: 'upload',
-  },
-}
-
-/** Prominent — illustration-led with a larger, verb-first headline for high-visibility first-run moments. */
-export const Prominent: Story = {
-  args: {
-    emphasis: 'prominent',
-    illustration: 'empty-campaigns',
-    title: 'Launch your first campaign',
-    description: 'Reach your audience with a broadcast email. Design it, pick a segment, and send — you can track opens and clicks the moment it goes out.',
-    actionLabel: 'Create campaign',
-    actionIcon: 'plus',
-  },
-}
-
-/** Launcher — a vertical menu of starting points passed via the default slot. */
-export const Launcher: Story = {
-  args: {
-    title: 'How do you want to start?',
-    description: 'Pick a starting point for your new campaign.',
-  },
-  render: (args) => ({
-    components: { MpEmptyState },
-    setup: () => ({ args }),
-    template: `
-      <MpEmptyState v-bind="args" variant="launcher">
-        <v-btn variant="outlined" class="text-none justify-start" prepend-icon="file">Start from scratch</v-btn>
-        <v-btn variant="outlined" class="text-none justify-start" prepend-icon="layout-template">Use a template</v-btn>
-        <v-btn variant="outlined" class="text-none justify-start" prepend-icon="sparkles">Draft with Da Vinci</v-btn>
-      </MpEmptyState>
-    `,
-  }),
-}
 
 /** Long title + multi-sentence description — copy wraps inside the 420px measure without breaking layout. */
 export const LongCopy: Story = {

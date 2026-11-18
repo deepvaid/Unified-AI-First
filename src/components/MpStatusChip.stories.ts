@@ -1,14 +1,15 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpStatusChip from './MpStatusChip.vue'
+import { grid, liquidskyDocs } from '@/stories/storyTemplate'
 
 const meta = {
   title: 'Atoms/MpStatusChip',
   component: MpStatusChip,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'liquidsky'],
   parameters: {
     docs: {
       description: {
-        component: `
+        component: liquidskyDocs('atoms-mpstatuschip') + `
 ### Overview
 The \`MpStatusChip\` displays the current state of an entity. It automatically applies appropriate Maropost semantic colors based on the text string matching known statuses in the business logic (lookup is case-insensitive).
 
@@ -51,12 +52,12 @@ The \`MpStatusChip\` displays the current state of an entity. It automatically a
     status: { control: 'text', description: 'Status text, rendered verbatim. Matched case-insensitively against the tone map for the given type.' },
     type: {
       control: 'select',
-      options: ['order', 'fulfillment', 'payment', 'payout', 'dispute', 'method', 'readiness', 'campaign', 'contact', 'ticket', 'coupon', 'priority', 'connection', 'general'],
+      options: ['order', 'fulfillment', 'payment', 'payout', 'dispute', 'method', 'readiness', 'campaign', 'contact', 'ticket', 'coupon', 'priority', 'connection', 'stock', 'report', 'general'],
       description: 'Business domain used to resolve the status → color mapping. Unknown statuses fall back to the general map, then neutral.',
     },
     size: { control: 'select', options: ['sm', 'md', 'lg'], description: 'Chip size on the shared sm|md|lg ramp (P2-1). Heights come from component.chip.height.* — 20 / 24 / 32. Use "sm" inside data tables.' },
     variant: { control: 'select', options: ['flat', 'tonal', 'outlined'], description: 'Chip fill style. Tonal (default) is the platform standard.' },
-    showIcon: { control: 'boolean', description: 'Prepend the mapped status icon (available for fulfillment, campaign, ticket, order, payment, payout, dispute, method, readiness, priority, connection).' },
+    showIcon: { control: 'boolean', description: 'Prepend the mapped status icon (available for fulfillment, campaign, ticket, order, payment, payout, dispute, method, readiness, priority, connection, stock).' },
   },
 } satisfies Meta<typeof MpStatusChip>
 
@@ -91,19 +92,14 @@ export const Variants: Story = {
 
 /** All three sizes on the shared sm|md|lg ramp. */
 export const Sizes: Story = {
-  render: () => ({
-    components: { MpStatusChip },
-    setup: () => ({ sizes: ['sm', 'md', 'lg'] }),
-    template: `
-      <div class="d-flex flex-wrap ga-4 align-center">
-        <div v-for="size in sizes" :key="size">
-          <div class="text-caption text-medium-emphasis mb-2">{{ size }}</div>
-          <MpStatusChip status="Shipped" type="fulfillment" :size="size" show-icon />
-        </div>
-      </div>
-    `,
-  }),
-  args: {} as any,
+  render: grid(
+    { MpStatusChip },
+    (['sm', 'md', 'lg'] as const).map((size) => ({
+      label: size,
+      args: { status: 'Shipped', type: 'fulfillment', size, showIcon: true },
+    })),
+  ),
+  args: {} as never,
 }
 
 /** Every tone the chip maps to, plus the icon on/off state and an unmapped status falling back to neutral. */
@@ -139,141 +135,7 @@ export const States: Story = {
   args: {} as never,
 }
 
-export const WithIcon: Story = {
-  args: { status: 'Shipped', type: 'fulfillment', showIcon: true },
-}
-
-export const OrderStatuses: Story = {
-  render: () => ({
-    components: { MpStatusChip },
-    template: `
-      <div class="d-flex flex-wrap ga-2 align-center">
-        <MpStatusChip status="Pending" type="order" />
-        <MpStatusChip status="Processing" type="order" />
-        <MpStatusChip status="Completed" type="order" />
-        <MpStatusChip status="Cancelled" type="order" />
-        <MpStatusChip status="Refunded" type="order" />
-        <MpStatusChip status="On Hold" type="order" />
-      </div>
-    `,
-  }),
-  args: {} as any,
-}
-
-export const PriorityLevels: Story = {
-  render: () => ({
-    components: { MpStatusChip },
-    template: `
-      <div class="d-flex flex-wrap ga-2 align-center">
-        <MpStatusChip status="Critical" type="priority" showIcon />
-        <MpStatusChip status="High" type="priority" showIcon />
-        <MpStatusChip status="Medium" type="priority" showIcon />
-        <MpStatusChip status="Low" type="priority" showIcon />
-      </div>
-    `,
-  }),
-  args: {} as any,
-}
-
-export const ConnectionStatuses: Story = {
-  render: () => ({
-    components: { MpStatusChip },
-    template: `
-      <div class="d-flex flex-wrap ga-2 align-center">
-        <MpStatusChip status="Connected" type="connection" showIcon />
-        <MpStatusChip status="Disconnected" type="connection" showIcon />
-        <MpStatusChip status="Needs Setup" type="connection" showIcon />
-        <MpStatusChip status="Sync Issue" type="connection" showIcon />
-        <MpStatusChip status="Auth Expired" type="connection" showIcon />
-        <MpStatusChip status="Active" type="connection" showIcon />
-        <MpStatusChip status="Setup Incomplete" type="connection" showIcon />
-        <MpStatusChip status="Inactive" type="connection" showIcon />
-      </div>
-    `,
-  }),
-  args: {} as any,
-}
-
-export const FulfillmentStatuses: Story = {
-  render: () => ({
-    components: { MpStatusChip },
-    template: `
-      <div class="d-flex flex-wrap ga-2 align-center">
-        <MpStatusChip status="Unapproved" type="fulfillment" showIcon />
-        <MpStatusChip status="Not Ready" type="fulfillment" showIcon />
-        <MpStatusChip status="Ready For Fulfillment" type="fulfillment" showIcon />
-        <MpStatusChip status="Shipped" type="fulfillment" showIcon />
-        <MpStatusChip status="Return Requested" type="fulfillment" showIcon />
-        <MpStatusChip status="Cancelled" type="fulfillment" showIcon />
-      </div>
-    `,
-  }),
-  args: {} as any,
-}
-
-export const PaymentStatuses: Story = {
-  render: () => ({
-    components: { MpStatusChip },
-    template: `
-      <div class="d-flex flex-wrap ga-2 align-center">
-        <MpStatusChip status="Not Paid" type="payment" />
-        <MpStatusChip status="Paid" type="payment" />
-        <MpStatusChip status="Requires Action" type="payment" />
-      </div>
-    `,
-  }),
-  args: {} as any,
-}
-
-/**
- * Maropay's vocabulary. `readiness` is one map for every account and store state
- * dimension, so Submitted → Verified → Ready to activate → Live read as distinct
- * steps instead of a single "Connected". Payouts say "Sent to bank" — the confirmed
- * event — never "Received".
- */
-export const MaropayStatuses: Story = {
-  render: () => ({
-    components: { MpStatusChip },
-    setup: () => ({
-      rows: [
-        { type: 'readiness', statuses: ['Not started', 'In progress', 'Submitted', 'Under review', 'Action required', 'Verified', 'Rejected'] },
-        { type: 'readiness', statuses: ['Not enabled', 'Enabled', 'Restricted', 'Ready', 'Paused', 'Inactive', 'Ready to activate', 'Live'] },
-        { type: 'payment', statuses: ['Processing', 'Authorised', 'Succeeded', 'Partially refunded', 'Refunded', 'Failed', 'Cancelled', 'Disputed'] },
-        { type: 'payout', statuses: ['Upcoming', 'In transit', 'Sent to bank', 'Failed'] },
-        { type: 'dispute', statuses: ['Needs response', 'Under review', 'Won', 'Lost', 'Accepted'] },
-        { type: 'method', statuses: ['Available', 'Setup required', 'Pending approval', 'Enabled', 'Unavailable'] },
-      ],
-    }),
-    template: `
-      <div class="d-flex flex-column ga-6">
-        <div v-for="(row, i) in rows" :key="i">
-          <div class="text-caption text-medium-emphasis mb-2">{{ row.type }}</div>
-          <div class="d-flex flex-wrap ga-2 align-center">
-            <MpStatusChip v-for="s in row.statuses" :key="s" :status="s" :type="row.type" show-icon />
-          </div>
-        </div>
-      </div>
-    `,
-  }),
-  args: {} as never,
-}
-
-export const CampaignStatuses: Story = {
-  render: () => ({
-    components: { MpStatusChip },
-    template: `
-      <div class="d-flex flex-wrap ga-2 align-center">
-        <MpStatusChip status="Draft" type="campaign" />
-        <MpStatusChip status="Scheduled" type="campaign" />
-        <MpStatusChip status="Sending" type="campaign" />
-        <MpStatusChip status="Sent" type="campaign" />
-        <MpStatusChip status="Stopped" type="campaign" />
-      </div>
-    `,
-  }),
-  args: {} as any,
-}
-
+/** A sample of the most-used types. `FullMatrix` lists every type and every status. */
 export const AllTypes: Story = {
   render: () => ({
     components: { MpStatusChip },
@@ -294,14 +156,14 @@ export const AllTypes: Story = {
         <h4 class="text-subtitle-2 mb-2">Payment</h4>
         <div class="d-flex flex-wrap gap-2 mb-4">
           <MpStatusChip status="Paid" type="payment" />
-          <MpStatusChip status="Not Paid" type="payment" />
-          <MpStatusChip status="Requires Action" type="payment" />
+          <MpStatusChip status="Pending" type="payment" />
+          <MpStatusChip status="Failed" type="payment" />
         </div>
         <h4 class="text-subtitle-2 mb-2">Campaign</h4>
         <div class="d-flex flex-wrap gap-2 mb-4">
           <MpStatusChip status="Draft" type="campaign" />
           <MpStatusChip status="Sent" type="campaign" />
-          <MpStatusChip status="Stopped" type="campaign" />
+          <MpStatusChip status="Scheduled" type="campaign" />
         </div>
         <h4 class="text-subtitle-2 mb-2">Ticket</h4>
         <div class="d-flex flex-wrap gap-2 mb-4">
@@ -317,35 +179,56 @@ export const AllTypes: Story = {
 }
 
 /**
- * The complete status × type matrix — every status string the component maps for
- * every type, plus the neutral fallback for unknown statuses. This is the source
- * of truth for which strings resolve to which tone.
+ * The complete status × type matrix: every status string the component maps, for all sixteen
+ * types, with the mapped icon where a type has one, plus the neutral fallback for an unknown
+ * status. This is the source of truth for which strings resolve to which tone.
+ *
+ * `readiness` is Maropay's one map for every account and store state dimension, so
+ * Submitted → Verified → Ready to activate → Live read as distinct steps instead of a single
+ * "Connected". Payouts say "Sent to bank" (the confirmed event), never "Received".
  */
 export const FullMatrix: Story = {
   render: () => ({
     components: { MpStatusChip },
     setup() {
-      // Mirrors the component's toneMap keys, title-cased for display
-      // (the lookup is case-insensitive).
+      // Mirrors the keys of `toneMap` in MpStatusChip.vue (the lookup is case-insensitive).
       const matrix: Record<string, string[]> = {
-        order: ['Processing', 'Completed', 'Cancelled', 'Refunded', 'On Hold', 'Archived'],
+        order: ['Processing', 'Completed', 'Cancelled', 'Refunded', 'On hold', 'Archived'],
         fulfillment: [
-          'Unapproved', 'Not Ready', 'Ready For Fulfillment', 'Shipped', 'Return Requested',
-          'Cancelled', 'Fulfilled', 'Unfulfilled', 'Partial', 'Awaiting Fulfillment',
-          'Picking', 'Packed', 'Ready To Ship',
+          'Unapproved', 'Not ready', 'Ready for fulfillment', 'Shipped', 'Return requested',
+          'Cancelled', 'Fulfilled', 'Unfulfilled', 'Partial', 'Awaiting fulfillment',
+          'Picking', 'Packed', 'Ready to ship',
         ],
-        payment: ['Paid', 'Refunded', 'Voided', 'Pending', 'Failed', 'Authorised', 'partially_refunded'],
-        campaign: ['Sent', 'Scheduled', 'Draft', 'Sending', 'Active', 'Paused', 'Completed', 'Failed', 'Archived', 'Aborted'],
-        contact: ['Active', 'Subscribed', 'Unsubscribed', 'Bounced', 'Pending', 'Confirmed', 'Suspended', 'Suppressed', 'Spam', 'Hard Bounce'],
-        ticket: ['Open', 'In Progress', 'Awaiting Reply', 'Resolved', 'Closed', 'On Hold', 'Escalated', 'New'],
+        payment: [
+          'Paid', 'Refunded', 'Voided', 'Pending', 'Failed', 'Authorised', 'Partially refunded',
+          'Disputed', 'Succeeded', 'Processing', 'Cancelled',
+        ],
+        payout: ['Upcoming', 'In transit', 'Sent to bank', 'Failed'],
+        dispute: ['Needs response', 'Under review', 'Won', 'Lost', 'Accepted'],
+        method: ['Available', 'Setup required', 'Pending approval', 'Enabled', 'Unavailable'],
+        readiness: [
+          'Not started', 'In progress', 'Submitted', 'Not submitted', 'Under review', 'Action required',
+          'Verified', 'Rejected', 'Declined', 'Not enabled', 'Enabled', 'Restricted', 'Disabled',
+          'Ready', 'Paused', 'Inactive', 'Needs setup', 'Ready to activate', 'Live', 'Pending',
+        ],
+        campaign: ['Sent', 'Scheduled', 'Draft', 'Sending', 'Active', 'Paused', 'Completed', 'Failed', 'Archived', 'Aborted', 'Recurring'],
+        contact: ['Active', 'Subscribed', 'Unsubscribed', 'Bounced', 'Pending', 'Confirmed', 'Suspended', 'Suppressed', 'Spam', 'Hard bounce'],
+        ticket: ['Open', 'In progress', 'Awaiting reply', 'Resolved', 'Closed', 'On hold', 'Escalated', 'New', 'Pending'],
         coupon: ['Active', 'Expired', 'Scheduled', 'Used', 'Disabled'],
         priority: ['Critical', 'Urgent', 'High', 'Medium', 'Normal', 'Low'],
-        connection: ['Connected', 'Disconnected', 'Needs Setup', 'Sync Issue', 'Auth Expired', 'Syncing', 'Error', 'Healthy', 'Active', 'Setup Incomplete', 'Inactive'],
+        connection: [
+          'Connected', 'Disconnected', 'Needs setup', 'Sync issue', 'Auth expired', 'Syncing',
+          'Error', 'Healthy', 'Active', 'Setup incomplete', 'Inactive',
+        ],
+        stock: ['In stock', 'Low stock', 'Out of stock', 'Backordered', 'Discontinued'],
+        report: ['Scheduled', 'Recurring'],
         general: [
           'Active', 'Inactive', 'Pending', 'Error', 'Published', 'Draft', 'Archived',
-          'Enabled', 'Disabled', 'Failed', 'Running', 'Paused', 'Completed',
-          'Connected', 'Disconnected', 'Needs Setup', 'Sync Issue', 'Auth Expired',
-          'Healthy', 'Needs Attention', 'Incomplete', 'Open', 'Closed', 'Online', 'Offline', 'Syncing',
+          'Enabled', 'Disabled', 'Failed', 'Success', 'Required', 'Optional',
+          'Running', 'Paused', 'Completed', 'Indexing', 'Available', 'Unconfigured',
+          'Info', 'Warning', 'Connected', 'Disconnected', 'Needs setup', 'Sync issue', 'Auth expired',
+          'Healthy', 'Needs attention', 'Incomplete', 'Open', 'Closed', 'Online', 'Offline',
+          'Syncing', 'Invited', 'Deactivated', 'Verified', 'Unverified', 'Finished',
         ],
       }
       return { matrix }
@@ -355,46 +238,15 @@ export const FullMatrix: Story = {
         <div v-for="(statuses, type) in matrix" :key="type" class="mb-4">
           <h4 class="text-subtitle-2 text-capitalize mb-2">{{ type }}</h4>
           <div class="d-flex flex-wrap ga-2 align-center">
-            <MpStatusChip v-for="s in statuses" :key="s" :status="s" :type="type" />
+            <MpStatusChip v-for="s in statuses" :key="s" :status="s" :type="type" show-icon />
           </div>
         </div>
         <h4 class="text-subtitle-2 mb-2">Unknown status → neutral fallback</h4>
         <div class="d-flex flex-wrap ga-2 align-center">
-          <MpStatusChip status="Some Custom Status" type="order" />
+          <MpStatusChip status="Some custom status" type="order" />
         </div>
       </div>
     `,
   }),
-  args: {} as any,
-}
-
-/** Size × variant matrix on a single status, for density decisions in tables vs detail views. */
-export const SizesAndVariants: Story = {
-  render: () => ({
-    components: { MpStatusChip },
-    setup() {
-      const sizes = ['sm', 'md', 'lg']
-      const variants = ['tonal', 'flat', 'outlined']
-      return { sizes, variants }
-    },
-    template: `
-      <div>
-        <div v-for="variant in variants" :key="variant" class="mb-4">
-          <h4 class="text-subtitle-2 text-capitalize mb-2">{{ variant }}</h4>
-          <div class="d-flex flex-wrap ga-2 align-center">
-            <MpStatusChip
-              v-for="size in sizes"
-              :key="size"
-              status="Shipped"
-              type="fulfillment"
-              :size="size"
-              :variant="variant"
-              showIcon
-            />
-          </div>
-        </div>
-      </div>
-    `,
-  }),
-  args: {} as any,
+  args: {} as never,
 }

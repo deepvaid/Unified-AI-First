@@ -1,5 +1,7 @@
+import { ref } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MaropayActivateDialog from './MaropayActivateDialog.vue'
+import { overlayDocs } from '@/stories/decorators'
 
 function consequences(takeCards: boolean): string[] {
   return [
@@ -37,9 +39,25 @@ at \`size="sm"\`; \`MpConfirmDialog\` has no room for a control.
 - **Consumer must:** act on \`confirm(takeCards)\`.
         `,
       },
+      // Every story opens the dialog on mount.
+      ...overlayDocs().docs,
     },
   },
-  args: { modelValue: true, storeName: 'Atlas Outfitters', gateway: 'Stripe', consequences },
+  args: { storeName: 'Atlas Outfitters', gateway: 'Stripe', consequences },
+  // Storybook does not write `update:modelValue` back into args, so the story holds the open state.
+  render: (args) => ({
+    components: { MaropayActivateDialog },
+    setup() {
+      const open = ref(true)
+      return { args, open }
+    },
+    template: `
+      <div>
+        <v-btn variant="outlined" @click="open = true">Reopen</v-btn>
+        <MaropayActivateDialog v-bind="args" v-model="open" />
+      </div>
+    `,
+  }),
 } satisfies Meta<typeof MaropayActivateDialog>
 
 export default meta

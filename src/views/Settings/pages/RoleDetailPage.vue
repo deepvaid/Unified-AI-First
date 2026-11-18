@@ -227,7 +227,7 @@ function statusLabel(status: string): string {
         </v-btn>
       </SettingsSection>
 
-      <SettingsSection v-if="!role.system" title="Danger zone" compact>
+      <SettingsSection v-if="!role.system" title="Danger zone" density="compact">
         <p class="text-body-2 text-medium-emphasis">
           Deleting a role is permanent. Roles assigned to users can’t be deleted — reassign those users first.
         </p>

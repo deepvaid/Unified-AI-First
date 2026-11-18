@@ -2,13 +2,15 @@ import { ref } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 import DvHistoryDrawer from './DvHistoryDrawer.vue'
 import { useDaVinciHistory } from '@/composables/useDaVinciHistory'
+import { isolateStorage, overlayDocs } from '@/stories/decorators'
 
 // Stories drive the useDaVinciHistory() module singleton from setup() — same
 // convention as DvToastStack.stories.ts: clear the list, re-seed it, then
 // re-date the items (through the reactive proxies) so they spread across the
 // Today / Yesterday / Last 7 days / Older groups deterministically. Seeding
 // goes through addItem(), so the seeds also land in localStorage
-// ('davinci-history-v1'), like real conversations would.
+// ('davinci-history-v1'), like real conversations would; the isolateStorage
+// decorator puts localStorage back when the story unmounts.
 
 interface HistorySeed {
   title: string
@@ -56,8 +58,11 @@ const meta = {
   title: 'Product/Da Vinci/DvHistoryDrawer',
   component: DvHistoryDrawer,
   tags: ['autodocs'],
+  decorators: [isolateStorage],
   parameters: {
     docs: {
+      // The history list is a module singleton: a frame per story keeps each one's own state.
+      ...overlayDocs().docs,
       description: {
         component: `
 ### Overview
@@ -87,18 +92,12 @@ conversation; per-row and "Clear all" deletions route through \`MpConfirmDialog\
       },
     },
   },
-  parameters: {
-    canvas: 'full',
-    // The drawer positions absolutely inside its host panel — isolate docs
-    // examples in iframes so each story shows its own singleton state.
-    docs: { story: { inline: false, height: '640px' } },
-  },
   argTypes: {
     open: { control: false, description: 'Slides the drawer in (overlay mode). Ignored in rail mode, which is always visible.' },
     activeId: { control: false, description: 'Id of the currently open conversation — highlights its row.' },
     mode: {
       control: false,
-      description: '"overlay" (default): slides in over the copilot panel below its 60px header, with a close button. "rail": fills a persistent side rail and swaps the close button for a kebab menu with "Delete all conversations" (gated behind an MpConfirmDialog — replaced window.confirm in the Phase 4 a11y pass, which also gave the search input an aria-label).',
+      description: '"overlay" (default): slides in over the copilot panel below its 56px header, with a close button. "rail": fills a persistent side rail and swaps the close button for a kebab menu with "Delete all conversations" (gated behind an MpConfirmDialog — replaced window.confirm in the Phase 4 a11y pass, which also gave the search input an aria-label).',
     },
     close: { control: false, description: 'Event — X button clicked (overlay mode only).', table: { category: 'events' } },
     select: { control: false, description: 'Event — conversation chosen (click or Enter/Space); payload is the item id.', table: { category: 'events' } },
@@ -109,14 +108,14 @@ conversation; per-row and "Clear all" deletions route through \`MpConfirmDialog\
 export default meta
 type Story = StoryObj<typeof meta>
 
-// 380×560 stage mimicking the copilot panel the drawer overlays; the 60px
-// header matches the inset the drawer leaves for the real panel header.
+// 380×560 stage mimicking the copilot panel the drawer overlays; the header is
+// the 56px inset the drawer leaves for the real panel header.
 const FRAME_STYLE = 'position:relative; width:380px; height:560px; overflow:hidden;'
-  + ' border:1px solid rgb(var(--v-theme-outline-variant)); border-radius:16px;'
-  + ' background: rgb(var(--v-theme-surface));'
-const HEAD_STYLE = 'height:60px; display:flex; align-items:center; padding:0 16px;'
-  + ' border-bottom:1px solid rgb(var(--v-theme-outline-variant));'
-  + ' font-weight:600; font-size:13.5px; color: rgb(var(--v-theme-on-surface));'
+  + ' border:1px solid var(--border-subtle); border-radius:var(--mp-component-card-radius);'
+  + ' background:var(--surface-primary); color:var(--on-surface);'
+const HEAD_STYLE = 'height:var(--mp-layout-appbarHeight); display:flex; align-items:center;'
+  + ' padding-inline:var(--mp-space-16); border-bottom:1px solid var(--border-subtle);'
+  + ' font-size:var(--mp-fontSize-14); font-weight:var(--mp-fontWeight-semibold);'
 
 /**
  * Overlay mode as used inside MpDaVinciBot: grouped history with an active
@@ -132,7 +131,7 @@ export const Default: Story = {
       return { activeId, open }
     },
     template: `
-      <div class="pa-6 d-flex flex-column align-center ga-4">
+      <div class="d-flex flex-column align-center ga-4">
         <v-btn size="small" variant="tonal" color="primary" class="text-none" @click="open = !open">
           {{ open ? 'Close drawer' : 'Reopen drawer' }}
         </v-btn>
@@ -164,7 +163,7 @@ export const RailMode: Story = {
       return { activeId }
     },
     template: `
-      <div class="pa-6 d-flex justify-center">
+      <div class="d-flex justify-center">
         <div style="${FRAME_STYLE}">
           <DvHistoryDrawer
             open
@@ -188,41 +187,12 @@ export const Empty: Story = {
       clearAll()
     },
     template: `
-      <div class="pa-6 d-flex justify-center">
+      <div class="d-flex justify-center">
         <div style="${FRAME_STYLE}">
           <div style="${HEAD_STYLE}">Da Vinci</div>
           <DvHistoryDrawer open mode="overlay" />
         </div>
       </div>
     `,
-  }),
-}
-
-// ── Template: Variants · Sizes · States ──────────────────────────────────────
-
-/** Two structures: the full drawer and the narrow rail mode the copilot uses when it is docked beside a page. */
-export const Variants: Story = {
-  render: (args) => ({
-    components: { DvHistoryDrawer },
-    setup: () => ({ args }),
-    template: `<DvHistoryDrawer v-bind="args" />`,
-  }),
-}
-
-/** There is no `size` prop — the drawer takes its width from the copilot surface it lives in. Its rows sit on `component.listItem.*`, the same 40px floor as every other list in the system, so a history entry and a nav row line up. */
-export const Sizes: Story = {
-  render: (args) => ({
-    components: { DvHistoryDrawer },
-    setup: () => ({ args }),
-    template: `<DvHistoryDrawer v-bind="args" />`,
-  }),
-}
-
-/** Populated, and empty — a first session with nothing to look back at yet. */
-export const States: Story = {
-  render: (args) => ({
-    components: { DvHistoryDrawer },
-    setup: () => ({ args }),
-    template: `<DvHistoryDrawer v-bind="args" />`,
   }),
 }

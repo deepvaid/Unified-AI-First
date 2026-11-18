@@ -64,7 +64,7 @@ const meta = {
     data: {
       control: 'object',
       description:
-        '`DashboardAttentionData` — `{ kind: \'attention\', items }`. Each item carries `severity`, `title`, `detail`, `occurredAt`, `actionLabel`, `dataSource`, `routeName` and an optional Lucide `icon` (falls back to a per-severity glyph). Rows compose `MpListRow`, so their geometry is `component.listItem.*`.',
+        '`DashboardAttentionData` — `{ kind: \'attention\', items }`. Each item carries `severity`, `title`, `context`, `occurredAt`, `actionLabel`, `dataSource`, `routeName` and an optional Lucide `icon` (falls back to a per-severity glyph). Rows compose `MpListRow`, so their geometry is `component.listItem.*`.',
     },
   },
 } satisfies Meta<typeof DashboardAttentionWidget>
@@ -84,66 +84,20 @@ export const Empty: Story = {
   },
 }
 
-// ── Template: Variants · Sizes · States ──────────────────────────────────────
-
-/** Two structures: the collapsed banner (a single tight row) and the expanded list of items needing attention. */
-export const Variants: Story = {
-  render: (args) => ({
-    components: { DashboardAttentionWidget },
-    setup: () => ({ args }),
-    template: `<DashboardAttentionWidget v-bind="args" />`,
-  }),
-}
-
-/**
- * There is no `size` prop — a widget fills the grid cell it is placed in. This is one of the
- * three **bespoke-header** widgets: `DashboardWidgetCard` zeroes its body inset for these, so
- * the widget draws its own edges. Phase 4 (P4-1) made it state that inset as
- * `component.card.padding` — the role token, not the `20` primitive — so a change to the
- * standard moves it with the rest of the family.
- *
- * Rendered below at three cell sizes; the left edges should match the standard widgets'.
- */
-export const Sizes: Story = {
-  render: (args) => ({
-    components: { DashboardAttentionWidget },
-    setup: () => ({ args }),
-    template: `
-      <div class="d-flex ga-6 flex-wrap align-start">
-        <div style="width: 280px; height: 220px"><v-card flat border rounded="lg" class="h-100 pa-5"><DashboardAttentionWidget v-bind="args" /></v-card></div>
-        <div style="width: 420px; height: 260px"><v-card flat border rounded="lg" class="h-100 pa-5"><DashboardAttentionWidget v-bind="args" /></v-card></div>
-        <div style="width: 620px; height: 300px"><v-card flat border rounded="lg" class="h-100 pa-5"><DashboardAttentionWidget v-bind="args" /></v-card></div>
-      </div>
-    `,
-  }),
-}
-
-/** Collapsed, expanded, and cleared — nothing currently needs attention. */
-export const States: Story = {
-  render: (args) => ({
-    components: { DashboardAttentionWidget },
-    setup: () => ({ args }),
-    template: `<DashboardAttentionWidget v-bind="args" />`,
-  }),
-}
-
 // ── Composed example ────────────────────────────────────────────────────────
 
 /**
- * **In context.** The widget where it actually lives — inside a `DashboardWidgetCard`, in a
- * dashboard row beside its siblings. This is the composition P4-1 is judged on: the header
- * band, the body inset and the footer are the card's, and every widget in the family sits on
- * the same edge.
+ * **In context.** The widget inside a card, at the size a dashboard row gives it. This widget
+ * draws its own header and inset, so the card adds none: the same arrangement
+ * `DashboardWidgetCard` uses for it.
  */
 export const InContextDashboardRow: Story = {
+  args: { data: ATTENTION },
   render: (args) => ({
     components: { DashboardAttentionWidget },
     setup: () => ({ args }),
     template: `
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--mp-space-16); align-items: stretch">
-        <v-card flat border rounded="lg" style="height: 280px" class="pa-5"><DashboardAttentionWidget v-bind="args" /></v-card>
-        <v-card flat border rounded="lg" style="height: 280px" class="pa-5"><DashboardAttentionWidget v-bind="args" /></v-card>
-      </div>
+      <v-card flat border rounded="lg"><DashboardAttentionWidget v-bind="args" /></v-card>
     `,
   }),
 }

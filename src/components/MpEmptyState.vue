@@ -50,7 +50,7 @@ const hasIllustration = computed(
   >
     <div v-if="hasIllustration" class="mp-empty-state__illustration">
       <slot name="illustration">
-        <MpIllustration v-if="illustration" :name="illustration" :size="180" />
+        <MpIllustration v-if="illustration" :name="illustration" size="lg" />
       </slot>
     </div>
     <div v-else-if="icon" class="mp-empty-state__icon">

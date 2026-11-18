@@ -100,6 +100,12 @@ defineEmits<{
   color: var(--ink-panel-fg);
 }
 
+/* A destructive action (`class="text-error"`): the error red is about 3:1 on this surface,
+   so it takes the panel's own danger pair. `text-error` is !important, hence the override. */
+.mp-floating-bulk-bar :deep(.v-btn.text-error) {
+  color: var(--ink-panel-danger) !important;
+}
+
 .mp-floating-bulk-bar :deep(.v-btn:hover) .v-btn__overlay {
   opacity: 1;
   background: rgba(var(--mp-rgb-color-dark-textPrimary), 0.08);

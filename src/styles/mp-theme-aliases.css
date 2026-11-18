@@ -132,6 +132,7 @@
   --ink-panel-fg: var(--mp-color-light-inkPanel-fg);
   --ink-panel-muted-fg: var(--mp-color-light-inkPanel-mutedFg);
   --ink-panel-accent: var(--mp-color-light-inkPanel-accent);
+  --ink-panel-danger: var(--mp-color-light-inkPanel-danger);
   --ink-panel-border: var(--mp-color-light-inkPanel-border);
 
   /* Tag palette — categories, not states. Soft fill + its foreground. */
@@ -263,6 +264,7 @@
   --ink-panel-fg: var(--mp-color-dark-inkPanel-fg);
   --ink-panel-muted-fg: var(--mp-color-dark-inkPanel-mutedFg);
   --ink-panel-accent: var(--mp-color-dark-inkPanel-accent);
+  --ink-panel-danger: var(--mp-color-dark-inkPanel-danger);
   --ink-panel-border: var(--mp-color-dark-inkPanel-border);
 
   /* Tag palette */

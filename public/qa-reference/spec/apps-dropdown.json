@@ -1,0 +1,10 @@
+{
+  "key": "apps-dropdown",
+  "liquidsky": [
+    "TheAppsDropdown"
+  ],
+  "status": "no-reference",
+  "reference": "None",
+  "note": "Marobase has no product switcher in the bar; the clouds are sections of one sidebar. Needs a design decision if LiquidSky keeps it.",
+  "stories": []
+}

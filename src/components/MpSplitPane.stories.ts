@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import MpSplitPane from './MpSplitPane.vue'
 
 const meta = {
@@ -64,9 +64,10 @@ const frame = (body: string) => `
     ${body}
   </v-card>`
 
-const panes = `
+/** The two panes. Each specimen passes its own id, which the separator's `aria-controls` points at. */
+const panes = (id: string) => `
   <template #start>
-    <div id="story-list" class="pa-4 h-100 overflow-y-auto">
+    <div id="${id}" class="pa-4 h-100 overflow-y-auto">
       <div class="text-body-2 font-weight-medium mb-2">List</div>
       <div v-for="n in 12" :key="n" class="text-body-2 text-medium-emphasis py-1">Item {{ n }}</div>
     </div>
@@ -78,17 +79,24 @@ const panes = `
     </div>
   </template>`
 
+/** One framed split bound to its own `size` ref (`model`) and its own pane id. */
+const split = (model: string, id: string, attrs = '') => frame(`
+  <MpSplitPane v-model:size="${model}" :default-size="280" :min="200" ariaLabel="Resize list" controls="${id}" ${attrs} class="h-100">
+    ${panes(id)}
+  </MpSplitPane>`)
+
 /** Default — drag or arrow-key the separator; the width shows below. */
 export const Default: Story = {
   render: (args) => ({
     components: { MpSplitPane },
     setup: () => {
       const size = ref(args.size)
+      watch(() => args.size, (next) => { size.value = next })
       return { args, size }
     },
     template: `
       <div>
-        ${frame(`<MpSplitPane v-bind="args" v-model:size="size" controls="story-list" class="h-100">${panes}</MpSplitPane>`)}
+        ${frame(`<MpSplitPane v-bind="args" v-model:size="size" controls="split-default-list" class="h-100">${panes('split-default-list')}</MpSplitPane>`)}
         <p class="text-caption text-medium-emphasis mt-2">Start pane: {{ size }}px</p>
       </div>`,
   }),
@@ -98,19 +106,27 @@ export const Default: Story = {
 export const Variants: Story = {
   render: () => ({
     components: { MpSplitPane },
-    setup: () => ({ size: ref(280) }),
+    setup: () => ({ sideBySide: ref(280), stackedStart: ref(280), stackedEnd: ref(280) }),
     template: `
       <div class="d-flex flex-column ga-4">
-        <div v-for="stacked in [null, 'start', 'end']" :key="String(stacked)">
-          <div class="text-caption text-medium-emphasis mb-1">stacked: {{ stacked ?? 'null (side by side)' }}</div>
-          ${frame(`<MpSplitPane v-model:size="size" :default-size="280" :min="200" ariaLabel="Resize list" :stacked="stacked" class="h-100">${panes}</MpSplitPane>`)}
+        <div>
+          <div class="text-caption text-medium-emphasis mb-1">stacked: null (side by side)</div>
+          ${split('sideBySide', 'split-variants-side-by-side')}
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-1">stacked: start</div>
+          ${split('stackedStart', 'split-variants-stacked-start', 'stacked="start"')}
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-1">stacked: end</div>
+          ${split('stackedEnd', 'split-variants-stacked-end', 'stacked="end"')}
         </div>
       </div>`,
   }),
 }
 
-/** Sizes — the clamp: a saved width wider than `maxRatio` allows renders at the cap. */
-export const Sizes: Story = {
+/** There is no `size` ramp: `size` is a width in px. These are its two limits: `min`, and the `maxRatio` cap a wider saved width renders at. */
+export const Limits: Story = {
   render: () => ({
     components: { MpSplitPane },
     setup: () => ({ narrow: ref(200), wide: ref(900) }),
@@ -118,24 +134,25 @@ export const Sizes: Story = {
       <div class="d-flex flex-column ga-4">
         <div>
           <div class="text-caption text-medium-emphasis mb-1">At min (200px)</div>
-          ${frame(`<MpSplitPane v-model:size="narrow" :default-size="280" :min="200" ariaLabel="Resize list" class="h-100">${panes}</MpSplitPane>`)}
+          ${split('narrow', 'split-limits-min')}
         </div>
         <div>
           <div class="text-caption text-medium-emphasis mb-1">Saved 900px, rendered at the 50% cap</div>
-          ${frame(`<MpSplitPane v-model:size="wide" :default-size="280" :min="200" ariaLabel="Resize list" class="h-100">${panes}</MpSplitPane>`)}
+          ${split('wide', 'split-limits-cap')}
         </div>
       </div>`,
   }),
 }
 
-/** States — the separator focused (grip + 2px focus line). Tab to it if a click took focus. */
+/** States — the separator focused (grip + 2px focus line). On the docs page nothing is focused on load (it would scroll the page): tab to the separator. */
 export const States: Story = {
-  render: () => ({
+  render: (_args, context) => ({
     components: { MpSplitPane },
     setup: () => ({ size: ref(280) }),
     mounted() {
+      if (context.viewMode === 'docs') return
       ;(this.$el as HTMLElement).querySelector<HTMLElement>('[role="separator"]')?.focus()
     },
-    template: frame(`<MpSplitPane v-model:size="size" :default-size="280" :min="200" ariaLabel="Resize list" class="h-100">${panes}</MpSplitPane>`),
+    template: split('size', 'split-states-list'),
   }),
 }

@@ -7,29 +7,33 @@ import type {
   QuickAction,
   SetupCardConfig,
 } from './ModuleLandingPage.vue'
+import { computed, ref } from 'vue'
 import ModuleLandingPage from './ModuleLandingPage.vue'
+import MpSegmentedControl from './MpSegmentedControl.vue'
 
 // Realistic config lifted from MarketingLanding.vue (the component's main consumer).
 const BASE = '/accounts/2000290'
 
+// The first action is prominent by default; `emphasis: 'default'` is the outlined secondary.
 const PRIMARY_ACTIONS: PrimaryAction[] = [
   { label: 'New campaign', icon: 'plus', to: `${BASE}/campaigns/new` },
+  { label: 'View reports', icon: 'bar-chart-3', to: `${BASE}/reports`, emphasis: 'default' },
 ]
 
 const QUICK_ACTIONS: QuickAction[] = [
-  { icon: 'send', label: 'New campaign', description: 'Send an email to a list', to: `${BASE}/campaigns/new` },
-  { icon: 'route', label: 'Build a journey', description: 'Multi-step automation', to: `${BASE}/journeys` },
-  { icon: 'clipboard-list', label: 'Create form', description: 'Capture new contacts', to: `${BASE}/signup_forms` },
-  { icon: 'file-text', label: 'Browse templates', description: 'Reusable email content', to: `${BASE}/contents` },
+  { icon: 'send', label: 'New campaign', description: 'Send an email to a list', to: `${BASE}/campaigns/new`, color: 'blue' },
+  { icon: 'route', label: 'Build a journey', description: 'Multi-step automation', to: `${BASE}/journeys`, color: 'violet' },
+  { icon: 'clipboard-list', label: 'Create form', description: 'Capture new contacts', to: `${BASE}/signup_forms`, color: 'green' },
+  { icon: 'file-text', label: 'Browse templates', description: 'Reusable email content', to: `${BASE}/contents`, color: 'cyan' },
 ]
 
 const CHILD_PAGES: ChildPage[] = [
-  { icon: 'megaphone', title: 'Campaigns', description: 'Email blasts, transactional sends, and campaign tags.', to: `${BASE}/campaigns`, count: 24 },
-  { icon: 'route', title: 'Journeys', description: 'Multi-step automated customer journeys with branching logic.', to: `${BASE}/journeys`, count: 8 },
-  { icon: 'file-text', title: 'Templates', description: 'Reusable email content and dynamic blocks for fast composition.', to: `${BASE}/contents`, count: 47 },
-  { icon: 'zap', title: 'Automations', description: 'Triggered flows: cart abandon, win-back, post-purchase, and more.', to: `${BASE}/data_journeys`, count: 12 },
-  { icon: 'clipboard-list', title: 'Forms', description: 'Signup forms, landing pages, and surveys to grow your audience.', to: `${BASE}/signup_forms`, count: 6 },
-  { icon: 'bar-chart-3', title: 'Reports', description: 'Email performance, deliverability, and engagement analytics.', to: `${BASE}/reports`, status: 'New' },
+  { icon: 'megaphone', title: 'Campaigns', description: 'Email blasts, transactional sends, and campaign tags.', to: `${BASE}/campaigns`, count: 24, color: 'blue' },
+  { icon: 'route', title: 'Journeys', description: 'Multi-step automated customer journeys with branching logic.', to: `${BASE}/journeys`, count: 8, color: 'violet' },
+  { icon: 'file-text', title: 'Templates', description: 'Reusable email content and dynamic blocks for fast composition.', to: `${BASE}/contents`, count: 47, color: 'cyan' },
+  { icon: 'zap', title: 'Automations', description: 'Triggered flows: cart abandon, win-back, post-purchase, and more.', to: `${BASE}/data_journeys`, count: 12, color: 'amber' },
+  { icon: 'clipboard-list', title: 'Forms', description: 'Signup forms, landing pages, and surveys to grow your audience.', to: `${BASE}/signup_forms`, count: 6, color: 'green' },
+  { icon: 'bar-chart-3', title: 'Reports', description: 'Email performance, deliverability, and engagement analytics.', to: `${BASE}/reports`, status: 'New', color: 'rose' },
 ]
 
 const RECENT_ACTIVITY: ActivityItem[] = [
@@ -131,9 +135,9 @@ renders conditionally.
     description: { control: 'text', description: 'One-line module summary under the title.' },
     eyebrow: { control: 'text', description: 'Muted, tracked kicker rendered above the display headline.' },
     inkDaVinciCard: { control: 'boolean', description: 'Renders the Da Vinci card as the ink panel — the page\'s single branded moment. Use at most once per page.' },
-    primaryActions: { control: 'object', description: 'Pill buttons in the header ({ label, icon?, to?/href?, variant? }[]). The first entry defaults to primary color.' },
-    quickActions: { control: 'object', description: 'Shortcut buttons row under the header ({ icon, label, description?, to }[]).' },
-    childPages: { control: 'object', description: 'Required. Grid of section cards ({ icon, title, description, to, count? | status? }[]).' },
+    primaryActions: { control: 'object', description: 'Pill buttons in the header ({ label, icon?, to?/href?, emphasis? }[]). `emphasis` is `prominent` (filled, primary colour) or `default` (outlined); the first entry defaults to `prominent`, the rest to `default`.' },
+    quickActions: { control: 'object', description: 'Shortcut buttons row under the header ({ icon, label, description?, to, color? }[]). `color` tints the icon tile: blue, violet, rose, green, amber, cyan, indigo or teal; without it the tile takes the module accent.' },
+    childPages: { control: 'object', description: 'Required. Grid of section cards ({ icon, title, description, to, count? | status?, color? }[]). `color` tints the icon tile and count pill, with the same hues as a quick action.' },
     recentActivity: { control: 'object', description: 'Feed rows ({ icon, eyebrow, title, meta?, tag? }[]); tag colors the icon chip (email/order/audience/automation).' },
     setupCard: { control: 'object', description: 'Optional setup checklist side card with progress bar ({ title, description, items, ctaLabel?, ctaTo? }); null hides it.' },
     daVinciCard: { control: 'object', description: 'Optional Da Vinci suggestions side card ({ title, description, suggestions }); null hides it.' },
@@ -152,88 +156,58 @@ renders conditionally.
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** The full Marketing hub: every optional section populated. */
+/**
+ * The full Marketing hub: every optional section populated. Two primary actions (the first
+ * `prominent`, the second `emphasis: 'default'`), and a `color` on each quick action and
+ * section card, as the app's Marketing landing page sets them.
+ */
 export const Default: Story = {}
 
-/** Both Da Vinci treatments side by side: the suggestion list vs the single ink moment. */
-export const Variants: Story = {
+const ABSENT = {
+  recentActivity: [],
+  setupCard: null,
+  quickActions: [],
+  daVinciCard: null,
+}
+
+/**
+ * Each optional block absent in turn, so a module with no activity or no setup card is
+ * verifiable. One page at a time: the switch above the page picks the block to leave out.
+ */
+export const States: Story = {
   render: (args) => ({
-    components: { ModuleLandingPage },
-    setup: () => ({ args }),
+    components: { ModuleLandingPage, MpSegmentedControl },
+    setup() {
+      const absent = ref<string | null>('recentActivity')
+      const items = [
+        { value: 'recentActivity', label: 'No recent activity' },
+        { value: 'setupCard', label: 'No setup card' },
+        { value: 'quickActions', label: 'No quick actions' },
+        { value: 'daVinciCard', label: 'No Da Vinci card' },
+      ]
+      const pageArgs = computed(() => ({ ...args, ...(absent.value ? { [absent.value]: ABSENT[absent.value as keyof typeof ABSENT] } : {}) }))
+      return { absent, items, pageArgs }
+    },
     template: `
-      <div class="d-flex flex-column ga-8">
-        <div>
-          <div class="text-caption text-medium-emphasis mb-2">default — Da Vinci suggestion list in the side column</div>
-          <ModuleLandingPage v-bind="args" :ink-da-vinci-card="false" />
-        </div>
-        <div>
-          <div class="text-caption text-medium-emphasis mb-2">inkDaVinciCard — the single branded moment</div>
-          <ModuleLandingPage v-bind="args" ink-da-vinci-card />
-        </div>
+      <div>
+        <MpSegmentedControl v-model="absent" :items="items" ariaLabel="Optional block to leave out" class="mb-6" />
+        <ModuleLandingPage v-bind="pageArgs" />
       </div>
     `,
   }),
 }
 
 /**
- * Content volume is the size axis for a landing page — there is no `size` prop.
- * This is the same pattern with a minimal payload and a full one.
+ * Only the required props — header plus child-page grid, no side column content. The cards
+ * carry no `color` here, so their icon tiles take the module accent.
  */
-export const Sizes: Story = {
-  render: (args) => ({
-    components: { ModuleLandingPage },
-    setup: () => ({ args }),
-    template: `
-      <div class="d-flex flex-column ga-8">
-        <div>
-          <div class="text-caption text-medium-emphasis mb-2">minimal — child pages only</div>
-          <ModuleLandingPage
-            title="Content"
-            description="Templates and reusable blocks."
-            :child-pages="args.childPages.slice(0, 2)"
-          />
-        </div>
-        <div>
-          <div class="text-caption text-medium-emphasis mb-2">full — quick actions, activity, setup and Da Vinci</div>
-          <ModuleLandingPage v-bind="args" />
-        </div>
-      </div>
-    `,
-  }),
-}
-
-/** Each optional block absent in turn, so a module with no activity or no setup card is verifiable. */
-export const States: Story = {
-  render: (args) => ({
-    components: { ModuleLandingPage },
-    setup: () => ({ args }),
-    template: `
-      <div class="d-flex flex-column ga-8">
-        <div>
-          <div class="text-caption text-medium-emphasis mb-2">no recent activity</div>
-          <ModuleLandingPage v-bind="args" :recent-activity="[]" />
-        </div>
-        <div>
-          <div class="text-caption text-medium-emphasis mb-2">no setup card — onboarding already complete</div>
-          <ModuleLandingPage v-bind="args" :setup-card="null" />
-        </div>
-        <div>
-          <div class="text-caption text-medium-emphasis mb-2">no quick actions</div>
-          <ModuleLandingPage v-bind="args" :quick-actions="[]" />
-        </div>
-      </div>
-    `,
-  }),
-}
-
-/** Only the required props — header plus child-page grid, no side column content. */
 export const Minimal: Story = {
   args: {
     title: 'Content',
     description: 'Templates, snippets, and media for every channel.',
     primaryActions: undefined,
     quickActions: undefined,
-    childPages: CHILD_PAGES.slice(2, 5).map((cp) => ({ ...cp, count: undefined })),
+    childPages: CHILD_PAGES.slice(2, 5).map((cp) => ({ ...cp, count: undefined, color: undefined })),
     recentActivity: undefined,
     setupCard: null,
     daVinciCard: null,

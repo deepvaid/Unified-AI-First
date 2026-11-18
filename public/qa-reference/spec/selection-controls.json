@@ -1,0 +1,25 @@
+{
+  "key": "selection-controls",
+  "liquidsky": [
+    "MpVCheckbox",
+    "MpVCheckboxBtn",
+    "MpVRadio",
+    "MpVRadioGroup",
+    "MpVSwitch"
+  ],
+  "status": "partial",
+  "reference": "Vuetify selection controls on the theme defaults; MpFormField labels a group",
+  "note": "There is no dedicated story for checkbox, radio or switch yet. A radio group with its label is shown in MpFormField.",
+  "stories": [
+    {
+      "id": "molecules-mpformfield--default",
+      "label": "Radio group with label",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpformfield--default",
+      "png": {
+        "light": "png/selection-controls/molecules-mpformfield--default--light.png",
+        "dark": "png/selection-controls/molecules-mpformfield--default--dark.png"
+      },
+      "parts": []
+    }
+  ]
+}

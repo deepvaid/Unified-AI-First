@@ -29,9 +29,9 @@ export interface OrderRow {
 export const ORDERS: OrderRow[] = [
   { id: 'o-10000', order: '#10000', date: 'Aug 28, 2026', customer: 'James Anderson', items: 1, total: '$1,180.00', fulfillment: 'Not Ready', status: 'Processing', payment: 'Paid' },
   { id: 'o-10001', order: '#10001', date: 'Aug 27, 2026', customer: 'Sofia Thompson', items: 4, total: '$1,040.00', fulfillment: 'Ready For Fulfillment', status: 'Completed', payment: 'Paid' },
-  { id: 'o-10002', order: '#10002', date: 'Aug 26, 2026', customer: 'Liam Martinez', items: 3, total: '$1,120.00', fulfillment: 'Shipped', status: 'Cancelled', payment: 'Refunded' },
+  { id: 'o-10002', order: '#10002', date: 'Aug 26, 2026', customer: 'Liam Martinez', items: 3, total: '$1,120.00', fulfillment: 'Shipped', status: 'Completed', payment: 'Paid' },
   { id: 'o-10003', order: '#10003', date: 'Aug 25, 2026', customer: 'Emma Johnson', items: 2, total: '$890.00', fulfillment: 'Return Requested', status: 'Refunded', payment: 'Refunded' },
-  { id: 'o-10004', order: '#10004', date: 'Aug 24, 2026', customer: 'Noah Williams', items: 1, total: '$760.00', fulfillment: 'Cancelled', status: 'On Hold', payment: 'Unpaid' },
+  { id: 'o-10004', order: '#10004', date: 'Aug 24, 2026', customer: 'Noah Williams', items: 1, total: '$760.00', fulfillment: 'Cancelled', status: 'Cancelled', payment: 'Unpaid' },
   { id: 'o-10005', order: '#10005', date: 'Aug 23, 2026', customer: 'Olivia Brown', items: 4, total: '$820.00', fulfillment: 'Unapproved', status: 'Processing', payment: 'Pending' },
   { id: 'o-10006', order: '#10006', date: 'Aug 22, 2026', customer: 'Ethan Davis', items: 3, total: '$940.00', fulfillment: 'Not Ready', status: 'Completed', payment: 'Paid' },
 ]
@@ -90,17 +90,9 @@ export const ORDER_TABS = [
   { label: 'Not Fulfilled', key: 'unfulfilled', count: 41 },
 ]
 
-/** Rows for list-shaped surfaces (activity feeds, recent items). */
-export const ACTIVITY = [
-  { id: 'a-1', time: '2m ago', title: 'Spring Refresh sent to VIP — Repeat Buyers', meta: '58.2% open', icon: 'send' },
-  { id: 'a-2', time: '14m ago', title: 'Cart Abandon · Step 2 entered 312 contacts', meta: 'In flow', icon: 'git-branch' },
-  { id: 'a-3', time: '32m ago', title: 'VIP segment refreshed', meta: '+312', icon: 'users' },
-  { id: 'a-4', time: '1h ago', title: 'Order #10002 refunded', meta: '−$1,120.00', icon: 'receipt' },
-]
-
 /** A support-thread exchange for MpChatBubble stories (mirrors the useTickets thread shape). */
 export const MESSAGES = [
-  { id: 'm-1', side: 'start' as const, tone: 'neutral' as const, author: 'Sofia Thompson', time: 'Aug 28, 09:12', avatar: 'ST', body: "Hi — my order #10002 arrived but the Trail Shell Jacket is the wrong size. I ordered an M and got an S. Can I exchange it?" },
+  { id: 'm-1', side: 'start' as const, tone: 'neutral' as const, author: 'Sofia Thompson', time: 'Aug 28, 09:12', avatar: 'ST', body: "Hi — my order #10001 arrived but the Trail Shell Jacket is the wrong size. I ordered an M and got an S. Can I exchange it?" },
   { id: 'm-2', side: 'start' as const, tone: 'accent' as const, author: 'Maya (Support)', time: 'Aug 28, 09:30', avatar: 'M', body: "Sorry about the mix-up, Sofia! I've set up a free exchange — you'll get a prepaid return label by email in the next few minutes, and the M ships out today." },
   { id: 'm-3', side: 'start' as const, tone: 'neutral' as const, author: 'Sofia Thompson', time: 'Aug 28, 09:41', avatar: 'ST', body: 'Amazing, thank you! Got the label already.' },
 ]

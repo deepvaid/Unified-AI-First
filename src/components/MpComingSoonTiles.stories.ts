@@ -48,7 +48,7 @@ Empty means "nothing to show yet"; coming-soon means "this doesn't exist yet".
 - **Do** make each tile's \`desc\` specific — naming real capabilities is what makes the panel
   informative rather than an apology.
 - **Do** set \`headingLevel\` to fit the page outline; it sits under the \`MpPageHeader\` h1, so
-  the default \`h3\` is right when there's an intervening section heading, \`h2\` when there isn't.
+  the default \`3\` (an h3) is right when there's an intervening section heading, \`2\` when there isn't.
 
 ### 🔴 Don'ts
 - **Don't** promise dates in the copy.
@@ -69,7 +69,7 @@ Empty means "nothing to show yet"; coming-soon means "this doesn't exist yet".
     tiles: { control: 'object', description: 'ComingSoonTile[] — { icon, title, desc } previewing planned capabilities.' },
     smCols: { control: 'number', description: 'Tile column width at the sm breakpoint. Default 6 (two up).' },
     mdCols: { control: 'number', description: 'Tile column width at the md breakpoint. Omit to keep the sm width.' },
-    headingLevel: { control: 'select', options: ['h2', 'h3', 'h4'], description: 'Heading element for the headline. Default h3.' },
+    headingLevel: { control: 'inline-radio', options: [2, 3, 4], description: 'Heading level for the headline — renders an h2, h3 or h4. Default 3.' },
   },
   render: (args) => ({
     components: { MpComingSoonTiles },
@@ -117,8 +117,8 @@ export const Variants: Story = {
   args: {} as never,
 }
 
-/** The column ramp — `smCols` / `mdCols` control how tiles wrap. */
-export const Sizes: Story = {
+/** `mdCols` sets how many tiles sit in a row on desktop: 6 is two across, 3 is four across. */
+export const Columns: Story = {
   render: () => ({
     components: { MpComingSoonTiles },
     setup: () => ({
@@ -167,11 +167,6 @@ export const ThreeColumn: Story = {
     tiles: SETTINGS,
     mdCols: 4,
   },
-}
-
-/** Headline only — `description` is optional and its paragraph is skipped entirely. */
-export const NoDescription: Story = {
-  args: { icon: 'wrench', title: 'Diagnostics coming soon', tiles: HARDWARE.slice(0, 2) },
 }
 
 /** At 375px the tiles stack to a single column. */

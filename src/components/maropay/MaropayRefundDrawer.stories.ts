@@ -1,3 +1,4 @@
+import { ref } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MaropayRefundDrawer from './MaropayRefundDrawer.vue'
 import { money } from '@/maropay/money'
@@ -5,6 +6,7 @@ import { fail, ok } from '@/maropay/model'
 import type { Money } from '@/maropay/money'
 import type { Payment } from '@/maropay/model'
 import { storyPayment } from './storyFixtures'
+import { overlayDocs } from '@/stories/decorators'
 
 const ours = storyPayment('m10', (p) => p.status === 'captured' && p.provider === 'maropay')
 const paypal = storyPayment('m06', (p) => p.status === 'captured' && p.provider === 'paypal')
@@ -23,7 +25,7 @@ const meta = {
   tags: ['autodocs'],
   parameters: {
     docs: {
-      story: { inline: false, height: '640px' },
+      ...overlayDocs().docs,
       description: {
         component: `
 ### Overview
@@ -54,6 +56,20 @@ rejects keeps the drawer open with the reason.
     storeName: 'Atlas Outfitters',
     refund: fakeRefund(ours),
   },
+  // Storybook does not write `update:modelValue` back into args, so the story holds the open state.
+  render: (args) => ({
+    components: { MaropayRefundDrawer },
+    setup() {
+      const open = ref(args.modelValue)
+      return { args, open }
+    },
+    template: `
+      <div>
+        <v-btn variant="outlined" @click="open = true">Reopen</v-btn>
+        <MaropayRefundDrawer v-bind="args" v-model="open" />
+      </div>
+    `,
+  }),
 } satisfies Meta<typeof MaropayRefundDrawer>
 
 export default meta

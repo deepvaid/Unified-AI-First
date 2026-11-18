@@ -2,6 +2,7 @@
 // and the register's (Product/POS/Foundations/Colors) render the same way.
 import {
   mp_radius_12,
+  mp_space_6,
   mp_space_12,
   mp_space_24,
   mp_fontFamily_mono,
@@ -9,12 +10,16 @@ import {
   mp_fontSize_11,
 } from '@/design-tokens/generated/tokens'
 
-/** Reusable swatch-grid section. `panel` styles let dark tokens render on a dark canvas. */
+/**
+ * Reusable swatch-grid section. `panel` styles let dark tokens render on a dark canvas;
+ * `caption` is one optional line under the heading (who the family is for).
+ */
 export const SwatchGrid = {
-  props: ['swatches', 'heading', 'panelBg', 'panelText', 'panelMuted', 'panelBorder'],
+  props: ['swatches', 'heading', 'caption', 'panelBg', 'panelText', 'panelMuted', 'panelBorder'],
   setup() {
     return {
       mp_radius_12,
+      mp_space_6,
       mp_space_12,
       mp_space_24,
       mp_fontFamily_mono,
@@ -33,7 +38,8 @@ export const SwatchGrid = {
         marginBottom: mp_space_24,
       }"
     >
-      <p class="text-overline" :style="{ color: panelMuted, marginBottom: mp_space_12 }">{{ heading }}</p>
+      <p class="text-overline" :style="{ color: panelMuted, marginBottom: caption ? mp_space_6 : mp_space_12 }">{{ heading }}</p>
+      <p v-if="caption" :style="{ fontSize: mp_fontSize_12, color: panelMuted, marginBottom: mp_space_12 }">{{ caption }}</p>
       <div :style="{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: mp_space_12 }">
         <div v-for="s in swatches" :key="s.token">
           <div
@@ -44,7 +50,7 @@ export const SwatchGrid = {
               border: '1px solid ' + panelBorder,
             }"
           />
-          <div :style="{ fontSize: mp_fontSize_12, fontWeight: 600, marginTop: '6px', wordBreak: 'break-all' }">{{ s.name }}</div>
+          <div :style="{ fontSize: mp_fontSize_12, fontWeight: 600, marginTop: mp_space_6, wordBreak: 'break-all' }">{{ s.name }}</div>
           <div :style="{ fontFamily: mp_fontFamily_mono, fontSize: mp_fontSize_11, color: panelMuted, wordBreak: 'break-all' }">{{ s.value }}</div>
         </div>
       </div>

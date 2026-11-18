@@ -1,17 +1,20 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import PlgTrialBanner from './PlgTrialBanner.vue'
 import { usePlgStore, type PlgDemoPreset } from '@/stores/usePlg'
+import { isolateStorage, overlayDocs } from '@/stories/decorators'
 
 const meta = {
   title: 'Product/PLG/PlgTrialBanner',
   component: PlgTrialBanner,
   tags: ['autodocs'],
+  // applyDemoPreset() persists the PLG state to localStorage: put it back on unmount.
+  decorators: [isolateStorage],
   parameters: {
     // Every story seeds the same shared usePlgStore singleton via applyDemoPreset(), and the
-    // component's dismissal flag is module-scoped — render docs examples in isolated iframes
-    // (same idiom as PlgTrialChip.stories.ts) so one story's preset or dismissal can't leak.
+    // component's dismissal flag is module-scoped — a frame per story on the docs page (same
+    // idiom as PlgTrialChip.stories.ts) keeps one story's preset or dismissal from leaking.
     docs: {
-      story: { inline: false, height: '160px' },
+      ...overlayDocs('160px').docs,
       description: {
         component: `
 ### Overview
@@ -59,61 +62,31 @@ This banner takes **no props** — the Controls panel is empty by design. It rea
 export default meta
 type Story = StoryObj<typeof meta>
 
-export const Default: Story = presetStory('trial-d12')
-
-/** Seeds usePlgStore from setup() via applyDemoPreset — same idiom as PlgTrialChip.stories.ts. */
-function presetStory(preset: PlgDemoPreset): Story {
+/**
+ * Seeds usePlgStore from setup() via applyDemoPreset — same idiom as PlgTrialChip.stories.ts.
+ * `hiddenNote` is shown under the banner for a preset the banner renders nothing for.
+ */
+function presetStory(preset: PlgDemoPreset, hiddenNote = ''): Story {
   return {
     render: () => ({
       components: { PlgTrialBanner },
       setup() {
         const plg = usePlgStore()
         plg.applyDemoPreset(preset)
-        return {}
+        return { hiddenNote }
       },
       template: `
-        <div style="min-height: 80px;">
+        <div>
           <PlgTrialBanner />
+          <p v-if="hiddenNote" class="text-body-2 text-medium-emphasis">{{ hiddenNote }}</p>
         </div>
       `,
     }),
   }
 }
 
-/** The banner has one structure; urgency is what varies, driven by days remaining. */
-export const Variants: Story = {
-  render: () => ({
-    components: { PlgTrialBanner },
-    template: `
-      <div class="d-flex flex-column ga-4">
-        <div class="text-caption text-medium-emphasis">
-          The banner recolours itself from the trial state rather than from a prop. The
-          ExpiringSoon / Expired stories seed different trial dates — see States.
-        </div>
-        <PlgTrialBanner />
-      </div>
-    `,
-  }),
-}
-
-/** Visible while a trial is running, hidden once the account converts. */
-export const States: Story = {
-  render: () => ({
-    components: { PlgTrialBanner },
-    template: `
-      <div class="d-flex flex-column ga-4">
-        <div class="text-caption text-medium-emphasis">
-          Each state seeds the PLG store with a different trial date, so they cannot share
-          one canvas — switch between ExpiringSoon, Expired and NotVisible below.
-        </div>
-        <PlgTrialBanner />
-      </div>
-    `,
-  }),
-}
-
 /** Inside the last 3 days — amber banner, day countdown, dismissible. */
-export const ExpiringSoon: Story = presetStory('trial-d12')
+export const Default: Story = presetStory('trial-d12')
 
 /** Trial lapsed — red banner, data-retention message, and no dismiss control. */
 export const Expired: Story = presetStory('trial-expired')
@@ -122,4 +95,7 @@ export const Expired: Story = presetStory('trial-expired')
  * Steady mid-trial (day 3 of the window): `isExpiring` is false, so the banner renders nothing.
  * The same is true for every paid preset — this is the component's default state in the shell.
  */
-export const NotVisible: Story = presetStory('trial-d3')
+export const NotVisible: Story = presetStory(
+  'trial-d3',
+  'The banner is hidden for this preset: day 3 of the trial is not yet "expiring".',
+)

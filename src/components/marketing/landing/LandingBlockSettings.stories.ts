@@ -8,6 +8,7 @@ import type { Meta, StoryObj } from '@storybook/vue3'
 import LandingBlockSettings from './LandingBlockSettings.vue'
 import { defaultLandingBlock } from '@/stores/useLandingPages'
 import type { LandingPageBlock } from '@/stores/useLandingPages'
+import { measure, overlayDocs, surfaceFrame } from '@/stories/decorators'
 
 // `title` is the only block type whose settings branch includes a color-override
 // control — the inline swatch + v-menu + v-color-picker this story exists to document
@@ -26,6 +27,8 @@ const meta = {
   title: 'Product/Marketing/Landing Pages/LandingBlockSettings',
   component: LandingBlockSettings,
   tags: ['autodocs'],
+  // The editor's settings column.
+  decorators: [surfaceFrame({ width: measure.narrow })],
   parameters: {
     docs: {
       description: {
@@ -96,11 +99,7 @@ palette preview), or editing more than one block at a time — there's no bulk-e
     setup() {
       return { args }
     },
-    template: `
-      <aside style="width:320px;border-left:1px solid rgba(var(--v-theme-on-surface), 0.10);background:rgb(var(--v-theme-surface));padding:16px;">
-        <LandingBlockSettings v-bind="args" />
-      </aside>
-    `,
+    template: `<div class="pa-4"><LandingBlockSettings v-bind="args" /></div>`,
   }),
 } satisfies Meta<typeof LandingBlockSettings>
 
@@ -119,17 +118,7 @@ export const ColorPickerOpen: Story = {
   args: {
     block: titleBlock('#7E3AF2'),
   },
-  render: (args) => ({
-    components: { LandingBlockSettings },
-    setup() {
-      return { args }
-    },
-    template: `
-      <aside style="width:320px;min-height:520px;border-left:1px solid rgba(var(--v-theme-on-surface), 0.10);background:rgb(var(--v-theme-surface));padding:16px;">
-        <LandingBlockSettings v-bind="args" />
-      </aside>
-    `,
-  }),
+  parameters: overlayDocs(),
   play: async ({ canvasElement }) => {
     await new Promise(resolve => setTimeout(resolve, 300))
     const trigger = canvasElement.querySelector<HTMLElement>('[aria-label="Text color override"]')

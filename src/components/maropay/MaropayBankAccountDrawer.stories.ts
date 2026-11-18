@@ -1,13 +1,17 @@
+import { ref } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MaropayBankAccountDrawer from './MaropayBankAccountDrawer.vue'
+import { isolateStorage, overlayDocs } from '@/stories/decorators'
 
 const meta = {
   title: 'Product/Maropay/MaropayBankAccountDrawer',
   component: MaropayBankAccountDrawer,
   tags: ['autodocs'],
+  // Saving the account goes through the Maropay store, which persists to localStorage.
+  decorators: [isolateStorage],
   parameters: {
     docs: {
-      story: { inline: false, height: '640px' },
+      ...overlayDocs().docs,
       description: {
         component: `
 ### Overview
@@ -33,6 +37,20 @@ notice about the change.
     country: 'US',
     defaultHolder: 'Atlas Outfitters LLC',
   },
+  // Storybook does not write `update:modelValue` back into args, so the story holds the open state.
+  render: (args) => ({
+    components: { MaropayBankAccountDrawer },
+    setup() {
+      const open = ref(args.modelValue)
+      return { args, open }
+    },
+    template: `
+      <div>
+        <v-btn variant="outlined" @click="open = true">Reopen</v-btn>
+        <MaropayBankAccountDrawer v-bind="args" v-model="open" />
+      </div>
+    `,
+  }),
 } satisfies Meta<typeof MaropayBankAccountDrawer>
 
 export default meta

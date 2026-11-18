@@ -19,6 +19,7 @@
     "test:service": "node --experimental-strip-types --test 'tests/service/*.test.ts'",
     "test:plg": "node --experimental-strip-types --test 'tests/plg/*.test.ts'",
     "contrast:check": "node scripts/check-contrast.mjs",
+    "storybook:smoke": "NODE_ENV=development storybook build -o dist-storybook-smoke && node --experimental-strip-types scripts/storybook-smoke.mjs",
     "qa:export": "node --experimental-strip-types scripts/qa-export.mjs",
     "qa:compare": "node --env-file-if-exists=.env.local --experimental-strip-types scripts/qa-compare.mjs",
     "audit:ui": "node scripts/ui-visibility-audit.mjs",
@@ -58,7 +59,7 @@
   },
   "devDependencies": {
     "@mdx-js/react": "^3.1.1",
-    "@storybook/addon-a11y": "^9.1.20",
+    "@storybook/addon-a11y": "9.1.20",
     "@storybook/addon-docs": "9.1.20",
     "@storybook/react-dom-shim": "9.1.20",
     "@storybook/vue3": "9.1.20",

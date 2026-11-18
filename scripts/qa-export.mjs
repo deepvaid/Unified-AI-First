@@ -14,11 +14,10 @@
  * use another channel, e.g. `msedge`.
  */
 import fs from 'node:fs'
-import http from 'node:http'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { QA_COMPONENTS, QA_LINKS } from '../src/stories/qa/liquidskyMap.ts'
-import { THEMES, VIEWPORT, launchPage, measure, settle } from './qa-lib.mjs'
+import { THEMES, VIEWPORT, launchPage, measure, serveStatic, settle } from './qa-lib.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const storybookDir = path.join(root, 'dist-storybook')
@@ -31,16 +30,7 @@ if (!fs.existsSync(path.join(storybookDir, 'index.json'))) {
 }
 const storyIds = new Set(Object.keys(JSON.parse(fs.readFileSync(path.join(storybookDir, 'index.json'), 'utf8')).entries))
 
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2', '.woff': 'font/woff' }
-const server = http.createServer((req, res) => {
-  const file = path.join(storybookDir, decodeURIComponent(req.url.split('?')[0]))
-  fs.readFile(file, (error, data) => {
-    if (error) { res.writeHead(404); res.end(); return }
-    res.writeHead(200, { 'content-type': MIME[path.extname(file)] ?? 'application/octet-stream' })
-    res.end(data)
-  })
-})
-await new Promise((resolve) => server.listen(PORT, resolve))
+const server = await serveStatic(storybookDir, PORT)
 
 const { browser, page } = await launchPage()
 
@@ -48,7 +38,7 @@ const tokenVar = (token) => `--mp-${token.replaceAll('.', '-')}`
 const problems = []
 
 async function openStory(id, theme, selectors) {
-  await page.goto(`http://localhost:${PORT}/iframe.html?id=${id}&viewMode=story&globals=theme:${theme}`)
+  await page.goto(`http://127.0.0.1:${PORT}/iframe.html?id=${id}&viewMode=story&globals=theme:${theme}`)
   await page.waitForSelector('[data-visual-root]')
   await settle(page, selectors)
 }

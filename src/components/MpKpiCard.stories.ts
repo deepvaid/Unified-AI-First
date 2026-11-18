@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpKpiCard from './MpKpiCard.vue'
 import { formatMoneyParts } from '@/utils/formatMoneyParts'
+import { constrain } from '@/stories/decorators'
+import { grid } from '@/stories/storyTemplate'
 // The app loads the --cloud-* accent tokens via main.ts; preview.ts doesn't.
 import '@/styles/source-cloud-colors.css'
 
@@ -72,8 +74,8 @@ const meta = {
     period: { control: 'text', description: 'Time window shown under the label ("Today", "Last 30 days").' },
     emphasis: {
       control: 'inline-radio',
-      options: ['default', 'hero'],
-      description: 'Value scale: `default` (32px/700) or `hero` (48px/800) for a single headline metric.',
+      options: ['default', 'prominent'],
+      description: 'Value scale: `default` (32px/700) or `prominent` (48px/800) for a single headline metric.',
     },
     updatedAt: { control: 'text', description: 'Optional last-updated meta line ("Updated 2h ago"), rendered as the smallest, most-muted caption at the card\'s bottom edge.' },
     sparkline: { control: false, description: 'Slot — 96px-wide mini chart aligned with the value. A `#value` slot also exists to replace the default value rendering (e.g. demoted-cents money).', table: { category: 'slots' } },
@@ -96,44 +98,37 @@ export const Default: Story = {
   },
 }
 
-/** The two emphasis levels. `hero` puts a single headline metric at display scale. */
+/** The two emphasis levels. `prominent` puts a single headline metric at display scale (48px/800). */
 export const Variants: Story = {
-  render: () => ({
-    components: { MpKpiCard },
-    template: `
-      <div class="d-flex flex-column ga-8">
-        <div>
-          <div class="text-caption text-medium-emphasis mb-2">default</div>
-          <div style="max-width: 320px;">
-            <MpKpiCard label="Total Revenue" value="$12,430" icon="dollar-sign" color="success" trend="+12.5%" trend-positive period="vs last month" />
-          </div>
-        </div>
-        <div>
-          <div class="text-caption text-medium-emphasis mb-2">hero — one headline metric at display scale</div>
-          <div style="max-width: 320px;">
-            <MpKpiCard variant="hero" label="Total Revenue" value="$12,430" icon="dollar-sign" color="success" trend="+12.5%" trend-positive period="vs last month" />
-          </div>
-        </div>
-      </div>
-    `,
-  }),
-  args: {} as never,
+  args: {
+    label: 'Total Revenue',
+    value: '$12,430',
+    icon: 'dollar-sign',
+    color: 'success',
+    trend: '+12.5%',
+    period: 'vs last month',
+  },
+  render: grid({ MpKpiCard }, [
+    { label: 'emphasis="default"', args: { emphasis: 'default' } },
+    { label: 'emphasis="prominent"', args: { emphasis: 'prominent' } },
+  ]),
 }
 
 /** Every state a KPI can be in: rising, falling, flat, and with no comparison at all. */
 export const States: Story = {
-  render: () => ({
-    components: { MpKpiCard },
-    template: `
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--mp-space-16);">
-        <MpKpiCard label="Revenue" value="$12,430" icon="dollar-sign" color="success" trend="+12.5%" trend-positive period="vs last month" />
-        <MpKpiCard label="Refunds" value="$1,204" icon="corner-down-left" color="error" trend="-8.1%" period="vs last month" />
-        <MpKpiCard label="Sessions" value="48,120" icon="activity" color="primary" period="vs last month" />
-        <MpKpiCard label="Open rate" value="—" icon="mail-open" color="primary" />
-      </div>
-    `,
-  }),
-  args: {} as never,
+  args: {
+    label: 'Revenue',
+    value: '$12,430',
+    icon: 'dollar-sign',
+    color: 'success',
+    period: 'vs last month',
+  },
+  render: grid({ MpKpiCard }, [
+    { label: 'Rising', args: { trend: '+12.5%' } },
+    { label: 'Falling', args: { label: 'Refunds', value: '$1,204', icon: 'corner-down-left', color: 'error', trend: '-8.1%', trendPositive: false } },
+    { label: 'Flat (no trend)', args: { label: 'Sessions', value: '48,120', icon: 'activity', color: 'primary' } },
+    { label: 'No comparison', args: { label: 'Open rate', value: '—', icon: 'mail-open', color: 'primary', period: undefined } },
+  ]),
 }
 
 export const NegativeTrend: Story = {
@@ -184,39 +179,17 @@ export const WithUpdatedAt: Story = {
 }
 
 export const WithSparkline: Story = {
+  decorators: [constrain('narrow')],
   render: () => ({
     components: { MpKpiCard },
     template: `
-      <div style="max-width: 320px;">
-        <MpKpiCard label="Revenue" value="$13,420" icon="dollar-sign" color="success" trend="+12.5%" :trendPositive="true" period="Last 30 days">
-          <template #sparkline>
-            <svg viewBox="0 0 96 36" width="96" height="36" fill="none">
-              <path d="M0 30 L12 26 L24 28 L36 20 L48 22 L60 14 L72 16 L84 8 L96 10" stroke="rgb(var(--v-theme-primary))" stroke-width="2" stroke-linecap="round" />
-            </svg>
-          </template>
-        </MpKpiCard>
-      </div>
-    `,
-  }),
-  args: {} as any, // Fixes TS strict mode error
-}
-
-/** Trend state matrix: up (green), down (red), and flat (no trend row, optional sub-stat). */
-export const TrendStates: Story = {
-  render: () => ({
-    components: { MpKpiCard },
-    template: `
-      <v-row style="max-width: 960px;">
-        <v-col cols="12" sm="4">
-          <MpKpiCard label="Revenue" value="$12,430" icon="trending-up" color="success" trend="+12.5%" :trendPositive="true" subStat="vs last month" />
-        </v-col>
-        <v-col cols="12" sm="4">
-          <MpKpiCard label="Open Rate" value="24.3%" icon="mail-open" color="warning" trend="-1.2%" :trendPositive="false" subStat="vs last month" />
-        </v-col>
-        <v-col cols="12" sm="4">
-          <MpKpiCard label="Active Campaigns" value="8" icon="megaphone" color="primary" subStat="No change" />
-        </v-col>
-      </v-row>
+      <MpKpiCard label="Revenue" value="$13,420" icon="dollar-sign" color="success" trend="+12.5%" :trendPositive="true" period="Last 30 days">
+        <template #sparkline>
+          <svg viewBox="0 0 96 36" width="96" height="36" fill="none">
+            <path d="M0 30 L12 26 L24 28 L36 20 L48 22 L60 14 L72 16 L84 8 L96 10" stroke="rgb(var(--v-theme-primary))" stroke-width="2" stroke-linecap="round" />
+          </svg>
+        </template>
+      </MpKpiCard>
     `,
   }),
   args: {} as any, // Fixes TS strict mode error
@@ -251,22 +224,9 @@ export const IconTones: Story = {
   args: {} as any, // Fixes TS strict mode error
 }
 
-/** `emphasis="prominent"` renders the value at display scale (48px/800) for a single headline metric. */
-export const Hero: Story = {
-  args: {
-    label: 'Total Revenue',
-    value: '$128,940',
-    icon: 'dollar-sign',
-    color: 'success',
-    trend: '+18.2%',
-    trendPositive: true,
-    subStat: 'vs last quarter',
-    emphasis: 'prominent',
-  },
-}
-
 /** Demoted-cents composition via the `#value` slot + `formatMoneyParts()` — cents shrink and fade. */
 export const DemotedCents: Story = {
+  decorators: [constrain('narrow')],
   render: () => ({
     components: { MpKpiCard },
     setup() {
@@ -274,13 +234,11 @@ export const DemotedCents: Story = {
       return { money }
     },
     template: `
-      <div style="max-width: 320px;">
-        <MpKpiCard label="Net Sales" icon="dollar-sign" color="commerce" trend="+6.4%" :trendPositive="true" subStat="vs last month" value="">
-          <template #value>
-            <span class="mp-kpi-value mp-money">{{ money.symbol }}{{ money.integer }}<span class="mp-money__cents">.{{ money.cents }}</span></span>
-          </template>
-        </MpKpiCard>
-      </div>
+      <MpKpiCard label="Net Sales" icon="dollar-sign" color="commerce" trend="+6.4%" :trendPositive="true" subStat="vs last month" value="">
+        <template #value>
+          <span class="mp-kpi-value mp-money">{{ money.symbol }}{{ money.integer }}<span class="mp-money__cents">.{{ money.cents }}</span></span>
+        </template>
+      </MpKpiCard>
     `,
   }),
   args: {} as any, // Fixes TS strict mode error

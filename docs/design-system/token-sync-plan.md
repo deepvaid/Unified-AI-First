@@ -29,7 +29,7 @@ Storybook light+dark.
 
 `global.scss` webkit scrollbar thumb uses raw `rgba(0, 0, 0, 0.15)` — near-invisible in dark
 mode and risky in overlays. Fix: theme-scoped CSS variable (e.g. `--mp-scrollbar-thumb`) defined
-per theme from neutral tokens; test in dark-mode drawers (MpFormDrawer long-content story).
+per theme from neutral tokens; test in dark-mode drawers (MpFormDrawer `States` story (its long-content specimen)).
 
 ## 3. Font-size literal migration — 29 components (was 33 at P1; 2 offenders deleted in P2)
 

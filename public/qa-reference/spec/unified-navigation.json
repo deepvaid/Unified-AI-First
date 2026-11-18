@@ -1,7 +1,9 @@
 {
   "key": "unified-navigation",
   "liquidsky": [
-    "TheUnifiedNavigation"
+    "TheUnifiedNavigation",
+    "TheAppSidebar",
+    "MarobaseSidebar"
   ],
   "status": "matched",
   "reference": "AppSidebar (Patterns › App Shell)",
@@ -24,7 +26,7 @@
               "dark": "248px"
             },
             "background-color": {
-              "light": "rgb(240, 240, 240)",
+              "light": "rgb(234, 237, 242)",
               "dark": "rgb(31, 34, 38)"
             }
           }
@@ -78,7 +80,7 @@
           "state": "hover",
           "props": {
             "background-color": {
-              "light": "oklch(0.209825 0.0082939 none / 0.05)",
+              "light": "rgba(26, 24, 20, 0.06)",
               "dark": "rgb(39, 43, 48)"
             },
             "color": {
@@ -91,7 +93,7 @@
           "part": "active item",
           "props": {
             "background-color": {
-              "light": "oklch(0.209825 0.0082939 none / 0.07)",
+              "light": "rgba(26, 24, 20, 0.1)",
               "dark": "rgb(33, 58, 71)"
             },
             "color": {
@@ -145,7 +147,7 @@
               "dark": "72px"
             },
             "background-color": {
-              "light": "rgb(240, 240, 240)",
+              "light": "rgb(234, 237, 242)",
               "dark": "rgb(31, 34, 38)"
             }
           }

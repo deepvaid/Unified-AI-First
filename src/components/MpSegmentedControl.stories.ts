@@ -1,15 +1,16 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import MpSegmentedControl from './MpSegmentedControl.vue'
+import { liquidskyDocs } from '@/stories/storyTemplate'
 
 const meta = {
   title: 'Atoms/MpSegmentedControl',
   component: MpSegmentedControl,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'liquidsky'],
   parameters: {
     docs: {
       description: {
-        component: `
+        component: liquidskyDocs('atoms-mpsegmentedcontrol') + `
 ### Overview
 \`MpSegmentedControl\` is the one segmented toggle: a padded track with pill segments, for
 switching between 2–5 mutually exclusive views or modes (preview device, light/dark, widget
@@ -79,7 +80,7 @@ it's content-set filtering above a table (use \`MpFilterTabs\`).
     },
     items: {
       control: 'object',
-      description: 'Segments: `{ value, label?, icon?, disabled?, tooltip? }[]`. An `icon` makes the segment icon-only (square) and `label` becomes its `aria-label`; without `icon`, `label` is the visible text.',
+      description: 'Segments: `{ value, label?, icon?, disabled?, tooltip?, badge? }[]`. An `icon` makes the segment icon-only (square) and `label` becomes its `aria-label`; without `icon`, `label` is the visible text. `badge` is a short pill after the label of a text segment.',
     },
     size: {
       control: 'inline-radio',
@@ -105,6 +106,7 @@ export const Default: Story = {
     components: { MpSegmentedControl },
     setup() {
       const model = ref(args.modelValue)
+      watch(() => args.modelValue, (next) => { model.value = next })
       return { args, model }
     },
     template: `
@@ -114,6 +116,54 @@ export const Default: Story = {
       </div>
     `,
   }),
+}
+
+/**
+ * The three segment structures. **Text** is the default. An **`icon`** makes a segment icon-only
+ * (square): its `label` becomes the `aria-label`, and `tooltip` shows it on hover (the builder
+ * device switcher). A **`badge`** qualifies a text segment without lengthening its label (the
+ * billing-period switcher on the Plans page says "Annual" and lets the pill carry the saving).
+ */
+export const Variants: Story = {
+  render: () => ({
+    components: { MpSegmentedControl },
+    setup() {
+      const view = ref('trend')
+      const device = ref('desktop')
+      const cycle = ref('annual')
+      const textItems = [
+        { value: 'trend', label: 'Trend' },
+        { value: 'compare', label: 'Compare' },
+      ]
+      const iconItems = [
+        { value: 'desktop', icon: 'monitor', label: 'Desktop', tooltip: 'Desktop' },
+        { value: 'tablet', icon: 'tablet', label: 'Tablet', tooltip: 'Tablet' },
+        { value: 'mobile', icon: 'smartphone', label: 'Mobile', tooltip: 'Mobile' },
+      ]
+      const badgeItems = [
+        { value: 'annual', label: 'Annual', badge: '−20%' },
+        { value: 'monthly', label: 'Monthly' },
+      ]
+      return { view, device, cycle, textItems, iconItems, badgeItems }
+    },
+    template: `
+      <div class="d-flex flex-column align-start ga-4 pa-4">
+        <div class="d-flex align-center ga-4">
+          <MpSegmentedControl v-model="view" :items="textItems" ariaLabel="View" />
+          <span class="text-body-2 text-medium-emphasis">text segments</span>
+        </div>
+        <div class="d-flex align-center ga-4">
+          <MpSegmentedControl v-model="device" :items="iconItems" ariaLabel="Preview device" />
+          <span class="text-body-2 text-medium-emphasis">icon-only segments, with tooltips (previewing: {{ device }})</span>
+        </div>
+        <div class="d-flex align-center ga-4">
+          <MpSegmentedControl v-model="cycle" :items="badgeItems" ariaLabel="Billing period" />
+          <span class="text-body-2 text-medium-emphasis">a badge on a text segment</span>
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
 }
 
 /**
@@ -196,54 +246,3 @@ export const States: Story = {
   args: {} as never,
 }
 
-// ── Scenarios ────────────────────────────────────────────────────────────────
-
-/**
- * A `badge` qualifies a segment without lengthening its label — the billing-period
- * switcher on the Plans page says "Annual" and lets the pill carry the saving.
- */
-export const WithBadge: Story = {
-  render: () => ({
-    components: { MpSegmentedControl },
-    setup() {
-      const cycle = ref('annual')
-      const items = [
-        { value: 'annual', label: 'Annual', badge: '−20%' },
-        { value: 'monthly', label: 'Monthly' },
-      ]
-      return { cycle, items }
-    },
-    template: `
-      <div class="pa-4">
-        <MpSegmentedControl v-model="cycle" :items="items" ariaLabel="Billing period" />
-      </div>
-    `,
-  }),
-  args: {} as never,
-}
-
-/**
- * Icon-only segments — the builder device switcher. Each segment's `label` becomes its
- * `aria-label` and doubles as the tooltip.
- */
-export const IconOnly: Story = {
-  render: () => ({
-    components: { MpSegmentedControl },
-    setup() {
-      const device = ref('desktop')
-      const items = [
-        { value: 'desktop', icon: 'monitor', label: 'Desktop', tooltip: 'Desktop' },
-        { value: 'tablet', icon: 'tablet', label: 'Tablet', tooltip: 'Tablet' },
-        { value: 'mobile', icon: 'smartphone', label: 'Mobile', tooltip: 'Mobile' },
-      ]
-      return { device, items }
-    },
-    template: `
-      <div class="d-flex flex-column align-start ga-3 pa-4">
-        <MpSegmentedControl v-model="device" :items="items" size="sm" ariaLabel="Preview device" />
-        <div class="text-body-2 text-medium-emphasis">Hover a segment for its tooltip — previewing: {{ device }}</div>
-      </div>
-    `,
-  }),
-  args: {} as never,
-}

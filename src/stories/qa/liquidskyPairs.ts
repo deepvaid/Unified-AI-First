@@ -70,7 +70,7 @@ export const QA_PAIRS: Record<string, QaPair> = {
       subtitle: '.app-page-title__subtitle',
     },
   },
-  'molecules-mppageheader--with-back-link': {
+  'molecules-mppageheader--with-eyebrow': {
     id: 'components-appbreadcrumb--with-basic-breadcrumbs',
     parts: {},
   },
@@ -154,7 +154,7 @@ export const QA_PAIRS: Record<string, QaPair> = {
       'done marker': '.v-stepper-item--complete .v-stepper-item__avatar',
     },
   },
-  'molecules-mpdaterangeselect--menu-open': {
+  'patterns-form-fields--date-field': {
     id: 'components-appdatepicker--default',
     parts: {},
   },
@@ -169,19 +169,22 @@ export const QA_PAIRS: Record<string, QaPair> = {
       'selected option': '.app-dropdown-auto-complete .v-list-item--active',
     },
   },
-  'molecules-mpbanner--default': {
+  'product-onboarding-onboardingprogressbanner--on-task-page': {
     id: 'components-theonboardingbanner--default',
     parts: {},
   },
-  'atoms-mplistrow--checklist': {
+  'product-onboarding-get-started--default': {
     id: 'components-theonboardingscreenchecklists--mixed-status',
+    parts: {},
+  },
+  'patterns-data-table--overflow-cell': {
+    id: 'components-appexpandablelist--default',
     parts: {},
   },
 }
 
-/** Components with no reference: the LiquidSky story shown on its own, so the gap is visible. */
+/** Components with no dedicated design: the LiquidSky story shown on its own, so the gap is visible. */
 export const QA_BUILD_ONLY: Record<string, string> = {
-  'expandable-list': 'components-appexpandablelist--default',
   'tree-dropdown': 'components-apptreedropdown--single-select',
   'grid-table': 'components-appgridtable--basic',
 }

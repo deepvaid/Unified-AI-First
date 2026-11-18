@@ -77,6 +77,7 @@ const TABS_WIDGET: DashboardWidget = {
   dataSource: 'commerce',
   metricId: 'overview_tabs',
   layout: buildLayoutFromPreset('table', 'M', { x: 0, y: 0 }),
+  drilldown: { routeName: 'SalesOrders', label: 'Open sales orders' },
   lastRefreshedAt: minutesAgo(6),
 }
 
@@ -87,6 +88,7 @@ const ATTENTION_WIDGET: DashboardWidget = {
   dataSource: 'commerce',
   metricId: 'overview_attention',
   layout: buildLayoutFromPreset('table', 'M', { x: 0, y: 0 }),
+  drilldown: { routeName: 'CampaignReports', label: 'Open reports' },
   lastRefreshedAt: minutesAgo(11),
 }
 

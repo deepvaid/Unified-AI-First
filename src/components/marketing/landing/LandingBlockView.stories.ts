@@ -1,11 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import LandingBlockView from './LandingBlockView.vue'
 import { PALETTE, PAGE_BLOCKS, block } from './landingStoryFixtures'
+import { constrain } from '@/stories/decorators'
 
 const meta = {
   title: 'Product/Marketing/Landing Pages/LandingBlockView',
   component: LandingBlockView,
   tags: ['autodocs'],
+  decorators: [constrain('section')],
   parameters: {
     docs: {
       description: {
@@ -57,33 +59,24 @@ sane document outline.
 export default meta
 type Story = StoryObj<typeof meta>
 
-const wrap = (inner: string) => ({
-  components: { LandingBlockView },
-  template: `<div style="max-width: 720px; margin: 0 auto">${inner}</div>`,
-})
-
 /** Preview face — how a block renders on the published page. */
 export const Default: Story = {
   args: { block: block('title', { text: 'Spring into savings', titleSize: 'XL', align: 'center' }) },
-  render: (args) => ({ ...wrap('<LandingBlockView v-bind="args" />'), setup: () => ({ args }) }),
 }
 
 /** Editor face — type chip and hover controls, not yet selected. */
 export const Editable: Story = {
   args: { ...Default.args, editable: true, palette: PALETTE },
-  render: Default.render,
 }
 
 /** Selected in the editor — the selection ring is drawn. */
 export const Selected: Story = {
   args: { ...Default.args, editable: true, selected: true, palette: PALETTE },
-  render: Default.render,
 }
 
 /** The editor's "show structure" toggle, which outlines each block's bounds. */
 export const ShowStructure: Story = {
   args: { ...Default.args, editable: true, showStructure: true, palette: PALETTE },
-  render: Default.render,
 }
 
 /** Every block type in the fixture page, rendered in preview mode. */
@@ -93,7 +86,7 @@ export const BlockTypeMatrix: Story = {
     components: { LandingBlockView },
     setup: () => ({ blocks: PAGE_BLOCKS, palette: PALETTE }),
     template: `
-      <div style="max-width: 720px; margin: 0 auto">
+      <div>
         <LandingBlockView v-for="b in blocks" :key="b.id" :block="b" :palette="palette" />
       </div>
     `,
@@ -110,7 +103,7 @@ export const TitleSizes: Story = {
         block('title', { text: `Title size ${size}`, titleSize: size }, `lpb-story-title-${i}`)),
     }),
     template: `
-      <div style="max-width: 720px; margin: 0 auto">
+      <div>
         <LandingBlockView v-for="b in blocks" :key="b.id" :block="b" />
       </div>
     `,

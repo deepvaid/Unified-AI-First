@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/vue3'
 import { provide } from 'vue'
 import { routeLocationKey } from 'vue-router'
 import MpDaVinciBot from './MpDaVinciBot.vue'
+import { overlayDocs } from '@/stories/decorators'
 import type { ChatMessage } from '@/stores/useCopilot'
 
 type StoryMessage = {
@@ -121,7 +122,11 @@ const meta = {
   component: MpDaVinciBot,
   tags: ['autodocs'],
   parameters: {
+    // A page mock: it lays out its own gutters, edge to edge.
+    canvas: 'full',
     docs: {
+      // One instance per frame: the history, toast and voice layers are module singletons.
+      ...overlayDocs('820px').docs,
       description: {
         component: `
 ### Overview
@@ -176,8 +181,6 @@ layer directly.
   args: {
     initialChatMode: false,
     initialMessages: [],
-    attachmentName: '',
-    attachmentMeta: 'CSV, image, or PDF - max 25 MB',
     subtitle: 'Intelligent AI assistant',
   },
   render: (args) => ({
@@ -195,13 +198,13 @@ layer directly.
       return { args, toggleExpand }
     },
     template: `
-      <div style="height:800px;display:flex;background:rgb(var(--v-theme-background));padding:24px;">
-        <div style="flex:1;border-radius:12px;background:rgb(var(--v-theme-surface));margin-right:24px;padding:24px;border:1px solid rgb(var(--v-theme-outline-variant));overflow:hidden;">
+      <div style="height:800px;display:flex;gap:var(--mp-space-24);padding:var(--mp-space-24);">
+        <v-card flat border rounded="lg" class="mp-card-inset flex-grow-1">
           <h2 class="text-h6 font-weight-bold mb-6">Dashboard</h2>
-          <div style="background:rgb(var(--v-theme-surface-variant));height:120px;border-radius:8px;margin-bottom:16px;"></div>
-          <div style="background:rgb(var(--v-theme-surface-variant));height:300px;border-radius:8px;"></div>
-        </div>
-        <div style="width:440px;border-radius:12px;overflow:hidden;box-shadow:0 16px 40px -12px rgba(var(--mp-rgb-color-light-textPrimary),.18);flex-shrink:0;transition:width .3s ease;" class="copilot-container">
+          <div style="background:var(--surface-secondary);height:120px;border-radius:var(--mp-radius-12);margin-bottom:var(--mp-space-16);"></div>
+          <div style="background:var(--surface-secondary);height:300px;border-radius:var(--mp-radius-12);"></div>
+        </v-card>
+        <div style="width:440px;border:1px solid var(--border-subtle);border-radius:var(--mp-component-card-radius);overflow:hidden;box-shadow:var(--elevation-overlay);flex-shrink:0;transition:width .3s ease;" class="copilot-container">
           <MpDaVinciBot v-bind="args" @expand="toggleExpand" />
         </div>
       </div>
@@ -218,17 +221,14 @@ export const Conversation: Story = {
   args: {
     initialChatMode: true,
     initialMessages: conversationMessages,
-    attachmentName: 'top-products.csv',
-    attachmentMeta: 'CSV - 25 KB',
   },
 }
 
 export const CompactDrawer: Story = {
+  parameters: { canvas: 'padded' },
   args: {
     initialChatMode: true,
     initialMessages: conversationMessages,
-    attachmentName: 'top-products.csv',
-    attachmentMeta: 'CSV - 25 KB',
   },
   render: (args) => ({
     components: { MpDaVinciBot },
@@ -237,7 +237,7 @@ export const CompactDrawer: Story = {
       return { args }
     },
     template: `
-      <div style="height:700px;width:440px;border-radius:12px;overflow:hidden;box-shadow:0 16px 40px -12px rgba(var(--mp-rgb-color-light-textPrimary),.18);background:rgb(var(--v-theme-background));">
+      <div style="height:700px;width:440px;border:1px solid var(--border-subtle);border-radius:var(--mp-component-card-radius);overflow:hidden;box-shadow:var(--elevation-overlay);">
         <MpDaVinciBot v-bind="args" />
       </div>
     `,
@@ -288,33 +288,4 @@ export const AdvisorOffline: Story = {
       },
     ] satisfies ChatMessage[],
   },
-}
-
-// ── Template: Variants · Sizes · States ──────────────────────────────────────
-
-/** Two structures: the full copilot surface with its own header, and `headerless` for hosts that supply their own chrome (the docked drawer does). */
-export const Variants: Story = {
-  render: (args) => ({
-    components: { MpDaVinciBot },
-    setup: () => ({ args }),
-    template: `<MpDaVinciBot v-bind="args" />`,
-  }),
-}
-
-/** There is no `size` prop — the bot fills whatever surface hosts it, from a 400px docked drawer to a full-page studio. Its internal rows and controls resolve to the shared `component.listItem.*` and `component.control.height` tokens, so the copilot does not read as a different product from the page behind it. */
-export const Sizes: Story = {
-  render: (args) => ({
-    components: { MpDaVinciBot },
-    setup: () => ({ args }),
-    template: `<MpDaVinciBot v-bind="args" />`,
-  }),
-}
-
-/** The states a session moves through: empty (suggestion chips), mid-conversation, and the onboarding card a first-run user sees. */
-export const States: Story = {
-  render: (args) => ({
-    components: { MpDaVinciBot },
-    setup: () => ({ args }),
-    template: `<MpDaVinciBot v-bind="args" />`,
-  }),
 }

@@ -1,14 +1,16 @@
+import { ref } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpWizardSteps from './MpWizardSteps.vue'
+import { liquidskyDocs, stack } from '@/stories/storyTemplate'
 
 const meta = {
   title: 'Atoms/MpWizardSteps',
   component: MpWizardSteps,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'liquidsky'],
   parameters: {
     docs: {
       description: {
-        component: `
+        component: liquidskyDocs('atoms-mpwizardsteps') + `
 ### Overview
 \`MpWizardSteps\` renders the compact step chips used in wizard toolbars (numbered circles,
 check icon for completed steps, rail separators). \`current\` is 1-based. Below 700px viewport
@@ -66,6 +68,7 @@ width the labels collapse and only the numbered circles remain, so the toolbar s
       control: { type: 'number', min: 1, max: 5, step: 1 },
       description: '1-based index of the active step. Steps below it render as completed (check); a value beyond the last step marks all steps done.',
     },
+    onSelect: { action: 'select', table: { disable: true } },
   },
 } satisfies Meta<typeof MpWizardSteps>
 
@@ -74,63 +77,50 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {}
 
-/** Step-count is the only structural axis — the component is a passive indicator. */
+const fourSteps = ['Choose a type', 'Configure', 'Design', 'Review']
+
+/**
+ * The two contracts. **Passive** (the default) is a read-only position tracker: every step is a
+ * `div`. **Clickable** is wizard navigation: steps up to `maxStep` are buttons that emit
+ * `select`. Click a visited step below to jump to it; "Review" stays inert because the wizard
+ * has only reached step 3.
+ */
 export const Variants: Story = {
   render: () => ({
     components: { MpWizardSteps },
+    setup() {
+      const current = ref(2)
+      return { steps: fourSteps, current }
+    },
     template: `
       <div class="d-flex flex-column ga-8">
         <div>
-          <div class="text-caption text-medium-emphasis mb-2">two steps</div>
-          <MpWizardSteps :steps="['Choose a type', 'Configure']" :current="1" />
+          <div class="text-caption text-medium-emphasis mb-2">passive — a progress display</div>
+          <MpWizardSteps :steps="steps" :current="2" />
         </div>
         <div>
-          <div class="text-caption text-medium-emphasis mb-2">four steps</div>
-          <MpWizardSteps :steps="['Choose a type', 'Configure', 'Design', 'Review']" :current="2" />
+          <div class="text-caption text-medium-emphasis mb-2">clickable, max-step 3 — visited steps are buttons (on step {{ current }})</div>
+          <MpWizardSteps :steps="steps" :current="current" clickable :max-step="3" @select="current = $event" />
         </div>
       </div>
     `,
   }),
-  args: {} as never,
 }
 
-/** Below 700px the labels collapse to dots. Resize the canvas to verify. */
-export const Sizes: Story = {
-  render: () => ({
-    components: { MpWizardSteps },
-    template: `
-      <div class="d-flex flex-column ga-8">
-        <div>
-          <div class="text-caption text-medium-emphasis mb-2">full width — labels visible</div>
-          <MpWizardSteps :steps="['Choose a type', 'Configure', 'Design', 'Review']" :current="2" />
-        </div>
-        <div>
-          <div class="text-caption text-medium-emphasis mb-2">narrow container — labels collapse to dots</div>
-          <div style="max-width: 320px;">
-            <MpWizardSteps :steps="['Choose a type', 'Configure', 'Design', 'Review']" :current="2" />
-          </div>
-        </div>
-      </div>
-    `,
-  }),
-  args: {} as never,
+/** There is no `size` prop: what varies is the number of steps (keep it to five or fewer). */
+export const StepCount: Story = {
+  render: stack({ MpWizardSteps }, [
+    { label: 'two steps', args: { steps: ['Choose a type', 'Configure'], current: 1 } },
+    { label: 'four steps', args: { steps: fourSteps, current: 2 } },
+  ]),
 }
 
-/** Progress through every position: first, mid, and complete. `aria-current` follows `current`. */
+/** Progress through every position: first, mid, and last. `aria-current` follows `current`. */
 export const States: Story = {
-  render: () => ({
-    components: { MpWizardSteps },
-    setup: () => ({ steps: ['Choose a type', 'Configure', 'Design', 'Review'] }),
-    template: `
-      <div class="d-flex flex-column ga-8">
-        <div v-for="n in [1, 2, 4]" :key="n">
-          <div class="text-caption text-medium-emphasis mb-2">current={{ n }}</div>
-          <MpWizardSteps :steps="steps" :current="n" />
-        </div>
-      </div>
-    `,
-  }),
-  args: {} as never,
+  render: stack({ MpWizardSteps }, [1, 2, 4].map((current) => ({
+    label: `current=${current}`,
+    args: { steps: fourSteps, current },
+  }))),
 }
 
 export const TwoStepsOnSettings: Story = {

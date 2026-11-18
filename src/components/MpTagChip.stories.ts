@@ -24,8 +24,8 @@ cloud (use \`MpSourceCloudChip\`). Tag colours are categorical: a red tag is not
 
 ### Usage
 \`\`\`html
-<MpTagChip :name="tag.name" :color="tag.color" />
-<MpTagChip :name="tag.name" :color="tag.color" size="md" removable @remove="untag(tag.id)" />
+<MpTagChip :name="tag.name" :color="tag.color" size="sm" />
+<MpTagChip :name="tag.name" :color="tag.color" removable @remove="untag(tag.id)" />
 \`\`\`
 
 ### A11y
@@ -41,10 +41,11 @@ cloud (use \`MpSourceCloudChip\`). Tag colours are categorical: a red tag is not
   argTypes: {
     name: { control: 'text', description: 'Tag name. Truncates with an ellipsis; full name in `title`.' },
     color: { control: 'select', options: [...TAG_COLORS], description: 'One of the eight tag swatches.' },
-    size: { control: 'inline-radio', options: ['sm', 'md'], description: 'Chip ramp height: sm 20 (default) · md 24.' },
+    size: { control: 'inline-radio', options: ['sm', 'md'], description: 'Chip ramp height: sm 20 (tables and lists) · md 24 (default).' },
     removable: { control: 'boolean', description: 'Adds a labelled remove button that emits `remove`.' },
+    onRemove: { action: 'remove', table: { disable: true } },
   },
-  args: { name: 'Billing', color: 'sky', size: 'sm', removable: false },
+  args: { name: 'Billing', color: 'sky', size: 'md', removable: false },
 } satisfies Meta<typeof MpTagChip>
 
 export default meta
@@ -60,10 +61,10 @@ export const Variants: Story = {
     template: `
       <div class="d-flex flex-column ga-4">
         <div class="d-flex flex-wrap ga-2 align-center">
-          <MpTagChip v-for="c in colors" :key="c" :name="labels[c]" :color="c" />
+          <MpTagChip v-for="c in colors" :key="c" :name="labels[c]" :color="c" size="sm" />
         </div>
         <div class="d-flex flex-wrap ga-2 align-center">
-          <MpTagChip v-for="c in colors" :key="c" :name="labels[c]" :color="c" size="md" removable />
+          <MpTagChip v-for="c in colors" :key="c" :name="labels[c]" :color="c" removable />
         </div>
       </div>
     `,
@@ -89,32 +90,34 @@ export const Sizes: Story = {
 
 /**
  * States — removable, a long name truncating inside a narrow column, and focus on the remove
- * button. The play function focuses it; the ring is `:focus-visible`, so if a mouse click got
- * there first, Tab to it.
+ * button. In the canvas the play function focuses it (on a docs page it does not, so the page
+ * is not scrolled); the ring is `:focus-visible`, so if a mouse click got there first, Tab to it.
  */
 export const States: Story = {
-  render: () => ({
+  render: (args) => ({
     components: { MpTagChip },
+    setup: () => ({ args }),
     template: `
       <div class="d-flex flex-column ga-4">
         <div class="d-flex align-center ga-3">
           <span class="text-caption text-medium-emphasis" style="width: 6rem;">removable</span>
-          <MpTagChip name="VIP customer" color="violet" removable />
+          <MpTagChip name="VIP customer" color="violet" removable @remove="args.onRemove" />
         </div>
         <div class="d-flex align-center ga-3">
           <span class="text-caption text-medium-emphasis" style="width: 6rem;">long name</span>
           <div style="max-width: var(--mp-component-toolbar-titleMinWidth); min-width: 0;">
-            <MpTagChip name="Escalated to the warehouse team — damaged in transit" color="orange" removable />
+            <MpTagChip name="Escalated to the warehouse team — damaged in transit" color="orange" removable @remove="args.onRemove" />
           </div>
         </div>
         <div class="d-flex align-center ga-3">
           <span class="text-caption text-medium-emphasis" style="width: 6rem;">focus</span>
-          <MpTagChip name="Urgent" color="red" removable data-story-focus />
+          <MpTagChip name="Urgent" color="red" removable data-story-focus @remove="args.onRemove" />
         </div>
       </div>
     `,
   }),
-  play: async ({ canvasElement }) => {
+  play: async ({ canvasElement, viewMode }) => {
+    if (viewMode === 'docs') return
     canvasElement.querySelector<HTMLButtonElement>('[data-story-focus] .mp-tag-chip__remove')?.focus()
   },
 }

@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
-import { VContainer } from 'vuetify/components'
 import {
   mp_radius_4,
   mp_fontFamily_mono,
@@ -7,11 +6,11 @@ import {
 } from '@/design-tokens/generated/tokens'
 import { tokensByPrefix } from './foundationTokens'
 
-const meta = {
+const meta: Meta = {
   title: 'Foundations/Spacing',
-  component: VContainer,
   tags: ['autodocs'],
   parameters: {
+    controls: { disable: true },
     docs: {
       description: {
         component: `
@@ -30,7 +29,7 @@ rendered from \`src/design-tokens/generated/tokens.ts\`, so its width **is** the
       },
     },
   },
-} satisfies Meta<typeof VContainer>
+}
 
 export default meta
 type Story = StoryObj<typeof meta>

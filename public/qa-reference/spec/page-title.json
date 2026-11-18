@@ -1,12 +1,10 @@
 {
   "key": "page-title",
   "liquidsky": [
-    "AppPageTitle",
-    "AppBreadcrumb"
+    "AppPageTitle"
   ],
-  "status": "partial",
+  "status": "matched",
   "reference": "MpPageHeader",
-  "note": "Marobase has no breadcrumb trail: a detail page shows one back link (`backTo`) above the title. AppBreadcrumb has no reference beyond that link.",
   "stories": [
     {
       "id": "molecules-mppageheader--default",

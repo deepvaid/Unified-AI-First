@@ -3,50 +3,181 @@
   "liquidsky": [
     "TheOnboardingBanner"
   ],
-  "status": "partial",
-  "reference": "MpBanner (the full-width edge strip)",
-  "note": "There is no onboarding-specific banner in Marobase. Only the strip geometry and tones carry over; the onboarding content needs a design.",
+  "status": "matched",
+  "reference": "OnboardingProgressBanner (Product › Onboarding)",
+  "note": "The progress card that opens Get started. On a task page it takes the task as its title, puts the count on its own line and ends in a link back to the list.",
   "stories": [
     {
-      "id": "molecules-mpbanner--default",
-      "label": "Banner",
-      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpbanner--default",
+      "id": "product-onboarding-onboardingprogressbanner--default",
+      "label": "On Get started",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/product-onboarding-onboardingprogressbanner--default",
       "png": {
-        "light": "png/onboarding-banner/molecules-mpbanner--default--light.png",
-        "dark": "png/onboarding-banner/molecules-mpbanner--default--dark.png"
+        "light": "png/onboarding-banner/product-onboarding-onboardingprogressbanner--default--light.png",
+        "dark": "png/onboarding-banner/product-onboarding-onboardingprogressbanner--default--dark.png"
       },
       "parts": [
         {
-          "part": "strip",
+          "part": "card",
           "props": {
-            "min-height": {
-              "light": "44px",
-              "token": "component.banner.minHeight",
-              "dark": "44px"
-            },
             "padding": {
-              "light": "6px 16px",
-              "dark": "6px 16px"
+              "light": "20px",
+              "token": "component.card.padding",
+              "dark": "20px"
             },
             "column-gap": {
-              "light": "10px",
-              "dark": "10px"
+              "light": "20px",
+              "token": "space.20",
+              "dark": "20px"
             },
-            "border-bottom-color": {
-              "light": "color(srgb 0.0156863 0.196078 0.301961 / 0.25)",
-              "dark": "color(srgb 0.870588 0.952941 1 / 0.25)"
+            "border-top-color": {
+              "light": "rgba(0, 0, 0, 0.12)",
+              "dark": "rgba(255, 255, 255, 0.12)"
             },
-            "color": {
-              "light": "rgb(4, 50, 77)",
-              "dark": "rgb(222, 243, 255)"
+            "border-top-width": {
+              "light": "1px",
+              "dark": "1px"
             },
             "background-color": {
-              "light": "rgb(222, 243, 255)",
-              "dark": "rgb(4, 50, 77)"
+              "light": "rgba(0, 113, 168, 0.03)",
+              "dark": "rgba(44, 196, 255, 0.03)"
             },
             "border-radius": {
-              "light": "0px",
-              "dark": "0px"
+              "light": "16px",
+              "token": "component.card.radius",
+              "dark": "16px"
+            }
+          }
+        },
+        {
+          "part": "ring",
+          "props": {
+            "width": {
+              "light": "64px",
+              "dark": "64px"
+            },
+            "height": {
+              "light": "64px",
+              "dark": "64px"
+            },
+            "color": {
+              "light": "rgb(0, 113, 168)",
+              "dark": "rgb(44, 196, 255)"
+            }
+          }
+        },
+        {
+          "part": "title",
+          "props": {
+            "font-size": {
+              "light": "16px",
+              "dark": "16px"
+            },
+            "font-weight": {
+              "light": "600",
+              "dark": "600"
+            },
+            "line-height": {
+              "light": "28px",
+              "dark": "28px"
+            },
+            "color": {
+              "light": "rgba(26, 24, 20, 0.87)",
+              "dark": "rgb(236, 236, 236)"
+            }
+          }
+        },
+        {
+          "part": "caption",
+          "props": {
+            "font-size": {
+              "light": "14px",
+              "dark": "14px"
+            },
+            "font-weight": {
+              "light": "400",
+              "dark": "400"
+            },
+            "line-height": {
+              "light": "19.95px",
+              "dark": "19.95px"
+            },
+            "color": {
+              "light": "rgba(26, 24, 20, 0.6)",
+              "dark": "rgba(236, 236, 236, 0.7)"
+            }
+          }
+        },
+        {
+          "part": "bar",
+          "props": {
+            "height": {
+              "light": "6px",
+              "dark": "6px"
+            },
+            "border-radius": {
+              "light": "9999px",
+              "dark": "9999px"
+            },
+            "color": {
+              "light": "rgba(26, 24, 20, 0.87)",
+              "dark": "rgb(236, 236, 236)"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "product-onboarding-onboardingprogressbanner--on-task-page",
+      "label": "On a task page",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/product-onboarding-onboardingprogressbanner--on-task-page",
+      "png": {
+        "light": "png/onboarding-banner/product-onboarding-onboardingprogressbanner--on-task-page--light.png",
+        "dark": "png/onboarding-banner/product-onboarding-onboardingprogressbanner--on-task-page--dark.png"
+      },
+      "parts": [
+        {
+          "part": "count",
+          "props": {
+            "font-size": {
+              "light": "12px",
+              "dark": "12px"
+            },
+            "font-weight": {
+              "light": "500",
+              "dark": "500"
+            },
+            "line-height": {
+              "light": "20.004px",
+              "dark": "20.004px"
+            },
+            "color": {
+              "light": "rgba(26, 24, 20, 0.87)",
+              "dark": "rgb(236, 236, 236)"
+            }
+          }
+        },
+        {
+          "part": "action",
+          "props": {
+            "font-size": {
+              "light": "16px",
+              "dark": "16px"
+            },
+            "font-weight": {
+              "light": "500",
+              "dark": "500"
+            },
+            "line-height": {
+              "light": "24px",
+              "dark": "24px"
+            },
+            "color": {
+              "light": "rgb(0, 115, 171)",
+              "dark": "rgb(44, 196, 255)"
+            },
+            "column-gap": {
+              "light": "6px",
+              "dark": "6px"
             }
           }
         }

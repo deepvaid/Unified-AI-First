@@ -6,6 +6,7 @@ import { useCopilotStore } from '@/stores/useCopilot'
 import { LANGUAGES, useUserProfile, type LanguageCode } from '@/stores/useUserProfile'
 import { useAppTheme, type ThemeMode } from '@/composables/useAppTheme'
 import { useMobileNav } from '@/composables/useMobileNav'
+import { mp_layout_appbarHeight } from '@/design-tokens/generated/tokens'
 import { useToast } from '@/composables/useToast'
 import DvOrbitOrb from '@/components/copilot/voice/DvOrbitOrb.vue'
 import MpNotificationsMenu from '@/components/MpNotificationsMenu.vue'
@@ -430,7 +431,7 @@ function onSearchKeydown(event: KeyboardEvent) {
 </script>
 
 <template>
-  <v-app-bar height="56" color="surface" flat class="mp-appbar">
+  <v-app-bar :height="Number.parseInt(mp_layout_appbarHeight, 10)" color="surface" flat class="mp-appbar">
     <div class="mp-appbar-shell w-100 d-flex align-center px-4 gap-2">
       <div ref="searchGroup" class="appbar-search-group">
         <button

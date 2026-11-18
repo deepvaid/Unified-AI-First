@@ -37,7 +37,7 @@ description, optional preview area.
 **New component:** `src/components/MpOptionCard.vue` — props `{ selected: boolean; title: string; description?: string; icon?: string }`,
 default slot (extra body: chips, inset previews), `#media` slot (full-bleed footer with top border +
 background, used by CreateJourney's flow preview), click/dblclick via native fallthrough.
-Story: `MpOptionCard.stories.ts` (Unselected / Selected / WithMedia / SelectionGroup).
+Story: `MpOptionCard.stories.ts` (Default / Variants / States / WithMedia / SelectionGroup (Unselected and Selected were folded into Variants and States on 2026-11-18)).
 
 **Deliberate standardization (component-owned chrome):**
 - CreateCampaign template cards previously used a filled-primary "elevated" selected state with a
