@@ -6,7 +6,7 @@ import AppBar from './AppBar.vue'
 import AppSidebar from './AppSidebar.vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpKpiCard from '@/components/MpKpiCard.vue'
-import { sidebarSkin } from '@/stories/decorators'
+import { appShell } from '@/stories/decorators'
 import { liquidskyDocs } from '@/stories/storyTemplate'
 
 /**
@@ -85,7 +85,7 @@ const meta = {
   title: 'Patterns/App Shell/AppBar',
   component: AppBar,
   tags: ['autodocs', 'liquidsky'],
-  decorators: [sidebarSkin],
+  decorators: [appShell],
   parameters: {
     canvas: 'full',
     sidebarSkin: 'gray',

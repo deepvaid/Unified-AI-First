@@ -96,26 +96,71 @@ export function railFrame(height = '560px'): Decorator {
 }
 
 /**
- * Stamps `data-sidebar` on <html> so the shell skins in `sidebar-*.css` resolve.
- * Reads `parameters.sidebarSkin`, defaulting to `gray` — the app's own default.
+ * Stamps the app shell's attributes on <html>, as App.vue does, so `AppBar` and `AppSidebar`
+ * render with the chrome the running app has: `data-sidebar` (the skin in `sidebar-*.css`),
+ * `data-shell` and `data-frame` (the shell variant in `shell-variants.css`).
  *
- * P5.5: the attribute is now restored on unmount. It previously only ever got
- * set, so navigating away from a `dark`-skin story left the dark chrome stamped
- * on <html> for every story after it — dark nav surfaces under light-theme ink.
+ * Reads `parameters.sidebarSkin` (default `gray`) and `parameters.shell` (default `studio`);
+ * both are the app's own defaults. The frame follows the shell, as it does in the app.
+ * Everything is restored on unmount, so a skin never leaks into the next story.
+ *
+ * The attributes are one per document: on a docs page every story shares them. Give a story
+ * that shows a non-default skin or shell `parameters: overlayDocs()` so it gets its own frame.
  */
-export const sidebarSkin: Decorator = (story, context) => ({
+export const appShell: Decorator = (story, context) => ({
   components: { story },
   setup() {
-    const skin = String(context.parameters.sidebarSkin ?? 'gray')
-    const previous = document.documentElement.dataset.sidebar
-    document.documentElement.dataset.sidebar = skin
+    const root = document.documentElement
+    const shell = String(context.parameters.shell ?? 'studio')
+    const next = {
+      sidebar: String(context.parameters.sidebarSkin ?? 'gray'),
+      shell,
+      frame: shell === 'studio' ? 'on' : 'off',
+    }
+    const previous = { sidebar: root.dataset.sidebar, shell: root.dataset.shell, frame: root.dataset.frame }
+    Object.assign(root.dataset, next)
 
     onUnmounted(() => {
-      if (previous === undefined) {
-        delete document.documentElement.dataset.sidebar
-      } else {
-        document.documentElement.dataset.sidebar = previous
+      for (const key of ['sidebar', 'shell', 'frame'] as const) {
+        if (previous[key] === undefined) delete root.dataset[key]
+        else root.dataset[key] = previous[key]
       }
+    })
+
+    return {}
+  },
+  template: '<story />',
+})
+
+/**
+ * Story parameters for a story that opens an overlay on mount (dialog, drawer, menu, toast) or
+ * that changes something page-wide. On a docs page it renders in its own frame of the given
+ * height, so several open overlays cannot stack on one page and a play function that queries
+ * `document` only finds its own story.
+ *
+ *   export const Open: Story = { parameters: overlayDocs(), ... }
+ *   parameters: { docs: { description: { story: '…' }, ...overlayDocs('720px').docs } }
+ */
+export function overlayDocs(height = '640px') {
+  return { docs: { story: { inline: false, height } } }
+}
+
+/**
+ * Puts `localStorage` back the way it was when the story unmounts. Several stores persist there
+ * (PLG, Maropay, Trial Lab, Da Vinci history), so a story that seeds one changed every story
+ * opened after it. Storybook's own keys are left alone.
+ */
+export const isolateStorage: Decorator = (story) => ({
+  components: { story },
+  setup() {
+    const own = (key: string) => !/^@?storybook|^sb-/i.test(key)
+    const snapshot = Object.fromEntries(Object.entries(localStorage).filter(([key]) => own(key)))
+
+    onUnmounted(() => {
+      for (const key of Object.keys(localStorage).filter(own)) {
+        if (!(key in snapshot)) localStorage.removeItem(key)
+      }
+      for (const [key, value] of Object.entries(snapshot)) localStorage.setItem(key, value)
     })
 
     return {}

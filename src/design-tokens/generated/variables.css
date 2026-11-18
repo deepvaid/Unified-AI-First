@@ -1952,7 +1952,7 @@
   --mp-component-pos-radius-sheet: var(--mp-radius-16);
   --mp-layout-sidebarWidth: 248px;
   --mp-layout-sidebarRailWidth: 72px;
-  --mp-layout-appbarHeight: 60px;
+  --mp-layout-appbarHeight: 56px;
   --mp-layout-drawerWidth: var(--mp-component-drawer-width-md);
   --mp-layout-searchMaxWidth: 560px;
   --mp-layout-contentMaxWidth: 1280px;

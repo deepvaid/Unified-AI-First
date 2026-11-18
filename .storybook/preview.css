@@ -13,8 +13,22 @@
 .mp-storybook-root,
 .mp-storybook-root .v-application,
 .mp-storybook-root .v-application__wrap {
-  min-height: 100vh;
   width: 100%;
+}
+
+/* The canvas fills the viewport; a docs page stacks many stories, so there each one takes the
+   height of its content. Vuetify's wrap and global.scss's `.mp-story-canvas` (the in-app
+   sandbox) both default to a full viewport, hence the reset. */
+#storybook-root .mp-storybook-root,
+#storybook-root .v-application,
+#storybook-root .v-application__wrap,
+#storybook-root .mp-story-canvas {
+  min-height: 100vh;
+}
+
+.docs-story .mp-storybook-root .v-application__wrap,
+.docs-story .mp-story-canvas {
+  min-height: 0;
 }
 
 .mp-storybook-root .v-application {
@@ -28,7 +42,6 @@
 .mp-story-canvas {
   background: var(--surface-canvas, rgb(var(--v-theme-background)));
   color: var(--on-surface, rgb(var(--v-theme-on-background)));
-  min-height: 100vh;
 }
 
 .mp-story-canvas[data-canvas='padded'] {

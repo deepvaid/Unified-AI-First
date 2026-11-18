@@ -24,7 +24,7 @@ export interface Specimen {
 interface GridOptions {
   /** Grid column width; `1fr` stacks one specimen per row. Default: auto-fit at 260px. */
   columns?: string
-  /** Extra markup placed inside each specimen wrapper, after the component. */
+  /** Class added to each rendered component. */
   itemClass?: string
 }
 
@@ -47,12 +47,12 @@ export function grid(
     setup: () => ({ args, specimens }),
     template: `
       <div class="sb-grid" style="display: grid; grid-template-columns: ${columns}; gap: var(--mp-space-24);">
-        <div v-for="s in specimens" :key="s.label" class="sb-grid__item" style="min-width: 0;">
+        <div v-for="(s, index) in specimens" :key="index" class="sb-grid__item" style="min-width: 0;">
           <div class="sb-grid__label" style="
             margin-bottom: var(--mp-space-8);
             font-size: var(--mp-fontSize-11);
             font-weight: var(--mp-fontWeight-semibold);
-            letter-spacing: 0.06em;
+            letter-spacing: var(--mp-text-eyebrow-letterSpacing);
             text-transform: uppercase;
             color: var(--text-muted);
           ">{{ s.label }}</div>

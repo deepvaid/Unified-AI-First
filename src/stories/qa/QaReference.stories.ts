@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import { VContainer } from 'vuetify/components'
-import { QA_COMPONENTS, QA_LINKS, type QaComponent } from './liquidskyMap'
+import { QA_COMPONENTS, type QaComponent } from './liquidskyMap'
 
 /** One exported property: the computed value per theme, and the token that owns it. */
 interface ExportedProp { light?: string; dark?: string; token?: string }
@@ -13,11 +13,19 @@ interface ExportedSpec extends Omit<QaComponent, 'stories'> {
   }[]
 }
 
-// Written by `npm run qa:export`; the same files QA downloads from /qa-reference/spec/.
-const exported = import.meta.glob<ExportedSpec>('../../../public/qa-reference/spec/*.json', { eager: true, import: 'default' })
-const specs = QA_COMPONENTS
-  .map((component) => exported[`../../../public/qa-reference/spec/${component.key}.json`])
-  .filter((spec): spec is ExportedSpec => Boolean(spec))
+/**
+ * The files `npm run qa:export` writes, the same ones QA downloads from /qa-reference/spec/.
+ * Fetched from where Storybook serves `public/`, not imported: Vite refuses JS imports of
+ * public files and warned once per file on every start.
+ */
+async function loadSpecs(): Promise<ExportedSpec[]> {
+  const files = await Promise.all(QA_COMPONENTS.map((component) =>
+    fetch(`qa-reference/spec/${component.key}.json`)
+      .then((response) => (response.ok ? response.json() as Promise<ExportedSpec> : null))
+      .catch(() => null),
+  ))
+  return files.filter((spec): spec is ExportedSpec => Boolean(spec))
+}
 
 const STATUS_LABEL = { matched: 'Matched', partial: 'Partial', 'no-reference': 'No reference' } as const
 
@@ -60,7 +68,7 @@ type Story = StoryObj<typeof meta>
 /** Every LiquidSky component in review and its Marobase reference stories. */
 export const ComponentMap: Story = {
   render: () => ({
-    setup: () => ({ components: QA_COMPONENTS, links: QA_LINKS, STATUS_LABEL }),
+    setup: () => ({ components: QA_COMPONENTS, STATUS_LABEL }),
     template: `
       <v-table>
         <thead>
@@ -81,7 +89,7 @@ export const ComponentMap: Story = {
             </td>
             <td>
               <div v-for="s in c.stories" :key="s.id">
-                <a class="mp-link" :href="links.marobaseStorybook + '?path=/story/' + s.id" target="_blank" rel="noopener">{{ s.label }}</a>
+                <a class="mp-link" :href="'./?path=/story/' + s.id" target="_top">{{ s.label }}</a>
               </div>
               <span v-if="!c.stories.length" class="text-medium-emphasis">Needs a design decision</span>
             </td>
@@ -94,8 +102,9 @@ export const ComponentMap: Story = {
 
 /** The values the comparison checks. A row with a token is owned by that token; change the token, not the number. */
 export const SpecContract: Story = {
-  render: () => ({
-    setup: () => ({ specs }),
+  loaders: [async () => ({ specs: await loadSpecs() })],
+  render: (_args, { loaded }) => ({
+    setup: () => ({ specs: loaded.specs as ExportedSpec[] }),
     template: `
       <div class="d-flex flex-column ga-8">
         <p v-if="!specs.length" class="ma-0 text-medium-emphasis">No export found. Run <code>npm run qa:export</code>.</p>
@@ -104,7 +113,7 @@ export const SpecContract: Story = {
           <p class="text-medium-emphasis text-body-2 mb-4">Reference: {{ spec.reference }}<template v-if="spec.note"> — {{ spec.note }}</template></p>
           <template v-for="story in spec.stories" :key="story.id">
             <div v-if="story.parts.length" class="mb-6">
-              <a class="mp-link font-weight-medium" :href="story.url" target="_blank" rel="noopener">{{ story.label }}</a>
+              <a class="mp-link font-weight-medium" :href="'./?path=/story/' + story.id" target="_top">{{ story.label }}</a>
               <v-table density="compact" class="mt-2">
                 <thead>
                   <tr>

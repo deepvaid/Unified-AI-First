@@ -3,10 +3,29 @@
  * build): one browser setup and one way of reading a part's computed CSS, so both sides are
  * measured identically.
  */
+import fs from 'node:fs'
+import http from 'node:http'
+import path from 'node:path'
 import { chromium } from 'playwright-core'
 
 export const THEMES = ['light', 'dark']
 export const VIEWPORT = { width: 1280, height: 800 }
+
+const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2' }
+
+/** Serves a built folder (dist-storybook) on localhost so a page can load it. */
+export async function serveStatic(dir, port) {
+  const server = http.createServer((req, res) => {
+    const file = path.join(dir, decodeURIComponent(req.url.split('?')[0]))
+    fs.readFile(file, (error, data) => {
+      if (error) { res.writeHead(404); res.end(); return }
+      res.writeHead(200, { 'content-type': MIME[path.extname(file)] ?? 'application/octet-stream' })
+      res.end(data)
+    })
+  })
+  await new Promise((resolve) => server.listen(port, resolve))
+  return server
+}
 
 /** Uses the installed Chrome (playwright-core downloads no browser). QA_BROWSER_CHANNEL overrides it. */
 export async function launchPage() {

@@ -6,7 +6,7 @@ import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import { ORDERS, ORDER_HEADERS } from '@/stories/fixtures'
 import { ref } from 'vue'
-import { sidebarSkin } from '@/stories/decorators'
+import { appShell } from '@/stories/decorators'
 import { liquidskyDocs } from '@/stories/storyTemplate'
 
 /**
@@ -19,7 +19,7 @@ const meta = {
   title: 'Patterns/App Shell/AppSidebar',
   component: AppSidebar,
   tags: ['autodocs', 'liquidsky'],
-  decorators: [sidebarSkin],
+  decorators: [appShell],
   parameters: {
     canvas: 'full',
     sidebarSkin: 'gray',
