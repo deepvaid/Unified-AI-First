@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/vue3'
 import MaropayMethodMark from './MaropayMethodMark.vue'
 import MpListRow from '@/components/MpListRow.vue'
 import { grid } from '@/stories/storyTemplate'
+import { measure } from '@/stories/decorators'
 import { METHOD_MARK_IDS } from '@/maropay/methodMarks'
 
 const meta = {
@@ -54,7 +55,7 @@ export const States: Story = {
   render: () => ({
     components: { MaropayMethodMark, MpListRow },
     template: `
-      <div style="display: grid; gap: var(--mp-space-24); max-width: 480px;">
+      <div style="display: grid; gap: var(--mp-space-24); max-width: ${measure.drawer};">
         <div>
           <p class="mp-meta-label mb-2">Labelled (role="img")</p>
           <MaropayMethodMark mark="paypal" />

@@ -213,6 +213,8 @@
   --mp-color-light-inkPanel-mutedFg: rgba(247,245,242,0.64);
   --mp-color-light-inkPanel-accent: #2CC4FF;
   --mp-rgb-color-light-inkPanel-accent: 44, 196, 255;
+  --mp-color-light-inkPanel-danger: #F4A199;
+  --mp-rgb-color-light-inkPanel-danger: 244, 161, 153;
   --mp-color-light-inkPanel-border: rgba(247,245,242,0.14);
   --mp-color-light-accent-cyan-default: #0073AB;
   --mp-rgb-color-light-accent-cyan-default: 0, 115, 171;
@@ -667,6 +669,8 @@
   --mp-color-dark-inkPanel-mutedFg: rgba(247,245,242,0.64);
   --mp-color-dark-inkPanel-accent: #2CC4FF;
   --mp-rgb-color-dark-inkPanel-accent: 44, 196, 255;
+  --mp-color-dark-inkPanel-danger: #F4A199;
+  --mp-rgb-color-dark-inkPanel-danger: 244, 161, 153;
   --mp-color-dark-inkPanel-border: #3D4249;
   --mp-rgb-color-dark-inkPanel-border: 61, 66, 73;
   --mp-color-dark-surfaceRaised: #24272C;
@@ -1923,6 +1927,9 @@
   --mp-component-state-measure: 420px;
   --mp-component-state-measureWide: 480px;
   --mp-component-state-iconDisc: var(--mp-space-80);
+  --mp-component-illustration-size-sm: 120px;
+  --mp-component-illustration-size-md: 160px;
+  --mp-component-illustration-size-lg: 180px;
   --mp-component-table-rowMinHeight: var(--mp-space-48);
   --mp-component-table-headerMinHeight: var(--mp-component-control-height);
   --mp-component-table-cellPaddingBlock: var(--mp-space-14);

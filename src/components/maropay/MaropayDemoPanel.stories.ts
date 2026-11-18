@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/vue3'
 import MaropayDemoPanel from './MaropayDemoPanel.vue'
 import MpListRow from '@/components/MpListRow.vue'
 import MpSegmentedControl from '@/components/MpSegmentedControl.vue'
+import { measure } from '@/stories/decorators'
 
 const meta = {
   title: 'Product/Maropay/MaropayDemoPanel',
@@ -78,7 +79,7 @@ export const Sizes: Story = {
     components: { MaropayDemoPanel, MpListRow },
     template: `
       <div class="d-flex flex-column ga-6">
-        <div style="max-width: 360px"><MaropayDemoPanel :open="true">${rows}</MaropayDemoPanel></div>
+        <div style="max-width: ${measure.narrow}"><MaropayDemoPanel :open="true">${rows}</MaropayDemoPanel></div>
         <MaropayDemoPanel :open="true">${rows}</MaropayDemoPanel>
       </div>
     `,

@@ -1,16 +1,16 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import { ref } from 'vue'
 import MpBanner from './MpBanner.vue'
-import { liquidskyDocs } from '@/stories/storyTemplate'
+import { stack } from '@/stories/storyTemplate'
 
 const meta = {
   title: 'Molecules/MpBanner',
   component: MpBanner,
-  tags: ['autodocs', 'liquidsky'],
+  tags: ['autodocs'],
   parameters: {
     docs: {
       description: {
-        component: liquidskyDocs('molecules-mpbanner') + `
+        component: `
 ### Overview
 \`MpBanner\` is the full-width announcement strip that spans the app frame (or a whole page
 region): square corners, a soft tone fill, and a bottom hairline as its boundary against the
@@ -88,9 +88,12 @@ Props \`tone\` · \`message?\` (or default slot for rich markup) · \`icon?: str
       description: 'One-line message. Use the default slot instead for rich markup.',
     },
     icon: {
-      control: 'text',
+      control: 'select',
+      options: ['Tone default', 'false (hidden)', 'megaphone', 'shield-alert', 'clock'],
+      mapping: { 'Tone default': undefined, 'false (hidden)': false },
       description: 'Lucide icon override; pass `false` to hide. Defaults per tone.',
     },
+    onDismiss: { action: 'dismiss', table: { disable: true } },
     dismissible: {
       control: 'boolean',
       description: 'Renders a dismiss button. Visibility stays consumer-owned: v-if + @dismiss.',
@@ -119,21 +122,15 @@ export const Default: Story = {}
 
 /** The four tones — soft fill + tone-ink hairline, always full-width and square. */
 export const Variants: Story = {
-  render: () => ({
-    components: { MpBanner },
-    template: `
-      <div class="d-flex flex-column">
-        <MpBanner tone="info" message="Scheduled maintenance on Sep 6, 02:00–03:00 UTC." />
-        <MpBanner tone="success" message="Migration complete — all 48,120 contacts moved to the new workspace." />
-        <MpBanner tone="warning" message="Your trial ends in 3 days." />
-        <MpBanner tone="error" message="Your last payment failed. Update your payment method to keep access." />
-      </div>
-    `,
-  }),
-  args: {} as never,
+  render: stack({ MpBanner }, [
+    { label: 'tone="info"', args: { tone: 'info', message: 'Scheduled maintenance on Sep 6, 02:00–03:00 UTC.' } },
+    { label: 'tone="success"', args: { tone: 'success', message: 'Migration complete — all 48,120 contacts moved to the new workspace.' } },
+    { label: 'tone="warning"', args: { tone: 'warning', message: 'Your trial ends in 3 days.' } },
+    { label: 'tone="error"', args: { tone: 'error', message: 'Your last payment failed. Update your payment method to keep access.' } },
+  ]),
 }
 
-/** Actions, dismissal (consumer-owned), and rich slot content with a bold lead. */
+/** Actions, dismissal (consumer-owned), no icon, and rich slot content with a bold lead. */
 export const States: Story = {
   render: () => ({
     components: { MpBanner },
@@ -157,6 +154,7 @@ export const States: Story = {
           dismiss-label="Dismiss for this session"
           @dismiss="visible = false"
         />
+        <MpBanner tone="success" :icon="false" message="No icon (icon is false) — the tint and the screen-reader prefix still carry the tone." />
         <MpBanner tone="error">
           <strong>3 products failed to sync.</strong>&nbsp;Prices on this channel may be stale until the next successful sync.
           <template #actions>

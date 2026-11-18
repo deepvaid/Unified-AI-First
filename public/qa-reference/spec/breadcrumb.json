@@ -1,0 +1,58 @@
+{
+  "key": "breadcrumb",
+  "liquidsky": [
+    "AppBreadcrumb"
+  ],
+  "status": "matched",
+  "reference": "The `eyebrow` of MpPageHeader",
+  "note": "The trail is one line of text above the title: the levels joined by a middle dot, uppercase and muted. It is text, not links; a detail page has the back link (`backTo`) for going up a level.",
+  "stories": [
+    {
+      "id": "molecules-mppageheader--with-eyebrow",
+      "label": "Eyebrow above the title",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mppageheader--with-eyebrow",
+      "png": {
+        "light": "png/breadcrumb/molecules-mppageheader--with-eyebrow--light.png",
+        "dark": "png/breadcrumb/molecules-mppageheader--with-eyebrow--dark.png"
+      },
+      "parts": [
+        {
+          "part": "eyebrow",
+          "props": {
+            "font-size": {
+              "light": "11px",
+              "token": "text.metaLabel.fontSize",
+              "dark": "11px"
+            },
+            "font-weight": {
+              "light": "600",
+              "token": "text.metaLabel.fontWeight",
+              "dark": "600"
+            },
+            "line-height": {
+              "light": "16.5px",
+              "dark": "16.5px"
+            },
+            "color": {
+              "light": "rgb(90, 101, 115)",
+              "dark": "rgb(155, 163, 172)"
+            },
+            "letter-spacing": {
+              "light": "0.66px",
+              "dark": "0.66px"
+            },
+            "text-transform": {
+              "light": "uppercase",
+              "dark": "uppercase"
+            },
+            "margin-bottom": {
+              "light": "4px",
+              "token": "space.4",
+              "dark": "4px"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

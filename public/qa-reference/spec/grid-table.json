@@ -3,8 +3,29 @@
   "liquidsky": [
     "AppGridTable"
   ],
-  "status": "no-reference",
-  "reference": "None",
-  "note": "Marobase has no card-grid table. Needs a design decision before it can be reviewed.",
-  "stories": []
+  "status": "partial",
+  "reference": "No dedicated design yet. Build from these parts",
+  "note": "The header and cell rhythm are the Data Table pattern (`component.table.*`). An editor inside a cell is a compact field (`component.field.height.sm`) with no visible label; name it with `aria-label`. Grid lines between columns and a pinned first column have no design yet.",
+  "stories": [
+    {
+      "id": "patterns-data-table--default",
+      "label": "Header and cell rhythm",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-data-table--default",
+      "png": {
+        "light": "png/grid-table/patterns-data-table--default--light.png",
+        "dark": "png/grid-table/patterns-data-table--default--dark.png"
+      },
+      "parts": []
+    },
+    {
+      "id": "patterns-form-fields--sizes",
+      "label": "Compact field for a cell editor",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-form-fields--sizes",
+      "png": {
+        "light": "png/grid-table/patterns-form-fields--sizes--light.png",
+        "dark": "png/grid-table/patterns-form-fields--sizes--dark.png"
+      },
+      "parts": []
+    }
+  ]
 }

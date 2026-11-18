@@ -68,12 +68,10 @@
     {
       "key": "page-title",
       "liquidsky": [
-        "AppPageTitle",
-        "AppBreadcrumb"
+        "AppPageTitle"
       ],
-      "status": "partial",
+      "status": "matched",
       "reference": "MpPageHeader",
-      "note": "Marobase has no breadcrumb trail: a detail page shows one back link (`backTo`) above the title. AppBreadcrumb has no reference beyond that link.",
       "spec": "spec/page-title.json",
       "stories": [
         {
@@ -92,6 +90,27 @@
           "png": {
             "light": "png/page-title/molecules-mppageheader--with-back-link--light.png",
             "dark": "png/page-title/molecules-mppageheader--with-back-link--dark.png"
+          }
+        }
+      ]
+    },
+    {
+      "key": "breadcrumb",
+      "liquidsky": [
+        "AppBreadcrumb"
+      ],
+      "status": "matched",
+      "reference": "The `eyebrow` of MpPageHeader",
+      "note": "The trail is one line of text above the title: the levels joined by a middle dot, uppercase and muted. It is text, not links; a detail page has the back link (`backTo`) for going up a level.",
+      "spec": "spec/breadcrumb.json",
+      "stories": [
+        {
+          "id": "molecules-mppageheader--with-eyebrow",
+          "label": "Eyebrow above the title",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mppageheader--with-eyebrow",
+          "png": {
+            "light": "png/breadcrumb/molecules-mppageheader--with-eyebrow--light.png",
+            "dark": "png/breadcrumb/molecules-mppageheader--with-eyebrow--dark.png"
           }
         }
       ]
@@ -129,6 +148,10 @@
       "status": "matched",
       "reference": "Data Table pattern: MpFilterTabs + MpDataTableToolbar + v-data-table + MpFloatingBulkBar",
       "note": "Cell content (chips, switches) follows its own component; this contract covers the table frame only.",
+      "notRequired": [
+        "Skeleton loading. A loading indicator is fine.",
+        "The empty state with an icon, a title and an action. A one-line empty message is fine."
+      ],
       "spec": "spec/data-table.json",
       "stories": [
         {
@@ -166,6 +189,15 @@
             "light": "png/data-table/patterns-data-table--loading--light.png",
             "dark": "png/data-table/patterns-data-table--loading--dark.png"
           }
+        },
+        {
+          "id": "patterns-data-table--with-folders",
+          "label": "With folders",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-data-table--with-folders",
+          "png": {
+            "light": "png/data-table/patterns-data-table--with-folders--light.png",
+            "dark": "png/data-table/patterns-data-table--with-folders--dark.png"
+          }
         }
       ]
     },
@@ -198,6 +230,35 @@
           "png": {
             "light": "png/table-actions/molecules-mpdatatabletoolbar--with-single-filter--light.png",
             "dark": "png/table-actions/molecules-mpdatatabletoolbar--with-single-filter--dark.png"
+          }
+        }
+      ]
+    },
+    {
+      "key": "overflow-cell",
+      "liquidsky": [
+        "AppExpandableList"
+      ],
+      "status": "matched",
+      "reference": "The overflow cell of the Data Table pattern: the first value, then \"+N more\" that shows the rest",
+      "spec": "spec/overflow-cell.json",
+      "stories": [
+        {
+          "id": "patterns-data-table--overflow-cell",
+          "label": "Overflow cell",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-data-table--overflow-cell",
+          "png": {
+            "light": "png/overflow-cell/patterns-data-table--overflow-cell--light.png",
+            "dark": "png/overflow-cell/patterns-data-table--overflow-cell--dark.png"
+          }
+        },
+        {
+          "id": "patterns-data-table--overflow-cell-open",
+          "label": "Overflow cell, list shown",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-data-table--overflow-cell-open",
+          "png": {
+            "light": "png/overflow-cell/patterns-data-table--overflow-cell-open--light.png",
+            "dark": "png/overflow-cell/patterns-data-table--overflow-cell-open--dark.png"
           }
         }
       ]
@@ -358,18 +419,45 @@
         "AppDatePicker",
         "MpVDatePicker"
       ],
-      "status": "partial",
-      "reference": "MpDateRangeSelect",
-      "note": "Marobase has a range selector (presets + custom range fields) but no calendar-grid date picker. The trigger and panel are covered; the calendar itself has no reference.",
+      "status": "matched",
+      "reference": "The single-date field (Patterns › Form Fields): a field that opens a calendar and takes one date",
       "spec": "spec/date-picker.json",
+      "stories": [
+        {
+          "id": "patterns-form-fields--date-field",
+          "label": "Date field",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-form-fields--date-field",
+          "png": {
+            "light": "png/date-picker/patterns-form-fields--date-field--light.png",
+            "dark": "png/date-picker/patterns-form-fields--date-field--dark.png"
+          }
+        },
+        {
+          "id": "patterns-form-fields--date-field-open",
+          "label": "Calendar open",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-form-fields--date-field-open",
+          "png": {
+            "light": "png/date-picker/patterns-form-fields--date-field-open--light.png",
+            "dark": "png/date-picker/patterns-form-fields--date-field-open--dark.png"
+          }
+        }
+      ]
+    },
+    {
+      "key": "date-range",
+      "liquidsky": [],
+      "status": "matched",
+      "reference": "MpDateRangeSelect",
+      "note": "Not a LiquidSky component today. This is the design for picking a date range (presets and custom range fields), as used on reports and dashboards. One date is the date-picker entry.",
+      "spec": "spec/date-range.json",
       "stories": [
         {
           "id": "molecules-mpdaterangeselect--menu-open",
           "label": "Preset menu open",
           "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpdaterangeselect--menu-open",
           "png": {
-            "light": "png/date-picker/molecules-mpdaterangeselect--menu-open--light.png",
-            "dark": "png/date-picker/molecules-mpdaterangeselect--menu-open--dark.png"
+            "light": "png/date-range/molecules-mpdaterangeselect--menu-open--light.png",
+            "dark": "png/date-range/molecules-mpdaterangeselect--menu-open--dark.png"
           }
         },
         {
@@ -377,8 +465,8 @@
           "label": "Custom range open",
           "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpdaterangeselect--custom-panel-open",
           "png": {
-            "light": "png/date-picker/molecules-mpdaterangeselect--custom-panel-open--light.png",
-            "dark": "png/date-picker/molecules-mpdaterangeselect--custom-panel-open--dark.png"
+            "light": "png/date-range/molecules-mpdaterangeselect--custom-panel-open--light.png",
+            "dark": "png/date-range/molecules-mpdaterangeselect--custom-panel-open--dark.png"
           }
         }
       ]
@@ -393,6 +481,9 @@
       ],
       "status": "matched",
       "reference": "v-select / v-autocomplete on the form-field baseline (Patterns › Form Fields)",
+      "notRequired": [
+        "The label above the field. A floating label inside the field is fine."
+      ],
       "spec": "spec/dropdown.json",
       "stories": [
         {
@@ -420,18 +511,27 @@
       "liquidsky": [
         "TheOnboardingBanner"
       ],
-      "status": "partial",
-      "reference": "MpBanner (the full-width edge strip)",
-      "note": "There is no onboarding-specific banner in Marobase. Only the strip geometry and tones carry over; the onboarding content needs a design.",
+      "status": "matched",
+      "reference": "OnboardingProgressBanner (Product › Onboarding)",
+      "note": "The progress card that opens Get started. On a task page it takes the task as its title, puts the count on its own line and ends in a link back to the list.",
       "spec": "spec/onboarding-banner.json",
       "stories": [
         {
-          "id": "molecules-mpbanner--default",
-          "label": "Banner",
-          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpbanner--default",
+          "id": "product-onboarding-onboardingprogressbanner--default",
+          "label": "On Get started",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/product-onboarding-onboardingprogressbanner--default",
           "png": {
-            "light": "png/onboarding-banner/molecules-mpbanner--default--light.png",
-            "dark": "png/onboarding-banner/molecules-mpbanner--default--dark.png"
+            "light": "png/onboarding-banner/product-onboarding-onboardingprogressbanner--default--light.png",
+            "dark": "png/onboarding-banner/product-onboarding-onboardingprogressbanner--default--dark.png"
+          }
+        },
+        {
+          "id": "product-onboarding-onboardingprogressbanner--on-task-page",
+          "label": "On a task page",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/product-onboarding-onboardingprogressbanner--on-task-page",
+          "png": {
+            "light": "png/onboarding-banner/product-onboarding-onboardingprogressbanner--on-task-page--light.png",
+            "dark": "png/onboarding-banner/product-onboarding-onboardingprogressbanner--on-task-page--dark.png"
           }
         }
       ]
@@ -441,18 +541,27 @@
       "liquidsky": [
         "TheOnboardingScreenChecklists"
       ],
-      "status": "partial",
-      "reference": "MpListRow, checklist rows",
-      "note": "Only the row geometry has a reference. The onboarding screen layout around it needs a design.",
+      "status": "matched",
+      "reference": "The Get started page (Product › Onboarding)",
+      "note": "The card at the top of the page is the onboarding-banner entry.",
       "spec": "spec/onboarding-checklists.json",
       "stories": [
         {
-          "id": "atoms-mplistrow--checklist",
-          "label": "Checklist rows",
-          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/atoms-mplistrow--checklist",
+          "id": "product-onboarding-get-started--default",
+          "label": "Get started",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/product-onboarding-get-started--default",
           "png": {
-            "light": "png/onboarding-checklists/atoms-mplistrow--checklist--light.png",
-            "dark": "png/onboarding-checklists/atoms-mplistrow--checklist--dark.png"
+            "light": "png/onboarding-checklists/product-onboarding-get-started--default--light.png",
+            "dark": "png/onboarding-checklists/product-onboarding-get-started--default--dark.png"
+          }
+        },
+        {
+          "id": "product-onboarding-get-started--task-open",
+          "label": "A task open",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/product-onboarding-get-started--task-open",
+          "png": {
+            "light": "png/onboarding-checklists/product-onboarding-get-started--task-open--light.png",
+            "dark": "png/onboarding-checklists/product-onboarding-get-started--task-open--dark.png"
           }
         }
       ]
@@ -539,6 +648,9 @@
       "status": "matched",
       "reference": "Vuetify fields on the form-field baseline (Patterns › Form Fields)",
       "note": "One label style (static top label), one size ramp (32 / 40 / 48 from the density prop). A number input is a text field with a suffix.",
+      "notRequired": [
+        "The label above the field. A floating label inside the field is fine."
+      ],
       "spec": "spec/text-fields.json",
       "stories": [
         {
@@ -958,13 +1070,12 @@
     {
       "key": "expandable-list",
       "liquidsky": [
-        "AppExpandableList",
         "MpVExpansionPanels",
         "MpVExpansionPanel"
       ],
       "status": "no-reference",
       "reference": "None",
-      "note": "Marobase has no expandable-list component. Needs a design decision before it can be reviewed.",
+      "note": "Marobase has no expansion-panel component. Needs a design decision before it can be reviewed.",
       "spec": "spec/expandable-list.json",
       "stories": []
     },
@@ -973,22 +1084,69 @@
       "liquidsky": [
         "AppTreeDropdown"
       ],
-      "status": "no-reference",
-      "reference": "None",
-      "note": "Marobase has no tree dropdown. The closed field follows AppDropdown; the tree panel needs a design decision.",
+      "status": "partial",
+      "reference": "No dedicated design yet. Build from these parts",
+      "note": "The closed field and the menu panel are the dropdown in Patterns › Form Fields. A tree row is a menu row at the menu density (`component.menu.itemHeight`, `component.menu.itemPaddingBlock`) with a checkbox from the selection controls. The expand arrow, the indent of a child level and the child count have no design yet.",
       "spec": "spec/tree-dropdown.json",
-      "stories": []
+      "stories": [
+        {
+          "id": "patterns-form-fields--selected-with-checkmark",
+          "label": "Field and menu panel",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-form-fields--selected-with-checkmark",
+          "png": {
+            "light": "png/tree-dropdown/patterns-form-fields--selected-with-checkmark--light.png",
+            "dark": "png/tree-dropdown/patterns-form-fields--selected-with-checkmark--dark.png"
+          }
+        },
+        {
+          "id": "molecules-mpformfield--default",
+          "label": "Selection control with its label",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpformfield--default",
+          "png": {
+            "light": "png/tree-dropdown/molecules-mpformfield--default--light.png",
+            "dark": "png/tree-dropdown/molecules-mpformfield--default--dark.png"
+          }
+        },
+        {
+          "id": "molecules-mprowactionsmenu--open-menu",
+          "label": "Menu row density",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mprowactionsmenu--open-menu",
+          "png": {
+            "light": "png/tree-dropdown/molecules-mprowactionsmenu--open-menu--light.png",
+            "dark": "png/tree-dropdown/molecules-mprowactionsmenu--open-menu--dark.png"
+          }
+        }
+      ]
     },
     {
       "key": "grid-table",
       "liquidsky": [
         "AppGridTable"
       ],
-      "status": "no-reference",
-      "reference": "None",
-      "note": "Marobase has no card-grid table. Needs a design decision before it can be reviewed.",
+      "status": "partial",
+      "reference": "No dedicated design yet. Build from these parts",
+      "note": "The header and cell rhythm are the Data Table pattern (`component.table.*`). An editor inside a cell is a compact field (`component.field.height.sm`) with no visible label; name it with `aria-label`. Grid lines between columns and a pinned first column have no design yet.",
       "spec": "spec/grid-table.json",
-      "stories": []
+      "stories": [
+        {
+          "id": "patterns-data-table--default",
+          "label": "Header and cell rhythm",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-data-table--default",
+          "png": {
+            "light": "png/grid-table/patterns-data-table--default--light.png",
+            "dark": "png/grid-table/patterns-data-table--default--dark.png"
+          }
+        },
+        {
+          "id": "patterns-form-fields--sizes",
+          "label": "Compact field for a cell editor",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-form-fields--sizes",
+          "png": {
+            "light": "png/grid-table/patterns-form-fields--sizes--light.png",
+            "dark": "png/grid-table/patterns-form-fields--sizes--dark.png"
+          }
+        }
+      ]
     }
   ]
 }

@@ -1,3 +1,4 @@
+import { ref, watch } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpDialog from './MpDialog.vue'
 import MpListRow from './MpListRow.vue'
@@ -6,6 +7,7 @@ import MpFormGrid from './MpFormGrid.vue'
 import MpFormSection from './MpFormSection.vue'
 import MpFormField from './MpFormField.vue'
 import { liquidskyDocs } from '@/stories/storyTemplate'
+import { overlayDocs } from '@/stories/decorators'
 
 const meta = {
   title: 'Molecules/MpDialog',
@@ -90,6 +92,7 @@ is state, and it is the only thing that tells a reader the content continues pas
     },
   },
   argTypes: {
+    modelValue: { control: 'boolean', description: 'v-model — dialog visibility.' },
     size: {
       control: 'inline-radio',
       options: ['sm', 'md', 'lg'],
@@ -132,11 +135,15 @@ is state, and it is the only thing that tells a reader the content continues pas
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** Reusable trigger so every story below opens a real overlay rather than a static box. */
-function launcher(inner: string, label = 'Open dialog') {
+/**
+ * A trigger button plus one dialog, so every story below opens a real overlay rather than a
+ * static box. Stories that pass `open: true` show the dialog on load and carry `overlayDocs()`,
+ * which gives each its own frame on the docs page.
+ */
+function launcher(inner: string, label = 'Open dialog', open = false) {
   return {
     components: { MpDialog, MpListRow, MpFormGrid, MpFormSection, MpFormField },
-    data: () => ({ open: true }),
+    data: () => ({ open }),
     template: `
       <div>
         <v-btn variant="outlined" class="text-none" @click="open = true">${label}</v-btn>
@@ -146,17 +153,34 @@ function launcher(inner: string, label = 'Open dialog') {
   }
 }
 
+/** Bound to the Controls panel on the Canvas tab (the docs page frames it, and the Controls table there cannot drive a frame). Switch `modelValue` off and on to close and reopen it. */
 export const Default: Story = {
-  render: () => launcher(`
-    <MpDialog v-model="open" title="Rename dashboard" subtitle="Visible to everyone with access">
-      <v-text-field label="Dashboard name" model-value="Lifecycle Health" />
-      <template #footer>
-        <v-btn variant="text" class="text-none" @click="open = false">Cancel</v-btn>
-        <v-btn color="primary" variant="flat" class="text-none" @click="open = false">Save changes</v-btn>
-      </template>
-    </MpDialog>
-  `),
-  args: { title: 'Rename dashboard' },
+  args: {
+    modelValue: true,
+    title: 'Rename dashboard',
+    subtitle: 'Visible to everyone with access',
+  },
+  parameters: overlayDocs(),
+  render: (args) => ({
+    components: { MpDialog },
+    setup() {
+      const open = ref(args.modelValue ?? false)
+      watch(() => args.modelValue, (value) => { open.value = value ?? false })
+      return { args, open }
+    },
+    template: `
+      <div>
+        <v-btn variant="outlined" class="text-none" @click="open = true">Open dialog</v-btn>
+        <MpDialog v-bind="args" v-model="open">
+          <v-text-field label="Dashboard name" model-value="Lifecycle Health" />
+          <template #footer>
+            <v-btn variant="text" class="text-none" @click="open = false">Cancel</v-btn>
+            <v-btn color="primary" variant="flat" class="text-none" @click="open = false">Save changes</v-btn>
+          </template>
+        </MpDialog>
+      </div>
+    `,
+  }),
 }
 
 /**
@@ -168,7 +192,7 @@ export const Default: Story = {
 export const Variants: Story = {
   render: () => ({
     components: { MpDialog },
-    data: () => ({ which: 'plain' as string }),
+    data: () => ({ which: '' as string }),
     template: `
       <div class="d-flex ga-2 flex-wrap">
         <v-btn variant="outlined" class="text-none" @click="which = 'plain'">Title only</v-btn>
@@ -300,26 +324,8 @@ export const States: Story = {
 // ── Form layouts ────────────────────────────────────────────────────────────
 
 /**
- * **A short form.** Four fields, no margins anywhere: the gap between them is
- * `component.dialog.gap`, stated once by the shell.
- */
-export const ShortForm: Story = {
-  render: () => launcher(`
-    <MpDialog v-model="open" title="New folder" subtitle="Organise campaigns by lifecycle stage">
-      <v-text-field label="Folder name *" placeholder="Welcome series" />
-      <v-select label="Parent folder" :items="['None', 'Lifecycle', 'Promotions', 'Archive']" model-value="Lifecycle" />
-      <v-textarea label="Description" rows="3" />
-      <template #footer>
-        <v-btn variant="text" class="text-none" @click="open = false">Cancel</v-btn>
-        <v-btn color="primary" variant="flat" class="text-none" @click="open = false">Create folder</v-btn>
-      </template>
-    </MpDialog>
-  `, 'Open short form'),
-  args: {} as never,
-}
-
-/**
- * **A long scrolling form.** The header and footer stay pinned while the body scrolls, and each
+ * **A long scrolling form.** No field in it carries a margin: the gap between fields is
+ * `component.dialog.gap`, stated once by the shell. The header and footer stay pinned while the body scrolls, and each
  * casts an edge shadow only while there is content hidden beneath it — scroll the body up and
  * down to watch them appear and clear. Sections come from `MpFormSection`, so the space around
  * every heading is the same one token.
@@ -370,7 +376,8 @@ export const LongScrollingForm: Story = {
         <v-btn color="primary" variant="flat" class="text-none" @click="open = false">Save campaign</v-btn>
       </template>
     </MpDialog>
-  `, 'Open long form'),
+  `, 'Open long form', true),
+  parameters: overlayDocs(),
   args: {} as never,
 }
 
@@ -416,7 +423,8 @@ export const ErrorStates: Story = {
         <v-btn color="primary" variant="flat" class="text-none" disabled>Create coupon</v-btn>
       </template>
     </MpDialog>
-  `, 'Open form with errors'),
+  `, 'Open form with errors', true),
+  parameters: overlayDocs('720px'),
   args: {} as never,
 }
 
@@ -480,6 +488,7 @@ export const TwoColumnWithTrailingRow: Story = {
       </div>
     `,
   }),
+  parameters: overlayDocs('720px'),
   args: {} as never,
 }
 
@@ -597,13 +606,14 @@ export const SideBySideRegression: Story = {
 /**
  * **In context.** A real "add a widget source" picker: a scrolling list of `MpListRow`s in
  * the body, a two-button footer. Nothing here sets a padding — every edge in the dialog
- * comes from `component.dialog.*`, and the rows come from `component.listItem.*`.
+ * comes from `component.dialog.*`, and the rows come from `component.listItem.*`. It starts
+ * closed: press **Add widget**.
  */
 export const InContextSourcePicker: Story = {
   render: () => ({
     components: { MpDialog, MpListRow },
     data: () => ({
-      open: true,
+      open: false,
       selected: 'marketing',
       sources: [
         { id: 'marketing', label: 'Marketing Cloud', caption: 'Campaigns, journeys, sends', icon: 'megaphone' },
@@ -646,8 +656,10 @@ export const InContextSourcePicker: Story = {
   args: {} as never,
 }
 
+/** The dialog at a 375px viewport (canvas only; a docs frame is as wide as the page). */
 export const Mobile375: Story = {
   globals: { viewport: { value: 'mobile375', isRotated: false } },
+  parameters: overlayDocs(),
   render: () => launcher(`
     <MpDialog v-model="open" title="Move to folder" subtitle="Spring Refresh">
       <p class="ma-0">Below <code>layout.breakpointCompact</code> (640) all three bands drop to <code>paddingCompact</code> (16), the same way MpFormDrawer collapses.</p>
@@ -656,6 +668,6 @@ export const Mobile375: Story = {
         <v-btn color="primary" variant="flat" class="text-none" @click="open = false">Move</v-btn>
       </template>
     </MpDialog>
-  `),
+  `, 'Open dialog', true),
   args: {} as never,
 }

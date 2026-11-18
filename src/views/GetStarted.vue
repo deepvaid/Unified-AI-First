@@ -5,6 +5,7 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
+import OnboardingProgressBanner from '@/components/onboarding/OnboardingProgressBanner.vue'
 import WelcomeDialog from '@/components/onboarding/WelcomeDialog.vue'
 import { useAccountsStore } from '@/stores/useAccounts'
 import { useOnboardingStore, type OnboardingPhase, type SetupGoal } from '@/stores/useOnboarding'
@@ -111,36 +112,16 @@ function doReset() {
     </MpPageHeader>
 
     <!-- ── Progress summary ─────────────────────────────────────── -->
-    <v-card variant="flat" border rounded="lg" class="gs-summary d-flex align-center gap-5 pa-5 mb-6">
-      <v-progress-circular
-        :model-value="store.progress"
-        :size="64"
-        :width="6"
-        color="primary"
-        class="flex-shrink-0"
-        aria-hidden="true"
-      >
-        <span class="text-caption font-weight-bold">{{ store.progress }}%</span>
-      </v-progress-circular>
-      <div class="flex-grow-1 min-w-0">
-        <div class="text-subtitle-1 font-weight-semibold">
-          {{ store.allResolved ? 'Setup complete — nicely done.' : `${store.doneCount} of ${store.totalCount} tasks complete` }}
-        </div>
-        <div class="text-body-2 text-medium-emphasis">
-          {{ store.allResolved
-            ? 'Your store, email, audience, and support desk are ready for customers.'
-            : 'Most merchants finish setup in under an hour.' }}
-        </div>
-        <v-progress-linear
-          :model-value="store.progress"
-          color="primary"
-          height="6"
-          rounded
-          class="mt-3"
-          aria-label="Overall setup progress"
-        />
-      </div>
-    </v-card>
+    <OnboardingProgressBanner
+      class="mb-6"
+      :done="store.doneCount"
+      :total="store.totalCount"
+      :title="store.allResolved ? 'Setup complete — nicely done.' : undefined"
+      :caption="store.allResolved
+        ? 'Your store, email, audience, and support desk are ready for customers.'
+        : 'Most merchants finish setup in under an hour.'"
+      :hide-count="store.allResolved"
+    />
 
     <!-- ── All resolved celebration (every task completed or skipped) ─── -->
     <v-card v-if="store.allResolved" variant="flat" border rounded="lg" class="pa-8 text-center">
@@ -271,9 +252,6 @@ function doReset() {
 .gs-page {
   max-width: 880px;
   margin-inline: auto;
-}
-.gs-summary {
-  background: rgba(var(--v-theme-primary), 0.03);
 }
 .gs-phase-title {
   line-height: 1.3;

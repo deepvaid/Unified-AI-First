@@ -26,11 +26,16 @@ export const Names = ({ status }) => (
       {QA_COMPONENTS.filter((c) => c.status === status).map((c) => (
         <tr key={c.key}>
           <td style={{ ...cell, width: '30%' }}>
-            {c.liquidsky.map((name) => <div key={name}><code>{name}</code></div>)}
+            {c.liquidsky.length
+              ? c.liquidsky.map((name) => <div key={name}><code>{name}</code></div>)
+              : <span style={{ color: 'var(--text-muted)' }}>No LiquidSky component</span>}
           </td>
           <td style={cell}>
             {c.reference}
             {c.note && <div style={muted}>{c.note}</div>}
+            {c.notRequired && c.notRequired.map((line) => (
+              <div key={line} style={muted}><strong>Not required in this phase:</strong> {line}</div>
+            ))}
           </td>
           <td style={{ ...cell, width: '24%' }}>
             {c.stories.length
@@ -41,6 +46,16 @@ export const Names = ({ status }) => (
       ))}
     </tbody>
   </table>
+)
+
+export const NotRequired = () => (
+  <ul>
+    {QA_COMPONENTS.filter((c) => c.notRequired).flatMap((c) => c.notRequired.map((line) => (
+      <li key={c.key + line}>
+        {c.liquidsky.map((name, index) => <span key={name}>{index > 0 && ', '}<code>{name}</code></span>)}: {line}
+      </li>
+    )))}
+  </ul>
 )
 
 export const count = (status) => QA_COMPONENTS.filter((c) => c.status === status).reduce((n, c) => n + c.liquidsky.length, 0)
@@ -74,7 +89,7 @@ and **{count('no-reference')}** have none yet.
   global styles. Where your `MpV*` wraps a Vuetify component, its design is the story for that
   component (for example `MpVBtn` is *Foundations › Buttons*).
 - **Icons:** Marobase uses Lucide names (`settings`, `chevron-down`); LiquidSky uses MDI. A short list
-  of MDI names and the Lucide icon each one maps to is under *Foundations › Icons › MDI Aliases*. There
+  of MDI names and the Lucide icon each one maps to is under *Foundations › Icons › MDI aliases*. There
   is no full map yet.
 
 ## Matched
@@ -94,6 +109,13 @@ and **{count('no-reference')}** have none yet.
 <p style={muted}>{STATUS['no-reference'].hint} Ask the design team before building these to the Marobase look.</p>
 
 <Names status="no-reference" />
+
+## Not required in this phase
+
+Some parts of a design are outside what LiquidSky builds in this phase. The tables mark them
+*Not required in this phase* and say what is fine in their place. Design review does not raise them.
+
+<NotRequired />
 
 ## Design review
 

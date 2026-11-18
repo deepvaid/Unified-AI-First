@@ -38,7 +38,7 @@ const tokenVar = (token) => `--mp-${token.replaceAll('.', '-')}`
 const problems = []
 
 async function openStory(id, theme, selectors) {
-  await page.goto(`http://localhost:${PORT}/iframe.html?id=${id}&viewMode=story&globals=theme:${theme}`)
+  await page.goto(`http://127.0.0.1:${PORT}/iframe.html?id=${id}&viewMode=story&globals=theme:${theme}`)
   await page.waitForSelector('[data-visual-root]')
   await settle(page, selectors)
 }

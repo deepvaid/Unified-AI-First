@@ -1,17 +1,23 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
-import { VContainer } from 'vuetify/components'
 import {
   mp_fontFamily_base,
   mp_fontFamily_mono,
   mp_fontSize_11,
 } from '@/design-tokens/generated/tokens'
-import { tokensByPrefix, type TokenEntry } from './foundationTokens'
+import { compositeStyles, tokensByPrefix } from './foundationTokens'
 
-const meta = {
+const fontSizes = tokensByPrefix('mp_fontSize_')
+const fontWeights = tokensByPrefix('mp_fontWeight_')
+const lineHeights = tokensByPrefix('mp_lineHeight_')
+const letterSpacings = tokensByPrefix('mp_letterSpacing_')
+const displayStyles = compositeStyles(tokensByPrefix('mp_display_'))
+const textStyles = compositeStyles(tokensByPrefix('mp_text_'))
+
+const meta: Meta = {
   title: 'Foundations/Typography',
-  component: VContainer,
   tags: ['autodocs'],
   parameters: {
+    controls: { disable: true },
     docs: {
       description: {
         component: `
@@ -25,8 +31,8 @@ JetBrains Mono for token values and code.
   **The token name is the pixel value**, so there is no \`md\`-means-16-or-13 guesswork. **Body is
   14px** — the one canonical body size. No fractional sizes exist in this system.
 - **Other primitives:** \`fontWeight\` (regular → heavy), \`lineHeight\`, \`letterSpacing\`.
-- **Text roles:** composite \`text.*\` — pageTitle, kpiValue, sectionTitle, body, caption,
-  eyebrow — the styles product pages should actually use. Every one resolves to a stop on the ramp.
+- **Text roles:** composite \`text.*\` — ${textStyles.map((style) => style.name).join(', ')} —
+  the styles product pages should actually use. Every one resolves to a stop on the ramp.
 - **Display styles:** composite \`display.{sm,md,lg,xl}\` — a deliberately separate hero ramp
   (32/44/60/80) for marketing surfaces and page heroes, never product chrome.
 
@@ -38,31 +44,10 @@ JetBrains Mono for token values and code.
       },
     },
   },
-} satisfies Meta<typeof VContainer>
+}
 
 export default meta
 type Story = StoryObj<typeof meta>
-
-const fontSizes = tokensByPrefix('mp_fontSize_')
-const fontWeights = tokensByPrefix('mp_fontWeight_')
-const lineHeights = tokensByPrefix('mp_lineHeight_')
-const letterSpacings = tokensByPrefix('mp_letterSpacing_')
-
-/** Groups composite tokens like `sm_fontSize`/`sm_lineHeight` into per-style CSS objects. */
-function compositeStyles(entries: TokenEntry[]): { name: string; css: Record<string, string> }[] {
-  const groups = new Map<string, Record<string, string>>()
-  for (const { name, value } of entries) {
-    const split = name.lastIndexOf('_')
-    const group = name.slice(0, split)
-    const prop = name.slice(split + 1)
-    if (!groups.has(group)) groups.set(group, {})
-    groups.get(group)![prop] = value
-  }
-  return Array.from(groups.entries()).map(([name, css]) => ({ name, css }))
-}
-
-const displayStyles = compositeStyles(tokensByPrefix('mp_display_'))
-const textStyles = compositeStyles(tokensByPrefix('mp_text_'))
 
 const SpecimenLabel = {
   props: ['entry'],
@@ -158,13 +143,19 @@ export const DisplayStyles: Story = {
 export const SemanticStyles: Story = {
   render: () => ({
     setup() {
+      // A role with no sample here shows its own name, so a new text.* role is never mislabelled.
       const samples: Record<string, string> = {
         pageTitle: 'Sales orders',
+        pageSubtitle: 'Track, fulfil and refund every order in one place.',
         kpiValue: '$48,920',
+        kpiValueHero: '$1.2M',
         sectionTitle: 'Recent activity',
         body: 'Body copy for cards, tables and forms.',
         caption: 'Updated 4 minutes ago',
         eyebrow: 'COMMERCE',
+        metaLabel: 'Order date',
+        metaValue: '12 Nov 2026',
+        label: 'Store name',
       }
       return { textStyles, samples, mp_fontFamily_mono, mp_fontSize_11 }
     },
@@ -176,7 +167,7 @@ export const SemanticStyles: Story = {
             class="text-medium-emphasis mb-1"
             :style="{ fontFamily: mp_fontFamily_mono, fontSize: mp_fontSize_11 }"
           >text.{{ s.name }} · {{ Object.entries(s.css).map(([k, v]) => k + ': ' + v).join(' · ') }}</div>
-          <div :style="s.css">{{ samples[s.name] ?? 'Specimen' }}</div>
+          <div :style="s.css">{{ samples[s.name] ?? s.name }}</div>
         </div>
       </div>
     `,

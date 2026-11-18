@@ -1,7 +1,9 @@
+import { ref } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 import StoreProviderChooserDrawer from './StoreProviderChooserDrawer.vue'
 import { storyState } from '@/components/maropay/storyFixtures'
 import { storeProvidersFor } from '@/maropay/providers'
+import { overlayDocs } from '@/stories/decorators'
 
 const ATLAS = 'retest-sales-notification'
 
@@ -26,9 +28,25 @@ kind; the page connects it and opens its own drawer.
   until a choice is made.
         `,
       },
+      // Every story opens the drawer on mount.
+      ...overlayDocs().docs,
     },
   },
-  args: { modelValue: true, setup: storeProvidersFor(storyState('m05'), ATLAS), group: 'providers' },
+  args: { setup: storeProvidersFor(storyState('m05'), ATLAS), group: 'providers' },
+  // Storybook does not write `update:modelValue` back into args, so the story holds the open state.
+  render: (args) => ({
+    components: { StoreProviderChooserDrawer },
+    setup() {
+      const open = ref(true)
+      return { args, open }
+    },
+    template: `
+      <div>
+        <v-btn variant="outlined" @click="open = true">Reopen</v-btn>
+        <StoreProviderChooserDrawer v-bind="args" v-model="open" />
+      </div>
+    `,
+  }),
 } satisfies Meta<typeof StoreProviderChooserDrawer>
 
 export default meta

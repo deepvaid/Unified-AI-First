@@ -1,7 +1,9 @@
+import { onUnmounted } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpToastStack from './MpToastStack.vue'
 import { useToast } from '@/composables/useToast'
 import { liquidskyDocs } from '@/stories/storyTemplate'
+import { overlayDocs } from '@/stories/decorators'
 
 const meta = {
   title: 'Molecules/MpToastStack',
@@ -10,11 +12,10 @@ const meta = {
   parameters: {
     canvas: 'full',
     // The stack teleports to <body> and positions fixed at the bottom-right of
-    // the viewport — render docs examples in isolated iframes so each story
-    // shows its own queue (toast state is a module singleton, same convention
-    // as DvToastStack.stories.ts).
+    // the viewport, and toast state is a module singleton — so every story here
+    // gets its own frame on the docs page and shows only its own queue.
     docs: {
-      story: { inline: false, height: '300px' },
+      ...overlayDocs('300px').docs,
       description: {
         component: liquidskyDocs('molecules-mptoaststack') + `
 ### Overview
@@ -89,26 +90,91 @@ type Story = StoryObj<typeof meta>
 // never pass this. Errors already persist by default (no override needed).
 const STABLE_MS = 3_600_000
 
-/** Seeds the useToast() singleton from setup() — reset first so stories don't bleed into
- * each other, then push the story's fixture toast(s). Same idiom as DvToastStack.stories.ts. */
-function seededStory(seed: (toast: ReturnType<typeof useToast>) => void): Story {
+/**
+ * Takes over the shared `useToast()` stack for one story: empties it on setup and puts back what
+ * was there when the story unmounts, so a seed never reaches the next story.
+ */
+function useStoryToasts() {
+  const toast = useToast()
+  const before = toast.toasts.value
+  toast.toasts.value = []
+  onUnmounted(() => { toast.toasts.value = before })
+  return toast
+}
+
+/** A story that shows the host with the given toasts already in the stack. */
+function seededStory(seed: (toast: ReturnType<typeof useToast>) => void, height?: string): Story {
   return {
+    ...(height ? { parameters: overlayDocs(height) } : {}),
     render: () => ({
       components: { MpToastStack },
       setup() {
-        const toast = useToast()
-        toast.toasts.value = []
-        seed(toast)
+        seed(useStoryToasts())
         return {}
       },
-      template: `
-        <div style="min-height: 260px; padding: 24px;">
-          <MpToastStack />
-        </div>
-      `,
+      template: '<MpToastStack />',
     }),
   }
 }
+
+/**
+ * The host with nothing queued, driven through the real API: each button calls `useToast()`.
+ * This shows the real timing (success and info leave after 4.5s, a warning after 7s, an error
+ * stays) and the pause on hover or focus — hover a toast, or Tab to its action, before it
+ * times out.
+ */
+export const Default: Story = {
+  render: () => ({
+    components: { MpToastStack },
+    setup: () => ({ toast: useStoryToasts() }),
+    template: `
+      <div class="d-flex flex-wrap ga-2 pa-6">
+        <v-btn variant="tonal" color="success" @click="toast.success('Segment saved.')">Push success</v-btn>
+        <v-btn variant="tonal" color="error" @click="toast.error('Could not save changes.')">Push error</v-btn>
+        <v-btn variant="tonal" color="warning" @click="toast.warning('Send rate is throttled.')">Push warning</v-btn>
+        <v-btn variant="tonal" color="info" @click="toast.info('3 contacts were skipped.')">Push info</v-btn>
+        <v-btn variant="tonal" @click="toast.success('Widget added.', { action: { label: 'View', onClick: () => {} } })">Push with action</v-btn>
+        <MpToastStack />
+      </div>
+    `,
+  }),
+}
+
+// ── Template: Variants · States ──────────────────────────────────────────────
+
+/**
+ * The four types in one stack, oldest at the top: success, error, warning, info. Each pairs its
+ * colour with its own icon. It also shows how the stack grows: a new toast is added at the
+ * bottom and pushes the older ones up.
+ */
+export const Variants: Story = seededStory((toast) => {
+  toast.success('Segment saved.', { durationMs: STABLE_MS })
+  toast.error('Could not save changes. Check your connection and try again.')
+  toast.warning('Send rate is throttled — this campaign will take about 40 minutes longer.', { durationMs: STABLE_MS })
+  toast.info('3 contacts were skipped because they already exist in this list.', { durationMs: STABLE_MS })
+}, '460px')
+
+/**
+ * Content states: an optional bold title above the message, and a long message, which wraps
+ * inside the fixed-width card instead of widening it. The action button is `WithAction`.
+ */
+export const States: Story = seededStory((toast) => {
+  toast.success('The change applies to all new enrollments immediately.', {
+    title: 'Automation activated',
+    durationMs: STABLE_MS,
+  })
+  toast.error(
+    'Stopping "Black Friday 2025 — Early Access VIP" cancels delivery for the 18,240 contacts '
+    + 'still queued. The 6,411 emails already sent cannot be recalled, and their opens and clicks '
+    + 'will keep reporting under this campaign.',
+    { title: 'Campaign send stopped' },
+  )
+}, '420px')
+
+// ── One toast per story ──────────────────────────────────────────────────────
+// These stay separate from `Variants` on purpose: the LiquidSky QA map
+// (`src/stories/qa/liquidskyMap.ts`) measures the first toast of each, so each type needs a
+// story where it is the only toast.
 
 /** A success confirmation. Auto-dismisses after 4.5s in real usage (pinned here so the docs page stays stable). */
 export const Success: Story = seededStory((toast) => {
@@ -131,61 +197,10 @@ export const Info: Story = seededStory((toast) => {
   toast.info('3 contacts were skipped because they already exist in this list.', { durationMs: STABLE_MS })
 })
 
-/** Optional bold title above the message. */
-export const WithTitle: Story = seededStory((toast) => {
-  toast.success('The change applies to all new enrollments immediately.', {
-    title: 'Automation activated',
-    durationMs: STABLE_MS,
-  })
-})
-
-/** At most one action, rendered as a text-link style button next to the message. */
+/** At most one action, rendered as a text-link style button under the message. */
 export const WithAction: Story = seededStory((toast) => {
   toast.success('Contact archived.', {
     action: { label: 'Undo', onClick: () => {} },
     durationMs: STABLE_MS,
   })
 })
-
-/** A long message wraps inside the fixed ~320px card instead of widening it. */
-export const LongMessage: Story = seededStory((toast) => {
-  toast.error(
-    'Stopping "Black Friday 2025 — Early Access VIP" cancels delivery for the 18,240 contacts '
-    + 'still queued. The 6,411 emails already sent cannot be recalled, and their opens and clicks '
-    + 'will keep reporting under this campaign.',
-    { title: 'Campaign send stopped' },
-  )
-})
-
-/** Multiple toasts at once — newest appended at the bottom, older ones pushed upward. */
-export const MultipleStacked: Story = seededStory((toast) => {
-  toast.info('Draft autosaved.', { durationMs: STABLE_MS })
-  toast.success('Widget added to Overview.', {
-    action: { label: 'View', onClick: () => {} },
-    durationMs: STABLE_MS,
-  })
-  toast.error('2 items failed to import.')
-})
-
-/** Drives the real API from buttons — demonstrates the actual 4.5s auto-dismiss timing and
- * hover/focus-to-pause behavior (hover a toast, or Tab to its action button, before it times out). */
-export const Interactive: Story = {
-  render: () => ({
-    components: { MpToastStack },
-    setup() {
-      const toast = useToast()
-      toast.toasts.value = []
-      return { toast }
-    },
-    template: `
-      <div style="min-height: 260px; padding: 24px; display: flex; gap: 8px; flex-wrap: wrap; align-content: flex-start;">
-        <v-btn variant="tonal" color="success" class="text-none" @click="toast.success('Segment saved.')">Push success</v-btn>
-        <v-btn variant="tonal" color="error" class="text-none" @click="toast.error('Could not save changes.')">Push error</v-btn>
-        <v-btn variant="tonal" color="warning" class="text-none" @click="toast.warning('Send rate is throttled.')">Push warning</v-btn>
-        <v-btn variant="tonal" color="info" class="text-none" @click="toast.info('3 contacts were skipped.')">Push info</v-btn>
-        <v-btn variant="tonal" class="text-none" @click="toast.success('Widget added.', { action: { label: 'View', onClick: () => {} } })">Push with action</v-btn>
-        <MpToastStack />
-      </div>
-    `,
-  }),
-}

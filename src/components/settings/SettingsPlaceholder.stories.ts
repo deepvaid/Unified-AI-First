@@ -77,7 +77,3 @@ export const States: Story = {
   }),
   args: {} as never,
 }
-
-export const WithoutDescription: Story = {
-  args: { title: 'Audit Log', description: undefined },
-}

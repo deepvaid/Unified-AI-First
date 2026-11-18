@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpMenuItem from './MpMenuItem.vue'
 import MpRowActionsMenu from './MpRowActionsMenu.vue'
+import { overlayDocs } from '@/stories/decorators'
 
 const meta = {
   title: 'Atoms/MpMenuItem',
@@ -107,7 +108,7 @@ export const InRowActionsMenu: Story = {
   render: () => ({
     components: { MpMenuItem, MpRowActionsMenu },
     template: `
-      <div class="d-flex justify-center pt-4" style="min-height: 280px">
+      <div class="d-flex justify-center pt-4">
         <MpRowActionsMenu ariaLabel="Order actions" itemLabel="#10002">
           <MpMenuItem title="View order" icon="eye" />
           <MpMenuItem title="Print packing slip" icon="printer" />
@@ -118,6 +119,7 @@ export const InRowActionsMenu: Story = {
     `,
   }),
   args: {} as never,
+  parameters: overlayDocs('320px'),
   play: async ({ canvasElement }) => {
     await new Promise(resolve => setTimeout(resolve, 300))
     canvasElement.querySelector<HTMLElement>('[aria-label="Order actions for #10002"]')?.click()

@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import StoreEditorSidebar from './StoreEditorSidebar.vue'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
+import { railFrame } from '@/stories/decorators'
 
 const ACCOUNT_ID = '2000290'
 
@@ -43,12 +44,13 @@ auto-minimizes behind it via the route's \`railShell\`/\`storeEditor\` meta.
   state via \`aria-current\`, and keyboard-operable switcher.
 - **Consumer must:** ensure exactly one rail is on screen per shell route.
 
-> **Story note:** the Storybook router is a catch-all with no \`accountId\` param, so the rail
-> falls back to account \`${ACCOUNT_ID}\` and every link resolves against that stub route.
+> **Story note:** the Storybook route carries \`accountId\` \`${ACCOUNT_ID}\`, and the Storybook
+> router registers a stub for each route name the rail links to, so every link resolves.
         `,
       },
     },
   },
+  decorators: [railFrame()],
   argTypes: {
     channel: { control: 'object', description: 'The SalesChannel being edited — supplies rail identity, domain caption, and the switcher exclusion.' },
   },
@@ -67,11 +69,7 @@ function channelStory(index: number): Story {
         const channel = store.webStoreChannels(ACCOUNT_ID)[index]
         return { channel }
       },
-      template: `
-        <div style="display: flex; min-height: 620px;">
-          <StoreEditorSidebar v-if="channel" :channel="channel" />
-        </div>
-      `,
+      template: `<StoreEditorSidebar v-if="channel" :channel="channel" />`,
     }),
   }
 }
@@ -90,32 +88,3 @@ export const AlternateStore: Story = channelStory(1)
  * the literal "Web store".
  */
 export const NoDomainFallback: Story = channelStory(2)
-
-// ── Template: Variants · Sizes · States ──────────────────────────────────────
-
-/** One structure — the entity flavor of `MpSectionRail`: a back link, the store's identity card with a switcher, then the grouped section links. It adds no geometry of its own. */
-export const Variants: Story = {
-  render: (args) => ({
-    components: { StoreEditorSidebar },
-    setup: () => ({ args }),
-    template: `<StoreEditorSidebar v-bind="args" />`,
-  }),
-}
-
-/** There is no `size` prop — it inherits `MpSectionRail`'s 260px column (`layout.sectionRailWidth`) and its `component.listItem.*` rows. Phase 4 (P4-7) tokenized the rail, and this component picked all of it up for free — which is the argument for composing the rail rather than hand-rolling one, as the deleted `SettingsSidebar` did. */
-export const Sizes: Story = {
-  render: (args) => ({
-    components: { StoreEditorSidebar },
-    setup: () => ({ args }),
-    template: `<StoreEditorSidebar v-bind="args" />`,
-  }),
-}
-
-/** A store with a domain, a store without one (caption falls back), and the switcher open. */
-export const States: Story = {
-  render: (args) => ({
-    components: { StoreEditorSidebar },
-    setup: () => ({ args }),
-    template: `<StoreEditorSidebar v-bind="args" />`,
-  }),
-}

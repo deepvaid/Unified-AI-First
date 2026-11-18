@@ -8,12 +8,14 @@ import type { Meta, StoryObj } from '@storybook/vue3'
 import { ref } from 'vue'
 import LandingPageStylePanel from './LandingPageStylePanel.vue'
 import { PAGE_STYLE } from './landingStoryFixtures'
+import { constrain } from '@/stories/decorators'
 import type { LandingPageStyle } from '@/stores/useLandingPages'
 
 const meta = {
   title: 'Product/Marketing/Landing Pages/LandingPageStylePanel',
   component: LandingPageStylePanel,
   tags: ['autodocs'],
+  decorators: [constrain('narrow')],
   parameters: {
     docs: {
       description: {
@@ -63,7 +65,7 @@ export const Default: Story = {
   render: (args) => ({
     components: { LandingPageStylePanel },
     setup: () => ({ args }),
-    template: '<div style="max-width: 300px"><LandingPageStylePanel v-bind="args" /></div>',
+    template: '<LandingPageStylePanel v-bind="args" />',
   }),
 }
 
@@ -88,10 +90,6 @@ export const Interactive: Story = {
       const apply = (patch: Partial<LandingPageStyle>) => { style.value = { ...style.value, ...patch } }
       return { style, apply }
     },
-    template: `
-      <div style="max-width: 300px">
-        <LandingPageStylePanel :style="style" @update="apply" />
-      </div>
-    `,
+    template: `<LandingPageStylePanel :style="style" @update="apply" />`,
   }),
 }

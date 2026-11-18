@@ -1,13 +1,14 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import { ref } from 'vue'
 import TicketViewSwitcher from './TicketViewSwitcher.vue'
-import { constrain } from '@/stories/decorators'
+import { constrain, isolateStorage } from '@/stories/decorators'
 
 const meta = {
   title: 'Product/Service/TicketViewSwitcher',
   component: TicketViewSwitcher,
   tags: ['autodocs'],
-  decorators: [constrain('compact')],
+  // Opening or closing an inbox group saves `mp.tickets.viewsExpanded.v1`; put it back on unmount.
+  decorators: [constrain('compact'), isolateStorage],
   parameters: {
     docs: {
       description: {

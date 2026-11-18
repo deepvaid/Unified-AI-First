@@ -3,55 +3,208 @@
   "liquidsky": [
     "TheOnboardingScreenChecklists"
   ],
-  "status": "partial",
-  "reference": "MpListRow, checklist rows",
-  "note": "Only the row geometry has a reference. The onboarding screen layout around it needs a design.",
+  "status": "matched",
+  "reference": "The Get started page (Product › Onboarding)",
+  "note": "The card at the top of the page is the onboarding-banner entry.",
   "stories": [
     {
-      "id": "atoms-mplistrow--checklist",
-      "label": "Checklist rows",
-      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/atoms-mplistrow--checklist",
+      "id": "product-onboarding-get-started--default",
+      "label": "Get started",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/product-onboarding-get-started--default",
       "png": {
-        "light": "png/onboarding-checklists/atoms-mplistrow--checklist--light.png",
-        "dark": "png/onboarding-checklists/atoms-mplistrow--checklist--dark.png"
+        "light": "png/onboarding-checklists/product-onboarding-get-started--default--light.png",
+        "dark": "png/onboarding-checklists/product-onboarding-get-started--default--dark.png"
       },
       "parts": [
         {
-          "part": "row",
-          "props": {
-            "padding": {
-              "light": "4px 0px",
-              "dark": "4px 0px"
-            },
-            "column-gap": {
-              "light": "12px",
-              "token": "component.listItem.gap",
-              "dark": "12px"
-            }
-          }
-        },
-        {
-          "part": "row title",
+          "part": "group title",
           "props": {
             "font-size": {
-              "light": "13px",
-              "dark": "13px"
+              "light": "16px",
+              "dark": "16px"
             },
             "font-weight": {
-              "light": "500",
-              "dark": "500"
+              "light": "600",
+              "dark": "600"
             },
             "line-height": {
-              "light": "16.9px",
-              "dark": "16.9px"
+              "light": "20.8px",
+              "dark": "20.8px"
             },
             "color": {
               "light": "rgb(26, 24, 20)",
               "dark": "rgb(236, 236, 236)"
             }
           }
+        },
+        {
+          "part": "task group card",
+          "props": {
+            "border-radius": {
+              "light": "16px",
+              "token": "component.card.radius",
+              "dark": "16px"
+            },
+            "border-top-color": {
+              "light": "rgba(0, 0, 0, 0.12)",
+              "dark": "rgba(255, 255, 255, 0.12)"
+            },
+            "border-top-width": {
+              "light": "1px",
+              "dark": "1px"
+            },
+            "box-shadow": {
+              "light": "rgba(0, 0, 0, 0.2) 0px 0px 0px 0px, rgba(0, 0, 0, 0.14) 0px 0px 0px 0px, rgba(0, 0, 0, 0.12) 0px 0px 0px 0px",
+              "dark": "rgba(0, 0, 0, 0.2) 0px 0px 0px 0px, rgba(0, 0, 0, 0.14) 0px 0px 0px 0px, rgba(0, 0, 0, 0.12) 0px 0px 0px 0px"
+            },
+            "background-color": {
+              "light": "rgb(255, 255, 255)",
+              "dark": "rgb(31, 34, 38)"
+            }
+          }
+        },
+        {
+          "part": "task row",
+          "props": {
+            "padding": {
+              "light": "16px",
+              "dark": "16px"
+            },
+            "column-gap": {
+              "light": "12px",
+              "dark": "12px"
+            }
+          }
+        },
+        {
+          "part": "task row divider",
+          "props": {
+            "border-bottom-color": {
+              "light": "rgba(0, 0, 0, 0.12)",
+              "dark": "rgba(255, 255, 255, 0.12)"
+            }
+          }
+        },
+        {
+          "part": "done check",
+          "props": {
+            "width": {
+              "light": "22px",
+              "dark": "22px"
+            },
+            "height": {
+              "light": "22px",
+              "dark": "22px"
+            },
+            "color": {
+              "light": "rgb(25, 122, 81)",
+              "dark": "rgb(76, 194, 138)"
+            }
+          }
+        },
+        {
+          "part": "done title",
+          "props": {
+            "font-size": {
+              "light": "14px",
+              "dark": "14px"
+            },
+            "font-weight": {
+              "light": "400",
+              "dark": "400"
+            },
+            "line-height": {
+              "light": "19.95px",
+              "dark": "19.95px"
+            },
+            "color": {
+              "light": "rgba(26, 24, 20, 0.6)",
+              "dark": "rgba(236, 236, 236, 0.7)"
+            }
+          }
+        },
+        {
+          "part": "to-do check",
+          "props": {
+            "width": {
+              "light": "22px",
+              "dark": "22px"
+            },
+            "height": {
+              "light": "22px",
+              "dark": "22px"
+            },
+            "color": {
+              "light": "rgba(26, 24, 20, 0.28)",
+              "dark": "rgba(236, 236, 236, 0.28)"
+            }
+          }
+        },
+        {
+          "part": "to-do title",
+          "props": {
+            "font-size": {
+              "light": "14px",
+              "dark": "14px"
+            },
+            "font-weight": {
+              "light": "400",
+              "dark": "400"
+            },
+            "line-height": {
+              "light": "19.95px",
+              "dark": "19.95px"
+            },
+            "color": {
+              "light": "rgba(26, 24, 20, 0.87)",
+              "dark": "rgb(236, 236, 236)"
+            }
+          }
+        },
+        {
+          "part": "time chip",
+          "props": {
+            "height": {
+              "light": "20px",
+              "dark": "20px"
+            },
+            "padding": {
+              "light": "0px 8px",
+              "dark": "0px 8px"
+            },
+            "border-radius": {
+              "light": "9999px",
+              "dark": "9999px"
+            },
+            "font-size": {
+              "light": "10px",
+              "dark": "10px"
+            },
+            "font-weight": {
+              "light": "400",
+              "dark": "400"
+            },
+            "line-height": {
+              "light": "15px",
+              "dark": "15px"
+            },
+            "color": {
+              "light": "rgba(26, 24, 20, 0.87)",
+              "dark": "rgb(236, 236, 236)"
+            }
+          }
         }
       ]
+    },
+    {
+      "id": "product-onboarding-get-started--task-open",
+      "label": "A task open",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/product-onboarding-get-started--task-open",
+      "png": {
+        "light": "png/onboarding-checklists/product-onboarding-get-started--task-open--light.png",
+        "dark": "png/onboarding-checklists/product-onboarding-get-started--task-open--dark.png"
+      },
+      "parts": []
     }
   ]
 }

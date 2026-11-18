@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpErrorState from './MpErrorState.vue'
+import { stack } from '@/stories/storyTemplate'
 
 const meta = {
   title: 'Molecules/MpErrorState',
@@ -56,6 +57,7 @@ All props have sensible defaults (\`alert-triangle\` icon, "Something went wrong
     actionLabel: { control: 'text', description: 'CTA label. Default: "Try again". Pass an empty string to hide the button.' },
     actionIcon: { control: 'text', description: 'Lucide icon prepended to the CTA. Default: refresh-cw.' },
     action: { control: false, description: 'Event — emitted when the CTA button is clicked (wire your retry here).', table: { category: 'events' } },
+    onAction: { action: 'action', table: { disable: true } },
   },
 } satisfies Meta<typeof MpErrorState>
 
@@ -75,50 +77,42 @@ export const Default: Story = {
  * action is offered, which is the States axis below.
  */
 export const Variants: Story = {
-  render: () => ({
-    components: { MpErrorState },
-    template: `
-      <div class="d-flex flex-column ga-8">
-        <div>
-          <div class="text-caption text-medium-emphasis mb-2">recoverable — offers a retry</div>
-          <MpErrorState title="Couldn't load campaigns" description="There was a problem reaching the server." />
-        </div>
-        <div>
-          <div class="text-caption text-medium-emphasis mb-2">terminal — no retry to offer</div>
-          <MpErrorState title="You don't have access to this report" description="Ask an account admin to grant you the Analytics role." :action-label="undefined" />
-        </div>
-      </div>
-    `,
-  }),
-  args: {} as never,
+  render: stack({ MpErrorState }, [
+    {
+      label: 'recoverable — offers a retry',
+      args: { title: 'Couldn’t load campaigns', description: 'There was a problem reaching the server.' },
+    },
+    {
+      label: 'terminal — no retry to offer',
+      args: {
+        title: 'You don’t have access to this report',
+        description: 'Ask an account admin to grant you the Analytics role.',
+        actionLabel: '',
+      },
+    },
+  ]),
 }
 
 /** Every state the component renders. There is no `size` prop — an error state fills its container. */
 export const States: Story = {
-  render: () => ({
-    components: { MpErrorState },
-    template: `
-      <div class="d-flex flex-column ga-8">
-        <div>
-          <div class="text-caption text-medium-emphasis mb-2">default — generic failure</div>
-          <MpErrorState />
-        </div>
-        <div>
-          <div class="text-caption text-medium-emphasis mb-2">with description</div>
-          <MpErrorState title="Couldn't load campaigns" description="There was a problem reaching the server. Check your connection and try again." />
-        </div>
-        <div>
-          <div class="text-caption text-medium-emphasis mb-2">no retry</div>
-          <MpErrorState title="Report unavailable" description="This report was removed." :action-label="undefined" />
-        </div>
-        <div>
-          <div class="text-caption text-medium-emphasis mb-2">custom icon + label</div>
-          <MpErrorState icon="wifi-off" title="You're offline" description="Reconnect to load this page." action-label="Retry now" />
-        </div>
-      </div>
-    `,
-  }),
-  args: {} as never,
+  render: stack({ MpErrorState }, [
+    { label: 'default — generic failure', args: {} },
+    {
+      label: 'with description',
+      args: {
+        title: 'Couldn’t load campaigns',
+        description: 'There was a problem reaching the server. Check your connection and try again.',
+      },
+    },
+    {
+      label: 'no retry',
+      args: { title: 'Report unavailable', description: 'This report was removed.', actionLabel: '' },
+    },
+    {
+      label: 'custom icon + label',
+      args: { icon: 'wifi-off', title: 'You’re offline', description: 'Reconnect to load this page.', actionLabel: 'Retry now' },
+    },
+  ]),
 }
 
 export const NoRetry: Story = {

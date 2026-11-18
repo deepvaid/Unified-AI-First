@@ -1,11 +1,13 @@
 import { ref } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 import PermissionMatrix from './PermissionMatrix.vue'
+import { constrain } from '@/stories/decorators'
 
 const meta = {
   title: 'Product/RBAC/PermissionMatrix',
   component: PermissionMatrix,
   tags: ['autodocs'],
+  decorators: [constrain('wide')],
   parameters: {
     docs: {
       description: {
@@ -47,10 +49,10 @@ another grant depends on renders checked + disabled with a "Required by …" too
       return { args, model }
     },
     template: `
-      <section style="padding:24px;background:rgb(var(--v-theme-background));max-width:880px;">
+      <div>
         <PermissionMatrix v-model="model" :products="args.products" :readonly="args.readonly" />
         <p class="text-caption text-medium-emphasis mt-4">{{ model.length }} permissions granted</p>
-      </section>
+      </div>
     `,
   }),
   argTypes: {

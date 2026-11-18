@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import MpSplitHandle from './MpSplitHandle.vue'
 
 const meta = {
@@ -50,8 +50,12 @@ makes the pane wider.
     defaultSize: { control: { type: 'number' }, description: 'Width Enter / double-click returns to.' },
     side: { control: 'inline-radio', options: ['start', 'end'], description: 'Which side of the handle the sized pane is on.' },
     step: { control: { type: 'number' }, description: 'Arrow-key step in px.' },
+    ariaLabel: { control: 'text', description: 'Required accessible name of the separator: say what resizes ("Resize ticket list").' },
+    controls: { control: 'text', description: 'id of the sized pane, for `aria-controls`.' },
+    dragging: { control: false, description: 'Event — emitted with `true` when a pointer drag starts and `false` when it ends, for a `user-select: none` on the layout.', table: { category: 'events' } },
+    onDragging: { action: 'dragging', table: { disable: true } },
   },
-  args: { size: 240, min: 160, max: 400, defaultSize: 240, side: 'start', step: 16, ariaLabel: 'Resize panel' },
+  args: { size: 240, min: 160, max: 400, defaultSize: 240, side: 'start', step: 16, ariaLabel: 'Resize panel', controls: 'split-handle-default' },
 } satisfies Meta<typeof MpSplitHandle>
 
 export default meta
@@ -75,14 +79,18 @@ const frame = (side: 'start' | 'end', model: string, extra = '') => {
 export const Default: Story = {
   render: (args) => ({
     components: { MpSplitHandle },
-    setup: () => ({ args, size: ref(args.size) }),
+    setup: () => {
+      const size = ref(args.size)
+      watch(() => args.size, (next) => { size.value = next })
+      return { args, size }
+    },
     template: `
       <v-card flat border rounded="lg" class="d-flex overflow-hidden" height="160">
-        <div id="story-default" class="pa-4 bg-surface-light flex-shrink-0" :style="{ width: size + 'px' }">
+        <div :id="args.controls" class="pa-4 bg-surface-light flex-shrink-0" :style="{ width: size + 'px' }">
           <div class="text-body-2 font-weight-medium">Sized pane</div>
           <div class="text-caption text-medium-emphasis">{{ size }}px</div>
         </div>
-        <MpSplitHandle v-bind="args" v-model:size="size" controls="story-default" />
+        <MpSplitHandle v-bind="args" v-model:size="size" />
         <div class="pa-4 flex-grow-1"><div class="text-body-2 text-medium-emphasis">The rest</div></div>
       </v-card>`,
   }),
@@ -108,8 +116,8 @@ export const Variants: Story = {
   args: {} as never,
 }
 
-/** Sizes — the two limits: at `min` (160px) and at `max` (400px) the handle stops. */
-export const Sizes: Story = {
+/** There is no `size` ramp: `size` is a width in px. These are its two limits: at `min` (160px) and at `max` (400px) the handle stops. */
+export const Limits: Story = {
   render: () => ({
     components: { MpSplitHandle },
     setup: () => ({ atMin: ref(160), atMax: ref(400) }),
@@ -128,12 +136,16 @@ export const Sizes: Story = {
   args: {} as never,
 }
 
-/** States — focused: the line turns the focus colour at 2px and the grip shows. Hover shows the grip alone. */
+/**
+ * States — focused: the line turns the focus colour at 2px and the grip shows. Hover shows the
+ * grip alone. On the docs page nothing is focused on load (it would scroll the page): tab to it.
+ */
 export const States: Story = {
-  render: () => ({
+  render: (_args, context) => ({
     components: { MpSplitHandle },
     setup: () => ({ size: ref(240) }),
     mounted() {
+      if (context.viewMode === 'docs') return
       ;(this.$el as HTMLElement).querySelector<HTMLElement>('[role="separator"]')?.focus()
     },
     template: frame('start', 'size'),

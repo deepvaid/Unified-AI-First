@@ -5,11 +5,13 @@
 // named region (`aria-labelledby`) instead of hand-rolling both.
 import { useId } from 'vue'
 
-defineProps<{
+withDefaults(defineProps<{
   title?: string
   description?: string
-  compact?: boolean
-}>()
+  density?: 'default' | 'compact'
+}>(), {
+  density: 'default',
+})
 
 const headingId = useId()
 </script>
@@ -17,7 +19,7 @@ const headingId = useId()
 <template>
   <section
     class="settings-section"
-    :class="{ 'settings-section--compact': compact }"
+    :class="{ 'settings-section--compact': density === 'compact' }"
     :aria-labelledby="title ? headingId : undefined"
   >
     <div v-if="title || description || $slots.actions" class="settings-section__head">

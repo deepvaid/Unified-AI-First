@@ -12,6 +12,9 @@
   "status": "matched",
   "reference": "Vuetify fields on the form-field baseline (Patterns › Form Fields)",
   "note": "One label style (static top label), one size ramp (32 / 40 / 48 from the density prop). A number input is a text field with a suffix.",
+  "notRequired": [
+    "The label above the field. A floating label inside the field is fine."
+  ],
   "stories": [
     {
       "id": "patterns-form-fields--all-states",

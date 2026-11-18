@@ -51,7 +51,7 @@ for production, and there is no Figma file — this Storybook is the reference.
 
 ### On this page
 - **Component map** — which \`Mp*\` story is the reference for each LiquidSky component in
-  design review, and where there is none.
+  design review, where there is none, and what is not required in this phase.
 - **Spec contract** — the values the comparison checks, per part, in light and dark.
 
 \`npm run build-storybook && npm run qa:export\` writes them to \`public/qa-reference/\` from
@@ -81,11 +81,17 @@ export const ComponentMap: Story = {
         </thead>
         <tbody>
           <tr v-for="c in components" :key="c.key">
-            <td class="font-weight-medium">{{ c.liquidsky.join(', ') }}</td>
+            <td class="font-weight-medium">
+              {{ c.liquidsky.join(', ') }}
+              <span v-if="!c.liquidsky.length" class="font-weight-regular text-medium-emphasis">No LiquidSky component</span>
+            </td>
             <td class="text-no-wrap">{{ STATUS_LABEL[c.status] }}</td>
             <td>
               {{ c.reference }}
               <div v-if="c.note" class="text-medium-emphasis text-body-2 mt-1">{{ c.note }}</div>
+              <div v-for="line in c.notRequired" :key="line" class="text-medium-emphasis text-body-2 mt-1">
+                <strong>Not required in this phase:</strong> {{ line }}
+              </div>
             </td>
             <td>
               <div v-for="s in c.stories" :key="s.id">
@@ -109,7 +115,7 @@ export const SpecContract: Story = {
       <div class="d-flex flex-column ga-8">
         <p v-if="!specs.length" class="ma-0 text-medium-emphasis">No export found. Run <code>npm run qa:export</code>.</p>
         <section v-for="spec in specs" :key="spec.key">
-          <h3 class="text-h6 mb-1">{{ spec.liquidsky.join(', ') }}</h3>
+          <h3 class="text-h6 mb-1">{{ spec.liquidsky.join(', ') || spec.reference }}</h3>
           <p class="text-medium-emphasis text-body-2 mb-4">Reference: {{ spec.reference }}<template v-if="spec.note"> — {{ spec.note }}</template></p>
           <template v-for="story in spec.stories" :key="story.id">
             <div v-if="story.parts.length" class="mb-6">

@@ -45,7 +45,7 @@ This is NOT a production app — it uses mock data and has no backend API.
 │   └── personas/              ← 4 merchant personas
 ├── maropost-screenshots/      ← 50+ screenshots of the real app
 ├── src/
-│   ├── components/            ← 112 components, all with stories (see Component Inventory)
+│   ├── components/            ← components and their co-located stories (see Component Inventory); a few Product parts have no story yet (DESIGN_AUDIT.md)
 │   │   ├── Mp*.vue / ModuleLandingPage.vue ← 30 top-level design-system components
 │   │   ├── layout/            ← AppBar (top bar) + AppSidebar (left nav, collapsible rail)
 │   │   ├── copilot/           ← 22 Dv* Da Vinci surfaces (4 Catalog Co-Pilot) + voice/ (7 orbit voice components)
@@ -119,7 +119,7 @@ This is NOT a production app — it uses mock data and has no backend API.
 - **MpErrorState** — composes `MpEmptyState` with `role="alert"`, the error tone and retry defaults. Error = something failed; don't merge with empty states.
 - **MpFloatingBulkBar** — `count`, `total?` · emits `clear` · default slot (actions). Shows on row selection; auto-hides at 0.
 - **MpTableSkeleton** — `rows?`, `columns?`, `showHeader?`. Loading placeholder inside table cards.
-- **MpComingSoonTiles** — `icon`, `title`, `description?`, `tiles` ({ icon, title, desc }[]), `smCols?`, `mdCols?`, `headingLevel?`. "Planned, not built yet" panel. Coming-soon = the surface doesn't exist yet; don't use it where `MpEmptyState` belongs.
+- **MpComingSoonTiles** — `icon`, `title`, `description?`, `tiles` ({ icon, title, desc }[]), `smCols?`, `mdCols?`, `headingLevel?` (2|3|4, default 3). "Planned, not built yet" panel. Coming-soon = the surface doesn't exist yet; don't use it where `MpEmptyState` belongs.
 
 ### Forms & selection
 
@@ -366,10 +366,10 @@ Reach for a role token when the system has already made the decision, a primitiv
   padding and gap come from `component.listItem.*` — there is no second nav sizing scale
 - **Widget actions** `component.widget.*` → `actionSize` 32 · `actionGap` 2 · `actionInset` 12.
   Widget *insets* come from `component.card.*`; this group is only the floating action overlay
-- Colors: light theme primary `#0073AB`, secondary `#1a1814`, background `#f4f6fa` (dark theme
+- Colors: light theme primary `#0071A8`, secondary `#1a1814`, background `#f4f6fa` (dark theme
   under `color.dark.*`). **Every surface token has a declared foreground — see below**
 - Shadows: sm (1px), md (4px), lg (8px) — use sparingly, prefer border
-- Layout: sidebar 248px, rail 72px, section rail 260px, appbar 60px, drawer 480px, content max 1280px,
+- Layout: sidebar 248px, rail 72px, section rail 260px, appbar 56px (`layout.appbarHeight`, the height the bar renders at; the app bar, the sidebar header and the content frame read the token), drawer 480px, content max 1280px,
   shopper preview 360px (`layout.previewPanelWidth`; side by side from a 840px page, `previewSplitWidth`)
 - **Table column stops** `layout.tableColumns{Sm,Md,Lg}` → 480 / 720 / 900. The *table's own* width
   below which `hideBelow: 'sm' | 'md' | 'lg'` columns drop, for shells that provide
@@ -390,7 +390,7 @@ surface when a theme flips. The pairs:
 | Surface | Foreground |
 |---|---|
 | `--surface-*` (the whole ladder) | `--on-surface` · `--on-surface-muted` |
-| `--ink-panel-bg` | `--ink-panel-fg` · `--ink-panel-muted-fg` · `--ink-panel-accent` |
+| `--ink-panel-bg` | `--ink-panel-fg` · `--ink-panel-muted-fg` · `--ink-panel-accent` · `--ink-panel-danger` |
 | `--accent-default` / `--accent-container` | `--accent-on` / `--accent-on-container` |
 | `--pos` / `--neg` / `--warn` | `--on-pos` / `--on-neg` / `--on-warn` |
 | `--pos-soft` / `--neg-soft` / `--warn-soft` | `--pos-ink` / `--neg-ink` / `--warn-ink` |
@@ -417,6 +417,7 @@ changelog in `DESIGN_AUDIT.md`.
 | `npm run build` | TypeScript check + Vite production build |
 | `npm run storybook` | Start Storybook on :6006 |
 | `npm run build-storybook` | Build Storybook to dist-storybook/ |
+| `npm run storybook:smoke` | Builds `dist-storybook-smoke/` with Vue's development warnings on (a production build compiles them out), opens every story and fails on one that throws, logs an error or a Vue warning, or renders nothing; also checks the Theme toolbar, docs example heights and the LiquidSky map's story links |
 | `npm run tokens:build` | Generate SCSS/CSS/TS from tokens.json |
 | `npm run contrast:check` | WCAG 2.1 ratios for every declared surface/foreground token pair |
 | `npm run qa:export` | QA reference for LiquidSky: screenshots + computed-CSS spec per mapped story → `public/qa-reference/` (needs `build-storybook` first) |
@@ -489,7 +490,7 @@ Marobase is Maropost's design system, compliant with Liquid Sky. It currently ha
 
 ## Story hierarchy
 
-Five top-level buckets, and only these five. The tier a component belongs to is decided by one rule:
+Five top-level buckets, and only these five. Two documentation-only pages sit above them: *Introduction* and *LiquidSky* (the map for developers of the LiquidSky production library); they hold no components and are not buckets. The tier a component belongs to is decided by one rule:
 
 > **Atom** — a single control or mark: no internal regions, no `Mp*` dependency.
 > **Molecule** — has internal regions (header/body/footer, trigger+panel) **or** composes another `Mp*`.
@@ -497,14 +498,29 @@ Five top-level buckets, and only these five. The tier a component belongs to is 
 > **Product** — a surface specific to one Maropost feature area.
 
 **Why Product exists (Phase 5 decision, 2026-08-28).** The four design-system tiers were the
-original rule, but 77 of 123 stories are feature surfaces — Da Vinci, Dashboards, Marketing,
-Merchandising, PLG, RBAC, Sales Channels — that are *not* reusable patterns. Filing them under
-`Patterns/` would have buried the 10 that are. `Product/` keeps the design-system tiers honest and
+original rule, but most stories were feature surfaces — Da Vinci, Dashboards, Maropay, Marketing,
+Merchandising, PLG, POS, RBAC, Sales Channels and others — that are *not* reusable patterns. Filing
+them under `Patterns/` would have buried the ones that are. `Product/` keeps the design-system tiers honest and
 signals "reference, not API" to anyone reading the sidebar. Logged in the Phase 5 changelog in
 `DESIGN_AUDIT.md`.
 
-`Foundations/Overview` and `Introduction` are MDX pages (`src/stories/**/*.mdx`); everything else is
-CSF. The order is set once in `.storybook/preview.ts` → `storySort`.
+`Foundations/Overview`, `Introduction`, `LiquidSky` and `Product/POS/Overview` are MDX pages
+(`src/stories/**/*.mdx`, `src/components/pos/`); everything else is CSF. The order is set once in `.storybook/preview.ts` → `storySort`.
+
+**The Variants / Sizes / States template is for the design-system tiers** (Foundations, Atoms,
+Molecules, Patterns): `Default` bound to args, then `Variants`, `Sizes` (only if the component has a
+`size` or measure prop; otherwise name the real axis: `Density`, `HeadingLevels`…) and `States`.
+**Product stories are reference surfaces:** `Default` plus real scenario stories. A story that only
+renders `<X v-bind="args" />` again is deleted, not kept as a template shell.
+
+**Story helpers** (`src/stories/decorators.ts`, `storyTemplate.ts`): `overlayDocs()` on every story
+that opens a dialog, drawer, menu or toast on mount (it gets its own frame on the docs page, so
+overlays cannot stack and a play function only finds its own story); `isolateStorage` on a story that
+seeds a store that persists to `localStorage`; `appShell` for the shell stories (stamps the app's
+default `data-sidebar`, `data-shell` and `data-frame`); `grid()` / `stack()` take the component as an
+object keyed by tag name: `grid({ MpAlert }, specimens)`. The preview router stubs any named route a
+component links to, and carries `accountId` `2000290`. Run `npm run storybook:smoke` before pushing
+story changes.
 
 **No per-story dark clones.** The toolbar **Theme** global flips every story; a `DarkMode` twin of a
 story is duplicated sidebar noise. The only exceptions are stories where the dark *palette itself* is
@@ -512,8 +528,11 @@ the subject (`Foundations/Colors`) or where dark is a different axis entirely (t
 skins).
 
 **Shared story helpers** live in `src/stories/`: `storyTemplate.ts` (the Variants/Sizes/States grid
-renderer), `fixtures.ts` (realistic data), `decorators.ts` (the `measure` scale, `surfaceFrame`,
-`railFrame`, `sidebarSkin`). Reach for these before writing another inline wrapper `<div style="…">`.
+renderer, and `bulkActions()`: a story that shows `MpFloatingBulkBar` names its actions and takes the
+buttons from it, so every bar has the same button, label and icon per action), `fixtures.ts`
+(realistic data), `decorators.ts` (the `measure` scale, `constrain`, `surfaceFrame`, `railFrame`,
+`appShell`, `overlayDocs`, `isolateStorage`). Reach for these before writing another inline wrapper
+`<div style="…">`.
 
 ## Token discipline
 

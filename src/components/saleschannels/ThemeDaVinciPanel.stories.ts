@@ -152,32 +152,3 @@ export const Interactive: Story = {
     `,
   }),
 }
-
-// ── Template: Variants · Sizes · States ──────────────────────────────────────
-
-/** One structure — the Da Vinci panel docked in the theme builder. Its variants are the conversation modes: welcome, generating, an active exchange, and the fallback when nothing matched. */
-export const Variants: Story = {
-  render: (args) => ({
-    components: { ThemeDaVinciPanel },
-    setup: () => ({ args }),
-    template: `<ThemeDaVinciPanel v-bind="args" />`,
-  }),
-}
-
-/** There is no `size` prop — the panel fills the builder's side column. Its rows and controls resolve to the shared list-row and control-height tokens. */
-export const Sizes: Story = {
-  render: (args) => ({
-    components: { ThemeDaVinciPanel },
-    setup: () => ({ args }),
-    template: `<ThemeDaVinciPanel v-bind="args" />`,
-  }),
-}
-
-/** Welcome, generating, mid-conversation, unmatched fallback, and interactive. */
-export const States: Story = {
-  render: (args) => ({
-    components: { ThemeDaVinciPanel },
-    setup: () => ({ args }),
-    template: `<ThemeDaVinciPanel v-bind="args" />`,
-  }),
-}

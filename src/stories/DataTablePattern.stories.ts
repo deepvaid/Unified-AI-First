@@ -6,7 +6,9 @@
  * MpEmptyState (no data) → MpFloatingBulkBar (on selection), with MpTableSkeleton
  * standing in for the table while loading.
  *
- * Reference implementation: src/views/Commerce/SalesOrders.vue
+ * Reference implementations: src/views/Commerce/SalesOrders.vue (the list),
+ * src/views/Marketing/EmailCampaigns.vue (folders and the bulk bar),
+ * src/views/Products/ProductsList.vue (the overflow cell).
  */
 import type { Meta, StoryObj } from '@storybook/vue3'
 import { ref, computed } from 'vue'
@@ -17,7 +19,15 @@ import MpEmptyState from '../components/MpEmptyState.vue'
 import MpFloatingBulkBar from '../components/MpFloatingBulkBar.vue'
 import MpTableSkeleton from '../components/MpTableSkeleton.vue'
 import MpRowActionsMenu from '../components/MpRowActionsMenu.vue'
-import { liquidskyDocs } from '@/stories/storyTemplate'
+import MpMenuItem from '../components/MpMenuItem.vue'
+import MpPageHeader from '../components/MpPageHeader.vue'
+import MpFolderSelect from '../components/MpFolderSelect.vue'
+import MpManageFoldersDrawer from '../components/MpManageFoldersDrawer.vue'
+import MpMoveToFolderDialog from '../components/MpMoveToFolderDialog.vue'
+import MpConfirmDialog from '../components/MpConfirmDialog.vue'
+import { useFoldersStore } from '@/stores/useFolders'
+import { overlayDocs } from '@/stories/decorators'
+import { bulkActions, liquidskyDocs } from '@/stories/storyTemplate'
 
 const meta: Meta = {
   title: 'Patterns/Data Table',
@@ -69,8 +79,11 @@ Style cells with custom \`#item.*\` templates:
 - Identifier column reads as a link: \`text-primary font-weight-bold\`.
 - Status columns always use \`MpStatusChip\` with the **correct \`type\`** (\`order\`,
   \`fulfillment\`, \`payment\`, \`campaign\`, \`ticket\`…) and \`size="sm"\` in tables.
-- The last column is \`MpRowActionsMenu\` (kebab) with \`v-list-item\`s; destructive items get
-  \`class="text-error"\` behind a divider. Wrap it in \`<div @click.stop>\` if rows navigate on click.
+- The last column is \`MpRowActionsMenu\` (kebab) holding \`MpMenuItem\`s. A destructive item
+  takes \`danger\` and goes last, behind \`<v-divider class="my-1" />\`. Wrap the menu in
+  \`<div @click.stop>\` if rows navigate on click.
+- A cell with many values shows the first and a "+N more" chip that reveals the rest
+  (see **Overflow Cell**).
 
 **5. MpEmptyState** — rendered inside the table's \`#no-data\` slot, so it appears in the card
 below the toolbar. Distinguish the two empties: *no matches* (search/filters active → offer to
@@ -81,8 +94,16 @@ adjust) vs *truly empty* (nothing exists yet → offer the create action).
 
 **7. MpFloatingBulkBar** — outside the card, after it. Appears automatically when
 \`count > 0\`. Pass \`count\` and \`total\` (filtered length), handle \`@clear\` and
-\`@select-all\`, and put bulk action buttons in the default slot — destructive ones confirmed
-via \`MpConfirmDialog\` with \`danger\`.
+\`@select-all\`, and put the bulk actions in the default slot as text buttons with an icon:
+\`<v-btn size="small" variant="text" class="text-none" prepend-icon="…">\`. The bar gives them
+its own ink. A destructive action goes last with \`class="text-none text-error"\` and is
+confirmed via \`MpConfirmDialog\` with \`danger\`.
+
+**8. Folders** (lists that file their records: campaigns, content, forms, images) — a
+"Manage Folders" button in the page header opens \`MpManageFoldersDrawer\`, \`MpFolderSelect\`
+sits in the toolbar's \`#actions\` slot, the chosen folder shows as a "Folder: name" chip
+through \`active-filters\`, "Move to folder…" in the row menu and the bulk bar opens
+\`MpMoveToFolderDialog\`, and Delete asks first. See **With Folders**.
 
 ### The table's own geometry (Phase 4, P4-4)
 The rows you see below are not sized by the pattern — they come from \`component.table.*\`,
@@ -178,6 +199,7 @@ function tableStory(preselected: number[]) {
       MpEmptyState,
       MpFloatingBulkBar,
       MpRowActionsMenu,
+      MpMenuItem,
     },
     setup() {
       const activeTab = ref('all')
@@ -269,11 +291,11 @@ function tableStory(preselected: number[]) {
             <template v-slot:item.actions="{ item }">
               <div @click.stop>
                 <MpRowActionsMenu aria-label="Order actions">
-                  <v-list-item prepend-icon="eye" title="View order" />
-                  <v-list-item prepend-icon="package-check" title="Mark fulfilled" :disabled="item.fulfillment === 'Shipped'" />
-                  <v-list-item prepend-icon="printer" title="Print invoice" />
-                  <v-divider class="my-1" style="opacity: 0.4" />
-                  <v-list-item prepend-icon="ban" title="Cancel order" class="text-error" :disabled="item.status === 'Cancelled'" />
+                  <MpMenuItem icon="eye" title="View order" />
+                  <MpMenuItem icon="package-check" title="Mark fulfilled" :disabled="item.fulfillment === 'Shipped'" />
+                  <MpMenuItem icon="printer" title="Print invoice" />
+                  <v-divider class="my-1" />
+                  <MpMenuItem icon="ban" title="Cancel order" danger :disabled="item.status === 'Cancelled'" />
                 </MpRowActionsMenu>
               </div>
             </template>
@@ -295,8 +317,7 @@ function tableStory(preselected: number[]) {
           @clear="selected = []"
           @select-all="selectAll"
         >
-          <v-btn size="small" variant="flat" color="surface" prepend-icon="package-check" class="text-none" rounded="lg">Mark Fulfilled</v-btn>
-          <v-btn size="small" variant="flat" color="surface" prepend-icon="ban" class="text-none text-error" rounded="lg">Cancel Orders</v-btn>
+          ${bulkActions(['fulfill', 'cancel'])}
         </MpFloatingBulkBar>
       </div>
     `,
@@ -399,8 +420,395 @@ export const Loading: Story = {
 /**
  * Rows selected. MpFloatingBulkBar appears automatically when count > 0 — it shows the
  * selection tally, a select-all affordance, bulk action buttons, and a clear control.
- * Destructive bulk actions must confirm via MpConfirmDialog with the danger prop.
+ * Bulk actions are text buttons with an icon, as on the app's Campaigns, Products and Tickets
+ * lists; the destructive one is last, in the error colour, and must confirm via
+ * MpConfirmDialog with the danger prop.
  */
 export const WithSelection: Story = {
+  parameters: overlayDocs(),
   render: tableStory([2, 3, 8]),
+}
+
+// ── Folders ───────────────────────────────────────────────────────────────────
+interface DemoCampaign {
+  id: number
+  name: string
+  listName: string
+  status: string
+  sentDate: string | null
+  /** A folder id from the folders store's `campaigns` scope, or null for unfiled. */
+  folderId: string | null
+}
+
+const campaigns: DemoCampaign[] = [
+  { id: 1, name: 'Black Friday 2025 — Early Access VIP', listName: 'VIP Customer Circle', status: 'Sent', sentDate: '2025-11-22', folderId: 'cmp-black-friday' },
+  { id: 2, name: 'Welcome Series #1 — Glad to Have You!', listName: 'Newsletter Opt-in', status: 'Sent', sentDate: '2025-11-15', folderId: 'cmp-automated' },
+  { id: 3, name: 'Cyber Monday Flash Sale — 24 Hours Only', listName: 'Master Subscriber List', status: 'Sent', sentDate: '2025-11-25', folderId: 'cmp-promotions' },
+  { id: 4, name: 'December Holiday Gift Guide 2025', listName: 'Master Subscriber List', status: 'Sent', sentDate: '2025-12-08', folderId: 'cmp-seasonal' },
+  { id: 5, name: 'Year End Recap & Thank You', listName: 'Master Subscriber List', status: 'Sent', sentDate: '2025-12-30', folderId: null },
+  { id: 6, name: 'Spring Collection Preview — First Look', listName: 'Master Subscriber List', status: 'Scheduled', sentDate: '2026-03-20', folderId: 'cmp-seasonal' },
+  { id: 7, name: 'VIP Exclusive — Secret Sale Event', listName: 'VIP Customer Circle', status: 'Scheduled', sentDate: '2026-03-15', folderId: 'cmp-promotions' },
+  { id: 8, name: 'Product Update: Dyson V15 Now In Stock', listName: 'Product Announcement', status: 'Draft', sentDate: null, folderId: 'cmp-announcements' },
+  { id: 9, name: 'Abandoned Cart Reminder — Complete Your Order', listName: 'Abandoned Cart Recovery', status: 'Sending', sentDate: '2026-03-07', folderId: 'cmp-automated' },
+  { id: 10, name: 'Customer Feedback Survey — Share Your Thoughts', listName: 'Master Subscriber List', status: 'Draft', sentDate: null, folderId: null },
+]
+
+const campaignHeaders = [
+  { title: 'Campaign Name', key: 'name', sortable: true },
+  { title: 'List', key: 'listName' },
+  { title: 'Status', key: 'status' },
+  { title: 'Sent Date', key: 'sentDate' },
+  { title: 'Actions', key: 'actions', align: 'end' as const, sortable: false },
+]
+
+/**
+ * A list that files its records in folders, composed the way the app's Campaigns list is
+ * (`src/views/Marketing/EmailCampaigns.vue`). Four parts, all on the `useFolders` store:
+ *
+ * - **Manage Folders** in the page header opens `MpManageFoldersDrawer` (create, rename,
+ *   nest, delete). Its `@deleted` event is where the list un-files that folder's records.
+ * - **`MpFolderSelect`** in the toolbar's `#actions` slot filters the table. A parent folder
+ *   includes its children, and so do the counts beside each folder.
+ * - The chosen folder becomes a **"Folder: name" chip** through the toolbar's `active-filters`,
+ *   with Clear; `@remove-filter` and `@clear-filters` reset the select.
+ * - **Move to folder…** in the row menu, and "Move to folder" in the bulk bar, open
+ *   `MpMoveToFolderDialog`. The row's folder shows as a caption under its name.
+ * - **Delete**, last in the row menu and the bulk bar, always asks first (`MpConfirmDialog`,
+ *   `danger`): the bulk bar here is the Campaigns page's own, Move to folder and Delete.
+ *
+ * Every overlay starts closed: open the drawer from the header, the dialog from a row menu.
+ */
+export const WithFolders: Story = {
+  render: () => ({
+    components: {
+      MpPageHeader,
+      MpDataTableToolbar,
+      MpStatusChip,
+      MpEmptyState,
+      MpFolderSelect,
+      MpManageFoldersDrawer,
+      MpMoveToFolderDialog,
+      MpConfirmDialog,
+      MpFloatingBulkBar,
+      MpRowActionsMenu,
+      MpMenuItem,
+    },
+    setup() {
+      const foldersStore = useFoldersStore()
+      const rows = ref(campaigns.map(campaign => ({ ...campaign })))
+      const search = ref('')
+      const selected = ref<number[]>([])
+
+      // Folder filtering
+      const selectedFolderId = ref<string | null>(null)
+      const manageFoldersOpen = ref(false)
+      const campaignFolders = computed(() => foldersStore.foldersByScope('campaigns'))
+
+      /** A folder and its children: a parent folder lists what is filed under both. */
+      const withChildren = (folderId: string) => [folderId, ...foldersStore.childrenOf(folderId).map(f => f.id)]
+
+      const folderCounts = computed(() => {
+        const counts: Record<string, number> = {}
+        for (const folder of campaignFolders.value) {
+          const ids = withChildren(folder.id)
+          counts[folder.id] = rows.value.filter(c => c.folderId && ids.includes(c.folderId)).length
+        }
+        return counts
+      })
+
+      const activeFilterEntries = computed(() => {
+        const folder = foldersStore.getFolder(selectedFolderId.value)
+        return folder ? [{ key: 'folder', label: `Folder: ${folder.name}` }] : []
+      })
+
+      const filteredCampaigns = computed(() => {
+        if (!selectedFolderId.value) return rows.value
+        const ids = withChildren(selectedFolderId.value)
+        return rows.value.filter(c => c.folderId && ids.includes(c.folderId))
+      })
+
+      function folderName(folderId: string | null) {
+        return foldersStore.getFolder(folderId)?.name ?? 'Unfiled'
+      }
+
+      function clearFolder() {
+        selectedFolderId.value = null
+      }
+
+      function moveToFolder(id: number, folderId: string | null) {
+        const campaign = rows.value.find(c => c.id === id)
+        if (campaign) campaign.folderId = folderId
+      }
+
+      /** A deleted folder leaves its campaigns unfiled. */
+      function reassignFolder(folderId: string) {
+        for (const campaign of rows.value) {
+          if (campaign.folderId === folderId) campaign.folderId = null
+        }
+      }
+
+      // Move to folder (row + bulk)
+      const moveTarget = ref<DemoCampaign | null>(null)
+      const moveDialogOpen = computed({
+        get: () => !!moveTarget.value,
+        set: (open: boolean) => { if (!open) moveTarget.value = null },
+      })
+      const bulkMoveOpen = ref(false)
+      const bulkLabel = computed(() => `${selected.value.length} campaign${selected.value.length === 1 ? '' : 's'}`)
+
+      function onMove(folderId: string | null) {
+        if (moveTarget.value) moveToFolder(moveTarget.value.id, folderId)
+      }
+
+      function onBulkMove(folderId: string | null) {
+        for (const id of selected.value) moveToFolder(id, folderId)
+        selected.value = []
+      }
+
+      // Delete (row + bulk), always confirmed
+      const deleteTarget = ref<DemoCampaign | null>(null)
+      const bulkDeleteOpen = ref(false)
+      const deleteDialogOpen = computed({
+        get: () => !!deleteTarget.value,
+        set: (open: boolean) => { if (!open) deleteTarget.value = null },
+      })
+      const deleteIds = computed(() => (deleteTarget.value ? [deleteTarget.value.id] : selected.value))
+
+      function confirmDelete() {
+        rows.value = rows.value.filter(c => !deleteIds.value.includes(c.id))
+        selected.value = []
+        deleteTarget.value = null
+        bulkDeleteOpen.value = false
+      }
+
+      function selectAll() {
+        selected.value = filteredCampaigns.value.map(c => c.id)
+      }
+
+      return {
+        rows, search, selected, headers: campaignHeaders,
+        selectedFolderId, manageFoldersOpen, campaignFolders, folderCounts,
+        activeFilterEntries, filteredCampaigns, folderName, clearFolder, reassignFolder,
+        moveTarget, moveDialogOpen, bulkMoveOpen, bulkLabel, onMove, onBulkMove, selectAll,
+        deleteTarget, deleteDialogOpen, bulkDeleteOpen, deleteIds, confirmDelete,
+      }
+    },
+    template: `
+      <div class="d-flex flex-column gap-5">
+        <MpPageHeader
+          eyebrow="Marketing · Campaigns"
+          title="Email Campaigns"
+          :subtitle="rows.length + ' campaigns'"
+        >
+          <template #actions>
+            <v-btn variant="outlined" prepend-icon="folder" class="text-none" @click="manageFoldersOpen = true">Manage Folders</v-btn>
+            <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none">New Campaign</v-btn>
+          </template>
+        </MpPageHeader>
+
+        <v-card variant="flat" border rounded="lg" class="overflow-hidden">
+          <MpDataTableToolbar
+            v-model:search="search"
+            title="Campaigns"
+            search-placeholder="Search campaigns..."
+            :active-filters="activeFilterEntries"
+            :total-count="filteredCampaigns.length"
+            @remove-filter="clearFolder"
+            @clear-filters="clearFolder"
+          >
+            <template #actions>
+              <MpFolderSelect
+                v-model="selectedFolderId"
+                :folders="campaignFolders"
+                :counts="folderCounts"
+                :total-count="rows.length"
+                @manage="manageFoldersOpen = true"
+              />
+            </template>
+          </MpDataTableToolbar>
+
+          <v-data-table
+            v-model="selected"
+            :headers="headers"
+            :items="filteredCampaigns"
+            :search="search"
+            item-value="id"
+            show-select
+            hover
+            density="comfortable"
+            :items-per-page="15"
+          >
+            <!-- Labelled select boxes (WCAG W-04). aria-checked is dropped: Vuetify's "mixed" is invalid on a native checkbox. -->
+            <template #header.data-table-select="{ allSelected, selectAll, someSelected }">
+              <v-checkbox-btn
+                :model-value="allSelected"
+                :indeterminate="someSelected && !allSelected"
+                :aria-checked="undefined"
+                aria-label="Select all rows"
+                @update:model-value="selectAll(!allSelected)"
+              />
+            </template>
+            <template #item.data-table-select="{ internalItem, isSelected, toggleSelect }">
+              <v-checkbox-btn
+                :model-value="isSelected(internalItem)"
+                :aria-label="'Select ' + internalItem.raw.name"
+                @update:model-value="toggleSelect(internalItem)"
+              />
+            </template>
+
+            <template #item.name="{ item }">
+              <div class="py-2">
+                <div class="font-weight-medium text-body-2">{{ item.name }}</div>
+                <div v-if="item.folderId" class="text-caption text-medium-emphasis">{{ folderName(item.folderId) }}</div>
+              </div>
+            </template>
+
+            <template #item.listName="{ item }">
+              <span class="text-body-2 text-medium-emphasis">{{ item.listName }}</span>
+            </template>
+
+            <template #item.status="{ item }">
+              <MpStatusChip :status="item.status" type="campaign" size="sm" show-icon />
+            </template>
+
+            <template #item.sentDate="{ item }">
+              <span class="text-caption text-medium-emphasis text-no-wrap">{{ item.sentDate || '--' }}</span>
+            </template>
+
+            <template #item.actions="{ item }">
+              <MpRowActionsMenu :ariaLabel="'Actions for ' + item.name">
+                <MpMenuItem title="Edit" icon="pencil" />
+                <MpMenuItem title="Duplicate" icon="copy" />
+                <MpMenuItem title="Move to folder…" icon="folder-input" @click="moveTarget = item" />
+                <v-divider class="my-1" />
+                <MpMenuItem title="Delete" icon="trash-2" danger @click="deleteTarget = item" />
+              </MpRowActionsMenu>
+            </template>
+
+            <template #no-data>
+              <MpEmptyState
+                v-if="search"
+                icon="search"
+                title="No campaigns match your search"
+                description="Try a different term or clear the search."
+              />
+              <MpEmptyState
+                v-else
+                icon="folder"
+                title="This folder is empty"
+                :description="'No campaigns filed under ' + folderName(selectedFolderId) + ' yet.'"
+              />
+            </template>
+          </v-data-table>
+        </v-card>
+
+        <MpManageFoldersDrawer
+          v-model="manageFoldersOpen"
+          scope="campaigns"
+          :counts="folderCounts"
+          @deleted="reassignFolder"
+        />
+
+        <MpMoveToFolderDialog
+          v-model="moveDialogOpen"
+          scope="campaigns"
+          :current-folder-id="moveTarget ? moveTarget.folderId : null"
+          :item-label="moveTarget ? moveTarget.name : undefined"
+          @move="onMove"
+        />
+
+        <MpMoveToFolderDialog
+          v-model="bulkMoveOpen"
+          scope="campaigns"
+          :current-folder-id="null"
+          :item-label="bulkLabel"
+          @move="onBulkMove"
+        />
+
+        <MpConfirmDialog
+          :model-value="deleteDialogOpen || bulkDeleteOpen"
+          :title="deleteIds.length === 1 ? 'Delete this campaign?' : 'Delete ' + deleteIds.length + ' campaigns?'"
+          message="They will be permanently deleted. This cannot be undone."
+          confirm-label="Delete"
+          danger
+          @update:model-value="open => { if (!open) { deleteTarget = null; bulkDeleteOpen = false } }"
+          @confirm="confirmDelete"
+        />
+
+        <MpFloatingBulkBar
+          :count="selected.length"
+          :total="filteredCampaigns.length"
+          @clear="selected = []"
+          @select-all="selectAll"
+        >
+          ${bulkActions(['move', 'delete'], { move: 'bulkMoveOpen = true', delete: 'bulkDeleteOpen = true' })}
+        </MpFloatingBulkBar>
+      </div>
+    `,
+  }),
+}
+
+// ── Overflow cell ─────────────────────────────────────────────────────────────
+const products = [
+  { id: 1, name: 'Premium Full Face Helmet', sku: 'HLM-FF-001', collections: ['Premium Full Face', 'Helmets', 'Road', 'Touring', 'Track Day', 'New Arrivals', 'Best Sellers', 'Gift Ideas', 'Summer Sale', 'Staff Picks'] },
+  { id: 2, name: 'City Commuter Scooter', sku: 'SCT-CC-014', collections: ['Scooters', 'Commuter', 'Electric'] },
+  { id: 3, name: 'Reflective Rain Jacket', sku: 'APP-RJ-203', collections: ['Apparel'] },
+  { id: 4, name: 'Replacement Brake Pads', sku: 'PRT-BP-088', collections: [] },
+]
+
+const productHeaders = [
+  { title: 'Product', key: 'name' },
+  { title: 'SKU', key: 'sku' },
+  { title: 'Collections', key: 'collections', sortable: false },
+]
+
+/** The Products table's Collections column, markup copied from `src/views/Products/ProductsList.vue`. */
+function overflowCellStory() {
+  return () => ({
+    setup: () => ({ products, headers: productHeaders }),
+    template: `
+      <v-card variant="flat" border rounded="lg" class="overflow-hidden">
+        <v-data-table :headers="headers" :items="products" item-value="id" density="comfortable" hide-default-footer>
+          <template #item.name="{ item }">
+            <span class="text-body-2 font-weight-medium">{{ item.name }}</span>
+          </template>
+          <template #item.collections="{ item }">
+            <div v-if="item.collections.length" class="d-flex flex-wrap ga-1">
+              <v-chip size="x-small" variant="tonal" label>{{ item.collections[0] }}</v-chip>
+              <v-tooltip v-if="item.collections.length > 1" location="top" :text="item.collections.slice(1).join(', ')">
+                <template #activator="{ props: tip }">
+                  <v-chip v-bind="tip" size="x-small" variant="text" tabindex="0">+{{ item.collections.length - 1 }} more</v-chip>
+                </template>
+              </v-tooltip>
+            </div>
+            <span v-else class="text-body-2 text-medium-emphasis">Not in a collection</span>
+          </template>
+        </v-data-table>
+      </v-card>
+    `,
+  })
+}
+
+/**
+ * A cell that can hold many values shows the first and a "+N more" chip; the chip reveals the
+ * rest on hover or keyboard focus (it is a tab stop). Four rows: ten values ("+9 more"), three
+ * ("+2 more"), a single value (no chip), and none (a muted sentence, never an empty cell).
+ * **Overflow Cell (Open)** shows the revealed list.
+ *
+ * LiquidSky's `AppExpandableList` is this cell. Its example reveals the rest as a list in a
+ * popover; here they are one comma-separated line in a tooltip.
+ */
+export const OverflowCell: Story = {
+  render: overflowCellStory(),
+}
+
+/** The first row's "+9 more" chip hovered, so the other nine values are revealed. */
+export const OverflowCellOpen: Story = {
+  name: 'Overflow Cell (Open)',
+  parameters: overlayDocs('360px'),
+  render: overflowCellStory(),
+  play: async ({ canvasElement }) => {
+    await new Promise(resolve => setTimeout(resolve, 300))
+    canvasElement.querySelector('.v-chip--variant-text')?.dispatchEvent(new MouseEvent('mouseenter'))
+  },
 }

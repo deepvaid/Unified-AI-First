@@ -166,7 +166,7 @@ export const Variants: Story = {
  * label-to-control and control-to-hint distance — is a token pair (`field.labelGap` 6,
  * `field.hintGap` 4), stated once for every field type.
  */
-export const Sizes: Story = {
+export const Alignment: Story = {
   render: () => ({
     components: { MpFormField, MpFormGrid },
     template: `

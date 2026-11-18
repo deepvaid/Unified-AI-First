@@ -2,11 +2,13 @@ import type { Meta, StoryObj } from '@storybook/vue3'
 import LandingInsertionPoint from './LandingInsertionPoint.vue'
 import LandingBlockView from './LandingBlockView.vue'
 import { PALETTE, PAGE_BLOCKS } from './landingStoryFixtures'
+import { constrain } from '@/stories/decorators'
 
 const meta = {
   title: 'Product/Marketing/Landing Pages/LandingInsertionPoint',
   component: LandingInsertionPoint,
   tags: ['autodocs'],
+  decorators: [constrain('section')],
   parameters: {
     docs: {
       description: {
@@ -61,7 +63,7 @@ export const Default: Story = {
   render: (args) => ({
     components: { LandingInsertionPoint },
     setup: () => ({ args }),
-    template: '<div style="max-width: 720px; margin: 0 auto; padding: 24px 0"><LandingInsertionPoint v-bind="args" /></div>',
+    template: '<div class="py-6"><LandingInsertionPoint v-bind="args" /></div>',
   }),
 }
 
@@ -72,7 +74,7 @@ export const BetweenBlocks: Story = {
     components: { LandingInsertionPoint, LandingBlockView },
     setup: () => ({ args, blocks: PAGE_BLOCKS.slice(0, 3), palette: PALETTE }),
     template: `
-      <div style="max-width: 720px; margin: 0 auto">
+      <div>
         <template v-for="b in blocks" :key="b.id">
           <LandingInsertionPoint v-bind="args" />
           <LandingBlockView :block="b" editable :palette="palette" />

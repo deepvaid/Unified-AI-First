@@ -27,7 +27,8 @@
 }
 
 .docs-story .mp-storybook-root .v-application__wrap,
-.docs-story .mp-story-canvas {
+.docs-story .mp-story-canvas,
+.docs-story .mp-content-frame {
   min-height: 0;
 }
 

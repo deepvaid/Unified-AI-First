@@ -15,6 +15,7 @@ const props = withDefaults(defineProps<{
   /** Optional last-updated meta line ("Updated 2h ago"), rendered as the smallest, most-muted caption at the card's bottom edge. */
   updatedAt?: string
 }>(), {
+  trendPositive: true,
   emphasis: 'default',
 })
 

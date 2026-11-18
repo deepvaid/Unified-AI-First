@@ -1,11 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import LandingLayersPanel from './LandingLayersPanel.vue'
 import { PALETTE, PAGE_BLOCKS, block } from './landingStoryFixtures'
+import { constrain } from '@/stories/decorators'
 
 const meta = {
   title: 'Product/Marketing/Landing Pages/LandingLayersPanel',
   component: LandingLayersPanel,
   tags: ['autodocs'],
+  decorators: [constrain('narrow')],
   parameters: {
     docs: {
       description: {
@@ -56,28 +58,19 @@ canvas drag grip and insertion-point drop zones have no keyboard path, so the la
 export default meta
 type Story = StoryObj<typeof meta>
 
-const render: Story['render'] = (args) => ({
-  components: { LandingLayersPanel },
-  setup: () => ({ args }),
-  template: '<div style="max-width: 300px"><LandingLayersPanel v-bind="args" /></div>',
-})
-
 /** A typical page outline with nothing selected. */
 export const Default: Story = {
   args: { blocks: PAGE_BLOCKS, selectedId: null, palette: PALETTE },
-  render,
 }
 
 /** A row selected — mirrors the canvas selection ring. */
 export const WithSelection: Story = {
   args: { blocks: PAGE_BLOCKS, selectedId: PAGE_BLOCKS[2]!.id, palette: PALETTE },
-  render,
 }
 
 /** An empty page — the panel renders no rows. */
 export const NoBlocks: Story = {
   args: { blocks: [], selectedId: null, palette: PALETTE },
-  render,
 }
 
 /**
@@ -96,5 +89,4 @@ export const PreviewStrings: Story = {
     selectedId: null,
     palette: PALETTE,
   },
-  render,
 }

@@ -2,6 +2,8 @@ import type { Meta, StoryObj } from '@storybook/vue3'
 import DvWidgetDraftCard from './DvWidgetDraftCard.vue'
 import { useDashboardsStore } from '@/stores/useDashboards'
 import type { DashboardWidgetDraft } from '@/stores/dashboards/types'
+import { isolateStorage } from '@/stories/decorators'
+import { grid } from '@/stories/storyTemplate'
 
 // Seeded demo account (Pinia is registered in .storybook/preview.ts); the
 // default seeded dashboard for it is `2000290-home` ("Overview").
@@ -54,6 +56,17 @@ const meta = {
   title: 'Product/Da Vinci/DvWidgetDraftCard',
   component: DvWidgetDraftCard,
   tags: ['autodocs'],
+  decorators: [
+    // Seed the dashboards store so commitDraft() can resolve the target dashboard.
+    () => ({
+      setup() {
+        useDashboardsStore().ensureAccountDashboards(ACCOUNT_ID)
+      },
+      template: '<story />',
+    }),
+    // Outermost: the store persists to localStorage, so put it back on unmount.
+    isolateStorage,
+  ],
   args: {
     accountId: ACCOUNT_ID,
     dashboardId: DASHBOARD_ID,
@@ -96,11 +109,7 @@ after adding, the card dims into its "Added" state.
   },
   render: (args) => ({
     components: { DvWidgetDraftCard },
-    setup() {
-      // Seed the dashboards store so commitDraft() can resolve the target dashboard.
-      useDashboardsStore().ensureAccountDashboards(ACCOUNT_ID)
-      return { args }
-    },
+    setup: () => ({ args }),
     template: `
       <div style="max-width: 360px;">
         <DvWidgetDraftCard v-bind="args" />
@@ -112,62 +121,32 @@ after adding, the card dims into its "Added" state.
 export default meta
 type Story = StoryObj<typeof meta>
 
-
 /** Line-chart draft — the most common Da Vinci proposal. */
 export const Default: Story = {}
 
-/** KPI quad draft. */
 /** Every draft type the card can preview. */
 export const Variants: Story = {
-  render: () => ({
-    components: { DvWidgetDraftCard },
-    setup: () => ({ ts: TIMESERIES_DRAFT, kpi: KPI_DRAFT, tbl: TABLE_DRAFT }),
-    template: `
-      <div class="d-flex flex-column ga-6">
-        <div>
-          <div class="text-caption text-medium-emphasis mb-2">timeseries</div>
-          <DvWidgetDraftCard :draft="ts" />
-        </div>
-        <div>
-          <div class="text-caption text-medium-emphasis mb-2">kpi</div>
-          <DvWidgetDraftCard :draft="kpi" />
-        </div>
-        <div>
-          <div class="text-caption text-medium-emphasis mb-2">table</div>
-          <DvWidgetDraftCard :draft="tbl" />
-        </div>
-      </div>
-    `,
-  }),
-  args: {} as never,
+  render: grid({ DvWidgetDraftCard }, [
+    { label: 'timeseries', args: { draft: TIMESERIES_DRAFT } },
+    { label: 'kpi', args: { draft: KPI_DRAFT } },
+    { label: 'table', args: { draft: TABLE_DRAFT } },
+  ]),
 }
 
 /** Selected vs unselected. Tab to the card to see the focus ring. */
 export const States: Story = {
-  render: () => ({
-    components: { DvWidgetDraftCard },
-    setup: () => ({ d: TIMESERIES_DRAFT }),
-    template: `
-      <div class="d-flex flex-column ga-6">
-        <div>
-          <div class="text-caption text-medium-emphasis mb-2">unselected</div>
-          <DvWidgetDraftCard :draft="d" />
-        </div>
-        <div>
-          <div class="text-caption text-medium-emphasis mb-2">selected</div>
-          <DvWidgetDraftCard :draft="d" selected />
-        </div>
-      </div>
-    `,
-  }),
-  args: {} as never,
+  render: grid({ DvWidgetDraftCard }, [
+    { label: 'unselected', args: { selected: false } },
+    { label: 'selected', args: { selected: true } },
+  ]),
 }
 
-/** Mini-table draft. */
+/** KPI quad draft. */
 export const KpiDraft: Story = {
   args: { draft: KPI_DRAFT },
 }
 
+/** Mini-table draft. */
 export const TableDraft: Story = {
   args: { draft: TABLE_DRAFT },
 }

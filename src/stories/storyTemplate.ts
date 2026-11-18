@@ -92,3 +92,38 @@ export function liquidskyDocs(componentId: string): string {
   const list = names.map((name) => `\`${name}\``).join(' · ')
   return `> **In LiquidSky:** ${list} — these take their design from this page. [Every LiquidSky name](?path=/docs/liquidsky--docs)\n\n`
 }
+
+/** The bulk actions the stories offer: one label and one icon per action, in every story. */
+const BULK_ACTIONS = {
+  fulfill: { label: 'Mark fulfilled', icon: 'package-check' },
+  export: { label: 'Export', icon: 'download' },
+  tag: { label: 'Tag', icon: 'tag' },
+  move: { label: 'Move to folder', icon: 'folder-input' },
+  cancel: { label: 'Cancel orders', icon: 'ban', danger: true },
+  delete: { label: 'Delete', icon: 'trash-2', danger: true },
+} as const
+
+export type BulkAction = keyof typeof BULK_ACTIONS
+
+/**
+ * The buttons inside an `MpFloatingBulkBar`, for a story's `template:`.
+ *
+ * Every story gets the same button the app's most common bar uses (`size="small"
+ * variant="text"`, icon first, `text-none`), the same label and icon for the same action, and
+ * the destructive action last in `text-error`, whatever order the story lists them in. A story
+ * names its actions; it does not write the markup, so the bars cannot drift apart.
+ *
+ *   `<MpFloatingBulkBar …>${bulkActions(['move', 'delete'], { move: 'bulkMoveOpen = true' })}</MpFloatingBulkBar>`
+ *
+ * @param actions   which actions to show
+ * @param handlers  an expression for `@click`, by action
+ */
+export function bulkActions(actions: BulkAction[], handlers: Partial<Record<BulkAction, string>> = {}): string {
+  const ordered = [...actions].sort((a, b) => Number('danger' in BULK_ACTIONS[a]) - Number('danger' in BULK_ACTIONS[b]))
+  return ordered.map((action) => {
+    const { label, icon } = BULK_ACTIONS[action]
+    const danger = 'danger' in BULK_ACTIONS[action]
+    const click = handlers[action] ? ` @click="${handlers[action]}"` : ''
+    return `<v-btn size="small" variant="text" class="text-none${danger ? ' text-error' : ''}" prepend-icon="${icon}"${click}>${label}</v-btn>`
+  }).join('\n')
+}

@@ -21,10 +21,10 @@ export type IllustrationName =
 
 const props = withDefaults(defineProps<{
   name: IllustrationName
-  /** Rendered width in px; height is size * 0.75 to match the 160x120 viewBox. */
-  size?: number
+  /** Rendered width on `component.illustration.size` (120 / 160 / 180); height follows the 4:3 viewBox. */
+  size?: 'sm' | 'md' | 'lg'
 }>(), {
-  size: 160,
+  size: 'md',
 })
 
 const registry: Record<IllustrationName, string> = {
@@ -45,8 +45,8 @@ const markup = computed(() => registry[props.name] ?? '')
   <span
     v-if="markup"
     class="mp-illustration"
+    :class="`mp-illustration--${size}`"
     aria-hidden="true"
-    :style="{ width: `${size}px`, height: `${size * 0.75}px` }"
     v-html="markup"
   />
 </template>
@@ -54,7 +54,20 @@ const markup = computed(() => registry[props.name] ?? '')
 <style scoped>
 .mp-illustration {
   display: inline-flex;
+  aspect-ratio: 4 / 3;
   color: var(--icon-secondary);
+}
+
+.mp-illustration--sm {
+  width: var(--mp-component-illustration-size-sm);
+}
+
+.mp-illustration--md {
+  width: var(--mp-component-illustration-size-md);
+}
+
+.mp-illustration--lg {
+  width: var(--mp-component-illustration-size-lg);
 }
 
 .mp-illustration :deep(svg) {

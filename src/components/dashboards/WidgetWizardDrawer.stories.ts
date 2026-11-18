@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 import type { DashboardFilterState, DashboardWidgetDraft } from '@/stores/dashboards/types'
+import { overlayDocs } from '@/stories/decorators'
 import WidgetWizardDrawer from './WidgetWizardDrawer.vue'
 
 const FILTERS: DashboardFilterState = {
@@ -78,10 +79,10 @@ const meta = {
       return { args, open }
     },
     template: `
-      <section style="min-height:720px;background:rgb(var(--v-theme-background));padding:24px;">
+      <div>
         <v-btn color="primary" prepend-icon="plus" @click="open = true">Add widget</v-btn>
         <WidgetWizardDrawer v-bind="args" v-model="open" />
-      </section>
+      </div>
     `,
   }),
 } satisfies Meta<typeof WidgetWizardDrawer>
@@ -89,50 +90,16 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-export const LibraryStep: Story = {}
+export const LibraryStep: Story = {
+  parameters: overlayDocs('720px'),
+}
 
 export const EditExistingWidget: Story = {
   args: { initialDraft: EDIT_DRAFT },
+  parameters: overlayDocs('720px'),
 }
 
 export const DaVinciDraft: Story = {
   args: { initialDraft: DAVINCI_DRAFT },
-}
-
-// ── Template: Variants · Sizes · States ──────────────────────────────────────
-
-/**
- * The wizard's two structures are its two steps: **library** (pick a widget type) and **edit**
- * (configure the one you picked). Both live in the same `MpFormDrawer` shell, so they share
- * its header/body/footer rhythm.
- */
-export const Variants: Story = {
-  render: (args) => ({
-    components: { WidgetWizardDrawer },
-    setup: () => ({ args }),
-    template: `<WidgetWizardDrawer v-bind="args" />`,
-  }),
-}
-
-/**
- * There is no `size` prop. The drawer is wider than the 480 default because the edit step puts
- * a live preview beside the form; the width is set once on the `MpFormDrawer` it composes.
- * Below 640px it goes full-bleed like every other drawer.
- */
-export const Sizes: Story = {
-  render: (args) => ({
-    components: { WidgetWizardDrawer },
-    setup: () => ({ args }),
-    template: `<WidgetWizardDrawer v-bind="args" />`,
-  }),
-}
-
-/** Opening on the library step, opening straight into edit for an existing widget, and the
- *  Da Vinci draft hand-off where the wizard arrives pre-filled. */
-export const States: Story = {
-  render: (args) => ({
-    components: { WidgetWizardDrawer },
-    setup: () => ({ args }),
-    template: `<WidgetWizardDrawer v-bind="args" />`,
-  }),
+  parameters: overlayDocs('720px'),
 }

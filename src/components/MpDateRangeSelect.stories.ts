@@ -1,8 +1,9 @@
 import { ref, watch } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpDateRangeSelect from './MpDateRangeSelect.vue'
-import { dateRangeLabel, type DateRangePreset, type DateRangeValue } from '@/stores/useAnalytics'
+import { dateRangeLabel, dateRangePresets, type DateRangeValue } from '@/stores/useAnalytics'
 import { liquidskyDocs } from '@/stories/storyTemplate'
+import { overlayDocs } from '@/stories/decorators'
 
 const meta = {
   title: 'Molecules/MpDateRangeSelect',
@@ -21,8 +22,9 @@ of standard presets plus a "Custom range" option that reveals From/To date field
 **Use when:** a report or dashboard needs one date-range filter driving its queried data — pair
 it with \`isWithinRange()\` from \`useAnalytics\` to filter rows against the selected value.
 
-**Don't use when:** the page needs two independent date pickers, or a range that isn't
-report-scoped (use plain \`v-text-field type="date"\` fields instead).
+**Don't use when:** a form needs one date (use the single-date field — Patterns › Form Fields,
+\`DateField\`), two independent dates, or a range that isn't report-scoped (use plain
+\`v-text-field type="date"\` fields instead).
 
 ### Usage
 \`\`\`html
@@ -89,19 +91,45 @@ const filteredRows = computed(() => rows.filter((r) => isWithinRange(r.date, dat
       )
       return { value }
     },
-    template: `
-      <section style="padding:24px;background:rgb(var(--v-theme-background));min-height:280px;">
-        <MpDateRangeSelect v-model="value" />
-      </section>
-    `,
+    template: '<MpDateRangeSelect v-model="value" />',
   }),
 } satisfies Meta<typeof MpDateRangeSelect>
 
 export default meta
 type Story = StoryObj<typeof meta>
 
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
 export const Default: Story = {
   args: { modelValue: { preset: 'Last 30 days' } },
+}
+
+/**
+ * What the trigger shows for each kind of value: a preset shows its name; a custom range shows
+ * the formatted dates; a custom range with no dates yet falls back to "Custom range". Each
+ * specimen is live — open one and pick another range.
+ */
+export const States: Story = {
+  render: () => ({
+    components: { MpDateRangeSelect },
+    setup() {
+      const specimens = ref<{ label: string, value: DateRangeValue }[]>([
+        { label: 'Preset', value: { preset: 'Last 30 days' } },
+        { label: 'Custom range, both dates', value: { preset: 'Custom', from: '2026-06-01', to: '2026-06-30' } },
+        { label: 'Custom range, no dates yet', value: { preset: 'Custom' } },
+      ])
+      return { specimens }
+    },
+    template: `
+      <div class="d-flex flex-wrap ga-6">
+        <div v-for="s in specimens" :key="s.label">
+          <div class="text-caption text-medium-emphasis mb-2">{{ s.label }}</div>
+          <MpDateRangeSelect v-model="s.value" />
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
 }
 
 /** Every standard preset, closed, side by side — the trigger label is just the preset name. */
@@ -109,50 +137,42 @@ export const AllPresets: Story = {
   render: () => ({
     components: { MpDateRangeSelect },
     setup() {
-      const presets: DateRangePreset[] = ['Last 7 days', 'Last 30 days', 'Last 90 days', 'This month', 'This year']
-      const values = ref<DateRangeValue[]>(presets.map((preset) => ({ preset })))
-      return { presets, values }
+      const values = ref<DateRangeValue[]>(dateRangePresets.map((preset) => ({ preset })))
+      return { presets: dateRangePresets, values }
     },
     template: `
-      <div style="padding:24px;display:flex;flex-wrap:wrap;gap:16px;background:rgb(var(--v-theme-background));">
+      <div class="d-flex flex-wrap ga-4">
         <MpDateRangeSelect v-for="(p, i) in presets" :key="p" v-model="values[i]" />
       </div>
     `,
   }),
-  args: {} as any,
-}
-
-/** An active Custom range with both bounds set — the trigger shows the formatted date span. */
-export const CustomRange: Story = {
-  args: { modelValue: { preset: 'Custom', from: '2026-06-01', to: '2026-06-30' } },
-}
-
-/** Custom selected but no bounds filled yet — the trigger falls back to "Custom range". */
-export const CustomRangeUnset: Story = {
-  args: { modelValue: { preset: 'Custom' } },
+  args: {} as never,
 }
 
 /** The preset menu opened automatically — the active preset is highlighted, "Custom range" sits below a divider. */
 export const MenuOpen: Story = {
   args: { modelValue: { preset: 'Last 90 days' } },
+  parameters: overlayDocs('420px'),
   play: async ({ canvasElement }) => {
-    await new Promise((resolve) => setTimeout(resolve, 300))
-    const trigger = canvasElement.querySelector<HTMLElement>('.mp-range-trigger')
-    trigger?.click()
+    await wait(300)
+    canvasElement.querySelector<HTMLElement>('.mp-range-trigger')?.click()
   },
 }
 
 /** Clicking "Custom range" reveals the From/To fields inline, without closing the menu. */
 export const CustomPanelOpen: Story = {
   args: { modelValue: { preset: 'This month' } },
+  parameters: overlayDocs('600px'),
   play: async ({ canvasElement }) => {
-    await new Promise((resolve) => setTimeout(resolve, 300))
+    await wait(300)
     const trigger = canvasElement.querySelector<HTMLElement>('.mp-range-trigger')
     trigger?.click()
-    await new Promise((resolve) => setTimeout(resolve, 200))
-    const items = Array.from(document.querySelectorAll<HTMLElement>('.v-list-item'))
-    const customItem = items.find((el) => el.textContent?.includes('Custom range'))
-    customItem?.click()
+    await wait(200)
+    // The menu is teleported out of the canvas. The trigger's `aria-controls` names this story's
+    // own menu, so the click never lands in another story's menu.
+    const menu = document.getElementById(trigger?.getAttribute('aria-controls') ?? '')
+    const items = Array.from(menu?.querySelectorAll<HTMLElement>('.v-list-item') ?? [])
+    items.find((el) => el.textContent?.includes('Custom range'))?.click()
   },
 }
 
@@ -165,11 +185,11 @@ export const LiveSelection: Story = {
       return { value, dateRangeLabel }
     },
     template: `
-      <div style="padding:24px;background:rgb(var(--v-theme-background));min-height:280px;">
+      <div>
         <MpDateRangeSelect v-model="value" />
         <p class="text-body-2 text-medium-emphasis mt-4">Active range: {{ dateRangeLabel(value) }}</p>
       </div>
     `,
   }),
-  args: {} as any,
+  args: {} as never,
 }

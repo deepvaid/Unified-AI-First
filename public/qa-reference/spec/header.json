@@ -21,8 +21,8 @@
           "part": "bar",
           "props": {
             "height": {
-              "light": "57px",
-              "dark": "57px"
+              "light": "56px",
+              "dark": "56px"
             },
             "background-color": {
               "light": "rgb(234, 237, 242)",

@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 import Plg3dsDialog from './Plg3dsDialog.vue'
+import { overlayDocs } from '@/stories/decorators'
 
 const meta = {
   title: 'Product/PLG/Plg3dsDialog',
@@ -8,6 +9,8 @@ const meta = {
   tags: ['autodocs'],
   parameters: {
     docs: {
+      // Every story opens the dialog on mount, so each gets its own frame on the docs page.
+      ...overlayDocs('520px').docs,
       description: {
         component: `
 ### Overview
@@ -74,10 +77,10 @@ decline path — this dialog always approves after the simulated delay.
       return { args, open }
     },
     template: `
-      <section style="min-height:420px;background:rgb(var(--v-theme-background));padding:24px;">
+      <div>
         <v-btn variant="outlined" prepend-icon="landmark" @click="open = true">Open verification</v-btn>
         <Plg3dsDialog v-bind="args" v-model="open" />
-      </section>
+      </div>
     `,
   }),
 } satisfies Meta<typeof Plg3dsDialog>
@@ -95,55 +98,21 @@ export const Default: Story = {}
  */
 export const Verifying: Story = {
   play: async () => {
-    // Dialog content teleports to <body> via v-dialog/v-overlay, so it's queried from
-    // `document` rather than canvasElement. Give the open transition a beat to settle.
+    // The dialog teleports to the overlay container, outside canvasElement, so the open dialog
+    // is found in `document` and everything else is queried inside it. Give the open
+    // transition a beat to settle.
     await new Promise(resolve => setTimeout(resolve, 400))
-    const firstField = document.querySelector<HTMLInputElement>('.v-otp-input__field')
+    const dialog = document.querySelector<HTMLElement>('.mp-dialog.v-overlay--active')
+    if (!dialog) return
+    const firstField = dialog.querySelector<HTMLInputElement>('.v-otp-input__field')
     if (firstField) {
       const paste = new Event('paste', { bubbles: true, cancelable: true })
       Object.defineProperty(paste, 'clipboardData', { value: { getData: () => '123456' } })
       firstField.dispatchEvent(paste)
     }
     await new Promise(resolve => setTimeout(resolve, 250))
-    const approveBtn = Array.from(document.querySelectorAll<HTMLButtonElement>('button'))
+    const approveBtn = Array.from(dialog.querySelectorAll<HTMLButtonElement>('button'))
       .find(btn => btn.textContent?.trim() === 'Approve')
     approveBtn?.click()
   },
-}
-
-// ── Template: Variants · Sizes · States ──────────────────────────────────────
-
-/**
- * One structure — a bank verification prompt. It is deliberately the only dialog in the app
- * with no dismissal other than its own footer: `persistent`, so a stray Esc cannot abandon a
- * payment mid-authorisation.
- */
-export const Variants: Story = {
-  render: (args) => ({
-    components: { Plg3dsDialog },
-    setup: () => ({ args }),
-    template: `<Plg3dsDialog v-bind="args" />`,
-  }),
-}
-
-/**
- * There is no `size` prop — this is `MpDialog`'s `sm` (440px). A six-digit code and one line of
- * explanation do not need more. Phase 4 replaced this file's own `pa-2` card and three `pa-4`
- * bands with the shell's single 20px inset.
- */
-export const Sizes: Story = {
-  render: (args) => ({
-    components: { Plg3dsDialog },
-    setup: () => ({ args }),
-    template: `<Plg3dsDialog v-bind="args" />`,
-  }),
-}
-
-/** Empty (Approve disabled), complete, and verifying (button in its loading state, inputs locked). */
-export const States: Story = {
-  render: (args) => ({
-    components: { Plg3dsDialog },
-    setup: () => ({ args }),
-    template: `<Plg3dsDialog v-bind="args" />`,
-  }),
 }

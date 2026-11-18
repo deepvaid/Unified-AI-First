@@ -3,6 +3,7 @@ import DvOrbitMicBar from './DvOrbitMicBar.vue'
 // Global orbit keyframes (dv-orbit-ripple) — imported by src/main.ts in the app;
 // pulled in here for the Storybook preview bundle.
 import '@/styles/dv-orbit.css'
+import { surfaceFrame } from '@/stories/decorators'
 
 const meta = {
   title: 'Product/Da Vinci/Voice/DvOrbitMicBar',
@@ -39,15 +40,11 @@ drawer is 420px wide, so stories render inside a fixed-width host.
       },
     },
   },
-  render: (args) => ({
-    components: { DvOrbitMicBar },
-    setup: () => ({ args }),
-    template: `
-      <div style="width: 420px; background: rgb(var(--v-theme-surface)); border: 1px solid rgb(var(--v-theme-outline-variant)); border-radius: 16px; padding-top: 20px;">
-        <DvOrbitMicBar v-bind="args" />
-      </div>
-    `,
-  }),
+  // The drawer-width host; the top inset stands in for the surface body above the bar.
+  decorators: [
+    () => ({ template: '<div class="pt-5"><story /></div>' }),
+    surfaceFrame({ width: '420px' }),
+  ],
 } satisfies Meta<typeof DvOrbitMicBar>
 
 export default meta

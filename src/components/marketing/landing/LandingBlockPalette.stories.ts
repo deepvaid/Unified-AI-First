@@ -1,11 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import LandingBlockPalette from './LandingBlockPalette.vue'
 import { PALETTE } from './landingStoryFixtures'
+import { constrain } from '@/stories/decorators'
 
 const meta = {
   title: 'Product/Marketing/Landing Pages/LandingBlockPalette',
   component: LandingBlockPalette,
   tags: ['autodocs'],
+  decorators: [constrain('narrow')],
   parameters: {
     docs: {
       description: {
@@ -53,15 +55,9 @@ type Story = StoryObj<typeof meta>
 /** The editor's full 14-type palette. */
 export const Default: Story = {
   args: { palette: PALETTE },
-  render: (args) => ({
-    components: { LandingBlockPalette },
-    setup: () => ({ args }),
-    template: '<div style="max-width: 280px"><LandingBlockPalette v-bind="args" /></div>',
-  }),
 }
 
 /** A trimmed palette — the grid reflows to whatever it's given. */
 export const Reduced: Story = {
   args: { palette: PALETTE.slice(0, 5) },
-  render: Default.render,
 }

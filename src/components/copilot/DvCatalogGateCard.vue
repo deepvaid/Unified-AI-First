@@ -115,7 +115,7 @@ function onAction(action: string) {
       :label="meter.label"
       :used="meter.used"
       :limit="meter.limit"
-      dense
+      density="compact"
       class="mt-4"
     />
   </DvOnboardingCardShell>

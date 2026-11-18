@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import SmsPhonePreview from './SmsPhonePreview.vue'
+import { measure } from '@/stories/decorators'
 
 const meta = {
   title: 'Product/Marketing/Campaigns/SmsPhonePreview',
@@ -36,7 +37,7 @@ export const Default: Story = {
   render: (args) => ({
     components: { SmsPhonePreview },
     setup: () => ({ args }),
-    template: `<div style="max-width:320px"><SmsPhonePreview v-bind="args" /></div>`,
+    template: `<div style="max-width: ${measure.narrow}"><SmsPhonePreview v-bind="args" /></div>`,
   }),
 }
 
@@ -47,8 +48,8 @@ export const Variants: Story = {
     components: { SmsPhonePreview },
     template: `
       <div class="d-flex flex-wrap ga-6">
-        <div style="max-width:320px"><SmsPhonePreview sender="MAROPOST" message="Your verification code is 482910. It expires in 10 minutes." /></div>
-        <div style="max-width:320px"><SmsPhonePreview sender="+61481074914" message="Good news! Your order #45012 has shipped and is on its way. Track the parcel any time: 0.mpt1.co/x7Fh2 — expected delivery Thursday. Questions? Just reply to this message and our team will help. Text STOP to opt-out" /></div>
+        <div style="max-width: ${measure.narrow}"><SmsPhonePreview sender="MAROPOST" message="Your verification code is 482910. It expires in 10 minutes." /></div>
+        <div style="max-width: ${measure.narrow}"><SmsPhonePreview sender="+61481074914" message="Good news! Your order #45012 has shipped and is on its way. Track the parcel any time: 0.mpt1.co/x7Fh2 — expected delivery Thursday. Questions? Just reply to this message and our team will help. Text STOP to opt-out" /></div>
       </div>
     `,
   }),

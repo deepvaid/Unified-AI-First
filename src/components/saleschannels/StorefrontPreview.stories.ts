@@ -8,6 +8,7 @@ import { ref } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 import StorefrontPreview from './StorefrontPreview.vue'
 import { createBlock, createSection, type ThemeSection, type ThemeStyles } from '@/stores/themeBuilderData'
+import { constrain } from '@/stories/decorators'
 
 function homeSections(): ThemeSection[] {
   return [
@@ -96,6 +97,7 @@ viewport (desktop full, tablet ~768px, mobile ~390px).
       },
     },
   },
+  decorators: [constrain('section')],
   args: {
     device: 'desktop',
     interactive: false,
@@ -118,41 +120,14 @@ viewport (desktop full, tablet ~768px, mobile ~390px).
 export default meta
 type Story = StoryObj<typeof meta>
 
-export const Default: Story = {
-  render: (args) => ({
-    components: { StorefrontPreview },
-    setup: () => ({ args }),
-    template: `
-      <div style="max-width:720px;">
-        <StorefrontPreview v-bind="args" />
-      </div>
-    `,
-  }),
-}
+export const Default: Story = {}
 
 export const Sectioned: Story = {
-  render: (args) => ({
-    components: { StorefrontPreview },
-    setup: () => ({ args, sections: homeSections() }),
-    template: `
-      <div style="max-width:720px;">
-        <StorefrontPreview v-bind="args" :sections="sections" />
-      </div>
-    `,
-  }),
+  args: { sections: homeSections() },
 }
 
 export const Styled: Story = {
-  args: { styles: boutiqueStyles },
-  render: (args) => ({
-    components: { StorefrontPreview },
-    setup: () => ({ args, sections: homeSections() }),
-    template: `
-      <div style="max-width:720px;">
-        <StorefrontPreview v-bind="args" :sections="sections" />
-      </div>
-    `,
-  }),
+  args: { sections: homeSections(), styles: boutiqueStyles },
 }
 
 export const InteractiveSelected: Story = {
@@ -165,7 +140,7 @@ export const InteractiveSelected: Story = {
       return { args, sections, selectedId }
     },
     template: `
-      <div style="max-width:720px;">
+      <div>
         <StorefrontPreview
           v-bind="args"
           :sections="sections"
@@ -179,71 +154,15 @@ export const InteractiveSelected: Story = {
 }
 
 export const MobileDevice: Story = {
-  args: { device: 'mobile' },
-  render: (args) => ({
-    components: { StorefrontPreview },
-    setup: () => ({ args, sections: homeSections() }),
-    template: `
-      <div style="max-width:720px;">
-        <StorefrontPreview v-bind="args" :sections="sections" />
-      </div>
-    `,
-  }),
+  args: { sections: homeSections(), device: 'mobile' },
 }
 
 /** A rich-text section carrying heading, paragraph, and button blocks — renders the nested block mocks. */
 export const SectionWithBlocks: Story = {
-  render: (args) => ({
-    components: { StorefrontPreview },
-    setup: () => ({ args, sections: sectionsWithBlocks() }),
-    template: `
-      <div style="max-width:720px;">
-        <StorefrontPreview v-bind="args" :sections="sections" />
-      </div>
-    `,
-  }),
+  args: { sections: sectionsWithBlocks() },
 }
 
 /** A collection-grid section from the "4-up" variant preset (columns: 4). */
 export const CollectionGridVariant: Story = {
-  render: (args) => ({
-    components: { StorefrontPreview },
-    setup: () => ({ args, sections: collectionGridSections() }),
-    template: `
-      <div style="max-width:720px;">
-        <StorefrontPreview v-bind="args" :sections="sections" />
-      </div>
-    `,
-  }),
-}
-
-// ── Template: Variants · Sizes · States ──────────────────────────────────────
-
-/** The preview renders whichever sections the theme defines — hero, collection grid, featured products, testimonials — so its variants are the merchant's own layout, not a prop. */
-export const Variants: Story = {
-  render: (args) => ({
-    components: { StorefrontPreview },
-    setup: () => ({ args }),
-    template: `<StorefrontPreview v-bind="args" />`,
-  }),
-}
-
-/** The `device` prop is the size axis: `desktop` (full), `tablet` (~768) and `mobile` (~390). It constrains the inner viewport so a merchant can check their theme at each breakpoint.
- *
- * **This component is deliberately outside the token system (P4-8).** Everything it draws is a simulated *merchant* storefront, not Marobase chrome, so its raw px values are the thing being previewed rather than design-system drift. Forcing the Marobase scale onto them would make the preview less honest, not more consistent — the same exemption the chart canvases carry. The builder chrome *around* it is fully tokenized; the line is drawn at the preview frame. */
-export const Sizes: Story = {
-  render: (args) => ({
-    components: { StorefrontPreview },
-    setup: () => ({ args }),
-    template: `<StorefrontPreview v-bind="args" />`,
-  }),
-}
-
-/** Static, sectioned, styled with theme overrides, and the interactive editing states — a section selected, a block selected, and a just-generated section carrying its "New" cue. */
-export const States: Story = {
-  render: (args) => ({
-    components: { StorefrontPreview },
-    setup: () => ({ args }),
-    template: `<StorefrontPreview v-bind="args" />`,
-  }),
+  args: { sections: collectionGridSections() },
 }

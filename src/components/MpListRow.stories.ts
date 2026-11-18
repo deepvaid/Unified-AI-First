@@ -1,15 +1,15 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpListRow from './MpListRow.vue'
-import { liquidskyDocs } from '@/stories/storyTemplate'
+import MpStatusChip from './MpStatusChip.vue'
 
 const meta = {
   title: 'Atoms/MpListRow',
   component: MpListRow,
-  tags: ['autodocs', 'liquidsky'],
+  tags: ['autodocs'],
   parameters: {
     docs: {
       description: {
-        component: liquidskyDocs('atoms-mplistrow') + `
+        component: `
 ### Overview
 \`MpListRow\` is the one row geometry for every list in the system. Before it, a single
 file (\`ModuleLandingPage\`) hand-rolled three different rows at three different heights,
@@ -149,7 +149,7 @@ export const Variants: Story = {
  * There is no `size` prop — a row spans its container. The axes that vary are density
  * (row height) and emphasis (title weight), shown together here.
  */
-export const Sizes: Story = {
+export const DensityAndEmphasis: Story = {
   render: () => ({
     components: { MpListRow },
     template: `
@@ -180,10 +180,13 @@ export const Sizes: Story = {
   args: {} as never,
 }
 
-/** Static vs interactive, and each tag the component can resolve to. Hover and focus a row to see the affordance. */
+/**
+ * Static vs interactive, each tag the component can resolve to (`div`, `button`, `a`, `RouterLink`),
+ * and the two trailing slots. Hover and focus a row to see the affordance.
+ */
 export const States: Story = {
   render: () => ({
-    components: { MpListRow },
+    components: { MpListRow, MpStatusChip },
     template: `
       <div class="d-flex flex-column ga-8">
         <div>
@@ -197,6 +200,27 @@ export const States: Story = {
         <div>
           <div class="text-caption text-medium-emphasis mb-2">href — renders an &lt;a&gt;</div>
           <MpListRow href="https://maropost.com" title="External link row" meta="↗" />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">to — renders a RouterLink</div>
+          <MpListRow to="/accounts/2000290/orders" title="Route link row" meta="→" />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">#trailing — replaces the meta text with any content</div>
+          <MpListRow variant="divided" title="Klarna" subtitle="5.99% + 30¢">
+            <template #trailing><MpStatusChip status="Enabled" type="method" size="sm" /></template>
+          </MpListRow>
+          <MpListRow variant="divided" title="Afterpay" subtitle="6% + 30¢">
+            <template #trailing><MpStatusChip status="Setup required" type="method" size="sm" /></template>
+          </MpListRow>
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">#actions on an interactive row — the button sits beside the row's link, not inside it</div>
+          <MpListRow variant="boxed" clickable title="Spring Refresh sent to Segment A" subtitle="Click the row to open it, or use its own action">
+            <template #actions>
+              <v-btn size="small" variant="text" class="text-none">Duplicate</v-btn>
+            </template>
+          </MpListRow>
         </div>
         <div>
           <div class="text-caption text-medium-emphasis mb-2">boxed + interactive — border reacts too</div>

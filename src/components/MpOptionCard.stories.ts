@@ -1,6 +1,8 @@
 import { ref } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpOptionCard from './MpOptionCard.vue'
+import { constrain } from '@/stories/decorators'
+import { grid } from '@/stories/storyTemplate'
 
 const meta = {
   title: 'Molecules/MpOptionCard',
@@ -65,7 +67,6 @@ Chooser tiles that are page landmarks pass \`heading-level\` so the title is a r
     },
   },
   args: {
-    selected: false,
     title: 'Abandoned cart recovery',
     description: 'Bring shoppers back with a timed three-email nudge sequence.',
     icon: 'shopping-cart',
@@ -87,6 +88,7 @@ Chooser tiles that are page landmarks pass \`heading-level\` so the title is a r
 export default meta
 type Story = StoryObj<typeof meta>
 
+/** A selection-mode card, not selected. Clear the `selected` control (or set `href`) to see the other modes. */
 export const Default: Story = {
   args: {
     selected: false,
@@ -96,94 +98,59 @@ export const Default: Story = {
   },
 }
 
-/** With and without a media slot — the structural axis. */
+/**
+ * The card resolves its own structure from its props. With **`selected`** it is a toggle button
+ * (`aria-pressed`, ring + check) for select-then-commit galleries. With **`to` / `href`** it is a
+ * real link, with no pressed state. With **neither** it is a plain action button. Inspect the
+ * DOM to see the three roots.
+ */
 export const Variants: Story = {
-  render: () => ({
-    components: { MpOptionCard },
-    template: `
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--mp-space-16);">
-        <MpOptionCard :selected="false" icon="file" title="Start from scratch" description="A blank canvas." />
-        <MpOptionCard :selected="false" icon="layout-template" title="Use a template" description="Start from a proven layout.">
-          <template #media>
-            <div style="height: 96px; background: var(--surface-secondary);"></div>
-          </template>
-        </MpOptionCard>
-      </div>
-    `,
-  }),
-  args: {} as never,
+  render: grid({ MpOptionCard }, [
+    {
+      label: 'selection mode — pass selected',
+      args: { selected: true, icon: 'layout-template', title: 'Use a template', description: 'Start from a proven layout.' },
+    },
+    {
+      label: 'navigation mode — pass to or href',
+      args: { href: '#templates', icon: 'layout-grid', title: 'Browse templates', description: 'Opens the template gallery.' },
+    },
+    {
+      label: 'plain action — neither',
+      args: { icon: 'file', title: 'Start from scratch', description: 'A blank canvas.' },
+    },
+  ]),
 }
 
 /** Selected, unselected, and focus — tab through to see the focus ring. */
 export const States: Story = {
-  render: () => ({
-    components: { MpOptionCard },
-    template: `
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--mp-space-16);">
-        <div>
-          <div class="text-caption text-medium-emphasis mb-2">unselected</div>
-          <MpOptionCard :selected="false" icon="file" title="Start from scratch" description="A blank canvas." />
-        </div>
-        <div>
-          <div class="text-caption text-medium-emphasis mb-2">selected</div>
-          <MpOptionCard :selected="true" icon="layout-template" title="Use a template" description="Start from a proven layout." />
-        </div>
-        <div>
-          <div class="text-caption text-medium-emphasis mb-2">tab to focus</div>
-          <MpOptionCard :selected="false" icon="sparkles" title="Draft with Da Vinci" description="Let AI propose a first pass." />
-        </div>
-      </div>
-    `,
-  }),
-  args: {} as never,
+  render: grid({ MpOptionCard }, [
+    { label: 'unselected', args: { selected: false, icon: 'file', title: 'Start from scratch', description: 'A blank canvas.' } },
+    { label: 'selected', args: { selected: true, icon: 'layout-template', title: 'Use a template', description: 'Start from a proven layout.' } },
+    { label: 'tab to focus', args: { selected: false, icon: 'sparkles', title: 'Draft with Da Vinci', description: 'Let AI propose a first pass.' } },
+  ]),
 }
 
-export const Unselected: Story = {
-  render: (args) => ({
-    components: { MpOptionCard },
-    setup: () => ({ args }),
-    template: `
-      <div style="max-width:340px;">
-        <MpOptionCard v-bind="args" />
-      </div>
-    `,
-  }),
-}
-
-export const Selected: Story = {
-  args: { selected: true },
-  render: (args) => ({
-    components: { MpOptionCard },
-    setup: () => ({ args }),
-    template: `
-      <div style="max-width:340px;">
-        <MpOptionCard v-bind="args" />
-      </div>
-    `,
-  }),
-}
-
+/** The default slot (chips under the description) and the full-bleed `#media` footer. */
 export const WithMedia: Story = {
   args: { selected: true },
   render: (args) => ({
     components: { MpOptionCard },
     setup: () => ({ args }),
     template: `
-      <div style="max-width:340px;">
-        <MpOptionCard v-bind="args">
-          <div class="d-flex gap-2 mt-3">
-            <v-chip size="x-small" variant="tonal" color="primary">4 steps</v-chip>
-            <v-chip size="x-small" variant="tonal" color="secondary">1 branch</v-chip>
+      <MpOptionCard v-bind="args">
+        <div class="d-flex gap-2 mt-3">
+          <v-chip size="x-small" variant="tonal" color="primary">4 steps</v-chip>
+          <v-chip size="x-small" variant="tonal" color="secondary">1 branch</v-chip>
+        </div>
+        <template #media>
+          <div class="pa-4 d-flex justify-center text-medium-emphasis text-caption">
+            Flow preview renders here
           </div>
-          <template #media>
-            <div class="pa-4 d-flex justify-center text-medium-emphasis text-caption">
-              Flow preview renders here
-            </div>
-          </template>
-        </MpOptionCard>
-      </div>
+        </template>
+      </MpOptionCard>
     `,
   }),
+  decorators: [constrain('narrow')],
 }
 
 export const SelectionGroup: Story = {
@@ -199,7 +166,7 @@ export const SelectionGroup: Story = {
       return { selectedId, options }
     },
     template: `
-      <v-row style="max-width:900px;">
+      <v-row>
         <v-col v-for="opt in options" :key="opt.id" cols="12" sm="4">
           <MpOptionCard
             :selected="selectedId === opt.id"
@@ -213,6 +180,7 @@ export const SelectionGroup: Story = {
       </v-row>
     `,
   }),
+  decorators: [constrain('wide')],
 }
 
 /** Navigation mode: real links (inspect the DOM — anchors, no aria-pressed), with a title-append badge. */
@@ -220,28 +188,34 @@ export const NavigationTiles: Story = {
   render: () => ({
     components: { MpOptionCard },
     template: `
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--mp-space-20); max-width: 720px;">
-        <MpOptionCard
-          title="Next-Gen segment builder"
-          description="Build rules from contact attributes, purchases and campaign activity."
-          icon="sparkles"
-          :heading-level="2"
-          href="#next-gen"
-        >
-          <template #title-append>
-            <v-chip size="small" color="primary" variant="tonal" class="ml-auto">New</v-chip>
-          </template>
-          <p class="text-caption font-weight-medium text-primary mb-0 mt-2">Recommended for new segments</p>
-        </MpOptionCard>
-        <MpOptionCard
-          title="Legacy segment builder"
-          description="The original builder, with multiple sets of rules."
-          icon="layers"
-          :heading-level="2"
-          href="#legacy"
-        />
-      </div>
+      <v-row>
+        <v-col cols="12" sm="6">
+          <MpOptionCard
+            class="h-100"
+            title="Next-Gen segment builder"
+            description="Build rules from contact attributes, purchases and campaign activity."
+            icon="sparkles"
+            :heading-level="2"
+            href="#next-gen"
+          >
+            <template #title-append>
+              <v-chip size="small" color="primary" variant="tonal" class="ml-auto">New</v-chip>
+            </template>
+            <p class="text-caption font-weight-medium text-primary mb-0 mt-2">Recommended for new segments</p>
+          </MpOptionCard>
+        </v-col>
+        <v-col cols="12" sm="6">
+          <MpOptionCard
+            class="h-100"
+            title="Legacy segment builder"
+            description="The original builder, with multiple sets of rules."
+            icon="layers"
+            :heading-level="2"
+            href="#legacy"
+          />
+        </v-col>
+      </v-row>
     `,
   }),
-  args: {} as never,
+  decorators: [constrain('section')],
 }

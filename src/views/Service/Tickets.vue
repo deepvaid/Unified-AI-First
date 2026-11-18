@@ -662,7 +662,7 @@ function newContact() {
                       <!-- Tags beside the subject: the subject truncates first; two chips,
                            then "+N" (spoken in full, since the row itself is the button). -->
                       <span v-if="t.tags.length" class="tickets-row__tags d-flex align-center ga-1">
-                        <MpTagChip v-for="tag in rowTags(t)" :key="tag" :name="tag" :color="settings.tagColor(tag)" />
+                        <MpTagChip v-for="tag in rowTags(t)" :key="tag" :name="tag" :color="settings.tagColor(tag)" size="sm" />
                         <template v-if="moreTags(t).length">
                           <span class="tickets-row__more text-caption" aria-hidden="true" :title="moreTags(t).join(', ')">+{{ moreTags(t).length }}</span>
                           <span class="d-sr-only">, also tagged {{ moreTags(t).join(', ') }}</span>

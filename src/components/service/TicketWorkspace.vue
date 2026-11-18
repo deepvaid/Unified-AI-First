@@ -450,7 +450,7 @@ const SEND_AND_SET: TicketStatus[] = ['Pending', 'On Hold', 'Closed']
           <!-- Every tag, wrapping; colours come from Settings › Tags. -->
           <ul v-if="ticket.tags.length" class="tw-tags d-flex align-center flex-wrap" aria-label="Tags">
             <li v-for="tag in ticket.tags" :key="tag" class="d-flex">
-              <MpTagChip :name="tag" :color="settings.tagColor(tag)" />
+              <MpTagChip :name="tag" :color="settings.tagColor(tag)" size="sm" />
             </li>
           </ul>
         </div>

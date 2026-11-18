@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/vue3'
 import type { FlowNode } from '@/stores/journeyFlowData'
 import { dataJourneyTemplates, instantiateTemplate } from '@/stores/journeyFlowData'
 import JourneyMiniPreview from './JourneyMiniPreview.vue'
+import { measure } from '@/stories/decorators'
 
 /** First `count` nodes of a flow with the tail edge cleared → a pure linear run. */
 function linearSlice(nodes: FlowNode[], count: number): FlowNode[] {
@@ -53,7 +54,7 @@ prop exists for its internal branch recursion only).
     components: { JourneyMiniPreview },
     setup: () => ({ args }),
     template: `
-      <div class="bg-background border rounded-lg pa-4 d-flex justify-center" style="width: 340px; overflow-x: auto;">
+      <div class="bg-background border rounded-lg pa-4 d-flex justify-center" style="width: ${measure.narrow}; overflow-x: auto;">
         <JourneyMiniPreview :nodes="args.nodes" />
       </div>
     `,
@@ -105,16 +106,6 @@ export const Sizes: Story = {
         </div>
       </div>
     `,
-  }),
-  args: {} as never,
-}
-
-/** The preview is a static thumbnail — it has one state per journey shape. */
-export const States: Story = {
-  render: () => ({
-    components: { JourneyMiniPreview },
-    setup: () => ({ linear: LINEAR_NODES, short: LINEAR_NODES.slice(0, 2) }),
-    template: `<JourneyMiniPreview :nodes="linear" />`,
   }),
   args: {} as never,
 }

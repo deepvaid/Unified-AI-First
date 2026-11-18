@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpUsageMeter from './MpUsageMeter.vue'
+import { grid } from '@/stories/storyTemplate'
 
 const meta = {
   title: 'Atoms/MpUsageMeter',
@@ -30,7 +31,7 @@ const meta = {
 ### 🟢 Do's
 - **Do** pass raw numbers for \`used\`/\`limit\` — compact formatting ("12.4K / 50K") is handled internally.
 - **Do** pass \`-1\` for \`limit\` to render the unlimited state (low neutral bar, no warning coloring).
-- **Do** use \`dense\` when the meter sits inside a tight card or toolbar strip.
+- **Do** use \`density="compact"\` when the meter sits inside a tight card or toolbar strip.
 
 ### 🔴 Don'ts
 - **Don't** pre-format \`used\`/\`limit\` yourself — pass the raw numbers.
@@ -49,7 +50,11 @@ const meta = {
     limit: { control: 'number', description: 'Plan cap (raw number). Pass -1 for unlimited.' },
     icon: { control: 'text', description: 'Optional Lucide icon shown before the label.' },
     hint: { control: 'text', description: 'Optional caption below the bar (e.g. reset cadence or upgrade nudge).' },
-    dense: { control: 'boolean', description: 'Compact sizing: 4px bar height and smaller text.' },
+    density: {
+      control: 'inline-radio',
+      options: ['default', 'compact'],
+      description: '`compact` is the tight-card sizing: 4px bar height and smaller text.',
+    },
   },
 } satisfies Meta<typeof MpUsageMeter>
 
@@ -65,41 +70,33 @@ export const Default: Story = {
   },
 }
 
-export const NearLimit: Story = {
+/**
+ * The bar's colour follows the ratio: primary below 80%, warning from 80%, error from 95%.
+ * A `limit` of -1 is the unlimited state — a low neutral bar that never warns.
+ */
+export const States: Story = {
   args: {
     label: 'Emails sent',
     icon: 'mail',
-    used: 41_000,
+    used: 12_400,
     limit: 50_000,
   },
+  render: grid({ MpUsageMeter }, [
+    { label: 'Under 80%', args: {} },
+    { label: 'Near limit (80%+)', args: { used: 41_000 } },
+    { label: 'At limit (95%+)', args: { label: 'Chatbots', icon: 'bot', used: 3, limit: 3 } },
+    { label: 'Unlimited', args: { label: 'Da Vinci AI tokens', icon: 'sparkles', used: 182_000, limit: -1, hint: 'Unlimited on your plan' } },
+  ]),
 }
 
-export const AtLimit: Story = {
-  args: {
-    label: 'Chatbots',
-    icon: 'bot',
-    used: 3,
-    limit: 3,
-  },
-}
-
-export const Unlimited: Story = {
-  args: {
-    label: 'Da Vinci AI tokens',
-    icon: 'sparkles',
-    used: 182_000,
-    limit: -1,
-    hint: 'Unlimited on your plan',
-  },
-}
-
-export const DenseWithHint: Story = {
+/** `density="compact"` with a hint line — the meter as it sits inside a tight card. */
+export const CompactWithHint: Story = {
   args: {
     label: 'SMS sends',
     icon: 'message-square',
     used: 4_820,
     limit: 25_000,
     hint: 'Resets monthly · Upgrade for a larger allocation',
-    dense: true,
+    density: 'compact',
   },
 }

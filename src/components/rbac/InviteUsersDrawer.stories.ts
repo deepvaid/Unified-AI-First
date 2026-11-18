@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 import InviteUsersDrawer from './InviteUsersDrawer.vue'
+import { overlayDocs } from '@/stories/decorators'
 
 function wait(ms: number) {
   return new Promise<void>(resolve => setTimeout(resolve, ms))
@@ -18,12 +19,7 @@ const meta = {
   component: InviteUsersDrawer,
   tags: ['autodocs'],
   parameters: {
-    // MpFormDrawer teleports to <body>, and every story here defaults open — isolate
-    // each story in its own iframe on the Docs page so one story's drawer (and this
-    // file's play functions) can never collide with another's, same convention as
-    // MpToastStack.stories.ts.
     docs: {
-      story: { inline: false, height: '720px' },
       description: {
         component: `
 ### Overview
@@ -86,17 +82,20 @@ roles outside an invite/edit flow (\`RolePicker\` on its own).
       return { args, open, lastInvited }
     },
     template: `
-      <section style="min-height:640px;background:rgb(var(--v-theme-background));padding:24px;">
+      <div>
         <v-btn color="primary" variant="flat" prepend-icon="user-plus" class="text-none" @click="open = true">Invite users</v-btn>
         <div class="text-caption text-medium-emphasis mt-3">Last invited: {{ lastInvited }}</div>
         <InviteUsersDrawer v-bind="args" v-model="open" @invited="emails => lastInvited = emails.join(', ')" />
-      </section>
+      </div>
     `,
   }),
 } satisfies Meta<typeof InviteUsersDrawer>
 
 export default meta
 type Story = StoryObj<typeof meta>
+
+// MpFormDrawer teleports to <body>. Each story that opens it on mount gets its own frame on the
+// docs page (`overlayDocs`), so one story's drawer and play function never reach another's.
 
 /** Closed — just the trigger button, the resting state on the Users & Roles page. */
 export const Default: Story = {
@@ -106,11 +105,13 @@ export const Default: Story = {
 /** Freshly opened step 1: empty emails, no roles selected yet, Continue disabled. */
 export const Open: Story = {
   args: { modelValue: true },
+  parameters: overlayDocs('720px'),
 }
 
 /** A typical filled-out step 1 — two email chips plus two compatible Marketing Cloud roles, so Continue is enabled. */
 export const PopulatedForm: Story = {
   args: { modelValue: true },
+  parameters: overlayDocs('720px'),
   play: async () => {
     await wait(300)
     const emailInput = document.querySelector<HTMLInputElement>('.mp-form-drawer__body input')
@@ -128,6 +129,7 @@ export const PopulatedForm: Story = {
 /** Selecting two conflicting roles (Read-Only Analyst + Platform Admin) surfaces the inline warning — Continue stays blocked until one is removed. */
 export const RoleConflictWarning: Story = {
   args: { modelValue: true },
+  parameters: overlayDocs('720px'),
   play: async () => {
     await wait(300)
     document.querySelector<HTMLInputElement>('input[aria-label*="Read-Only Analyst"]')?.click()

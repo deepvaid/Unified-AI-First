@@ -4,7 +4,8 @@ import MpDataTableToolbar from './MpDataTableToolbar.vue'
 import MpStatusChip from './MpStatusChip.vue'
 import { CAMPAIGNS, CAMPAIGN_HEADERS, FOLDERS, FOLDER_COUNTS } from '@/stories/fixtures'
 import type { Folder } from '@/stores/useFolders'
-import { liquidskyDocs } from '@/stories/storyTemplate'
+import { grid, liquidskyDocs } from '@/stories/storyTemplate'
+import { overlayDocs } from '@/stories/decorators'
 
 const sampleFolders: Folder[] = [
   { id: 'promotions', name: 'Promotions', parentId: null, scope: 'campaigns' },
@@ -82,6 +83,7 @@ have no folder metadata (use \`MpFilterTabs\` or the filter drawer).
     totalCount: { control: 'number', description: 'Count shown next to "All folders".' },
     label: { control: 'text', description: 'Activator text when nothing is selected. Defaults to "All folders".' },
     manage: { control: false, description: 'Event — "Manage folders" clicked. Open MpManageFoldersDrawer.', table: { category: 'events' } },
+    onManage: { action: 'manage', table: { disable: true } },
   },
 } satisfies Meta<typeof MpFolderSelect>
 
@@ -126,15 +128,7 @@ export const OpenMenu: Story = {
     totalCount: 25,
     modelValue: 'black-friday',
   },
-  render: (args) => ({
-    components: { MpFolderSelect },
-    setup: () => ({ args }),
-    template: `
-      <div style="min-height: 420px;">
-        <MpFolderSelect v-bind="args" />
-      </div>
-    `,
-  }),
+  parameters: overlayDocs('480px'),
   play: async ({ canvasElement }) => {
     await new Promise(resolve => setTimeout(resolve, 300))
     const trigger = canvasElement.querySelector<HTMLElement>('[aria-label="Filter by folder"]')
@@ -142,7 +136,7 @@ export const OpenMenu: Story = {
   },
 }
 
-// ── Template: Variants · Sizes · States ──────────────────────────────────────
+// ── Template: Variants · ControlHeight · States ──────────────────────────────────────
 
 /**
  * One structure — an outlined activator opening a folder menu. What varies is the tree it is
@@ -150,30 +144,11 @@ export const OpenMenu: Story = {
  * and empty.
  */
 export const Variants: Story = {
-  render: () => ({
-    components: { MpFolderSelect },
-    setup: () => ({
-      flat: FOLDERS.filter(f => !f.parentId),
-      nested: FOLDERS,
-      counts: FOLDER_COUNTS,
-    }),
-    template: `
-      <div class="d-flex ga-10 flex-wrap">
-        <div>
-          <div class="text-caption text-medium-emphasis mb-2">flat</div>
-          <MpFolderSelect :folders="flat" :counts="counts" :total-count="102" />
-        </div>
-        <div>
-          <div class="text-caption text-medium-emphasis mb-2">nested</div>
-          <MpFolderSelect :folders="nested" :counts="counts" :total-count="102" />
-        </div>
-        <div>
-          <div class="text-caption text-medium-emphasis mb-2">empty — only "All folders" and Manage</div>
-          <MpFolderSelect :folders="[]" :total-count="0" />
-        </div>
-      </div>
-    `,
-  }),
+  render: grid({ MpFolderSelect }, [
+    { label: 'flat', args: { folders: FOLDERS.filter(f => !f.parentId), counts: FOLDER_COUNTS, totalCount: 102 } },
+    { label: 'nested', args: { folders: FOLDERS, counts: FOLDER_COUNTS, totalCount: 102 } },
+    { label: 'empty — only "All folders" and Manage', args: { folders: [], totalCount: 0 } },
+  ]),
   args: {} as never,
 }
 
@@ -183,7 +158,7 @@ export const Variants: Story = {
  * (P4-7) replaced its `height="40"` attribute with the token, which is the same number stated
  * as a decision rather than a literal.
  */
-export const Sizes: Story = {
+export const ControlHeight: Story = {
   render: () => ({
     components: { MpFolderSelect },
     setup: () => ({ folders: FOLDERS, counts: FOLDER_COUNTS }),
@@ -201,31 +176,13 @@ export const Sizes: Story = {
 
 /** Nothing selected (shows the `label`), a folder selected (shows its name), and a child selected. */
 export const States: Story = {
-  render: () => ({
-    components: { MpFolderSelect },
-    setup: () => ({ folders: FOLDERS, counts: FOLDER_COUNTS }),
-    template: `
-      <div class="d-flex ga-10 flex-wrap">
-        <div>
-          <div class="text-caption text-medium-emphasis mb-2">no selection</div>
-          <MpFolderSelect :model-value="null" :folders="folders" :counts="counts" :total-count="102" />
-        </div>
-        <div>
-          <div class="text-caption text-medium-emphasis mb-2">parent selected</div>
-          <MpFolderSelect model-value="f-promos" :folders="folders" :counts="counts" :total-count="102" />
-        </div>
-        <div>
-          <div class="text-caption text-medium-emphasis mb-2">child selected</div>
-          <MpFolderSelect model-value="f-winback" :folders="folders" :counts="counts" :total-count="102" />
-        </div>
-        <div>
-          <div class="text-caption text-medium-emphasis mb-2">custom label</div>
-          <MpFolderSelect :model-value="null" :folders="folders" :counts="counts" :total-count="102" label="All campaigns" />
-        </div>
-      </div>
-    `,
-  }),
-  args: {} as never,
+  render: grid({ MpFolderSelect }, [
+    { label: 'no selection', args: { modelValue: null } },
+    { label: 'parent selected', args: { modelValue: 'f-promos' } },
+    { label: 'child selected', args: { modelValue: 'f-winback' } },
+    { label: 'custom label', args: { modelValue: null, label: 'All campaigns' } },
+  ]),
+  args: { folders: FOLDERS, counts: FOLDER_COUNTS, totalCount: 102 } as never,
 }
 
 // ── Composed example ────────────────────────────────────────────────────────

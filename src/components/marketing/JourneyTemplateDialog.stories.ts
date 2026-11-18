@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/vue3'
 import { ref } from 'vue'
 import { templateById } from '@/stores/journeyFlowData'
 import JourneyTemplateDialog from './JourneyTemplateDialog.vue'
+import { overlayDocs } from '@/stories/decorators'
 
 const meta = {
   title: 'Product/Marketing/Journeys/JourneyTemplateDialog',
@@ -18,6 +19,8 @@ preview (\`JourneyMiniPreview\` replaces production's static PNG), its long desc
 \`MpDialog size="lg"\`.
         `,
       },
+      // Every story opens the dialog on mount.
+      ...overlayDocs('720px').docs,
     },
   },
   argTypes: {

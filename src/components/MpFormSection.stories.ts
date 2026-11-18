@@ -113,7 +113,7 @@ export const Variants: Story = {
  * What varies is `headingLevel`, and that is a document-structure choice, not a visual one: all
  * three render identically and differ only in the element a screen reader announces.
  */
-export const Sizes: Story = {
+export const HeadingLevels: Story = {
   render: () => ({
     components: { MpFormSection },
     template: `

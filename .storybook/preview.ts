@@ -2,7 +2,7 @@ import type { Preview } from '@storybook/vue3'
 import { setup } from '@storybook/vue3'
 import { createPinia } from 'pinia'
 import { reactive, watchEffect } from 'vue'
-import { createMemoryHistory, createRouter, type RouteLocationRaw, type Router } from 'vue-router'
+import { createMemoryHistory, createRouter, type RouteLocationRaw, type RouteRecordNameGeneric, type Router } from 'vue-router'
 
 // Vuetify — full import to ensure all component styles are available in stories
 import '@mdi/font/css/materialdesignicons.css' // fallback for any residual mdi-* strings
@@ -52,11 +52,19 @@ const storybookRouter = createRouter({
  * the app's routes and vue-router throws on an unknown name, which blanked every story that
  * rendered such a link. The first request for a name registers a stub route for it.
  */
+const stubParams = new Map<RouteRecordNameGeneric, Set<string>>()
+
 function ensureNamedRoute(to: RouteLocationRaw) {
-  if (typeof to !== 'object' || !('name' in to) || to.name == null || storybookRouter.hasRoute(to.name)) return
-  const params = Object.keys(to.params ?? {}).filter((key) => key !== 'accountId')
+  if (typeof to !== 'object' || !('name' in to) || to.name == null) return
+  const known = stubParams.get(to.name) ?? new Set<string>()
+  const wanted = Object.keys(to.params ?? {}).filter((key) => key !== 'accountId' && !known.has(key))
+  if (storybookRouter.hasRoute(to.name) && !wanted.length) return
+  // A name asked for again with a param it did not have before replaces its stub (same name).
+  wanted.forEach((key) => known.add(key))
+  stubParams.set(to.name, known)
   storybookRouter.addRoute({
-    path: `/accounts/:accountId?/sb/${String(to.name)}${params.map((key) => `/:${key}?`).join('')}`,
+    // `accountId` is required so a named link inherits the current account (2000290).
+    path: `/accounts/:accountId/sb/${String(to.name)}${[...known].map((key) => `/:${key}?`).join('')}`,
     name: to.name,
     component: routeStub,
   })

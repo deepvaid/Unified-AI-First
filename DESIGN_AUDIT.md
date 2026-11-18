@@ -2613,3 +2613,162 @@ design for, say, `AppDialogWrapper` meant already knowing it is `MpDialog`.
   `AppSplitButton`, `ClassicFolderTree` / `SlVueTreeNext`, `AppNumber` / `AppPriceDisplay` /
   `AppMultiCellValue` / `AppClipboard` (formatting only), `AppExpandableList`, `AppTreeDropdown`,
   `AppGridTable`.
+
+## Storybook review — 2026-11-18
+
+A review of the whole Storybook (three agents reading every story file, and every story opened in a
+browser) found 74 stories that threw and rendered blank, a Theme toolbar that did nothing to an open
+story, docs pages where every example was a full screen tall, dialogs and drawers stacking open on
+docs pages, and a dev server that reloaded the page for each new Vuetify import. It also found
+stories that rendered but showed the wrong thing, about 240 duplicate or empty stories, and nine
+points from the LiquidSky developers about the reference.
+
+### Check added
+
+- `npm run storybook:smoke` (`scripts/storybook-smoke.mjs`). Builds a copy of the Storybook in
+  development mode (`NODE_ENV=development`: a production build compiles Vue's warnings out, and the
+  SFC compiler drops `required` from props, so a missing prop would pass unseen), opens every story
+  on a clean page and fails on one that throws, logs a console error or a Vue warning, requests a
+  missing same-origin file, or renders nothing. Proven with a deliberately broken canary story
+  (missing required prop) that it fails on. It also checks that the Theme toolbar changes an open story, that a docs example is not
+  a full screen tall, and that every story the LiquidSky map links to exists.
+  Before the fixes: 74 of 991 stories failed. After: 810 of 810 pass.
+
+### Fixed in the Storybook itself
+
+- **Router.** The preview router carries `accountId` and stubs any route name a component links to.
+  Eleven stories were blank only because of this (AppSidebar in-context, TicketOrdersPanel,
+  TrialReviewerPanel, StoreEditorSidebar).
+- **Theme and Accent toolbars** now change a story that is already open, and drive Vuetify's global
+  theme and `useAppTheme` (three chart widgets and the Da Vinci orb read those, not the nearest
+  `<v-app>`).
+- **Docs pages.** `.mp-story-canvas` and Vuetify's layout wrap carried a full-viewport minimum
+  height into docs, so each example was 800px (MpStatusChip's page was 16,700px). Now only the
+  canvas fills the viewport.
+- **Dev server.** `main.ts` registered the Vuetify plugin, alias and SCSS prelude a second time, and
+  Vite found Vuetify's component imports one at a time and reloaded for each (213 reloads in one
+  pass over the stories). `main.ts` now relies on `vite.config.ts`, pre-bundles the Vuetify entries
+  and ignores build output. Cold start over 50 stories: 0 reloads.
+- **Overlays.** `overlayDocs()` gives an open-on-mount story its own frame on the docs page (45
+  stories). Stories whose open state could never be closed now use a local ref and a Reopen button.
+- **State leaks.** `isolateStorage` restores `localStorage` when a story unmounts (11 stories);
+  toast, notification and folder stories restore their stores.
+- **Wrong things shown.** MpKpiCard "hero" used a prop that does not exist; MpErrorState "no retry"
+  specimens showed the retry button; MpStatusChip lacked `stock` and `report` and used three labels
+  that map to nothing; no MpSectionRail example had an active row; every floating bulk bar landed
+  on the same spot; the "narrow container" wizard-steps specimen could not collapse; two AppSidebar
+  stories used a drawer outside a layout; `MobileTemporary` could never open its drawer.
+- **Bulk action bar.** Every story that shows `MpFloatingBulkBar` (the component, the toolbar, both
+  Data Table patterns) now takes its buttons from one helper, `bulkActions()` in
+  `storyTemplate.ts`: the same text button, the same label and icon per action (Export was
+  `download` in one story and `share` in another), the destructive action last. The folders story
+  is the Campaigns page's own bar, Move to folder and Delete (confirmed).
+- **Data Table › With Folders** gained Delete (row menu and bar, behind `MpConfirmDialog`); checked
+  in a browser: folder filter and "Folder: name" chip, Clear, row and bulk move, delete.
+- **QA Reference** loads its spec files by URL (35 Vite warnings per start gone) and links to
+  stories in the Storybook it is open in.
+- **Docs pages.** Colors groups its roles by family instead of one grid of 230; Typography shows all
+  eleven text roles; Radius & Shadows shows only what its headings say; Introduction lists the real
+  Product areas; `CLAUDE.md` updated (stale counts, appbar 56px, light primary `#0071A8`, the
+  two documentation-only pages, the story helpers).
+- Brand spelling in the manager theme, `@storybook/addon-a11y` pinned to 9.1.20, tablet and
+  desktop viewport presets, `storySort` lists every live group (Wizard Shell, Chatbot, Onboarding,
+  Service, Trial Lab were missing).
+
+### Renames and breaking changes
+
+Stories (no `title` changed; none of the removed ids is referenced by the QA map, any MDX page or
+`docs/`):
+
+- 227 story exports removed and 44 added (136 story files edited). Removed: the empty `Variants` / `Sizes` /
+  `States` shells in Product (the template now applies to the design-system tiers only, see
+  `CLAUDE.md`), near-duplicates in the design-system tiers, and stories folded into a grid.
+- Renamed because the component has no `size` prop: `Sizes` → `Emphasis` (MpEmptyState),
+  `TabCount` (MpFilterTabs), `RowBaseline` (MpSectionRail), `Limits` (MpSplitPane, MpSplitHandle),
+  `HeadingLevels` (MpPageHeader, MpSectionHeader, MpFormSection), `Dimensions` (MpTableSkeleton),
+  `DensityAndEmphasis` (MpListRow), `ControlHeight` (MpFolderSelect), `Alignment` (MpFormField),
+  `ContainerWidths` (MpFormGrid), `Columns` (MpComingSoonTiles), `SharedControlHeight`
+  (MpDataTableToolbar). Other renames: `MpFormDrawer` `WidgetEditFlyout` → `Default`,
+  `MpWizardShell` `Measures` → `Sizes`, `MpUsageMeter` `DenseWithHint` → `CompactWithHint`.
+- New: `patterns-form-fields--date-field(-open)`, `patterns-data-table--with-folders`,
+  `--overflow-cell(-open)`, `product-onboarding-get-started--default` / `--task-open`,
+  `product-onboarding-onboardingprogressbanner--*`, `molecules-mppageheader--with-eyebrow` (now the
+  breadcrumb reference).
+- `sidebarSkin` decorator → `appShell` (also stamps `data-shell` and `data-frame`, the app's
+  defaults).
+
+Components and tokens (the app looks the same unless stated):
+
+- `layout.appbarHeight` 60px → **56px**: the height the bar always rendered at. `AppBar.vue`, the
+  page-height calculation in `App.vue` and the sidebar header now read the token. Not changed
+  because their 56 is not the app bar's: the builder toolbar (`MpBuilderShell`), the Da Vinci
+  history drawer; `--copilot-top` in `App.vue` is still a literal 60px.
+- New token pair `inkPanel.danger` (`--ink-panel-danger`, `#F4A199`): a destructive action on the
+  dark bulk bar was the error red at 3.3:1; now 8.8:1 on the light-theme bar and 5.7:1 on the
+  dark-theme bar, in `$contrastPairs`. `MpFloatingBulkBar` applies it to `.text-error` buttons, so
+  the destructive action looks lighter in every bar in the app that has one.
+- `MpUsageMeter` `dense` → `density: 'default' | 'compact'`.
+- `SettingsSection` `compact` → `density: 'default' | 'compact'`.
+- `MpIllustration` `size` number → `'sm' | 'md' | 'lg'`; new tokens `component.illustration.size.*`
+  (120 / 160 / 180px).
+- `MpTagChip` default `size` `sm` → `md`; the three call sites that passed none got `size="sm"`.
+- `MpComingSoonTiles` `headingLevel` `'h2' | 'h3' | 'h4'` → `2 | 3 | 4`.
+- `MpKpiCard` `trendPositive` now defaults to `true` (it read an omitted value as a downtrend). Two
+  Showcase wall cards that showed "+12.4%" and "+0.02%" with a down arrow now point up.
+- `AppSidebar.vue`: the default `--sidebar-*` variables are at zero specificity (`:where()`), so
+  the skin stylesheets win whatever order the styles load in. See the developer feedback below.
+- `.mp-content-frame` and `.mp-main-shell` moved from `App.vue` to `styles/shell-variants.css` so
+  Storybook renders the content frame; no rule changed.
+- New `OnboardingProgressBanner` (the progress card of Get Started, extracted; Get Started renders
+  byte-identical).
+
+### Developer feedback (nine points)
+
+- **TheUnifiedNavigation background.** Cause: the sidebar's own scoped defaults and the skin
+  stylesheet had equal specificity, so whichever loaded last won. In the app the skin wins
+  (`#eaedf2`); in Storybook the component's lazily loaded stylesheet won (`#f0f0f0`). Fixed in
+  `AppSidebar.vue` (above). The reference now measures `rgb(234, 237, 242)` and the app-bar height
+  56px. Shell stories also stamp the app's default shell and frame.
+- **AppBreadcrumb**: the breadcrumb is `MpPageHeader`'s `eyebrow`; own map entry, story
+  `molecules-mppageheader--with-eyebrow` (two and three levels). The note saying Marobase has no
+  breadcrumb was wrong and is removed.
+- **AppDataTable**: bulk bar buttons and folder functionality, see below.
+- **AppDatePicker**: single-date field stories added; the date range stays a separate entry.
+- **TheOnboardingScreenChecklists / TheOnboardingBanner**: stories of the real Get Started page and
+  of the extracted banner (with the task-page form).
+- **AppExpandableList** → the overflow cell story. **AppTreeDropdown** and **AppGridTable** list the
+  existing parts to build from; their own designs are not done.
+- **Their three limits** (own loading indicator, one-line empty state, label inside the field) are
+  recorded on the map entries as "Not required in this phase".
+
+### Decisions needed
+
+- **Bulk action buttons.** The app composes the bar three ways: text buttons (14 bars, the most
+  common), white flat pills (11, including Sales Orders and the list template page), tonal (2),
+  default (2); none is outlined. The stories now show text buttons, which is also what the QA map
+  measures. The template page and Sales Orders should follow, or this should be reversed.
+- `AppBar.stories.ts` and `MpFloatingBulkBar` docs now describe what the app does; the
+  comparison script (`qa-compare`) measures a floating label that the developers said they keep as
+  is. Remove the `label` pair in `liquidskyPairs.ts` if design review should not list it.
+
+### Not done (deferred)
+
+- Tier moves: `MpListRow` → Molecules; `MpFormGrid`, `MpFormSection` → Atoms;
+  `MpBuilderPreviewDialog` → Molecules; `SettingsSection` → Molecules or Product;
+  `SettingsPlaceholder` → Product. These change story ids and every QA reference file name.
+- New Foundations pages (component tokens, motion, layering).
+- Stories for 12 Product components with none (`DtRingDonut`, `MaropayMoneyPanel`,
+  `MaropaySetupTimeline`, `MaropayStoreMark`, `MaropayStoreNag`, `StoreLineupRow`,
+  `StoreManualMethodDrawer`, `StoreProviderDrawer`, `TicketWorkspace`, `TicketWorkspaceActions`,
+  `DynamicContentBlockEditor`, `FooterRender`).
+- Prop vocabulary: `MpBuilderShell` `leftWidth` / `rightWidth` take raw px.
+- `MpMoveToFolderDialog` does not preselect `currentFolderId` when mounted already open.
+- Full designs for the tree dropdown, grid table and the other groups in the previous entry.
+- `StorefrontPreview` `device="tablet"` has no story (the stories sit in a 720px frame, narrower
+  than the 768px tablet width).
+- `qa:compare` keys its pairs by story id, so a story borrowed by an interim entry
+  (`tree-dropdown`, `grid-table`) shows its own comparison under that card too.
+- On a docs page the Controls table cannot drive a story rendered in its own frame
+  (`overlayDocs()`); the Controls panel on the Canvas tab does.
+- The Figma ledger in `docs/design-system/figma/` still lists the app bar token as 60 and
+  `MpIllustration` / `MpUsageMeter` with their old props.
