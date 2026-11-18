@@ -39,6 +39,11 @@ function imageFor(line: CartLine): string | undefined {
   return commerce.products.find((p) => p.id === line.productId)?.imageUrls?.[0]
 }
 
+/** A line as its buttons name it: the same product bought once and on a plan are two lines, and must not sound alike. */
+function nameOf(line: CartLine): string {
+  return line.plan ? `${line.name}, ${line.plan.name}` : line.name
+}
+
 function setQty(line: CartLine, value: number): void {
   if (Number.isFinite(value)) cart.setQty(channelId.value, lineKey(line), value)
 }
@@ -70,8 +75,8 @@ function checkout(express?: string): void {
               <span v-if="line.plan" class="sf-cart__plan">{{ line.plan.name }} · {{ deliverySummary(line.plan) }}</span>
               <span class="sf-muted">{{ formatMoney(lineTotal({ price: line.price, qty: 1 }, currency)) }} {{ line.plan ? 'per delivery' : 'each' }}</span>
             </div>
-            <div class="sf-qty sf-qty--sm" role="group" :aria-label="`Quantity of ${line.name}`">
-              <button type="button" :aria-label="`Decrease quantity of ${line.name}`" @click="setQty(line, line.qty - 1)">
+            <div class="sf-qty sf-qty--sm" role="group" :aria-label="`Quantity of ${nameOf(line)}`">
+              <button type="button" :aria-label="`Decrease quantity of ${nameOf(line)}`" @click="setQty(line, line.qty - 1)">
                 <v-icon size="14">minus</v-icon>
               </button>
               <input
@@ -83,12 +88,12 @@ function checkout(express?: string): void {
                 aria-label="Quantity"
                 @change="setQty(line, Number(($event.target as HTMLInputElement).value))"
               >
-              <button type="button" :aria-label="`Increase quantity of ${line.name}`" :disabled="line.qty >= MAX_QTY" @click="setQty(line, line.qty + 1)">
+              <button type="button" :aria-label="`Increase quantity of ${nameOf(line)}`" :disabled="line.qty >= MAX_QTY" @click="setQty(line, line.qty + 1)">
                 <v-icon size="14">plus</v-icon>
               </button>
             </div>
             <span class="sf-cart__total">{{ formatMoney(lineTotal(line, currency)) }}</span>
-            <button type="button" class="sf-icon-btn" :aria-label="`Remove ${line.name}`" @click="cart.remove(channelId, lineKey(line))">
+            <button type="button" class="sf-icon-btn" :aria-label="`Remove ${nameOf(line)}`" @click="cart.remove(channelId, lineKey(line))">
               <v-icon size="18">trash-2</v-icon>
             </button>
           </li>

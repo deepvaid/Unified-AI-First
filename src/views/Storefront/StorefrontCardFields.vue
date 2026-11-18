@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { watch } from 'vue'
 import { TEST_CARDS } from '@/maropay/storefront'
 import type { CardInput } from '@/maropay/storefront'
 import { useDemoStore } from './storefrontContext'
@@ -20,8 +21,15 @@ const card = defineModel<CardInput>('card', { required: true })
 /** A store shown to prospects offers the same cards under plain words. */
 const demo = useDemoStore()
 
+// Several fields can change in the same instant: a browser filling in a saved card sets the
+// number, the expiry and the code together. Each change builds on the one before it, not on the
+// value the parent has not handed back yet, or only the last field would be kept.
+let latest = card.value
+watch(card, (value) => { latest = value })
+
 function update(patch: Partial<CardInput>): void {
-  card.value = { ...card.value, ...patch }
+  latest = { ...latest, ...patch }
+  card.value = latest
 }
 
 function onNumber(event: Event): void {

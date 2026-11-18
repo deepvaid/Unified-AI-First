@@ -169,7 +169,7 @@ function seedThemes(): StoreTheme[] {
       styles: { ...VITAHEAL_THEME_STYLES },
       templates: {
         home: [
-          createSection('announcement-bar', { text: 'Free shipping over 549 kr · Made in Sweden · 30-day money-back guarantee on Unwind' }, 'vitaheal-home-announcement'),
+          createSection('announcement-bar', { text: 'Free shipping over 549 kr · Made in Sweden · 30-day money-back guarantee on Unwind', link: '' }, 'vitaheal-home-announcement'),
           createSection('header', { menuStyle: 'Centered' }, 'vitaheal-home-header'),
           {
             ...createSection('image-banner', {

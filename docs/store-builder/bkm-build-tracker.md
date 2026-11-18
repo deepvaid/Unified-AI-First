@@ -328,6 +328,50 @@ here already exists when those slices start.
     pre-chat form and business hours from the builder are not applied on the store. Only
     Vitaheal's storefront has the widget.
 
+- **Preview test pass (2026-11-18).** Asked for by the human: test every flow on the deployed
+  Vercel preview, as a shopper and as a merchant, and fix what breaks. Run on the branch's
+  preview (commit `0ab0631c`) in a browser with nothing stored, at 1280px and 375px, with the
+  store and the admin open in two tabs. Console clean throughout.
+  - **Shopper, all passed:** all 25 store pages (home, six collections, eight products, pages,
+    policies, account, cart) with no dead link, broken picture or sideways scroll; gallery,
+    purchase options and quantity; the not-found page; the newsletter form; a cart with a
+    subscription line and a one-time line of the same product; every checkout error message;
+    the three sample cards (paid, bank check, declined); cancelling the bank check; a reload in
+    the middle of a payment; Apple Pay and Google Pay; Click & collect; every link on the
+    confirmation; the account page (wrong and right sign-in, skip, pause, resume, change plan,
+    cancel, pay again after a failed payment); the chatbot (five suggested questions, seven
+    wellness needs, the health caution, order by number, an unknown order, a person, nonsense);
+    and the keyboard alone on the purchase options and the chat.
+  - **Merchant, all passed:** every button on the store's page; add a product from the store
+    page, see it in the store, delete it; a plan's discount edited and a plan paused; the
+    Subscribers tabs, search and empty result; skip, pause, resume and "Charge now" on a seeded
+    subscriber; the orders list and four order pages (first order, renewal, Google Pay, Click &
+    collect); the store's Chatbot page, Conversations, and order tracking switched off in the
+    builder; photos on the Themes page and the theme builder; "Restore original store".
+  - **Across tabs, all passed without a reload:** a new product, a deleted product (its open
+    page became the store's not-found page), a plan's discount, a paused plan, order tracking
+    switched off, and the restore.
+  - **Neelam-Store, unchanged:** no widget, its own account link, dollars, five countries, its
+    prototype notes and countdown.
+  - **Bugs found and fixed:**
+    1. Card number, expiry and security code filled in the same instant, as a browser does with
+       a saved card, kept only the last of the three. (`StorefrontCardFields.vue`; all stores.)
+    2. Two cart lines of one product (once, and on a plan) had the same button names for a
+       screen reader. They now name the plan. (`StorefrontCart.vue`.)
+    3. The admin's drawing of the store showed a "Shop sale" link in the announcement that the
+       store does not have.
+    4. The store page's checklist said "Merchandising connected. Search and recommendations are
+       active" for a store where it is still to do. It now says "Connect merchandising". (All
+       web stores that have not connected it.)
+  - **Seen and left alone** (shared with other stores, or outside this work): page titles are
+    capitalised word by word ("Terms Of Service") and the not-found page reads "Sorry, This Page
+    Not Found!", both from the shared storefront theme; an order is "Fulfilled from" a US
+    location; the Maropay pages show the account's own name; Vercel's own toolbar button floats
+    on the preview's pages (a setting in the Vercel project, not in this code).
+  - **Not covered:** Safari and Firefox; a screen reader; a real uploaded product picture (the
+    test product used the drawn pack shot); creating a new plan through the drawer (checked up
+    to its error messages).
+
 **Sales-demo pass (added 2026-11-16, after the audience was confirmed as sales people showing prospects):**
 
 - The header's search, account and wishlist are hidden on Vitaheal (demo) until their pages exist (`headerTools` on the store's chrome). S13 turns search on, S8 the account.

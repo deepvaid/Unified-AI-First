@@ -2761,3 +2761,13 @@ prospects, so BKM's name is off the screen:
   checkout with a subscription line).
 - `StorefrontReceipt`'s "Continue shopping" links to "/" through `StorefrontAnchor` (its
   `homeHref` prop is kept for the countdown).
+
+**Preview test pass (2026-11-18) — four fixes from testing the deployed preview.**
+
+- `StorefrontCardFields` keeps every field when several change in the same instant (browser
+  autofill). No visible change.
+- Cart line buttons name the plan when the line has one ("Remove Unwind, 3-month supply").
+- The Vitaheal announcement section has an empty `link`, so the admin drawing no longer shows
+  the default "Shop sale".
+- The store page's merchandising checklist item reads "Connect merchandising" until it is
+  connected (it read "Merchandising connected" in both states).

@@ -407,7 +407,9 @@ const setupChecklist = computed<SetupItem[]>(() => {
     return [
       { id: 'domain', title: 'Store URL', description: current.webStore?.domain ?? 'Add a storefront domain', done: Boolean(current.webStore?.domain), target: 'preview' },
       { id: 'theme', title: 'Theme ready', description: current.webStore?.published ? 'Published theme is live' : 'Publish the draft theme', done: Boolean(current.webStore?.published), target: 'store_builder' },
-      { id: 'merchandise', title: 'Merchandising connected', description: 'Search and recommendations are active', done: Boolean(current.webStore?.merchandiseConnected), target: 'merchandise' },
+      current.webStore?.merchandiseConnected
+        ? { id: 'merchandise', title: 'Merchandising connected', description: 'Search and recommendations are active', done: true, target: 'merchandise' }
+        : { id: 'merchandise', title: 'Connect merchandising', description: 'Turn on search and recommendations for this store', done: false, target: 'merchandise' },
       // The demo store's policies are written (Store content › Pages), so its item opens them instead of a tab with nothing to review.
       isDemoStore.value
         ? { id: 'legal', title: 'Legal pages', description: 'Privacy, refunds and terms are published', done: true, target: 'pages' }
