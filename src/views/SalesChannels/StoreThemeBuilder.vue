@@ -23,6 +23,8 @@ import { useCopilotStore } from '@/stores/useCopilot'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import { useStoreThemesStore } from '@/stores/useStoreThemes'
 import { useStorefrontStore } from '@/stores/useStorefront'
+import { useCommerceStore } from '@/stores/useCommerce'
+import { previewProducts } from '@/views/Storefront/storefrontCatalog'
 import {
   blockCatalog,
   getBlockDef,
@@ -64,6 +66,8 @@ const theme = computed(() => {
   return requested?.channelId === channelId.value ? requested : themesStore.themeForChannel(channelId.value)
 })
 const previewHeader = computed(() => storefronts.previewHeaderFor(channel.value))
+/** The store's own products in the canvas's product rows; a store on the shared catalogue keeps the drawn stand-ins. */
+const previewItems = computed(() => (channel.value ? previewProducts(useCommerceStore().products, channel.value) : undefined))
 
 const backRoute = computed(() =>
   channel.value
@@ -1063,6 +1067,7 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
               :styles="theme.styles"
               :brand="previewHeader.brand"
               :menu="previewHeader.menu"
+              :products="previewItems"
               :device="device"
               interactive
               :selected-id="selectedSectionId"

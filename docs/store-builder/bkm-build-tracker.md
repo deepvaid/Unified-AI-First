@@ -191,6 +191,14 @@ here already exists when those slices start.
     space ("SEK 585.90", was "SEK585.90") on Commerce and Maropay pages.
   - **Store page.** Vitaheal's own company details, revenue in kronor and recent activity
     (`VITAHEAL_ADMIN` in the seed). Its "Legal pages" setup item is done and opens Pages.
+  - **The admin's drawing of the store shows the store** (added after review, 2026-11-18: the
+    human looked at the grey drawing and saw none of the changes). `StorefrontPreview` on the
+    store's overview, its Preview dialog, the Themes page and the theme builder's canvas now
+    draws the photo named in a banner's, hero's, image-with-text section's or collection
+    block's `image` setting, the banner's subheadline, and the store's own products (photo,
+    name, price) in a featured-products section. A store on the shared catalogue keeps the
+    drawn stand-ins: Neelam-Store's drawing is unchanged. This supersedes "the theme builder's
+    own preview stays as it is" from the plan.
   - **Other stores, checked:** Neelam-Store's checkout still offers the five original countries,
     Ava Brown in San Francisco, "Pay $119.33", "Total USD $119.33", its prototype notes and the
     countdown; its order still reads "Online Store" with a made-up US address.
@@ -199,8 +207,7 @@ here already exists when those slices start.
     so "Free shipping over 549 kr" is not enforced (S10). The order is "Fulfilled from" a US
     location, because locations belong to the account. The Maropay pages still show the
     account's own name ("Atlas Outfitters LLC") and a "Demo controls" panel; the order page's
-    "View in Maropay" leads there. The overview's "Storefront preview" is the builder's drawing
-    without photos. The walk's test orders (#20001 to #20006, one of them Neelam-Store's) stay in this browser's Maropay data.
+    "View in Maropay" leads there. The walk's test orders (#20001 to #20006, one of them Neelam-Store's) stay in this browser's Maropay data.
 
 **Sales-demo pass (added 2026-11-16, after the audience was confirmed as sales people showing prospects):**
 

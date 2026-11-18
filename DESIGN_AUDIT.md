@@ -2697,7 +2697,10 @@ prospects, so BKM's name is off the screen:
 - Order page (`OrderDetail.vue`): a product photo on each line whose product has one (the
   Products list's `v-avatar` pattern); the address line no longer leaves a stray comma when
   there is no region.
-- No new component, token or story.
+- `StorefrontPreview` gains an optional `products` prop and draws a section's or collection
+  block's `image` setting (out of system, like the storefront it draws). `previewProducts` in
+  `src/views/Storefront/storefrontCatalog.ts` supplies the products. New story `WithStorePhotos`.
+- No new component or token.
 
 ### Renames and breaking changes
 

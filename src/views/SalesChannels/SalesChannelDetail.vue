@@ -32,6 +32,7 @@ import { useStoreThemesStore } from '@/stores/useStoreThemes'
 import { useStorefrontStore } from '@/stores/useStorefront'
 import { storesWithOwnCatalogue } from '@/storefront/catalog'
 import { VITAHEAL_ADMIN, VITAHEAL_CHANNEL_ID } from '@/storefront/vitahealDemo'
+import { previewProducts } from '@/views/Storefront/storefrontCatalog'
 
 type MetricColor = 'primary' | 'retail' | 'commerce' | 'analytics' | 'contacts' | 'success' | 'warning'
 type DetailTab = 'overview' | 'settings' | 'apps' | 'ai' | 'activity'
@@ -202,6 +203,8 @@ const previewSections = computed(() => channelTheme.value?.templates.home)
 const previewStyles = computed(() => channelTheme.value?.styles)
 // A crawled store's own wordmark and menu in the preview header (Neelam-Store); others keep the sample header.
 const previewHeader = computed(() => useStorefrontStore().previewHeaderFor(channel.value))
+/** The store's own products in the preview's product rows; a store on the shared catalogue keeps the drawn stand-ins. */
+const previewItems = computed(() => (channel.value ? previewProducts(commerceStore.products, channel.value) : undefined))
 
 const locations = computed(() => {
   if (!channel.value?.offlineStore) return []
@@ -844,7 +847,7 @@ function locationRoleText(locationId: string) {
             </div>
 
             <div class="retail-widget-body">
-              <StorefrontPreview v-if="isWebStore" :sections="previewSections" :styles="previewStyles" :brand="previewHeader.brand" :menu="previewHeader.menu" />
+              <StorefrontPreview v-if="isWebStore" :sections="previewSections" :styles="previewStyles" :brand="previewHeader.brand" :menu="previewHeader.menu" :products="previewItems" />
 
               <div v-else class="sc-retail-preview sc-retail-preview--hero" aria-label="Retail location summary">
                 <button
@@ -1198,7 +1201,7 @@ function locationRoleText(locationId: string) {
         </template>
 
         <div class="sc-preview-dialog__body">
-          <StorefrontPreview :sections="previewSections" :styles="previewStyles" :brand="previewHeader.brand" :menu="previewHeader.menu" :device="previewDevice" />
+          <StorefrontPreview :sections="previewSections" :styles="previewStyles" :brand="previewHeader.brand" :menu="previewHeader.menu" :products="previewItems" :device="previewDevice" />
         </div>
       </MpDialog>
 

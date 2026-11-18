@@ -2,7 +2,10 @@ import { parseDecimal, zero } from '@/maropay/money'
 import type { Money } from '@/maropay/money'
 import type { Product } from '@/stores/useCommerce'
 import { toHandle } from '@/stores/useProductExtras'
-import { catalogFor, isAvailable } from '@/storefront/catalog'
+import type { SalesChannel } from '@/stores/useSalesChannels'
+import { catalogFor, hasPriceRange, isAvailable, lowestPrice, storesWithOwnCatalogue } from '@/storefront/catalog'
+import { formatStorePrice } from '@/storefront/price'
+import { roundForDisplay } from '@/subscriptions/plans'
 
 // What a storefront sells. A store with products assigned to it (Vitaheal (demo)) sells
 // those. The others share the account's published Commerce products: a stand-in,
@@ -51,6 +54,29 @@ export function priceOf(product: Product, currency: string): Money {
 
 export function inStock(product: Product): boolean {
   return isAvailable(product)
+}
+
+/** A product as the admin's drawing of the storefront shows it. */
+export interface PreviewProduct {
+  name: string
+  /** As the store's product card reads: "From 399 kr". */
+  price: string
+  image?: string
+}
+
+/**
+ * The products a store's home page features, for the admin's drawing of it
+ * (StorefrontPreview), in the storefront's own order and wording. Only for a
+ * store with products of its own: a store on the shared catalogue keeps the
+ * drawn stand-ins, so this returns undefined for it.
+ */
+export function previewProducts(products: Product[], channel: Pick<SalesChannel, 'id' | 'webStore'>): PreviewProduct[] | undefined {
+  if (!storesWithOwnCatalogue(products).includes(channel.id)) return undefined
+  const currency = channel.webStore?.currency ?? 'USD'
+  return storefrontProducts(products, channel.id).filter(inStock).map((product) => {
+    const price = formatStorePrice(roundForDisplay(parseDecimal(lowestPrice(product), currency) ?? priceOf(product, currency)), channel.webStore?.locale)
+    return { name: product.name, price: hasPriceRange(product) ? `From ${price}` : price, image: product.imageUrls?.[0] }
+  })
 }
 
 /** Stands in for the product photograph. */
