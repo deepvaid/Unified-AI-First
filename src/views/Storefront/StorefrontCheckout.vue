@@ -10,6 +10,7 @@ import type { CardInput, ShopperMethod } from '@/maropay/storefront'
 import { useCommerceStore } from '@/stores/useCommerce'
 import { useMaropayStore } from '@/stores/useMaropay'
 import { MAX_QTY, lineTotal, useStorefrontCartStore } from '@/stores/useStorefrontCart'
+import { useStorefrontShopperStore } from '@/stores/useStorefrontShopper'
 import { deliverySummary, nextChargeDate, recurringCharges } from '@/subscriptions/plans'
 import StorefrontAnchor from './StorefrontAnchor.vue'
 import StorefrontCardFields from './StorefrontCardFields.vue'
@@ -35,6 +36,7 @@ const storefront = inject(STOREFRONT)!
 const maropay = useMaropayStore()
 const commerce = useCommerceStore()
 const cart = useStorefrontCartStore()
+const shopper = useStorefrontShopperStore()
 
 const channelId = computed(() => storefront.channel.value.id)
 const accountId = computed(() => String(route.params.accountId ?? '2000290'))
@@ -289,6 +291,8 @@ watch(sheet, async (now, before) => {
 watch(done, async (isDone) => {
   if (!isDone) return
   if (!buyNow.value) cart.clear(channelId.value)
+  // Whoever just bought a subscription is signed in, so "Manage your subscription" opens it without asking who they are.
+  if (session.value?.lineItems.some((l) => l.plan)) shopper.signIn(channelId.value, session.value.customer.email)
   await nextTick()
   receipt.value?.focus()
 }, { immediate: true })
@@ -329,7 +333,10 @@ const storePaymentsHref = computed(() => router.resolve({ name: MAROPAY_STORE_RO
       />
       <p v-if="nextCharge" class="sf-co__subscribed">
         <v-icon size="18">repeat</v-icon>
-        <span>Your subscription has started. The next charge is on {{ nextCharge }}.</span>
+        <span>
+          Your subscription has started. The next charge is on {{ nextCharge }}.
+          <StorefrontAnchor href="/account" class="sf-co__manage">Manage your subscription</StorefrontAnchor>
+        </span>
       </p>
       <p v-if="adminLinks" class="sf-co__demo">
         <strong>{{ storefront.demo.value ? 'What the merchant sees:' : 'Prototype' }}</strong>
@@ -889,6 +896,11 @@ legend.sf-co__step-title {
 
 .sf-co__none a {
   text-decoration: underline;
+}
+
+.sf-co__manage {
+  text-decoration: underline;
+  white-space: nowrap;
 }
 
 .sf-co__demo {

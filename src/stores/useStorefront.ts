@@ -40,6 +40,8 @@ export interface StorefrontChrome {
   wordmarkIcon: string | null
   /** Which tools the header shows. A store leaves out the ones it has no page for, so none leads to a 404. */
   headerTools: StorefrontHeaderTool[]
+  /** Where the account tool leads. Absent: the real store's own sign-in path, which this prototype does not serve. */
+  accountHref?: string
   social: Array<StorefrontLink & { icon: string }>
   searchPlaceholder: string
   nav: StorefrontLink[]

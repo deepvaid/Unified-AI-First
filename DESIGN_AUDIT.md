@@ -2716,3 +2716,28 @@ prospects, so BKM's name is off the screen:
   the order's currency.
 - A store in kronor now shows exact amounts at checkout ("585,90 kr"); whole kronor stay on the
   product pages and the cart. This narrows part 3's rounding rule.
+
+**Demo pass, part 5 (2026-11-18) — a subscription can be managed, by its shopper and by the merchant.**
+
+- New pages Commerce › Subscriptions › Subscribers (`Subscribers.vue`, list archetype:
+  `MpPageHeader` with `MpFilterTabs`, `MpDataTableToolbar`, `v-data-table`, `MpRowActionsMenu`,
+  `MpEmptyState`) and the subscription's own page (`SubscriptionDetail.vue`, detail archetype:
+  `MpStatusChip` in `#title-append`, `MpAlert` for paused, cancelled and failed, `MpListRow`
+  history, `MpFormDrawer` for the date and the plan, `MpDialog` for cancelling with a reason,
+  `MpConfirmDialog` for charging, `MpErrorState` when it is gone).
+- `MpStatusChip` gains the type `subscription` (Active, Paused, Cancelled, Payment failed), with
+  its story.
+- New storefront page `StorefrontAccount.vue` (out of system, like the rest of the storefront).
+- New pure module `src/subscriptions/contracts.ts`; new store `useStorefrontShopper`.
+- A lone field in an `MpFormDrawer` goes inside `MpFormGrid`: placed straight in the drawer's
+  column it stretched to the drawer's full height.
+
+### Renames and breaking changes
+
+- `/commerce/:accountId/subscriptions` now redirects to Subscribers (it redirected to Plans).
+- `useSubscriptionsStore` also holds `contracts` and their actions; its `restore()` resets them.
+- `CheckoutInput` and `CheckoutSession` gain an optional `renewalOf`; `CheckoutOrderInput` too.
+  A renewal order is tagged `Renewal` and starts no subscription.
+- `StorefrontChrome` gains an optional `accountHref`. Vitaheal's header now has the account
+  tool (`headerTools: ['account']`); its footer and phone menu gain "My subscription".
+- `vitahealDemo.ts` now imports the pure rule modules, not only types.

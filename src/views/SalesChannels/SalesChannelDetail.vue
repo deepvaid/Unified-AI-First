@@ -179,7 +179,7 @@ const confirmRestore = ref(false)
 
 function restoreStore() {
   commerceStore.restoreDemoStore()
-  toast.success(`${channel.value?.name ?? 'The store'} is back to its original products and plans`)
+  toast.success(`${channel.value?.name ?? 'The store'} is back to its original products, plans and subscribers`)
 }
 
 const maropay = useMaropayStore()
@@ -1051,8 +1051,8 @@ function locationRoleText(locationId: string) {
           </div>
           <div class="retail-widget-body">
             <p class="text-body-2 text-medium-emphasis mb-0">
-              Products and subscription plans you add or edit in this store stay after a reload,
-              in this browser only. Restoring puts the original ones back.
+              Products, subscription plans and subscribers you add or change in this store stay after
+              a reload, in this browser only. Restoring puts the original ones back.
             </p>
           </div>
         </v-card>
@@ -1212,7 +1212,7 @@ function locationRoleText(locationId: string) {
         :consequences="[
           'Products you added to this store are removed.',
           'Your edits to its products are undone.',
-          'Subscription plans go back to the original two.',
+          'Subscription plans go back to the original two, and subscribers to the original eight.',
           'The cart is emptied.',
           'Orders already placed stay.',
         ]"

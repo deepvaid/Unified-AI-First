@@ -20,6 +20,7 @@ import { PROVIDER_LABELS } from '@/maropay/model'
 import { isManualKind } from '@/maropay/providers'
 import { formatDay } from '@/maropay/readiness'
 import { deliverySummary } from '@/subscriptions/plans'
+import { useSubscriptionsStore } from '@/stores/useSubscriptions'
 import type { RefundResult } from '@/services/maropay/mockAdapter'
 
 const route = useRoute()
@@ -158,6 +159,9 @@ function saveAddress() {
 function lineTotal(qty: number, price: string, discountPct: number): string {
   return (qty * parseFloat(price) * (1 - discountPct / 100)).toFixed(2)
 }
+
+/** The subscription this order started or renewed, for the link on its line. */
+const subscription = computed(() => (order.value ? useSubscriptionsStore().contractOfOrder(order.value.id) : undefined))
 
 /** The line's product photo, when its product has one. */
 function lineImage(sku: string): string | undefined {
@@ -307,6 +311,13 @@ function timelineIcon(entry: { kind: string; text: string }): string {
                         <v-icon size="12">repeat</v-icon>
                         Subscription: {{ li.plan.name }} ({{ deliverySummary(li.plan) }})
                       </div>
+                      <RouterLink
+                        v-if="li.plan && subscription && subscription.sku === li.sku"
+                        :to="{ name: 'SubscriptionDetail', params: { accountId, subscriptionId: subscription.id } }"
+                        class="mp-link text-caption"
+                      >
+                        View subscription {{ subscription.number }}
+                      </RouterLink>
                     </div>
                   </div>
                 </td>

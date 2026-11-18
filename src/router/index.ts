@@ -133,7 +133,9 @@ const routes: RouteRecordRaw[] = [
   { path: '/commerce/:accountId/orders/drafts/:draftId(\\d+)', name: 'EditDraftOrder', component: () => import('@/views/Commerce/CreateDraftOrder.vue'), meta: { ...sharedCommerceGate, builderShell: true } },
   { path: '/commerce/:accountId/orders/:orderId(\\d+)', name: 'OrderDetail', component: () => import('@/views/Commerce/OrderDetail.vue'), meta: sharedCommerceGate },
   { path: '/commerce/:accountId/subscriptions/plans', name: 'SubscriptionPlans', component: () => import('@/views/Commerce/SubscriptionPlans.vue'), meta: sharedCommerceGate },
-  { path: '/commerce/:accountId/subscriptions', redirect: (to) => `/commerce/${to.params.accountId}/subscriptions/plans` },
+  { path: '/commerce/:accountId/subscriptions/subscribers', name: 'Subscribers', component: () => import('@/views/Commerce/Subscribers.vue'), meta: sharedCommerceGate },
+  { path: '/commerce/:accountId/subscriptions/subscribers/:subscriptionId', name: 'SubscriptionDetail', component: () => import('@/views/Commerce/SubscriptionDetail.vue'), meta: sharedCommerceGate },
+  { path: '/commerce/:accountId/subscriptions', redirect: (to) => `/commerce/${to.params.accountId}/subscriptions/subscribers` },
   { path: '/commerce/:accountId/fulfillments', name: 'Fulfillments', component: () => import('@/views/Commerce/Fulfillments.vue'), meta: sharedCommerceGate },
   { path: '/commerce/:accountId/coupons', name: 'Coupons', component: () => import('@/views/Commerce/Coupons.vue'), meta: sharedCommerceGate },
   { path: '/commerce/:accountId/promotions', name: 'Promotions', component: () => import('@/views/Commerce/Coupons.vue'), meta: sharedCommerceGate },
@@ -287,6 +289,8 @@ const routes: RouteRecordRaw[] = [
       { path: 'collections/:handle', name: 'StorefrontCollection', component: () => import('@/views/Storefront/StorefrontCollection.vue') },
       { path: 'products/:handle', name: 'StorefrontProduct', component: () => import('@/views/Storefront/StorefrontProduct.vue') },
       { path: 'cart-page', name: 'StorefrontCart', component: () => import('@/views/Storefront/StorefrontCart.vue') },
+      // The shopper's own page: sign in (mocked), then their subscriptions.
+      { path: 'account', name: 'StorefrontAccount', component: () => import('@/views/Storefront/StorefrontAccount.vue') },
       // Takes the payment through the store's Maropay setup; query: buy/qty (express buy-now), express, session.
       { path: 'checkout', name: 'StorefrontCheckout', component: () => import('@/views/Storefront/StorefrontCheckout.vue'), meta: { minimalChrome: true } },
       { path: ':pathMatch(.*)*', name: 'StorefrontNotFound', component: () => import('@/views/Storefront/StorefrontNotFound.vue') },

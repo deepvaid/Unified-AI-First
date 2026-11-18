@@ -209,6 +209,60 @@ here already exists when those slices start.
     account's own name ("Atlas Outfitters LLC") and a "Demo controls" panel; the order page's
     "View in Maropay" leads there. The walk's test orders (#20001 to #20006, one of them Neelam-Store's) stay in this browser's Maropay data.
 
+- **Part 5, managing a subscription (done, 2026-11-18).** Asked for by the human after part 4
+  ("where user will manage subscription", then "also for merchant"). A demo-sized piece of S8.
+  - **Rules** in `src/subscriptions/contracts.ts` (15 tests in `tests/subscriptions/`, with S8's
+    acceptance cases: skipping moves the next charge one interval; cancelling gives Cancelled and
+    no next charge; a renewal records its order). A checkout line bought on a plan starts one
+    subscription ("S-1009"). Each action returns a changed copy with a dated history line that
+    says who did it, so the shopper's page and the admin tell the same story.
+  - **Shopper:** `/account` on the storefront (`StorefrontAccount.vue`). Their subscriptions, each
+    with photo, plan, next delivery, price per delivery, payment method and status, and the
+    actions: skip next delivery, pause, resume, change plan, cancel with a reason, and pay again
+    after a failed payment. Every action asks first and answers in a status line. Linked from the
+    confirmation ("Manage your subscription"), the header's account icon, the phone menu and the
+    footer ("My subscription").
+  - **Sign-in is mocked:** an email, then a code, and any six digits work. A checkout that buys a
+    subscription signs its shopper in, so the confirmation's link goes straight in.
+  - **Merchant:** Commerce › Subscriptions › Subscribers
+    (`/commerce/:accountId/subscriptions/subscribers`): a list with tabs All, Active, Paused,
+    Cancelled, Payment failed, search, and quick row actions. Each subscription has its own page
+    with the customer and address, the payment method, the plan and item, the next charge and
+    the history with links to its orders. Actions: skip next delivery, pause, resume, change the
+    next charge date, change plan, cancel with a reason, and "Charge now" or "Retry payment".
+  - **Renewals:** "Charge now" runs a payment through the store's provider like a checkout and
+    places a renewal order: tagged `Subscription` and `Renewal`, with "Renewal of subscription
+    S-1009" in its timeline and a link back to the subscription. The first order links to it too.
+  - **Seeded subscribers:** eight made-up Swedish subscribers (five Active, one Paused, one
+    Cancelled, one Payment failed), with dates that count back from the day the store is opened.
+    Kept in the browser (`mp.vitaheal-demo.subscriptions.v1`) and put back by "Restore original
+    store" with the products and plans.
+  - **The walk** (desktop 1280px, then phone 375px; no page scrolled sideways, console clean):
+    1. Bought Electrolytes on the 3-month supply → confirmation → "Manage your subscription" →
+       `/account`, signed in, subscription S-1009, next delivery 18 Feb 2027.
+    2. Skip next delivery → "Your next … delivery is now 18 May 2027."
+    3. Admin › Subscribers: Linnea Berg first, 18 May 2027; her page's history shows the skip
+       "By the customer".
+    4. Paused in the admin → the shopper's page shows Paused → resumed there.
+    5. Charge now → order #20008, tagged Subscription and Renewal, paid with Visa •••• 4242;
+       next charge 18 Aug 2027; still there after a reload.
+    6. Admin: next charge moved to 1 Sept 2027 (a past date is refused with a message), plan
+       changed to Monthly subscription (223,20 kr).
+    7. Cancelled on the shopper's page with "I have too much left" → Cancelled in the admin with
+       the reason.
+    8. Lucas Andersson (Payment failed) → Retry payment → Active, order #20009.
+    9. Phone: account icon → email (a wrong one is refused) → code (too short is refused) →
+       Erik Johansson's subscription; an unknown email gets an empty page with a link to the
+       Subscription collection.
+    10. Restore original store → eight subscribers again.
+    11. Neelam-Store: its account icon still leads to its own sign-in path, no "My subscription".
+  - **Known limits.** Nothing renews by itself: there is no scheduler, no "Run renewals due
+    today" and no retry schedule; a failed payment exists only on the seeded subscriber. The
+    shopper cannot move the date, swap flavour or change the payment method. The account has no
+    orders or addresses page. No messages are sent (P05). Step 4 was checked by reloading one
+    tab, not with two tabs side by side. A restore leaves an order's "View subscription" link out
+    for subscriptions it removed.
+
 **Sales-demo pass (added 2026-11-16, after the audience was confirmed as sales people showing prospects):**
 
 - The header's search, account and wishlist are hidden on Vitaheal (demo) until their pages exist (`headerTools` on the store's chrome). S13 turns search on, S8 the account.
@@ -264,7 +318,7 @@ here already exists when those slices start.
 | T17 | Contact page | S13 | not started | Contact page seeded as plain content |
 | T18 | Policy pages | S0 | partial | Refund, privacy and terms served at `/policies/:handle` and linked in the footer. No admin page to edit them, and no `policy` template (S1) |
 | T19 | Collection page | S1 | not started | |
-| T20 | Account pages | S8 | not started | |
+| T20 | Account pages | S8 | partial | The subscriptions page only (demo pass, part 5) |
 | T21 | Theme settings | S0 | partial | Figtree and Inconsolata, navy scheme, 8px buttons and the three badge colours are theme settings, with a Badges group in the Styles tab. Open: custom hex colours, border colour, accent font |
 | T22 | Video hero | S3 | partial | A photo hero with headline, subheadline and button (demo pass). Open: video, poster, overlay setting |
 | T23 | Image with text | S3 | partial | Section drawn on the storefront with a seeded photo, placeholder in the builder (demo pass). Open: image picker, registry (S1) |
@@ -300,8 +354,8 @@ here already exists when those slices start.
 | T53 | Related products | S6 | not started | |
 | T54 | Product card | S5 | partial | Photo, second photo on hover, subtitle and "From" price. Open: rating, badge |
 | P01 | Subscription plans | S7 | partial | Plans with interval, units per delivery and discount, edited in Commerce › Subscriptions › Plans; bought through checkout with consent; order tagged (demo pass, part 3). Open: per-variant attachment, contracts (S8) |
-| P02 | Recurring billing | S8 | not started | |
-| P03 | Subscriber portal | S8 | not started | |
+| P02 | Recurring billing | S8 | partial | A subscription per plan line, charged by hand ("Charge now") into a renewal order (demo pass, part 5). Open: a scheduler, "Run renewals due today", the 1, 3, 7 day retry schedule |
+| P03 | Subscriber portal | S8 | partial | `/account`: skip, pause, resume, change plan, cancel with a reason, pay again (demo pass, part 5). Open: reschedule, swap flavour, update payment method |
 | P04 | Subscription pricing rules | S7 | partial | Percentage discount per plan and a free-shipping flag shown as a badge (demo pass, part 3). Open: the flag changing a shipping charge (needs rates, S10) |
 | P05 | Subscription messages | S8 | not started | |
 | P06 | Market currencies and prices | S9 | not started | Groundwork in S0: one currency and locale per store |
@@ -316,7 +370,7 @@ here already exists when those slices start.
 | P15 | Add-on discount | S5 | not started | |
 | P16 | Returns and guarantee | S14 | not started | Guarantee terms page seeded |
 | P17 | Reviews | S11 | not started | |
-| P18 | Customer accounts | S8 | not started | |
+| P18 | Customer accounts | S8 | partial | Mocked passwordless sign-in (email, then any 6-digit code) and a subscriptions page (demo pass, part 5). Open: orders, order detail, addresses |
 | P19 | Back-in-stock alerts | S14 | not started | |
 | P20 | Email, SMS and signup forms | S14 | not started | |
 | P21 | Pixels and attribution | S12 | not started | |

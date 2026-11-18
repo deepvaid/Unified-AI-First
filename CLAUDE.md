@@ -58,7 +58,7 @@ This is NOT a production app — it uses mock data and has no backend API.
 │   │   └── settings/          ← SettingsSection, SettingsPlaceholder, settingsMenu (rail = MpSectionRail)
 │   ├── maropay/               ← Maropay domain logic — pure TS, node:test-importable (see docs/maropay/)
 │   ├── services/maropay/      ← Deterministic mock adapter for the payments partner
-│   ├── subscriptions/         ← Subscription plan rules — pure TS, node:test-importable: price per delivery, display rounding, charge dates, purchase options
+│   ├── subscriptions/         ← Subscription rules — pure TS, node:test-importable: plans (price per delivery, display rounding, charge dates, purchase options) and the subscriptions shoppers hold on them (`contracts.ts`: skip, pause, change plan, cancel, renewals)
 │   ├── storefront/            ← Storefront rules — pure TS, node:test-importable: store catalogue and product form rules, cart lines, price format, which countries and sample shopper a store's checkout has (`checkoutProfile.ts`), pack-shot art, what the demo store keeps in the browser (`demoStorage.ts`), and the Vitaheal (demo) store seed, whose photos are in `public/storefront/vitaheal/` (see docs/store-builder/)
 │   ├── design-tokens/
 │   │   ├── tokens.json        ← SOURCE OF TRUTH for all design values
@@ -69,7 +69,7 @@ This is NOT a production app — it uses mock data and has no backend API.
 │   │       └── tokens.ts
 │   ├── views/                 ← 80+ page views across 10 modules
 │   │   ├── Analytics/         ← 13 report views
-│   │   ├── Commerce/          ← SalesOrders, DraftOrders, Fulfillments, Coupons, StoreSetup, SubscriptionPlans
+│   │   ├── Commerce/          ← SalesOrders, DraftOrders, Fulfillments, Coupons, StoreSetup, SubscriptionPlans, Subscribers, SubscriptionDetail
 │   │   ├── Contacts/          ← AllContacts, Lists, Segments, Fields, Tags, SQL, etc.
 │   │   ├── DaVinci/           ← AI dashboard + studio
 │   │   ├── Integrations/
@@ -78,7 +78,7 @@ This is NOT a production app — it uses mock data and has no backend API.
 │   │   ├── Products/          ← ProductsList, Inventory, Recommendations, TaxCategories
 │   │   ├── Service/           ← Tickets
 │   │   ├── Settings/          ← Settings, Billing, Users, Profile
-│   │   ├── Storefront/        ← Shopper storefront of a web store: home, collections, product, cart, checkout (P4-8, out of system)
+│   │   ├── Storefront/        ← Shopper storefront of a web store: home, collections, product, cart, checkout, account (the shopper's subscriptions) (P4-8, out of system)
 │   │   └── Templates/         ← /templates page-archetype gallery (engineer reference, placeholder data)
 │   ├── stores/                ← 6 Pinia stores with mock data
 │   ├── plugins/vuetify.ts     ← Vuetify theme (light + dark) + global defaults
@@ -106,7 +106,7 @@ This is NOT a production app — it uses mock data and has no backend API.
 ### Data display
 
 - **MpKpiCard** — `label`, `value`, `icon?`, `color?`, `trend?`, `trendPositive?`, `subStat?`, `period?` · slot `#sparkline`. Dashboard metric cards, 4-column row.
-- **MpStatusChip** — `status`, `type?` ('order'|'fulfillment'|'payment'|'payout'|'dispute'|'method'|'readiness'|'campaign'|'contact'|'ticket'|'coupon'|'priority'|'connection'|'stock'|'report'|'general'), `size?` ('sm'|'md'|'lg'), `variant?` ('tonal'|'flat'|'outlined'), `showIcon?`. Workflow states in tables; color maps are automatic per type. Use `size="sm"` in data tables. `readiness` is Maropay's one map for its account/store state dimensions (Submitted ≠ Verified ≠ Ready to activate ≠ Live).
+- **MpStatusChip** — `status`, `type?` ('order'|'fulfillment'|'payment'|'payout'|'dispute'|'method'|'readiness'|'campaign'|'contact'|'ticket'|'coupon'|'subscription'|'priority'|'connection'|'stock'|'report'|'general'), `size?` ('sm'|'md'|'lg'), `variant?` ('tonal'|'flat'|'outlined'), `showIcon?`. Workflow states in tables; color maps are automatic per type. Use `size="sm"` in data tables. `readiness` is Maropay's one map for its account/store state dimensions (Submitted ≠ Verified ≠ Ready to activate ≠ Live).
 - **MpSourceCloudChip** — `dataSource`, `size?` ('sm'|'md'|'lg'), `iconOnly?`. Identifies a widget/KPI's source cloud.
 - **MpTagChip** — `name`, `color` (`TagColor`: sky|green|slate|amber|violet|blue|orange|red), `size?` ('sm'|'md'), `removable?` · emits `remove`. A user-defined tag (service desk tags): soft pill on the theme-flipping `--tag-<hue>-container` / `--tag-<hue>-on-container` aliases (`mp-theme-aliases.css`, from the `color.{light,dark}.tag.<hue>` pairs), long names truncate with a `title`, the remove button is named "Remove tag <name>". Categorical, not a state — states stay `MpStatusChip`.
 - **MpListRow** — `title?`, `subtitle?`, `eyebrow?`, `meta?`, `variant?` ('plain'|'divided'|'boxed'), `emphasis?`, `density?`, `to?`/`href?`/`clickable?` · slots `#lead`, default, `#title`, `#subtitle`, `#trailing`. The one list-row geometry — activity feeds, checklists, suggestion menus. `subtitle` makes a two-line row (14 title that wraps + muted 13 line); `#title`/`#subtitle` take rich content and keep the styling. Resolves its own tag from whichever target prop is set. Never hand-roll a repeating row, or its title/subtitle spans.
@@ -428,7 +428,7 @@ changelog in `DESIGN_AUDIT.md`.
 | `npm run test:catalog` | Da Vinci Catalog Co-Pilot draft-generator tests (`node:test` over `tests/davinci-catalog/`) |
 | `npm run test:chatbot` | Chatbot brand-colour contrast + builder-preview responder tests (`node:test` over `tests/chatbot/`) |
 | `npm run test:plg` | PLG promotion tests — coupon maths and code validation in `src/plg/promo.ts` (`node:test` over `tests/plg/`) |
-| `npm run test:subscriptions` | Subscription plan rules in `src/subscriptions/plans.ts` — price per delivery, display rounding, charge dates, what a shopper is offered — and the Vitaheal (demo) plans (`node:test` over `tests/subscriptions/`) |
+| `npm run test:subscriptions` | Subscription rules in `src/subscriptions/` — plans (price per delivery, display rounding, charge dates, what a shopper is offered) and subscriptions (skip, pause, change plan, cancel, renewals) — and the Vitaheal (demo) plans and subscribers (`node:test` over `tests/subscriptions/`) |
 | `npm run test:storefront` | Storefront rules — which products a store sells, the product form's stock and collection rules, cart lines, store price formatting, a store's checkout countries and sample shopper, what the demo store keeps in the browser — and the Vitaheal (demo) seed checked against its reference tables (`node:test` over `tests/storefront/`) |
 | `npm run tokens:watch` | Watch tokens.json and regenerate on save |
 | `npm run type-check` | Run vue-tsc type checking |
@@ -473,7 +473,7 @@ Example: `[feat]: add MpDateRangePicker component with story`
   report for the real MCC; never edit its statuses), `bkm-build-prompt.md` (the slice-by-slice build
   prompt) and `bkm-build-tracker.md` (prototype progress per slice and requirement). The demo store is
   sales channel `vitaheal-demo` ("Vitaheal", a fictional brand that stands in for BKM so sales can show it to any
-  prospect), seeded from `src/storefront/vitahealDemo.ts`. Its products and subscription plans are kept in this browser
+  prospect), seeded from `src/storefront/vitahealDemo.ts`. Its products, subscription plans and subscribers are kept in this browser
   (`mp.vitaheal-demo.*` in localStorage) and put back from the store's Settings tab ("Restore original store").
   The store carries `webStore.demo`: its checkout uses plain words where another store shows a prototype note, and amounts
   that are charged read "585,90 kr" (the product pages and cart show whole kronor).

@@ -528,6 +528,8 @@ export interface CheckoutOrderInput {
   channelId: string
   /** The store's own name, for a store with products of its own. Absent: "Online Store", the shared catalogue's channel. */
   salesChannel?: string
+  /** A renewal: the subscription's number. The order is tagged Renewal and starts no subscription. */
+  renewalOf?: string
   customer: CheckoutCustomer
   lineItems: Array<{ product: string; sku: string; qty: number; price: string; plan?: LinePlan }>
   shipping: string
@@ -1411,8 +1413,8 @@ export const useCommerceStore = defineStore('commerce', () => {
       date: input.date,
       lineItems: input.lineItems.map((li): OrderLineItem => ({ ...li, status: 'Processing', coupon: null, discountPct: 0 })),
       notes: null,
-      // A line bought on a plan makes it a subscription order, findable by its tag.
-      tags: subscribed.length ? ['Subscription'] : [],
+      // A line bought on a plan makes it a subscription order, findable by its tag; a renewal says so too.
+      tags: subscribed.length ? ['Subscription', ...(input.renewalOf ? ['Renewal'] : [])] : [],
       salesChannel: input.salesChannel ?? 'Online Store',
       currency: input.currency,
       region: address.region || '—',
@@ -1424,8 +1426,8 @@ export const useCommerceStore = defineStore('commerce', () => {
       fulfilledFromLocation: WAREHOUSE_LOCATIONS[input.id % WAREHOUSE_LOCATIONS.length]!,
       timeline: [
         ...input.timeline,
-        // Renewals themselves come with contracts (S8); the order records what was agreed.
-        ...subscribed.map((li) => ({
+        // The first order records what was agreed. A renewal's own line is already in `input.timeline`.
+        ...(input.renewalOf ? [] : subscribed).map((li) => ({
           text: `Subscription started: ${li.product}, ${li.plan.name} (${deliverySummary(li.plan)}). Payment method saved; next charge ${new Date(`${nextChargeDate(input.date, li.plan)}T00:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`,
           date: input.date,
         })),

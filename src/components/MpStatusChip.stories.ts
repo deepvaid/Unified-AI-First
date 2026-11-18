@@ -51,7 +51,7 @@ The \`MpStatusChip\` displays the current state of an entity. It automatically a
     status: { control: 'text', description: 'Status text, rendered verbatim. Matched case-insensitively against the tone map for the given type.' },
     type: {
       control: 'select',
-      options: ['order', 'fulfillment', 'payment', 'payout', 'dispute', 'method', 'readiness', 'campaign', 'contact', 'ticket', 'coupon', 'priority', 'connection', 'general'],
+      options: ['order', 'fulfillment', 'payment', 'payout', 'dispute', 'method', 'readiness', 'campaign', 'contact', 'ticket', 'coupon', 'subscription', 'priority', 'connection', 'general'],
       description: 'Business domain used to resolve the status → color mapping. Unknown statuses fall back to the general map, then neutral.',
     },
     size: { control: 'select', options: ['sm', 'md', 'lg'], description: 'Chip size on the shared sm|md|lg ramp (P2-1). Heights come from component.chip.height.* — 20 / 24 / 32. Use "sm" inside data tables.' },
@@ -339,6 +339,7 @@ export const FullMatrix: Story = {
         contact: ['Active', 'Subscribed', 'Unsubscribed', 'Bounced', 'Pending', 'Confirmed', 'Suspended', 'Suppressed', 'Spam', 'Hard Bounce'],
         ticket: ['Open', 'In Progress', 'Awaiting Reply', 'Resolved', 'Closed', 'On Hold', 'Escalated', 'New'],
         coupon: ['Active', 'Expired', 'Scheduled', 'Used', 'Disabled'],
+        subscription: ['Active', 'Paused', 'Cancelled', 'Payment failed'],
         priority: ['Critical', 'Urgent', 'High', 'Medium', 'Normal', 'Low'],
         connection: ['Connected', 'Disconnected', 'Needs Setup', 'Sync Issue', 'Auth Expired', 'Syncing', 'Error', 'Healthy', 'Active', 'Setup Incomplete', 'Inactive'],
         general: [

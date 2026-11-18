@@ -12,7 +12,7 @@
 //   useStoreContent     VITAHEAL_CONTENT, VITAHEAL_BLOG_SEO
 //   useStoreNavigation  VITAHEAL_MENUS
 //   useStorefront       VITAHEAL_CHROME
-//   useSubscriptions    VITAHEAL_PLANS
+//   useSubscriptions    VITAHEAL_PLANS, vitahealSubscriptions()
 //
 // The catalogue has the shape of BKM's (variants, SEK prices, collections), which
 // is what the requirements test. The brand, product and flavour names are made up,
@@ -21,8 +21,8 @@
 //
 // Everything a visitor can see or click must read like a real store: no internal
 // wording, no link to a missing page, and never BKM's name (the test checks that).
-// SKUs and weights are placeholders. Type-only imports keep this file runnable in
-// Node: `npm run test:storefront` checks it against the reference tables.
+// SKUs and weights are placeholders. It imports only types and the pure rule modules,
+// so Node can run it: `npm run test:storefront` checks it against the reference tables.
 
 import type { Product, ProductVariant } from '../stores/useCommerce.ts'
 import type { ThemeStyles } from '../stores/themeBuilderData.ts'
@@ -30,7 +30,10 @@ import type { SalesChannel } from '../stores/useSalesChannels.ts'
 import type { ContentEntry, BlogSeoSettings } from '../stores/useStoreContent.ts'
 import type { StoreMenu } from '../stores/useStoreNavigation.ts'
 import type { StorefrontChrome } from '../stores/useStorefront.ts'
+import { money, toDecimal } from '../maropay/money.ts'
+import { linePlan, nextChargeDate, pricePerDelivery } from '../subscriptions/plans.ts'
 import type { SubscriptionPlan } from '../subscriptions/plans.ts'
+import type { ContractEvent, ContractStatus, SubscriptionContract } from '../subscriptions/contracts.ts'
 
 export const VITAHEAL_CHANNEL_ID = 'vitaheal-demo'
 export const VITAHEAL_CHANNEL_NAME = 'Vitaheal (demo)'
@@ -362,6 +365,98 @@ export const VITAHEAL_PLANS: SubscriptionPlan[] = [
   },
 ]
 
+// ── Subscribers ──────────────────────────────────────────────────────────────
+// Eight made-up subscribers, so Commerce › Subscriptions › Subscribers has something
+// to show before the first purchase. Their dates count back from the day the store
+// is opened, so "next charge" is always ahead and a failed payment is always recent.
+
+interface SubscriberSeed {
+  name: string
+  email: string
+  street: string
+  postalCode: string
+  city: string
+  productId: number
+  planId: string
+  /** Days before today that the subscription started. */
+  startedDaysAgo: number
+  status: ContractStatus
+  card: string
+  cancelReason?: string
+}
+
+const SUBSCRIBER_SEEDS: SubscriberSeed[] = [
+  { name: 'Astrid Lindqvist', email: 'astrid.lindqvist@example.com', street: 'Vasagatan 21', postalCode: '411 24', city: 'Göteborg', productId: 2001, planId: 'plan-3-month', startedDaysAgo: 200, status: 'Active', card: 'Visa •••• 4242' },
+  { name: 'Erik Johansson', email: 'erik.johansson@example.com', street: 'Södra Förstadsgatan 40', postalCode: '211 43', city: 'Malmö', productId: 2005, planId: 'plan-monthly', startedDaysAgo: 75, status: 'Active', card: 'Mastercard •••• 5454' },
+  { name: 'Maja Nilsson', email: 'maja.nilsson@example.com', street: 'Kungsgatan 9', postalCode: '753 21', city: 'Uppsala', productId: 2002, planId: 'plan-monthly', startedDaysAgo: 140, status: 'Active', card: 'Visa •••• 1881' },
+  { name: 'Oskar Bergström', email: 'oskar.bergstrom@example.com', street: 'Drottninggatan 55', postalCode: '111 21', city: 'Stockholm', productId: 2003, planId: 'plan-3-month', startedDaysAgo: 310, status: 'Active', card: 'Amex •••• 0005' },
+  { name: 'Elsa Karlsson', email: 'elsa.karlsson@example.com', street: 'Storgatan 3', postalCode: '582 23', city: 'Linköping', productId: 2006, planId: 'plan-monthly', startedDaysAgo: 110, status: 'Paused', card: 'Visa •••• 7720' },
+  { name: 'Lucas Andersson', email: 'lucas.andersson@example.com', street: 'Nygatan 14', postalCode: '702 11', city: 'Örebro', productId: 2005, planId: 'plan-3-month', startedDaysAgo: 185, status: 'Payment failed', card: 'Mastercard •••• 3102' },
+  { name: 'Freja Holm', email: 'freja.holm@example.com', street: 'Hamngatan 7', postalCode: '392 31', city: 'Kalmar', productId: 2001, planId: 'plan-monthly', startedDaysAgo: 95, status: 'Cancelled', card: 'Visa •••• 6009', cancelReason: 'Too expensive' },
+  { name: 'Nils Ekström', email: 'nils.ekstrom@example.com', street: 'Rådhusesplanaden 2', postalCode: '903 28', city: 'Umeå', productId: 2002, planId: 'plan-3-month', startedDaysAgo: 30, status: 'Active', card: 'Visa •••• 4242' },
+]
+
+function daysBefore(today: string, days: number): string {
+  const [year = 1970, month = 1, day = 1] = today.slice(0, 10).split('-').map(Number)
+  return new Date(Date.UTC(year, month - 1, day - days)).toISOString().slice(0, 10)
+}
+
+/** The store's seeded subscribers, as of `today` ("YYYY-MM-DD"). */
+export function vitahealSubscriptions(today: string): SubscriptionContract[] {
+  return SUBSCRIBER_SEEDS.map((seed, index): SubscriptionContract => {
+    const product = PRODUCT_SEEDS.find((p) => p.id === seed.productId)!
+    const plan = VITAHEAL_PLANS.find((p) => p.id === seed.planId)!
+    const lowest = product.variants.reduce((min, v) => (v.price < min.price ? v : min))
+    const startedOn = daysBefore(today, seed.startedDaysAgo)
+
+    // A paused or cancelled subscription stopped being charged on the day it was paused or cancelled.
+    const stoppedOn = seed.status === 'Paused' ? daysBefore(today, 6) : seed.status === 'Cancelled' ? daysBefore(today, 12) : null
+
+    // Every charge date that came due while it was running; the first one still ahead is the next charge.
+    const due: string[] = []
+    let next = nextChargeDate(startedOn, plan)
+    while (next <= today) {
+      if (!stoppedOn || next <= stoppedOn) due.push(next)
+      next = nextChargeDate(next, plan)
+    }
+    // A failed payment is the latest charge that came due and did not go through.
+    const failed = seed.status === 'Payment failed' ? due.pop() : undefined
+
+    const history: ContractEvent[] = [
+      { date: startedOn, text: 'Subscription started', actor: 'customer' },
+      ...due.map((date): ContractEvent => ({ date, text: `Renewal charged to ${seed.card}`, actor: 'merchant' })),
+    ]
+    if (failed) history.push({ date: failed, text: `Renewal payment failed: ${seed.card} was declined`, actor: 'merchant' })
+    if (stoppedOn && seed.status === 'Paused') history.push({ date: stoppedOn, text: 'Paused. Nothing is charged or sent until it is resumed', actor: 'customer' })
+    if (stoppedOn && seed.status === 'Cancelled') history.push({ date: stoppedOn, text: `Cancelled. Reason: ${seed.cancelReason}`, actor: 'customer' })
+
+    return {
+      id: `sub-${1001 + index}`,
+      number: `S-${1001 + index}`,
+      channelId: VITAHEAL_CHANNEL_ID,
+      customer: {
+        name: seed.name,
+        email: seed.email,
+        address: { line1: seed.street, city: seed.city, region: '', postalCode: seed.postalCode, country: 'Sweden' },
+      },
+      productId: product.id,
+      product: product.name,
+      sku: lowest.sku,
+      qty: 1,
+      plan: linePlan(plan),
+      price: toDecimal(pricePerDelivery(money(lowest.price * 100, 'SEK'), plan)),
+      currency: 'SEK',
+      paymentMethod: seed.card,
+      methodId: 'card',
+      status: seed.status,
+      startedOn,
+      nextChargeOn: seed.status === 'Cancelled' ? null : failed ?? next,
+      ...(seed.cancelReason ? { cancelReason: seed.cancelReason } : {}),
+      history: history.reverse(),
+    }
+  })
+}
+
 // ── Storefront header and footer ─────────────────────────────────────────────
 
 const COLLECTION_LINKS = [
@@ -375,8 +470,10 @@ export const VITAHEAL_CHROME: StorefrontChrome = {
   wordmark: 'Vitaheal',
   wordmarkIcon: null,
   announcementAboveHeader: true,
-  // No search, account or wishlist until their pages exist (search S13, account S8): a demo must not hit a 404.
-  headerTools: [],
+  // No search or wishlist until their pages exist (search S13): a demo must not hit a 404.
+  // The account icon opens the shopper's subscriptions (/account).
+  headerTools: ['account'],
+  accountHref: '/account',
   social: [],
   searchPlaceholder: 'Search...',
   nav: [
@@ -391,6 +488,7 @@ export const VITAHEAL_CHROME: StorefrontChrome = {
     { label: 'Subscription', href: '/collections/subscription' },
     { label: 'About', href: '/page/about' },
     { label: 'Contact', href: '/page/contact' },
+    { label: 'My subscription', href: '/account' },
     { label: 'Cart', href: '/cart-page' },
   ],
   footerColumns: [
@@ -409,6 +507,7 @@ export const VITAHEAL_CHROME: StorefrontChrome = {
     {
       heading: { label: 'Help', href: '/page/contact' },
       items: [
+        { label: 'My subscription', href: '/account' },
         { label: 'Money-back guarantee', href: '/page/money-back-guarantee' },
         { label: 'Refund policy', href: '/policies/refund-policy' },
         { label: 'Privacy policy', href: '/policies/privacy-policy' },

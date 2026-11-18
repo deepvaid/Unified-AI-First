@@ -111,13 +111,14 @@ test('the store carries a fictional brand: nothing in the seed names the real on
   assert.equal(seed.match(realNames)?.[0], undefined)
 })
 
-test('the header offers no tool whose page does not exist yet', () => {
-  assert.deepEqual(VITAHEAL_CHROME.headerTools, [])
+test('the header offers no tool whose page does not exist yet: only the account, at its own page', () => {
+  assert.deepEqual(VITAHEAL_CHROME.headerTools, ['account'])
+  assert.equal(VITAHEAL_CHROME.accountHref, '/account')
 })
 
 test('every header, footer, menu and in-copy link leads somewhere', () => {
   const known = new Set<string>([
-    '/', '/cart-page', '/collections/all',
+    '/', '/cart-page', '/account', '/collections/all',
     ...VITAHEAL_COLLECTIONS.map((c) => `/collections/${handle(c.title)}`),
     ...VITAHEAL_CONTENT.filter((e) => e.kind === 'page').map((e) => `/page/${e.handle}`),
     ...VITAHEAL_CONTENT.filter((e) => e.kind === 'policy').map((e) => `/policies/${e.handle}`),

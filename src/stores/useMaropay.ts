@@ -20,6 +20,7 @@ import type { OrderPaymentSummary } from '@/stores/useCommerce'
 import { useNotifications } from '@/stores/useNotifications'
 import { useOnboardingStore } from '@/stores/useOnboarding'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
+import { useSubscriptionsStore } from '@/stores/useSubscriptions'
 import { formatMoney, parseDecimal } from '@/maropay/money'
 import type { Money } from '@/maropay/money'
 import {
@@ -192,8 +193,9 @@ export const useMaropayStore = defineStore('maropay', () => {
       ...(storesWithOwnCatalogue(commerce.products).includes(session.channelId) ? { salesChannel: channelName(session.channelId) } : {}),
       currency: payment.amount.currency,
       payment: orderSummary(payment),
+      ...(session.renewalOf ? { renewalOf: session.renewalOf } : {}),
       timeline: [
-        { text: `Order placed via ${channelName(session.channelId)} checkout`, date: session.order.date },
+        { text: session.renewalOf ? `Renewal of subscription ${session.renewalOf}, charged to the saved payment method` : `Order placed via ${channelName(session.channelId)} checkout`, date: session.order.date },
         { text: paymentLine(payment), date: session.order.date },
       ],
     })
@@ -619,7 +621,11 @@ export const useMaropayStore = defineStore('maropay', () => {
   // ── Shopper checkout ────────────────────────────────────────────────
 
   function applyCheckoutStep(step: CheckoutStep, hadFirstPayment: boolean): void {
-    if (step.createdOrder && step.payment) ensureCheckoutOrder(step.session, step.payment)
+    if (step.createdOrder && step.payment) {
+      ensureCheckoutOrder(step.session, step.payment)
+      // A line bought on a plan starts a subscription. Once, here: not when orders are rebuilt on a reload.
+      if (!step.session.renewalOf) useSubscriptionsStore().startFromCheckout(step.session, step.payment)
+    }
     const first = state.value.milestones.firstPaymentId
     if (!hadFirstPayment && first) {
       const payment = paymentById(first)

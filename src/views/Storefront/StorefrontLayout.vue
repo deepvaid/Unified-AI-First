@@ -154,7 +154,7 @@ function subscribe(): void {
               <v-icon size="16">search</v-icon>
             </button>
           </form>
-          <StorefrontAnchor v-if="chrome.headerTools.includes('account')" href="/user/login" class="sf-icon-btn" aria-label="Account">
+          <StorefrontAnchor v-if="chrome.headerTools.includes('account')" :href="chrome.accountHref ?? '/user/login'" class="sf-icon-btn" aria-label="Account">
             <v-icon size="20">user-round</v-icon>
           </StorefrontAnchor>
           <StorefrontAnchor v-if="chrome.headerTools.includes('wishlist')" href="/wishlist-page" class="sf-icon-btn" aria-label="Wishlist">

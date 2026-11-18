@@ -720,6 +720,8 @@ export interface CheckoutSession {
   order: CheckoutOrderSnapshot | null
   customer: CheckoutCustomer
   lineItems: CheckoutLineItem[]
+  /** Set on a renewal: the number of the subscription it charges ("S-1001"). The shopper was not there. */
+  renewalOf?: string
   createdAt: string
 }
 
