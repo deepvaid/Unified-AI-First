@@ -2762,6 +2762,29 @@ prospects, so BKM's name is off the screen:
 - `StorefrontReceipt`'s "Continue shopping" links to "/" through `StorefrontAnchor` (its
   `homeHref` prop is kept for the countdown).
 
+**Demo pass, part 7 (2026-11-18) — a store campaign carries an offer, and reaches the store and the inbox.**
+
+- `StoreCampaigns.vue`: the drawer gains `MpFormSection` "Offer" and an `MpAlert` in place of the
+  raw `v-alert`; the campaign name is a button with `mp-link`; the table chooses its columns
+  by its own width with `useElementSize` at the `layout.tableColumns*` stops, folding a dropped
+  column into a cell that stays.
+- New storefront component `StorefrontDiscountCode.vue` and helper `storefrontDiscount.ts`
+  (out of system, like the storefront).
+- New pure module `src/storefront/campaigns.ts`. No new design-system component or token.
+
+### Renames and breaking changes
+
+- `StoreCampaign`, `CampaignScheduleStatus` and `campaignStatus` now live in
+  `src/storefront/campaigns.ts`; `useStoreCampaigns` re-exports them. `StoreCampaign` gains
+  optional `offer`, `orders`, `revenue`, `emailCampaignId`.
+- `useStoreCampaignsStore` gains `recordUse`, `setEmailCampaign`, `restoreDemo`.
+- `useCampaignsStore` gains `restoreDemo` and keeps emails tagged `STORE_CAMPAIGN_TAG`.
+- `useStorefrontCartStore` gains `codeFor` and `setCode`; `clear` also drops the code.
+- `CheckoutLineItem` and `CheckoutOrderInput` lines gain optional `coupon` and `discountPct`.
+- The storefront context gains `campaignMessage`.
+- The Campaigns page's subtitle, empty text and delete warning are reworded for every store,
+  and its table has Offer, Orders and Email columns on every store.
+
 **Preview test pass (2026-11-18) — four fixes from testing the deployed preview.**
 
 - `StorefrontCardFields` keeps every field when several change in the same instant (browser

@@ -4,12 +4,14 @@ import { useRoute, useRouter } from 'vue-router'
 import { useChatbotStore } from '@/stores/useChatbot'
 import { useMaropayStore } from '@/stores/useMaropay'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
+import { useStoreCampaignsStore } from '@/stores/useStoreCampaigns'
 import { useStoreThemesStore } from '@/stores/useStoreThemes'
 import { useStorefrontStore } from '@/stores/useStorefront'
 import { useStorefrontCartStore } from '@/stores/useStorefrontCart'
 import { money } from '@/maropay/money'
 import type { Money } from '@/maropay/money'
 import { storefrontOffer } from '@/maropay/storefront'
+import { activeCampaign } from '@/storefront/campaigns'
 import { checkoutProfile } from '@/storefront/checkoutProfile'
 import { formatStorePrice } from '@/storefront/price'
 import { roundForDisplay } from '@/subscriptions/plans'
@@ -69,7 +71,10 @@ function offerFor(amount: Money) {
   return storefrontOffer(maropay.state, channelId.value, amount, { format: formatExact })
 }
 
-provide(STOREFRONT, { channel, theme, chrome, link, currency, formatMoney, formatExact, ownMoneyFormat, checkout, demo, offerFor })
+// A running campaign's message takes the store's announcement bar for as long as it runs.
+const campaignMessage = computed(() => activeCampaign(useStoreCampaignsStore().campaigns, channelId.value)?.offer?.message.trim() ?? '')
+
+provide(STOREFRONT, { channel, theme, chrome, link, currency, formatMoney, formatExact, ownMoneyFormat, checkout, demo, campaignMessage, offerFor })
 
 // A store shown to prospects names itself in the browser tab, where the router's fallback reads "Storefront home · Maropost".
 watch(() => [route.fullPath, demo.value], () => {
@@ -93,6 +98,7 @@ const themeVars = computed(() => storefrontThemeVars(theme.value?.styles))
 /** The theme's announcement, for a store that shows it above the header on every page. */
 const announcement = computed(() => {
   if (!chrome.value.announcementAboveHeader) return ''
+  if (campaignMessage.value) return campaignMessage.value
   const bar = theme.value?.templates.home.find((s) => s.kind === 'announcement-bar' && !s.hidden)
   return typeof bar?.settings.text === 'string' ? bar.settings.text : ''
 })

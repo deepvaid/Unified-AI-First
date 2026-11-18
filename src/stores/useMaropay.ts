@@ -21,6 +21,7 @@ import { useNotifications } from '@/stores/useNotifications'
 import { useOnboardingStore } from '@/stores/useOnboarding'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import { useSubscriptionsStore } from '@/stores/useSubscriptions'
+import { useStoreCampaignsStore } from '@/stores/useStoreCampaigns'
 import { formatMoney, parseDecimal } from '@/maropay/money'
 import type { Money } from '@/maropay/money'
 import {
@@ -625,6 +626,9 @@ export const useMaropayStore = defineStore('maropay', () => {
       ensureCheckoutOrder(step.session, step.payment)
       // A line bought on a plan starts a subscription. Once, here: not when orders are rebuilt on a reload.
       if (!step.session.renewalOf) useSubscriptionsStore().startFromCheckout(step.session, step.payment)
+      // An order placed with a campaign's code counts on that campaign.
+      const coupon = step.session.lineItems.find((line) => line.coupon)?.coupon
+      if (coupon) useStoreCampaignsStore().recordUse(step.session.channelId, coupon, step.session.amount.amount)
     }
     const first = state.value.milestones.firstPaymentId
     if (!hadFirstPayment && first) {

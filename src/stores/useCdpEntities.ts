@@ -155,6 +155,9 @@ export interface SecureList {
 
 const today = () => new Date().toISOString().slice(0, 10)
 
+/** The list a Vitaheal store campaign is announced to. */
+export const VITAHEAL_CUSTOMERS_LIST_ID = 901
+
 export const useCdpEntitiesStore = defineStore('cdpEntities', () => {
   // ── Lists ────────────────────────────────────────────────────────────────────
   const lists = ref<CdpList[]>([
@@ -165,6 +168,10 @@ export const useCdpEntitiesStore = defineStore('cdpEntities', () => {
     { id: 5, name: 'Black Friday 2025', type: 'Normal', addToManageSubscription: false, brand: 'Uniqlo', displayName: 'Black Friday', description: 'Seasonal campaign audience.', postUrl: '', fromName: 'Maropost Deals', fromEmail: 'deals@maropost.com', replyTo: 'deals@maropost.com', language: 'Spanish', address: '100 King St, Sydney NSW 2000', carts: blankCarts(), count: 28412, created: '2025-10-01' },
     { id: 6, name: 'Win-Back Segment', type: 'Normal', addToManageSubscription: false, brand: 'yg', displayName: 'Win-Back', description: 'Lapsed contacts to re-engage.', postUrl: '', fromName: 'Maropost', fromEmail: 'hello@maropost.com', replyTo: 'support@maropost.com', language: 'English', address: '100 King St, Sydney NSW 2000', carts: blankCarts(), count: 8912, created: '2024-01-10' },
     { id: 7, name: 'Global Suppression', type: 'Suppressed', addToManageSubscription: false, brand: '', displayName: '', description: 'Contacts excluded from every send.', postUrl: '', fromName: '', fromEmail: '', replyTo: '', language: 'English', address: '100 King St, Sydney NSW 2000', carts: blankCarts(), count: 1470, created: '2023-01-20' },
+    // The Vitaheal (demo) store's own audiences: who bought from it, and who is on a subscription.
+    // A campaign of that store is announced to them (store editor › Campaigns › Announce by email).
+    { id: VITAHEAL_CUSTOMERS_LIST_ID, name: 'Vitaheal customers', type: 'Normal', addToManageSubscription: true, brand: 'Vitaheal', displayName: 'Vitaheal', description: 'Everyone who has ordered from the Vitaheal (demo) store.', postUrl: '', fromName: 'Vitaheal', fromEmail: 'hello@vitaheal.example', replyTo: 'hello@vitaheal.example', language: 'English', address: 'Hantverkargatan 8, 112 21 Stockholm', carts: blankCarts(), count: 4812, created: '2026-11-16' },
+    { id: 902, name: 'Vitaheal subscribers', type: 'Normal', addToManageSubscription: true, brand: 'Vitaheal', displayName: 'Vitaheal subscribers', description: 'Customers with a running subscription in the Vitaheal (demo) store.', postUrl: '', fromName: 'Vitaheal', fromEmail: 'hello@vitaheal.example', replyTo: 'hello@vitaheal.example', language: 'English', address: 'Hantverkargatan 8, 112 21 Stockholm', carts: blankCarts(), count: 1936, created: '2026-11-16' },
   ])
 
   function addList(input: Omit<CdpList, 'id' | 'count' | 'created'>): CdpList {

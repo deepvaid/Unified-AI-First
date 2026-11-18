@@ -1215,6 +1215,7 @@ function locationRoleText(locationId: string) {
           'Products you added to this store are removed.',
           'Your edits to its products are undone.',
           'Subscription plans go back to the original two, and subscribers to the original eight.',
+          'Campaigns go back to the original three, and their announcement emails are removed.',
           'The chatbot’s settings go back, and its chats from this store are removed.',
           'The cart is emptied.',
           'Orders already placed stay.',

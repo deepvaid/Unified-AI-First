@@ -15,6 +15,17 @@ export { MAX_QTY, lineKey }
 export type { CartLine }
 
 const KEY = 'mp.storefront.cart.v1'
+/** The discount code the shopper applied, per store. Beside the cart, and emptied with it. */
+const CODE_KEY = 'mp.storefront.code.v1'
+
+function readCodes(): Record<string, string> {
+  try {
+    const parsed: unknown = JSON.parse(sessionStorage.getItem(CODE_KEY) ?? '{}')
+    return parsed && typeof parsed === 'object' ? (parsed as Record<string, string>) : {}
+  } catch {
+    return {}
+  }
+}
 
 function read(): Record<string, CartLine[]> {
   try {
@@ -70,6 +81,28 @@ export const useStorefrontCartStore = defineStore('storefrontCart', () => {
 
   function clear(channelId: string): void {
     carts.value[channelId] = []
+    delete codes.value[channelId]
+  }
+
+  // ── Discount code ────────────────────────────────────────────────
+  // Only the code is kept. Whether it still counts, and what it takes off, is
+  // worked out fresh from the store's campaigns (src/storefront/campaigns.ts).
+  const codes = ref<Record<string, string>>(readCodes())
+  watch(codes, (value) => {
+    try {
+      sessionStorage.setItem(CODE_KEY, JSON.stringify(value))
+    } catch {
+      // Storage blocked: the code still applies for this page view.
+    }
+  }, { deep: true })
+
+  function codeFor(channelId: string): string {
+    return codes.value[channelId] ?? ''
+  }
+
+  function setCode(channelId: string, code: string): void {
+    if (code.trim()) codes.value[channelId] = code.trim().toUpperCase()
+    else delete codes.value[channelId]
   }
 
   function count(channelId: string): number {
@@ -80,5 +113,5 @@ export const useStorefrontCartStore = defineStore('storefrontCart', () => {
     return sum(linesFor(channelId).map((l) => lineTotal(l, currency)), currency)
   }
 
-  return { carts, linesFor, add, setQty, remove, clear, count, subtotal }
+  return { carts, linesFor, add, setQty, remove, clear, count, subtotal, codeFor, setCode }
 })

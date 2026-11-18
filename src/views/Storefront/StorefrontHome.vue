@@ -150,7 +150,7 @@ function looped(section: ThemeSection): ThemeBlock[] {
         </div>
       </section>
 
-      <div v-else-if="section.kind === 'announcement-bar'" class="sf-announcement">{{ text(section, 'text') }}</div>
+      <div v-else-if="section.kind === 'announcement-bar'" class="sf-announcement">{{ storefront.campaignMessage.value || text(section, 'text') }}</div>
     </template>
   </div>
 </template>

@@ -66,6 +66,8 @@ export interface AssistantContext {
   trackingEnabled: boolean
   /** A store shown to prospects says so where the mocked code is asked for. */
   demo: boolean
+  /** The message of the store's running campaign ("15% off with code WINTER15"), or empty when none runs. */
+  promotion?: string
 }
 
 /** A question waiting for the shopper to say who they are. */
@@ -119,6 +121,7 @@ const THANKS = /\b(thanks|thank you|thx|tack|cheers|great,? thanks)\b/
 const GENERAL = /\b(how (do|does)|what (is|are)|do you (offer|have)|can i (subscribe|cancel|pause|skip)|is there)\b/
 /** Words of a question about how the store works: its pages answer it, even when it names a need or a product. */
 const POLICY = /\b(guarantee\w*|refund\w*|returns?|return (it|policy)|shipping|ship to|deliver(y|ies) (time|cost)|policy|vat|payment methods?)\b/
+const PROMOTION = /\b(discounts?|coupons?|promo(tion)?s?|vouchers?|on sale|sales?|deals?|(special|any|current) offers?)\b/
 const SHOPPING = /\b(recommend\w*|suggest\w*|which (product|one)|what (should|can|do) i (take|buy|use|try)|looking for|help me (choose|pick|find)|what do you (sell|have)|best (product|supplement))\b/
 
 /**
@@ -278,6 +281,17 @@ export function assistantReply(message: string, ctx: AssistantContext, state: As
         ? `I can look up order ${number}. Which email did you order with?`
         : `I can check that. Which email did you ${aboutSubscription ? 'subscribe' : 'order'} with?`,
     }], { pending: { step: 'email', question: message, needsCode: !(aboutOrder && number) } })
+  }
+
+  // ── Is there an offer on? The store's running campaign answers ─────
+  if (PROMOTION.test(text)) {
+    return turn([{
+      kind: 'text',
+      text: ctx.promotion
+        ? `Yes. ${ctx.promotion}. Type the code in your cart or at checkout.`
+        : 'There is no discount code running right now. A subscription saves 20% to 30% on every delivery, all year.',
+      link: ctx.promotion ? { label: 'Go to your cart', href: '/cart-page' } : { label: 'See subscriptions', href: '/collections/subscription' },
+    }])
   }
 
   if (HUMAN.test(text)) {

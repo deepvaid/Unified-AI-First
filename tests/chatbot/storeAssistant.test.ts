@@ -236,6 +236,17 @@ test('a greeting and an unknown question both say what the assistant can do', ()
   assert.match(chat(['Thanks!']).replies[0]!.text, /You’re welcome/)
 })
 
+test('a question about a discount is answered with the store’s running campaign, or says there is none', () => {
+  const running = chat(['Do you have a discount code?'], ctx({ promotion: 'Winter wellness week: 15% off everything with code WINTER15' })).replies[0]!
+  assert.equal(running.text, 'Yes. Winter wellness week: 15% off everything with code WINTER15. Type the code in your cart or at checkout.')
+  assert.ok(running.kind === 'text' && running.link?.href === '/cart-page')
+  const none = chat(['any offers right now?']).replies[0]!
+  assert.match(none.text, /no discount code running/)
+  // An order or a policy question that mentions neither is not mistaken for one.
+  assert.equal(chat(['Where is my order?'], ctx({ email: LINNEA, promotion: 'x' })).replies[0]!.kind, 'order')
+  assert.equal(chat(['What is your return policy?'], ctx({ promotion: 'x' })).replies[0]!.kind, 'answer')
+})
+
 test('asking for a person points to the contact page', () => {
   const reply = chat(['Can I talk to a human?']).replies[0]!
   assert.ok(reply.kind === 'text' && reply.link?.href === '/page/contact')

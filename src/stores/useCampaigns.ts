@@ -3,6 +3,11 @@ import { ref } from 'vue'
 import type { FlowNode, JourneySettings } from '@/stores/journeyFlowData'
 import { cloneFlowNodes, instantiateTemplate, seedJourneyFlows, templateById } from '@/stores/journeyFlowData'
 import { useOnboardingStore } from '@/stores/useOnboarding'
+import { browserStorage, keepInBrowser } from '@/stores/demoKeep'
+import { demoSlot } from '@/storefront/demoStorage'
+
+/** The tag on an email that announces a store's campaign. */
+export const STORE_CAMPAIGN_TAG = 'Store campaign'
 
 export interface CampaignMetrics {
   sent: number
@@ -126,6 +131,12 @@ export interface Journey {
   settings?: JourneySettings
 }
 
+/** Saved emails are only read back when they still look like campaigns. */
+function isCampaignList(value: unknown): value is Campaign[] {
+  return Array.isArray(value) && value.every((c: Partial<Campaign> | null) =>
+    !!c && typeof c.id === 'number' && typeof c.name === 'string' && typeof c.status === 'string' && !!c.metrics && !!c.config)
+}
+
 export const useCampaignsStore = defineStore('campaigns', () => {
   const campaigns = ref<Campaign[]>([
     { id: 1, name: 'Black Friday 2025 — Early Access VIP', folderId: 'cmp-promotions', status: 'Sent', sentDate: '2025-11-22', listName: 'VIP Customer Circle', metrics: { sent: 312, opens: 287, clicks: 134, unsubscribes: 2, revenue: 18420.50 } },
@@ -167,6 +178,25 @@ export const useCampaignsStore = defineStore('campaigns', () => {
     { id: 32, name: 'Fourth of July Flash — 4 Hours, 40% Off', folderId: 'cmp-promotions', status: 'Sent', sentDate: '2026-07-03', listName: 'Master Subscriber List', metrics: { sent: 47910, opens: 22840, clicks: 8120, unsubscribes: 203, revenue: 79340.00 } },
     { id: 33, name: 'Back to School Ride — Student Deals', folderId: 'cmp-seasonal', status: 'Sent', sentDate: '2026-07-28', listName: 'Master Subscriber List', metrics: { sent: 41230, opens: 17920, clicks: 5610, unsubscribes: 142, revenue: 46180.50 } },
   ])
+
+  // ── Emails that announce a store's campaign ──────────────────────────
+  // The Vitaheal (demo) store announces its campaigns by email (store editor ›
+  // Campaigns). Those emails are kept in the browser with the rest of that store's
+  // data, so the campaign still shows its email after a reload. Nothing else here is kept.
+  const isAnnouncement = (campaign: Campaign): boolean => campaign.config?.tag === STORE_CAMPAIGN_TAG
+  const keptAnnouncements = demoSlot('emails', 1, browserStorage(), isCampaignList)
+  campaigns.value.unshift(...(keptAnnouncements.load() ?? []))
+  const setAnnouncements = (list: Campaign[]): void => {
+    campaigns.value = [...list, ...campaigns.value.filter((c) => !isAnnouncement(c))]
+  }
+  const keptEmails = keepInBrowser(keptAnnouncements, () => campaigns.value.filter(isAnnouncement), (fromOtherTab) => setAnnouncements(fromOtherTab ?? []))
+
+  /** Removes the demo store's announcement emails. Called by its restore (useCommerce). */
+  function restoreDemo(): void {
+    keptAnnouncements.clear()
+    setAnnouncements([])
+    keptEmails.adopt()
+  }
 
 /** Applies the terminal status once the wizard's final action ("finalize") runs. */
   function applyFinalizeStatus(campaign: Campaign, input: CampaignDraftInput) {
@@ -340,7 +370,7 @@ export const useCampaignsStore = defineStore('campaigns', () => {
   }
 
   return {
-    campaigns, createCampaign, updateCampaignDraft, getCampaign, moveToFolder, duplicateCampaign, deleteCampaigns, reassignFolder,
+    campaigns, createCampaign, updateCampaignDraft, getCampaign, moveToFolder, duplicateCampaign, deleteCampaigns, reassignFolder, restoreDemo,
     journeys, journeyFlows, getFlow, createJourney, setJourneyStatus,
     saveJourneyFlow, duplicateJourney, deleteJourney,
   }

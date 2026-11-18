@@ -6,7 +6,9 @@ import { MAX_QTY, lineKey, lineTotal, useStorefrontCartStore } from '@/stores/us
 import { deliverySummary, recurringCharges } from '@/subscriptions/plans'
 import type { CartLine } from '@/stores/useStorefrontCart'
 import StorefrontAnchor from './StorefrontAnchor.vue'
+import StorefrontDiscountCode from './StorefrontDiscountCode.vue'
 import StorefrontExpressButtons from './StorefrontExpressButtons.vue'
+import { useStorefrontDiscount } from './storefrontDiscount'
 import { STOREFRONT } from './storefrontContext'
 import { CATEGORY_ICONS, productHandle } from './storefrontCatalog'
 
@@ -24,7 +26,10 @@ const channelId = computed(() => storefront.channel.value.id)
 const currency = computed(() => storefront.currency.value)
 const lines = computed(() => cart.linesFor(channelId.value))
 const subtotal = computed(() => cart.subtotal(channelId.value, currency.value))
-const offer = computed(() => storefront.offerFor(subtotal.value))
+// A campaign's code, when the store has one running. It lowers this order only.
+const code = useStorefrontDiscount(() => lines.value, () => subtotal.value)
+const total = computed(() => code.payable.value)
+const offer = computed(() => storefront.offerFor(total.value))
 /** What a subscription line charges again, and how often. */
 const recurring = computed(() => recurringCharges(lines.value, (line) => lineTotal(line, currency.value)))
 
@@ -107,11 +112,24 @@ function checkout(express?: string): void {
         <dl class="sf-cart__sums">
           <div><dt>Subtotal</dt><dd>{{ formatMoney(subtotal) }}</dd></div>
           <div><dt>Shipping</dt><dd>Free</dd></div>
-          <div class="sf-cart__grand"><dt>Total</dt><dd>{{ formatMoney(subtotal) }}</dd></div>
+          <div v-if="code.discount.value" class="sf-cart__discount">
+            <dt>Discount · {{ code.discount.value.discountPct }}% off</dt><dd>−{{ formatMoney(code.discount.value.amount) }}</dd>
+          </div>
+          <div class="sf-cart__grand"><dt>Total</dt><dd>{{ formatMoney(total) }}</dd></div>
           <div v-for="charge in recurring" :key="charge.interval" class="sf-cart__recurring">
             <dt>Then {{ charge.interval }}</dt><dd>{{ formatMoney(charge.amount) }}</dd>
           </div>
         </dl>
+        <StorefrontDiscountCode
+          v-if="code.offered.value || code.applied.value"
+          v-model:typed="code.typed.value"
+          id-prefix="sf-cart"
+          :applied="code.discount.value ? code.applied.value : ''"
+          :problem="code.problem.value"
+          @apply="code.apply"
+          @remove="code.remove"
+        />
+        <p v-if="code.discount.value && recurring.length" class="sf-cart__code-note sf-muted">The code lowers this order. Later deliveries are charged at the plan’s price.</p>
         <p v-if="offer.payIn4.labels.length" class="sf-cart__instalments sf-muted">
           or 4 interest-free payments of {{ formatMoney(offer.payIn4.amount) }} with {{ offer.payIn4.labels.join(' or ') }}
         </p>
@@ -262,6 +280,15 @@ function checkout(express?: string): void {
 .sf-cart__recurring {
   font-size: 14px;
   color: var(--sf-muted, #5f5f5f);
+}
+
+.sf-cart__discount {
+  font-weight: 600;
+}
+
+.sf-cart__code-note {
+  margin: -6px 0 0;
+  font-size: 13px;
 }
 
 .sf-cart__instalments {

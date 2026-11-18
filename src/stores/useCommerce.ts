@@ -5,6 +5,8 @@ import { useMaropayStore } from '@/stores/useMaropay'
 import { useStorefrontCartStore } from '@/stores/useStorefrontCart'
 import { useSubscriptionsStore } from '@/stores/useSubscriptions'
 import { useChatbotStore } from '@/stores/useChatbot'
+import { useStoreCampaignsStore } from '@/stores/useStoreCampaigns'
+import { useCampaignsStore } from '@/stores/useCampaigns'
 import { browserStorage, keepInBrowser } from '@/stores/demoKeep'
 import type { CheckoutCustomer, MaropayProvider, OrderPaymentStatusLabel } from '@/maropay/model'
 import { demoSlot } from '@/storefront/demoStorage'
@@ -532,7 +534,7 @@ export interface CheckoutOrderInput {
   /** A renewal: the subscription's number. The order is tagged Renewal and starts no subscription. */
   renewalOf?: string
   customer: CheckoutCustomer
-  lineItems: Array<{ product: string; sku: string; qty: number; price: string; plan?: LinePlan }>
+  lineItems: Array<{ product: string; sku: string; qty: number; price: string; plan?: LinePlan; coupon?: string; discountPct?: number }>
   shipping: string
   total: string
   currency: string
@@ -843,6 +845,8 @@ export const useCommerceStore = defineStore('commerce', () => {
     keptDemoProducts.adopt()
     useSubscriptionsStore().restore()
     useChatbotStore().restoreDemo()
+    useStoreCampaignsStore().restoreDemo()
+    useCampaignsStore().restoreDemo()
     useStorefrontCartStore().clear(VITAHEAL_CHANNEL_ID)
   }
 
@@ -1393,6 +1397,7 @@ export const useCommerceStore = defineStore('commerce', () => {
     const address: OrderAddress = typed ? { name: input.customer.name, ...typed } : buildAddress(input.customer.name, city, input.id)
     const nameParts = input.customer.name.trim().split(/\s+/)
     const subscribed = input.lineItems.filter((li): li is typeof li & { plan: LinePlan } => !!li.plan)
+    const discounted = input.lineItems.find((li) => li.coupon && li.discountPct)
     const order: Order = {
       id: input.id,
       orderNumber: input.orderNumber,
@@ -1413,7 +1418,8 @@ export const useCommerceStore = defineStore('commerce', () => {
       trackingNumber: null,
       courier: null,
       date: input.date,
-      lineItems: input.lineItems.map((li): OrderLineItem => ({ ...li, status: 'Processing', coupon: null, discountPct: 0 })),
+      // A line bought with a campaign's code keeps the code and what it took off.
+      lineItems: input.lineItems.map((li): OrderLineItem => ({ ...li, status: 'Processing', coupon: li.coupon ?? null, discountPct: li.discountPct ?? 0 })),
       notes: null,
       // A line bought on a plan makes it a subscription order, findable by its tag; a renewal says so too.
       tags: subscribed.length ? ['Subscription', ...(input.renewalOf ? ['Renewal'] : [])] : [],
@@ -1428,6 +1434,7 @@ export const useCommerceStore = defineStore('commerce', () => {
       fulfilledFromLocation: WAREHOUSE_LOCATIONS[input.id % WAREHOUSE_LOCATIONS.length]!,
       timeline: [
         ...input.timeline,
+        ...(discounted ? [{ text: `Discount code ${discounted.coupon} applied: ${discounted.discountPct}% off`, date: input.date }] : []),
         // The first order records what was agreed. A renewal's own line is already in `input.timeline`.
         ...(input.renewalOf ? [] : subscribed).map((li) => ({
           text: `Subscription started: ${li.product}, ${li.plan.name} (${deliverySummary(li.plan)}). Payment method saved; next charge ${new Date(`${nextChargeDate(input.date, li.plan)}T00:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`,

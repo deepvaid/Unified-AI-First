@@ -81,6 +81,7 @@ function context(): AssistantContext {
     shoppingEnabled: cfg.value.shopping.enabled,
     trackingEnabled: cfg.value.orderTracking.enabled,
     demo: storefront.demo.value,
+    promotion: storefront.campaignMessage.value,
   }
 }
 

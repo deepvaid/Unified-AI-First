@@ -14,6 +14,7 @@
 //   useStorefront       VITAHEAL_CHROME
 //   useSubscriptions    VITAHEAL_PLANS, vitahealSubscriptions()
 //   useChatbot          VITAHEAL_CHATBOT, VITAHEAL_CONVERSATIONS
+//   useStoreCampaigns   vitahealCampaigns()
 //
 // The catalogue has the shape of BKM's (variants, SEK prices, collections), which
 // is what the requirements test. The brand, product and flavour names are made up,
@@ -36,6 +37,7 @@ import { money, toDecimal } from '../maropay/money.ts'
 import { linePlan, nextChargeDate, pricePerDelivery } from '../subscriptions/plans.ts'
 import type { SubscriptionPlan } from '../subscriptions/plans.ts'
 import type { ContractEvent, ContractStatus, SubscriptionContract } from '../subscriptions/contracts.ts'
+import type { StoreCampaign } from './campaigns.ts'
 
 export const VITAHEAL_CHANNEL_ID = 'vitaheal-demo'
 export const VITAHEAL_CHANNEL_NAME = 'Vitaheal (demo)'
@@ -457,6 +459,52 @@ export function vitahealSubscriptions(today: string): SubscriptionContract[] {
       history: history.reverse(),
     }
   })
+}
+
+// ── Campaigns ────────────────────────────────────────────────────────────────
+// One running, one to come and one over, so the store editor's Campaigns page
+// shows every state and the storefront has an offer to show. Like the
+// subscribers, their dates count from the day the store is opened.
+
+/** The store's seeded campaigns, as of `today` ("YYYY-MM-DD"). */
+export function vitahealCampaigns(today: string): StoreCampaign[] {
+  const day = (fromToday: number): string => daysBefore(today, -fromToday)
+  const stamp = (date: string): string => new Date(`${date}T00:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
+  return [
+    {
+      id: 'camp-vitaheal-winter',
+      channelId: VITAHEAL_CHANNEL_ID,
+      name: 'Winter wellness week',
+      targets: [],
+      startDate: day(-3), startTime: '08:00', endDate: day(11), endTime: '23:59',
+      updatedAt: stamp(day(-3)),
+      offer: { message: 'Winter wellness week: 15% off everything with code WINTER15', code: 'WINTER15', discountPct: 15 },
+      orders: 37,
+      revenue: 2_148_000,
+    },
+    {
+      id: 'camp-vitaheal-sleep',
+      channelId: VITAHEAL_CHANNEL_ID,
+      name: 'New year, better sleep',
+      targets: ['Sleep'],
+      startDate: day(40), startTime: '08:00', endDate: day(54), endTime: '23:59',
+      updatedAt: stamp(day(-1)),
+      offer: { message: 'Sleep better this year: 20% off the Sleep range with code SLEEP20', code: 'SLEEP20', discountPct: 20 },
+      orders: 0,
+      revenue: 0,
+    },
+    {
+      id: 'camp-vitaheal-black-week',
+      channelId: VITAHEAL_CHANNEL_ID,
+      name: 'Black week',
+      targets: [],
+      startDate: day(-30), startTime: '00:00', endDate: day(-23), endTime: '23:59',
+      updatedAt: stamp(day(-23)),
+      offer: { message: 'Black week: 25% off everything with code BLACK25', code: 'BLACK25', discountPct: 25 },
+      orders: 112,
+      revenue: 5_936_000,
+    },
+  ]
 }
 
 // ── Chatbot ──────────────────────────────────────────────────────────────────

@@ -15,6 +15,8 @@ import { deliverySummary, nextChargeDate, recurringCharges } from '@/subscriptio
 import StorefrontAnchor from './StorefrontAnchor.vue'
 import StorefrontCardFields from './StorefrontCardFields.vue'
 import StorefrontCheckoutSheet from './StorefrontCheckoutSheet.vue'
+import StorefrontDiscountCode from './StorefrontDiscountCode.vue'
+import { useStorefrontDiscount } from './storefrontDiscount'
 import StorefrontExpressButtons from './StorefrontExpressButtons.vue'
 import StorefrontPayButton from './StorefrontPayButton.vue'
 import StorefrontPaymentOptions from './StorefrontPaymentOptions.vue'
@@ -78,7 +80,19 @@ const done = computed(() => session.value?.state === 'complete' || session.value
 
 /** After the order is placed the summary shows what was bought, not the (now empty) cart. */
 const shownLines = computed(() => (done.value && session.value ? session.value.lineItems : lineItems.value))
-const total = computed(() => sum(shownLines.value.map((l) => lineTotal(l, currency.value)), currency.value))
+const subtotal = computed(() => sum(shownLines.value.map((l) => lineTotal(l, currency.value)), currency.value))
+
+// ── Discount code ────────────────────────────────────────────────────
+// A campaign's code lowers this order: the total, the pay button and what is
+// charged. Each covered line carries the code, so the order in the admin shows it.
+const code = useStorefrontDiscount(() => lineItems.value, () => subtotal.value)
+const total = computed(() => code.payable.value)
+/** The lines as they are paid for: covered ones say which code took what off. */
+const paidLines = computed<CheckoutLineItem[]>(() => {
+  const discount = code.discount.value
+  if (!discount) return lineItems.value
+  return lineItems.value.map((line, index) => (discount.covers[index] ? { ...line, coupon: discount.code, discountPct: discount.discountPct } : line))
+})
 const itemCount = computed(() => shownLines.value.reduce((n, l) => n + l.qty, 0))
 const offer = computed(() => storefront.offerFor(total.value))
 
@@ -238,7 +252,7 @@ async function pay(chosen: ShopperMethod): Promise<void> {
     flow: flowForMethod(chosen, card.value.number),
     amount: total.value,
     customer: customer.value,
-    lineItems: lineItems.value,
+    lineItems: paidLines.value,
     cardLabel: chosen.category === 'cards' ? cardLabel(card.value.number) : null,
   })
   if (!started.ok) {
@@ -513,13 +527,27 @@ const storePaymentsHref = computed(() => router.resolve({ name: MAROPAY_STORE_RO
             </li>
           </ul>
           <dl class="sf-co__sums">
-            <div><dt>Subtotal · {{ itemCount }} {{ itemCount === 1 ? 'item' : 'items' }}</dt><dd>{{ formatMoney(total) }}</dd></div>
+            <div><dt>Subtotal · {{ itemCount }} {{ itemCount === 1 ? 'item' : 'items' }}</dt><dd>{{ formatMoney(subtotal) }}</dd></div>
             <div><dt>Shipping</dt><dd>Free</dd></div>
+            <div v-if="code.discount.value" class="sf-co__discount">
+              <dt>Discount · {{ code.discount.value.code }}, {{ code.discount.value.discountPct }}% off</dt><dd>−{{ formatMoney(code.discount.value.amount) }}</dd>
+            </div>
             <div class="sf-co__grand"><dt>Total</dt><dd><span v-if="!storefront.ownMoneyFormat.value" class="sf-muted sf-co__currency">{{ currency }}</span> {{ formatMoney(total) }}</dd></div>
             <div v-for="charge in recurring" :key="charge.interval" class="sf-co__recurring">
               <dt>Then {{ charge.interval }}</dt><dd>{{ formatMoney(charge.amount) }}</dd>
             </div>
           </dl>
+          <StorefrontDiscountCode
+            v-if="code.offered.value || code.applied.value"
+            v-model:typed="code.typed.value"
+            id-prefix="sf-co"
+            class="sf-co__code"
+            :applied="code.discount.value ? code.applied.value : ''"
+            :problem="code.problem.value"
+            @apply="code.apply"
+            @remove="code.remove"
+          />
+          <p v-if="code.discount.value && recurring.length" class="sf-co__code-note sf-muted">The code lowers this order. Later deliveries are charged at the plan’s price.</p>
         </aside>
       </div>
     </template>
@@ -897,6 +925,19 @@ legend.sf-co__step-title {
 
 .sf-co__none a {
   text-decoration: underline;
+}
+
+.sf-co__discount {
+  font-weight: 600;
+}
+
+.sf-co__code {
+  margin-top: 16px;
+}
+
+.sf-co__code-note {
+  margin: 8px 0 0;
+  font-size: 13px;
 }
 
 .sf-co__manage {

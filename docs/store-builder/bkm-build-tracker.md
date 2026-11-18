@@ -328,6 +328,58 @@ here already exists when those slices start.
     pre-chat form and business hours from the builder are not applied on the store. Only
     Vitaheal's storefront has the widget.
 
+- **Part 7, a campaign for one store (done, 2026-11-18).** Asked for by the human ("how run
+  storewise campaign"), who chose both kinds: a promotion on the store and an email to that
+  store's customers, working in the demo.
+  - **Rules** in `src/storefront/campaigns.ts` (9 tests in `tests/storefront/campaigns.test.ts`).
+    A store campaign may carry an **offer**: a message for the store, a code and a percentage
+    off. With no targets the code covers the whole order; with collections, only products in
+    them. Each covered line loses its own percentage, rounded, so the lines add up.
+  - **Store editor › Campaigns** (`StoreCampaigns.vue`): the drawer gains an Offer section
+    (message, code, percent off) with its checks; the table gains Offer, Orders (count and
+    revenue) and Email; the table picks and folds its columns by its own width. A store with
+    products of its own targets its own collections by name.
+  - **On the store:** a running campaign's message takes the announcement bar. The cart and the
+    checkout ask for a discount code only while the store has one running. A wrong, ended or
+    not-yet-active code says why. The discount shows as its own line; the total, the pay button
+    and what is charged follow.
+  - **Subscriptions:** the code lowers the first order only. Later deliveries stay at the plan's
+    price, and the cart and checkout say so.
+  - **Order:** each covered line carries the code and percentage (the order page already had the
+    columns), with a timeline line. The campaign counts the order and its revenue.
+  - **Email:** "Announce by email" writes a draft in Marketing (subject, preheader, the list
+    "Vitaheal customers", sender Vitaheal, an email content written for it) and opens the
+    existing email wizard on it. After sending, the campaign row shows the email's status with a
+    link to its report. Two contact lists and one email content are seeded for the store.
+  - **Chatbot:** "Do you have a discount code?" answers with the running campaign.
+  - **Seeded and kept:** three Vitaheal campaigns (running, scheduled, ended), with dates
+    counted from today, kept in the browser (`mp.vitaheal-demo.campaigns.v1`), and the
+    announcement emails (`mp.vitaheal-demo.emails.v1`). "Restore original store" puts the
+    campaigns back and removes the emails.
+  - **The walk** (desktop 1280px and phone 375px, console clean):
+    1. Store: the bar reads "Winter wellness week: 15% off everything with code WINTER15".
+    2. Cart with Unwind and Electrolytes on the 3-month supply: an empty code, NOPE, SLEEP20
+       (not active yet) and BLACK25 (ended) each get their own message; winter15 applies:
+       "Discount · 15% off −148 kr", total 837 kr, "Then every 3 months 586 kr".
+    3. Checkout: "Discount · WINTER15, 15% off −147,74 kr", "Pay 837,16 kr".
+    4. Order: both lines show WINTER15 and 15%, 339.15 + 498.01 = 837.16, with "Discount code
+       WINTER15 applied" in the timeline. The subscription it started stays 585,90 kr.
+    5. Campaigns page: Winter wellness week went from 37 to 38 orders.
+    6. New campaign: an end before the start, and a code another campaign uses, are refused.
+       "Spring reset" saves as Scheduled and the store does not change.
+    7. Announce by email → the wizard opens filled in → Send now (4,812 contacts) → the row
+       reads "Sending" and links to the report; still there after a reload.
+    8. Deleting the running campaign: the bar goes back to the theme's text and the code field
+       leaves the cart.
+    9. Restore: the bar and the three campaigns are back, the emails are gone.
+    10. Neelam-Store: no code field in cart or checkout, no announcement change. Atlas
+        Outfitters' Campaigns page still lists its three campaigns with their targets.
+  - **Known limits.** One code per order, percentage only. No automatic discounts, no fixed
+    amounts, no usage limits. A sent email reads "Sending" with no opens or clicks, as any new
+    Marketing campaign does. Opening the email wizard's first step is the merchant's review:
+    nothing is sent until they press Send. Campaign targets on stores without their own
+    products still come from the shared link catalogue.
+
 - **Preview test pass (2026-11-18).** Asked for by the human: test every flow on the deployed
   Vercel preview, as a shopper and as a merchant, and fix what breaks. Run on the branch's
   preview (commit `0ab0631c`) in a browser with nothing stored, at 1280px and 375px, with the

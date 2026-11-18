@@ -683,6 +683,9 @@ export interface CheckoutLineItem {
   price: string
   /** The subscription plan the line was bought on; `price` is then the price of one delivery. */
   plan?: LinePlan
+  /** A store campaign's code that covered this line, and the percentage it took off `price`. The session's amount is already net of it. */
+  coupon?: string
+  discountPct?: number
 }
 
 /** Enough of a checkout-created order to rebuild it after reload (Commerce is not persisted). */
