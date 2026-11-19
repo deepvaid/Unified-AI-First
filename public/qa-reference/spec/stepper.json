@@ -1,7 +1,8 @@
 {
   "key": "stepper",
   "liquidsky": [
-    "AppStepper"
+    "AppStepper",
+    "MpVStepper"
   ],
   "status": "matched",
   "reference": "MpWizardSteps",

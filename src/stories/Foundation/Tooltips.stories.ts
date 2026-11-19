@@ -6,14 +6,15 @@
  *   • src/plugins/maropostTheme.ts → VTooltip defaults (location: 'top', openDelay: 150, closeDelay: 0)
  */
 import type { Meta, StoryObj } from '@storybook/vue3'
+import { liquidskyDocs } from '@/stories/storyTemplate'
 
 const meta: Meta = {
   title: 'Foundations/Tooltips',
-  tags: ['autodocs'],
+  tags: ['autodocs', 'liquidsky'],
   parameters: {
     docs: {
       description: {
-        component: `
+        component: liquidskyDocs('foundations-tooltips') + `
 ### Overview
 Tooltips in this app are **stock Vuetify \`v-tooltip\`s** — there is no \`MpTooltip\` wrapper.
 Their timing comes entirely from the shared \`VTooltip\` defaults in
@@ -77,7 +78,7 @@ type Story = StoryObj<typeof meta>
 export const Placements: Story = {
   render: () => ({
     template: `
-      <div class="d-flex flex-wrap ga-8" style="padding: 48px;">
+      <div class="d-flex flex-wrap ga-8 pa-12">
         <div class="d-flex flex-column align-center ga-2">
           <v-tooltip text="Settings" location="top">
             <template #activator="{ props }">
@@ -120,7 +121,7 @@ export const Placements: Story = {
 export const LongText: Story = {
   render: () => ({
     template: `
-      <div class="d-flex justify-center" style="padding: 48px;">
+      <div class="d-flex justify-center pa-12">
         <v-tooltip text="Exports every column currently visible in this table, including any custom fields you've added">
           <template #activator="{ props }">
             <v-btn v-bind="props" icon="download" variant="text" aria-label="Export all visible columns" />
@@ -137,7 +138,7 @@ export const LongText: Story = {
 export const KeyboardFocusTrigger: Story = {
   render: () => ({
     template: `
-      <div style="padding: 48px;">
+      <div class="pa-12">
         <p class="text-caption text-medium-emphasis mb-4">
           Click into this canvas, then press Tab — the tooltip opens on focus, no hover required.
         </p>
@@ -162,7 +163,7 @@ export const KeyboardFocusTrigger: Story = {
 export const DisabledControl: Story = {
   render: () => ({
     template: `
-      <div style="padding: 48px;">
+      <div class="pa-12">
         <v-tooltip text="Requires an active plan">
           <template #activator="{ props }">
             <span v-bind="props">
@@ -183,7 +184,7 @@ export const DisabledControl: Story = {
 export const WithShortcutChip: Story = {
   render: () => ({
     template: `
-      <div class="d-flex justify-center" style="padding: 48px;">
+      <div class="d-flex justify-center pa-12">
         <v-tooltip location="bottom">
           <template #activator="{ props }">
             <v-btn v-bind="props" icon="search" variant="text" aria-label="Search" />

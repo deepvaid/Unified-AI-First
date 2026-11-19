@@ -2,7 +2,10 @@
   "key": "table-actions",
   "liquidsky": [
     "AppTableActionMenu",
-    "AppFilterButton"
+    "AppFilterButton",
+    "MpVMenu",
+    "MpVList",
+    "MpVListItem"
   ],
   "status": "matched",
   "reference": "MpRowActionsMenu + MpMenuItem; the Filter button of MpDataTableToolbar",

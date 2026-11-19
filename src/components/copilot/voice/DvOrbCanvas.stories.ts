@@ -66,9 +66,10 @@ animation frame loop, reacts to an optional pull-based audio source, and resolve
 its palette from the \`--dv-*\` theme tokens.
 
 **Storybook notes:** stories pin a fixed-size dark surface so the additive glow
-reads clearly. If the runtime engine script cannot be served (e.g. a static
-Storybook build without the app's \`public/\` dir), the component's built-in CSS
-placeholder orb renders instead — that graceful fallback is part of the component.
+reads clearly. \`public/\` is served by both the Storybook dev server and the static
+build, so the live orb renders in each. The component's built-in CSS placeholder orb
+shows while the engine loads, and stays if WebGL is unavailable or the engine script
+fails to load — that graceful fallback is part of the component.
 Listening/Speaking stories feed synthetic audio frames in place of
 \`useDaVinciVoice().getVoiceFrame\`.
 `,

@@ -1083,7 +1083,11 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
 </template>
 
 <style scoped lang="scss">
-.mp-sidebar {
+/* Defaults at zero specificity: the skins in sidebar-*.css redefine these same variables on
+   `[data-sidebar] .mp-sidebar`, and a scoped rule of equal weight beat them whenever this
+   component's stylesheet loaded after theirs (Storybook, where it loads lazily). With :where()
+   the skin wins in any load order, as it does in the app. */
+:where(.mp-sidebar) {
   --sidebar-bg: var(--mp-color-sidebar-surface, var(--surface-primary));
   --sidebar-border: var(--mp-color-sidebar-border, var(--border-subtle));
   --sidebar-line: var(--sidebar-border);
@@ -1098,6 +1102,9 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
   --sidebar-radius: var(--mp-component-nav-itemRadius);
   --sidebar-radius-sm: var(--mp-component-input-radius);
   --sidebar-transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+}
+
+.mp-sidebar {
   background: var(--sidebar-bg) !important;
   border-right: 1px solid var(--sidebar-border) !important;
   color: var(--sidebar-text);
@@ -1116,9 +1123,9 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
   display: flex;
   align-items: center;
   gap: var(--mp-space-10);
-  /* Height matches the app bar (56px + 1px divider) so the two header dividers
-     line up. A shell-alignment constant, not a spacing step. */
-  height: 57px;
+  /* Height matches the app bar (layout.appbarHeight + its 1px divider) so the two
+     header dividers line up. A shell-alignment constant, not a spacing step. */
+  height: calc(var(--mp-layout-appbarHeight) + 1px);
   padding: 0 var(--mp-space-16) 0 var(--mp-space-20);
   margin-bottom: var(--mp-space-6);
   border-bottom: 1px solid var(--sidebar-border);
@@ -1541,7 +1548,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
 }
 
 /* Rail flyout — single card (tokens: sidebar-dark.css + light defaults below) */
-.rail-flyout-card {
+:where(.rail-flyout-card) {
   --sidebar-border: var(--border-subtle);
   --sidebar-text: var(--text-primary);
   --sidebar-muted: color-mix(in oklch, var(--text-primary) 62%, transparent);
@@ -1549,6 +1556,9 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
   --sidebar-active-bg: color-mix(in oklch, var(--sidebar-text) 11%, transparent);
   --sidebar-active-text: var(--sidebar-text);
   --sidebar-radius: var(--mp-component-nav-itemRadius);
+}
+
+.rail-flyout-card {
   background: var(--surface-primary);
   /* Shared popover chrome (matches .v-menu overlay surfaces in global.scss) */
   border: 1px solid var(--mp-border-subtle);

@@ -1,10 +1,16 @@
 {
   "key": "dropdown",
   "liquidsky": [
-    "AppDropdown"
+    "AppDropdown",
+    "MpVSelect",
+    "MpVAutocomplete",
+    "MpVCombobox"
   ],
   "status": "matched",
   "reference": "v-select / v-autocomplete on the form-field baseline (Patterns › Form Fields)",
+  "notRequired": [
+    "The label above the field. A floating label inside the field is fine."
+  ],
   "stories": [
     {
       "id": "patterns-form-fields--selected-with-checkmark",

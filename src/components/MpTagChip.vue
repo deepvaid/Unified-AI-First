@@ -13,12 +13,12 @@ withDefaults(defineProps<{
   name: string
   /** One of the eight tag swatches (`TAG_COLORS`). */
   color: TagColor
-  /** Pill height on the shared chip ramp: sm 20 (default, tables and lists) · md 24. */
+  /** Pill height on the shared chip ramp: sm 20 (tables and lists) · md 24 (default). */
   size?: 'sm' | 'md'
   /** Adds a remove button (`aria-label="Remove tag <name>"`) that emits `remove`. */
   removable?: boolean
 }>(), {
-  size: 'sm',
+  size: 'md',
   removable: false,
 })
 

@@ -298,65 +298,8 @@ const copilotDrawerWidth = computed(() => {
   top: 16px;
 }
 
-/* Studio frame — the working area floats as one rounded surface on the
-   canvas. Sub-shells that size themselves against the viewport subtract
-   --mp-frame-offset (top gap + bottom inset); it resolves to 0 outside
-   the frame (flush/fullPage routes), so those keep exact old behavior. */
-.mp-content-frame {
-  /* margins (4 + 12) + borders (2) + the 4px slack the old 52px constant
-     absorbed — keeps viewport-sized sub-shells exactly flush inside. */
-  --mp-frame-offset: 22px;
-  position: relative;
-  isolation: isolate;
-  margin: 4px 12px 12px 4px;
-  min-height: calc(100vh - 56px - 16px);
-  /* A hair off-white so the white widget cards read against the bed. */
-  background: #f9f9f9;
-  border: 1px solid var(--mp-border-subtle);
-  border-radius: var(--mp-component-card-radius);
-  overflow: hidden;
-}
-
-/* Dark: the bed is the canvas tier (one step below the L1 nav and gutter around
-   it), so the L1 cards float on it the way white cards float on the light bed.
-   Owner asked for the dotted bed ~20% darker than the surface it was on. */
-html[data-theme='dark'] .mp-content-frame {
-  background: var(--surface-canvas);
-}
-
-/* Faint Da Vinci-orb stipple on the content bed. A ::before overlay (not the
-   element's background) so the white-sidebar variant's `background !important`
-   override can't wipe it. Two mismatched dot periods break the visible grid. */
-.mp-content-frame::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background-image:
-    radial-gradient(circle, rgba(var(--v-theme-on-surface), 0.08) 1px, transparent 1.1px),
-    radial-gradient(circle, rgba(var(--v-theme-on-surface), 0.08) 1px, transparent 1.1px);
-  background-size: 22px 22px, 34px 34px;
-  background-position: 0 0, 11px 17px;
-  /* the global reset defaults pseudo-elements to no-repeat */
-  background-repeat: repeat;
-}
-
-.mp-main-shell {
-  padding: var(--mp-layout-shellInsetBlock) var(--mp-layout-shellInsetInline) !important;
-}
-
-@media (max-width: 1024px) {
-  .mp-main-shell {
-    padding: var(--mp-layout-shellInsetMedium) !important;
-  }
-}
-
-@media (max-width: 640px) {
-  .mp-main-shell {
-    padding: var(--mp-layout-shellInsetCompact) !important;
-  }
-}
+/* The studio content frame and .mp-main-shell live in styles/shell-variants.css, so
+   Storybook's shell stories render them too. */
 
 /* Copilot floats as a rounded surface like .mp-content-frame — same 4px top /
    12px right+bottom gutters, radius, border, and soft shadow. Vuetify's layout

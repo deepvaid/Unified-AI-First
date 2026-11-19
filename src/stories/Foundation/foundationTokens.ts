@@ -43,3 +43,19 @@ export function tokensByPrefix(prefix: string): TokenEntry[] {
     .map(([token, value]) => ({ token, name: token.slice(prefix.length), value }))
     .sort((a, b) => naturalCompare(a.name, b.name))
 }
+
+/**
+ * Groups composite tokens (`pageTitle_fontSize`, `pageTitle_fontWeight`, …) into one CSS object
+ * per style. The group names are the role names, so prose that lists them reads from here.
+ */
+export function compositeStyles(entries: TokenEntry[]): { name: string; css: Record<string, string> }[] {
+  const groups = new Map<string, Record<string, string>>()
+  for (const { name, value } of entries) {
+    const split = name.lastIndexOf('_')
+    const group = name.slice(0, split)
+    const prop = name.slice(split + 1)
+    if (!groups.has(group)) groups.set(group, {})
+    groups.get(group)![prop] = value
+  }
+  return Array.from(groups.entries()).map(([name, css]) => ({ name, css }))
+}

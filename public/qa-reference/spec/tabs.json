@@ -1,0 +1,31 @@
+{
+  "key": "tabs",
+  "liquidsky": [
+    "MpVTabs",
+    "MpVTab"
+  ],
+  "status": "matched",
+  "reference": "MpFilterTabs",
+  "stories": [
+    {
+      "id": "atoms-mpfiltertabs--default",
+      "label": "Default",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/atoms-mpfiltertabs--default",
+      "png": {
+        "light": "png/tabs/atoms-mpfiltertabs--default--light.png",
+        "dark": "png/tabs/atoms-mpfiltertabs--default--dark.png"
+      },
+      "parts": []
+    },
+    {
+      "id": "atoms-mpfiltertabs--states",
+      "label": "States",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/atoms-mpfiltertabs--states",
+      "png": {
+        "light": "png/tabs/atoms-mpfiltertabs--states--light.png",
+        "dark": "png/tabs/atoms-mpfiltertabs--states--dark.png"
+      },
+      "parts": []
+    }
+  ]
+}

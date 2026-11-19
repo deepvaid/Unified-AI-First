@@ -1,7 +1,8 @@
 {
   "key": "tooltip",
   "liquidsky": [
-    "AppTooltip"
+    "AppTooltip",
+    "MpVTooltip"
   ],
   "status": "matched",
   "reference": "v-tooltip on the global baseline (Foundations › Tooltips)",

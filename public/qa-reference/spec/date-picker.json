@@ -1,56 +1,75 @@
 {
   "key": "date-picker",
   "liquidsky": [
-    "AppDatePicker"
+    "AppDatePicker",
+    "MpVDatePicker"
   ],
-  "status": "partial",
-  "reference": "MpDateRangeSelect",
-  "note": "Marobase has a range selector (presets + custom range fields) but no calendar-grid date picker. The trigger and panel are covered; the calendar itself has no reference.",
+  "status": "matched",
+  "reference": "The single-date field (Patterns › Form Fields): a field that opens a calendar and takes one date",
   "stories": [
     {
-      "id": "molecules-mpdaterangeselect--menu-open",
-      "label": "Preset menu open",
-      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpdaterangeselect--menu-open",
+      "id": "patterns-form-fields--date-field",
+      "label": "Date field",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-form-fields--date-field",
       "png": {
-        "light": "png/date-picker/molecules-mpdaterangeselect--menu-open--light.png",
-        "dark": "png/date-picker/molecules-mpdaterangeselect--menu-open--dark.png"
+        "light": "png/date-picker/patterns-form-fields--date-field--light.png",
+        "dark": "png/date-picker/patterns-form-fields--date-field--dark.png"
       },
       "parts": [
         {
-          "part": "trigger",
+          "part": "field",
           "props": {
             "height": {
               "light": "40px",
-              "token": "component.control.height",
+              "token": "component.field.height.md",
               "dark": "40px"
             },
-            "padding": {
-              "light": "0px 12px",
-              "dark": "0px 12px"
-            },
             "border-radius": {
-              "light": "12px",
-              "dark": "12px"
-            },
-            "border-top-color": {
-              "light": "rgb(0, 113, 168)",
-              "dark": "rgb(44, 196, 255)"
+              "light": "10px",
+              "token": "component.input.radius",
+              "dark": "10px"
             },
             "background-color": {
-              "light": "rgb(255, 255, 255)",
-              "dark": "rgb(31, 34, 38)"
-            },
+              "light": "rgba(0, 0, 0, 0)",
+              "dark": "rgba(0, 0, 0, 0)"
+            }
+          }
+        },
+        {
+          "part": "label",
+          "props": {
             "font-size": {
-              "light": "14px",
-              "dark": "14px"
+              "light": "13px",
+              "dark": "13px"
             },
             "font-weight": {
               "light": "500",
               "dark": "500"
             },
             "line-height": {
-              "light": "21px",
-              "dark": "21px"
+              "light": "18px",
+              "dark": "18px"
+            },
+            "color": {
+              "light": "rgb(92, 96, 102)",
+              "dark": "rgb(194, 199, 205)"
+            }
+          }
+        },
+        {
+          "part": "value",
+          "props": {
+            "font-size": {
+              "light": "14px",
+              "dark": "14px"
+            },
+            "font-weight": {
+              "light": "400",
+              "dark": "400"
+            },
+            "line-height": {
+              "light": "19.6px",
+              "dark": "19.6px"
             },
             "color": {
               "light": "rgb(26, 24, 20)",
@@ -59,60 +78,18 @@
           }
         },
         {
-          "part": "panel",
+          "part": "calendar icon",
           "props": {
-            "min-width": {
-              "light": "240px",
-              "dark": "240px"
+            "width": {
+              "light": "21px",
+              "dark": "21px"
             },
-            "padding": {
-              "light": "0px",
-              "dark": "0px"
-            },
-            "box-shadow": {
-              "light": "rgba(11, 53, 88, 0.08) 0px 2px 16px -8px",
-              "dark": "rgba(0, 0, 0, 0.55) 0px 8px 24px -6px"
-            },
-            "background-color": {
-              "light": "rgb(255, 255, 255)",
-              "dark": "rgb(50, 55, 62)"
-            },
-            "border-radius": {
-              "light": "12px",
-              "dark": "12px"
-            }
-          }
-        },
-        {
-          "part": "option",
-          "props": {
-            "min-height": {
-              "light": "36px",
-              "dark": "36px"
-            },
-            "padding": {
-              "light": "6px 12px",
-              "dark": "6px 12px"
-            },
-            "border-radius": {
-              "light": "8px",
-              "dark": "8px"
+            "height": {
+              "light": "21px",
+              "dark": "21px"
             },
             "color": {
-              "light": "rgba(26, 24, 20, 0.87)",
-              "dark": "rgb(236, 236, 236)"
-            }
-          }
-        },
-        {
-          "part": "active option",
-          "props": {
-            "background-color": {
-              "light": "rgba(0, 0, 0, 0)",
-              "dark": "rgba(0, 0, 0, 0)"
-            },
-            "color": {
-              "light": "rgba(26, 24, 20, 0.87)",
+              "light": "rgb(26, 24, 20)",
               "dark": "rgb(236, 236, 236)"
             }
           }
@@ -120,14 +97,99 @@
       ]
     },
     {
-      "id": "molecules-mpdaterangeselect--custom-panel-open",
-      "label": "Custom range open",
-      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpdaterangeselect--custom-panel-open",
+      "id": "patterns-form-fields--date-field-open",
+      "label": "Calendar open",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-form-fields--date-field-open",
       "png": {
-        "light": "png/date-picker/molecules-mpdaterangeselect--custom-panel-open--light.png",
-        "dark": "png/date-picker/molecules-mpdaterangeselect--custom-panel-open--dark.png"
+        "light": "png/date-picker/patterns-form-fields--date-field-open--light.png",
+        "dark": "png/date-picker/patterns-form-fields--date-field-open--dark.png"
       },
-      "parts": []
+      "parts": [
+        {
+          "part": "calendar panel",
+          "props": {
+            "border-radius": {
+              "light": "12px",
+              "dark": "12px"
+            },
+            "background-color": {
+              "light": "rgb(255, 255, 255)",
+              "dark": "rgb(50, 55, 62)"
+            },
+            "box-shadow": {
+              "light": "rgba(11, 53, 88, 0.08) 0px 2px 16px -8px",
+              "dark": "rgba(0, 0, 0, 0.55) 0px 8px 24px -6px"
+            }
+          }
+        },
+        {
+          "part": "weekday",
+          "props": {
+            "font-size": {
+              "light": "14px",
+              "dark": "14px"
+            },
+            "font-weight": {
+              "light": "400",
+              "dark": "400"
+            },
+            "line-height": {
+              "light": "21px",
+              "dark": "21px"
+            },
+            "color": {
+              "light": "rgba(26, 24, 20, 0.87)",
+              "dark": "rgb(236, 236, 236)"
+            }
+          }
+        },
+        {
+          "part": "day",
+          "props": {
+            "width": {
+              "light": "36px",
+              "dark": "36px"
+            },
+            "height": {
+              "light": "40px",
+              "dark": "40px"
+            },
+            "font-size": {
+              "light": "14px",
+              "dark": "14px"
+            },
+            "font-weight": {
+              "light": "600",
+              "dark": "600"
+            },
+            "line-height": {
+              "light": "normal",
+              "dark": "normal"
+            },
+            "color": {
+              "light": "rgba(26, 24, 20, 0.87)",
+              "dark": "rgb(236, 236, 236)"
+            }
+          }
+        },
+        {
+          "part": "selected day",
+          "props": {
+            "background-color": {
+              "light": "rgb(236, 236, 236)",
+              "dark": "rgb(39, 43, 48)"
+            },
+            "color": {
+              "light": "rgb(92, 96, 102)",
+              "dark": "rgb(155, 163, 172)"
+            },
+            "border-radius": {
+              "light": "9999px",
+              "dark": "9999px"
+            }
+          }
+        }
+      ]
     }
   ]
 }

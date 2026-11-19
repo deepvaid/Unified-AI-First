@@ -1,0 +1,30 @@
+{
+  "key": "alert",
+  "liquidsky": [
+    "MpVAlert"
+  ],
+  "status": "matched",
+  "reference": "MpAlert",
+  "stories": [
+    {
+      "id": "molecules-mpalert--variants",
+      "label": "Tones",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpalert--variants",
+      "png": {
+        "light": "png/alert/molecules-mpalert--variants--light.png",
+        "dark": "png/alert/molecules-mpalert--variants--dark.png"
+      },
+      "parts": []
+    },
+    {
+      "id": "molecules-mpalert--states",
+      "label": "States",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpalert--states",
+      "png": {
+        "light": "png/alert/molecules-mpalert--states--light.png",
+        "dark": "png/alert/molecules-mpalert--states--dark.png"
+      },
+      "parts": []
+    }
+  ]
+}

@@ -1,7 +1,8 @@
 {
   "key": "snackbar",
   "liquidsky": [
-    "AppSnackbar"
+    "AppSnackbar",
+    "MpVSnackbar"
   ],
   "status": "matched",
   "reference": "MpToastStack (driven by useToast)",

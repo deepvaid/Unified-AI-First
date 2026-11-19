@@ -1,6 +1,7 @@
 import { ref, watch } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpFilterTabs from './MpFilterTabs.vue'
+import { liquidskyDocs, stack } from '@/stories/storyTemplate'
 
 const orderTabs = [
   { label: 'All', key: 'all', count: 1471 },
@@ -16,32 +17,14 @@ const campaignTabs = [
   { label: 'Sent', key: 'sent', count: 5 },
 ]
 
-const noCountTabs = [
-  { label: 'Overview', key: 'overview' },
-  { label: 'Email', key: 'email' },
-  { label: 'Commerce', key: 'commerce' },
-  { label: 'Audience', key: 'audience' },
-]
-
-const manyTabs = [
-  { label: 'All', key: 'all', count: 1471 },
-  { label: 'Open', key: 'open', count: 234 },
-  { label: 'Paid', key: 'paid', count: 892 },
-  { label: 'Fulfilled', key: 'fulfilled', count: 736 },
-  { label: 'Unfulfilled', key: 'unfulfilled', count: 345 },
-  { label: 'Returned', key: 'returned', count: 42 },
-  { label: 'Refunded', key: 'refunded', count: 19 },
-  { label: 'Archived', key: 'archived', count: 88 },
-]
-
 const meta = {
   title: 'Atoms/MpFilterTabs',
   component: MpFilterTabs,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'liquidsky'],
   parameters: {
     docs: {
       description: {
-        component: `
+        component: liquidskyDocs('atoms-mpfiltertabs') + `
 ### Overview
 \`MpFilterTabs\` is the tab strip that filters a list or table by status, placed between \`MpPageHeader\` and the table card. Each tab carries a key, a label, and an optional count badge; the active key is bound via \`v-model\`.
 
@@ -67,7 +50,7 @@ const meta = {
 - **Do** keep counts live — they update as the underlying data changes and are the fastest triage signal on the page.
 
 ### 🔴 Don'ts
-- **Don't** exceed ~8 tabs; the strip scrolls with overflow arrows (see the ManyTabs story) but scanning suffers.
+- **Don't** exceed ~8 tabs; the strip scrolls with overflow arrows (see the TabCount story) but scanning suffers.
 - **Don't** use counts for slow/expensive queries — a wrong count is worse than none (counts of 0 are hidden automatically).
 
 ### A11y
@@ -110,8 +93,9 @@ const meta = {
           v-model="active"
           :tabs="args.tabs"
           :aria-label="args.ariaLabel"
+          :controls-id="args.controlsId"
         />
-        <p class="text-body-2 text-medium-emphasis mt-4">Active tab: {{ active }}</p>
+        <p :id="args.controlsId" class="text-body-2 text-medium-emphasis mt-4">Active tab: {{ active }}</p>
       </section>
     `,
   }),
@@ -128,100 +112,63 @@ export const Default: Story = {
   },
 }
 
+const statusTabs = [
+  { label: 'All', key: 'all', count: 128 },
+  { label: 'Processing', key: 'processing', count: 12 },
+  { label: 'Refunded', key: 'refunded', count: 0 },
+]
+
 /** With and without counts — the structural axis. */
 export const Variants: Story = {
-  render: () => ({
-    components: { MpFilterTabs },
-    setup: () => ({
-      withCounts: [
-        { label: 'All', key: 'all', count: 128 },
-        { label: 'Processing', key: 'processing', count: 12 },
-        { label: 'Completed', key: 'completed', count: 104 },
-      ],
-      noCounts: [
-        { label: 'All', key: 'all' },
-        { label: 'Processing', key: 'processing' },
-        { label: 'Completed', key: 'completed' },
-      ],
-    }),
-    template: `
-      <div class="d-flex flex-column ga-8">
-        <div>
-          <div class="text-caption text-medium-emphasis mb-2">with counts</div>
-          <MpFilterTabs :tabs="withCounts" model-value="all" aria-label="Order filters" />
-        </div>
-        <div>
-          <div class="text-caption text-medium-emphasis mb-2">without counts</div>
-          <MpFilterTabs :tabs="noCounts" model-value="all" aria-label="Order filters" />
-        </div>
-      </div>
-    `,
-  }),
-  args: {} as never,
+  render: stack({ MpFilterTabs }, [
+    {
+      label: 'with counts',
+      args: {
+        tabs: [
+          { label: 'All', key: 'all', count: 128 },
+          { label: 'Processing', key: 'processing', count: 12 },
+          { label: 'Completed', key: 'completed', count: 104 },
+        ],
+      },
+    },
+    {
+      label: 'without counts',
+      args: {
+        tabs: [
+          { label: 'All', key: 'all' },
+          { label: 'Processing', key: 'processing' },
+          { label: 'Completed', key: 'completed' },
+        ],
+      },
+    },
+  ]),
 }
 
-/** Tab-count is the size axis — a long set scrolls horizontally rather than wrapping. */
-export const Sizes: Story = {
-  render: () => ({
-    components: { MpFilterTabs },
-    setup: () => ({
-      few: [{ label: 'All', key: 'all', count: 128 }, { label: 'Draft', key: 'draft', count: 4 }],
-      many: ['All', 'Processing', 'On hold', 'Completed', 'Cancelled', 'Refunded', 'Archived', 'Failed']
-        .map((label, i) => ({ label, key: `k${i}`, count: (i + 1) * 7 })),
-    }),
-    template: `
-      <div class="d-flex flex-column ga-8">
-        <div>
-          <div class="text-caption text-medium-emphasis mb-2">two tabs</div>
-          <MpFilterTabs :tabs="few" model-value="all" aria-label="Order filters" />
-        </div>
-        <div>
-          <div class="text-caption text-medium-emphasis mb-2">eight tabs — scrolls, never wraps</div>
-          <MpFilterTabs :tabs="many" model-value="k0" aria-label="Order filters" />
-        </div>
-      </div>
-    `,
-  }),
-  args: {} as never,
+/** There is no `size` prop: what varies is how many tabs there are. A long set scrolls horizontally rather than wrapping. */
+export const TabCount: Story = {
+  render: stack({ MpFilterTabs }, [
+    {
+      label: 'two tabs',
+      args: { tabs: [{ label: 'All', key: 'all', count: 128 }, { label: 'Draft', key: 'draft', count: 4 }] },
+    },
+    {
+      label: 'eight tabs — scrolls, never wraps',
+      args: {
+        modelValue: 'k0',
+        tabs: ['All', 'Processing', 'On hold', 'Completed', 'Cancelled', 'Refunded', 'Archived', 'Failed']
+          .map((label, i) => ({ label, key: `k${i}`, count: (i + 1) * 7 })),
+      },
+    },
+  ]),
 }
 
 /** Active vs inactive, and a zero count. Tab through to see the focus ring. */
 export const States: Story = {
-  render: () => ({
-    components: { MpFilterTabs },
-    setup: () => ({
-      tabs: [
-        { label: 'All', key: 'all', count: 128 },
-        { label: 'Processing', key: 'processing', count: 12 },
-        { label: 'Refunded', key: 'refunded', count: 0 },
-      ],
-    }),
-    template: `
-      <div class="d-flex flex-column ga-8">
-        <div>
-          <div class="text-caption text-medium-emphasis mb-2">first tab active</div>
-          <MpFilterTabs :tabs="tabs" model-value="all" aria-label="Order filters" />
-        </div>
-        <div>
-          <div class="text-caption text-medium-emphasis mb-2">middle tab active</div>
-          <MpFilterTabs :tabs="tabs" model-value="processing" aria-label="Order filters" />
-        </div>
-        <div>
-          <div class="text-caption text-medium-emphasis mb-2">zero-count tab active</div>
-          <MpFilterTabs :tabs="tabs" model-value="refunded" aria-label="Order filters" />
-        </div>
-      </div>
-    `,
-  }),
-  args: {} as never,
-}
-
-export const OrderTabs: Story = {
-  args: {
-    modelValue: 'all',
-    tabs: orderTabs,
-    ariaLabel: 'Filter orders',
-  },
+  render: stack({ MpFilterTabs }, [
+    { label: 'first tab active', args: { tabs: statusTabs, modelValue: 'all' } },
+    { label: 'middle tab active', args: { tabs: statusTabs, modelValue: 'processing' } },
+    { label: 'zero-count tab active', args: { tabs: statusTabs, modelValue: 'refunded' } },
+  ]),
 }
 
 export const CampaignTabs: Story = {
@@ -232,18 +179,3 @@ export const CampaignTabs: Story = {
   },
 }
 
-export const NoCounts: Story = {
-  args: {
-    modelValue: 'overview',
-    tabs: noCountTabs,
-    ariaLabel: 'Filter workspace sections',
-  },
-}
-
-export const ManyTabs: Story = {
-  args: {
-    modelValue: 'all',
-    tabs: manyTabs,
-    ariaLabel: 'Filter many order states',
-  },
-}

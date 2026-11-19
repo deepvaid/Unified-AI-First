@@ -82,8 +82,8 @@ export const Variants: Story = {
   args: {} as never,
 }
 
-/** Row and column counts are the size axis — match them to the table being stood in for. */
-export const Sizes: Story = {
+/** There is no `size` prop: the skeleton's dimensions are its `rows` and `columns`. Match them to the table being stood in for. */
+export const Dimensions: Story = {
   render: () => ({
     components: { MpTableSkeleton },
     template: `
@@ -121,40 +121,6 @@ export const States: Story = {
     `,
   }),
   args: {} as never,
-}
-
-export const CompactList: Story = {
-  args: {
-    rows: 4,
-    columns: 3,
-    showHeader: false,
-  },
-}
-
-export const WideTable: Story = {
-  args: {
-    rows: 8,
-    columns: 7,
-    showHeader: true,
-  },
-}
-
-/** Composed the way list views use it: inside the bordered card the table will occupy. */
-export const InCard: Story = {
-  render: (args) => ({
-    components: { MpTableSkeleton },
-    setup: () => ({ args }),
-    template: `
-      <v-card flat border rounded="lg">
-        <MpTableSkeleton v-bind="args" />
-      </v-card>
-    `,
-  }),
-  args: {
-    rows: 6,
-    columns: 5,
-    showHeader: true,
-  },
 }
 
 // ── Composed example ────────────────────────────────────────────────────────

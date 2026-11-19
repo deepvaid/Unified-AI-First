@@ -1,0 +1,32 @@
+{
+  "key": "section-rail",
+  "liquidsky": [
+    "MpSectionRail",
+    "StoreSectionRail",
+    "TheSecondaryNavigation"
+  ],
+  "status": "matched",
+  "reference": "MpSectionRail",
+  "stories": [
+    {
+      "id": "molecules-mpsectionrail--settings-flavor",
+      "label": "Settings",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpsectionrail--settings-flavor",
+      "png": {
+        "light": "png/section-rail/molecules-mpsectionrail--settings-flavor--light.png",
+        "dark": "png/section-rail/molecules-mpsectionrail--settings-flavor--dark.png"
+      },
+      "parts": []
+    },
+    {
+      "id": "molecules-mpsectionrail--store-editor",
+      "label": "Store editor",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpsectionrail--store-editor",
+      "png": {
+        "light": "png/section-rail/molecules-mpsectionrail--store-editor--light.png",
+        "dark": "png/section-rail/molecules-mpsectionrail--store-editor--dark.png"
+      },
+      "parts": []
+    }
+  ]
+}

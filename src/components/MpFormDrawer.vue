@@ -116,9 +116,9 @@ const { atTop, atBottom } = useScrollEdges(body)
 
 /* Float the drawer as a rounded surface, like .copilot-drawer — a 12px gutter on
    the right, top and bottom, plus radius, border and a soft shadow. Vuetify sets
-   top/height/bottom inline from the layout (top: 56px + bottom: 0 under the app
-   bar; top: 0 + bottom: 0 on fullPage routes with no app bar). We keep its top
-   and bottom and only force height:auto, so the box stretches between them; the
+   top/height/bottom inline from the layout (top: layout.appbarHeight + bottom: 0
+   under the app bar; top: 0 + bottom: 0 on fullPage routes with no app bar). We
+   keep its top and bottom and only force height:auto, so the box stretches between them; the
    margins then carve the 12px gutters — no hardcoded app-bar height needed, and
    it lands correctly whether or not the app bar is present.
    Retime the slide to the shared editorial motion tokens while we're here. */

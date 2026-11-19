@@ -1,0 +1,89 @@
+{
+  "key": "overflow-cell",
+  "liquidsky": [
+    "AppExpandableList"
+  ],
+  "status": "matched",
+  "reference": "The overflow cell of the Data Table pattern: the first value, then \"+N more\" that shows the rest",
+  "stories": [
+    {
+      "id": "patterns-data-table--overflow-cell",
+      "label": "Overflow cell",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-data-table--overflow-cell",
+      "png": {
+        "light": "png/overflow-cell/patterns-data-table--overflow-cell--light.png",
+        "dark": "png/overflow-cell/patterns-data-table--overflow-cell--dark.png"
+      },
+      "parts": [
+        {
+          "part": "first value",
+          "props": {
+            "height": {
+              "light": "20px",
+              "dark": "20px"
+            },
+            "border-radius": {
+              "light": "9999px",
+              "dark": "9999px"
+            },
+            "padding-left": {
+              "light": "8px",
+              "dark": "8px"
+            },
+            "font-size": {
+              "light": "10px",
+              "dark": "10px"
+            },
+            "font-weight": {
+              "light": "400",
+              "dark": "400"
+            },
+            "line-height": {
+              "light": "15px",
+              "dark": "15px"
+            },
+            "color": {
+              "light": "rgba(26, 24, 20, 0.87)",
+              "dark": "rgb(236, 236, 236)"
+            }
+          }
+        },
+        {
+          "part": "+N more trigger",
+          "props": {
+            "height": {
+              "light": "20px",
+              "dark": "20px"
+            },
+            "font-size": {
+              "light": "10px",
+              "dark": "10px"
+            },
+            "font-weight": {
+              "light": "400",
+              "dark": "400"
+            },
+            "line-height": {
+              "light": "15px",
+              "dark": "15px"
+            },
+            "color": {
+              "light": "rgba(26, 24, 20, 0.87)",
+              "dark": "rgb(236, 236, 236)"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "patterns-data-table--overflow-cell-open",
+      "label": "Overflow cell, list shown",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-data-table--overflow-cell-open",
+      "png": {
+        "light": "png/overflow-cell/patterns-data-table--overflow-cell-open--light.png",
+        "dark": "png/overflow-cell/patterns-data-table--overflow-cell-open--dark.png"
+      },
+      "parts": []
+    }
+  ]
+}

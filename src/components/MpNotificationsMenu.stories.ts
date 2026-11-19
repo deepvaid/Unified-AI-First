@@ -1,16 +1,19 @@
+import { onUnmounted } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpNotificationsMenu from './MpNotificationsMenu.vue'
 import { useNotifications, type AppNotification } from '@/stores/useNotifications'
 import { NOTIFICATIONS } from '@/stories/fixtures'
+import { liquidskyDocs } from '@/stories/storyTemplate'
+import { overlayDocs } from '@/stories/decorators'
 
 const meta = {
   title: 'Molecules/MpNotificationsMenu',
   component: MpNotificationsMenu,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'liquidsky'],
   parameters: {
     docs: {
       description: {
-        component: `
+        component: liquidskyDocs('molecules-mpnotificationsmenu') + `
 ### Overview
 \`MpNotificationsMenu\` is the app bar's notification centre, aligned with the real product's
 feed: a bell trigger whose unread badge **wraps** the button (the app's \`v-badge\` convention,
@@ -61,8 +64,10 @@ see the ActivityFeed story on MpListRow) or a transient confirmation (that's \`u
   pre-existing app-bar gap, carried over); the download action is a prototype stub (toast).
 
 ### Controls
-The component has no props — state comes from \`useNotifications\`. Stories seed the store in
-\`setup()\` (reset first, then push fixtures) so they don't bleed into each other.
+The component has no props — state comes from \`useNotifications\`. Each story seeds the store
+in \`setup()\` and puts back what was there when it unmounts. The unread, all-read and empty
+states are separate stories, not one grid, because the bell reads one store: two bells on a
+canvas always show the same feed.
         `,
       },
     },
@@ -72,19 +77,25 @@ The component has no props — state comes from \`useNotifications\`. Stories se
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** Seeds the useNotifications store from setup() — reset first so stories don't bleed into
- * each other. Same idiom as MpToastStack.stories.ts. */
+/**
+ * Seeds the `useNotifications` store for one story and puts back what was there when the story
+ * unmounts, so the seed never reaches another story's bell (the AppBar stories read the same
+ * store). `open` clicks the bell after mount; those stories get their own frame on the docs page.
+ */
 function seededStory(seed: AppNotification[], open = false): Story {
   return {
+    ...(open ? { parameters: overlayDocs('560px') } : {}),
     render: () => ({
       components: { MpNotificationsMenu },
       setup() {
         const store = useNotifications()
+        const before = store.items
         store.items = seed.map((n) => ({ ...n }))
+        onUnmounted(() => { store.items = before })
         return {}
       },
       template: `
-        <div class="d-flex justify-end" style="min-height: 480px; padding: 24px;">
+        <div class="d-flex justify-end">
           <MpNotificationsMenu />
         </div>
       `,
@@ -105,7 +116,8 @@ function seededStory(seed: AppNotification[], open = false): Story {
 export const Default: Story = seededStory(NOTIFICATIONS as AppNotification[])
 
 /** The open panel: See all + Mark all read in the header, generic-icon rows with absolute
- * times, download actions on report/export rows, unread dots. */
+ * times, unread dots, and download actions on the report/export rows — the download swallows
+ * its click, so it never marks the row read or closes the panel. */
 export const OpenPanel: Story = seededStory(NOTIFICATIONS as AppNotification[], true)
 
 /** All caught up — the badge hides at zero unread and "Mark all read" disables. */
@@ -116,16 +128,3 @@ export const AllRead: Story = seededStory(
 
 /** Empty feed — the panel composes MpEmptyState. */
 export const Empty: Story = seededStory([], true)
-
-// ── Scenarios ────────────────────────────────────────────────────────────────
-
-/** Download rows — reports and exports carry the trailing download action; it swallows its
- * click, so downloading never marks the row read or closes the panel. */
-export const WithDownloads: Story = seededStory(
-  [
-    { id: 'd-1', title: 'Custom report allfin generated for 206 campaigns', time: 'Aug 26, 2026 at 02:33 AM', read: false, downloadable: true },
-    { id: 'd-2', title: "Export report from Aug 26, 2026 to Aug 26, 2026 for 'transab' campaigns", time: 'Aug 26, 2026 at 02:31 AM', read: false, downloadable: true },
-    { id: 'd-3', title: "Import 10000 contacts to 'HB list 1' started. Emails imported: 9,988", time: 'Aug 31, 2026 at 02:54 AM', read: true },
-  ],
-  true
-)

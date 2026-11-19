@@ -2,18 +2,21 @@ import { ref, watch } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpConfirmDialog from './MpConfirmDialog.vue'
 import MpRowActionsMenu from './MpRowActionsMenu.vue'
+import MpMenuItem from './MpMenuItem.vue'
 import MpStatusChip from './MpStatusChip.vue'
 import MpEmptyState from './MpEmptyState.vue'
 import { CAMPAIGNS, CAMPAIGN_HEADERS } from '@/stories/fixtures'
+import { liquidskyDocs } from '@/stories/storyTemplate'
+import { overlayDocs } from '@/stories/decorators'
 
 const meta = {
   title: 'Molecules/MpConfirmDialog',
   component: MpConfirmDialog,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'liquidsky'],
   parameters: {
     docs: {
       description: {
-        component: `
+        component: liquidskyDocs('molecules-mpconfirmdialog') + `
 ### Overview
 \`MpConfirmDialog\` is a small confirm/cancel dialog for one-shot decisions (delete a node,
 discard a draft). It closes itself on Cancel, Escape, backdrop click, and after emitting
@@ -43,6 +46,8 @@ it and offer undo).
 - **Do** name the consequence in \`message\` ("also removes every step inside its branches").
 - **Do** use a verb-first \`confirmLabel\` ("Delete split", "Discard draft") — never "OK".
 - **Do** set \`danger\` whenever the confirm button destroys data.
+- **Do** rename the dismiss with \`cancelLabel\` when the action is itself a cancel: "Keep order"
+  beside "Cancel order", never "Cancel" beside "Cancel order" (see \`States\`).
 
 ### 🔴 Don'ts
 - **Don't** use it for forms or multi-field input — use \`MpFormDrawer\` or a dedicated dialog
@@ -68,6 +73,7 @@ it and offer undo).
     title: 'Apply this change?',
     message: 'The updated settings take effect for all new enrollments immediately.',
     confirmLabel: 'Apply',
+    cancelLabel: 'Cancel',
     danger: false,
   },
   argTypes: {
@@ -75,27 +81,26 @@ it and offer undo).
     title: { control: 'text', description: 'The question, phrased as a yes/no decision ("Delete this split?").' },
     message: { control: 'text', description: 'The consequence of confirming — plain body text.' },
     confirmLabel: { control: 'text', description: 'Verb-first confirm button label. Defaults to "Confirm"; never use "OK".' },
+    cancelLabel: { control: 'text', description: 'The dismiss button. Defaults to "Cancel"; rename it when the action is itself a cancel ("Keep order" beside "Cancel order").' },
     danger: { control: 'boolean', description: 'Destructive styling: error triangle icon + error confirm button.' },
     consequences: { control: 'object', description: 'Optional bullet list of consequences, rendered between the message and the action buttons.' },
     confirm: { control: false, description: 'Event — emitted when the confirm button is clicked (the dialog then closes itself).', table: { category: 'events' } },
+    onConfirm: { action: 'confirm', table: { disable: true } },
   },
   render: (args) => ({
     components: { MpConfirmDialog },
     setup() {
-      const open = ref(true)
-      watch(
-        () => [args.title, args.danger],
-        () => {
-          open.value = true
-        },
-      )
+      // Follows the `modelValue` control, so the dialog can be closed and reopened from Controls
+      // as well as from the trigger button.
+      const open = ref(args.modelValue ?? false)
+      watch(() => args.modelValue, (value) => { open.value = value ?? false })
       return { args, open }
     },
     template: `
-      <section style="min-height:360px;background:rgb(var(--v-theme-background));padding:24px;">
+      <div>
         <v-btn variant="outlined" @click="open = true">Open dialog</v-btn>
         <MpConfirmDialog v-bind="args" v-model="open" />
-      </section>
+      </div>
     `,
   }),
 } satisfies Meta<typeof MpConfirmDialog>
@@ -103,8 +108,15 @@ it and offer undo).
 export default meta
 type Story = StoryObj<typeof meta>
 
-export const Default: Story = {}
+/**
+ * Bound to the Controls panel on the Canvas tab (the docs page shows it in its own frame, which the Controls table there cannot drive); `confirm` is logged in the Actions panel. The three stories that
+ * show the dialog open on load each get their own frame on the docs page (`overlayDocs()`).
+ */
+export const Default: Story = {
+  parameters: overlayDocs('420px'),
+}
 
+/** `danger` swaps the header icon to the error tone and the confirm button to `error`. */
 export const Danger: Story = {
   args: {
     title: 'Delete this split?',
@@ -112,20 +124,7 @@ export const Danger: Story = {
     confirmLabel: 'Delete split',
     danger: true,
   },
-}
-
-/** A long, multi-sentence message wraps inside the 440px card without breaking the action row. */
-export const LongMessage: Story = {
-  args: {
-    title: 'Stop this campaign send?',
-    message:
-      'Stopping "Black Friday 2025 — Early Access VIP" cancels delivery for the 18,240 contacts '
-      + 'still queued. The 6,411 emails already sent cannot be recalled, and their opens and clicks '
-      + 'will keep reporting under this campaign. A stopped campaign cannot be resumed — to send to '
-      + 'the remaining contacts later, duplicate the campaign and target the "Not yet received" segment.',
-    confirmLabel: 'Stop send',
-    danger: true,
-  },
+  parameters: overlayDocs('420px'),
 }
 
 /** Bullet list of consequences rendered between the message and the action buttons. */
@@ -141,23 +140,26 @@ export const WithConsequences: Story = {
       'This cannot be undone.',
     ],
   },
+  parameters: overlayDocs('480px'),
 }
 
-// ── Template: Variants · Sizes · States ──────────────────────────────────────
+// ── Template: Variants · States ──────────────────────────────────────────────
 
 /**
  * Two structures, and they are the whole component: a neutral confirmation and a destructive
  * one. `danger` swaps the header icon to the error tone and the confirm button to `error` —
- * nothing else changes, which is the point.
+ * nothing else changes, which is the point. There is no `size` prop: a confirm prompt is always
+ * `MpDialog`'s `sm` (440px). A confirmation that needs more room is a form, and belongs in
+ * `MpFormDrawer`.
  */
 export const Variants: Story = {
   render: () => ({
     components: { MpConfirmDialog },
-    data: () => ({ which: 'neutral' as string }),
+    data: () => ({ which: '' as string }),
     template: `
       <div class="d-flex ga-2 flex-wrap">
-        <v-btn variant="outlined" class="text-none" @click="which = 'neutral'">Neutral</v-btn>
-        <v-btn variant="outlined" class="text-none" @click="which = 'danger'">Danger</v-btn>
+        <v-btn variant="outlined" @click="which = 'neutral'">Neutral</v-btn>
+        <v-btn variant="outlined" @click="which = 'danger'">Danger</v-btn>
 
         <MpConfirmDialog
           :model-value="which === 'neutral'"
@@ -181,33 +183,11 @@ export const Variants: Story = {
 }
 
 /**
- * There is no `size` prop. A confirm prompt is always `MpDialog`'s `sm` (440px) — a prompt the
- * reader has to take in at a glance should not be a wide measure. If a confirmation needs more
- * room than this, it is a form, and it belongs in `MpFormDrawer`.
- */
-export const Sizes: Story = {
-  render: () => ({
-    components: { MpConfirmDialog },
-    data: () => ({ open: true }),
-    template: `
-      <div>
-        <v-btn variant="outlined" class="text-none" @click="open = true">Open</v-btn>
-        <MpConfirmDialog
-          v-model="open"
-          title="Archive this campaign?"
-          message="Archived campaigns stop reporting and move out of the main list. You can restore them later."
-          confirm-label="Archive"
-        />
-      </div>
-    `,
-  }),
-  args: {} as never,
-}
-
-/**
- * The content states: a one-line message, a long message that wraps, and a consequences list.
- * All three sit in the same 20px body band — since Phase 4 this component composes `MpDialog`
- * and no longer sets any inset of its own.
+ * The content states: a one-line message, a long message that wraps inside the 440px card
+ * without breaking the action row, a consequences list, and a renamed dismiss.
+ *
+ * **When the action is itself a cancel, rename the dismiss.** "Cancel" beside "Cancel order"
+ * reads as two ways to cancel; `cancel-label="Keep order"` says what each button does.
  */
 export const States: Story = {
   render: () => ({
@@ -215,16 +195,17 @@ export const States: Story = {
     data: () => ({ which: '' as string }),
     template: `
       <div class="d-flex ga-2 flex-wrap">
-        <v-btn variant="outlined" class="text-none" @click="which = 'short'">Short</v-btn>
-        <v-btn variant="outlined" class="text-none" @click="which = 'long'">Long message</v-btn>
-        <v-btn variant="outlined" class="text-none" @click="which = 'consequences'">With consequences</v-btn>
+        <v-btn variant="outlined" @click="which = 'short'">Short</v-btn>
+        <v-btn variant="outlined" @click="which = 'long'">Long message</v-btn>
+        <v-btn variant="outlined" @click="which = 'consequences'">With consequences</v-btn>
+        <v-btn variant="outlined" @click="which = 'keep'">Action is a cancel</v-btn>
 
         <MpConfirmDialog :model-value="which === 'short'" title="Discard changes?" message="Your edits will be lost." confirm-label="Discard" danger @update:model-value="which = ''" />
         <MpConfirmDialog
           :model-value="which === 'long'"
-          title="Remove this sales channel?"
-          message="Removing the channel stops order sync immediately and unlinks every product mapping. Historical orders stay in Commerce, but inventory will no longer reconcile against this storefront until it is reconnected."
-          confirm-label="Remove channel"
+          title="Stop this campaign send?"
+          message="Stopping “Black Friday 2025 — Early Access VIP” cancels delivery for the 18,240 contacts still queued. The 6,411 emails already sent cannot be recalled, and their opens and clicks will keep reporting under this campaign. A stopped campaign cannot be resumed — to send to the remaining contacts later, duplicate the campaign and target the “Not yet received” segment."
+          confirm-label="Stop send"
           danger
           @update:model-value="which = ''"
         />
@@ -234,6 +215,15 @@ export const States: Story = {
           message="Deleting “VIP — Repeat Buyers” removes it everywhere it is used."
           :consequences="['3 active campaigns targeting this segment will lose their audience.', '2 journeys use this segment as an entry filter.', 'This cannot be undone.']"
           confirm-label="Delete segment"
+          danger
+          @update:model-value="which = ''"
+        />
+        <MpConfirmDialog
+          :model-value="which === 'keep'"
+          title="Cancel order #10482?"
+          message="The customer is refunded in full and the items go back into stock."
+          confirm-label="Cancel order"
+          cancel-label="Keep order"
           danger
           @update:model-value="which = ''"
         />
@@ -252,7 +242,7 @@ export const States: Story = {
  */
 export const InContextDeleteFromTable: Story = {
   render: () => ({
-    components: { MpConfirmDialog, MpRowActionsMenu, MpStatusChip, MpEmptyState },
+    components: { MpConfirmDialog, MpRowActionsMenu, MpMenuItem, MpStatusChip, MpEmptyState },
     setup() {
       const rows = ref([...CAMPAIGNS])
       const pending = ref<typeof CAMPAIGNS[number] | null>(null)
@@ -271,11 +261,11 @@ export const InContextDeleteFromTable: Story = {
             <MpStatusChip :status="item.status" type="campaign" size="sm" />
           </template>
           <template #item.actions="{ item }">
-            <MpRowActionsMenu aria-label="Campaign actions" :item-label="item.name">
-              <v-list-item title="Edit" prepend-icon="pencil" />
-              <v-list-item title="Duplicate" prepend-icon="copy" />
+            <MpRowActionsMenu ariaLabel="Campaign actions" :item-label="item.name">
+              <MpMenuItem title="Edit" icon="pencil" />
+              <MpMenuItem title="Duplicate" icon="copy" />
               <v-divider class="my-1" />
-              <v-list-item title="Delete" prepend-icon="trash-2" class="text-error" @click="ask(item)" />
+              <MpMenuItem title="Delete" icon="trash-2" danger @click="ask(item)" />
             </MpRowActionsMenu>
           </template>
         </v-data-table>

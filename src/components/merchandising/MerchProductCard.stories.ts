@@ -2,6 +2,7 @@ import { ref } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 import type { MerchProduct } from '@/stores/useMerchandising'
 import MerchProductCard from './MerchProductCard.vue'
+import { constrain } from '@/stories/decorators'
 
 // Mirrors the seeded catalog in useMerchandising.ts (picsum images, same shape).
 function makeProduct(overrides: Partial<MerchProduct> & { id: string; title: string }): MerchProduct {
@@ -111,7 +112,6 @@ type Story = StoryObj<typeof meta>
 /** Hover the card to reveal the select checkbox and pin button. */
 export const Default: Story = {}
 
-/** `compareAt` renders the sale price in error red with a strikethrough original. */
 /** Pinned, selectable, and read-only — the three structural modes. */
 export const Variants: Story = {
   render: () => ({
@@ -194,11 +194,12 @@ export const States: Story = {
   args: {} as never,
 }
 
-/** Pinned to position 1 — pin button stays visible, rank badge bottom-left. */
+/** `compareAt` renders the sale price in error red with a strikethrough original. */
 export const OnSale: Story = {
   args: { product: SALE_JEANS },
 }
 
+/** Pinned to position 1 — pin button stays visible, rank badge bottom-left. */
 export const PinnedWithRank: Story = {
   args: { product: BRACELET, pinned: true, rank: 1 },
 }
@@ -215,11 +216,12 @@ export const ReadOnly: Story = {
 
 /** How the collection grid composes cards: pinned ranks first, then organic results. */
 export const CollectionGrid: Story = {
+  decorators: [constrain('section')],
   render: () => ({
     components: { MerchProductCard },
     setup: () => ({ products: [BRACELET, SALE_JEANS, DRESS, BOOTS] }),
     template: `
-      <div style="display: grid; grid-template-columns: repeat(4, 180px); gap: 12px;">
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--mp-space-12);">
         <MerchProductCard v-for="(p, i) in products" :key="p.id" :product="p"
           :pinned="i < 2" :rank="i < 2 ? i + 1 : undefined" />
       </div>

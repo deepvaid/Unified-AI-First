@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { templateById } from '@/stores/journeyFlowData'
 import { blankBindings, templateSetupById } from '@/stores/journeyTemplateSetup'
 import JourneyTemplateSetup from './JourneyTemplateSetup.vue'
+import { constrain } from '@/stories/decorators'
 
 function story(id: string): Story {
   return {
@@ -14,6 +15,7 @@ const meta = {
   title: 'Product/Marketing/Journeys/JourneyTemplateSetup',
   component: JourneyTemplateSetup,
   tags: ['autodocs'],
+  decorators: [constrain('wide')],
   parameters: {
     layout: 'padded',
     docs: {
@@ -39,7 +41,7 @@ state: the sandbox has no connected webstore, so Finish stays blocked.
       return { args, bindings, valid }
     },
     template: `
-      <div style="max-width: 880px;">
+      <div>
         <JourneyTemplateSetup v-model="bindings" :template="args.template" :meta="args.meta" @update:valid="valid = $event" />
         <p class="text-caption text-medium-emphasis mt-4">finish enabled: {{ valid }}</p>
       </div>

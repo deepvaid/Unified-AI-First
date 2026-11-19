@@ -40,11 +40,11 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {}
 
 export const States: Story = {
-  render: grid(TrialVerifyForm, [
+  render: grid({ TrialVerifyForm }, [
     { label: 'Pending', args: { ...meta.args } },
     { label: 'Delayed email', args: { ...meta.args, challengeState: 'delayed' } },
     { label: 'Wrong code', args: { ...meta.args, lastResult: 'wrong' } },
     { label: 'Expired', args: { ...meta.args, challengeState: 'expired', lastResult: 'expired' } },
     { label: 'Submitting', args: { ...meta.args, submitting: true } },
-  ], { columns: 1 }),
+  ], { columns: '1fr' }),
 }

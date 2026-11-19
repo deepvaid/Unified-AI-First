@@ -10,6 +10,8 @@
  * labelled so a reviewer can read the grid without opening the controls panel.
  */
 
+import { QA_COMPONENTS } from './qa/liquidskyMap'
+
 export interface Specimen {
   /** Caption shown above the specimen. */
   label: string
@@ -22,7 +24,7 @@ export interface Specimen {
 interface GridOptions {
   /** Grid column width; `1fr` stacks one specimen per row. Default: auto-fit at 260px. */
   columns?: string
-  /** Extra markup placed inside each specimen wrapper, after the component. */
+  /** Class added to each rendered component. */
   itemClass?: string
 }
 
@@ -45,12 +47,12 @@ export function grid(
     setup: () => ({ args, specimens }),
     template: `
       <div class="sb-grid" style="display: grid; grid-template-columns: ${columns}; gap: var(--mp-space-24);">
-        <div v-for="s in specimens" :key="s.label" class="sb-grid__item" style="min-width: 0;">
+        <div v-for="(s, index) in specimens" :key="index" class="sb-grid__item" style="min-width: 0;">
           <div class="sb-grid__label" style="
             margin-bottom: var(--mp-space-8);
             font-size: var(--mp-fontSize-11);
             font-weight: var(--mp-fontWeight-semibold);
-            letter-spacing: 0.06em;
+            letter-spacing: var(--mp-text-eyebrow-letterSpacing);
             text-transform: uppercase;
             color: var(--text-muted);
           ">{{ s.label }}</div>
@@ -69,4 +71,59 @@ export function grid(
  */
 export function stack(component: Record<string, unknown>, specimens: Specimen[]) {
   return grid(component, specimens, { columns: '1fr' })
+}
+
+/**
+ * The "In LiquidSky" line at the top of a reference component's docs page: the LiquidSky
+ * (`App*` / `The*` / `MpV*`) names whose design is this component, read from
+ * `qa/liquidskyMap.ts` so the names are kept in one place.
+ *
+ * Prepend it to `parameters.docs.description.component` and give the file the `liquidsky` tag.
+ *
+ * @param componentId  the Storybook id before `--`, e.g. `molecules-mpdialog`
+ */
+export function liquidskyDocs(componentId: string): string {
+  const names = [...new Set(
+    QA_COMPONENTS
+      .filter((entry) => entry.stories.some((story) => story.id.startsWith(`${componentId}--`)))
+      .flatMap((entry) => entry.liquidsky),
+  )]
+  if (!names.length) return ''
+  const list = names.map((name) => `\`${name}\``).join(' · ')
+  return `> **In LiquidSky:** ${list} — these take their design from this page. [Every LiquidSky name](?path=/docs/liquidsky--docs)\n\n`
+}
+
+/** The bulk actions the stories offer: one label and one icon per action, in every story. */
+const BULK_ACTIONS = {
+  fulfill: { label: 'Mark fulfilled', icon: 'package-check' },
+  export: { label: 'Export', icon: 'download' },
+  tag: { label: 'Tag', icon: 'tag' },
+  move: { label: 'Move to folder', icon: 'folder-input' },
+  cancel: { label: 'Cancel orders', icon: 'ban', danger: true },
+  delete: { label: 'Delete', icon: 'trash-2', danger: true },
+} as const
+
+export type BulkAction = keyof typeof BULK_ACTIONS
+
+/**
+ * The buttons inside an `MpFloatingBulkBar`, for a story's `template:`.
+ *
+ * Every story gets the same button the app's most common bar uses (`size="small"
+ * variant="text"`, icon first, `text-none`), the same label and icon for the same action, and
+ * the destructive action last in `text-error`, whatever order the story lists them in. A story
+ * names its actions; it does not write the markup, so the bars cannot drift apart.
+ *
+ *   `<MpFloatingBulkBar …>${bulkActions(['move', 'delete'], { move: 'bulkMoveOpen = true' })}</MpFloatingBulkBar>`
+ *
+ * @param actions   which actions to show
+ * @param handlers  an expression for `@click`, by action
+ */
+export function bulkActions(actions: BulkAction[], handlers: Partial<Record<BulkAction, string>> = {}): string {
+  const ordered = [...actions].sort((a, b) => Number('danger' in BULK_ACTIONS[a]) - Number('danger' in BULK_ACTIONS[b]))
+  return ordered.map((action) => {
+    const { label, icon } = BULK_ACTIONS[action]
+    const danger = 'danger' in BULK_ACTIONS[action]
+    const click = handlers[action] ? ` @click="${handlers[action]}"` : ''
+    return `<v-btn size="small" variant="text" class="text-none${danger ? ' text-error' : ''}" prepend-icon="${icon}"${click}>${label}</v-btn>`
+  }).join('\n')
 }

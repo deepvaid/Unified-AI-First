@@ -279,7 +279,7 @@ function performDelete() {
 
         <MpFormField label="Preview">
           <div class="d-flex">
-            <MpTagChip :name="form.name.trim() || 'Tag name'" :color="form.color" />
+            <MpTagChip :name="form.name.trim() || 'Tag name'" :color="form.color" size="sm" />
           </div>
         </MpFormField>
       </MpFormGrid>

@@ -1,0 +1,33 @@
+{
+  "key": "notifications",
+  "liquidsky": [
+    "MpNotificationsMenu",
+    "TheNotificationIcon",
+    "TheNotificationDrawer"
+  ],
+  "status": "partial",
+  "reference": "MpNotificationsMenu",
+  "note": "The bell opens a menu panel in Marobase, not a side drawer. The bell, badge and rows carry over to TheNotificationDrawer; the drawer frame follows MpFormDrawer.",
+  "stories": [
+    {
+      "id": "molecules-mpnotificationsmenu--open-panel",
+      "label": "Panel open",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpnotificationsmenu--open-panel",
+      "png": {
+        "light": "png/notifications/molecules-mpnotificationsmenu--open-panel--light.png",
+        "dark": "png/notifications/molecules-mpnotificationsmenu--open-panel--dark.png"
+      },
+      "parts": []
+    },
+    {
+      "id": "molecules-mpnotificationsmenu--empty",
+      "label": "Nothing new",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpnotificationsmenu--empty",
+      "png": {
+        "light": "png/notifications/molecules-mpnotificationsmenu--empty--light.png",
+        "dark": "png/notifications/molecules-mpnotificationsmenu--empty--dark.png"
+      },
+      "parts": []
+    }
+  ]
+}

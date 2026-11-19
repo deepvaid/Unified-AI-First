@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpSectionHeader from './MpSectionHeader.vue'
+import { stack } from '@/stories/storyTemplate'
 
 const meta = {
   title: 'Atoms/MpSectionHeader',
@@ -64,41 +65,23 @@ export const Default: Story = {
 
 /** With and without the optional leading icon and eyebrow — the structural axes here. */
 export const Variants: Story = {
-  render: () => ({
-    components: { MpSectionHeader },
-    template: `
-      <div class="d-flex flex-column ga-6">
-        <div>
-          <div class="text-caption text-medium-emphasis mb-2">title only</div>
-          <MpSectionHeader title="Recent orders" />
-        </div>
-        <div>
-          <div class="text-caption text-medium-emphasis mb-2">with icon</div>
-          <MpSectionHeader icon="package" title="Recent orders" />
-        </div>
-        <div>
-          <div class="text-caption text-medium-emphasis mb-2">with eyebrow + description</div>
-          <MpSectionHeader eyebrow="LAST 30 DAYS" title="Recent orders" description="Every order placed across your sales channels." />
-        </div>
-      </div>
-    `,
-  }),
+  render: stack({ MpSectionHeader }, [
+    { label: 'title only', args: { title: 'Recent orders' } },
+    { label: 'with icon', args: { icon: 'package', title: 'Recent orders' } },
+    {
+      label: 'with eyebrow + description',
+      args: { eyebrow: 'Last 30 days', title: 'Recent orders', description: 'Every order placed across your sales channels.' },
+    },
+  ]),
   args: {} as never,
 }
 
-/** The heading-level ramp — there is no `size` prop; `headingLevel` is semantic, not visual. */
-export const Sizes: Story = {
-  render: () => ({
-    components: { MpSectionHeader },
-    template: `
-      <div class="d-flex flex-column ga-6">
-        <div v-for="lvl in [2, 3, 4]" :key="lvl">
-          <div class="text-caption text-medium-emphasis mb-2">headingLevel={{ lvl }} — same size, different aria-level</div>
-          <MpSectionHeader :heading-level="lvl" title="Recent orders" description="Rendered identically; only the announced level changes." />
-        </div>
-      </div>
-    `,
-  }),
+/** There is no `size` prop. `headingLevel` is semantic, not visual: the same size, a different `aria-level`. */
+export const HeadingLevels: Story = {
+  render: stack({ MpSectionHeader }, [2, 3, 4].map((headingLevel) => ({
+    label: `headingLevel=${headingLevel}`,
+    args: { headingLevel, title: 'Recent orders', description: 'Rendered identically; only the announced level changes.' },
+  }))),
   args: {} as never,
 }
 
@@ -130,22 +113,6 @@ export const States: Story = {
   args: {} as never,
 }
 
-export const WithActions: Story = {
-  render: (args) => ({
-    components: { MpSectionHeader },
-    setup: () => ({ args }),
-    template: `
-      <MpSectionHeader v-bind="args">
-        <template #actions>
-          <v-btn size="small" variant="text">Last 7 days</v-btn>
-          <v-btn size="small" variant="text" color="primary">View All</v-btn>
-        </template>
-      </MpSectionHeader>
-    `,
-  }),
-  args: { title: 'Top Campaigns' },
-}
-
 /** Eyebrow above and a supporting description below the title — the fullest section-header form. */
 export const WithEyebrowAndDescription: Story = {
   render: (args) => ({
@@ -166,20 +133,3 @@ export const WithEyebrowAndDescription: Story = {
   },
 }
 
-/** A long title next to actions — title and actions share one row, so keep titles short. */
-export const LongTitle: Story = {
-  render: (args) => ({
-    components: { MpSectionHeader },
-    setup: () => ({ args }),
-    template: `
-      <div style="max-width: 640px;">
-        <MpSectionHeader v-bind="args">
-          <template #actions>
-            <v-btn size="small" variant="text" color="primary">View All</v-btn>
-          </template>
-        </MpSectionHeader>
-      </div>
-    `,
-  }),
-  args: { title: 'Campaigns sent to VIP repeat buyers in the last 30 days' },
-}

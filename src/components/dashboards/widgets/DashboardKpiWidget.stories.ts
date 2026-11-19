@@ -22,10 +22,6 @@ const OPEN_RATE_KPI: DashboardKpiData = {
   helperText: 'Average campaign open rate',
 }
 
-function minutesAgo(minutes: number): string {
-  return new Date(Date.now() - minutes * 60_000).toISOString()
-}
-
 const meta = {
   title: 'Product/Dashboards/Widgets/DashboardKpiWidget',
   component: DashboardKpiWidget,
@@ -45,7 +41,6 @@ const meta = {
     comparisonLabel: 'vs prev 30d',
     icon: 'dollar-sign',
     dataSource: 'commerce',
-    lastRefreshedAt: minutesAgo(24),
     compact: false,
     aiGenerated: false,
     showViewReport: false,
@@ -123,10 +118,6 @@ export const DaVinciGenerated: Story = {
 }
 
 export const NarrowContainer: Story = {
-  args: {
-    dataSource: 'commerce',
-    lastRefreshedAt: minutesAgo(14 * 60),
-  },
   render: (args) => ({
     components: { DashboardKpiWidget },
     setup: () => ({ args }),
@@ -194,69 +185,4 @@ export const WithSparklineData: Story = {
       },
     },
   },
-}
-
-// ── Template: Variants · Sizes · States ──────────────────────────────────────
-
-/** One structure — a hero number with a trend and an optional sparkline. Its variants are whether the sparkline and the secondary stat are present. */
-export const Variants: Story = {
-  render: (args) => ({
-    components: { DashboardKpiWidget },
-    setup: () => ({ args }),
-    template: `<DashboardKpiWidget v-bind="args" />`,
-  }),
-}
-
-/**
- * There is no `size` prop — a widget fills the grid cell it is placed in. The KPI card is the
- * deliberately **dense** member of the family: Phase 4 (P4-1) gave it one uniform inset from
- * the scale's compact tier (`component.card.paddingCompact`, 12) rather than the 20 the rest
- * take. Denser than a card, but from the scale — it used to be an ad-hoc `14px 16px 12px`,
- * three different values on one box.
- *
- * Rendered below at three cell sizes, including the narrow container where the sparkline drops
- * below the value.
- */
-export const Sizes: Story = {
-  render: (args) => ({
-    components: { DashboardKpiWidget },
-    setup: () => ({ args }),
-    template: `
-      <div class="d-flex ga-6 flex-wrap align-start">
-        <div style="width: 280px; height: 220px"><v-card flat border rounded="lg" class="h-100 pa-5"><DashboardKpiWidget v-bind="args" /></v-card></div>
-        <div style="width: 420px; height: 260px"><v-card flat border rounded="lg" class="h-100 pa-5"><DashboardKpiWidget v-bind="args" /></v-card></div>
-        <div style="width: 620px; height: 300px"><v-card flat border rounded="lg" class="h-100 pa-5"><DashboardKpiWidget v-bind="args" /></v-card></div>
-      </div>
-    `,
-  }),
-}
-
-/** Positive trend, negative trend, no trend, and a narrow container where the spark drops below the value. */
-export const States: Story = {
-  render: (args) => ({
-    components: { DashboardKpiWidget },
-    setup: () => ({ args }),
-    template: `<DashboardKpiWidget v-bind="args" />`,
-  }),
-}
-
-// ── Composed example ────────────────────────────────────────────────────────
-
-/**
- * **In context.** The widget where it actually lives — inside a `DashboardWidgetCard`, in a
- * dashboard row beside its siblings. This is the composition P4-1 is judged on: the header
- * band, the body inset and the footer are the card's, and every widget in the family sits on
- * the same edge.
- */
-export const InContextDashboardRow: Story = {
-  render: (args) => ({
-    components: { DashboardKpiWidget },
-    setup: () => ({ args }),
-    template: `
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--mp-space-16); align-items: stretch">
-        <v-card flat border rounded="lg" style="height: 280px" class="pa-5"><DashboardKpiWidget v-bind="args" /></v-card>
-        <v-card flat border rounded="lg" style="height: 280px" class="pa-5"><DashboardKpiWidget v-bind="args" /></v-card>
-      </div>
-    `,
-  }),
 }

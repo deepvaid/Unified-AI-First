@@ -2,6 +2,7 @@ import { ref } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 import UserAccessDrawer from './UserAccessDrawer.vue'
 import { SEED_USERS } from '@/stores/rbacData'
+import { overlayDocs } from '@/stories/decorators'
 
 function wait(ms: number) {
   return new Promise<void>(resolve => setTimeout(resolve, ms))
@@ -12,12 +13,7 @@ const meta = {
   component: UserAccessDrawer,
   tags: ['autodocs'],
   parameters: {
-    // MpFormDrawer teleports to <body>, and every story here defaults open — isolate
-    // each story in its own iframe on the Docs page so one story's drawer (and this
-    // file's play function) can never collide with another's, same convention as
-    // MpToastStack.stories.ts.
     docs: {
-      story: { inline: false, height: '760px' },
       description: {
         component: `
 ### Overview
@@ -95,7 +91,7 @@ grants (\`PermissionMatrix\` inside role management).
       return { args, open, lastNotice }
     },
     template: `
-      <section style="min-height:640px;background:rgb(var(--v-theme-background));padding:24px;">
+      <div>
         <v-btn variant="flat" size="small" class="text-none" prepend-icon="user-cog" rounded="lg" color="surface" @click="open = true">Manage access</v-btn>
         <div class="text-caption text-medium-emphasis mt-3">Last notice: {{ lastNotice }}</div>
         <UserAccessDrawer
@@ -104,13 +100,16 @@ grants (\`PermissionMatrix\` inside role management).
           @notify="message => lastNotice = message"
           @request-remove="removedId => lastNotice = 'Requested removal of ' + removedId"
         />
-      </section>
+      </div>
     `,
   }),
 } satisfies Meta<typeof UserAccessDrawer>
 
 export default meta
 type Story = StoryObj<typeof meta>
+
+// MpFormDrawer teleports to <body>. Each story that opens it on mount gets its own frame on the
+// docs page (`overlayDocs`), so one story's drawer and play function never reach another's.
 
 /** Closed — just the trigger button, the resting state from a row's "Manage access" action. */
 export const Default: Story = {
@@ -120,21 +119,25 @@ export const Default: Story = {
 /** Mike Zhang — a single-role active user, the baseline open state. */
 export const Open: Story = {
   args: { modelValue: true, userId: 'user-3' },
+  parameters: overlayDocs('760px'),
 }
 
 /** James Okafor — MCC Admin scoped to two specific locations: exercises the commerce store-scope picker and a fuller product-access preview. */
 export const CommerceScopeAccess: Story = {
   args: { modelValue: true, userId: 'user-7' },
+  parameters: overlayDocs('760px'),
 }
 
 /** The account owner is fully protected: roles and scope render disabled behind an explanatory alert, and the danger zone is replaced with protective copy — Save stays disabled. */
 export const OwnerProtected: Story = {
   args: { modelValue: true, userId: 'user-1' },
+  parameters: overlayDocs('760px'),
 }
 
 /** Priya Sharma with "Show effective permissions" expanded, revealing the read-only PermissionMatrix for her current role selection. */
 export const EffectivePermissionsExpanded: Story = {
   args: { modelValue: true, userId: 'user-4' },
+  parameters: overlayDocs('760px'),
   play: async () => {
     await wait(300)
     const toggle = Array.from(document.querySelectorAll<HTMLButtonElement>('.mp-form-drawer__body button'))

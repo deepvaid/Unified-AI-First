@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpStatusToggle from './MpStatusToggle.vue'
+import { grid } from '@/stories/storyTemplate'
 
 const meta = {
   title: 'Atoms/MpStatusToggle',
@@ -68,38 +69,28 @@ from the \`@toggle\` handler instead of toggling directly).
       description: 'Event — emitted when the switch is flipped. The view owns the state change.',
       table: { category: 'events' },
     },
+    onToggle: { action: 'toggle', table: { disable: true } },
   },
 } satisfies Meta<typeof MpStatusToggle>
 
 export default meta
 type Story = StoryObj<typeof meta>
 
-export const Active: Story = {
+export const Default: Story = {
   args: { status: 'Active' },
 }
 
-export const Paused: Story = {
-  args: { status: 'Paused' },
-}
-
-/** Draft renders the switch disabled — drafts are activated from the builder, not the list. */
-export const Draft: Story = {
-  args: { status: 'Draft' },
-}
-
-/** The full state matrix side by side. */
-export const AllStates: Story = {
-  render: () => ({
-    components: { MpStatusToggle },
-    template: `
-      <div class="d-flex flex-column ga-3">
-        <MpStatusToggle status="Active" />
-        <MpStatusToggle status="Paused" />
-        <MpStatusToggle status="Draft" />
-      </div>
-    `,
-  }),
-  args: {} as any,
+/**
+ * The three statuses. Active is the switch on, Paused is the switch off, and Draft renders the
+ * switch disabled: drafts are activated from the builder, not the list.
+ */
+export const States: Story = {
+  render: grid({ MpStatusToggle }, [
+    { label: 'Active', args: { status: 'Active' } },
+    { label: 'Paused', args: { status: 'Paused' } },
+    { label: 'Draft — disabled', args: { status: 'Draft' } },
+  ]),
+  args: {} as never,
 }
 
 /**

@@ -935,8 +935,8 @@ tr:focus-within .action-btns {
    constant: inside the frame the math is exact (app bar 56 + margins 4+12 +
    borders 2 = 74 = 52 + the frame's 22px --mp-frame-offset). Outside the frame
    (?frame=off / classic shell) the offset resolves to 0px and the same 4px
-   slack the existing shells accept applies. Do not use --mp-layout-appbarHeight
-   (60px — does not match the rendered 56px bar). */
+   slack the existing shells accept applies. 52px is --mp-layout-appbarHeight (56px,
+   the height AppBar renders at) minus that 4px slack. */
 /* --mp-frame-height is exposed so a sticky panel inside the shell (the store
    Payments preview) can bound itself to the visible frame. */
 .mp-frame-fill {

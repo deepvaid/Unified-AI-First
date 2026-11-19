@@ -241,7 +241,7 @@ Generated 2026-09-07 by `scripts/figma/build-variable-plan.mjs` from `src/design
 | `font-size/48` | `var(--mp-fontSize-48)` | tokens.json: fontSize.48 | 48 |
 | `layout/sidebar` | `var(--mp-layout-sidebarWidth)` | tokens.json: layout.sidebarWidth | 248 |
 | `layout/rail` | `var(--mp-layout-sidebarRailWidth)` | tokens.json: layout.sidebarRailWidth | 72 |
-| `layout/appbar` | `var(--mp-layout-appbarHeight)` | tokens.json: layout.appbarHeight (token 60, rendered 56 — code ticket) | 56 |
+| `layout/appbar` | `var(--mp-layout-appbarHeight)` | tokens.json: layout.appbarHeight (56; was 60 until 2026-11-18, when the token was set to the rendered height) | 56 |
 | `layout/section-rail` | `var(--mp-layout-sectionRailWidth)` | tokens.json: layout.sectionRailWidth | 260 |
 | `layout/content-max` | `var(--mp-layout-contentMaxWidth)` | tokens.json: layout.contentMaxWidth | 1280 |
 | `layout/detail-sidebar` | `var(--mp-layout-detailSidebarWidth)` | tokens.json: layout.detailSidebarWidth | 340 |

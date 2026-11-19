@@ -3,10 +3,37 @@
  * build): one browser setup and one way of reading a part's computed CSS, so both sides are
  * measured identically.
  */
+import fs from 'node:fs'
+import http from 'node:http'
+import path from 'node:path'
 import { chromium } from 'playwright-core'
 
 export const THEMES = ['light', 'dark']
 export const VIEWPORT = { width: 1280, height: 800 }
+
+const MIME = {
+  '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json',
+  '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp',
+  '.woff': 'font/woff', '.woff2': 'font/woff2', '.wav': 'audio/wav', '.mp3': 'audio/mpeg',
+}
+
+/** Serves a built folder (dist-storybook) on localhost so a page can load it. */
+export async function serveStatic(dir, port) {
+  const root = path.resolve(dir)
+  const server = http.createServer((req, res) => {
+    let file
+    try { file = path.resolve(root, `.${decodeURIComponent(req.url.split('?')[0])}`) } catch { file = '' }
+    // Nothing outside the served folder, and a malformed URL is a 404, not a crash.
+    if (!file.startsWith(root + path.sep)) { res.writeHead(404); res.end(); return }
+    fs.readFile(file, (error, data) => {
+      if (error) { res.writeHead(404); res.end(); return }
+      res.writeHead(200, { 'content-type': MIME[path.extname(file)] ?? 'application/octet-stream' })
+      res.end(data)
+    })
+  })
+  await new Promise((resolve) => server.listen(port, '127.0.0.1', resolve))
+  return server
+}
 
 /** Uses the installed Chrome (playwright-core downloads no browser). QA_BROWSER_CHANNEL overrides it. */
 export async function launchPage() {

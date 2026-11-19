@@ -9,14 +9,15 @@
  *     subtle inset highlight on flat, subtle border token on outlined)
  */
 import type { Meta, StoryObj } from '@storybook/vue3'
+import { liquidskyDocs } from '@/stories/storyTemplate'
 
 const meta: Meta = {
   title: 'Foundations/Buttons',
-  tags: ['autodocs'],
+  tags: ['autodocs', 'liquidsky'],
   parameters: {
     docs: {
       description: {
-        component: `
+        component: liquidskyDocs('foundations-buttons') + `
 ### Overview
 Buttons in this app are **stock Vuetify \`v-btn\`s** — there is no \`MpButton\`. Their look
 comes entirely from the shared app defaults in \`src/plugins/maropostTheme.ts\` (VBtn entry)

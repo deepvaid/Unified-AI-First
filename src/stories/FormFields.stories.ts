@@ -25,18 +25,20 @@
  * label, no headroom).
  */
 import type { Meta, StoryObj } from '@storybook/vue3'
-import { nextTick, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpFormSection from '@/components/MpFormSection.vue'
 import MpFormField from '@/components/MpFormField.vue'
+import { liquidskyDocs } from '@/stories/storyTemplate'
+import { overlayDocs } from '@/stories/decorators'
 
 const meta: Meta = {
   title: 'Patterns/Form Fields',
-  tags: ['autodocs'],
+  tags: ['autodocs', 'liquidsky'],
   parameters: {
     docs: {
       description: {
-        component: `
+        component: liquidskyDocs('patterns-form-fields') + `
 ## Unified Field Baseline — static top label
 
 Every outlined form control in the app shares a single visual style — a **static
@@ -93,6 +95,9 @@ Flowbite floating-notch label, see DESIGN_AUDIT.md "Field rework"):
   field — Vuetify's counter doesn't self-invalidate, so always pair it with a max-length rule.
 - **Prefix/suffix** (\`prefix="$"\`, \`suffix="cm"\`) render muted — they're chrome, not content.
   There is deliberately no boxed-addon segment style.
+- **One date from a calendar:** a \`readonly\` field with \`append-inner-icon="calendar"\` that
+  opens a \`v-date-picker\` in a \`v-menu\` — see \`Date Field\`. There is no wrapper component.
+  A date range on a report is \`MpDateRangeSelect\`.
 
 ### Spacing between fields — not a field's job (Phase 6)
 A field sets **zero external margin**. The container owns the rhythm:
@@ -190,7 +195,7 @@ export const AllStates: Story = {
 export const LabelStates: Story = {
   name: 'Label States',
   parameters: { controls: { disable: true } },
-  render: () => ({
+  render: (_args, context) => ({
     setup() {
       const empty = ref('')
       const filled = ref('Scooter Village')
@@ -203,8 +208,13 @@ export const LabelStates: Story = {
       // the browser has already fired the autofocus event. Result: the
       // input is focused but renders as if it isn't. Calling the exposed
       // .focus() method after nextTick() sidesteps the race entirely.
+      //
+      // Canvas only: on the docs page a focus call would take focus from the reader and
+      // scroll the page down to this story.
       const focusedFieldRef = ref()
-      onMounted(() => nextTick(() => focusedFieldRef.value?.focus()))
+      onMounted(() => {
+        if (context.viewMode !== 'docs') nextTick(() => focusedFieldRef.value?.focus())
+      })
       return { empty, filled, emptyIcon, focusedFieldRef }
     },
     template: `
@@ -213,8 +223,8 @@ export const LabelStates: Story = {
         <p class="text-caption text-medium-emphasis mb-4">
           The label is 13px/500 --text-secondary in every state except disabled — focus and
           error are carried by the 2px border and the message, never by recoloring the label.
-          The focused specimen is pinned open so the calm label and no-glow border are visible
-          without clicking anything.
+          In the canvas the focused specimen takes focus on load, so the calm label and no-glow
+          border are visible without clicking anything; on the docs page, click it.
         </p>
         <v-row>
           <v-col cols="12" sm="6" md="4">
@@ -226,7 +236,7 @@ export const LabelStates: Story = {
             <v-text-field v-model="filled" label="Account name" hide-details />
           </v-col>
           <v-col cols="12" sm="6" md="4">
-            <div class="text-caption text-medium-emphasis mb-1">Focused (autofocus) — border 2px primary, label calm</div>
+            <div class="text-caption text-medium-emphasis mb-1">Focused — border 2px primary, label calm</div>
             <v-text-field ref="focusedFieldRef" v-model="emptyIcon" label="Email address" prepend-inner-icon="mail" hide-details />
           </v-col>
           <v-col cols="12" sm="6" md="4">
@@ -288,7 +298,7 @@ export const Sizes: Story = {
           </v-col>
           <v-col cols="12">
             <div class="text-caption text-medium-emphasis mb-1">Unlabelled chrome field beside a button — both boxes 40px, tops flush</div>
-            <div class="d-flex ga-3 align-start" style="max-width: 480px">
+            <div class="d-flex ga-3 align-start" style="max-width: var(--mp-layout-drawerWidth)">
               <v-text-field placeholder="Search records…" aria-label="Search records" prepend-inner-icon="search" hide-details />
               <v-btn color="primary" variant="flat" class="text-none">Search</v-btn>
             </div>
@@ -582,12 +592,16 @@ const statusItemsWithDisabled = [
   { title: 'Archived', value: 'archived', disabled: true },
 ]
 
+// Six of the stories below open a menu on load (the five "Select —" stories and "Autocomplete —
+// No Matches"). Each carries `overlayDocs()`, so on the docs page it renders in its own frame and
+// the open menus cannot stack on one page.
+
 /** Menu pre-opened with "Active" already selected — the active row shows the UX-008 trailing
  * checkmark (global.scss `.v-overlay .v-list-item--active[aria-selected='true']`), composed with
  * the existing tint rather than replacing it, per reference-research §1. */
 export const SelectedWithCheckmark: Story = {
   name: 'Select — Selected (Checkmark)',
-  parameters: { controls: { disable: true } },
+  parameters: { controls: { disable: true }, ...overlayDocs('380px') },
   render: () => ({
     setup() {
       const status = ref('Active')
@@ -617,7 +631,7 @@ export const SelectedWithCheckmark: Story = {
  * headers are visually recessed and non-interactive, never a clickable row. */
 export const GroupedOptions: Story = {
   name: 'Select — Grouped Options',
-  parameters: { controls: { disable: true } },
+  parameters: { controls: { disable: true }, ...overlayDocs('480px') },
   render: () => ({
     setup() {
       const assignee = ref('Jordan Lee')
@@ -647,7 +661,7 @@ export const GroupedOptions: Story = {
  * field's selected value and in each open-menu row. */
 export const LongLabels: Story = {
   name: 'Select — Long Labels',
-  parameters: { controls: { disable: true } },
+  parameters: { controls: { disable: true }, ...overlayDocs('380px') },
   render: () => ({
     setup() {
       const closedValue = ref(longLabelItems[0])
@@ -688,7 +702,7 @@ export const LongLabels: Story = {
  * internally instead of growing to fit every row. */
 export const ManyOptionsScroll: Story = {
   name: 'Select — Many Options (Scroll)',
-  parameters: { controls: { disable: true } },
+  parameters: { controls: { disable: true }, ...overlayDocs('520px') },
   render: () => ({
     setup() {
       const country = ref('')
@@ -719,7 +733,7 @@ export const ManyOptionsScroll: Story = {
  * `item-props` so each item object's own `disabled` flag reaches the underlying `v-list-item`. */
 export const DisabledItem: Story = {
   name: 'Select — Disabled Item',
-  parameters: { controls: { disable: true } },
+  parameters: { controls: { disable: true }, ...overlayDocs('340px') },
   render: () => ({
     setup() {
       const status = ref('active')
@@ -781,7 +795,7 @@ export const LoadingState: Story = {
  * renders in place of the list instead of an empty menu. */
 export const EmptyState: Story = {
   name: 'Autocomplete — No Matches',
-  parameters: { controls: { disable: true } },
+  parameters: { controls: { disable: true }, ...overlayDocs('320px') },
   render: () => ({
     setup() {
       const country = ref(null)
@@ -1003,4 +1017,68 @@ export const PrefixSuffix: Story = {
       </div>
     `,
   }),
+}
+
+const DATE_LABEL = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+
+/** The single-date field, shared by `DateField` (closed) and `DateFieldOpen` (calendar open). */
+function dateFieldStory(openOnLoad: boolean): Story['render'] {
+  return () => ({
+    setup() {
+      // A fixed date, so the story looks the same on any day it is opened.
+      const date = ref(new Date(2026, 8, 14))
+      const menu = ref(openOnLoad)
+      const label = computed(() => DATE_LABEL.format(date.value))
+      // Picking a day closes the calendar; changing the month or year does not.
+      function pick(value: Date) {
+        date.value = value
+        menu.value = false
+      }
+      return { date, menu, label, pick }
+    },
+    template: `
+      <div>
+        <h3 class="text-subtitle-1 font-weight-bold mb-4">Date field — one date from a calendar</h3>
+        <v-row>
+          <v-col cols="12" sm="6" md="4">
+            <v-menu v-model="menu" :close-on-content-click="false">
+              <template #activator="{ props: menuProps }">
+                <v-text-field
+                  v-bind="menuProps"
+                  :model-value="label"
+                  label="Send date"
+                  readonly
+                  append-inner-icon="calendar"
+                />
+              </template>
+              <v-date-picker :model-value="date" show-adjacent-months @update:model-value="pick" />
+            </v-menu>
+          </v-col>
+        </v-row>
+      </div>
+    `,
+  })
+}
+
+/**
+ * One date, picked from a calendar. This is the app's own composition (Analytics › eRFM report):
+ * a `readonly` text field — static top label, `append-inner-icon="calendar"` — is the activator
+ * of a `v-menu`, and the menu holds a `v-date-picker`. The field shows the formatted date
+ * ("Sep 14, 2026"); the model stays a `Date`. The calendar panel takes its corner, border and
+ * shadow from the shared menu rule (`component.menu.*`), like every other menu.
+ *
+ * There is no wrapper component. For a date range on a report, use `MpDateRangeSelect`.
+ */
+export const DateField: Story = {
+  name: 'Date Field',
+  parameters: { controls: { disable: true } },
+  render: dateFieldStory(false),
+}
+
+/** The same field with its calendar open on load: month and year controls, the weekday row, the
+ * month grid with the selected day filled, and the neighbouring months' days shown muted. */
+export const DateFieldOpen: Story = {
+  name: 'Date Field — Calendar Open',
+  parameters: { controls: { disable: true }, ...overlayDocs('680px') },
+  render: dateFieldStory(true),
 }

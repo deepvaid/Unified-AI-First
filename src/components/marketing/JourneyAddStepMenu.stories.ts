@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import JourneyAddStepMenu from './JourneyAddStepMenu.vue'
 import { nodeCatalog } from '@/stores/journeyFlowData'
+import { overlayDocs } from '@/stories/decorators'
 
 const meta = {
   title: 'Product/Marketing/Journeys/JourneyAddStepMenu',
@@ -75,13 +76,13 @@ button/icon, and \`pick\` fires with the chosen \`CatalogItem\` when a row is cl
     components: { JourneyAddStepMenu },
     setup: () => ({ args }),
     template: `
-      <section style="min-height:480px;background:rgb(var(--v-theme-background));padding:32px;display:flex;justify-content:center;">
-        <JourneyAddStepMenu :items="args.items" @pick="() => {}">
+      <div class="d-flex justify-center">
+        <JourneyAddStepMenu :items="args.items">
           <template #default="{ props: menu }">
             <v-btn v-bind="menu" icon="plus" size="small" variant="tonal" color="primary" aria-label="Add step"></v-btn>
           </template>
         </JourneyAddStepMenu>
-      </section>
+      </div>
     `,
   }),
 } satisfies Meta<typeof JourneyAddStepMenu>
@@ -98,6 +99,7 @@ export const Default: Story = {}
  * Action, Filter, Delay, End — each with its colored per-type icon avatar (UX-002).
  */
 export const Open: Story = {
+  parameters: overlayDocs(),
   play: async ({ canvasElement }) => {
     await new Promise(resolve => setTimeout(resolve, 300))
     const trigger = canvasElement.querySelector<HTMLElement>('[aria-label="Add step"]')
@@ -111,6 +113,7 @@ export const Open: Story = {
  * Delay, and End groups still render cleanly past the fold.
  */
 export const LongCatalogScrolled: Story = {
+  parameters: overlayDocs(),
   play: async ({ canvasElement }) => {
     await new Promise(resolve => setTimeout(resolve, 300))
     const trigger = canvasElement.querySelector<HTMLElement>('[aria-label="Add step"]')

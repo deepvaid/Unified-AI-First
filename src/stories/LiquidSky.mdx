@@ -1,0 +1,124 @@
+import { Meta, AnchorMdx } from '@storybook/addon-docs/blocks'
+import { QA_COMPONENTS } from './qa/liquidskyMap'
+
+<Meta title="LiquidSky" />
+
+export const STATUS = {
+  matched: { label: 'Matched', hint: 'The design is here. Build to it.' },
+  partial: { label: 'Partial', hint: 'Part of it is designed. The note says which part.' },
+  'no-reference': { label: 'Not designed yet', hint: 'Nothing here to build to. Needs a design decision first.' },
+}
+
+export const cell = { padding: 'var(--mp-space-8) var(--mp-space-12)', borderBottom: '1px solid var(--border-subtle)', textAlign: 'left', verticalAlign: 'top' }
+export const head = { ...cell, color: 'var(--text-muted)', fontWeight: 'var(--mp-fontWeight-medium)' }
+export const muted = { color: 'var(--text-muted)', fontSize: 'var(--mp-fontSize-13)', marginTop: 'var(--mp-space-4)' }
+
+export const Names = ({ status }) => (
+  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--mp-fontSize-14)' }}>
+    <thead>
+      <tr>
+        <th style={head}>LiquidSky</th>
+        <th style={head}>Design in Marobase</th>
+        <th style={head}>Open</th>
+      </tr>
+    </thead>
+    <tbody>
+      {QA_COMPONENTS.filter((c) => c.status === status).map((c) => (
+        <tr key={c.key}>
+          <td style={{ ...cell, width: '30%' }}>
+            {c.liquidsky.length
+              ? c.liquidsky.map((name) => <div key={name}><code>{name}</code></div>)
+              : <span style={{ color: 'var(--text-muted)' }}>No LiquidSky component</span>}
+          </td>
+          <td style={cell}>
+            {c.reference}
+            {c.note && <div style={muted}>{c.note}</div>}
+            {c.notRequired && c.notRequired.map((line) => (
+              <div key={line} style={muted}><strong>Not required in this phase:</strong> {line}</div>
+            ))}
+          </td>
+          <td style={{ ...cell, width: '24%' }}>
+            {c.stories.length
+              ? c.stories.map((s) => <div key={s.id}><AnchorMdx href={`?path=/story/${s.id}`}>{s.label}</AnchorMdx></div>)
+              : <span style={{ color: 'var(--text-muted)' }}>—</span>}
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+)
+
+export const NotRequired = () => (
+  <ul>
+    {QA_COMPONENTS.filter((c) => c.notRequired).flatMap((c) => c.notRequired.map((line) => (
+      <li key={c.key + line}>
+        {c.liquidsky.map((name, index) => <span key={name}>{index > 0 && ', '}<code>{name}</code></span>)}: {line}
+      </li>
+    )))}
+  </ul>
+)
+
+export const count = (status) => QA_COMPONENTS.filter((c) => c.status === status).reduce((n, c) => n + c.liquidsky.length, 0)
+
+# For LiquidSky developers
+
+This page is for anyone building `@maropost-ui/liquidsky-ui` to the Marobase design. LiquidSky names
+its components `App*` (used in many places), `The*` (one per app) and `MpV*` (Vuetify wrappers).
+Marobase names everything `Mp*`. The tables below give each LiquidSky name its page here.
+
+**{count('matched')}** LiquidSky names have a full design here, **{count('partial')}** have part of one,
+and **{count('no-reference')}** have none yet.
+
+## How to find a design
+
+1. **Look up your component** in the tables below, then open the linked story.
+2. **Every docs page that is a LiquidSky reference** starts with an *In LiquidSky* line naming your
+   components. To see only those pages, open the sidebar's tag filter and pick `liquidsky`.
+3. **Show code** under a story gives the Vuetify markup and props that produce what you see.
+4. **Values come from tokens, not from the screenshot.** Every size, gap, radius and colour is a token
+   in `src/design-tokens/tokens.json` (the file LiquidSky already copies). *Foundations* shows the
+   scales, and *Foundations › QA Reference* names the token behind each measured value.
+5. **Themes:** the toolbar's *Theme* switch is Light / Dark. LiquidSky's `marobaseLight` is our Light
+   and `marobaseDark` is our Dark. Marobase has no Classic theme.
+
+## Names that work differently
+
+- **`AppBar` and `AppSidebar` here are one-per-app parts.** In LiquidSky they would be `The*`: AppBar is
+  `TheHeader`, AppSidebar is `TheUnifiedNavigation`. They sit under *Patterns › App Shell*.
+- **No `MpV*` wrappers here.** Marobase styles plain Vuetify components through the theme defaults and
+  global styles. Where your `MpV*` wraps a Vuetify component, its design is the story for that
+  component (for example `MpVBtn` is *Foundations › Buttons*).
+- **Icons:** Marobase uses Lucide names (`settings`, `chevron-down`); LiquidSky uses MDI. A short list
+  of MDI names and the Lucide icon each one maps to is under *Foundations › Icons › MDI aliases*. There
+  is no full map yet.
+
+## Matched
+
+<p style={muted}>{STATUS.matched.hint}</p>
+
+<Names status="matched" />
+
+## Partial
+
+<p style={muted}>{STATUS.partial.hint}</p>
+
+<Names status="partial" />
+
+## Not designed yet
+
+<p style={muted}>{STATUS['no-reference'].hint} Ask the design team before building these to the Marobase look.</p>
+
+<Names status="no-reference" />
+
+## Not required in this phase
+
+Some parts of a design are outside what LiquidSky builds in this phase. The tables mark them
+*Not required in this phase* and say what is fine in their place. Design review does not raise them.
+
+<NotRequired />
+
+## Design review
+
+This list is the same one design review uses. *Foundations › QA Reference* shows the measured values
+for each matched part, and `docs/qa/` describes the review process. To change a mapping, edit
+`src/stories/qa/liquidskyMap.ts`; this page and the *In LiquidSky* lines update with it.
