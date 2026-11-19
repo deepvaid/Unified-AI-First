@@ -51,6 +51,16 @@ const stem = (word: string): string => (word.length > 3 && word.endsWith('s') ? 
 
 const wordsOf = (text: string): string[] => (text.toLowerCase().match(/[\p{L}\p{N}+]+/gu) ?? []).map(stem)
 
+/** Words a shopper types around what they mean: "something for sleep" is a search for sleep. */
+const FILLER = new Set(['a', 'an', 'and', 'the', 'for', 'to', 'of', 'with', 'in', 'on', 'my', 'me', 'i', 'am', 'is', 'it', 'that', 'some', 'something', 'anything', 'need', 'want', 'help', 'can', 'you', 'do', 'have', 'good', 'best', 'please', 'get'])
+
+/** The words of a query that say what is wanted. A query of filler words alone keeps them all. */
+function meaningWords(query: string): string[] {
+  const words = wordsOf(query)
+  const meant = words.filter((word) => !FILLER.has(word))
+  return meant.length ? meant : words
+}
+
 /** Every word of `phrase` begins a word of `text`: "sleep" finds "sleeping", "foc" finds "focus". */
 function matches(phrase: string[], text: string[]): boolean {
   return phrase.length > 0 && phrase.every((word) => text.some((candidate) => candidate.startsWith(word)))
@@ -108,14 +118,16 @@ export function searchStore<T extends SearchableProduct>(query: string, all: T[]
   const scored = products
     .map((product, index) => {
       // What the shopper typed outweighs what a synonym added.
-      const own = fit(wordsOf(q), product)
+      const own = fit(meaningWords(q), product)
       const widened = Math.max(0, ...alsoSearched.map((term) => fit(wordsOf(term), product)))
       return { product, index, score: own + widened * 0.6 }
     })
     .filter((row) => row.score > 0)
     .sort((a, b) => b.score - a.score || a.index - b.index)
 
-  const pin = rules.pins.find((p) => clean(p.query) === q)
+  // A pin is for what the query means: "something for sleep" gets the pins of "sleep".
+  const meant = meaningWords(q).join(' ')
+  const pin = rules.pins.find((p) => meaningWords(p.query).join(' ') === meant)
   const pinned = (pin?.pinnedProductIds ?? [])
     .map((id) => products.find((p) => String(p.id) === id))
     .filter((p): p is T => !!p)

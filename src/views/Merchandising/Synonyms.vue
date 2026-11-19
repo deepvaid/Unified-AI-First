@@ -183,7 +183,7 @@ function doDelete() {
       :subtitle="`Boost recall by mapping equivalent search terms for ${store.activeStore.domain}`"
     >
       <template #actions>
-        <v-btn variant="outlined" class="text-none" prepend-icon="upload" @click="toast.info('Upload — coming soon')">
+        <v-btn v-if="!store.ownData" variant="outlined" class="text-none" prepend-icon="upload" @click="toast.info('Upload — coming soon')">
           Upload
         </v-btn>
         <v-btn

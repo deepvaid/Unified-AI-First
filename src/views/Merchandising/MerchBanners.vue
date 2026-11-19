@@ -140,13 +140,13 @@ function doDelete() {
         <v-text-field
           v-model="form.title"
           label="Title *"
-          placeholder="e.g. Free shipping over $75"
+          :placeholder="store.ownData ? 'e.g. Free shipping on every order' : 'e.g. Free shipping over $75'"
         />
         <v-text-field
           v-model="form.imageLabel"
           label="Image label *"
           placeholder="Describes the banner artwork"
-          hint="Stands in for the artwork upload in this prototype"
+          :hint="store.ownData ? 'A short name for the artwork, shown in this list' : 'Stands in for the artwork upload in this prototype'"
           persistent-hint
         />
         <v-text-field

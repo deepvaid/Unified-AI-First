@@ -552,4 +552,16 @@ router.afterEach((to) => {
   setPageTitle(typeof to.name === 'string' ? titleFromRouteName(to.name) : undefined)
 })
 
+// A page left open while a new version went live asks for a screen whose file no
+// longer exists, and the click does nothing. Load the wanted page afresh instead,
+// which brings the new version with it. Once per address, so a screen that is
+// really broken cannot reload for ever.
+router.onError((error, to) => {
+  if (!/dynamically imported module|Importing a module script failed/i.test(String((error as Error)?.message))) return
+  const key = 'mp.reloadedFor'
+  if (sessionStorage.getItem(key) === to.fullPath) return
+  sessionStorage.setItem(key, to.fullPath)
+  window.location.assign(to.fullPath)
+})
+
 export default router

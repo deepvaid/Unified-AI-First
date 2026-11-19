@@ -1391,6 +1391,19 @@ export const useCommerceStore = defineStore('commerce', () => {
     maropayTimelineIds.delete(orderId)
   }
 
+  /**
+   * Where a store's own product is stocked, by one of its SKUs: an order for it
+   * ships from there. Products of the shared catalogue have no answer, and their
+   * orders keep a location picked by order number, as before.
+   */
+  function stockedAt(sku: string | undefined): string | undefined {
+    const variant = products.value
+      .filter((p) => p.channelIds?.length)
+      .flatMap((p) => p.detail?.variantsList ?? [])
+      .find((v) => v.sku === sku)
+    return Object.keys(variant?.stock ?? {})[0]
+  }
+
   /** Idempotent by id, so Maropay can rebuild its checkout orders after a reload. */
   function createCheckoutOrder(input: CheckoutOrderInput): Order {
     const existing = getOrderById(input.id)
@@ -1435,7 +1448,7 @@ export const useCommerceStore = defineStore('commerce', () => {
       shippingAddress: address,
       billingAddress: { ...address },
       fulfillmentStage: 'Picked',
-      fulfilledFromLocation: WAREHOUSE_LOCATIONS[input.id % WAREHOUSE_LOCATIONS.length]!,
+      fulfilledFromLocation: stockedAt(input.lineItems[0]?.sku) ?? WAREHOUSE_LOCATIONS[input.id % WAREHOUSE_LOCATIONS.length]!,
       timeline: [
         ...input.timeline,
         ...(discounted ? [{ text: `Discount code ${discounted.coupon} applied: ${discounted.discountPct}% off`, date: input.date }] : []),

@@ -47,7 +47,7 @@ function go(name: string) {
 
     <div class="d-flex align-center ga-2">
       <MpStatusChip :status="MERCHANDISING_STATUS_LABELS[merchandisingStatus(channel)]" type="general" size="md" show-icon />
-      <span class="text-body-2 text-medium-emphasis">Channel-scoped workspace</span>
+      <span class="text-body-2 text-medium-emphasis">{{ channel.webStore?.demo ? 'Search and recommendations are live on this store' : 'Channel-scoped workspace' }}</span>
     </div>
 
     <v-row dense>

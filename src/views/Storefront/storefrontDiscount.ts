@@ -66,5 +66,23 @@ export function useStorefrontDiscount(lines: () => Line[], total: () => Money) {
     problem.value = null
   }
 
-  return { offered, applied, discount, payable, typed, problem, apply, remove }
+  /** "15% off", or "20% off Sleep" when the code covers only some collections. */
+  const label = computed(() => {
+    if (!discount.value) return ''
+    const targets = findByCode(campaigns.campaigns, channelId.value, applied.value)?.targets ?? []
+    return `${discount.value.discountPct}% off${targets.length ? ` ${targets.join(' and ')}` : ''}`
+  })
+
+  /**
+   * What to say under the field: why the code just typed can't be used, or that the
+   * code in force takes nothing off any more (it ended, or what it covered left the cart).
+   */
+  const notice = computed(() => {
+    if (problem.value || !applied.value || discount.value) return problem.value
+    return codeProblem(campaigns.campaigns, channelId.value, applied.value)
+      ? `Code ${applied.value} can no longer be used.`
+      : `Code ${applied.value} doesn’t apply to anything in your cart now.`
+  })
+
+  return { offered, applied, discount, payable, typed, problem, label, notice, apply, remove }
 }

@@ -530,7 +530,7 @@ const storePaymentsHref = computed(() => router.resolve({ name: MAROPAY_STORE_RO
             <div><dt>Subtotal · {{ itemCount }} {{ itemCount === 1 ? 'item' : 'items' }}</dt><dd>{{ formatMoney(subtotal) }}</dd></div>
             <div><dt>Shipping</dt><dd>Free</dd></div>
             <div v-if="code.discount.value" class="sf-co__discount">
-              <dt>Discount · {{ code.discount.value.code }}, {{ code.discount.value.discountPct }}% off</dt><dd>−{{ formatMoney(code.discount.value.amount) }}</dd>
+              <dt>Discount · {{ code.discount.value.code }}, {{ code.label.value }}</dt><dd>−{{ formatMoney(code.discount.value.amount) }}</dd>
             </div>
             <div class="sf-co__grand"><dt>Total</dt><dd><span v-if="!storefront.ownMoneyFormat.value" class="sf-muted sf-co__currency">{{ currency }}</span> {{ formatMoney(total) }}</dd></div>
             <div v-for="charge in recurring" :key="charge.interval" class="sf-co__recurring">
@@ -543,7 +543,7 @@ const storePaymentsHref = computed(() => router.resolve({ name: MAROPAY_STORE_RO
             id-prefix="sf-co"
             class="sf-co__code"
             :applied="code.discount.value ? code.applied.value : ''"
-            :problem="code.problem.value"
+            :problem="code.notice.value"
             @apply="code.apply"
             @remove="code.remove"
           />

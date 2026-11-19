@@ -21,6 +21,19 @@ test('a query finds the products that are about every word of it, the best fit f
   assert.deepEqual(names(searchStore('hydrate', products, NO_SEARCH_RULES).products), ['Vitaheal Electrolytes'])
 })
 
+test('the words around what a shopper means are ignored, so a sentence finds what its subject finds', () => {
+  const plain = searchStore('sleep', products, rules)
+  for (const sentence of ['something for sleep', 'Help me sleep', 'I need the best sleep', 'sleeps']) {
+    const found = searchStore(sentence, products, rules)
+    assert.deepEqual(names(found.products), names(plain.products), sentence)
+    assert.deepEqual(found.pinnedIds, plain.pinnedIds, `${sentence} keeps the pin`)
+  }
+  assert.equal(searchStore('I am tired', products, rules).products[0]!.name, 'Clear Focus')
+  // A query of nothing but such words is still searched as typed.
+  assert.deepEqual(searchStore('the', products, NO_SEARCH_RULES).query, 'the')
+  assert.ok(searchStore('for', products, NO_SEARCH_RULES).products.length > 0)
+})
+
 test('nothing is found for an empty query or for words no product has', () => {
   assert.deepEqual(searchStore('   ', products, rules).products, [])
   const none = searchStore('blorp', products, rules)

@@ -1,16 +1,20 @@
 <script setup lang="ts">
 import StorefrontAnchor from './StorefrontAnchor.vue'
+import { useDemoStore } from './storefrontContext'
 
 // The storefront's 404 page, as the store renders it. Also where links to pages
 // that don't exist on the real store land ("/service", "/cart", "/products").
+// The wording is the real store's theme, word for word; a store shown to prospects
+// says the same in plain sentence case.
+const demo = useDemoStore()
 </script>
 
 <template>
   <div class="sf-404">
     <p class="sf-404__code" aria-hidden="true">404</p>
-    <h1 class="sf-404__title">Sorry, This Page Not Found!</h1>
-    <p>The page you are trying to access doesn't exist or has been moved.</p>
-    <StorefrontAnchor href="/" class="sf-404__home">GO TO HOMEPAGE</StorefrontAnchor>
+    <h1 class="sf-404__title">{{ demo ? 'We can’t find that page' : 'Sorry, This Page Not Found!' }}</h1>
+    <p>{{ demo ? 'It may have moved, or the link may be out of date.' : 'The page you are trying to access doesn\'t exist or has been moved.' }}</p>
+    <StorefrontAnchor href="/" class="sf-404__home">{{ demo ? 'Back to the home page' : 'GO TO HOMEPAGE' }}</StorefrontAnchor>
   </div>
 </template>
 

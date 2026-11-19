@@ -121,6 +121,8 @@ function search(): void {
   const q = query.value.trim()
   if (!q) return
   void router.push(link(`/search?q=${encodeURIComponent(q)}`))
+  // The results page has its own box with the query in it: the header's starts empty again.
+  if (searchable.value) query.value = ''
 }
 
 // ── Newsletter ──────────────────────────────────────────────────────────
@@ -173,7 +175,7 @@ function subscribe(): void {
         </StorefrontAnchor>
 
         <div class="sf-tools">
-          <form v-if="chrome.headerTools.includes('search') || searchable" class="sf-search" role="search" @submit.prevent="search">
+          <form v-if="chrome.headerTools.includes('search') || searchable" class="sf-search" :class="{ 'sf-search--ring': searchable }" role="search" @submit.prevent="search">
             <input v-model="query" type="search" :placeholder="chrome.searchPlaceholder" :aria-label="chrome.searchPlaceholder">
             <button type="submit" class="sf-search__go" aria-label="Search">
               <v-icon size="16">search</v-icon>
@@ -406,6 +408,12 @@ function subscribe(): void {
   border: 1px solid var(--sf-search-border);
   border-radius: 999px;
   margin-right: 8px;
+}
+
+/* The input has no outline of its own, so the box shows where the keyboard is. */
+.sf-search--ring:focus-within {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
 }
 
 .sf-search input {

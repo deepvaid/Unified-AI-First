@@ -113,7 +113,7 @@ function checkout(express?: string): void {
           <div><dt>Subtotal</dt><dd>{{ formatMoney(subtotal) }}</dd></div>
           <div><dt>Shipping</dt><dd>Free</dd></div>
           <div v-if="code.discount.value" class="sf-cart__discount">
-            <dt>Discount · {{ code.discount.value.discountPct }}% off</dt><dd>−{{ formatMoney(code.discount.value.amount) }}</dd>
+            <dt>Discount · {{ code.label.value }}</dt><dd>−{{ formatMoney(code.discount.value.amount) }}</dd>
           </div>
           <div class="sf-cart__grand"><dt>Total</dt><dd>{{ formatMoney(total) }}</dd></div>
           <div v-for="charge in recurring" :key="charge.interval" class="sf-cart__recurring">
@@ -125,7 +125,7 @@ function checkout(express?: string): void {
           v-model:typed="code.typed.value"
           id-prefix="sf-cart"
           :applied="code.discount.value ? code.applied.value : ''"
-          :problem="code.problem.value"
+          :problem="code.notice.value"
           @apply="code.apply"
           @remove="code.remove"
         />

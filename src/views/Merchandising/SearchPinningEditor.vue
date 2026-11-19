@@ -8,6 +8,9 @@ import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
 import MerchProductCard from '@/components/merchandising/MerchProductCard.vue'
 import { useToast } from '@/composables/useToast'
+import { useCommerceStore } from '@/stores/useCommerce'
+import { catalogFor } from '@/storefront/catalog'
+import { searchStore } from '@/storefront/search'
 import {
   useMerchandisingStore,
   MERCH_SORT_OPTIONS,
@@ -56,16 +59,23 @@ const pinnedProducts = computed(() =>
 const queryMatches = computed(() => {
   const q = query.value.trim().toLowerCase()
   if (!q) return store.merchProductList
-  const hits = store.merchProductList.filter((p) => p.title.toLowerCase().includes(q))
+  // A store with its own products shows what its shoppers get for the query, before any pin.
+  const hits = store.ownData
+    ? searchStore(q, catalogFor(useCommerceStore().products, store.activeChannelId), { ...store.searchRulesFor(store.activeChannelId), pins: [] })
+        .products.flatMap((found) => store.merchProductList.find((p) => p.id === String(found.id)) ?? [])
+    : store.merchProductList.filter((p) => p.title.toLowerCase().includes(q))
   return hits.length > 0 ? hits : store.merchProductList
 })
 
 const unpinnedProducts = computed(() => {
   const f = resultsFilter.value.trim().toLowerCase()
-  const rows = queryMatches.value.filter((p) =>
+  // For such a store the filter box reaches every product, so one the query does not find can still be pinned.
+  const pool = f && store.ownData ? store.merchProductList : queryMatches.value
+  const rows = pool.filter((p) =>
     !pinnedIds.value.includes(p.id) && (!f || p.title.toLowerCase().includes(f)),
   )
-  return sortMerchProducts(rows, sortKey.value)
+  // Its results keep the order shoppers see until the merchant picks another sort.
+  return store.ownData && !f && sortKey.value === 'popularity' ? rows : sortMerchProducts(rows, sortKey.value)
 })
 
 /* ── Pin / unpin / select ─────────────────────────────────────── */
@@ -196,7 +206,7 @@ function performDelete() {
       <v-spacer />
       <v-text-field
         v-model="resultsFilter"
-        placeholder="Filter results…"
+        :placeholder="store.ownData ? 'Find any product to pin…' : 'Filter results…'"
         aria-label="Filter unpinned results"
         prepend-inner-icon="list-filter"
         hide-details
