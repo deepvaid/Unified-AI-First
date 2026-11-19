@@ -20,5 +20,8 @@ export const formatMoneyParts = (value: number, currency = 'USD', locale = 'en-U
     else if (part.type !== 'literal' && part.type !== 'decimal') integer += part.value
   }
 
+  // A currency written as its code ("SEK") keeps the space before the amount: "SEK 585.90", not "SEK585.90".
+  if (/[A-Za-z]$/.test(symbol)) symbol += '\u00a0'
+
   return { integer, cents, symbol, formatted: formatter.format(value) }
 }

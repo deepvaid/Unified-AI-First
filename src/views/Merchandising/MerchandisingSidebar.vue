@@ -12,7 +12,7 @@ const route = useRoute()
 const router = useRouter()
 const salesChannels = useSalesChannelsStore()
 
-const groups = computed(() => merchandisingMenu(props.accountId, props.channel.id))
+const groups = computed(() => merchandisingMenu(props.accountId, props.channel.id, props.channel.webStore?.demo === true))
 const switcherOptions = computed<MpSectionRailSwitchOption[]>(() =>
   merchandisingChannels(salesChannels.channels, props.accountId).map((channel) => ({
     id: channel.id,

@@ -7,7 +7,10 @@ import { useCommerceStore, PRODUCT_TYPES, type Product, type ProductView } from 
 import { useProductExtrasStore } from '@/stores/useProductExtras'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import { downloadCsv } from '@/utils/exportCsv'
+import { parseDecimal } from '@/maropay/money'
+import { formatStorePrice } from '@/storefront/price'
 import { useToast } from '@/composables/useToast'
+import { useProductStores } from '@/composables/useProductStores'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpFilterTabs from '@/components/MpFilterTabs.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
@@ -197,7 +200,12 @@ const headers = [
 ]
 const { visibleHeaders } = useResponsiveTableHeaders(headers)
 
-const money = (value: string) => `$${(parseFloat(value) || 0).toFixed(2)}`
+/** A product of a store with its own currency reads in that currency ("399 kr"); the shared catalogue stays in dollars. */
+function money(item: Product): string {
+  const store = item.channelIds?.length ? salesChannels.getChannel(accountId.value, item.channelIds[0]!)?.webStore : undefined
+  const amount = store?.currency ? parseDecimal(item.price, store.currency) : null
+  return amount ? formatStorePrice(amount, store?.locale) : `$${(parseFloat(item.price) || 0).toFixed(2)}`
+}
 
 // ── Navigation ──────────────────────────────────────────────────────
 function openNewProduct() { router.push({ name: 'ProductNew', params: { accountId: accountId.value } }) }
@@ -349,12 +357,25 @@ const flashMessages: Record<string, string> = {
   'import-complete': 'Import complete',
 }
 
+// A product of a store with its own catalogue links to its page on that storefront.
+const productStores = useProductStores(accountId)
+
 onMounted(() => {
   if (catalog.ctaVisible) catalog.ctaViewed('index')
   const flash = route.query.flash
   const key = Array.isArray(flash) ? flash[0] : flash
   if (key && flashMessages[key]) {
-    toast.success(flashMessages[key]!)
+    // The wizards name the product they saved, so the message can say where shoppers find it.
+    const saved = store.products.find((p) => p.id === Number(route.query.product))
+    const link = saved ? productStores.storefrontLink(saved) : null
+    if (link) {
+      toast.success(`${flashMessages[key]!}. Shoppers can see it in ${link.storeName}.`, {
+        action: { label: 'View in store', onClick: () => window.open(link.href, '_blank', 'noopener') },
+        durationMs: 10000,
+      })
+    } else {
+      toast.success(flashMessages[key]!)
+    }
     router.replace({ query: {} })
   }
 })
@@ -515,7 +536,8 @@ onMounted(() => {
         <template #item.name="{ item }">
           <div class="d-flex align-center ga-3 py-2">
             <v-avatar :size="36" rounded="lg" class="border flex-shrink-0">
-              <div class="prod-thumb"><v-icon size="16">image</v-icon></div>
+              <v-img v-if="item.imageUrls?.length" :src="item.imageUrls[0]" alt="" cover />
+              <div v-else class="prod-thumb"><v-icon size="16">image</v-icon></div>
             </v-avatar>
             <div>
               <RouterLink
@@ -536,7 +558,7 @@ onMounted(() => {
           <MpStatusChip :status="item.status" type="general" size="sm" />
         </template>
         <template #item.price="{ item }">
-          <span class="text-body-2">{{ money(item.price) }}</span>
+          <span class="text-body-2">{{ money(item) }}</span>
         </template>
         <template #item.collections="{ item }">
           <div v-if="item.collections.length" class="d-flex flex-wrap ga-1">
@@ -555,6 +577,14 @@ onMounted(() => {
         <template #item.actions="{ item }">
           <MpRowActionsMenu ariaLabel="Product actions" :item-label="item.name">
             <MpMenuItem icon="pencil" title="Edit" @click="openEdit(item)" />
+            <MpMenuItem
+              v-if="productStores.storefrontLink(item)"
+              icon="external-link"
+              title="View in store"
+              :href="productStores.storefrontLink(item)!.href"
+              target="_blank"
+              rel="noopener"
+            />
             <v-divider class="my-1" />
             <MpMenuItem icon="trash-2" title="Delete" danger @click="askDelete(item)" />
           </MpRowActionsMenu>

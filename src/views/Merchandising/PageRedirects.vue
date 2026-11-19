@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useRoute } from 'vue-router'
+import { redirectPath } from '@/storefront/search'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
@@ -12,6 +14,14 @@ import { useMerchandisingStore, type PageRedirect } from '@/stores/useMerchandis
 
 const store = useMerchandisingStore()
 const toast = useToast()
+const route = useRoute()
+
+/** Where the row's link opens. A page of a store that runs in this app opens there; its public address is not a live site. */
+function hrefOf(redirect: PageRedirect): string {
+  const path = store.ownData ? redirectPath(redirect.leadsTo, store.activeStore.domain) : null
+  return path ? `/accounts/${String(route.params.accountId)}/sales_channels/${store.activeChannelId}/storefront${path}` : redirect.leadsTo
+}
+
 const createOpen = ref(true)
 const draftQueries = ref<string[]>([])
 const draftQueryInput = ref('')
@@ -228,7 +238,7 @@ function submitEdit() {
         <template #item.leadsTo="{ item }">
           <a
             class="merch-link text-body-2 text-primary"
-            :href="item.leadsTo"
+            :href="hrefOf(item)"
             target="_blank"
             rel="noopener noreferrer"
             :title="item.leadsTo"

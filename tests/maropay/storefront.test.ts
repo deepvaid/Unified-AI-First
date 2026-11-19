@@ -22,6 +22,8 @@ test('a live store offers Maropay’s ready methods beside the merchant’s own 
   assert.deepEqual(offer.acceptedMarks, ['Maropay', 'Visa', 'Mastercard', 'Amex', 'Apple Pay', 'Google Pay', 'PayPal', 'Bank deposit'])
   assert.deepEqual(offer.payIn4.labels, [])
   assert.equal(payButtonText(offer.methods[0]!, offer.payButton, PRICE), 'Pay $99.95')
+  // A store that writes amounts its own way hands in its format; the words stay the merchant's.
+  assert.equal(payButtonText(offer.methods[0]!, offer.payButton, PRICE, () => '99,95 kr'), 'Pay 99,95 kr')
 })
 
 test('one order and one default across providers reach the shopper, with the express switch and button label', () => {

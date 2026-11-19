@@ -42,11 +42,13 @@ function words(text: string): string[] {
   return text.toLowerCase().match(/[a-z0-9]+/g) ?? []
 }
 
-function keywords(message: string): string[] {
+/** The words of a message that carry its meaning, stemmed. Shared with the store assistant. */
+export function keywords(message: string): string[] {
   return words(message).filter((w) => w.length >= 3 && !STOP_WORDS.has(w)).map(stem).filter((w) => w.length >= 3)
 }
 
-function hits(tokens: string[], text: string): number {
+/** How many of the tokens a text mentions, in any word form. Shared with the store assistant. */
+export function hits(tokens: string[], text: string): number {
   const haystack = words(text).map(stem)
   return tokens.filter((t) => haystack.some((w) => w.length >= 3 && (w.startsWith(t) || t.startsWith(w)))).length
 }

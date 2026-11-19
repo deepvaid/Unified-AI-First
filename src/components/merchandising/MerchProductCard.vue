@@ -67,9 +67,9 @@ const emit = defineEmits<{
       <div class="merch-card__title text-body-2 font-weight-medium">{{ product.title }}</div>
       <div class="d-flex align-center ga-2 mt-1">
         <span class="text-body-2 font-weight-bold" :class="{ 'text-error': product.compareAt }">
-          ${{ product.price }}
+          {{ product.priceLabel ?? `$${product.price}` }}
         </span>
-        <s v-if="product.compareAt" class="text-caption text-medium-emphasis">${{ product.compareAt }}</s>
+        <s v-if="product.compareAt" class="text-caption text-medium-emphasis">{{ product.compareAtLabel ?? `$${product.compareAt}` }}</s>
       </div>
       <div class="text-caption text-medium-emphasis mt-1">Qty: {{ product.qty }}</div>
     </div>

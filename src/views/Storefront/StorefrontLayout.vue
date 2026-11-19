@@ -1,17 +1,27 @@
 <script setup lang="ts">
 import { computed, provide, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useChatbotStore } from '@/stores/useChatbot'
+import { useCommerceStore } from '@/stores/useCommerce'
 import { useMaropayStore } from '@/stores/useMaropay'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
+import { useStoreCampaignsStore } from '@/stores/useStoreCampaigns'
 import { useStoreThemesStore } from '@/stores/useStoreThemes'
 import { useStorefrontStore } from '@/stores/useStorefront'
 import { useStorefrontCartStore } from '@/stores/useStorefrontCart'
 import { money } from '@/maropay/money'
 import type { Money } from '@/maropay/money'
 import { storefrontOffer } from '@/maropay/storefront'
+import { activeCampaign } from '@/storefront/campaigns'
+import { storesWithOwnCatalogue } from '@/storefront/catalog'
+import { merchandisingStatus } from '@/utils/merchandisingChannels'
+import { checkoutProfile } from '@/storefront/checkoutProfile'
+import { formatStorePrice } from '@/storefront/price'
+import { roundForDisplay } from '@/subscriptions/plans'
 import { storefrontThemeVars } from '@/stores/themeBuilderData'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import StorefrontAnchor from './StorefrontAnchor.vue'
+import StorefrontChat from './StorefrontChat.vue'
 import StorefrontPayMark from './StorefrontPayMark.vue'
 import { STOREFRONT } from './storefrontContext'
 
@@ -51,19 +61,56 @@ function link(href: string): string {
 const channel = computed(() => found.value!)
 const theme = computed(() => (found.value ? themes.themeForChannel(found.value.id) : undefined))
 const chrome = computed(() => storefronts.chromeFor(channel.value))
-const currency = computed(() => maropay.account?.currency ?? 'USD')
+const currency = computed(() => found.value?.webStore?.currency ?? maropay.account?.currency ?? 'USD')
+// Kronor are shown whole ("586 kr" for 585,90): only the display is rounded, the order keeps the exact amount.
+const formatMoney = (amount: Money) => formatStorePrice(roundForDisplay(amount), found.value?.webStore?.locale)
+// What is charged is never rounded: the checkout, the pay button and the receipt read "585,90 kr".
+const formatExact = (amount: Money) => formatStorePrice(amount, found.value?.webStore?.locale)
+const ownMoneyFormat = computed(() => Boolean(found.value?.webStore?.locale))
+const checkout = computed(() => checkoutProfile(found.value?.webStore?.currency))
+const demo = computed(() => found.value?.webStore?.demo === true)
 
 function offerFor(amount: Money) {
-  return storefrontOffer(maropay.state, channelId.value, amount)
+  return storefrontOffer(maropay.state, channelId.value, amount, { format: formatExact })
 }
 
-provide(STOREFRONT, { channel, theme, chrome, link, currency, offerFor })
+// A running campaign's message takes the store's announcement bar for as long as it runs.
+const campaignMessage = computed(() => activeCampaign(useStoreCampaignsStore().campaigns, channelId.value)?.offer?.message.trim() ?? '')
+
+// Search is Merchandise Cloud's: a store has it once it is connected. It runs on the store's own
+// products, so a store on the shared catalogue keeps the header it had.
+const searchable = computed(() => !!found.value
+  && merchandisingStatus(found.value) === 'connected'
+  && storesWithOwnCatalogue(useCommerceStore().products).includes(found.value.id))
+
+provide(STOREFRONT, { channel, theme, chrome, link, currency, formatMoney, formatExact, ownMoneyFormat, checkout, demo, searchable, campaignMessage, offerFor })
+
+// A store shown to prospects names itself in the browser tab, where the router's fallback reads "Storefront home · Maropost".
+watch(() => [route.fullPath, demo.value], () => {
+  if (demo.value) document.title = chrome.value.wordmark
+}, { immediate: true, flush: 'post' })
 
 const minimal = computed(() => route.meta.minimalChrome === true)
+
+// The store's chatbot, on its pages. Only a store shown to prospects has the widget so far; other
+// stores keep their chatbot in the admin alone. It stays off the checkout, which is distraction-free.
+const chatbots = useChatbotStore()
+const chatbot = computed(() => {
+  const linked = demo.value ? chatbots.getByChannel(channelId.value) : undefined
+  return linked?.status === 'Active' ? linked : undefined
+})
 const cartCount = computed(() => (found.value ? cart.count(found.value.id) : 0))
 const footerMarks = computed(() => offerFor(money(0, currency.value)).acceptedMarks)
 
 const themeVars = computed(() => storefrontThemeVars(theme.value?.styles))
+
+/** The theme's announcement, for a store that shows it above the header on every page. */
+const announcement = computed(() => {
+  if (!chrome.value.announcementAboveHeader) return ''
+  if (campaignMessage.value) return campaignMessage.value
+  const bar = theme.value?.templates.home.find((s) => s.kind === 'announcement-bar' && !s.hidden)
+  return typeof bar?.settings.text === 'string' ? bar.settings.text : ''
+})
 
 // ── Header ──────────────────────────────────────────────────────────────
 const menuOpen = ref(false)
@@ -74,12 +121,15 @@ function search(): void {
   const q = query.value.trim()
   if (!q) return
   void router.push(link(`/search?q=${encodeURIComponent(q)}`))
+  // The results page has its own box with the query in it: the header's starts empty again.
+  if (searchable.value) query.value = ''
 }
 
 // ── Newsletter ──────────────────────────────────────────────────────────
 const email = ref('')
 const consent = ref(false)
 const subscribing = ref(false)
+const subscribed = ref(false)
 const canSubscribe = computed(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim()) && consent.value && !subscribing.value)
 
 function subscribe(): void {
@@ -87,6 +137,7 @@ function subscribe(): void {
   subscribing.value = true
   window.setTimeout(() => {
     subscribing.value = false
+    subscribed.value = true
     email.value = ''
     consent.value = false
   }, 600)
@@ -95,6 +146,7 @@ function subscribe(): void {
 
 <template>
   <div v-if="found" class="storefront sf-surface" :style="themeVars">
+    <p v-if="announcement && !minimal" class="sf-announce">{{ announcement }}</p>
     <header v-if="minimal" class="sf-top sf-top--minimal">
       <StorefrontAnchor href="/" class="sf-logo" aria-label="Logo">
         <v-icon v-if="chrome.wordmarkIcon" size="28">{{ chrome.wordmarkIcon }}</v-icon>
@@ -123,16 +175,16 @@ function subscribe(): void {
         </StorefrontAnchor>
 
         <div class="sf-tools">
-          <form class="sf-search" role="search" @submit.prevent="search">
+          <form v-if="chrome.headerTools.includes('search') || searchable" class="sf-search" :class="{ 'sf-search--ring': searchable }" role="search" @submit.prevent="search">
             <input v-model="query" type="search" :placeholder="chrome.searchPlaceholder" :aria-label="chrome.searchPlaceholder">
             <button type="submit" class="sf-search__go" aria-label="Search">
               <v-icon size="16">search</v-icon>
             </button>
           </form>
-          <StorefrontAnchor href="/user/login" class="sf-icon-btn" aria-label="Account">
+          <StorefrontAnchor v-if="chrome.headerTools.includes('account')" :href="chrome.accountHref ?? '/user/login'" class="sf-icon-btn" aria-label="Account">
             <v-icon size="20">user-round</v-icon>
           </StorefrontAnchor>
-          <StorefrontAnchor href="/wishlist-page" class="sf-icon-btn" aria-label="Wishlist">
+          <StorefrontAnchor v-if="chrome.headerTools.includes('wishlist')" href="/wishlist-page" class="sf-icon-btn" aria-label="Wishlist">
             <v-icon size="20">heart</v-icon>
           </StorefrontAnchor>
           <StorefrontAnchor href="/cart-page" class="sf-icon-btn sf-cart-link" :aria-label="cartCount ? `Cart, ${cartCount} ${cartCount === 1 ? 'item' : 'items'}` : 'Cart'">
@@ -147,6 +199,8 @@ function subscribe(): void {
       </nav>
 
       <nav v-if="menuOpen && chrome.mobileNav.length" class="sf-mobile-nav" aria-label="Menu">
+        <!-- The header's search box does not fit a phone: the menu leads to the search page instead. -->
+        <StorefrontAnchor v-if="searchable" href="/search">Search</StorefrontAnchor>
         <StorefrontAnchor v-for="item in chrome.mobileNav" :key="item.label" :href="item.href">{{ item.label }}</StorefrontAnchor>
       </nav>
     </header>
@@ -181,6 +235,7 @@ function subscribe(): void {
           <button type="submit" class="sf-button" :disabled="!canSubscribe">
             {{ subscribing ? chrome.newsletter.busy : chrome.newsletter.button }}
           </button>
+          <p v-if="subscribed && chrome.newsletter.success" class="sf-newsletter__done" role="status">{{ chrome.newsletter.success }}</p>
         </form>
       </div>
       <ul v-if="footerMarks.length" class="sf-foot__marks" aria-label="Ways to pay">
@@ -188,6 +243,9 @@ function subscribe(): void {
       </ul>
       <p v-if="chrome.copyright" class="sf-foot__copyright">{{ chrome.copyright }}</p>
     </footer>
+
+    <!-- Hidden, not removed, on the checkout: the conversation is still there when the shopper comes back. -->
+    <StorefrontChat v-if="chatbot" v-show="!minimal" :chatbot="chatbot" />
   </div>
 
   <MpEmptyState
@@ -239,6 +297,17 @@ function subscribe(): void {
 }
 
 /* Header */
+.sf-announce {
+  margin: 0;
+  padding: 8px 24px;
+  background: var(--sf-brand, #373842);
+  color: var(--sf-on-brand, #ffffff);
+  text-align: center;
+  font-size: 13px;
+  line-height: 18px;
+  letter-spacing: 0.02em;
+}
+
 .sf-top {
   border-bottom: 1px solid var(--sf-divider);
 }
@@ -306,7 +375,10 @@ function subscribe(): void {
   list-style: none;
 }
 
+/* The logo sits in the middle column and the tools at the end, also for a store
+   with no social links to fill the first column. */
 .sf-logo {
+  grid-column: 2;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -321,6 +393,7 @@ function subscribe(): void {
 }
 
 .sf-tools {
+  grid-column: 3;
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -335,6 +408,12 @@ function subscribe(): void {
   border: 1px solid var(--sf-search-border);
   border-radius: 999px;
   margin-right: 8px;
+}
+
+/* The input has no outline of its own, so the box shows where the keyboard is. */
+.sf-search--ring:focus-within {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
 }
 
 .sf-search input {
@@ -427,6 +506,12 @@ function subscribe(): void {
   background: var(--sf-bg, var(--sf-bg-fallback));
   color: inherit;
   font: inherit;
+}
+
+.sf-newsletter__done {
+  margin: 0;
+  font-size: 13px;
+  line-height: 18px;
 }
 
 .sf-newsletter__consent {

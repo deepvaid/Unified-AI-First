@@ -1,21 +1,30 @@
 <script setup lang="ts">
 import { computed, inject } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useStoreContentStore, type ContentKind } from '@/stores/useStoreContent'
 import StorefrontAnchor from './StorefrontAnchor.vue'
 import StorefrontNotFound from './StorefrontNotFound.vue'
-import { STOREFRONT } from './storefrontContext'
+import { STOREFRONT, isExternalHref } from './storefrontContext'
 
 // A storefront page (/page/:handle) or policy (/policies/:handle): breadcrumb, the
 // title band (the entry's title, capitalised as the theme draws it), then the body
 // as the merchant wrote it. Unknown or inactive handles get the 404 page.
 
 const route = useRoute()
+const router = useRouter()
 const storefront = inject(STOREFRONT)!
 const content = useStoreContentStore()
 
 const kind = computed(() => (route.meta.contentKind === 'policy' ? 'policy' : 'page') as ContentKind)
 const entry = computed(() => content.entryByHandle(storefront.channel.value.id, kind.value, String(route.params.handle ?? '')))
+
+/** A store-relative link in the body ("/policies/refund-policy") opens that storefront page, not the admin's path. */
+function followBodyLink(event: MouseEvent): void {
+  const href = (event.target as HTMLElement).closest('a')?.getAttribute('href')
+  if (!href || href.startsWith('#') || isExternalHref(href)) return
+  event.preventDefault()
+  void router.push(storefront.link(href))
+}
 </script>
 
 <template>
@@ -27,7 +36,7 @@ const entry = computed(() => content.entryByHandle(storefront.channel.value.id, 
     </nav>
     <h1 class="sf-content__title">{{ entry.title }}</h1>
     <!-- Merchant-authored rich text from the store's own content. -->
-    <div class="sf-content__body" v-html="entry.body" />
+    <div class="sf-content__body" @click="followBodyLink" v-html="entry.body" />
   </article>
   <StorefrontNotFound v-else />
 </template>
@@ -54,6 +63,10 @@ const entry = computed(() => content.entryByHandle(storefront.channel.value.id, 
   font-size: 39px;
   line-height: 1.2;
   font-weight: 700;
+}
+
+.sf-content__body :deep(a) {
+  text-decoration: underline;
 }
 
 .sf-content__body :deep(h2) {

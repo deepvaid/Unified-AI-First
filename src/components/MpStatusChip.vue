@@ -5,7 +5,7 @@ type Tone = 'brand' | 'success' | 'warning' | 'danger' | 'neutral'
 
 const props = withDefaults(defineProps<{
   status: string
-  type?: 'order' | 'fulfillment' | 'payment' | 'payout' | 'dispute' | 'method' | 'readiness' | 'campaign' | 'contact' | 'ticket' | 'coupon' | 'priority' | 'connection' | 'stock' | 'report' | 'general'
+  type?: 'order' | 'fulfillment' | 'payment' | 'payout' | 'dispute' | 'method' | 'readiness' | 'campaign' | 'contact' | 'ticket' | 'coupon' | 'subscription' | 'priority' | 'connection' | 'stock' | 'report' | 'general'
   size?: 'sm' | 'md' | 'lg'
   variant?: 'flat' | 'tonal' | 'outlined'
   showIcon?: boolean
@@ -68,6 +68,10 @@ const toneMap: Record<string, Record<string, Tone>> = {
     open: 'brand', 'in progress': 'warning', 'awaiting reply': 'brand',
     resolved: 'success', closed: 'neutral', 'on hold': 'warning',
     escalated: 'danger', new: 'brand', pending: 'warning',
+  },
+  // A shopper's subscription: paused is the shopper's choice, payment failed needs someone.
+  subscription: {
+    active: 'success', paused: 'warning', cancelled: 'neutral', 'payment failed': 'danger',
   },
   coupon: {
     active: 'success', expired: 'neutral', scheduled: 'brand',

@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { computed, inject } from 'vue'
 import { useRouter } from 'vue-router'
-import { formatMoney } from '@/maropay/money'
 import { useCommerceStore } from '@/stores/useCommerce'
-import { MAX_QTY, lineTotal, useStorefrontCartStore } from '@/stores/useStorefrontCart'
+import { MAX_QTY, lineKey, lineTotal, useStorefrontCartStore } from '@/stores/useStorefrontCart'
+import { deliverySummary, recurringCharges } from '@/subscriptions/plans'
 import type { CartLine } from '@/stores/useStorefrontCart'
 import StorefrontAnchor from './StorefrontAnchor.vue'
+import StorefrontDiscountCode from './StorefrontDiscountCode.vue'
 import StorefrontExpressButtons from './StorefrontExpressButtons.vue'
+import { useStorefrontDiscount } from './storefrontDiscount'
 import { STOREFRONT } from './storefrontContext'
 import { CATEGORY_ICONS, productHandle } from './storefrontCatalog'
 
@@ -24,15 +26,31 @@ const channelId = computed(() => storefront.channel.value.id)
 const currency = computed(() => storefront.currency.value)
 const lines = computed(() => cart.linesFor(channelId.value))
 const subtotal = computed(() => cart.subtotal(channelId.value, currency.value))
-const offer = computed(() => storefront.offerFor(subtotal.value))
+// A campaign's code, when the store has one running. It lowers this order only.
+const code = useStorefrontDiscount(() => lines.value, () => subtotal.value)
+const total = computed(() => code.payable.value)
+const offer = computed(() => storefront.offerFor(total.value))
+/** What a subscription line charges again, and how often. */
+const recurring = computed(() => recurringCharges(lines.value, (line) => lineTotal(line, currency.value)))
+
+const formatMoney = storefront.formatMoney
 
 function iconFor(line: CartLine): string {
   const category = commerce.products.find((p) => p.id === line.productId)?.category
   return (category && CATEGORY_ICONS[category]) || 'package'
 }
 
+function imageFor(line: CartLine): string | undefined {
+  return commerce.products.find((p) => p.id === line.productId)?.imageUrls?.[0]
+}
+
+/** A line as its buttons name it: the same product bought once and on a plan are two lines, and must not sound alike. */
+function nameOf(line: CartLine): string {
+  return line.plan ? `${line.name}, ${line.plan.name}` : line.name
+}
+
 function setQty(line: CartLine, value: number): void {
-  if (Number.isFinite(value)) cart.setQty(channelId.value, line.productId, value)
+  if (Number.isFinite(value)) cart.setQty(channelId.value, lineKey(line), value)
 }
 
 function checkout(express?: string): void {
@@ -52,14 +70,18 @@ function checkout(express?: string): void {
     <div v-else class="sf-cart__layout">
       <section class="sf-cart__lines" aria-label="Items in your cart">
         <ul>
-          <li v-for="line in lines" :key="line.productId" class="sf-cart__line">
-            <span class="sf-cart__thumb" aria-hidden="true"><v-icon size="28">{{ iconFor(line) }}</v-icon></span>
+          <li v-for="line in lines" :key="lineKey(line)" class="sf-cart__line">
+            <span class="sf-cart__thumb" aria-hidden="true">
+              <img v-if="imageFor(line)" :src="imageFor(line)" alt="" class="sf-cart__image">
+              <v-icon v-else size="28">{{ iconFor(line) }}</v-icon>
+            </span>
             <div class="sf-cart__item">
               <StorefrontAnchor :href="`/products/${productHandle({ name: line.name, id: line.productId })}`" class="sf-cart__name">{{ line.name }}</StorefrontAnchor>
-              <span class="sf-muted">{{ formatMoney(lineTotal({ price: line.price, qty: 1 }, currency)) }} each</span>
+              <span v-if="line.plan" class="sf-cart__plan">{{ line.plan.name }} · {{ deliverySummary(line.plan) }}</span>
+              <span class="sf-muted">{{ formatMoney(lineTotal({ price: line.price, qty: 1 }, currency)) }} {{ line.plan ? 'per delivery' : 'each' }}</span>
             </div>
-            <div class="sf-qty sf-qty--sm" role="group" :aria-label="`Quantity of ${line.name}`">
-              <button type="button" :aria-label="`Decrease quantity of ${line.name}`" @click="setQty(line, line.qty - 1)">
+            <div class="sf-qty sf-qty--sm" role="group" :aria-label="`Quantity of ${nameOf(line)}`">
+              <button type="button" :aria-label="`Decrease quantity of ${nameOf(line)}`" @click="setQty(line, line.qty - 1)">
                 <v-icon size="14">minus</v-icon>
               </button>
               <input
@@ -71,12 +93,12 @@ function checkout(express?: string): void {
                 aria-label="Quantity"
                 @change="setQty(line, Number(($event.target as HTMLInputElement).value))"
               >
-              <button type="button" :aria-label="`Increase quantity of ${line.name}`" :disabled="line.qty >= MAX_QTY" @click="setQty(line, line.qty + 1)">
+              <button type="button" :aria-label="`Increase quantity of ${nameOf(line)}`" :disabled="line.qty >= MAX_QTY" @click="setQty(line, line.qty + 1)">
                 <v-icon size="14">plus</v-icon>
               </button>
             </div>
             <span class="sf-cart__total">{{ formatMoney(lineTotal(line, currency)) }}</span>
-            <button type="button" class="sf-icon-btn" :aria-label="`Remove ${line.name}`" @click="cart.remove(channelId, line.productId)">
+            <button type="button" class="sf-icon-btn" :aria-label="`Remove ${nameOf(line)}`" @click="cart.remove(channelId, lineKey(line))">
               <v-icon size="18">trash-2</v-icon>
             </button>
           </li>
@@ -90,15 +112,32 @@ function checkout(express?: string): void {
         <dl class="sf-cart__sums">
           <div><dt>Subtotal</dt><dd>{{ formatMoney(subtotal) }}</dd></div>
           <div><dt>Shipping</dt><dd>Free</dd></div>
-          <div class="sf-cart__grand"><dt>Total</dt><dd>{{ formatMoney(subtotal) }}</dd></div>
+          <div v-if="code.discount.value" class="sf-cart__discount">
+            <dt>Discount · {{ code.label.value }}</dt><dd>−{{ formatMoney(code.discount.value.amount) }}</dd>
+          </div>
+          <div class="sf-cart__grand"><dt>Total</dt><dd>{{ formatMoney(total) }}</dd></div>
+          <div v-for="charge in recurring" :key="charge.interval" class="sf-cart__recurring">
+            <dt>Then {{ charge.interval }}</dt><dd>{{ formatMoney(charge.amount) }}</dd>
+          </div>
         </dl>
+        <StorefrontDiscountCode
+          v-if="code.offered.value || code.applied.value"
+          v-model:typed="code.typed.value"
+          id-prefix="sf-cart"
+          :applied="code.discount.value ? code.applied.value : ''"
+          :problem="code.notice.value"
+          @apply="code.apply"
+          @remove="code.remove"
+        />
+        <p v-if="code.discount.value && recurring.length" class="sf-cart__code-note sf-muted">The code lowers this order. Later deliveries are charged at the plan’s price.</p>
         <p v-if="offer.payIn4.labels.length" class="sf-cart__instalments sf-muted">
           or 4 interest-free payments of {{ formatMoney(offer.payIn4.amount) }} with {{ offer.payIn4.labels.join(' or ') }}
         </p>
         <button type="button" class="sf-button sf-button--block" @click="checkout()">
           <v-icon size="16">lock</v-icon> Checkout
         </button>
-        <template v-if="offer.express.length">
+        <!-- Express buttons skip the checkout form, and with it the consent a subscription needs. -->
+        <template v-if="offer.express.length && !recurring.length">
           <p class="sf-or">or</p>
           <StorefrontExpressButtons :methods="offer.express" @pick="checkout" />
         </template>
@@ -168,6 +207,13 @@ function checkout(express?: string): void {
   color: #8a8780;
 }
 
+.sf-cart__image {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+}
+
 .sf-cart__item {
   display: flex;
   flex-direction: column;
@@ -179,6 +225,11 @@ function checkout(express?: string): void {
 .sf-cart__name {
   font-size: 15px;
   font-weight: 600;
+}
+
+.sf-cart__plan {
+  font-size: 13px;
+  font-weight: 500;
 }
 
 .sf-cart__total {
@@ -224,6 +275,20 @@ function checkout(express?: string): void {
   border-top: 1px solid #e3e3e0;
   font-size: 18px;
   font-weight: 700;
+}
+
+.sf-cart__recurring {
+  font-size: 14px;
+  color: var(--sf-muted, #5f5f5f);
+}
+
+.sf-cart__discount {
+  font-weight: 600;
+}
+
+.sf-cart__code-note {
+  margin: -6px 0 0;
+  font-size: 13px;
 }
 
 .sf-cart__instalments {

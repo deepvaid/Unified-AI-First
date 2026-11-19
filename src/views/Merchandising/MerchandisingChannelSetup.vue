@@ -4,7 +4,10 @@ import { useRoute } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import { useCommerceStore } from '@/stores/useCommerce'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
+import { catalogFor } from '@/storefront/catalog'
 import { channelDomain, merchandisingHealth, merchandisingStatus, MERCHANDISING_HEALTH_LABELS, MERCHANDISING_STATUS_LABELS, providerLabel } from '@/utils/merchandisingChannels'
 
 const route = useRoute()
@@ -14,8 +17,23 @@ const accountId = computed(() => String(route.params.accountId ?? '2000290'))
 const channelId = computed(() => String(route.params.channelId ?? ''))
 const channel = computed(() => salesChannels.getChannel(accountId.value, channelId.value))
 
+// A store shown to prospects gets a real answer; the others keep the prototype's note.
+const demo = computed(() => channel.value?.webStore?.demo === true)
+
 function reviewConnection() {
-  notice.value = 'Connection review queued for this prototype channel.'
+  notice.value = demo.value ? 'The connection is healthy.' : 'Connection review queued for this prototype channel.'
+}
+
+function checkSync() {
+  if (!demo.value) return reviewConnection()
+  salesChannels.connectMerchandising(accountId.value, channelId.value)
+  const count = catalogFor(useCommerceStore().products, channelId.value).length
+  notice.value = `${count} ${count === 1 ? 'product is' : 'products are'} in sync.`
+}
+
+const disconnectDialog = ref(false)
+function disconnect() {
+  salesChannels.disconnectMerchandising(accountId.value, channelId.value)
 }
 
 /* — Status & usage (Findify parity) — */
@@ -55,11 +73,24 @@ function copyJsTag() {
       </div>
       <div class="d-flex flex-wrap ga-3 mt-6">
         <v-btn color="primary" variant="flat" class="text-none" prepend-icon="refresh-cw" @click="reviewConnection">Review connection</v-btn>
-        <v-btn variant="outlined" class="text-none" prepend-icon="package" @click="reviewConnection">Check product sync</v-btn>
+        <v-btn variant="outlined" class="text-none" prepend-icon="package" @click="checkSync">Check product sync</v-btn>
+        <v-spacer />
+        <v-btn variant="text" color="error" class="text-none" prepend-icon="unplug" @click="disconnectDialog = true">Disconnect</v-btn>
       </div>
     </v-card>
 
-    <v-card flat border rounded="lg" class="pa-6">
+    <MpConfirmDialog
+      v-model="disconnectDialog"
+      :title="`Disconnect Merchandising from ${channel.name}?`"
+      message="The store stops using Merchandising until you connect it again."
+      :consequences="['Shoppers lose the store’s search box.', 'Product pages go back to the standard “You may also like” row.', 'Your synonyms, pins, redirects and engines are kept.']"
+      confirm-label="Disconnect"
+      danger
+      @confirm="disconnect"
+    />
+
+    <!-- A switch that changes nothing is not shown on a store that is demonstrated to prospects. -->
+    <v-card v-if="!demo" flat border rounded="lg" class="pa-6">
       <div class="text-subtitle-1 font-weight-bold mb-1">Solutions status</div>
       <MpFormGrid>
         <v-switch
@@ -91,7 +122,7 @@ function copyJsTag() {
       <div class="code-chip code-chip--inline">
         <code class="code-chip__code">••••••••-[REDACTED]</code>
       </div>
-      <p class="text-caption text-medium-emphasis mt-2 mb-0">Keys are hidden in this prototype.</p>
+      <p v-if="!demo" class="text-caption text-medium-emphasis mt-2 mb-0">Keys are hidden in this prototype.</p>
     </v-card>
   </div>
 </template>

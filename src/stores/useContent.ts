@@ -19,6 +19,9 @@ export const EDITOR_SLUGS: Record<ContentEditorType, string> = {
 /** Templates are authored in a narrower set — the source's template chooser offers only two. */
 export type TemplateEditorType = 'Drag & Drop' | 'WYSIWYG' | 'Drag & Drop (Legacy)'
 
+/** The email content a Vitaheal store campaign is announced with. */
+export const VITAHEAL_CAMPAIGN_CONTENT_ID = 9001
+
 export interface ContentItem {
   id: number
   name: string
@@ -149,6 +152,17 @@ function seedContent(): ContentItem[] {
       usedByCampaigns: scramble(i, 11) % 6 === 0 ? (scramble(i, 12) % 4) + 1 : 0,
     })
   }
+  // The email the Vitaheal (demo) store sends to announce one of its campaigns, newest so it lists first.
+  out.push({
+    id: VITAHEAL_CAMPAIGN_CONTENT_ID,
+    name: 'Vitaheal: campaign announcement',
+    editorType: 'Drag & Drop',
+    createdAt: new Date(Date.now() - 2 * 86_400_000).toISOString(),
+    updatedAt: new Date().toISOString(),
+    folderId: null,
+    archived: false,
+    usedByCampaigns: 0,
+  })
   return out.sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt))
 }
 

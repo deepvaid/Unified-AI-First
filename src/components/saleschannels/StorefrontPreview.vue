@@ -24,6 +24,8 @@ const props = withDefaults(defineProps<{
   brand?: string
   /** The store's header menu labels. */
   menu?: string[]
+  /** The store's own products, for a featured-products section: photo, name and price. Omit for drawn stand-ins. */
+  products?: Array<{ name: string; price: string; image?: string }>
   /** A Da Vinci generation in flight — a placeholder band shows where the section will land. */
   generating?: { prompt: string; stage: number } | null
 }>(), {
@@ -37,6 +39,7 @@ const props = withDefaults(defineProps<{
   pendingBlockIds: () => [],
   brand: 'ATLAS',
   menu: () => ['New', 'Women', 'Men', 'Sale'],
+  products: undefined,
   generating: null,
 })
 
@@ -165,9 +168,10 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
           <div
             v-else-if="section.kind === 'hero'"
             class="sf-hero"
-            :class="{ 'sf-hero--center': section.settings.alignment === 'Center' }"
+            :class="{ 'sf-hero--center': section.settings.alignment === 'Center', 'sf-photo': text(section, 'image') }"
             :style="{ '--sf-overlay': `${num(section, 'overlay', 15)}%` }"
           >
+            <img v-if="text(section, 'image')" :src="text(section, 'image')" alt="" class="sf-photo__image">
             <strong>{{ text(section, 'headline', 'Hero headline') }}</strong>
             <p v-if="text(section, 'subheadline')">{{ text(section, 'subheadline') }}</p>
             <span class="sf-btn">{{ text(section, 'ctaLabel', 'Shop now') }}</span>
@@ -175,7 +179,17 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
 
           <div v-else-if="section.kind === 'featured-products'" class="sf-products" :class="{ 'sf-products--carousel': section.settings.layout === 'Carousel' }">
             <strong class="sf-heading">{{ text(section, 'title', 'Featured products') }}</strong>
-            <div class="sf-products__grid">
+            <!-- The store's own products when it has them; drawn stand-ins otherwise. -->
+            <div v-if="products" class="sf-products__grid">
+              <div v-for="product in products.slice(0, num(section, 'productCount', 4))" :key="product.name" class="sf-product">
+                <span class="sf-product__img">
+                  <img v-if="product.image" :src="product.image" alt="" loading="lazy">
+                </span>
+                <span class="sf-product__name">{{ product.name }}</span>
+                <span class="sf-product__amount">{{ product.price }}</span>
+              </div>
+            </div>
+            <div v-else class="sf-products__grid">
               <div v-for="n in num(section, 'productCount', 4)" :key="n" class="sf-product">
                 <span class="sf-product__img" />
                 <span class="sf-product__line" />
@@ -194,8 +208,25 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
             </div>
           </div>
 
-          <div v-else-if="section.kind === 'image-banner'" class="sf-banner" :class="`sf-banner--${String(section.settings.height || 'Medium').toLowerCase()}`">
+          <div
+            v-else-if="section.kind === 'image-banner'"
+            class="sf-banner"
+            :class="[`sf-banner--${String(section.settings.height || 'Medium').toLowerCase()}`, { 'sf-photo': text(section, 'image') }]"
+          >
+            <img v-if="text(section, 'image')" :src="text(section, 'image')" alt="" class="sf-photo__image">
             <strong>{{ text(section, 'headline', 'Image banner') }}</strong>
+            <p v-if="text(section, 'subheadline')">{{ text(section, 'subheadline') }}</p>
+          </div>
+
+          <div v-else-if="section.kind === 'image-with-text'" class="sf-story" :class="{ 'sf-story--flip': section.settings.imageSide === 'Right' }">
+            <span class="sf-story__media" aria-hidden="true">
+              <img v-if="text(section, 'image')" :src="text(section, 'image')" alt="" loading="lazy">
+            </span>
+            <div class="sf-story__copy">
+              <strong class="sf-heading">{{ text(section, 'heading', 'Image with text') }}</strong>
+              <p>{{ text(section, 'body', 'Add a short paragraph beside the photograph.') }}</p>
+              <span v-if="text(section, 'buttonLabel')" class="sf-btn">{{ text(section, 'buttonLabel') }}</span>
+            </div>
           </div>
 
           <div v-else-if="section.kind === 'rich-text'" class="sf-richtext" :class="{ 'sf-richtext--center': section.settings.alignment === 'Center' }">
@@ -309,8 +340,9 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
                 class="sf-block__image"
                 :style="{ aspectRatio: blockText(block, 'ratio', '4:3').replace(':', ' / ') }"
               />
-              <span v-else-if="block.kind === 'collection'" class="sf-block__collection">
-                {{ blockText(block, 'label', 'Collection') }}
+              <span v-else-if="block.kind === 'collection'" class="sf-block__collection" :class="{ 'sf-photo': blockText(block, 'image') }">
+                <img v-if="blockText(block, 'image')" :src="blockText(block, 'image')" alt="" class="sf-photo__image" loading="lazy">
+                <span>{{ blockText(block, 'label', 'Collection') }}</span>
               </span>
               <span v-else-if="block.kind === 'divider'" class="sf-block__divider" />
               <span
@@ -952,6 +984,53 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
   background: var(--sf-soft-fill);
 }
 
+.sf-product__img,
+.sf-story__media {
+  overflow: hidden;
+}
+
+.sf-product__img img,
+.sf-story__media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sf-product__name {
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.sf-product__amount {
+  color: color-mix(in oklch, var(--sf-text) 70%, transparent);
+  font-size: 11px;
+}
+
+/* A section or tile drawn over its photograph: the photo fills it under a dark veil, and the
+   text sets its own colour to read on that veil, whatever the theme's text colour is. */
+.sf-photo {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  color: #fff;
+}
+
+.sf-photo__image {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: brightness(0.62);
+}
+
+.sf-photo p {
+  color: #fff;
+}
+
 .sf-product__line {
   width: 80%;
   height: 7px;
@@ -1002,6 +1081,47 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
 .sf-banner strong {
   font-family: var(--sf-heading-font);
   font-size: 16px;
+}
+
+.sf-banner.sf-photo {
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  text-align: center;
+}
+
+.sf-banner p {
+  margin: 0;
+  max-width: 340px;
+  font-size: 11.5px;
+}
+
+.sf-story {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 16px;
+}
+
+.sf-story__media {
+  aspect-ratio: 4 / 3;
+  border-radius: var(--sf-radius);
+  background: var(--sf-soft-fill);
+}
+
+.sf-story--flip .sf-story__media {
+  order: 2;
+}
+
+.sf-story__copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.sf-story__copy p {
+  margin: 0;
 }
 
 .sf-richtext {

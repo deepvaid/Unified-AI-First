@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import type { SalesChannel } from './useSalesChannels'
+import { VITAHEAL_CHANNEL_ID, VITAHEAL_CHROME } from '@/storefront/vitahealDemo'
 
 // The shopper-facing storefront's chrome — header, menus and footer — as the store
 // renders it. Neelam-Store's comes from the UAT crawl (docs/rebuild/neelam-store/
@@ -26,12 +27,21 @@ export interface StorefrontNewsletter {
   consent: Array<string | StorefrontLink>
   button: string
   busy: string
+  /** Shown once the shopper has signed up. Absent: the form just clears. */
+  success?: string
 }
+
+/** The header's tools beside the cart. */
+export type StorefrontHeaderTool = 'search' | 'account' | 'wishlist'
 
 export interface StorefrontChrome {
   /** Stands in for the logo image: its wordmark, with an icon for the artwork. */
   wordmark: string
   wordmarkIcon: string | null
+  /** Which tools the header shows. A store leaves out the ones it has no page for, so none leads to a 404. */
+  headerTools: StorefrontHeaderTool[]
+  /** Where the account tool leads. Absent: the real store's own sign-in path, which this prototype does not serve. */
+  accountHref?: string
   social: Array<StorefrontLink & { icon: string }>
   searchPlaceholder: string
   nav: StorefrontLink[]
@@ -39,11 +49,14 @@ export interface StorefrontChrome {
   footerColumns: StorefrontFooterColumn[]
   newsletter: StorefrontNewsletter | null
   copyright: string
+  /** Show the theme's announcement bar above the header on every page, not in the home page's flow. */
+  announcementAboveHeader?: boolean
 }
 
 const NEELAM_STORE: StorefrontChrome = {
   wordmark: 'AUTO CAR',
   wordmarkIcon: 'car',
+  headerTools: ['search', 'account', 'wishlist'],
   social: [
     { label: 'Facebook', href: '/facebookUrl', icon: 'facebook' },
     { label: 'Instagram', href: '/instaUrl', icon: 'instagram' },
@@ -100,6 +113,7 @@ const NEELAM_STORE: StorefrontChrome = {
 
 const CHROME_BY_CHANNEL: Record<string, StorefrontChrome> = {
   'neelam-store': NEELAM_STORE,
+  [VITAHEAL_CHANNEL_ID]: VITAHEAL_CHROME,
 }
 
 export const useStorefrontStore = defineStore('storefront', () => {
@@ -108,6 +122,7 @@ export const useStorefrontStore = defineStore('storefront', () => {
     return CHROME_BY_CHANNEL[channel.id] ?? {
       wordmark: channel.name,
       wordmarkIcon: null,
+      headerTools: ['search', 'account', 'wishlist'],
       social: [],
       searchPlaceholder: 'Search...',
       nav: [],

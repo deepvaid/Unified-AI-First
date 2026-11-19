@@ -10,7 +10,19 @@ function route(name: string, accountId: string, channelId: string): RouteLocatio
   return { name, params: { accountId, channelId } }
 }
 
-export function merchandisingMenu(accountId: string, channelId: string): MpSectionRailGroup[] {
+/**
+ * Pages a store shown to prospects does not list: each has a button that says
+ * "coming soon" or "prototype only" and nothing behind it. They stay in every
+ * other store's rail, and at their addresses.
+ */
+const NOT_FOR_DEMO = ['search-content', 'integrations', 'fields']
+
+export function merchandisingMenu(accountId: string, channelId: string, demo = false): MpSectionRailGroup[] {
+  const groups = allGroups(accountId, channelId)
+  return demo ? groups.map((group) => ({ ...group, items: group.items.filter((item) => !NOT_FOR_DEMO.includes(item.slug)) })) : groups
+}
+
+function allGroups(accountId: string, channelId: string): MpSectionRailGroup[] {
   return [
     {
       title: 'Overview',

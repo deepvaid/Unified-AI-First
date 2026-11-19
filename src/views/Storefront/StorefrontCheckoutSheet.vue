@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref } from 'vue'
-import { formatMoney, money, subtract } from '@/maropay/money'
+import { money, subtract } from '@/maropay/money'
 import type { Money } from '@/maropay/money'
 import { PAY_IN_4_IDS } from '@/maropay/storefront'
 import StorefrontPayMark from './StorefrontPayMark.vue'
+import { useDemoStore, useExactMoney } from './storefrontContext'
 
 // What opens over the checkout while a payment is under way, in this prototype's
 // stand-in for each party's own screen: the wallet's payment sheet (Apple Pay,
@@ -23,6 +24,10 @@ const props = defineProps<{
   busy?: boolean
 }>()
 const emit = defineEmits<{ confirm: []; cancel: [] }>()
+
+const formatMoney = useExactMoney()
+/** A store shown to prospects says "demo store" where the note would say "prototype". */
+const demo = useDemoStore()
 
 const title = ref<HTMLElement | null>(null)
 onMounted(() => { void nextTick(() => title.value?.focus()) })
@@ -73,7 +78,7 @@ function confirm(): void {
       <template v-else-if="kind === 'authenticate'">
         <p id="sf-sheet-desc" class="sf-sheet__text">
           Your bank sent a 6-digit code to the phone number ending 0142 to approve {{ formatMoney(total) }} to {{ storeName }}.
-          In this prototype any 6 digits work.
+          {{ demo ? 'This is a demo store, so any 6 digits work.' : 'In this prototype any 6 digits work.' }}
         </p>
         <label class="sf-sheet__field">
           <span>Code</span>
@@ -83,7 +88,11 @@ function confirm(): void {
 
       <!-- PayPal and buy now, pay later: the provider's page. -->
       <template v-else>
-        <p class="sf-sheet__text">You’re on {{ method.label }}’s page, simulated in this prototype. Signed in as {{ email }}.</p>
+        <p class="sf-sheet__text">
+          <template v-if="demo">This demo store shows {{ method.label }}’s page here.</template>
+          <template v-else>You’re on {{ method.label }}’s page, simulated in this prototype.</template>
+          Signed in as {{ email }}.
+        </p>
         <ol v-if="payIn4" class="sf-sheet__plan">
           <li v-for="step in schedule" :key="step.when"><span>{{ step.when }}</span><strong>{{ formatMoney(step.amount) }}</strong></li>
         </ol>

@@ -20,6 +20,8 @@ import type { OrderPaymentSummary } from '@/stores/useCommerce'
 import { useNotifications } from '@/stores/useNotifications'
 import { useOnboardingStore } from '@/stores/useOnboarding'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
+import { useSubscriptionsStore } from '@/stores/useSubscriptions'
+import { useStoreCampaignsStore } from '@/stores/useStoreCampaigns'
 import { formatMoney, parseDecimal } from '@/maropay/money'
 import type { Money } from '@/maropay/money'
 import {
@@ -85,6 +87,7 @@ import type { ChannelFacts, MaropayTarget, PaymentFilter } from '@/maropay/readi
 import { isManualKind, storeProvidersFor as providersOf } from '@/maropay/providers'
 import type { ManualMethodSettings, OwnProviderKind, ProviderKind } from '@/maropay/providers'
 import { storefrontOffer } from '@/maropay/storefront'
+import { storesWithOwnCatalogue } from '@/storefront/catalog'
 import type { StorefrontOfferOptions } from '@/maropay/storefront'
 import type { BankAccountInput, OnboardingPatch } from '@/maropay/onboarding'
 import { deriveRequirements, rulesForState } from '@/maropay/requirements'
@@ -187,10 +190,13 @@ export const useMaropayStore = defineStore('maropay', () => {
     commerce.createCheckoutOrder({
       ...session.order,
       channelId: session.channelId,
+      // A store with products of its own is its own channel on the order; the rest sell the shared "Online Store" catalogue.
+      ...(storesWithOwnCatalogue(commerce.products).includes(session.channelId) ? { salesChannel: channelName(session.channelId) } : {}),
       currency: payment.amount.currency,
       payment: orderSummary(payment),
+      ...(session.renewalOf ? { renewalOf: session.renewalOf } : {}),
       timeline: [
-        { text: `Order placed via ${channelName(session.channelId)} checkout`, date: session.order.date },
+        { text: session.renewalOf ? `Renewal of subscription ${session.renewalOf}, charged to the saved payment method` : `Order placed via ${channelName(session.channelId)} checkout`, date: session.order.date },
         { text: paymentLine(payment), date: session.order.date },
       ],
     })
@@ -616,7 +622,14 @@ export const useMaropayStore = defineStore('maropay', () => {
   // ── Shopper checkout ────────────────────────────────────────────────
 
   function applyCheckoutStep(step: CheckoutStep, hadFirstPayment: boolean): void {
-    if (step.createdOrder && step.payment) ensureCheckoutOrder(step.session, step.payment)
+    if (step.createdOrder && step.payment) {
+      ensureCheckoutOrder(step.session, step.payment)
+      // A line bought on a plan starts a subscription. Once, here: not when orders are rebuilt on a reload.
+      if (!step.session.renewalOf) useSubscriptionsStore().startFromCheckout(step.session, step.payment)
+      // An order placed with a campaign's code counts on that campaign.
+      const coupon = step.session.lineItems.find((line) => line.coupon)?.coupon
+      if (coupon) useStoreCampaignsStore().recordUse(step.session.channelId, coupon, step.session.amount.amount)
+    }
     const first = state.value.milestones.firstPaymentId
     if (!hadFirstPayment && first) {
       const payment = paymentById(first)

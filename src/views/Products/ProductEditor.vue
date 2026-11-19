@@ -12,9 +12,19 @@ import MpFormField from '@/components/MpFormField.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpAlert from '@/components/MpAlert.vue'
+import MpListRow from '@/components/MpListRow.vue'
+import MpStatusChip from '@/components/MpStatusChip.vue'
 import { useDisplay } from 'vuetify'
 import DvCatalogCta from '@/components/copilot/DvCatalogCta.vue'
+import ProductMediaField from '@/components/products/ProductMediaField.vue'
+import { isPlaceholderImage } from '@/components/products/productMedia'
+import { useProductStores } from '@/composables/useProductStores'
+import { parseDecimal } from '@/maropay/money'
+import { withPrimaryCollection } from '@/storefront/catalog'
+import { formatStorePrice } from '@/storefront/price'
 import { useCopilotStore } from '@/stores/useCopilot'
+import { useSubscriptionsStore } from '@/stores/useSubscriptions'
+import { deliverySummary, pricePerDelivery, roundForDisplay } from '@/subscriptions/plans'
 import { useCatalogCopilotStore, type CatalogApplyPayload } from '@/stores/useCatalogCopilot'
 import type { CatalogField } from '@/composables/catalogCopilotConfig'
 import type { ProductSnapshot } from '@/composables/useCatalogGenerator'
@@ -48,7 +58,43 @@ const MATERIALS = ['Cotton', 'Polyester', 'Leather', 'Wool', 'Metal', 'Plastic',
 const COUNTRIES = ['United Kingdom', 'United States', 'China', 'India', 'Germany', 'Italy', 'France', 'Vietnam']
 const CHANNELS = ['Online Store', 'POS', 'Amazon', 'eBay', 'Instagram Shop']
 const taxCategoryOptions = computed(() => extras.taxCategories.map((c) => c.name))
-const collectionOptions = computed(() => extras.collections.map((c) => c.title))
+
+// Stores that sell their own products join the sales channels. A product in one
+// is priced in its currency, offered its collections, and links to its page there.
+const productStores = useProductStores(accountId)
+const channelOptions = computed(() => [...CHANNELS, ...productStores.stores.value.map((s) => s.name)])
+const storefrontLink = computed(() => (product.value ? productStores.storefrontLink(product.value) : null))
+const collectionOptions = computed(() => {
+  const storeIds = productStores.channelIds(form.value.detail.salesChannels)
+  const offered = storeIds.length
+    ? extras.collections.filter((c) => c.salesChannels.some((id) => storeIds.includes(id)))
+    : extras.collections
+  // What the product is already in stays selectable, whatever the list offers.
+  return [...new Set([...offered.map((c) => c.title), ...form.value.collections])]
+})
+
+// The subscription plans this product is sold on. Plans are edited on their own page.
+const subscriptions = useSubscriptionsStore()
+const purchasePlans = computed(() => {
+  const p = product.value
+  if (!p) return []
+  return subscriptions.plansWithProduct(p.id).map((plan) => {
+    const store = productStores.stores.value.find((s) => s.id === plan.channelId)?.webStore
+    const unit = store?.currency ? parseDecimal(p.price, store.currency) : null
+    return {
+      plan,
+      price: unit ? formatStorePrice(roundForDisplay(pricePerDelivery(unit, plan)), store?.locale) : null,
+    }
+  })
+})
+const plansRoute = computed(() => ({ name: 'SubscriptionPlans', params: { accountId: accountId.value } }))
+
+/** A variant's price in its store's currency ("419 kr"); dollars for the shared catalogue. */
+function money(price: string): string {
+  const store = productStores.stores.value.find((s) => form.value.detail.salesChannels.includes(s.name))?.webStore
+  const amount = store?.currency ? parseDecimal(price || '0', store.currency) : null
+  return amount ? formatStorePrice(amount, store?.locale) : `$${(parseFloat(price) || 0).toFixed(2)}`
+}
 const brandOptions = computed(() => Array.from(new Set(store.products.map((p) => p.vendor))).sort())
 // Includes what this product is filed under, so a new category (one Da Vinci added) stays selectable.
 const categoryOptions = computed(() =>
@@ -66,6 +112,10 @@ const form = ref({
   sku: '',
   price: '',
   publishStatus: 'Published' as PublishStatus,
+  /** Every collection the product is in; the first one leads. */
+  collections: [] as string[],
+  /** The product's pictures, the first one leading. */
+  images: [] as string[],
   detail: emptyDetail(),
   seo: { title: '', metaDescription: '', urlHandle: '', ogTitle: '', ogDescription: '' },
 })
@@ -83,6 +133,8 @@ function load() {
     sku: p.sku,
     price: p.price,
     publishStatus: p.publishStatus,
+    collections: [...p.collections],
+    images: (p.imageUrls ?? []).filter((url) => !isPlaceholderImage(url)),
     detail,
     seo: detail.seo ?? {
       title: '', metaDescription: '',
@@ -144,13 +196,19 @@ async function save() {
     variants: Math.max(1, form.value.detail.variantsList.length),
     type: p.type,
     publishStatus: form.value.publishStatus,
-    detail: { ...form.value.detail, seo: { ...form.value.seo } },
+    detail: { ...form.value.detail, collection: form.value.collections[0] ?? '', seo: { ...form.value.seo } },
     components: p.components,
+    collections: [...form.value.collections],
+    channelIds: productStores.channelIds(form.value.detail.salesChannels),
+    // A store product never goes out without a picture: it gets a drawn pack until one is added.
+    imageUrls: form.value.images.length
+      ? [...form.value.images]
+      : productStores.placeholdersFor(form.value.detail.salesChannels, form.value.name.trim()),
   })
   saving.value = false
   snapshot.value = JSON.stringify(form.value)
   trackSave(p.id, wasPublished)
-  router.push({ ...listRoute.value, query: { flash: 'product-updated' } })
+  router.push({ ...listRoute.value, query: { flash: 'product-updated', product: String(p.id) } })
 }
 
 // ── Da Vinci Catalog Co-Pilot ─────────────────────────────────────────
@@ -170,7 +228,7 @@ function buildSnapshot(): ProductSnapshot {
     brand: f.detail.brand ?? '',
     tag: f.detail.tag ?? '',
     categories: [...(f.detail.categories ?? [])],
-    collection: f.detail.collection ?? '',
+    collection: f.collections[0] ?? '',
     options: f.detail.options.map((o) => ({ name: o.name, values: [...o.values] })),
     seo: { title: f.seo.title, metaDescription: f.seo.metaDescription, urlHandle: f.seo.urlHandle },
   }
@@ -197,7 +255,7 @@ function applyDaVinci(payload: CatalogApplyPayload) {
   if (f.brand !== undefined) target.detail.brand = f.brand
   if (f.tag !== undefined) target.detail.tag = f.tag
   if (f.categories !== undefined) target.detail.categories = [...f.categories]
-  if (f.collection !== undefined) target.detail.collection = f.collection
+  if (f.collection !== undefined) target.collections = withPrimaryCollection(target.collections, f.collection)
   if (f.seoTitle !== undefined) target.seo.title = f.seoTitle
   if (f.seoMetaDescription !== undefined) target.seo.metaDescription = f.seoMetaDescription
   daVinciApplied.value = { at: payload.appliedAt }
@@ -255,6 +313,17 @@ function openVariantsWizard() {
           disabled-reason="You need permission to edit products to use Da Vinci."
           @click="editWithDaVinci"
         />
+        <v-btn
+          v-if="storefrontLink"
+          variant="text"
+          class="text-none"
+          prepend-icon="external-link"
+          :href="storefrontLink.href"
+          target="_blank"
+          rel="noopener"
+        >
+          View in store
+        </v-btn>
         <v-btn variant="text" class="text-none" :disabled="saving" @click="requestCancel">Cancel</v-btn>
         <v-btn color="primary" variant="flat" class="text-none" :loading="saving" :disabled="!valid || !dirty" @click="save">
           Save
@@ -309,14 +378,8 @@ function openVariantsWizard() {
         </v-card>
 
         <v-card variant="flat" border rounded="lg" class="ped-card">
-          <MpFormSection :heading-level="2" title="Media" description="PNG, JPG, GIF, JPEG or WEBP up to 20 MB each." />
-          <div class="ped-media">
-            <div class="ped-media__tile">
-              <v-icon size="20" class="text-medium-emphasis">image</v-icon>
-              <span class="text-caption text-medium-emphasis">Primary</span>
-            </div>
-            <v-btn variant="outlined" prepend-icon="plus" class="text-none align-self-center">Add media</v-btn>
-          </div>
+          <MpFormSection :heading-level="2" title="Media" description="The pictures shoppers see on the product page and in lists." />
+          <ProductMediaField v-model="form.images" />
         </v-card>
 
         <v-card variant="flat" border rounded="lg" class="ped-card">
@@ -349,7 +412,7 @@ function openVariantsWizard() {
               <span class="ped-mono text-body-2">{{ item.sku || '—' }}</span>
             </template>
             <template #item.price="{ item }">
-              <span class="text-body-2">${{ (parseFloat(item.price) || 0).toFixed(2) }}</span>
+              <span class="text-body-2">{{ money(item.price) }}</span>
             </template>
             <template v-for="location in INVENTORY_LOCATIONS" :key="location" #[`item.stock.${location}`]="{ item }">
               <span class="text-body-2">{{ item.stock[location] ?? 0 }}</span>
@@ -399,11 +462,34 @@ function openVariantsWizard() {
           <v-select v-model="form.publishStatus" :items="['Draft', 'Published']" label="Status" />
         </v-card>
 
+        <v-card v-if="storefrontLink || purchasePlans.length" variant="flat" border rounded="lg" class="ped-card">
+          <MpFormSection
+            :heading-level="2"
+            title="Purchase options"
+            description="Shoppers can buy this product once, or subscribe on a plan."
+          />
+          <div v-if="purchasePlans.length">
+            <MpListRow
+              v-for="{ plan, price } in purchasePlans"
+              :key="plan.id"
+              variant="divided"
+              :title="plan.name"
+              :subtitle="`${deliverySummary(plan)}${plan.discountPct ? ` · ${plan.discountPct}% off` : ''}${price ? ` · ${price} per delivery` : ''}`"
+            >
+              <template #trailing>
+                <MpStatusChip :status="plan.status" type="general" size="sm" />
+              </template>
+            </MpListRow>
+          </div>
+          <p v-else class="text-body-2 text-medium-emphasis mb-0">This product is not on a subscription plan.</p>
+          <RouterLink :to="plansRoute" class="mp-link text-body-2 align-self-start">Manage plans</RouterLink>
+        </v-card>
+
         <v-card variant="flat" border rounded="lg" class="ped-card">
           <MpFormSection :heading-level="2" title="Sales channels" description="Without a channel, the product falls back to the default sales channel." />
           <v-select
             v-model="form.detail.salesChannels"
-            :items="CHANNELS"
+            :items="channelOptions"
             label="Channels"
             multiple
             chips
@@ -431,7 +517,7 @@ function openVariantsWizard() {
             <v-select v-model="form.detail.material" :items="MATERIALS" label="Material" clearable />
             <v-combobox v-model="form.detail.brand" :items="brandOptions" label="Brand" clearable />
             <v-combobox v-model="form.detail.tag" :items="['Featured', 'New', 'Sale', 'Seasonal', 'Clearance']" label="Tags" clearable />
-            <v-select v-model="form.detail.collection" :items="collectionOptions" label="Collection" clearable />
+            <v-select v-model="form.collections" :items="collectionOptions" label="Collections" multiple chips closable-chips />
             <div class="ped-field-action">
               <v-select v-model="form.detail.categories" :items="categoryOptions" label="Categories" multiple chips closable-chips />
               <DvCatalogCta
@@ -478,23 +564,6 @@ function openVariantsWizard() {
   display: flex;
   flex-direction: column;
   gap: var(--mp-component-card-gap);
-}
-
-.ped-media {
-  display: flex;
-  gap: var(--mp-space-12);
-}
-
-.ped-media__tile {
-  width: 96px;
-  height: 96px;
-  border: 1px dashed rgb(var(--v-border-color), var(--v-border-opacity));
-  border-radius: var(--mp-radius-10);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--mp-space-4);
 }
 
 .ped-variants {

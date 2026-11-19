@@ -132,6 +132,10 @@ const routes: RouteRecordRaw[] = [
   { path: '/commerce/:accountId/orders/drafts/new', name: 'CreateDraftOrder', component: () => import('@/views/Commerce/CreateDraftOrder.vue'), meta: { ...sharedCommerceGate, builderShell: true } },
   { path: '/commerce/:accountId/orders/drafts/:draftId(\\d+)', name: 'EditDraftOrder', component: () => import('@/views/Commerce/CreateDraftOrder.vue'), meta: { ...sharedCommerceGate, builderShell: true } },
   { path: '/commerce/:accountId/orders/:orderId(\\d+)', name: 'OrderDetail', component: () => import('@/views/Commerce/OrderDetail.vue'), meta: sharedCommerceGate },
+  { path: '/commerce/:accountId/subscriptions/plans', name: 'SubscriptionPlans', component: () => import('@/views/Commerce/SubscriptionPlans.vue'), meta: sharedCommerceGate },
+  { path: '/commerce/:accountId/subscriptions/subscribers', name: 'Subscribers', component: () => import('@/views/Commerce/Subscribers.vue'), meta: sharedCommerceGate },
+  { path: '/commerce/:accountId/subscriptions/subscribers/:subscriptionId', name: 'SubscriptionDetail', component: () => import('@/views/Commerce/SubscriptionDetail.vue'), meta: sharedCommerceGate },
+  { path: '/commerce/:accountId/subscriptions', redirect: (to) => `/commerce/${to.params.accountId}/subscriptions/subscribers` },
   { path: '/commerce/:accountId/fulfillments', name: 'Fulfillments', component: () => import('@/views/Commerce/Fulfillments.vue'), meta: sharedCommerceGate },
   { path: '/commerce/:accountId/coupons', name: 'Coupons', component: () => import('@/views/Commerce/Coupons.vue'), meta: sharedCommerceGate },
   { path: '/commerce/:accountId/promotions', name: 'Promotions', component: () => import('@/views/Commerce/Coupons.vue'), meta: sharedCommerceGate },
@@ -284,7 +288,10 @@ const routes: RouteRecordRaw[] = [
       { path: 'policies/:handle', name: 'StorefrontPolicy', component: () => import('@/views/Storefront/StorefrontContent.vue'), meta: { contentKind: 'policy' } },
       { path: 'collections/:handle', name: 'StorefrontCollection', component: () => import('@/views/Storefront/StorefrontCollection.vue') },
       { path: 'products/:handle', name: 'StorefrontProduct', component: () => import('@/views/Storefront/StorefrontProduct.vue') },
+      { path: 'search', name: 'StorefrontSearch', component: () => import('@/views/Storefront/StorefrontSearch.vue') },
       { path: 'cart-page', name: 'StorefrontCart', component: () => import('@/views/Storefront/StorefrontCart.vue') },
+      // The shopper's own page: sign in (mocked), then their subscriptions.
+      { path: 'account', name: 'StorefrontAccount', component: () => import('@/views/Storefront/StorefrontAccount.vue') },
       // Takes the payment through the store's Maropay setup; query: buy/qty (express buy-now), express, session.
       { path: 'checkout', name: 'StorefrontCheckout', component: () => import('@/views/Storefront/StorefrontCheckout.vue'), meta: { minimalChrome: true } },
       { path: ':pathMatch(.*)*', name: 'StorefrontNotFound', component: () => import('@/views/Storefront/StorefrontNotFound.vue') },
@@ -543,6 +550,18 @@ router.beforeEach((to) => {
 // Fallback title from the route name; a level-1 MpPageHeader replaces it with its heading.
 router.afterEach((to) => {
   setPageTitle(typeof to.name === 'string' ? titleFromRouteName(to.name) : undefined)
+})
+
+// A page left open while a new version went live asks for a screen whose file no
+// longer exists, and the click does nothing. Load the wanted page afresh instead,
+// which brings the new version with it. Once per address, so a screen that is
+// really broken cannot reload for ever.
+router.onError((error, to) => {
+  if (!/dynamically imported module|Importing a module script failed/i.test(String((error as Error)?.message))) return
+  const key = 'mp.reloadedFor'
+  if (sessionStorage.getItem(key) === to.fullPath) return
+  sessionStorage.setItem(key, to.fullPath)
+  window.location.assign(to.fullPath)
 })
 
 export default router

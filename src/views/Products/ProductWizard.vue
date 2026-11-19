@@ -9,7 +9,7 @@ import {
   type ProductDraftInput,
   type PublishStatus,
 } from '@/stores/useCommerce'
-import { useProductExtrasStore } from '@/stores/useProductExtras'
+import { useProductExtrasStore, INVENTORY_LOCATIONS } from '@/stores/useProductExtras'
 import MpWizardShell from '@/components/MpWizardShell.vue'
 import MpWizardStepCard from '@/components/MpWizardStepCard.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
@@ -17,6 +17,10 @@ import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpFormSection from '@/components/MpFormSection.vue'
 import MpAlert from '@/components/MpAlert.vue'
 import DvCatalogCta from '@/components/copilot/DvCatalogCta.vue'
+import ProductMediaField from '@/components/products/ProductMediaField.vue'
+import { isPlaceholderImage } from '@/components/products/productMedia'
+import { lowestPrice, totalStock, withPrimaryCollection } from '@/storefront/catalog'
+import { useProductStores } from '@/composables/useProductStores'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
 import { useWizardSteps } from '@/composables/useWizardSteps'
 import { useCatalogCopilotStore, type CatalogApplyPayload } from '@/stores/useCatalogCopilot'
@@ -29,7 +33,8 @@ const store = useCommerceStore()
 const extras = useProductExtrasStore()
 const catalog = useCatalogCopilotStore()
 
-const LOCATIONS = ['testing', 'Oxford warehouse']
+// The same names the rest of the admin keeps stock under, so an edit never loses a count.
+const LOCATIONS = INVENTORY_LOCATIONS
 
 // ── Option sources (mock / store-backed) ───────────────────────────────
 const CATEGORIES = ['Electronics', 'Apparel', 'Home & Kitchen', 'Sports & Outdoors', 'Beauty & Health', 'Tools & Garden']
@@ -39,11 +44,25 @@ const TAGS = ['Featured', 'New', 'Sale', 'Seasonal', 'Clearance']
 const COUNTRIES = ['United Kingdom', 'United States', 'China', 'India', 'Germany', 'Italy', 'France', 'Vietnam']
 const SALES_CHANNELS = ['Online Store', 'POS', 'Amazon', 'eBay', 'Instagram Shop']
 const taxCategoryOptions = computed(() => extras.taxCategories.map(c => c.name))
-const collectionOptions = computed(() => extras.collections.map(c => c.title))
 
 const accountId = computed(() => {
   const value = route.params.accountId
   return (Array.isArray(value) ? value[0] : value) ?? '2000290'
+})
+
+// Stores that sell their own products join the sales channels. Picking one puts
+// the product in that store, in its currency and among its collections.
+const productStores = useProductStores(accountId)
+const salesChannelOptions = computed(() => [...SALES_CHANNELS, ...productStores.stores.value.map(s => s.name)])
+const pickedStoreNames = computed(() => productStores.stores.value.filter(s => salesChannels.value.includes(s.name)).map(s => s.name))
+const priceAffix = computed(() => productStores.affixFor(salesChannels.value))
+const collectionOptions = computed(() => {
+  const storeIds = productStores.channelIds(salesChannels.value)
+  const offered = storeIds.length
+    ? extras.collections.filter(c => c.salesChannels.some(id => storeIds.includes(id)))
+    : extras.collections
+  // What the product is already in stays selectable, whatever the list offers.
+  return [...new Set([...offered.map(c => c.title), ...collections.value])]
 })
 
 const productsRoute = computed(() => ({ name: 'Products', params: { accountId: accountId.value } }))
@@ -68,6 +87,8 @@ const subtitle = ref('')
 const url = ref('')
 const description = ref('')
 const hasVariants = ref(false)
+/** The product's pictures, the first one leading. */
+const images = ref<string[]>([])
 
 // ── Step 1 — Search engine listing ──────────────────────────────────────
 const seoTitle = ref('')
@@ -84,7 +105,8 @@ const taxCategory = ref('')
 const material = ref('')
 const brand = ref('')
 const tag = ref('')
-const collection = ref('')
+/** Every collection the product is in; the first one leads (breadcrumbs, Da Vinci). */
+const collections = ref<string[]>([])
 const categories = ref<string[]>([])
 // A category Da Vinci filed the product under that the list doesn't have yet stays selectable.
 const categoryOptions = computed(() => [...CATEGORIES, ...categories.value.filter(c => !CATEGORIES.includes(c))])
@@ -112,6 +134,9 @@ function makeVariant(vtitle: string, seed?: Partial<ProductVariant>): ProductVar
     allowBackorder: seed?.allowBackorder ?? false,
     costPrice: seed?.costPrice ?? '',
     price: seed?.price ?? '',
+    // Not edited here, but an edit must not lose them.
+    ...(seed?.compareAtPrice ? { compareAtPrice: seed.compareAtPrice } : {}),
+    ...(seed?.weight ? { weight: seed.weight } : {}),
     stock: seed?.stock ? { ...emptyStock(), ...seed.stock } : emptyStock(),
   }
 }
@@ -187,7 +212,7 @@ function buildDetail(): ProductDetail {
     material: material.value,
     brand: brand.value,
     tag: tag.value,
-    collection: collection.value,
+    collection: collections.value[0] ?? '',
     categories: [...categories.value],
     width: width.value,
     length: length.value,
@@ -202,23 +227,32 @@ function buildDetail(): ProductDetail {
   }
 }
 
-function totalInventory(): number {
-  return activeVariants.value.reduce(
-    (sum, v) => sum + LOCATIONS.reduce((s, l) => s + (Number(v.stock[l]) || 0), 0),
-    0,
-  )
+/** The lowest variant price: what lists and storefront cards show for the product. */
+function representativePrice(): string {
+  return Number(lowestPrice({ publishStatus: 'Draft', price: '0', detail: { variantsList: activeVariants.value } })).toFixed(2)
 }
 
-function representativePrice(): string {
-  const first = activeVariants.value[0]
-  return Number(first?.price || 0).toFixed(2)
-}
+/** What a shopper would trip over if this were published now. Shown on the last step. */
+const sellWarnings = computed(() => {
+  const variants = activeVariants.value
+  if (!variants.length) return []
+  const notes: string[] = []
+  if (variants.some(v => !(Number(v.price) > 0))) {
+    notes.push(variants.length > 1 ? 'Some variants have no price yet.' : 'There is no price yet.')
+  }
+  if (variants.every(v => v.manageInventory && !v.allowBackorder) && totalStock(variants) === 0) {
+    notes.push('There is no stock, so shoppers will see this product as sold out.')
+  }
+  return notes
+})
 
 function formSnapshot() {
   return JSON.stringify({
     title: title.value,
     sku: sku.value,
     detail: buildDetail(),
+    collections: collections.value,
+    images: images.value,
   })
 }
 const savedSnapshot = ref('')
@@ -248,21 +282,25 @@ function save(publishStatus: PublishStatus) {
     category: categories.value[0] ?? 'Uncategorised',
     vendor: brand.value || '—',
     price: representativePrice(),
-    inventory: totalInventory(),
+    inventory: totalStock(activeVariants.value),
     variants: activeVariants.value.length,
     type: 'product',
     publishStatus,
     detail,
+    collections: [...collections.value],
+    channelIds: productStores.channelIds(salesChannels.value),
+    // A store product never goes out without a picture: it gets a drawn pack until one is added.
+    imageUrls: images.value.length ? [...images.value] : productStores.placeholdersFor(salesChannels.value, title.value.trim()),
   }
   allowNextLeave()
   if (isEdit.value && editingId.value !== null) {
     store.updateProductDraft(editingId.value, input)
     trackSave(publishStatus, editingId.value)
-    router.push({ ...productsRoute.value, query: { flash: 'product-updated' } })
+    router.push({ ...productsRoute.value, query: { flash: 'product-updated', product: String(editingId.value) } })
   } else {
     const created = store.createProduct(input)
     trackSave(publishStatus, created.id)
-    router.push({ ...productsRoute.value, query: { flash: publishStatus === 'Draft' ? 'product-draft' : 'product-published' } })
+    router.push({ ...productsRoute.value, query: { flash: publishStatus === 'Draft' ? 'product-draft' : 'product-published', product: String(created.id) } })
   }
 }
 
@@ -291,7 +329,7 @@ function buildSnapshot(): ProductSnapshot {
     brand: brand.value ?? '',
     tag: tag.value ?? '',
     categories: [...categories.value],
-    collection: collection.value ?? '',
+    collection: collections.value[0] ?? '',
     options: hasVariants.value
       ? options.value.filter(o => o.name.trim() && o.values.length).map(o => ({ name: o.name, values: [...o.values] }))
       : [],
@@ -321,7 +359,7 @@ function hydrateFromDraft(payload: CatalogApplyPayload) {
   if (f.brand !== undefined) brand.value = f.brand
   if (f.tag !== undefined) tag.value = f.tag
   if (f.categories !== undefined) categories.value = [...f.categories]
-  if (f.collection !== undefined) collection.value = f.collection
+  if (f.collection !== undefined) collections.value = withPrimaryCollection(collections.value, f.collection)
   if (f.seoTitle !== undefined) seoTitle.value = f.seoTitle
   if (f.seoMetaDescription !== undefined) seoMetaDescription.value = f.seoMetaDescription
   if (f.options?.length) {
@@ -388,6 +426,8 @@ onMounted(() => {
       loadedStatus.value = product.publishStatus
       title.value = product.name
       sku.value = product.sku
+      collections.value = [...product.collections]
+      images.value = (product.imageUrls ?? []).filter(url => !isPlaceholderImage(url))
       const d = product.detail
       if (d) {
         subtitle.value = d.subtitle
@@ -399,7 +439,6 @@ onMounted(() => {
         material.value = d.material
         brand.value = d.brand
         tag.value = d.tag
-        collection.value = d.collection
         categories.value = [...d.categories]
         width.value = d.width
         length.value = d.length
@@ -433,6 +472,10 @@ onMounted(() => {
       }
       unlockAll()
     }
+  } else {
+    // Opened from a store ("Add product"): the product starts in that store.
+    const preset = productStores.stores.value.find(s => s.id === route.query.store)
+    if (preset) salesChannels.value = [preset.name]
   }
   savedSnapshot.value = formSnapshot()
   // After the snapshot, so an applied draft counts as unsaved (Cancel and leave prompt).
@@ -499,12 +542,7 @@ onMounted(() => {
           </MpWizardStepCard>
 
           <MpWizardStepCard title="Media" description="Add images that show off this product." :heading-level="3">
-            <div class="pw-dropzone">
-              <v-icon size="40" color="primary" class="mb-2">image-plus</v-icon>
-              <div class="text-body-1 font-weight-medium mb-1">Drag and Drop</div>
-              <div class="text-caption text-medium-emphasis mb-3">up to 20MB — PNG, JPG, GIF, JPEG, WEBP</div>
-              <v-btn variant="flat" color="primary" size="small" class="text-none" prepend-icon="upload">Add Media</v-btn>
-            </div>
+            <ProductMediaField v-model="images" />
           </MpWizardStepCard>
 
           <MpWizardStepCard title="Search engine listing" description="How this product appears in search results and shared links." :heading-level="3">
@@ -551,7 +589,7 @@ onMounted(() => {
               <v-select v-model="material" :items="MATERIALS" label="Material" clearable />
               <v-combobox v-model="brand" :items="BRANDS" label="Brand" clearable />
               <v-combobox v-model="tag" :items="TAGS" label="Tag" clearable />
-              <v-select v-model="collection" :items="collectionOptions" label="Collection" clearable />
+              <v-select v-model="collections" :items="collectionOptions" label="Collections" multiple chips closable-chips />
               <div class="pw-field-action">
                 <v-select v-model="categories" :items="categoryOptions" label="Categories" multiple chips closable-chips />
                 <DvCatalogCta
@@ -586,13 +624,26 @@ onMounted(() => {
                 hint="Allow discounts and promotions on this product."
                 persistent-hint
               />
-              <v-select v-model="salesChannels" :items="SALES_CHANNELS" label="Sales Channels" multiple chips closable-chips />
+              <v-select
+                v-model="salesChannels"
+                :items="salesChannelOptions"
+                label="Sales Channels"
+                multiple
+                chips
+                closable-chips
+                :hint="pickedStoreNames.length ? `Shoppers will find this product in ${pickedStoreNames.join(' and ')}.` : undefined"
+                persistent-hint
+              />
             </MpFormGrid>
           </v-card>
         </template>
 
         <!-- Step 3 — Variants -->
         <template v-else>
+          <MpAlert v-if="sellWarnings.length" tone="warning" title="Before you publish">
+            {{ sellWarnings.join(' ') }}
+          </MpAlert>
+
           <!-- With variants: options builder -->
           <template v-if="hasVariants">
             <MpWizardStepCard title="Options" description="Add an option name (e.g. Size) and its values. Variants are generated automatically.">
@@ -632,8 +683,8 @@ onMounted(() => {
                   <MpFormGrid :cols="2">
                     <MpFormSection :title="variant.title" />
                     <v-text-field v-model="variant.sku" label="SKU" class="mp-form-grid__full" />
-                    <v-text-field v-model="variant.costPrice" label="Cost Price" prefix="$" type="number" />
-                    <v-text-field v-model="variant.price" label="Price" prefix="$" type="number" />
+                    <v-text-field v-model="variant.costPrice" label="Cost Price" v-bind="priceAffix" type="number" />
+                    <v-text-field v-model="variant.price" label="Price" v-bind="priceAffix" type="number" />
                     <v-switch v-model="variant.manageInventory" label="Manage Inventory" />
                     <v-switch v-model="variant.allowBackorder" label="Allow Backorder" />
                     <template v-if="variant.manageInventory">
@@ -656,8 +707,8 @@ onMounted(() => {
           <MpWizardStepCard v-else title="Default Variant" description="This product has no variants, so pricing and stock are set on a single default variant.">
             <MpFormGrid :cols="2">
               <v-text-field v-model="defaultVariant.sku" label="SKU" class="mp-form-grid__full" />
-              <v-text-field v-model="defaultVariant.costPrice" label="Cost Price" prefix="$" type="number" />
-              <v-text-field v-model="defaultVariant.price" label="Price" prefix="$" type="number" />
+              <v-text-field v-model="defaultVariant.costPrice" label="Cost Price" v-bind="priceAffix" type="number" />
+              <v-text-field v-model="defaultVariant.price" label="Price" v-bind="priceAffix" type="number" />
               <v-switch v-model="defaultVariant.manageInventory" label="Manage Inventory" />
               <v-switch v-model="defaultVariant.allowBackorder" label="Allow Backorder" />
               <template v-if="defaultVariant.manageInventory">
@@ -718,17 +769,6 @@ onMounted(() => {
   top: 0;
   right: 0;
   z-index: 1;
-}
-
-.pw-dropzone {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: var(--mp-space-32) var(--mp-space-16);
-  border: 1px dashed var(--border-strong);
-  border-radius: var(--mp-radius-12);
 }
 
 .pw-variant {

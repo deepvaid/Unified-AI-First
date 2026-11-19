@@ -1,5 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { browserStorage, keepInBrowser } from '@/stores/demoKeep'
+import { demoSlot } from '@/storefront/demoStorage'
+import { VITAHEAL_CHANNEL_ID, VITAHEAL_CHANNEL_NAME, VITAHEAL_CHATBOT, VITAHEAL_CONVERSATIONS } from '@/storefront/vitahealDemo'
 
 /** A prompt is just its text — the assistant works out the intent itself. */
 export interface QuickPrompt {
@@ -281,8 +284,51 @@ function make(
   }
 }
 
+// ── The Vitaheal (demo) store's chatbot ──────────────────────────────────────
+// The one chatbot that also runs on a storefront (StorefrontChat.vue). Its
+// settings and the chats shoppers have with it are kept in the browser with the
+// rest of that store's data, so a change in the builder reaches the store's own
+// tab, a chat on the store shows up under Conversations, and "Restore original
+// store" puts both back. Its id is fixed, clear of the ids `make` hands out.
+
+export const VITAHEAL_CHATBOT_ID = 101
+
+function vitahealChatbot(): Chatbot {
+  const storeUrl = 'https://2000290-12.uat.maropost.store'
+  return {
+    id: VITAHEAL_CHATBOT_ID,
+    store: VITAHEAL_CHANNEL_NAME,
+    storeUrl,
+    channelId: VITAHEAL_CHANNEL_ID,
+    status: 'Active',
+    conversations: 214,
+    createdOn: 'Nov 16, 2026',
+    lastModified: 'Nov 18, 2026',
+    // A deep copy: the builder edits the config in place, and the seed must stay as written.
+    config: { ...defaultConfig('Vitaheal', storeUrl), ...(JSON.parse(JSON.stringify(VITAHEAL_CHATBOT)) as Partial<ChatbotConfig>) },
+  }
+}
+
+/** What of the demo chatbot is kept: whether it is on, and how it is set up. */
+type KeptChatbot = Pick<Chatbot, 'status' | 'config'>
+
+function isKeptChatbot(value: unknown): value is KeptChatbot {
+  const kept = value as Partial<KeptChatbot> | null
+  return !!kept && typeof kept.status === 'string' && typeof kept.config?.brandName === 'string'
+    && typeof kept.config.welcomeMessage === 'string' && Array.isArray(kept.config.quickPrompts) && Array.isArray(kept.config.knowledgeSources)
+}
+
+function isConversationList(value: unknown): value is ChatbotConversation[] {
+  return Array.isArray(value) && value.every((c: Partial<ChatbotConversation> | null) =>
+    !!c && typeof c.id === 'string' && typeof c.chatbotId === 'number' && Array.isArray(c.messages))
+}
+
 export const useChatbotStore = defineStore('chatbot', () => {
+  const keptChatbot = demoSlot('chatbot', 1, browserStorage(), isKeptChatbot)
+  const demoChatbot = (): Chatbot => ({ ...vitahealChatbot(), ...(keptChatbot.load() ?? {}) })
+
   const chatbots = ref<Chatbot[]>([
+    demoChatbot(),
     make('Johny Style Store', 'https://johny-style.sss.com', 'Active', 1298, 'Jan 1, 2025', 'Nov 11, 2025', { channelId: 'neelam-store' }),
     make('Tech Gizmo Store', 'https://techgizmo.store.com', 'Active', 1298, 'Jan 1, 2025', 'Nov 11, 2025', { primaryColor: '#6D28D9' }),
     make('Gourmet Delights', 'https://gourmet-delights.com', 'Disabled', 752, 'Feb 15, 2023', 'Dec 31, 2024', { primaryColor: '#DD7A3B' }),
@@ -298,6 +344,37 @@ export const useChatbotStore = defineStore('chatbot', () => {
   ])
 
   const MAX_CHATBOTS = 20
+
+  // The demo chatbot is seeded above and never removed from the list (archiving only changes its status).
+  const demoBot = (): Chatbot => chatbots.value.find(c => c.id === VITAHEAL_CHATBOT_ID)!
+  const seededDemo = (): KeptChatbot => { const seed = vitahealChatbot(); return { status: seed.status, config: seed.config } }
+  const keptDemo = keepInBrowser<KeptChatbot>(
+    keptChatbot,
+    () => ({ status: demoBot().status, config: demoBot().config }),
+    (saved) => { Object.assign(demoBot(), saved ?? seededDemo()) },
+  )
+
+  // Chats shoppers had with the demo chatbot on its store, newest first.
+  const keptChats = demoSlot('conversations', 1, browserStorage(), isConversationList)
+  const liveChats = ref<ChatbotConversation[]>(keptChats.load() ?? [])
+  const keptLive = keepInBrowser(keptChats, () => liveChats.value, (saved) => { liveChats.value = saved ?? [] })
+
+  /** Saves a storefront chat as it goes: the same id replaces the earlier copy. */
+  function recordConversation(conversation: ChatbotConversation): void {
+    const index = liveChats.value.findIndex(c => c.id === conversation.id)
+    if (index >= 0) liveChats.value[index] = conversation
+    else liveChats.value.unshift(conversation)
+  }
+
+  /** Puts the demo chatbot back as seeded and forgets its live chats. Called by the demo store's restore (useCommerce). */
+  function restoreDemo(): void {
+    keptChatbot.clear()
+    Object.assign(demoBot(), seededDemo())
+    keptDemo.adopt()
+    keptChats.clear()
+    liveChats.value = []
+    keptLive.adopt()
+  }
 
   function getById(id: number) {
     return chatbots.value.find(c => c.id === id)
@@ -347,9 +424,17 @@ export const useChatbotStore = defineStore('chatbot', () => {
    */
   function conversationsFor(chatbotId: number): ChatbotConversation[] {
     const bot = getById(chatbotId)
-    if (!bot || bot.conversations === 0) return []
+    if (!bot) return []
+    // The demo chatbot shows what shoppers just asked on its store, then its own earlier chats.
+    if (chatbotId === VITAHEAL_CHATBOT_ID) {
+      return [
+        ...liveChats.value.filter(c => c.chatbotId === chatbotId),
+        ...VITAHEAL_CONVERSATIONS.map((c, i) => ({ ...c, id: `${chatbotId}-${i + 1}`, chatbotId })),
+      ]
+    }
+    if (bot.conversations === 0) return []
     return CONVERSATION_SEED.map((c, i) => ({ ...c, id: `${chatbotId}-${i + 1}`, chatbotId }))
   }
 
-  return { chatbots, MAX_CHATBOTS, getById, getByChannel, create, setStatus, archive, restore, conversationsFor, previewProducts }
+  return { chatbots, MAX_CHATBOTS, getById, getByChannel, create, setStatus, archive, restore, conversationsFor, previewProducts, recordConversation, restoreDemo }
 })

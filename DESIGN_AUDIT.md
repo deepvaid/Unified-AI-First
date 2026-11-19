@@ -2582,6 +2582,264 @@ merchant-authored FAQs, configurable pre-chat forms, a full test environment) ar
 - The chatbot widget preview is still inline in `ChatbotBuilder.vue` (builder audit B4).
 - "CRM" on the call was read as the store association (the Sales channel select in General).
 
+## BKM demo store seed (BKM build S0) — 2026-11-16
+
+First slice of `docs/store-builder/bkm-build-prompt.md`; progress lives in
+`docs/store-builder/bkm-build-tracker.md`. The storefront is out of system (P4-8), so nothing
+here touches a design-system component.
+
+- **BKM (demo)** sales channel (`bkm-demo`) seeded from one module, `src/storefront/bkmDemo.ts`:
+  eight products with variants and generated pack shots, five collections, menus, pages, policies,
+  three blog posts and the "BKM" theme.
+- **Pure storefront rules** in `src/storefront/` with `npm run test:storefront`.
+- **Theme Styles tab** gains a Badges group (sale, custom, sold out).
+
+### Renames and breaking changes
+
+- `ThemeStyles` gains required `saleBadgeColor`, `customBadgeColor`, `soldOutBadgeColor`;
+  `storefrontThemeVars` emits `--sf-badge-{sale,custom,sold-out}` and `--sf-on-badge-*`.
+- `themeFonts` gains `Figtree` and `Inconsolata` (loaded by the Google Fonts import in `global.scss`).
+- `storefrontProducts`, `collectionsOf`, `collectionByHandle`, `productFromHandle` and
+  `relatedProducts` (`views/Storefront/storefrontCatalog.ts`) now take a `channelId`.
+- `StorefrontContext` gains `formatMoney`; `currency` is the store's own when it has one.
+- `Product` gains optional `channelIds` and `imageUrls`; `ProductVariant` gains optional
+  `compareAtPrice` and `weight`; `SalesChannel.webStore` gains optional `currency` and `locale`.
+
+### Not done here
+
+- The Styles tab still offers preset swatches only; a custom hex colour cannot be picked.
+- `ThemeStyles` has no border colour or accent font yet.
+
+**Renamed 2026-11-17 — the demo store carries a fictional brand.** Sales people show it to other
+prospects, so BKM's name is off the screen:
+
+- channel `bkm-demo` "BKM (demo)" → `vitaheal-demo` "Vitaheal (demo)"; theme `theme-bkm` "BKM" →
+  `theme-vitaheal` "Vitaheal";
+- `src/storefront/bkmDemo.ts` → `vitahealDemo.ts`; exports `BKM_*` → `VITAHEAL_*`, `bkmProducts()` →
+  `vitahealProducts()`; `tests/storefront/bkmDemo.test.ts` → `vitahealDemo.test.ts`;
+- products: Tranquil → Unwind, Ultra Focused → Clear Focus, Life NAD+ → Daily NAD+, Glow+ →
+  Collagen+, Harmonized → Balance, BKM Electrolytes → Vitaheal Electrolytes (flavours Lemon & Ginger,
+  Wild Berries); SKUs `BKM-…` → `VTH-…`. Prices, collections and theme values are unchanged.
+
+**Demo pass, part 1 (2026-11-17) — the demo store looks like the reference store, with photos.**
+
+- New theme section kind `image-with-text` (heading, body, button label and link, image side);
+  `image-banner` gains a `subheadline` field. Sections and the `collection` block may carry an
+  `image` setting (a path under `/public`); there is no builder field for it yet.
+- `StorefrontChrome.announcementAboveHeader` (optional): the theme's announcement bar is drawn by
+  `StorefrontLayout` above the header on every page, and the home page no longer repeats it.
+- Storefront header: `.sf-logo` is pinned to the middle grid column and `.sf-tools` to the last,
+  so a store with no social links no longer shows its logo at the start and its cart in the middle.
+- Product card shows `imageUrls[1]` on hover and focus; the product page has a thumbnail gallery;
+  the checkout summary shows the product photo.
+- `vitahealDemo.ts`: products name stock photos instead of generated pack shots (`ProductSeed.shape`
+  and `accent` are gone; `photo` replaces them); new exports `VITAHEAL_PHOTO_DIR`, `VITAHEAL_PHOTOS`.
+  `src/storefront/packShot.ts` is unused until part 2 (the picture for a product added without one).
+
+**Demo pass, part 2 (2026-11-17) — a sales person can add a product to the demo store, and changes are kept.**
+
+- New component `ProductMediaField` (`src/components/products/`, story `Product/Products/ProductMediaField`):
+  the pictures of a product on the product forms. It composes `MpFormField`; tiles are sized from
+  `space.48`, and the remove button is the existing `mp-btn--icon`. It replaces two hand-rolled
+  upload mock-ups (`.pw-dropzone` in the wizard, `.ped-media` in the editor, which used raw `96px`).
+- Product forms: the "Collection" select is now "Collections" (multiple). `ProductDetail.collection`
+  stays as the first one. Price fields take their currency affix from the picked store
+  (`currencyAffix` in `src/storefront/price.ts`) instead of a fixed `$`.
+- `ProductDraftInput` gains optional `collections`, `channelIds` and `imageUrls`.
+  `updateProductDraft` no longer replaces a product's collections with `detail.collection`.
+- New pure modules and rules: `src/storefront/demoStorage.ts` (`demoSlot`), and in
+  `src/storefront/catalog.ts` `storesWithOwnCatalogue`, `channelIdsFor`, `totalStock`,
+  `isAvailable`, `withPrimaryCollection`. `inStock` on the storefront now follows `isAvailable`.
+- New composable `useProductStores` (stores with their own catalogue, for the product forms and
+  the Products list). `useCommerceStore` gains `restoreDemoStore`.
+- Sales channel detail: an "Add product" quick action on a store with its own catalogue, and a
+  "Store data" card with a restore on the demo store's Settings tab.
+
+### Renames and breaking changes
+
+- The product wizard's stock fields are keyed by `INVENTORY_LOCATIONS` ("Testing",
+  "Oxford Warehouse"), no longer by its own "testing" / "Oxford warehouse".
+- `vitahealDemo.ts`: seeded products are filed under the category "Beauty & Health" in
+  `detail.categories` (it held their collections).
+
+**Demo pass, part 3 (2026-11-17) — subscription plans: edited in the admin, bought in the store.**
+
+- New page Commerce › Subscriptions › Plans (`src/views/Commerce/SubscriptionPlans.vue`, route
+  `SubscriptionPlans`), following the list archetype: `MpPageHeader`, `MpDataTableToolbar` with a
+  status quick filter, `v-data-table`, `MpEmptyState`, `MpFormDrawer`, `MpConfirmDialog`. The
+  Commerce sidebar gains a "Subscriptions" sub-group with "Plans".
+- New pure module `src/subscriptions/plans.ts` and script `npm run test:subscriptions`.
+- New store `useSubscriptions`; new `src/stores/demoKeep.ts` (`keepInBrowser`), which the commerce
+  store now uses for the demo products instead of its own watcher.
+- Storefront: new `StorefrontPurchaseOptions.vue` on the product page; cart lines are keyed by
+  product and plan (`src/storefront/cart.ts`); checkout has a consent box and repeat-charge rows.
+- Product editor: a "Purchase options" card (uses `MpListRow` and `MpStatusChip`), shown for a
+  product of a store with its own catalogue or a product that is on a plan.
+
+### Renames and breaking changes
+
+- `useStorefrontCartStore().setQty` and `.remove` take a line key (`lineKey(line)`), no longer a
+  product id. `add` takes an optional plan and price as its fourth argument.
+- `CheckoutLineItem` (`src/maropay/model.ts`) and `OrderLineItem` gain an optional `plan`.
+- A storefront in kronor rounds every amount it shows to whole kronor (`roundForDisplay`).
+  Stores in other currencies are unchanged.
+
+**Demo pass, part 4 (2026-11-18) — the shopper journey holds from "View store" to the order in the admin.**
+
+- New pure module `src/storefront/checkoutProfile.ts`: the countries, the region field and the
+  sample shopper of a store's checkout, chosen by the store's currency.
+- The storefront context (`storefrontContext.ts`) gains `formatExact`, `ownMoneyFormat`,
+  `checkout` and `demo`, plus `useExactMoney()` and `useDemoStore()` for the parts the checkout
+  shares with the admin's "What shoppers see" preview.
+- New store flag `webStore.demo` (Vitaheal only): plain wording in place of prototype notes on
+  the checkout, no countdown on the confirmation, the store's name in the browser tab, and no
+  "Edit" / "Upload" placeholder buttons on the store's Settings tab.
+- Order page (`OrderDetail.vue`): a product photo on each line whose product has one (the
+  Products list's `v-avatar` pattern); the address line no longer leaves a stray comma when
+  there is no region.
+- `StorefrontPreview` gains an optional `products` prop and draws a section's or collection
+  block's `image` setting (out of system, like the storefront it draws). `previewProducts` in
+  `src/views/Storefront/storefrontCatalog.ts` supplies the products. New story `WithStorePhotos`.
+- No new component or token.
+
+### Renames and breaking changes
+
+- `payButtonText` takes an optional fourth argument, the store's money format;
+  `StorefrontOfferOptions` gains `format` for the instalment captions.
+- `CheckoutSession.customer` and `CheckoutOrderSnapshot.customer` are now `CheckoutCustomer`
+  (`src/maropay/model.ts`), which adds an optional `address`. The payment's own `customer` stays
+  name and email.
+- `CheckoutOrderInput` (`useCommerce`) gains an optional `salesChannel`.
+- `formatMoneyParts` and Maropay's `moneyParts` add a no-break space to a symbol that is a
+  currency code ("SEK "). Dollar amounts are unchanged.
+- The order page and orders list no longer print a fixed "$" for subtotal and shipping: they use
+  the order's currency.
+- A store in kronor now shows exact amounts at checkout ("585,90 kr"); whole kronor stay on the
+  product pages and the cart. This narrows part 3's rounding rule.
+
+**Demo pass, part 5 (2026-11-18) — a subscription can be managed, by its shopper and by the merchant.**
+
+- New pages Commerce › Subscriptions › Subscribers (`Subscribers.vue`, list archetype:
+  `MpPageHeader` with `MpFilterTabs`, `MpDataTableToolbar`, `v-data-table`, `MpRowActionsMenu`,
+  `MpEmptyState`) and the subscription's own page (`SubscriptionDetail.vue`, detail archetype:
+  `MpStatusChip` in `#title-append`, `MpAlert` for paused, cancelled and failed, `MpListRow`
+  history, `MpFormDrawer` for the date and the plan, `MpDialog` for cancelling with a reason,
+  `MpConfirmDialog` for charging, `MpErrorState` when it is gone).
+- `MpStatusChip` gains the type `subscription` (Active, Paused, Cancelled, Payment failed), with
+  its story.
+- New storefront page `StorefrontAccount.vue` (out of system, like the rest of the storefront).
+- New pure module `src/subscriptions/contracts.ts`; new store `useStorefrontShopper`.
+- A lone field in an `MpFormDrawer` goes inside `MpFormGrid`: placed straight in the drawer's
+  column it stretched to the drawer's full height.
+
+### Renames and breaking changes
+
+- `/commerce/:accountId/subscriptions` now redirects to Subscribers (it redirected to Plans).
+- `useSubscriptionsStore` also holds `contracts` and their actions; its `restore()` resets them.
+- `CheckoutInput` and `CheckoutSession` gain an optional `renewalOf`; `CheckoutOrderInput` too.
+  A renewal order is tagged `Renewal` and starts no subscription.
+- `StorefrontChrome` gains an optional `accountHref`. Vitaheal's header now has the account
+  tool (`headerTools: ['account']`); its footer and phone menu gain "My subscription".
+- `vitahealDemo.ts` now imports the pure rule modules, not only types.
+
+**Demo pass, part 6 (2026-11-18) — the store's chatbot answers shoppers on the store.**
+
+- New storefront component `StorefrontChat.vue` (out of system, like the storefront; it takes
+  the chatbot's own colour with `onBrand` from `src/utils/brandContrast.ts` for the text on it).
+- New pure module `src/chatbot/storeAssistant.ts`. `previewResponder.ts` now exports `keywords`
+  and `hits` for it; the builder's preview is unchanged.
+- `useChatbot` seeds the Vitaheal chatbot (fixed id 101, first in the list) and keeps its
+  settings and live chats in the browser. No admin page changed.
+- No new design-system component, token or story.
+
+### Renames and breaking changes
+
+- `useChatbotStore` gains `recordConversation` and `restoreDemo`; `conversationsFor(101)`
+  returns the store's live chats, then the Vitaheal seed.
+- The Chatbots list has one more chatbot, first. Other chatbots keep their ids.
+- A checkout on a store whose chrome has `accountHref` signs its shopper in (was: only a
+  checkout with a subscription line).
+- `StorefrontReceipt`'s "Continue shopping" links to "/" through `StorefrontAnchor` (its
+  `homeHref` prop is kept for the countdown).
+
+**Demo pass, part 7 (2026-11-18) — a store campaign carries an offer, and reaches the store and the inbox.**
+
+- `StoreCampaigns.vue`: the drawer gains `MpFormSection` "Offer" and an `MpAlert` in place of the
+  raw `v-alert`; the campaign name is a button with `mp-link`; the table chooses its columns
+  by its own width with `useElementSize` at the `layout.tableColumns*` stops, folding a dropped
+  column into a cell that stays.
+- New storefront component `StorefrontDiscountCode.vue` and helper `storefrontDiscount.ts`
+  (out of system, like the storefront).
+- New pure module `src/storefront/campaigns.ts`. No new design-system component or token.
+
+### Renames and breaking changes
+
+- `StoreCampaign`, `CampaignScheduleStatus` and `campaignStatus` now live in
+  `src/storefront/campaigns.ts`; `useStoreCampaigns` re-exports them. `StoreCampaign` gains
+  optional `offer`, `orders`, `revenue`, `emailCampaignId`.
+- `useStoreCampaignsStore` gains `recordUse`, `setEmailCampaign`, `restoreDemo`.
+- `useCampaignsStore` gains `restoreDemo` and keeps emails tagged `STORE_CAMPAIGN_TAG`.
+- `useStorefrontCartStore` gains `codeFor` and `setCode`; `clear` also drops the code.
+- `CheckoutLineItem` and `CheckoutOrderInput` lines gain optional `coupon` and `discountPct`.
+- The storefront context gains `campaignMessage`.
+- The Campaigns page's subtitle, empty text and delete warning are reworded for every store,
+  and its table has Offer, Orders and Email columns on every store.
+
+**Demo pass, part 8 (2026-11-18) — Merchandise Cloud connects for real and reaches the store.**
+
+- `MerchandisingLayout.vue`: the connect card connects (progress line, then a toast) instead of
+  routing to itself; its copy names the product count.
+- `MerchandisingChannelSetup.vue`: a Disconnect button behind `MpConfirmDialog`. On a store shown
+  to prospects, the "Solutions status" switch (which changed nothing) and the prototype note are
+  not drawn.
+- `SearchPreview.vue` is a working page for a store with its own products (`MpAlert` for a
+  redirect, `MpEmptyState` for no query and no results, `MerchProductCard` read-only for results);
+  other stores keep the "coming soon" panel.
+- `MerchandisingAnalytics.vue`: `MpEmptyState` for a store with its own data.
+- `MerchProductCard` and the blacklisting table print the store's own price when the product has
+  one, and dollars otherwise.
+- New storefront page `StorefrontSearch.vue` (out of system, like the storefront).
+- New pure module `src/storefront/search.ts`. No new design-system component or token.
+
+### Renames and breaking changes
+
+- `useSalesChannelsStore` gains `connectMerchandising`, `disconnectMerchandising`, `restoreDemo`.
+- `useMerchandisingStore` gains `ownData`, `createSynonym`, `searchRulesFor`, `productEngineFor`,
+  `restoreDemo`. `merchProductList` is the store's Commerce products for a store with its own
+  catalogue. `MerchProduct` gains optional `priceLabel` and `compareAtLabel`.
+- The storefront context gains `searchable`. New route `StorefrontSearch` (`search`); a store
+  that is not searchable still gets its not-found page there.
+- Every store: the Merchandising connect card's button now connects, and "Add new" on Synonyms
+  opens the drawer (both did nothing before).
+
+**Demo pass, part 9 (2026-11-19) — review fixes and the sales film.**
+
+- Storefront: the discount line names what a targeted code covers; a lapsed code is explained
+  under the field; the header search box has a focus ring (`.sf-search--ring`) on a store with
+  search; the not-found page reads in sentence case on a store shown to prospects.
+- Merchandising, for a store with its own data: the pin editor lists real results; the engines
+  page has an `MpAlert` naming the engine in use; "coming soon" and "prototype" controls are not
+  offered. `merchandisingMenu(accountId, channelId, demo)` drops three pages from the demo
+  store's rail.
+- No new design-system component or token.
+
+### Renames and breaking changes
+
+- `merchandisingMenu` takes a third argument, `demo`.
+- `useStorefrontDiscount` returns `label` and `notice` as well.
+- The router reloads the wanted page once when its file is missing after a release.
+- New command `npm run demo:video` and script `scripts/demo-video/record.mjs`.
+
+**Preview test pass (2026-11-18) — four fixes from testing the deployed preview.**
+
+- `StorefrontCardFields` keeps every field when several change in the same instant (browser
+  autofill). No visible change.
+- Cart line buttons name the plan when the line has one ("Remove Unwind, 3-month supply").
+- The Vitaheal announcement section has an empty `link`, so the admin drawing no longer shows
+  the default "Shop sale".
+- The store page's merchandising checklist item reads "Connect merchandising" until it is
+  connected (it read "Merchandising connected" in both states).
+
 ## Storybook for LiquidSky developers — 2026-11-17
 
 LiquidSky (`@maropost-ui/liquidsky-ui`) rebuilds its `App*` / `The*` / `MpV*` components to this

@@ -13,6 +13,7 @@ import { money, zero } from './money.ts'
 import type { Money, RateCard } from './money.ts'
 import { DEFAULT_PROVIDERS_SINCE, PROVIDER_SPECS, cardGateway, isOwnProviderKind } from './providers.ts'
 import type { ManualMethodSettings, ProviderConnection, ProviderKind, ProviderMethod, StoreProviderSetup } from './providers.ts'
+import type { LinePlan } from '../subscriptions/plans.ts'
 
 // ── Vocabulary ────────────────────────────────────────────────────────────
 
@@ -680,14 +681,26 @@ export interface CheckoutLineItem {
   sku: string
   qty: number
   price: string
+  /** The subscription plan the line was bought on; `price` is then the price of one delivery. */
+  plan?: LinePlan
+  /** A store campaign's code that covered this line, and the percentage it took off `price`. The session's amount is already net of it. */
+  coupon?: string
+  discountPct?: number
 }
 
 /** Enough of a checkout-created order to rebuild it after reload (Commerce is not persisted). */
+/** Who is buying. The address is the one typed at checkout, for a store whose orders keep it. */
+export interface CheckoutCustomer {
+  name: string
+  email: string
+  address?: { line1: string; city: string; region: string; postalCode: string; country: string }
+}
+
 export interface CheckoutOrderSnapshot {
   id: number
   orderNumber: string
   date: string
-  customer: { name: string; email: string }
+  customer: CheckoutCustomer
   lineItems: CheckoutLineItem[]
   shipping: string
   total: string
@@ -708,8 +721,10 @@ export interface CheckoutSession {
   state: 'open' | 'requires_action' | 'redirected' | 'processing' | 'complete' | 'failed'
   paymentId: string | null
   order: CheckoutOrderSnapshot | null
-  customer: { name: string; email: string }
+  customer: CheckoutCustomer
   lineItems: CheckoutLineItem[]
+  /** Set on a renewal: the number of the subscription it charges ("S-1001"). The shopper was not there. */
+  renewalOf?: string
   createdAt: string
 }
 

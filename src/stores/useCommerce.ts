@@ -2,7 +2,19 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { useOnboardingStore } from '@/stores/useOnboarding'
 import { useMaropayStore } from '@/stores/useMaropay'
-import type { MaropayProvider, OrderPaymentStatusLabel } from '@/maropay/model'
+import { useStorefrontCartStore } from '@/stores/useStorefrontCart'
+import { useSubscriptionsStore } from '@/stores/useSubscriptions'
+import { useChatbotStore } from '@/stores/useChatbot'
+import { useStoreCampaignsStore } from '@/stores/useStoreCampaigns'
+import { useCampaignsStore } from '@/stores/useCampaigns'
+import { useMerchandisingStore } from '@/stores/useMerchandising'
+import { useSalesChannelsStore } from '@/stores/useSalesChannels'
+import { browserStorage, keepInBrowser } from '@/stores/demoKeep'
+import type { CheckoutCustomer, MaropayProvider, OrderPaymentStatusLabel } from '@/maropay/model'
+import { demoSlot } from '@/storefront/demoStorage'
+import { deliverySummary, nextChargeDate } from '@/subscriptions/plans'
+import type { LinePlan } from '@/subscriptions/plans'
+import { VITAHEAL_CHANNEL_ID, vitahealProducts } from '@/storefront/vitahealDemo'
 
 const productNames = [
   'Nike Air Max 270 - Black/White', 'Patagonia Better Sweater Fleece Vest', 'Apple iPhone 15 Pro Case - Clear',
@@ -75,6 +87,10 @@ export interface ProductVariant {
   allowBackorder: boolean
   costPrice: string
   price: string
+  /** The crossed-out "was" price, when this variant is on offer. */
+  compareAtPrice?: string
+  /** Shipping weight in kg. */
+  weight?: string
   /** Per-location on-hand counts, keyed by location name. */
   stock: Record<string, number>
 }
@@ -140,6 +156,14 @@ export interface Product {
   collections: string[]
   /** Storefront channels the product is published to. */
   salesChannelNames: string[]
+  /**
+   * Sales channel ids this product is assigned to. A store with assigned products
+   * sells only those; a product without assignments is in the shared catalogue
+   * (src/storefront/catalog.ts).
+   */
+  channelIds?: string[]
+  /** Product pictures, first one leading. Without any, the storefront and lists draw a placeholder. */
+  imageUrls?: string[]
   /** Merchandising type used by the Products filter drawer. */
   productType: string
   detail?: ProductDetail
@@ -178,6 +202,12 @@ export interface ProductDraftInput {
   publishStatus: PublishStatus
   detail?: ProductDetail
   components?: KitComponent[]
+  /** Every collection the product is in, the first one leading. Absent: unchanged (on create, `detail.collection` alone). */
+  collections?: string[]
+  /** The stores with their own catalogue that sell it (src/storefront/catalog.ts). Empty: the shared catalogue. Absent: unchanged. */
+  channelIds?: string[]
+  /** Product pictures, the first one leading. Absent: unchanged. */
+  imageUrls?: string[]
 }
 
 export interface InventoryItem {
@@ -401,6 +431,8 @@ export interface OrderLineItem {
   status: string
   coupon: string | null
   discountPct: number
+  /** The subscription plan the line was bought on; `price` is then the price of one delivery. */
+  plan?: LinePlan
 }
 
 export interface OrderTimelineEvent {
@@ -499,8 +531,12 @@ export interface CheckoutOrderInput {
   orderNumber: string
   date: string
   channelId: string
-  customer: { name: string; email: string }
-  lineItems: Array<{ product: string; sku: string; qty: number; price: string }>
+  /** The store's own name, for a store with products of its own. Absent: "Online Store", the shared catalogue's channel. */
+  salesChannel?: string
+  /** A renewal: the subscription's number. The order is tagged Renewal and starts no subscription. */
+  renewalOf?: string
+  customer: CheckoutCustomer
+  lineItems: Array<{ product: string; sku: string; qty: number; price: string; plan?: LinePlan; coupon?: string; discountPct?: number }>
   shipping: string
   total: string
   currency: string
@@ -741,8 +777,32 @@ function buildPosOrders(): Order[] {
   })
 }
 
+/** Saved demo products are only read back when they still look like products. */
+function isProductList(value: unknown): value is Product[] {
+  return Array.isArray(value) && value.every((p: Partial<Product> | null) =>
+    !!p && typeof p.id === 'number' && typeof p.name === 'string' && typeof p.price === 'string'
+    && Array.isArray(p.collections) && Array.isArray(p.channelIds))
+}
+
+const inDemoStore = (product: Product): boolean => !!product.channelIds?.includes(VITAHEAL_CHANNEL_ID)
+
+/**
+ * The product list with the demo store's products in place: the ones a sales
+ * person added lead it, as they did when they were created, and its seeded
+ * ones follow the shared catalogue, so nothing above them shifts.
+ */
+function withDemoProducts(shared: Product[], demo: Product[]): Product[] {
+  const seeded = new Set(vitahealProducts().map((p) => p.id))
+  return [...demo.filter((p) => !seeded.has(p.id)), ...shared, ...demo.filter((p) => seeded.has(p.id))]
+}
+
 export const useCommerceStore = defineStore('commerce', () => {
-  const products = ref<Product[]>(productNames.map((name, i) => {
+  // What the Vitaheal (demo) store sells is kept in this browser, so a sales person's
+  // changes survive a reload and reach the storefront tab (src/storefront/demoStorage.ts).
+  const demoProducts = demoSlot('products', 1, browserStorage(), isProductList)
+  const seededDemoProducts = (): Product[] => vitahealProducts().map((p) => ({ ...p, status: stockStatus(p.inventory) }))
+
+  const products = ref<Product[]>(withDemoProducts(productNames.map((name, i): Product => {
     const inv = i < 3 ? 0 : Math.floor(Math.random() * 500) + 5
     // Deterministic, so the storefront's product pages, cart and orders agree across reloads.
     const price = (15 + ((i * 7919) % 45000) / 100).toFixed(2)
@@ -764,7 +824,35 @@ export const useCommerceStore = defineStore('commerce', () => {
       salesChannelNames: i % 4 === 0 ? [] : ['Online Store'],
       productType: PRODUCT_TYPES[i % PRODUCT_TYPES.length]!,
     }
-  }))
+  }), demoProducts.load() ?? seededDemoProducts()))
+
+  // ── The demo store's products: kept, followed across tabs, restorable ──
+  function setDemoProducts(list: Product[]): void {
+    products.value = withDemoProducts(products.value.filter((p) => !inDemoStore(p)), list)
+  }
+
+  const keptDemoProducts = keepInBrowser(demoProducts, () => products.value.filter(inDemoStore), (fromOtherTab) => {
+    setDemoProducts(fromOtherTab ?? seededDemoProducts())
+    // No saved products means that tab restored the store: its cart goes too.
+    if (!fromOtherTab) useStorefrontCartStore().clear(VITAHEAL_CHANNEL_ID)
+  })
+
+  /**
+   * Puts the demo store back as seeded: its products and subscription plans,
+   * and an empty cart. Orders already placed stay.
+   */
+  function restoreDemoStore(): void {
+    demoProducts.clear()
+    setDemoProducts(seededDemoProducts())
+    keptDemoProducts.adopt()
+    useSubscriptionsStore().restore()
+    useChatbotStore().restoreDemo()
+    useStoreCampaignsStore().restoreDemo()
+    useCampaignsStore().restoreDemo()
+    useSalesChannelsStore().restoreDemo()
+    useMerchandisingStore().restoreDemo()
+    useStorefrontCartStore().clear(VITAHEAL_CHANNEL_ID)
+  }
 
   // ── Product CRUD (mock-persistent) ───────────────────────────────
   function nextProductId(): number {
@@ -785,15 +873,17 @@ export const useCommerceStore = defineStore('commerce', () => {
       category: input.category,
       status: stockStatus(input.inventory),
       vendor: input.vendor || '—',
-      images: 1,
+      images: input.imageUrls?.length || 1,
       variants: input.variants,
       type: input.type,
       publishStatus: input.publishStatus,
-      collections: input.detail?.collection ? [input.detail.collection] : [],
+      collections: input.collections ?? (input.detail?.collection ? [input.detail.collection] : []),
       salesChannelNames: input.detail?.salesChannels ?? [],
       productType: PRODUCT_TYPES[0]!,
       detail: input.detail,
       components: input.components,
+      ...(input.channelIds?.length ? { channelIds: input.channelIds } : {}),
+      ...(input.imageUrls?.length ? { imageUrls: input.imageUrls } : {}),
     }
     products.value.unshift(product)
     useOnboardingStore().complete('first-product')
@@ -815,9 +905,12 @@ export const useCommerceStore = defineStore('commerce', () => {
     product.variants = input.variants
     product.type = input.type
     product.publishStatus = input.publishStatus
-    if (input.detail) {
-      product.collections = input.detail.collection ? [input.detail.collection] : product.collections
-      product.salesChannelNames = input.detail.salesChannels
+    if (input.detail) product.salesChannelNames = input.detail.salesChannels
+    if (input.collections) product.collections = input.collections
+    if (input.channelIds) product.channelIds = input.channelIds.length ? input.channelIds : undefined
+    if (input.imageUrls) {
+      product.imageUrls = input.imageUrls.length ? input.imageUrls : undefined
+      product.images = input.imageUrls.length || 1
     }
     product.detail = input.detail
     product.components = input.components
@@ -1298,13 +1391,30 @@ export const useCommerceStore = defineStore('commerce', () => {
     maropayTimelineIds.delete(orderId)
   }
 
+  /**
+   * Where a store's own product is stocked, by one of its SKUs: an order for it
+   * ships from there. Products of the shared catalogue have no answer, and their
+   * orders keep a location picked by order number, as before.
+   */
+  function stockedAt(sku: string | undefined): string | undefined {
+    const variant = products.value
+      .filter((p) => p.channelIds?.length)
+      .flatMap((p) => p.detail?.variantsList ?? [])
+      .find((v) => v.sku === sku)
+    return Object.keys(variant?.stock ?? {})[0]
+  }
+
   /** Idempotent by id, so Maropay can rebuild its checkout orders after a reload. */
   function createCheckoutOrder(input: CheckoutOrderInput): Order {
     const existing = getOrderById(input.id)
     if (existing) return existing
-    const city = cities[input.id % cities.length]!
-    const address = buildAddress(input.customer.name, city, input.id)
+    // The address typed at checkout when the store keeps it; otherwise a made-up one, as for seeded orders.
+    const typed = input.customer.address
+    const city = typed ? [typed.city, typed.region].filter(Boolean).join(', ') || '—' : cities[input.id % cities.length]!
+    const address: OrderAddress = typed ? { name: input.customer.name, ...typed } : buildAddress(input.customer.name, city, input.id)
     const nameParts = input.customer.name.trim().split(/\s+/)
+    const subscribed = input.lineItems.filter((li): li is typeof li & { plan: LinePlan } => !!li.plan)
+    const discounted = input.lineItems.find((li) => li.coupon && li.discountPct)
     const order: Order = {
       id: input.id,
       orderNumber: input.orderNumber,
@@ -1325,10 +1435,12 @@ export const useCommerceStore = defineStore('commerce', () => {
       trackingNumber: null,
       courier: null,
       date: input.date,
-      lineItems: input.lineItems.map((li): OrderLineItem => ({ ...li, status: 'Processing', coupon: null, discountPct: 0 })),
+      // A line bought with a campaign's code keeps the code and what it took off.
+      lineItems: input.lineItems.map((li): OrderLineItem => ({ ...li, status: 'Processing', coupon: li.coupon ?? null, discountPct: li.discountPct ?? 0 })),
       notes: null,
-      tags: [],
-      salesChannel: 'Online Store',
+      // A line bought on a plan makes it a subscription order, findable by its tag; a renewal says so too.
+      tags: subscribed.length ? ['Subscription', ...(input.renewalOf ? ['Renewal'] : [])] : [],
+      salesChannel: input.salesChannel ?? 'Online Store',
       currency: input.currency,
       region: address.region || '—',
       country: address.country,
@@ -1336,8 +1448,16 @@ export const useCommerceStore = defineStore('commerce', () => {
       shippingAddress: address,
       billingAddress: { ...address },
       fulfillmentStage: 'Picked',
-      fulfilledFromLocation: WAREHOUSE_LOCATIONS[input.id % WAREHOUSE_LOCATIONS.length]!,
-      timeline: input.timeline.map((e, i): OrderTimelineEvent => ({ id: i + 1, kind: 'event', text: e.text, date: e.date })),
+      fulfilledFromLocation: stockedAt(input.lineItems[0]?.sku) ?? WAREHOUSE_LOCATIONS[input.id % WAREHOUSE_LOCATIONS.length]!,
+      timeline: [
+        ...input.timeline,
+        ...(discounted ? [{ text: `Discount code ${discounted.coupon} applied: ${discounted.discountPct}% off`, date: input.date }] : []),
+        // The first order records what was agreed. A renewal's own line is already in `input.timeline`.
+        ...(input.renewalOf ? [] : subscribed).map((li) => ({
+          text: `Subscription started: ${li.product}, ${li.plan.name} (${deliverySummary(li.plan)}). Payment method saved; next charge ${new Date(`${nextChargeDate(input.date, li.plan)}T00:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`,
+          date: input.date,
+        })),
+      ].map((e, i): OrderTimelineEvent => ({ id: i + 1, kind: 'event', text: e.text, date: e.date })),
       channelType: 'web_store',
       channelId: input.channelId,
     }
@@ -1792,7 +1912,7 @@ export const useCommerceStore = defineStore('commerce', () => {
   return {
     products, orders, promotions, fulfillments, draftOrders, customGiftCards, purchasableGiftCards,
     inventory,
-    createProduct, updateProductDraft, duplicateProduct, deleteProduct, deleteProducts,
+    createProduct, updateProductDraft, duplicateProduct, deleteProduct, deleteProducts, restoreDemoStore,
     setProductsPublishStatus, setProductsCategory, setProductsCollection, addProductsSalesChannel,
     productViews, addProductView, removeProductView,
     adjustStock, transferStock, inventoryImports,

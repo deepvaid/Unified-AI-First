@@ -27,7 +27,8 @@ const activeTab = ref('pinning')
 const tabs = computed(() => [
   { label: 'Pinning', key: 'pinning', count: store.pinningRuleList.length },
   { label: 'Merchandising rules', key: 'rules', count: store.merchRuleList.length },
-  { label: 'Promo cards', key: 'promo' },
+  // "Coming soon", so a store with its own data does not offer it.
+  ...(store.ownData ? [] : [{ label: 'Promo cards', key: 'promo' }]),
 ])
 
 function collectionName(id: string) {
@@ -128,8 +129,10 @@ function performConfirm() {
           <v-list role="menu" aria-label="Add new rule">
             <MpMenuItem icon="pin" title="Pinning rule" @click="router.push(pinningRoute('new'))" />
             <MpMenuItem icon="sliders-horizontal" title="Merchandising rule" @click="router.push(ruleRoute('new'))" />
-            <v-divider class="my-1" />
-            <MpMenuItem icon="tags" title="Promo card" subtitle="Coming soon" disabled />
+            <template v-if="!store.ownData">
+              <v-divider class="my-1" />
+              <MpMenuItem icon="tags" title="Promo card" subtitle="Coming soon" disabled />
+            </template>
           </v-list>
         </v-menu>
       </template>

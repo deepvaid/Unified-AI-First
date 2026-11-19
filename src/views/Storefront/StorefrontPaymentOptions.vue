@@ -2,11 +2,11 @@
 import MaropayMethodMark from '@/components/maropay/MaropayMethodMark.vue'
 import { CARD_BRAND_MARKS, markFor } from '@/maropay/methodMarks'
 import type { MethodMarkId } from '@/maropay/methodMarks'
-import { formatMoney } from '@/maropay/money'
 import type { Money } from '@/maropay/money'
 import type { PayButtonLabel } from '@/maropay/model'
 import { payButtonText } from '@/maropay/storefront'
 import type { ShopperMethod } from '@/maropay/storefront'
+import { useExactMoney } from './storefrontContext'
 
 // The checkout's payment options: one radio per method in the merchant's order,
 // the card form (the `card` slot) under the selected card option, and what happens
@@ -22,6 +22,7 @@ defineProps<{
 }>()
 
 const methodId = defineModel<string | null>('methodId', { required: true })
+const formatMoney = useExactMoney()
 
 /** Each option leads with its brand tile: Maropay's cards wear the Maropay tile, another processor's a plain card, everything else its own mark. */
 function leadMark(method: ShopperMethod): MethodMarkId {
@@ -55,9 +56,9 @@ function manualNote(method: ShopperMethod, total: Money): string {
           <span v-if="m.description" class="sf-co__panel-line">{{ m.description }}</span>
           <span class="sf-co__panel-line">{{ manualNote(m, total) }}</span>
         </template>
-        <template v-else-if="m.redirects">After you press <strong>{{ payButtonText(m, payButton, total) }}</strong>, you’ll approve the payment on {{ m.label }}’s page and come straight back here.</template>
+        <template v-else-if="m.redirects">After you press <strong>{{ payButtonText(m, payButton, total, formatMoney) }}</strong>, you’ll approve the payment on {{ m.label }}’s page and come straight back here.</template>
         <template v-else-if="m.delayed">You’ll authorise a debit from your bank account. Your order is placed straight away; the bank confirms the payment in a few business days.</template>
-        <template v-else>Press <strong>{{ payButtonText(m, payButton, total) }}</strong> and confirm with {{ m.label }}.</template>
+        <template v-else>Press <strong>{{ payButtonText(m, payButton, total, formatMoney) }}</strong> and confirm with {{ m.label }}.</template>
       </div>
     </div>
   </div>

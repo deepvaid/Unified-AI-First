@@ -140,7 +140,7 @@ function doDelete() {
           v-model="form.imageLabel"
           label="Image label *"
           placeholder="Describes the card artwork"
-          hint="Stands in for the artwork upload in this prototype"
+          :hint="store.ownData ? 'A short name for the artwork, shown in this list' : 'Stands in for the artwork upload in this prototype'"
           persistent-hint
         />
         <v-combobox

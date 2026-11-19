@@ -70,7 +70,7 @@ const statusTiles = computed(() => [
       </div>
       <div class="d-flex align-center ga-2 text-caption text-medium-emphasis mt-4">
         <v-icon size="14">info</v-icon>
-        Syncs run automatically in this prototype — there is nothing to configure here.
+        {{ store.ownData ? 'Syncs run automatically when a product changes. There is nothing to set up here.' : 'Syncs run automatically in this prototype — there is nothing to configure here.' }}
       </div>
     </v-card>
   </div>

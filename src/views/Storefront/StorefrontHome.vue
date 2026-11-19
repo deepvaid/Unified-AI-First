@@ -10,18 +10,24 @@ import { inStock, storefrontProducts } from './storefrontCatalog'
 // The storefront home page: the current theme's home template, section by
 // section. The header and footer belong to StorefrontLayout. Featured products
 // come from the stand-in catalogue (storefrontCatalog); testimonials and
-// newsletter sections aren't drawn.
+// newsletter sections aren't drawn. A banner, a collection card and an
+// image-with-text section show the photograph named in their `image` setting;
+// without one a banner or card keeps its drawn stand-in.
 
 const storefront = inject(STOREFRONT)!
 const commerce = useCommerceStore()
 
 function featured(section: ThemeSection) {
   const count = Number(section.settings.productCount) || 4
-  return storefrontProducts(commerce.products).filter(inStock).slice(0, count)
+  return storefrontProducts(commerce.products, storefront.channel.value.id).filter(inStock).slice(0, count)
 }
 
 const sections = computed<ThemeSection[]>(() =>
-  (storefront.theme.value?.templates.home ?? []).filter((s) => !s.hidden && s.kind !== 'header' && s.kind !== 'footer'),
+  (storefront.theme.value?.templates.home ?? []).filter((s) => {
+    if (s.hidden || s.kind === 'header' || s.kind === 'footer') return false
+    // A store that shows its announcement above the header (StorefrontLayout) doesn't repeat it here.
+    return !(s.kind === 'announcement-bar' && storefront.chrome.value.announcementAboveHeader)
+  }),
 )
 
 function text(section: ThemeSection, key: string): string {
@@ -61,9 +67,12 @@ function looped(section: ThemeSection): ThemeBlock[] {
         class="sf-banner"
         :style="{ '--sf-banner-height': BANNER_HEIGHT[text(section, 'height')] ?? BANNER_HEIGHT.Medium }"
       >
-        <div class="sf-banner__media" aria-hidden="true" />
+        <div class="sf-banner__media" :class="{ 'sf-banner__media--photo': text(section, 'image') }" aria-hidden="true">
+          <img v-if="text(section, 'image')" :src="text(section, 'image')" alt="">
+        </div>
         <div class="sf-banner__content">
           <h1 v-if="text(section, 'headline')" class="sf-banner__headline">{{ text(section, 'headline') }}</h1>
+          <p v-if="text(section, 'subheadline')" class="sf-banner__sub">{{ text(section, 'subheadline') }}</p>
           <template v-for="block in blocksOf(section, 'button')" :key="block.id">
             <StorefrontAnchor v-if="blockText(block, 'link')" :href="blockText(block, 'link')" class="sf-banner__button">
               {{ blockText(block, 'label') }}
@@ -82,6 +91,7 @@ function looped(section: ThemeSection): ThemeBlock[] {
             :href="blockText(block, 'link') || '/collections/all'"
             class="sf-collection"
           >
+            <img v-if="blockText(block, 'image')" :src="blockText(block, 'image')" alt="" class="sf-collection__photo" loading="lazy">
             <span class="sf-collection__label">{{ blockText(block, 'label') }}</span>
           </StorefrontAnchor>
         </div>
@@ -104,8 +114,25 @@ function looped(section: ThemeSection): ThemeBlock[] {
         <p v-if="text(section, 'body')">{{ text(section, 'body') }}</p>
       </section>
 
+      <section
+        v-else-if="section.kind === 'image-with-text' && text(section, 'image')"
+        class="sf-story"
+        :class="{ 'sf-story--flip': text(section, 'imageSide') === 'Right' }"
+      >
+        <img :src="text(section, 'image')" alt="" class="sf-story__photo" loading="lazy">
+        <div class="sf-story__copy">
+          <h2 v-if="text(section, 'heading')" class="sf-story__heading">{{ text(section, 'heading') }}</h2>
+          <p v-if="text(section, 'body')">{{ text(section, 'body') }}</p>
+          <StorefrontAnchor v-if="text(section, 'buttonLabel') && text(section, 'buttonLink')" :href="text(section, 'buttonLink')" class="sf-button sf-story__button">
+            {{ text(section, 'buttonLabel') }}
+          </StorefrontAnchor>
+        </div>
+      </section>
+
       <section v-else-if="section.kind === 'hero'" class="sf-banner" :style="{ '--sf-banner-height': BANNER_HEIGHT.Medium }">
-        <div class="sf-banner__media" aria-hidden="true" />
+        <div class="sf-banner__media" :class="{ 'sf-banner__media--photo': text(section, 'image') }" aria-hidden="true">
+          <img v-if="text(section, 'image')" :src="text(section, 'image')" alt="">
+        </div>
         <div class="sf-banner__content">
           <h1 v-if="text(section, 'headline')" class="sf-banner__headline">{{ text(section, 'headline') }}</h1>
           <p v-if="text(section, 'subheadline')" class="sf-banner__sub">{{ text(section, 'subheadline') }}</p>
@@ -123,11 +150,12 @@ function looped(section: ThemeSection): ThemeBlock[] {
         </div>
       </section>
 
-      <div v-else-if="section.kind === 'announcement-bar'" class="sf-announcement">{{ text(section, 'text') }}</div>
+      <div v-else-if="section.kind === 'announcement-bar'" class="sf-announcement">{{ storefront.campaignMessage.value || text(section, 'text') }}</div>
     </template>
   </div>
 </template>
 
+<style scoped src="./storefront-controls.css"></style>
 <style scoped>
 /* P4-8 — out of system on purpose: see StorefrontLayout.vue. Sizes are Aurora's. */
 .sf-banner {
@@ -146,6 +174,24 @@ function looped(section: ThemeSection): ThemeBlock[] {
   background:
     linear-gradient(100deg, rgba(18, 16, 17, 0.72) 0%, rgba(18, 16, 17, 0.2) 70%),
     linear-gradient(160deg, #3b4a42 0%, #1c2420 55%, #121011 100%);
+}
+
+/* A photograph, under a shade strong enough to keep the white headline readable on a pale sky. */
+.sf-banner__media--photo {
+  background: #121011;
+}
+
+.sf-banner__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sf-banner__media--photo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, rgba(18, 16, 17, 0.66) 0%, rgba(18, 16, 17, 0.38) 55%, rgba(18, 16, 17, 0.18) 100%);
 }
 
 .sf-banner__content {
@@ -170,8 +216,10 @@ function looped(section: ThemeSection): ThemeBlock[] {
 }
 
 .sf-banner__sub {
+  max-width: 560px;
   margin: 0;
   font-size: 18px;
+  line-height: 1.5;
 }
 
 .sf-banner__button {
@@ -225,6 +273,27 @@ function looped(section: ThemeSection): ThemeBlock[] {
   text-decoration: none !important;
 }
 
+.sf-collection__photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* The same shade the drawn card has, so the label reads on any photograph. */
+.sf-collection__photo + .sf-collection__label::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(0deg, rgba(18, 16, 17, 0.78) 0%, rgba(18, 16, 17, 0.1) 60%);
+}
+
+.sf-collection__photo + .sf-collection__label {
+  z-index: 1;
+}
+
 .sf-collection__label {
   font-size: 24px;
   line-height: 1.2;
@@ -261,6 +330,52 @@ function looped(section: ThemeSection): ThemeBlock[] {
 
 .sf-dot--active::before {
   background: var(--sf-text, #121011);
+}
+
+.sf-story {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 48px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 72px 24px 0;
+}
+
+.sf-story__photo {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: var(--sf-radius, 8px);
+  object-fit: cover;
+}
+
+.sf-story--flip .sf-story__photo {
+  order: 2;
+}
+
+.sf-story__copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 20px;
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+.sf-story__copy p {
+  margin: 0;
+}
+
+.sf-story__heading {
+  margin: 0;
+  font-family: var(--sf-heading-font, system-ui), -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: 36px;
+  line-height: 1.15;
+  font-weight: 700;
+}
+
+.sf-story__button:hover {
+  text-decoration: none !important;
 }
 
 .sf-richtext {
@@ -312,6 +427,20 @@ function looped(section: ThemeSection): ThemeBlock[] {
 
   .sf-collections__track {
     grid-auto-columns: 100%;
+  }
+
+  .sf-story {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+    padding-top: 48px;
+  }
+
+  .sf-story--flip .sf-story__photo {
+    order: 0;
+  }
+
+  .sf-story__heading {
+    font-size: 26px;
   }
 
   .sf-featured__grid {

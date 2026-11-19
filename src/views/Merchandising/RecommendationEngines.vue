@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import MpAlert from '@/components/MpAlert.vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
@@ -125,6 +126,11 @@ function onToggle(engine: RecommendationEngine) {
         </v-btn>
       </template>
     </MpPageHeader>
+
+    <!-- Which engine shoppers see, said where the merchant switches them on and off. -->
+    <MpAlert v-if="store.ownData" tone="info" live="off">
+      On this store, the engine for the <strong>Product</strong> page fills the row under each product. When more than one is on, the first in the list is used.
+    </MpAlert>
 
     <v-card flat border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar

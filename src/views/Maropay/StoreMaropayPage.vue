@@ -78,7 +78,7 @@ const isMaropostStore = computed(() => channel.value?.type === 'web_store' && ch
 const storeHomeHref = computed(() => router.resolve({ name: 'StorefrontHome', params: { accountId: accountId.value, channelId: channelId.value } }).href)
 /** A product page of this store (one in stock, so its buy buttons show), where the methods first show up for a shopper. */
 const storefrontHref = computed(() => {
-  const product = storefrontProducts(commerce.products).find(inStock)
+  const product = storefrontProducts(commerce.products, channelId.value).find(inStock)
   const params = { accountId: accountId.value, channelId: channelId.value }
   return router.resolve(product
     ? { name: 'StorefrontProduct', params: { ...params, handle: productHandle(product) } }

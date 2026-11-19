@@ -45,6 +45,12 @@ output/playwright/
 output/qa-compare/
 .playwright-cli/
 
+# BKM report infographics and Confluence body (scripts/bkm-report) — rebuildable
+output/bkm-figs/
+
+# The Vitaheal demo film (npm run demo:video) — rebuildable
+output/demo-video/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

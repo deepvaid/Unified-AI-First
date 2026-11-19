@@ -77,7 +77,7 @@ const meta = {
   rich-text, testimonials, newsletter, product-detail, cart-summary, footer.
 
 \`styles\` applies \`ThemeStyles\` as CSS vars (\`--sf-brand\`, \`--sf-accent\`, \`--sf-bg\`, \`--sf-text\`,
-\`--sf-radius\`, fonts) consumed by the section mocks. \`interactive\` adds hover outlines and click/keyboard
+\`--sf-radius\`, fonts, \`--sf-badge-*\`) consumed by the section mocks. \`interactive\` adds hover outlines and click/keyboard
 selection (\`select\` + \`hover\` emits); \`selectedId\` shows a labeled ring. \`device\` constrains the inner
 viewport (desktop full, tablet ~768px, mobile ~390px).
 
@@ -165,4 +165,29 @@ export const SectionWithBlocks: Story = {
 /** A collection-grid section from the "4-up" variant preset (columns: 4). */
 export const CollectionGridVariant: Story = {
   args: { sections: collectionGridSections() },
+}
+
+// A store with photographs and products of its own: the banner and the story name a
+// photo in their `image` setting, and `products` fills the featured-products row.
+const PHOTOS = '/storefront/vitaheal'
+
+function sectionsWithPhotos(): ThemeSection[] {
+  return [
+    createSection('header', {}, 'story-header-photos'),
+    createSection('image-banner', { headline: 'Supplements that do one job well', subheadline: 'Made in Sweden and delivered to your door.', height: 'Large', image: `${PHOTOS}/hero.jpg` }, 'story-banner-photos'),
+    createSection('featured-products', { title: 'Our range', productCount: 4 }, 'story-featured-photos'),
+    createSection('image-with-text', { heading: 'One warm cup before bed', body: 'Stir one scoop into warm water about an hour before you sleep.', buttonLabel: 'Shop Unwind', image: `${PHOTOS}/story-unwind.jpg` }, 'story-story-photos'),
+  ]
+}
+
+const storeProducts = [
+  { name: 'Unwind', price: 'From 399 kr', image: `${PHOTOS}/unwind-1.jpg` },
+  { name: 'Clear Focus', price: 'From 389 kr', image: `${PHOTOS}/clear-focus-1.jpg` },
+  { name: 'Daily NAD+', price: 'From 649 kr', image: `${PHOTOS}/daily-nad-1.jpg` },
+  { name: 'New product', price: '199 kr' },
+]
+
+/** With `products` and `image` settings the preview shows the store itself: its photographs, and each product's photo, name and price. A product without a photo keeps the grey stand-in. Without them (every other story) the sections are drawn. */
+export const WithStorePhotos: Story = {
+  args: { sections: sectionsWithPhotos(), products: storeProducts, brand: 'Vitaheal', menu: ['All products', 'Sleep', 'Sport'] },
 }

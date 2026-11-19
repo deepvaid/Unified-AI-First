@@ -12,6 +12,7 @@ import MpSegmentedControl from '@/components/MpSegmentedControl.vue'
 import MpOptionCard from '@/components/MpOptionCard.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpFormField from '@/components/MpFormField.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
 import StorefrontPreview from '@/components/saleschannels/StorefrontPreview.vue'
 import AddSectionDialog from '@/components/saleschannels/AddSectionDialog.vue'
 import ThemeDaVinciPanel, { type ThemeChatMessage, type ThemeGenerating } from '@/components/saleschannels/ThemeDaVinciPanel.vue'
@@ -22,6 +23,8 @@ import { useCopilotStore } from '@/stores/useCopilot'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import { useStoreThemesStore } from '@/stores/useStoreThemes'
 import { useStorefrontStore } from '@/stores/useStorefront'
+import { useCommerceStore } from '@/stores/useCommerce'
+import { previewProducts } from '@/views/Storefront/storefrontCatalog'
 import {
   blockCatalog,
   getBlockDef,
@@ -63,6 +66,8 @@ const theme = computed(() => {
   return requested?.channelId === channelId.value ? requested : themesStore.themeForChannel(channelId.value)
 })
 const previewHeader = computed(() => storefronts.previewHeaderFor(channel.value))
+/** The store's own products in the canvas's product rows; a store on the shared catalogue keeps the drawn stand-ins. */
+const previewItems = computed(() => (channel.value ? previewProducts(useCommerceStore().products, channel.value) : undefined))
 
 const backRoute = computed(() =>
   channel.value
@@ -415,6 +420,12 @@ const styleColorRows: { key: 'brandColor' | 'accentColor' | 'background' | 'text
   { key: 'accentColor', label: 'Accent color' },
   { key: 'background', label: 'Background' },
   { key: 'textColor', label: 'Text color' },
+]
+
+const badgeColorRows: { key: 'saleBadgeColor' | 'customBadgeColor' | 'soldOutBadgeColor'; label: string }[] = [
+  { key: 'saleBadgeColor', label: 'Sale badge' },
+  { key: 'customBadgeColor', label: 'Custom badge' },
+  { key: 'soldOutBadgeColor', label: 'Sold out badge' },
 ]
 
 const buttonStyleOptions: { value: ThemeStyles['buttonStyle']; title: string; description: string; icon: string }[] = [
@@ -1012,6 +1023,28 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
                 />
               </div>
             </MpFormField>
+
+            <MpFormSection title="Badges" description="The tags on product cards and galleries. Their text colour follows from the fill." />
+
+            <MpFormField v-for="row in badgeColorRows" :key="row.key" :label="row.label">
+              <template #default="{ labelId }">
+                <div class="tb-swatch-row" role="radiogroup" :aria-labelledby="labelId">
+                  <button
+                    v-for="swatch in swatchPalette"
+                    :key="swatch.value"
+                    class="tb-swatch"
+                    :class="{ 'tb-swatch--selected': theme.styles[row.key] === swatch.value }"
+                    :style="{ background: swatch.value }"
+                    role="radio"
+                    :tabindex="swatchTabindex(swatch, theme.styles[row.key])"
+                    :aria-checked="theme.styles[row.key] === swatch.value"
+                    :aria-label="`${row.label}: ${swatch.label}`"
+                    @click="setStyle({ [row.key]: swatch.value })"
+                    @keydown="onSwatchKeydown($event, (v: string) => setStyle({ [row.key]: v }))"
+                  ></button>
+                </div>
+              </template>
+            </MpFormField>
           </MpFormGrid>
         </div>
 
@@ -1034,6 +1067,7 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
               :styles="theme.styles"
               :brand="previewHeader.brand"
               :menu="previewHeader.menu"
+              :products="previewItems"
               :device="device"
               interactive
               :selected-id="selectedSectionId"

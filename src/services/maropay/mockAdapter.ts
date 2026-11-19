@@ -44,6 +44,7 @@ import type {
   ActionTask,
   BusinessChangeField,
   CaptureMode,
+  CheckoutCustomer,
   CheckoutLineItem,
   CheckoutOrderSnapshot,
   CheckoutSession,
@@ -967,10 +968,12 @@ export interface CheckoutInput {
   methodId: string
   flow: ShopperFlow
   amount: Money
-  customer: { name: string; email: string }
+  customer: CheckoutCustomer
   lineItems: CheckoutLineItem[]
   /** Cards: "Visa •••• 4242" from the number typed (storefront.ts `cardLabel`); the prototype's default when absent. */
   cardLabel?: string | null
+  /** A renewal charged to a saved method: the subscription's number. */
+  renewalOf?: string
 }
 
 export interface CheckoutStep {
@@ -1017,6 +1020,7 @@ export function createCheckoutSession(state: MaropayAccountState, input: Checkou
     order: null,
     customer: { ...input.customer },
     lineItems: input.lineItems.map((l) => ({ ...l })),
+    ...(input.renewalOf ? { renewalOf: input.renewalOf } : {}),
     createdAt: isoAt(env.now),
   }
   state.sessions.unshift(session)
@@ -1049,7 +1053,7 @@ function sessionPayment(state: MaropayAccountState, session: CheckoutSession, st
     refunds: [],
     disputeId: null,
     fee: zero(session.amount.currency),
-    customer: { ...session.customer },
+    customer: { name: session.customer.name, email: session.customer.email },
     createdAt: at,
     capturedAt: null,
     authorisationExpiresAt: status === 'authorised' ? daysFrom(env.now, 7) : null,

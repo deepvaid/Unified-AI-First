@@ -81,6 +81,8 @@ export interface StorefrontOfferOptions {
   asIfLive?: boolean
   /** With `asIfLive`: who takes cards in the preview — Maropay (the Activate dialog's default) or the store's existing gateway. */
   cardsVia?: 'maropay' | 'existing'
+  /** How the store writes an amount, for the instalment captions. Absent: Maropay's own "$94.19". */
+  format?: (amount: Money) => string
 }
 
 function fraction(amount: Money, parts: number): Money {
@@ -165,7 +167,7 @@ export function resolveShopperMethods(state: MaropayAccountState, channelId: str
   return candidates.sort((a, b) => rank(a) - rank(b))
 }
 
-function caption(m: ShopperMethodBase, amount: Money): string {
+function caption(m: ShopperMethodBase, amount: Money, format: (amount: Money) => string): string {
   if (m.category === 'manual') return m.description ?? 'Paid outside the store'
   switch (m.id) {
     case 'card': return m.providerId === 'maropay' ? 'Credit or debit card' : 'Enter your card details'
@@ -173,8 +175,8 @@ function caption(m: ShopperMethodBase, amount: Money): string {
     case 'google_pay': return 'Pay with a card saved to your Google account'
     case 'paypal': return 'Log in to PayPal to pay'
   }
-  if (PAY_IN_4_IDS.includes(m.id)) return `4 interest-free payments of ${formatMoney(fraction(amount, 4))}`
-  if (MONTHLY_IDS.includes(m.id)) return `Monthly payments from ${formatMoney(fraction(amount, 12))}/mo`
+  if (PAY_IN_4_IDS.includes(m.id)) return `4 interest-free payments of ${format(fraction(amount, 4))}`
+  if (MONTHLY_IDS.includes(m.id)) return `Monthly payments from ${format(fraction(amount, 12))}/mo`
   return m.delayed ? 'Pay from your bank account. The bank confirms in a few business days.' : 'Pay from your bank account'
 }
 
@@ -188,7 +190,7 @@ export function orderedCheckoutMethods(state: MaropayAccountState, binding: Stor
 /** `amount` drives the instalment figures: the product price on a product page, the cart total at checkout. */
 export function storefrontOffer(state: MaropayAccountState, channelId: string, amount: Money, options: StorefrontOfferOptions = {}): StorefrontOffer {
   const binding = bindingOf(state, channelId)
-  const methods = resolveShopperMethods(state, channelId, options).map((m) => ({ ...m, caption: caption(m, amount) }))
+  const methods = resolveShopperMethods(state, channelId, options).map((m) => ({ ...m, caption: caption(m, amount, options.format ?? formatMoney) }))
   const cardsVia = methods.find((m) => m.id === 'card')?.providerId ?? null
   const checkout = binding?.checkout ?? defaultCheckoutSettings()
   const preferred = binding?.defaultMethodId ?? null
@@ -213,11 +215,11 @@ export function storefrontOffer(state: MaropayAccountState, channelId: string, a
 }
 
 /** The pay button's words for the chosen method: redirects say where the shopper goes next; a manual method only places the order. */
-export function payButtonText(method: Pick<ShopperMethod, 'id' | 'label' | 'redirects' | 'category'> | null, label: PayButtonLabel, amount: Money): string {
+export function payButtonText(method: Pick<ShopperMethod, 'id' | 'label' | 'redirects' | 'category'> | null, label: PayButtonLabel, amount: Money, format: (amount: Money) => string = formatMoney): string {
   if (method?.id === 'paypal') return 'Pay with PayPal'
   if (method?.redirects) return `Continue to ${method.label}`
   if (method?.category === 'manual') return 'Place order'
-  return PAY_BUTTON_LABELS[label].replace('{amount}', formatMoney(amount))
+  return PAY_BUTTON_LABELS[label].replace('{amount}', format(amount))
 }
 
 /** "Paid with" on the confirmation: Maropay's cards carry the brand (F2); everything else is just the method. */

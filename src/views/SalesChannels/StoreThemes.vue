@@ -4,6 +4,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import { useStoreThemesStore } from '@/stores/useStoreThemes'
 import { useStorefrontStore } from '@/stores/useStorefront'
+import { useCommerceStore } from '@/stores/useCommerce'
+import { previewProducts } from '@/views/Storefront/storefrontCatalog'
 import type { StoreTheme } from '@/stores/themeBuilderData'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpSectionHeader from '@/components/MpSectionHeader.vue'
@@ -34,6 +36,8 @@ const channelId = computed(() => {
 
 const channel = computed(() => salesChannelsStore.getChannel(accountId.value, channelId.value))
 const previewHeader = computed(() => storefronts.previewHeaderFor(channel.value))
+/** The store's own products in the preview's product rows; a store on the shared catalogue keeps the drawn stand-ins. */
+const previewItems = computed(() => (channel.value ? previewProducts(useCommerceStore().products, channel.value) : undefined))
 
 const installed = computed(() => themesStore.themesForChannel(channelId.value))
 const current = computed(() => installed.value.find((theme) => theme.status === 'Published'))
@@ -92,7 +96,7 @@ const headers = [
     <v-card variant="flat" border rounded="lg" class="store-themes__current">
       <MpSectionHeader title="Current theme" :heading-level="2" />
       <template v-if="current">
-        <StorefrontPreview :sections="current.templates.home" :styles="current.styles" :brand="previewHeader.brand" :menu="previewHeader.menu" />
+        <StorefrontPreview :sections="current.templates.home" :styles="current.styles" :brand="previewHeader.brand" :menu="previewHeader.menu" :products="previewItems" />
         <div class="store-themes__current-bar">
           <div class="min-width-0">
             <div class="text-subtitle-1 font-weight-medium">{{ current.name }}</div>

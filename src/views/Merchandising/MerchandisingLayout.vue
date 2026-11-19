@@ -1,6 +1,9 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useToast } from '@/composables/useToast'
+import { useCommerceStore } from '@/stores/useCommerce'
+import { catalogFor } from '@/storefront/catalog'
 import MpBanner from '@/components/MpBanner.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
@@ -30,9 +33,33 @@ function backToSelector() {
   router.push({ name: 'MerchandisingHome', params: { accountId: accountId.value } })
 }
 
-function connectChannel() {
+function reviewSync() {
   router.push({ name: 'MerchandisingChannelSetup', params: { accountId: accountId.value, channelId: channelId.value } })
 }
+
+// Connecting syncs the store's products, then opens the workspace. The count
+// is the store's own published products, the ones its search will find.
+const toast = useToast()
+const productCount = computed(() => catalogFor(useCommerceStore().products, channelId.value).length)
+const synced = ref<number | null>(null)
+let syncTimer = 0
+
+function connectChannel() {
+  if (synced.value !== null) return
+  synced.value = 0
+  syncTimer = window.setInterval(() => {
+    if (synced.value! < productCount.value) {
+      synced.value = Math.min(productCount.value, synced.value! + Math.max(1, Math.ceil(productCount.value / 8)))
+      return
+    }
+    window.clearInterval(syncTimer)
+    const name = channel.value!.name
+    salesChannels.connectMerchandising(accountId.value, channelId.value)
+    synced.value = null
+    toast.success(`${productCount.value} ${productCount.value === 1 ? 'product is' : 'products are'} synced. Search and recommendations are on for ${name}.`, { title: 'Merchandising connected' })
+  }, 160)
+}
+onBeforeUnmount(() => window.clearInterval(syncTimer))
 </script>
 
 <template>
@@ -62,7 +89,7 @@ function connectChannel() {
       >
         <strong>Merchandising sync needs attention.</strong>&nbsp;{{ channel.name }} is available, but its catalog sync is not healthy. Review connection and sync settings before publishing changes.
         <template #actions>
-          <v-btn variant="outlined" color="warning" size="small" class="text-none" @click="connectChannel">Review sync</v-btn>
+          <v-btn variant="outlined" color="warning" size="small" class="text-none" @click="reviewSync">Review sync</v-btn>
         </template>
       </MpBanner>
 
@@ -73,14 +100,18 @@ function connectChannel() {
             <div>
               <div class="mp-meta-label text-warning">{{ providerLabel(channel) }}</div>
               <h1 class="mp-page-title mb-2">Connect Merchandising to {{ channel.name }}</h1>
-              <p class="text-body-2 text-medium-emphasis mb-4">Connect this online channel before managing search, smart collections, or recommendations. Existing Commerce data stays unchanged until the sync is ready.</p>
+              <p class="text-body-2 text-medium-emphasis mb-4">Connecting syncs this store's {{ productCount }} published {{ productCount === 1 ? 'product' : 'products' }} and turns on search and recommendations for its shoppers. Your Commerce data stays as it is.</p>
               <div class="d-flex flex-wrap ga-2 mb-6">
                 <v-chip size="small" variant="tonal">{{ channelDomain(channel) }}</v-chip>
                 <MpStatusChip :status="MERCHANDISING_STATUS_LABELS[status]" type="general" size="md" show-icon />
               </div>
+              <div v-if="synced !== null" class="mb-4" role="status">
+                <v-progress-linear :model-value="productCount ? (synced / productCount) * 100 : 100" color="primary" rounded height="6" aria-label="Product sync" />
+                <div class="text-caption text-medium-emphasis mt-2">Syncing products: {{ synced }} of {{ productCount }}</div>
+              </div>
               <div class="d-flex flex-wrap ga-3">
-                <v-btn color="primary" variant="flat" class="text-none" prepend-icon="plug" @click="connectChannel">Open connection setup</v-btn>
-                <v-btn variant="text" class="text-none" @click="backToSelector">Choose another channel</v-btn>
+                <v-btn color="primary" variant="flat" class="text-none" prepend-icon="plug" :loading="synced !== null" @click="connectChannel">Connect Merchandising</v-btn>
+                <v-btn variant="text" class="text-none" :disabled="synced !== null" @click="backToSelector">Choose another channel</v-btn>
               </div>
             </div>
           </div>

@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import { watch } from 'vue'
 import { TEST_CARDS } from '@/maropay/storefront'
 import type { CardInput } from '@/maropay/storefront'
+import { useDemoStore } from './storefrontContext'
 
 // The card form under the checkout's card option: number, expiry and security
 // code, and the prototype's test cards. Shared by the checkout and the admin's
@@ -16,9 +18,18 @@ const props = defineProps<{
 }>()
 
 const card = defineModel<CardInput>('card', { required: true })
+/** A store shown to prospects offers the same cards under plain words. */
+const demo = useDemoStore()
+
+// Several fields can change in the same instant: a browser filling in a saved card sets the
+// number, the expiry and the code together. Each change builds on the one before it, not on the
+// value the parent has not handed back yet, or only the last field would be kept.
+let latest = card.value
+watch(card, (value) => { latest = value })
 
 function update(patch: Partial<CardInput>): void {
-  card.value = { ...card.value, ...patch }
+  latest = { ...latest, ...patch }
+  card.value = latest
 }
 
 function onNumber(event: Event): void {
@@ -60,7 +71,7 @@ function id(key: string): string {
       <span v-if="errorFor('cvc')" :id="id('cvc-err')" class="sf-field__error">{{ errorFor('cvc') }}</span>
     </div>
     <details v-if="testCards" class="sf-co__testcards sf-co__full">
-      <summary>Test cards for this prototype</summary>
+      <summary>{{ demo ? 'Sample cards' : 'Test cards for this prototype' }}</summary>
       <ul>
         <li v-for="test in TEST_CARDS" :key="test.number">
           <button type="button" @click="useTestCard(test.number)"><code>{{ test.number }}</code></button>

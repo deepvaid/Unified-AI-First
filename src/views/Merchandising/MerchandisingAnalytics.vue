@@ -116,7 +116,16 @@ const recommendationHeaders = [
     </MpPageHeader>
 
     <!-- Snapshot -->
-    <template v-if="kind === 'snapshot'">
+    <!-- A store with its own data has no report until its shoppers have searched and browsed: never another store's numbers. -->
+    <v-card v-if="store.ownData" flat border rounded="lg" class="flex-grow-1 d-flex align-center justify-center">
+      <MpEmptyState
+        icon="bar-chart-3"
+        title="Nothing to report yet"
+        description="Reports fill in as shoppers search, browse collections and click recommendations on this store."
+      />
+    </v-card>
+
+    <template v-else-if="kind === 'snapshot'">
       <v-row dense class="flex-grow-0">
         <v-col v-for="kpi in snapshotKpis" :key="kpi.label" cols="12" sm="6" md="4" lg="2">
           <MpKpiCard :label="kpi.label" :value="kpi.value" :icon="kpi.icon" :color="kpi.color" />

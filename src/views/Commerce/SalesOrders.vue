@@ -130,11 +130,11 @@ const paymentDots: Record<string, string> = {
 // Orders whose total should read as struck-through (money no longer collected)
 const isVoidedTotal = (o: Order) => o.status === 'Cancelled' || o.status === 'Refunded'
 
-// Split a stored string amount ("1,234.50") into money parts for the .mp-money treatment
-const money = (value: string) => formatMoneyParts(parseFloat(value.replace(/,/g, '')) || 0)
+// Split a stored string amount ("1,234.50") into money parts for the .mp-money treatment, in the order's own currency
+const money = (value: string, currency?: string) => formatMoneyParts(parseFloat(value.replace(/,/g, '')) || 0, currency)
 
 // Line-item total for the expanded row
-const lineTotal = (qty: number, price: string) => money((qty * parseFloat(price)).toFixed(2))
+const lineTotal = (qty: number, price: string, currency?: string) => money((qty * parseFloat(price)).toFixed(2), currency)
 
 // ─── Tab + Filter Filtering ───────────────────────────────────────────────────
 function matchesTab(o: Order, key: string): boolean {
@@ -399,7 +399,7 @@ function exportOrders() {
         <!-- Total — .mp-money with demoted cents; struck through when no longer collected -->
         <template v-slot:item.total="{ item }">
           <span class="mp-money font-weight-semibold text-no-wrap" :class="{ 'mp-strike': isVoidedTotal(item) }">
-            {{ money(item.total).symbol }}{{ money(item.total).integer }}<span class="mp-money__cents">.{{ money(item.total).cents }}</span>
+            {{ money(item.total, item.currency).symbol }}{{ money(item.total, item.currency).integer }}<span class="mp-money__cents">.{{ money(item.total, item.currency).cents }}</span>
           </span>
         </template>
 
@@ -526,10 +526,10 @@ function exportOrders() {
                         </td>
                         <td class="ord-num text-medium-emphasis">{{ li.qty }}</td>
                         <td class="ord-num text-medium-emphasis">
-                          <span class="mp-money">{{ money(li.price).symbol }}{{ money(li.price).integer }}<span class="mp-money__cents">.{{ money(li.price).cents }}</span></span>
+                          <span class="mp-money">{{ money(li.price, item.currency).symbol }}{{ money(li.price, item.currency).integer }}<span class="mp-money__cents">.{{ money(li.price, item.currency).cents }}</span></span>
                         </td>
                         <td class="ord-num ord-exp__linetotal">
-                          <span class="mp-money">{{ lineTotal(li.qty, li.price).symbol }}{{ lineTotal(li.qty, li.price).integer }}<span class="mp-money__cents">.{{ lineTotal(li.qty, li.price).cents }}</span></span>
+                          <span class="mp-money">{{ lineTotal(li.qty, li.price, item.currency).symbol }}{{ lineTotal(li.qty, li.price, item.currency).integer }}<span class="mp-money__cents">.{{ lineTotal(li.qty, li.price, item.currency).cents }}</span></span>
                         </td>
                       </tr>
                     </tbody>
@@ -537,11 +537,11 @@ function exportOrders() {
 
                   <!-- Totals -->
                   <div class="ord-exp__totals">
-                    <div class="ord-exp__total-line"><span>Subtotal</span><span class="mp-money">${{ item.subtotal }}</span></div>
-                    <div class="ord-exp__total-line"><span>Shipping</span><span class="mp-money">${{ item.shipping }}</span></div>
+                    <div class="ord-exp__total-line"><span>Subtotal</span><span class="mp-money">{{ money(item.subtotal, item.currency).formatted }}</span></div>
+                    <div class="ord-exp__total-line"><span>Shipping</span><span class="mp-money">{{ money(item.shipping, item.currency).formatted }}</span></div>
                     <div class="ord-exp__total-line ord-exp__total-line--grand">
                       <span>Order total</span>
-                      <span class="mp-money" :class="{ 'mp-strike': isVoidedTotal(item) }">{{ money(item.total).symbol }}{{ money(item.total).integer }}<span class="mp-money__cents">.{{ money(item.total).cents }}</span></span>
+                      <span class="mp-money" :class="{ 'mp-strike': isVoidedTotal(item) }">{{ money(item.total, item.currency).symbol }}{{ money(item.total, item.currency).integer }}<span class="mp-money__cents">.{{ money(item.total, item.currency).cents }}</span></span>
                     </div>
                   </div>
 
