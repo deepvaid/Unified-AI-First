@@ -430,6 +430,7 @@ changelog in `DESIGN_AUDIT.md`.
 | `npm run test:plg` | PLG promotion tests — coupon maths and code validation in `src/plg/promo.ts` (`node:test` over `tests/plg/`) |
 | `npm run test:subscriptions` | Subscription rules in `src/subscriptions/` — plans (price per delivery, display rounding, charge dates, what a shopper is offered) and subscriptions (skip, pause, change plan, cancel, renewals) — and the Vitaheal (demo) plans and subscribers (`node:test` over `tests/subscriptions/`) |
 | `npm run test:storefront` | Storefront rules — which products a store sells, the product form's stock and collection rules, cart lines, store price formatting, a store's checkout countries and sample shopper, store campaigns and discount codes, store search (pins, synonyms, redirects, blacklisted products) and product recommendations, what the demo store keeps in the browser — and the Vitaheal (demo) seed checked against its reference tables (`node:test` over `tests/storefront/`) |
+| `npm run demo:video` | The sales film of the Vitaheal (demo) store: builds the app, drives the demo in Chrome and writes `output/demo-video/vitaheal-demo.mp4` (git-ignored). Scenes are in `scripts/demo-video/record.mjs`; the live script is `docs/store-builder/vitaheal-demo-script.md` |
 | `npm run tokens:watch` | Watch tokens.json and regenerate on save |
 | `npm run type-check` | Run vue-tsc type checking |
 | `npm run preview` | Preview production build locally |

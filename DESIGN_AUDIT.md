@@ -2812,6 +2812,24 @@ prospects, so BKM's name is off the screen:
 - Every store: the Merchandising connect card's button now connects, and "Add new" on Synonyms
   opens the drawer (both did nothing before).
 
+**Demo pass, part 9 (2026-11-19) — review fixes and the sales film.**
+
+- Storefront: the discount line names what a targeted code covers; a lapsed code is explained
+  under the field; the header search box has a focus ring (`.sf-search--ring`) on a store with
+  search; the not-found page reads in sentence case on a store shown to prospects.
+- Merchandising, for a store with its own data: the pin editor lists real results; the engines
+  page has an `MpAlert` naming the engine in use; "coming soon" and "prototype" controls are not
+  offered. `merchandisingMenu(accountId, channelId, demo)` drops three pages from the demo
+  store's rail.
+- No new design-system component or token.
+
+### Renames and breaking changes
+
+- `merchandisingMenu` takes a third argument, `demo`.
+- `useStorefrontDiscount` returns `label` and `notice` as well.
+- The router reloads the wanted page once when its file is missing after a release.
+- New command `npm run demo:video` and script `scripts/demo-video/record.mjs`.
+
 **Preview test pass (2026-11-18) — four fixes from testing the deployed preview.**
 
 - `StorefrontCardFields` keeps every field when several change in the same instant (browser

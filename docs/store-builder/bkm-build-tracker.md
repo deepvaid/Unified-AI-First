@@ -433,6 +433,46 @@ here already exists when those slices start.
     store knows (shared collections, newest, the store's own order), not shopper behaviour. A
     store on the shared catalogue can now be connected, but its storefront gets no search.
 
+- **Part 9, full review, fixes and the sales film (done, 2026-11-19).** Asked for by the human:
+  review every flow as QA and as product design manager, fix what is wrong, and make a video of
+  the working demo for sales. Their choices: the Vitaheal demo end to end; issues on shared pages
+  fixed for the demo store only; one film of about four minutes with captions and no voice.
+  - **Covered:** all 28 store pages at 1280px and 375px (no broken picture, wrong word or
+    sideways scroll); the 23 Merchandising pages and the 10 store editor pages of the demo store;
+    campaign codes (whole store, one collection, a code that stops applying, a deleted campaign);
+    13 odd searches (markup, one letter, a very long query, sentences); the pin and engine
+    editors; orders and subscribers; restore; Neelam-Store and Atlas Outfitters before and after.
+  - **Findings**
+
+    | # | What | Where | Severity | Result |
+    |---|---|---|---|---|
+    | 1 | A sentence ("something for sleep") found nothing | Store search | Medium | Fixed: filler words are ignored, and the pin still applies |
+    | 2 | A code for one collection did not say what it covers | Cart, checkout | Medium | Fixed: "20% off Sleep" |
+    | 3 | A code that stopped applying vanished without a word | Cart, checkout | Medium | Fixed: "Code X doesn't apply to anything in your cart now" |
+    | 4 | The pin editor's "Results" listed products the query does not find | Merchandising › Pinning | Medium | Fixed: the store's real results; the filter box reaches every product |
+    | 5 | Engines for other pages show nothing on the store, with no hint | Merchandising › Recommendations | Medium | Fixed: a note says which engine the store uses |
+    | 6 | Pages whose only button said "coming soon" or "prototype only" | Merchandising rail | Medium | Fixed: Content, Integrations and Field transformations are not listed for the demo store |
+    | 7 | "Upload" (coming soon) on Synonyms; a "coming soon" tab and menu item | Synonyms, Default merchandising | Medium | Fixed: not offered on the demo store |
+    | 8 | The header search box showed no keyboard focus | Store header | Medium | Fixed for a store with search |
+    | 9 | A page left open across a new release did nothing on the next click | Whole app | Medium | Fixed: it reloads the wanted page once |
+    | 10 | "Channel-scoped workspace" | Merchandising overview | Low | Fixed for the demo store |
+    | 11 | "in this prototype" wording | Product sync, promo card and banner forms | Low | Fixed for the demo store |
+    | 12 | "Sorry, This Page Not Found!" / "GO TO HOMEPAGE" | Store not-found page | Low | Fixed for the demo store |
+    | 13 | A Swedish order "Fulfilled from Main Warehouse - FL" | Order page | Low | Fixed: where the product is stocked |
+    | 14 | The header search box kept the old query after a search | Store header | Low | Fixed for a store with search |
+    | 15 | An engine's filter values come from another store's sample list, and filters do not reach the store | Engine editor, step 4 | Low | Left: needs its own piece of work |
+    | 16 | The store's address reads `…uat.maropost.store` | Admin, several pages | Low | Left: every store's address has this form |
+    | 17 | Search rules, promo cards, banners and smart collections work in the admin but do not change the store | Merchandising | Limit | Left, and listed in the sales script under "What not to promise" |
+
+  - **The film:** `npm run demo:video` builds the app, drives the real demo in Chrome from a
+    browser with nothing stored, and writes `output/demo-video/vitaheal-demo.mp4` (1080p,
+    3 min 34 s, about 12 MB, captions drawn in the page, not committed). `scripts/demo-video/record.mjs`
+    holds the twelve scenes in order; `--fast` and `--only=3,4` are for checking a change. It
+    films the browser's own frames and assembles them with the installed ffmpeg, so it needs no
+    download.
+  - **The live script:** `docs/store-builder/vitaheal-demo-script.md` (what to do and say, what
+    else to show, what not to promise).
+
 - **Preview test pass (2026-11-18).** Asked for by the human: test every flow on the deployed
   Vercel preview, as a shopper and as a merchant, and fix what breaks. Run on the branch's
   preview (commit `0ab0631c`) in a browser with nothing stored, at 1280px and 375px, with the
