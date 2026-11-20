@@ -22,16 +22,18 @@ import {
   type ConnectedCloud,
 } from '@/stores/useSalesChannels'
 import { useCommerceStore } from '@/stores/useCommerce'
+import { useDemoStores } from '@/stores/useDemoStores'
 import { useMaropayStore } from '@/stores/useMaropay'
 import { markForProvider } from '@/maropay/methodMarks'
 import type { MethodMarkId } from '@/maropay/methodMarks'
-import { PROVIDER_LABELS, STORE_ACTIVATION_LABELS } from '@/maropay/model'
+import { PROVIDER_LABELS, STORE_ACTIVATION_LABELS, localDateKey } from '@/maropay/model'
 import { activeConnections, connectionOfferedMethods } from '@/maropay/providers'
 import { useRetailStore } from '@/stores/useRetail'
 import { useStoreThemesStore } from '@/stores/useStoreThemes'
 import { useStorefrontStore } from '@/stores/useStorefront'
 import { storesWithOwnCatalogue } from '@/storefront/catalog'
-import { VITAHEAL_ADMIN, VITAHEAL_CHANNEL_ID } from '@/storefront/vitahealDemo'
+import { canApplyTheme, demoStoreFor, homeBlueprintOf } from '@/storefront/demoStores'
+import { historyFor, snapshotFor } from '@/storefront/demoStores/install'
 import { previewProducts } from '@/views/Storefront/storefrontCatalog'
 
 type MetricColor = 'primary' | 'retail' | 'commerce' | 'analytics' | 'contacts' | 'success' | 'warning'
@@ -145,6 +147,7 @@ const salesChannelsStore = useSalesChannelsStore()
 const retailStore = useRetailStore()
 const commerceStore = useCommerceStore()
 const storeThemesStore = useStoreThemesStore()
+const demoStores = useDemoStores()
 const toast = useToast()
 
 const addedAssistantIds = ref<string[]>([])
@@ -168,18 +171,61 @@ const isWebStore = computed(() => channel.value?.type === 'web_store')
 /** This store sells products of its own, so a product can be added straight to it. */
 const hasOwnCatalogue = computed(() => storesWithOwnCatalogue(commerceStore.products).includes(channelId.value))
 
-// The demo store keeps what is changed in it in this browser, and can be put back.
-const keepsChanges = computed(() => channelId.value === VITAHEAL_CHANNEL_ID)
-/** The demo store's own company, figures and theme name, in place of the placeholders other web stores share. */
-const demoFacts = computed(() => (channelId.value === VITAHEAL_CHANNEL_ID ? VITAHEAL_ADMIN : null))
+// A store that can take a theme from the library keeps what is changed in it in this browser, and can be put back.
+const keepsChanges = computed(() => canApplyTheme(channel.value))
+/** A demo store's own company and figures, in place of the placeholders other web stores share. They stay whatever theme it runs. */
+const demoFacts = computed(() => homeBlueprintOf(channelId.value)?.admin ?? null)
 /** A store shown to prospects has no button that only answers "not built yet". */
 const isDemoStore = computed(() => channel.value?.webStore?.demo === true)
 const ownProductCount = computed(() => commerceStore.products.filter((p) => p.channelIds?.includes(channelId.value)).length)
 const confirmRestore = ref(false)
 
+/** What "Restore original store" puts back: the seed of the theme the store started with. */
+const restoreFacts = computed(() => {
+  const current = channel.value
+  const original = current?.webStore?.blueprint?.original
+  if (!current || !original) return null
+  const today = localDateKey(Date.now())
+  const seed = snapshotFor(current, original, today)
+  return {
+    plans: seed.plans.length,
+    subscribers: historyFor(current.id, today)?.subscriptions.length ?? 0,
+    campaigns: seed.campaigns.length,
+    /** Set while another theme is applied: the name of the one the store goes back to. */
+    theme: demoStores.blueprintOf(current.id)?.id === original ? null : demoStoreFor(original).card.name,
+  }
+})
+
+const COUNT_WORDS = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve']
+const countWord = (n: number): string => COUNT_WORDS[n] ?? String(n)
+
+/** What the store keeps in this browser, as the restore card and its toast name it. */
+const restoreParts = computed(() => (restoreFacts.value?.plans
+  ? { card: 'Products, subscription plans and subscribers', toast: 'products, plans and subscribers' }
+  : { card: 'Products and campaigns', toast: 'products and campaigns' }))
+
+const restoreConsequences = computed(() => {
+  const facts = restoreFacts.value
+  const emails = demoFacts.value?.audienceListId !== undefined
+  return [
+    ...(facts?.theme ? [`The theme goes back to ${facts.theme}, with its collections, pages and menus.`] : []),
+    'Products you added to this store are removed.',
+    'Your edits to its products are undone.',
+    ...(facts?.plans
+      ? [`Subscription plans go back to the original ${countWord(facts.plans)}${facts.subscribers ? `, and subscribers to the original ${countWord(facts.subscribers)}` : ''}.`]
+      : []),
+    facts?.campaigns
+      ? `Campaigns go back to the original ${countWord(facts.campaigns)}${emails ? ', and their announcement emails are removed' : ''}.`
+      : 'Campaigns you added are removed.',
+    'The chatbot’s settings go back, and its chats from this store are removed.',
+    'The cart is emptied.',
+    'Orders already placed stay.',
+  ]
+})
+
 function restoreStore() {
-  commerceStore.restoreDemoStore()
-  toast.success(`${channel.value?.name ?? 'The store'} is back to its original products, plans and subscribers`)
+  demoStores.restore(channelId.value)
+  toast.success(`${channel.value?.name ?? 'The store'} is back to its original ${restoreParts.value.toast}`)
 }
 
 const maropay = useMaropayStore()
@@ -199,6 +245,15 @@ const paymentProviderNames = computed(() => [...(maropayLive.value ? ['Maropay']
 // Published theme for this channel drives the preview dialog; falls back to the
 // default static storefront mock when no theme exists.
 const channelTheme = computed(() => (channelId.value ? storeThemesStore.themeForChannel(channelId.value) : undefined))
+/** The published theme as the activity names it: a library theme with its version ("Vitaheal 1.0"), any other by its name. */
+const publishedThemeName = computed(() => {
+  const theme = channelTheme.value
+  const running = demoStores.blueprintOf(channelId.value)
+  if (!running) return theme?.name ?? ''
+  return !theme || theme.name === running.card.name ? `${running.card.name} ${running.card.version}` : theme.name
+})
+/** The plans the store's theme sells on, as the activity lists them. */
+const seededPlanNames = computed(() => demoStores.snapshotOf(channelId.value)?.plans.map((p) => p.name) ?? [])
 const previewSections = computed(() => channelTheme.value?.templates.home)
 const previewStyles = computed(() => channelTheme.value?.styles)
 // A crawled store's own wordmark and menu in the preview header (Neelam-Store); others keep the sample header.
@@ -443,11 +498,13 @@ const activityItems = computed<ActivityItem[]>(() => {
   const current = channel.value
   if (!current) return []
 
-  if (current.type === 'web_store' && demoFacts.value) {
+  if (current.type === 'web_store' && keepsChanges.value) {
     return [
-      { id: 'theme', icon: 'rocket', title: 'Theme published', meta: demoFacts.value.themeName, time: formatRelative(current.lastActivityAt), color: 'primary' },
+      { id: 'theme', icon: 'rocket', title: 'Theme published', meta: publishedThemeName.value, time: formatRelative(current.lastActivityAt), color: 'primary' },
       { id: 'inventory', icon: 'package', title: 'Catalog synced', meta: `${ownProductCount.value} products from Commerce Cloud`, time: '2 h ago', color: 'commerce' },
-      { id: 'plans', icon: 'repeat', title: 'Subscription plans updated', meta: '3-month supply, Monthly subscription', time: 'Yesterday', color: 'analytics' },
+      seededPlanNames.value.length
+        ? { id: 'plans', icon: 'repeat', title: 'Subscription plans updated', meta: seededPlanNames.value.join(', '), time: 'Yesterday', color: 'analytics' }
+        : { id: 'search', icon: 'sliders-horizontal', title: 'Search rules updated', meta: 'Fall outerwear', time: 'Yesterday', color: 'analytics' },
     ]
   }
 
@@ -1053,7 +1110,7 @@ function locationRoleText(locationId: string) {
           </div>
           <div class="retail-widget-body">
             <p class="text-body-2 text-medium-emphasis mb-0">
-              Products, subscription plans and subscribers you add or change in this store stay after
+              {{ restoreParts.card }} you add or change in this store stay after
               a reload, in this browser only. Restoring puts the original ones back.
             </p>
           </div>
@@ -1211,15 +1268,7 @@ function locationRoleText(locationId: string) {
         v-model="confirmRestore"
         title="Restore the original store?"
         :message="`${channel.name} goes back to the products it started with.`"
-        :consequences="[
-          'Products you added to this store are removed.',
-          'Your edits to its products are undone.',
-          'Subscription plans go back to the original two, and subscribers to the original eight.',
-          'Campaigns go back to the original three, and their announcement emails are removed.',
-          'The chatbot’s settings go back, and its chats from this store are removed.',
-          'The cart is emptied.',
-          'Orders already placed stay.',
-        ]"
+        :consequences="restoreConsequences"
         confirm-label="Restore store"
         danger
         @confirm="restoreStore"

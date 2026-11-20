@@ -681,6 +681,13 @@ export interface CheckoutLineItem {
   sku: string
   qty: number
   price: string
+  /** The product bought. Absent on a line saved before lines carried it: it is then found by `sku`. */
+  productId?: number
+  /** The variant the shopper chose, and its title as it was then ("M / Sand", "Front"). */
+  variantId?: number
+  variantTitle?: string
+  /** The shopper's vehicle when they bought it: "2019 Ford F-150". */
+  vehicle?: string
   /** The subscription plan the line was bought on; `price` is then the price of one delivery. */
   plan?: LinePlan
   /** A store campaign's code that covered this line, and the percentage it took off `price`. The session's amount is already net of it. */

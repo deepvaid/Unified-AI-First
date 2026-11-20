@@ -12,8 +12,10 @@ import {
   type ThemeSection,
   type ThemeStyles,
 } from './themeBuilderData'
-import { useSalesChannelsStore } from './useSalesChannels'
-import { VITAHEAL_CHANNEL_ID, VITAHEAL_PHOTOS, VITAHEAL_THEME_STYLES } from '@/storefront/vitahealDemo'
+import { SEEDED_DEMO_CHANNELS, demoChannelRecord, demoSnapshotOf, replaceStoreRows, useSalesChannelsStore } from './useSalesChannels'
+import { canApplyTheme } from '@/storefront/demoStores'
+import type { StoreSnapshot } from '@/storefront/demoStores'
+import type { InstallChannel } from '@/storefront/demoStores/install'
 
 function nowIso() {
   return new Date().toISOString()
@@ -27,7 +29,8 @@ function cloneTheme(theme: StoreTheme): StoreTheme {
 // ── Seeds ─────────────────────────────────────────────────────────────────────
 // One theme per channel with webStore.storeBuilderEnabled (see useSalesChannels
 // seeds): Atlas Outfitters ships Published with all four templates populated;
-// Beta Sales Channel is a Draft starter.
+// Beta Sales Channel is a Draft starter. A demo store (Vitaheal) gets the theme of
+// the blueprint it runs (src/storefront/demoStores/), after these.
 
 function seedThemes(): StoreTheme[] {
   return [
@@ -156,78 +159,6 @@ function seedThemes(): StoreTheme[] {
       styles: defaultThemeStyles(),
       templates: { home: [], product: [], collection: [], cart: [] },
     },
-    // Vitaheal (demo): the fictional store that stands in for BKM Health (docs/store-builder/bkm-build-prompt.md).
-    // Built from the section kinds that exist today; slices S2, S3 and S6 add the sections that build needs.
-    // The home page follows the reference store's order: hero, range, a story, goals, a second story.
-    {
-      id: 'theme-vitaheal',
-      channelId: VITAHEAL_CHANNEL_ID,
-      name: 'Vitaheal',
-      status: 'Published',
-      publishedAt: '2026-11-16T09:00:00Z',
-      updatedAt: '2026-11-16T09:00:00Z',
-      styles: { ...VITAHEAL_THEME_STYLES },
-      templates: {
-        home: [
-          createSection('announcement-bar', { text: 'Free shipping over 549 kr · Made in Sweden · 30-day money-back guarantee on Unwind', link: '' }, 'vitaheal-home-announcement'),
-          createSection('header', { menuStyle: 'Centered' }, 'vitaheal-home-header'),
-          {
-            ...createSection('image-banner', {
-              headline: 'Supplements that do one job well',
-              subheadline: 'Sleep, focus and recovery, made in Sweden and delivered to your door.',
-              height: 'Large',
-              image: VITAHEAL_PHOTOS.hero,
-            }, 'vitaheal-home-banner'),
-            blocks: [createBlock('button', { label: 'Shop all products', link: '/collections/all' }, 'vitaheal-banner-button')],
-          },
-          createSection('featured-products', { title: 'Our range', productCount: 8 }, 'vitaheal-home-featured'),
-          createSection('image-with-text', {
-            heading: 'Unwind helps you switch off, sleep deeply and wake up ready',
-            body: 'One warm cup about an hour before bed. Nothing in it knocks you out; it helps your body do what it already knows how to do.',
-            buttonLabel: 'Shop Unwind',
-            buttonLink: '/products/unwind-2001',
-            imageSide: 'Left',
-            image: VITAHEAL_PHOTOS.storyUnwind,
-          }, 'vitaheal-home-story-unwind'),
-          {
-            ...createSection('collection-grid', { title: 'Shop by goal', columns: 3 }, 'vitaheal-home-collections'),
-            blocks: [
-              createBlock('collection', { label: 'Sleep', link: '/collections/sleep', image: VITAHEAL_PHOTOS.tileSleep }, 'vitaheal-collection-sleep'),
-              createBlock('collection', { label: 'Sport', link: '/collections/sport', image: VITAHEAL_PHOTOS.tileSport }, 'vitaheal-collection-sport'),
-              createBlock('collection', { label: 'Longevity', link: '/collections/longevity', image: VITAHEAL_PHOTOS.tileLongevity }, 'vitaheal-collection-longevity'),
-              createBlock('collection', { label: 'Hydrate', link: '/collections/hydrate', image: VITAHEAL_PHOTOS.tileHydrate }, 'vitaheal-collection-hydrate'),
-            ],
-          },
-          createSection('image-with-text', {
-            heading: 'Clear Focus keeps your mind sharp and your energy steady',
-            body: 'Two capsules with breakfast, for long days at a desk or a long session on the road. No jitters, no afternoon dip.',
-            buttonLabel: 'Shop Clear Focus',
-            buttonLink: '/products/clear-focus-2002',
-            imageSide: 'Right',
-            image: VITAHEAL_PHOTOS.storyFocus,
-          }, 'vitaheal-home-story-focus'),
-          createSection('rich-text', { heading: 'Subscribe and save 20%', body: 'Most of our customers subscribe. You get every delivery for less, and you can skip, pause or cancel whenever you like.', alignment: 'Center' }, 'vitaheal-home-subscribe'),
-          createSection('newsletter', { headline: 'Get the Vitaheal letter' }, 'vitaheal-home-newsletter'),
-          createSection('footer', { showSocial: false, columns: 3 }, 'vitaheal-home-footer'),
-        ],
-        product: [
-          createSection('header', { menuStyle: 'Centered' }, 'vitaheal-product-header'),
-          createSection('product-detail', {}, 'vitaheal-product-detail'),
-          createSection('featured-products', { title: 'You may also like' }, 'vitaheal-product-related'),
-          createSection('footer', { showSocial: false, columns: 3 }, 'vitaheal-product-footer'),
-        ],
-        collection: [
-          createSection('header', { menuStyle: 'Centered' }, 'vitaheal-collection-header'),
-          createSection('collection-grid', {}, 'vitaheal-collection-grid'),
-          createSection('footer', { showSocial: false, columns: 3 }, 'vitaheal-collection-footer'),
-        ],
-        cart: [
-          createSection('header', { menuStyle: 'Centered' }, 'vitaheal-cart-header'),
-          createSection('cart-summary', {}, 'vitaheal-cart-summary'),
-          createSection('footer', { showSocial: false, columns: 3 }, 'vitaheal-cart-footer'),
-        ],
-      },
-    },
   ]
 }
 
@@ -246,16 +177,52 @@ const AURORA_STYLES: ThemeStyles = {
   soldOutBadgeColor: '#121011',
 }
 
+/** A demo store's theme, as its snapshot has it: published on the store. */
+function snapshotTheme(channelId: string, snapshot: StoreSnapshot): StoreTheme {
+  const { id, name, publishedAt, styles, templates } = snapshot.theme
+  return { id, channelId, name, status: 'Published', publishedAt, updatedAt: publishedAt, styles, templates }
+}
+
 // ── Store ─────────────────────────────────────────────────────────────────────
 
 export const useStoreThemesStore = defineStore('storeThemes', () => {
   const themes = ref<StoreTheme[]>(seedThemes())
+
+  /** The id of the theme each demo store was seeded with: what reseedDemo replaces. */
+  const seededThemeIds = new Map<string, string>()
 
   // Last published (or seeded) snapshot per theme id — what discardDraft
   // restores. Non-reactive on purpose; only read inside actions.
   const baselines = new Map<string, StoreTheme>(
     themes.value.map((theme) => [theme.id, cloneTheme(theme)]),
   )
+
+  /** The stores whose theme is seeded (attachStore): each only once. */
+  const attached = new Set<string>()
+
+  /**
+   * Puts the theme of the blueprint a store runs now on it, published, after the
+   * other themes (none for a store that started blank). Themes are not kept in the browser.
+   */
+  function attachStore(channel: InstallChannel): void {
+    if (attached.has(channel.id)) return
+    attached.add(channel.id)
+    const snapshot = demoSnapshotOf(channel)
+    if (!snapshot) return
+    const theme = snapshotTheme(channel.id, snapshot)
+    themes.value = replaceStoreRows(themes.value, (t) => t.channelId === channel.id && t.id === theme.id, [theme])
+    baselines.set(theme.id, cloneTheme(theme))
+    seededThemeIds.set(channel.id, theme.id)
+  }
+  // The demo stores' themes, after the others.
+  for (const channel of SEEDED_DEMO_CHANNELS) attachStore(channel)
+
+  /** Takes a theme off the storefront. Its baseline goes too, so discarding its edits later never publishes it again. */
+  function demote(theme: StoreTheme) {
+    theme.status = 'Draft'
+    const baseline = baselines.get(theme.id)
+    if (baseline) baseline.status = 'Draft'
+  }
 
   function getTheme(themeId: string) {
     return themes.value.find((theme) => theme.id === themeId)
@@ -467,7 +434,7 @@ export const useStoreThemesStore = defineStore('storeThemes', () => {
     const theme = getTheme(themeId)
     if (!theme) return
     // A store has one current theme, so publishing one takes the previous one off the storefront.
-    for (const other of themesForChannel(theme.channelId)) if (other.id !== theme.id && other.status === 'Published') other.status = 'Draft'
+    for (const other of themesForChannel(theme.channelId)) if (other.id !== theme.id && other.status === 'Published') demote(other)
     theme.status = 'Published'
     theme.publishedAt = nowIso()
     theme.updatedAt = theme.publishedAt
@@ -496,6 +463,43 @@ export const useStoreThemesStore = defineStore('storeThemes', () => {
     theme.templates = restored.templates
   }
 
+  /**
+   * Brings a store that can take a theme in as the app starts (a store made from a
+   * theme; src/stores/useDemoStores.ts): it gets the theme it runs. Does nothing a
+   * second time, or for a store that cannot take a theme.
+   */
+  function attachDemo(channelId: string) {
+    const channel = demoChannelRecord(channelId)
+    if (channel && canApplyTheme(channel)) attachStore(channel)
+  }
+
+  /**
+   * Puts the theme of the blueprint the store runs now on it, published, in place of
+   * the theme it was seeded with (contract: reseedDemo). The merchant's other themes
+   * stay, as drafts. A store that started blank is left with only its own themes.
+   */
+  function reseedDemo(channelId: string) {
+    const channel = demoChannelRecord(channelId)
+    if (!canApplyTheme(channel)) return
+    attached.add(channelId)
+    const snapshot = demoSnapshotOf(channel)
+    const next = snapshot ? snapshotTheme(channelId, snapshot) : undefined
+    const previousId = seededThemeIds.get(channelId)
+    const isSeeded = (theme: StoreTheme) => theme.channelId === channelId && (theme.id === previousId || theme.id === next?.id)
+
+    for (const theme of themesForChannel(channelId)) {
+      if (isSeeded(theme)) baselines.delete(theme.id)
+      else if (next && theme.status === 'Published') demote(theme)
+    }
+    themes.value = replaceStoreRows(themes.value, isSeeded, next ? [next] : [])
+    if (next) {
+      baselines.set(next.id, cloneTheme(next))
+      seededThemeIds.set(channelId, next.id)
+    } else {
+      seededThemeIds.delete(channelId)
+    }
+  }
+
   return {
     themes,
     getTheme,
@@ -514,5 +518,7 @@ export const useStoreThemesStore = defineStore('storeThemes', () => {
     updateBlock,
     publishTheme,
     discardDraft,
+    attachDemo,
+    reseedDemo,
   }
 })

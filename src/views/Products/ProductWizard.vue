@@ -20,6 +20,7 @@ import DvCatalogCta from '@/components/copilot/DvCatalogCta.vue'
 import ProductMediaField from '@/components/products/ProductMediaField.vue'
 import { isPlaceholderImage } from '@/components/products/productMedia'
 import { lowestPrice, totalStock, withPrimaryCollection } from '@/storefront/catalog'
+import { buildVariants, numberVariants } from '@/storefront/variants'
 import { useProductStores } from '@/composables/useProductStores'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
 import { useWizardSteps } from '@/composables/useWizardSteps'
@@ -121,22 +122,24 @@ const discountable = ref(true)
 const salesChannels = ref<string[]>(['Online Store'])
 
 // ── Step 3 — Variants ───────────────────────────────────────────────────
-let variantSeq = 0
+// A variant keeps its id for good, so carts and orders that name it still find it.
+// A new one has a draft id below 0 until Save numbers it from the product's id
+// (numberVariants in src/storefront/variants.ts).
+let draftSeq = 0
 function emptyStock(): Record<string, number> {
   return Object.fromEntries(LOCATIONS.map(l => [l, 0]))
 }
 function makeVariant(vtitle: string, seed?: Partial<ProductVariant>): ProductVariant {
   return {
-    id: ++variantSeq,
+    // Fields not edited here (compare-at price, weight, option values) come with the seed, so an edit never loses them.
+    ...seed,
+    id: seed?.id ?? --draftSeq,
     title: vtitle,
     sku: seed?.sku ?? '',
     manageInventory: seed?.manageInventory ?? true,
     allowBackorder: seed?.allowBackorder ?? false,
     costPrice: seed?.costPrice ?? '',
     price: seed?.price ?? '',
-    // Not edited here, but an edit must not lose them.
-    ...(seed?.compareAtPrice ? { compareAtPrice: seed.compareAtPrice } : {}),
-    ...(seed?.weight ? { weight: seed.weight } : {}),
     stock: seed?.stock ? { ...emptyStock(), ...seed.stock } : emptyStock(),
   }
 }
@@ -153,21 +156,9 @@ function removeOption(index: number) {
   regenerateVariants()
 }
 
+/** One variant per combination of option values; a combination that was already there keeps its variant. */
 function regenerateVariants() {
-  const valid = options.value.filter(o => o.name.trim() && o.values.length)
-  if (!valid.length) {
-    generatedVariants.value = []
-    return
-  }
-  let combos: string[][] = [[]]
-  for (const opt of valid) {
-    combos = combos.flatMap(c => opt.values.map(v => [...c, v]))
-  }
-  const prev = new Map(generatedVariants.value.map(v => [v.title, v]))
-  generatedVariants.value = combos.map(combo => {
-    const vtitle = combo.join(' / ')
-    return prev.get(vtitle) ?? makeVariant(vtitle)
-  })
+  generatedVariants.value = buildVariants(options.value, generatedVariants.value, title => makeVariant(title))
 }
 
 watch(options, regenerateVariants, { deep: true })
@@ -190,6 +181,16 @@ function nextStep() {
 }
 
 // ── Persistence ─────────────────────────────────────────────────────────
+/** The edited product's detail as loaded: what this form does not edit (its size chart, the vehicles it fits) is saved as it was. */
+let loadedDetail: Partial<ProductDetail> = {}
+/** The variant ids the edited product had when the form opened: a variant added now never takes the id of one removed now. */
+let loadedVariantIds: number[] = []
+
+/** An option as saved: what this form edits, and how the storefront offers it (display, swatches), which it does not. */
+function copyOption(o: ProductOption): ProductOption {
+  return { ...o, values: [...o.values], ...(o.swatches ? { swatches: { ...o.swatches } } : {}) }
+}
+
 function buildSeo(): ProductDetail['seo'] {
   const seo = {
     title: seoTitle.value.trim(),
@@ -202,11 +203,12 @@ function buildSeo(): ProductDetail['seo'] {
 
 function buildDetail(): ProductDetail {
   return {
+    ...loadedDetail,
     subtitle: subtitle.value.trim(),
     url: url.value.trim(),
     description: description.value.trim(),
     hasVariants: hasVariants.value,
-    options: hasVariants.value ? options.value.filter(o => o.name.trim()).map(o => ({ name: o.name.trim(), values: [...o.values] })) : [],
+    options: hasVariants.value ? options.value.filter(o => o.name.trim()).map(o => ({ ...copyOption(o), name: o.name.trim() })) : [],
     variantsList: activeVariants.value.map(v => ({ ...v, stock: { ...v.stock } })),
     taxCategory: taxCategory.value,
     material: material.value,
@@ -269,6 +271,15 @@ const {
   message: 'You have unsaved changes. Leaving now will discard them.',
 })
 
+/**
+ * The input with every variant's id as saved: kept where it has one, numbered from
+ * the product's id where new, past every id the product had when the form opened.
+ */
+function withVariantIds(input: ProductDraftInput, productId: number): ProductDraftInput {
+  if (!input.detail) return input
+  return { ...input, detail: { ...input.detail, variantsList: numberVariants(input.detail.variantsList, productId, loadedVariantIds) } }
+}
+
 function save(publishStatus: PublishStatus) {
   submitted.value = true
   if (!titleValid.value) {
@@ -294,11 +305,13 @@ function save(publishStatus: PublishStatus) {
   }
   allowNextLeave()
   if (isEdit.value && editingId.value !== null) {
-    store.updateProductDraft(editingId.value, input)
+    store.updateProductDraft(editingId.value, withVariantIds(input, editingId.value))
     trackSave(publishStatus, editingId.value)
     router.push({ ...productsRoute.value, query: { flash: 'product-updated', product: String(editingId.value) } })
   } else {
     const created = store.createProduct(input)
+    // New variants are numbered from the product's id, which exists only now.
+    store.updateProductDraft(created.id, withVariantIds(input, created.id))
     trackSave(publishStatus, created.id)
     router.push({ ...productsRoute.value, query: { flash: publishStatus === 'Draft' ? 'product-draft' : 'product-published', product: String(created.id) } })
   }
@@ -430,11 +443,13 @@ onMounted(() => {
       images.value = (product.imageUrls ?? []).filter(url => !isPlaceholderImage(url))
       const d = product.detail
       if (d) {
+        loadedDetail = d
+        loadedVariantIds = d.variantsList.map(v => v.id)
         subtitle.value = d.subtitle
         url.value = d.url
         description.value = d.description
         hasVariants.value = d.hasVariants
-        options.value = d.options.length ? d.options.map(o => ({ name: o.name, values: [...o.values] })) : [{ name: '', values: [] }]
+        options.value = d.options.length ? d.options.map(copyOption) : [{ name: '', values: [] }]
         taxCategory.value = d.taxCategory
         material.value = d.material
         brand.value = d.brand
@@ -456,7 +471,8 @@ onMounted(() => {
           seoSocial.value = { ogTitle: d.seo.ogTitle, ogDescription: d.seo.ogDescription }
         }
         if (d.hasVariants) {
-          generatedVariants.value = d.variantsList.map(v => makeVariant(v.title, v))
+          // Built here rather than by the options watcher, so the form starts out unchanged.
+          generatedVariants.value = buildVariants(options.value, d.variantsList.map(v => makeVariant(v.title, v)), title => makeVariant(title))
         } else {
           defaultVariant.value = d.variantsList[0] ? makeVariant(d.variantsList[0].title, d.variantsList[0]) : makeVariant('Default variant')
         }

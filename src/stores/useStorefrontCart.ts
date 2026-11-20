@@ -2,10 +2,10 @@ import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 import { money, sum, parseDecimal } from '@/maropay/money'
 import type { Money } from '@/maropay/money'
-import { MAX_QTY, addLine, lineKey } from '@/storefront/cart'
+import { MAX_QTY, addLine, lineKey, pruneLines } from '@/storefront/cart'
 import type { CartLine } from '@/storefront/cart'
 import type { LinePlan } from '@/subscriptions/plans'
-import type { Product } from './useCommerce'
+import type { Product, ProductVariant } from './useCommerce'
 
 // A shopper's cart on a storefront, one per store. It lives for the browser tab
 // (sessionStorage), like a guest cart, and keeps each line's price as it was added.
@@ -36,6 +36,16 @@ function read(): Record<string, CartLine[]> {
   }
 }
 
+/** What the shopper chose beside the product: a plan (and its price per delivery), a variant, their vehicle. */
+export interface CartChoice {
+  plan?: LinePlan
+  /** The unit price to charge: on a plan, one delivery. Absent: the variant's price, else the product's. */
+  price?: string
+  variant?: Pick<ProductVariant, 'id' | 'title' | 'sku' | 'price'>
+  /** "2019 Ford F-150". */
+  vehicle?: string
+}
+
 export function lineTotal(line: Pick<CartLine, 'price' | 'qty'>, currency: string): Money {
   const unit = parseDecimal(line.price, currency) ?? money(0, currency)
   return money(unit.amount * line.qty, currency)
@@ -56,16 +66,31 @@ export const useStorefrontCartStore = defineStore('storefrontCart', () => {
     return carts.value[channelId] ?? []
   }
 
-  /** Adds a product, bought once at its own price, or on a plan at the plan's price per delivery. */
-  function add(channelId: string, product: Product, qty = 1, subscription?: { plan: LinePlan; price: string }): void {
+  /**
+   * Adds a product, bought once at its own price, or on a plan at the plan's price
+   * per delivery. A chosen variant gives the line its id, title, SKU and price; it
+   * is only kept where the product has options, so a product without a choice
+   * stays one line however it was added.
+   */
+  function add(channelId: string, product: Product, qty = 1, choice?: CartChoice): void {
+    const variant = product.detail?.options.length ? choice?.variant : undefined
     carts.value[channelId] = addLine(linesFor(channelId), {
       productId: product.id,
       name: product.name,
-      sku: product.sku,
-      price: subscription?.price ?? product.price,
+      sku: variant?.sku || product.sku,
+      price: choice?.price ?? variant?.price ?? product.price,
       qty,
-      ...(subscription ? { plan: subscription.plan } : {}),
+      ...(variant ? { variantId: variant.id, variantTitle: variant.title } : {}),
+      ...(choice?.vehicle ? { vehicle: choice.vehicle } : {}),
+      ...(choice?.plan ? { plan: choice.plan } : {}),
     })
+  }
+
+  /** Takes out the lines whose product the store no longer sells, and returns them so the shopper can be told. */
+  function prune(channelId: string, sellableIds: Iterable<number>): CartLine[] {
+    const { kept, removed } = pruneLines(linesFor(channelId), sellableIds)
+    if (removed.length) carts.value[channelId] = kept
+    return removed
   }
 
   /** `key` is the line's `lineKey`. */
@@ -113,5 +138,5 @@ export const useStorefrontCartStore = defineStore('storefrontCart', () => {
     return sum(linesFor(channelId).map((l) => lineTotal(l, currency)), currency)
   }
 
-  return { carts, linesFor, add, setQty, remove, clear, count, subtotal, codeFor, setCode }
+  return { carts, linesFor, add, setQty, remove, prune, clear, count, subtotal, codeFor, setCode }
 })

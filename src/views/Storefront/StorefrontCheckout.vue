@@ -7,6 +7,7 @@ import { isEmail } from '@/maropay/onboarding'
 import { MAROPAY_STORE_ROUTE } from '@/maropay/readiness'
 import { cardErrors, cardLabel, flowForMethod, payButtonText } from '@/maropay/storefront'
 import type { CardInput, ShopperMethod } from '@/maropay/storefront'
+import { lineProduct } from '@/storefront/cart'
 import { useCommerceStore } from '@/stores/useCommerce'
 import { useMaropayStore } from '@/stores/useMaropay'
 import { MAX_QTY, lineTotal, useStorefrontCartStore } from '@/stores/useStorefrontCart'
@@ -66,8 +67,18 @@ const buyNow = computed(() => {
 })
 
 const lineItems = computed<CheckoutLineItem[]>(() => (buyNow.value
-  ? [{ product: buyNow.value.product.name, sku: buyNow.value.product.sku, qty: buyNow.value.qty, price: buyNow.value.product.price }]
-  : cart.linesFor(channelId.value).map((l) => ({ product: l.name, sku: l.sku, qty: l.qty, price: l.price, ...(l.plan ? { plan: l.plan } : {}) }))))
+  ? [{ product: buyNow.value.product.name, sku: buyNow.value.product.sku, qty: buyNow.value.qty, price: buyNow.value.product.price, productId: buyNow.value.product.id }]
+  : cart.linesFor(channelId.value).map((l) => ({
+      product: l.name,
+      sku: l.sku,
+      qty: l.qty,
+      price: l.price,
+      productId: l.productId,
+      ...(l.variantId !== undefined ? { variantId: l.variantId } : {}),
+      ...(l.variantTitle ? { variantTitle: l.variantTitle } : {}),
+      ...(l.vehicle ? { vehicle: l.vehicle } : {}),
+      ...(l.plan ? { plan: l.plan } : {}),
+    }))))
 
 // ── The payment under way (persisted, so a reload resumes it) ──────
 
@@ -114,13 +125,13 @@ const nextCharge = computed(() => {
 })
 
 function iconFor(line: CheckoutLineItem): string {
-  const category = commerce.products.find((p) => p.sku === line.sku)?.category
+  const category = lineProduct(commerce.products, line)?.category
   return (category && CATEGORY_ICONS[category]) || 'package'
 }
 
 /** The product's first picture, for a line whose product has one. */
 function imageFor(line: CheckoutLineItem): string | undefined {
-  return commerce.products.find((p) => p.sku === line.sku)?.imageUrls?.[0]
+  return lineProduct(commerce.products, line)?.imageUrls?.[0]
 }
 
 const editHref = computed(() => (buyNow.value ? `/products/${productHandle(buyNow.value.product)}` : '/cart-page'))

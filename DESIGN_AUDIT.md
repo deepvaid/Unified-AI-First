@@ -3030,3 +3030,109 @@ Components and tokens (the app looks the same unless stated):
   (`overlayDocs()`); the Controls panel on the Canvas tab does.
 - The Figma ledger in `docs/design-system/figma/` still lists the app bar token as 60 and
   `MpIllustration` / `MpUsageMeter` with their old props.
+
+## Demo store registry (store themes, part 1) — 2026-11-19
+
+Groundwork for two more demo stores and a theme library (plan: Northfold apparel, Torqline auto
+parts). Nothing a shopper or merchant sees changes on Vitaheal (demo) or any other store; the
+checks are `tests/storefront/fixtures/vitaheal-seed.json` (the seed before the change),
+`vitaheal-saved-head.json` (browser data the app saved before it) and `vitaheal-app-head.json`
+(every Pinia store's Vitaheal rows at the commit before, on a frozen clock: products, campaigns,
+search rules and engines, plans, subscribers, the chatbot and its 214 chats, announcement
+emails), read by `tests/storefront/demoStoresVitaheal.test.ts` and `demoStoresApp.test.ts`.
+`tests/storefront/fixtures/capture-vitaheal-app.mjs` captures the last one again from a worktree.
+
+- **Registry** `src/storefront/demoStores/` (pure): `types.ts` (`DemoStoreBlueprint`,
+  `StoreSnapshot`), `index.ts` (`DEMO_STORES`, `demoStoreFor`, `homeBlueprintOf`, `canApplyTheme`),
+  `install.ts` (id blocks, `snapshotFor`, `currentBlueprintId`, the `installed` record),
+  `vitaheal.ts` (wraps `vitahealDemo.ts`; every `VITAHEAL_*` export stays).
+- **Orchestrator** `src/stores/useDemoStores.ts`: `blueprintOf`, `snapshotOf`, `canApply`,
+  `attach(channelId)`, `apply(channelId, id)`, `restore(channelId)`. Every store holding part of a
+  demo store has `attachDemo(channelId)` and `reseedDemo(channelId)`; those holding history have
+  `restoreDemoHistory(channelId)`.
+  - `attach` / `attachDemo` bring in a store the stores do not seed on their own (a store made from
+    a theme, part 4) as the app starts: each part is seeded as the theme the store runs now has it,
+    then what this browser saved for it is read back. Nothing is cleared, history slots included
+    (subscribers, chats, chatbot on/off, the Merchandise connection). A second call does nothing;
+    `attach` returns false for a store that cannot take a theme. `useStorefront.attachDemo` does
+    nothing (chrome is computed when shown); it exists so every store answers the same call.
+  - `reseedDemo` clears and reseeds, and is for apply and restore only. It and
+    `restoreDemoHistory` attach a store first, so a store not attached yet keeps what it saved in
+    its history slots.
+  - A seed fix (`seedVersion` bump) reseeds the store first and writes its `installed` record
+    afterwards, so in a full browser the cleared slots make room for the record. If the browser
+    still refuses it, the next start reseeds the store again. Restore writes the record last too.
+- **Shared suite** `tests/storefront/demoStores.test.ts` runs over every blueprint (links, photos and
+  credits, fonts, SKUs and variants, real brand names, capabilities, fitment), and over the home
+  store's history (its chats' links and brand names; no subscribers on a store without
+  subscriptions). Vehicle makes count as real brands outside `.fitment.` rows; "Ram" counts only
+  capitalised and never in "ram air". The theme card thumbnail check is skipped until the
+  thumbnails are captured.
+- **Pure moves**: `src/storefront/handles.ts` (`toHandle`, `productHandle`),
+  `src/storefront/themeSections.ts` (section and block catalogues, `createSection`, `createBlock`,
+  `storefrontThemeVars`, `onBrandColor`, `themeFonts`; `themeBuilderData.ts` re-exports them).
+- **New pure modules**: `variants.ts`, `fitment.ts`, `vehicles.ts`, `sizeCharts.ts`, `orderStatus.ts`
+  (`src/storefront/`), `src/chatbot/assistantProfiles.ts` (wellness only; the `AssistantProfileId`
+  type also names `'apparel'` and `'auto-parts'`, which answer as wellness until parts 2 and 3 add
+  them).
+  - `parseVehicle` (fitment) reads a vehicle only when the message names it: a spelled-out model
+    (F-150, CR-V) wins over a make found only through "ram"; a make and a model that disagree read
+    null; a make alone ("my 2018 Jeep") reads as its one table model only when the next word in
+    the clause is missing, a year or a filler word. So "2018 Jeep Grand Cherokee", "Ford Explorer"
+    and "2019 ram air intake" read null, and "my 2018 Jeep brakes" now does too (the chat asks for
+    the model).
+  - `shopperOrderStatus` (orderStatus) has two more keys after cancelled, refunded, delivered and
+    shipped: `payment-problem` ("Payment not received") for a Failed or Voided payment, and
+    `awaiting-payment` for a Pending one, except cash on delivery (`paymentProvider: 'cod'`), which
+    stays `preparing`. `ShopperOrder` gains optional `paymentProvider`.
+- `global.scss` loads Instrument Serif, DM Sans, Barlow, Barlow Condensed and Space Grotesk.
+
+### Renames and breaking changes
+
+- Removed `restoreDemo()` from `useChatbot`, `useStoreCampaigns`, `useCampaigns`,
+  `useSalesChannels` and `useMerchandising`, and `useSubscriptions.restore()`: use
+  `useDemoStores().restore(channelId)` (or the per-store `reseedDemo` / `restoreDemoHistory`).
+  `useCommerce.restoreDemoStore(channelId = 'vitaheal-demo')` stays, as a wrapper.
+- `useStorefrontCart.add(channelId, product, qty, choice?)`: the 4th argument is a `CartChoice`
+  (`plan`, `price`, `variant`, `vehicle`); the old `{ plan, price }` still fits it. New `prune`.
+- `lineKey` is `productId[/variantId][:planId]`; a line without a variant keeps its old key. Adding
+  more of a line for a different vehicle drops the line's `vehicle` (no single vehicle is true).
+- `useCommerce.stockedAt` takes a line (`{ sku, productId? }`) and finds its product by id.
+- **Product ids**: a product a merchant creates or duplicates is numbered from 100001
+  (`nextMerchantProductId`), never inside a demo store's block. Its default SKU is therefore
+  `SKU-20001` and up (was `SKU-12009` after the Vitaheal seed), and its links end `-100001`.
+- **Variant ids**: the product wizard keeps a variant's id across saves; a new variant gets
+  `productId*100 + n` (`numberVariants(variants, productId, alsoTaken?)`), with n past the highest
+  n among the kept ids and `alsoTaken`. The wizard passes the ids the product had when it opened,
+  so a variant removed in that session never lends its id to a new one (a cart line for it would
+  otherwise point at the new variant). `nextVariantId` likewise returns the id after the highest
+  one, not the lowest gap. A duplicate's variants are numbered from the copy's id.
+- The product wizard keeps what it does not edit: `detail.sizeChartId`, `detail.fitment`, and each
+  option's `display` and `swatches`.
+- `ProductOption` gains optional `display`, `swatches`; `ProductVariant` gains `optionValues`;
+  `ProductDetail` gains `sizeChartId`, `fitment`; cart, checkout and order lines gain optional
+  `productId`, `variantId`, `variantTitle`, `vehicle`. `SalesChannel.webStore` gains `blueprint`;
+  `ChatbotConfig` gains `assistantProfile`; `Campaign` gains `storeChannelId`
+  (`useCampaigns.markAnnouncement`). `productsFor` (store assistant) takes a profile.
+- **Browser keys**: Vitaheal's nine `mp.vitaheal-demo.<slot>.v1` keys are unchanged. Another demo
+  store keeps its data under `mp.demo-store.<channelId>.`; new slot `installed.v1` (the theme applied
+  to a store). Plans and subscriptions are split by `channelId` on load.
+- **Restore scope**: Restore original store resets the theme, collections, pages and menus only when
+  another theme was applied (the dialog then says so); a store that kept its own theme keeps this
+  session's edits to them, as before. Reseeding a store keeps a product it shares with another store,
+  in the other store only.
+- `discardDraft` on a theme that publishing another one took off the storefront no longer puts it
+  back as Published (its baseline is demoted with it).
+
+### Not done here
+
+- Applying a theme to another store, the theme library and thumbnails, Start from a theme (part 4).
+- Open decisions for part 4: whether theme edits are kept in the browser (a `themes` slot), and
+  whether plans a merchant made on a store survive Apply switched off or are removed.
+- Part 4 must call `useDemoStores().attach(channelId)` for each created store on every start;
+  nothing does yet, because no created stores exist.
+- Variant ids across edit sessions: when the top variant is removed and saved, the next session
+  no longer sees its id and can hand it out again. The lasting fix is a per-product counter
+  (`detail.nextVariantN`). n past 99 also runs into the next product's block, as before.
+- No test covers the seed-fix order (record after reseed); it needs a `seedVersion` bump and a
+  full browser.

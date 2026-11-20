@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { MAX_QTY, addLine, lineKey } from '../../src/storefront/cart.ts'
+import { MAX_QTY, addLine, lineKey, lineProduct, pruneLines } from '../../src/storefront/cart.ts'
 import type { CartLine } from '../../src/storefront/cart.ts'
 import { VITAHEAL_PLANS } from '../../src/storefront/vitahealDemo.ts'
 import { linePlan } from '../../src/subscriptions/plans.ts'
@@ -36,4 +36,45 @@ test('adding does not change the cart it was given', () => {
   const before = [once]
   addLine(before, once)
   assert.deepEqual(before, [{ ...once, qty: 1 }])
+})
+
+// ── Variants, vehicles and a store whose products changed ───────────────────
+
+const tee = (variantId: number, variantTitle: string, qty = 1): CartLine => ({
+  productId: 3001, name: 'Everyday Tee', sku: `NF-TEE-${variantId}`, price: '38.00', qty, variantId, variantTitle,
+})
+
+test('two sizes of one product are two lines, keyed product/variant', () => {
+  let lines = addLine([], tee(300102, 'M / Black'))
+  lines = addLine(lines, tee(300103, 'L / Black'))
+  lines = addLine(lines, tee(300102, 'M / Black', 2))
+  assert.deepEqual(lines.map((l) => [lineKey(l), l.qty]), [['3001/300102', 3], ['3001/300103', 1]])
+})
+
+test('a variant on a plan keys product/variant:plan', () => {
+  assert.equal(lineKey({ ...once, variantId: 20052, plan: threeMonth }), '2005/20052:plan-3-month')
+})
+
+test('the vehicle a part was added for does not split a line, and a line for two vehicles names neither', () => {
+  const pads: CartLine = { productId: 4001, name: 'Ceramic Brake Pads', sku: 'TQ-BRK-4471', price: '64.99', qty: 1, variantId: 400101, variantTitle: 'Front', vehicle: '2019 Ford F-150' }
+  const same = addLine([pads], { ...pads })
+  assert.deepEqual(same.map((l) => [lineKey(l), l.qty, l.vehicle]), [['4001/400101', 2, '2019 Ford F-150']])
+  const lines = addLine([pads], { ...pads, vehicle: '2015 Honda Civic' })
+  assert.deepEqual(lines.map((l) => [lineKey(l), l.qty, l.vehicle]), [['4001/400101', 2, undefined]])
+  assert.equal('vehicle' in lines[0]!, false)
+})
+
+test('lines whose product the store no longer sells are taken out, and said', () => {
+  const lines = [once, tee(300102, 'M / Black'), onPlan(threeMonth, '585.90')]
+  const { kept, removed } = pruneLines(lines, [3001])
+  assert.deepEqual(kept.map(lineKey), ['3001/300102'])
+  assert.deepEqual(removed.map(lineKey), ['2005', '2005:plan-3-month'])
+  assert.deepEqual(pruneLines(lines, new Set([2005, 3001])).removed, [])
+})
+
+test('a line finds its product by id, or by SKU when it was saved without one', () => {
+  const products = [{ id: 2005, sku: 'VTH-ELE-LEM' }, { id: 92005, sku: 'VTH-ELE-LEM' }]
+  assert.equal(lineProduct(products, { productId: 92005, sku: 'VTH-ELE-LEM' })?.id, 92005)
+  assert.equal(lineProduct(products, { sku: 'VTH-ELE-LEM' })?.id, 2005)
+  assert.equal(lineProduct(products, { productId: 1, sku: 'VTH-ELE-LEM' }), undefined)
 })

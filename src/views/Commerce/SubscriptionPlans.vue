@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useCommerceStore } from '@/stores/useCommerce'
+import { useDemoStores } from '@/stores/useDemoStores'
 import { useSubscriptionsStore } from '@/stores/useSubscriptions'
 import { useProductStores } from '@/composables/useProductStores'
 import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
@@ -31,6 +32,7 @@ import MpStatusChip from '@/components/MpStatusChip.vue'
 const route = useRoute()
 const commerce = useCommerceStore()
 const subscriptions = useSubscriptionsStore()
+const demoStores = useDemoStores()
 const toast = useToast()
 
 const accountId = computed(() => {
@@ -38,9 +40,11 @@ const accountId = computed(() => {
   return (Array.isArray(value) ? value[0] : value) ?? '2000290'
 })
 
-// Plans belong to a store that sells its own products.
+// Plans belong to a store that sells its own products. New ones only go to a store
+// whose theme sells on subscription; a plan of another store still shows its name.
 const productStores = useProductStores(accountId)
 const stores = computed(() => productStores.stores.value)
+const planStores = computed(() => stores.value.filter((s) => demoStores.blueprintOf(s.id)?.capabilities.subscriptions))
 const storeName = (channelId: string) => stores.value.find((s) => s.id === channelId)?.name ?? '—'
 const productsOf = (channelId: string) => commerce.products.filter((p) => p.channelIds?.includes(channelId))
 
@@ -93,6 +97,8 @@ const blank = (): PlanInput => ({
 const drawer = ref(false)
 const editingId = ref<string | null>(null)
 const formStore = ref('')
+/** The Store picker: the stores that sell plans, and the edited plan's own store. */
+const storeOptions = computed(() => stores.value.filter((s) => planStores.value.includes(s) || (!!editingId.value && s.id === formStore.value)))
 const form = ref<PlanInput>(blank())
 const attempted = ref(false)
 
@@ -101,7 +107,7 @@ const productOptions = computed(() => productsOf(formStore.value).map((p) => ({ 
 
 function openCreate() {
   editingId.value = null
-  formStore.value = stores.value[0]?.id ?? ''
+  formStore.value = planStores.value[0]?.id ?? ''
   form.value = blank()
   attempted.value = false
   drawer.value = true
@@ -185,7 +191,7 @@ function doDelete() {
       subtitle="What shoppers can subscribe on: how often it is delivered, how many units, and the discount."
     >
       <template #actions>
-        <v-btn v-if="stores.length" color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="openCreate">New plan</v-btn>
+        <v-btn v-if="planStores.length" color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="openCreate">New plan</v-btn>
       </template>
     </MpPageHeader>
 
@@ -252,11 +258,11 @@ function doDelete() {
             :title="filtering ? 'No plans match your filters' : 'No subscription plans'"
             :description="filtering
               ? 'Try a different search term or clear the status filter.'
-              : stores.length
+              : planStores.length
                 ? 'Create a plan to let shoppers subscribe to a product at a discount.'
                 : 'Plans are sold by a store that has products of its own. This account has no such store yet.'"
-            :action-label="filtering || !stores.length ? undefined : 'New plan'"
-            :action-icon="filtering || !stores.length ? undefined : 'plus'"
+            :action-label="filtering || !planStores.length ? undefined : 'New plan'"
+            :action-icon="filtering || !planStores.length ? undefined : 'plus'"
             @action="openCreate"
           />
         </template>
@@ -271,9 +277,9 @@ function doDelete() {
       <MpFormGrid :cols="2">
         <v-text-field v-model="form.name" label="Plan name *" placeholder="Monthly subscription" class="mp-form-grid__full" :error-messages="errors.name" />
         <v-select
-          v-if="stores.length > 1"
+          v-if="storeOptions.length > 1"
           v-model="formStore"
-          :items="stores"
+          :items="storeOptions"
           item-title="name"
           item-value="id"
           label="Store"

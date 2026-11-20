@@ -1,8 +1,11 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
-import { browserStorage, keepInBrowser } from '@/stores/demoKeep'
-import { demoSlot } from '@/storefront/demoStorage'
-import { VITAHEAL_CHANNEL, VITAHEAL_CHANNEL_ID } from '@/storefront/vitahealDemo'
+import { browserStorage, keepPerChannel } from '@/stores/demoKeep'
+import { DEMO_STORES, canApplyTheme, homeBlueprintOf } from '@/storefront/demoStores'
+import { currentBlueprintId, snapshotFor } from '@/storefront/demoStores/install'
+import type { InstallChannel } from '@/storefront/demoStores/install'
+import type { StoreBlueprintRef, StoreSnapshot } from '@/storefront/demoStores/types'
+import { localDateKey } from '@/maropay/model'
 
 export type SalesChannelType = 'web_store' | 'offline_store'
 export type SalesChannelStatus = 'connected' | 'needs_setup' | 'draft' | 'sync_issue'
@@ -45,6 +48,8 @@ export interface SalesChannel {
     locale?: string
     /** A store shown to prospects. Its checkout says "demo" in plain words where a prototype note would be, and its admin page has no button that leads nowhere. */
     demo?: boolean
+    /** Set on a store that can take a theme from the library (src/storefront/demoStores/): what it started from, and its slot. */
+    blueprint?: StoreBlueprintRef
   }
   offlineStore?: {
     locationIds: string[]
@@ -299,8 +304,46 @@ const seedChannels: SalesChannel[] = [
     },
   },
   // Last on purpose: earlier positions decide the "primary store" in the Maropay scenarios and story indexes.
-  VITAHEAL_CHANNEL,
+  ...DEMO_STORES.map((blueprint) => blueprint.homeChannel),
 ]
+
+// ── Demo stores (src/storefront/demoStores/) ─────────────────────────────────
+// Helpers for every store that holds a part of a demo store (contract: reseedDemo).
+
+/**
+ * The stores seeded from a blueprint when the app starts: the demo stores' own
+ * channels. Read it in a store's setup, where calling this store would make a cycle.
+ */
+export const SEEDED_DEMO_CHANNELS: readonly SalesChannel[] = DEMO_STORES.map((blueprint) => blueprint.homeChannel)
+
+/**
+ * What a store that can take a theme is seeded with now: the theme applied to it,
+ * else the one it started from. Null for a store that started blank or cannot take
+ * a theme. A fresh copy on every call.
+ */
+export function demoSnapshotOf(channel: InstallChannel | null | undefined): StoreSnapshot | null {
+  if (!channel || !canApplyTheme(channel)) return null
+  const id = currentBlueprintId(channel, browserStorage())
+  return id ? snapshotFor(channel, id, localDateKey(Date.now())) : null
+}
+
+/** A store's live record, else its seeded demo channel. For use inside actions (it reads this store). */
+export function demoChannelRecord(channelId: string): SalesChannel | undefined {
+  return useSalesChannelsStore().channels.find((channel) => channel.id === channelId) ?? homeBlueprintOf(channelId)?.homeChannel
+}
+
+/**
+ * `rows` with one store's rows (`belongs`) replaced by `next`. The new rows take the
+ * place of the first one they replace (else they go last), so lists keep their order;
+ * every other row stays as it is.
+ */
+export function replaceStoreRows<T>(rows: readonly T[], belongs: (row: T) => boolean, next: readonly T[]): T[] {
+  const others = rows.filter((row) => !belongs(row))
+  // Every row before the first one replaced stays, so that is where the new rows go.
+  const at = rows.findIndex(belongs)
+  const before = at === -1 ? others.length : at
+  return [...others.slice(0, before), ...next, ...others.slice(before)]
+}
 
 function slugify(value: string): string {
   return value
@@ -457,28 +500,93 @@ export const useSalesChannelsStore = defineStore('salesChannels', () => {
     channel.updatedAt = nowIso()
   }
 
-  // The demo store's connection is kept in the browser with the rest of its data,
-  // so the storefront tab has a search box as soon as the admin tab connects.
-  const demoChannel = (): SalesChannel => channels.value.find((channel) => channel.id === VITAHEAL_CHANNEL_ID)!
-  const keptConnection = demoSlot('merchandise', 1, browserStorage(), isKeptConnection)
-  setMerchandising(demoChannel(), keptConnection.load()?.connectedAt ?? null)
-  const keptDemo = keepInBrowser(
-    keptConnection,
-    () => ({ connectedAt: demoChannel().merchandising?.lastSyncAt ?? null }),
-    (fromOtherTab) => setMerchandising(demoChannel(), fromOtherTab?.connectedAt ?? null),
-  )
+  // ── Demo stores ──────────────────────────────────────────────────────
+  const channelById = (channelId: string): SalesChannel | undefined => channels.value.find((channel) => channel.id === channelId)
 
-  /** Disconnects the demo store again. Called by its restore (useCommerce). */
-  function restoreDemo(): void {
-    keptConnection.clear()
-    setMerchandising(demoChannel(), null)
-    keptDemo.adopt()
+  // A demo store's connection is kept in the browser with the rest of its data, so
+  // the storefront tab has a search box as soon as the admin tab connects. It is
+  // history: applying a theme keeps it, only a restore disconnects the store.
+  const keptConnection = keepPerChannel('merchandise', 1, isKeptConnection, {
+    read: (channelId) => ({ connectedAt: channelById(channelId)?.merchandising?.lastSyncAt ?? null }),
+    take: (channelId, saved) => {
+      const channel = channelById(channelId)
+      if (channel) setMerchandising(channel, saved?.connectedAt ?? null)
+    },
+  })
+
+  /** Prices are written in the store's market; a store that started blank keeps its own. */
+  function setMarket(channel: SalesChannel, market: StoreSnapshot['market']): void {
+    if (!channel.webStore || (channel.webStore.currency === market.currency && channel.webStore.locale === market.locale)) return
+    // A new object: the seed's own is shared with the blueprint it comes from.
+    const webStore: NonNullable<SalesChannel['webStore']> = { ...channel.webStore, currency: market.currency, locale: market.locale }
+    if (!market.locale) delete webStore.locale
+    channel.webStore = webStore
+  }
+
+  /** The stores whose market and connection are seeded and kept (attachStore): each only once. */
+  const attached = new Set<string>()
+
+  /**
+   * Seeds a store's market as the theme it runs now has it, and its Merchandise Cloud
+   * connection as it had it before the demo (not connected), then keeps the
+   * connection: what this browser saved is read, never cleared.
+   */
+  function attachStore(channel: SalesChannel): void {
+    if (attached.has(channel.id)) return
+    attached.add(channel.id)
+    const snapshot = demoSnapshotOf(channel)
+    if (snapshot) setMarket(channel, snapshot.market)
+    setMerchandising(channel, null)
+    keptConnection.attach(channel.id)
+  }
+  for (const seeded of SEEDED_DEMO_CHANNELS) attachStore(channelById(seeded.id)!)
+
+  /** The store's record when it can take a theme. */
+  const demoChannel = (channelId: string): SalesChannel | undefined => {
+    const channel = channelById(channelId)
+    return channel && canApplyTheme(channel) ? channel : undefined
+  }
+
+  /**
+   * Brings a store that can take a theme in with what this browser saved for it,
+   * as the app starts (a store made from a theme; src/stores/useDemoStores.ts).
+   * Nothing saved is cleared. Does nothing a second time, or for a store that
+   * cannot take a theme.
+   */
+  function attachDemo(channelId: string): void {
+    const channel = demoChannel(channelId)
+    if (channel) attachStore(channel)
+  }
+
+  /**
+   * Puts the store's market back as the theme it runs now has it (contract: reseedDemo).
+   * Its connection stays, and is kept from now on if it was not yet.
+   * A store that cannot take a theme is left alone.
+   */
+  function reseedDemo(channelId: string): void {
+    const channel = demoChannel(channelId)
+    if (!channel) return
+    attachStore(channel)
+    const snapshot = demoSnapshotOf(channel)
+    if (snapshot) setMarket(channel, snapshot.market)
+  }
+
+  /** Disconnects the store from Merchandise Cloud again (contract: restoreDemoHistory, a restore only). */
+  function restoreDemoHistory(channelId: string): void {
+    const channel = demoChannel(channelId)
+    if (!channel) return
+    attachStore(channel)
+    keptConnection.clear(channelId)
+    setMerchandising(channel, null)
+    keptConnection.adopt(channelId)
   }
 
   return {
     connectMerchandising,
     disconnectMerchandising,
-    restoreDemo,
+    attachDemo,
+    reseedDemo,
+    restoreDemoHistory,
     channels,
     allChannels,
     channelsForAccount,

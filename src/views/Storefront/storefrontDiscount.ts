@@ -5,6 +5,7 @@ import { useCommerceStore } from '@/stores/useCommerce'
 import { useStoreCampaignsStore } from '@/stores/useStoreCampaigns'
 import { useStorefrontCartStore } from '@/stores/useStorefrontCart'
 import { codeProblem, discountFor, findByCode, takesCodes } from '@/storefront/campaigns'
+import { lineProduct } from '@/storefront/cart'
 import { STOREFRONT } from './storefrontContext'
 
 // The shopper's discount code, for the cart and the checkout: whether the store
@@ -13,6 +14,8 @@ import { STOREFRONT } from './storefrontContext'
 // in src/storefront/campaigns.ts.
 
 interface Line {
+  /** Absent on a checkout line saved before lines carried it: the product is then found by SKU. */
+  productId?: number
   sku: string
   price: string
   qty: number
@@ -36,7 +39,7 @@ export function useStorefrontDiscount(lines: () => Line[], total: () => Money) {
     const covered = lines().map((line) => ({
       price: line.price,
       qty: line.qty,
-      collections: commerce.products.find((p) => p.sku === line.sku)?.collections ?? [],
+      collections: lineProduct(commerce.products, line)?.collections ?? [],
     }))
     return discountFor(covered, findByCode(campaigns.campaigns, channelId.value, code), storefront.currency.value)
   })

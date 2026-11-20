@@ -1,6 +1,10 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { VITAHEAL_CHANNEL_ID, VITAHEAL_COLLECTIONS } from '@/storefront/vitahealDemo'
+import { toHandle } from '@/storefront/handles'
+import { canApplyTheme } from '@/storefront/demoStores'
+import type { StoreSnapshot } from '@/storefront/demoStores'
+import type { InstallChannel } from '@/storefront/demoStores/install'
+import { SEEDED_DEMO_CHANNELS, demoChannelRecord, demoSnapshotOf, replaceStoreRows } from './useSalesChannels'
 
 /**
  * Mock-persistent data for the Products satellite pages that don't live in the
@@ -263,14 +267,8 @@ export interface TaxCategory {
   description: string
 }
 
-/** Slugify a title into a URL handle (lowercase, hyphenated). */
-export function toHandle(title: string): string {
-  return title
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-}
+// The handle rule lives with the storefront's pure modules; it is still exported from here.
+export { toHandle }
 
 /** `2026-08-29` → `Aug 29, 2026 at 04:45 AM`, the format every UAT table uses. */
 export function formatStamp(iso: string): string {
@@ -543,9 +541,42 @@ export const useProductExtrasStore = defineStore('productExtras', () => {
     seedCollection(20, 'All Products', 'Automated', '2025-10-10T19:06:00Z', 45),
     { ...seedCollection(21, 'Summer Feature Picks', 'Manual', '2026-07-12T09:15:00Z', 3), productItemIds: ['ring1', 'pbd', 'bbsm'], rules: [] },
     { ...seedCollection(22, 'Clearance — Inactive', 'Manual', '2026-03-02T11:00:00Z', 0, 'Inactive'), productItemIds: [], rules: [] },
-    // The Vitaheal (demo) store's collections. Its storefront reads them from the products' own `collections`.
-    ...VITAHEAL_COLLECTIONS.map((c, i) => ({ ...seedCollection(23 + i, c.title, 'Manual', '2026-11-16T09:00:00Z', c.productCount), salesChannels: [VITAHEAL_CHANNEL_ID] })),
   ])
+
+  /** A demo store's collections, as the theme it runs has them. */
+  function demoCollections(channelId: string, snapshot: StoreSnapshot | null): Collection[] {
+    return (snapshot?.collections ?? []).map((c) => ({ ...seedCollection(c.id, c.title, 'Manual', c.updatedAt, c.productCount), salesChannels: [channelId] }))
+  }
+
+  /** The stores whose collections are seeded (attachStore): each only once. */
+  const attached = new Set<string>()
+
+  /** Puts a store's collections in place as the theme it runs now has them. Collections are not kept in the browser. */
+  function attachStore(channel: InstallChannel): void {
+    if (attached.has(channel.id)) return
+    attached.add(channel.id)
+    collections.value = replaceStoreRows(collections.value, (c) => c.salesChannels.includes(channel.id), demoCollections(channel.id, demoSnapshotOf(channel)))
+  }
+  // The demo stores' collections (Vitaheal's are 23-27), after the others. Their storefronts read them from the products' own `collections`.
+  for (const channel of SEEDED_DEMO_CHANNELS) attachStore(channel)
+
+  /**
+   * Brings a store that can take a theme in as the app starts (a store made from a
+   * theme; src/stores/useDemoStores.ts): it gets the collections of the theme it
+   * runs. Does nothing a second time, or for a store that cannot take a theme.
+   */
+  function attachDemo(channelId: string): void {
+    const channel = demoChannelRecord(channelId)
+    if (channel && canApplyTheme(channel)) attachStore(channel)
+  }
+
+  /** Puts the store's collections back as the theme it runs now has them (contract: reseedDemo). Other collections stay. */
+  function reseedDemo(channelId: string): void {
+    const channel = demoChannelRecord(channelId)
+    if (!canApplyTheme(channel)) return
+    attached.add(channelId)
+    collections.value = replaceStoreRows(collections.value, (c) => c.salesChannels.includes(channelId), demoCollections(channelId, demoSnapshotOf(channel)))
+  }
 
   function nextCollectionId(): number {
     return collections.value.reduce((max, c) => Math.max(max, c.id), 0) + 1
@@ -650,6 +681,8 @@ export const useProductExtrasStore = defineStore('productExtras', () => {
     reservations, reservableVariants, addReservation, updateReservation, deleteReservation,
     taxCategories, addTaxCategory, updateTaxCategory, deleteTaxCategory,
     collections, addCollection, updateCollection, deleteCollection, deleteCollections, setCollectionsStatus,
+    attachDemo,
+    reseedDemo,
     toHandle,
   }
 })

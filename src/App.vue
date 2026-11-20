@@ -22,6 +22,7 @@ import { applyChartPalette, type ChartPalette } from '@/plugins/chartPalette'
 import { useCopilotStore } from '@/stores/useCopilot'
 import { useAccountsStore } from '@/stores/useAccounts'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
+import { useDemoStores } from '@/stores/useDemoStores'
 import { usePlgStore, isPlgDemoPreset } from '@/stores/usePlg'
 import { useMaropayStore, isMaropayScenarioKey } from '@/stores/useMaropay'
 import { useCatalogCopilotStore } from '@/stores/useCatalogCopilot'
@@ -156,6 +157,8 @@ watch(width, (w, prevW) => {
 // manual re-expand inside the shell is respected; the user's prior state is
 // restored on exit (unless the narrow-viewport rule forces rail anyway).
 const salesChannelsStore = useSalesChannelsStore()
+// From the start, so a theme applied or a store restored in another tab is followed here.
+useDemoStores()
 const railBeforeShell = ref<boolean | null>(null)
 
 const inRailShell = computed(() => {

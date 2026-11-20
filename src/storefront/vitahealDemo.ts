@@ -8,7 +8,7 @@
 //   useSalesChannels    VITAHEAL_CHANNEL
 //   useCommerce         vitahealProducts()
 //   useProductExtras    VITAHEAL_COLLECTIONS
-//   useStoreThemes      VITAHEAL_THEME_STYLES (the templates live there, beside the other themes)
+//   useStoreThemes      VITAHEAL_THEME_STYLES, VITAHEAL_THEME_TEMPLATES
 //   useStoreContent     VITAHEAL_CONTENT, VITAHEAL_BLOG_SEO
 //   useStoreNavigation  VITAHEAL_MENUS
 //   useStorefront       VITAHEAL_CHROME
@@ -16,6 +16,9 @@
 //   useChatbot          VITAHEAL_CHATBOT, VITAHEAL_CONVERSATIONS
 //   useStoreCampaigns   vitahealCampaigns()
 //   useMerchandising    VITAHEAL_MERCHANDISING
+//
+// src/storefront/demoStores/vitaheal.ts wraps all of it as the store's blueprint,
+// which is how the stores read it once they seed per store.
 //
 // The catalogue has the shape of BKM's (variants, SEK prices, collections), which
 // is what the requirements test. The brand, product and flavour names are made up,
@@ -40,6 +43,9 @@ import type { SubscriptionPlan } from '../subscriptions/plans.ts'
 import type { ContractEvent, ContractStatus, SubscriptionContract } from '../subscriptions/contracts.ts'
 import type { StoreCampaign } from './campaigns.ts'
 import type { PageRedirect, RecommendationEngine, SearchPin, Synonym } from '../stores/useMerchandising.ts'
+import { createBlock, createSection } from './themeSections.ts'
+import type { TemplateType, ThemeSection } from './themeSections.ts'
+import { productHandle } from './handles.ts'
 
 export const VITAHEAL_CHANNEL_ID = 'vitaheal-demo'
 export const VITAHEAL_CHANNEL_NAME = 'Vitaheal (demo)'
@@ -839,4 +845,75 @@ export const VITAHEAL_CONTENT: ContentEntry[] = [
 export const VITAHEAL_BLOG_SEO: BlogSeoSettings = {
   title: 'The Vitaheal Journal',
   metaDescription: 'Short, practical reads on sleep, training and healthy ageing from the Vitaheal team.',
+}
+
+// ── Theme templates ──────────────────────────────────────────────────────────
+// Built from the section kinds that exist today; slices S2, S3 and S6 add the sections that build needs.
+// The home page follows the reference store's order: hero, range, a story, goals, a second story.
+// Shared like the other seeds here, so a store deep-clones them before editing.
+
+/** The storefront link of one of the seeded products. */
+function productLink(id: number): string {
+  return `/products/${productHandle(PRODUCT_SEEDS.find((p) => p.id === id)!)}`
+}
+
+export const VITAHEAL_THEME_TEMPLATES: Record<TemplateType, ThemeSection[]> = {
+  home: [
+    createSection('announcement-bar', { text: 'Free shipping over 549 kr · Made in Sweden · 30-day money-back guarantee on Unwind', link: '' }, 'vitaheal-home-announcement'),
+    createSection('header', { menuStyle: 'Centered' }, 'vitaheal-home-header'),
+    {
+      ...createSection('image-banner', {
+        headline: 'Supplements that do one job well',
+        subheadline: 'Sleep, focus and recovery, made in Sweden and delivered to your door.',
+        height: 'Large',
+        image: VITAHEAL_PHOTOS.hero,
+      }, 'vitaheal-home-banner'),
+      blocks: [createBlock('button', { label: 'Shop all products', link: '/collections/all' }, 'vitaheal-banner-button')],
+    },
+    createSection('featured-products', { title: 'Our range', productCount: 8 }, 'vitaheal-home-featured'),
+    createSection('image-with-text', {
+      heading: 'Unwind helps you switch off, sleep deeply and wake up ready',
+      body: 'One warm cup about an hour before bed. Nothing in it knocks you out; it helps your body do what it already knows how to do.',
+      buttonLabel: 'Shop Unwind',
+      buttonLink: productLink(2001),
+      imageSide: 'Left',
+      image: VITAHEAL_PHOTOS.storyUnwind,
+    }, 'vitaheal-home-story-unwind'),
+    {
+      ...createSection('collection-grid', { title: 'Shop by goal', columns: 3 }, 'vitaheal-home-collections'),
+      blocks: [
+        createBlock('collection', { label: 'Sleep', link: '/collections/sleep', image: VITAHEAL_PHOTOS.tileSleep }, 'vitaheal-collection-sleep'),
+        createBlock('collection', { label: 'Sport', link: '/collections/sport', image: VITAHEAL_PHOTOS.tileSport }, 'vitaheal-collection-sport'),
+        createBlock('collection', { label: 'Longevity', link: '/collections/longevity', image: VITAHEAL_PHOTOS.tileLongevity }, 'vitaheal-collection-longevity'),
+        createBlock('collection', { label: 'Hydrate', link: '/collections/hydrate', image: VITAHEAL_PHOTOS.tileHydrate }, 'vitaheal-collection-hydrate'),
+      ],
+    },
+    createSection('image-with-text', {
+      heading: 'Clear Focus keeps your mind sharp and your energy steady',
+      body: 'Two capsules with breakfast, for long days at a desk or a long session on the road. No jitters, no afternoon dip.',
+      buttonLabel: 'Shop Clear Focus',
+      buttonLink: productLink(2002),
+      imageSide: 'Right',
+      image: VITAHEAL_PHOTOS.storyFocus,
+    }, 'vitaheal-home-story-focus'),
+    createSection('rich-text', { heading: 'Subscribe and save 20%', body: 'Most of our customers subscribe. You get every delivery for less, and you can skip, pause or cancel whenever you like.', alignment: 'Center' }, 'vitaheal-home-subscribe'),
+    createSection('newsletter', { headline: 'Get the Vitaheal letter' }, 'vitaheal-home-newsletter'),
+    createSection('footer', { showSocial: false, columns: 3 }, 'vitaheal-home-footer'),
+  ],
+  product: [
+    createSection('header', { menuStyle: 'Centered' }, 'vitaheal-product-header'),
+    createSection('product-detail', {}, 'vitaheal-product-detail'),
+    createSection('featured-products', { title: 'You may also like' }, 'vitaheal-product-related'),
+    createSection('footer', { showSocial: false, columns: 3 }, 'vitaheal-product-footer'),
+  ],
+  collection: [
+    createSection('header', { menuStyle: 'Centered' }, 'vitaheal-collection-header'),
+    createSection('collection-grid', {}, 'vitaheal-collection-grid'),
+    createSection('footer', { showSocial: false, columns: 3 }, 'vitaheal-collection-footer'),
+  ],
+  cart: [
+    createSection('header', { menuStyle: 'Centered' }, 'vitaheal-cart-header'),
+    createSection('cart-summary', {}, 'vitaheal-cart-summary'),
+    createSection('footer', { showSocial: false, columns: 3 }, 'vitaheal-cart-footer'),
+  ],
 }

@@ -1,6 +1,8 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
-import { VITAHEAL_BLOG_SEO, VITAHEAL_CHANNEL_ID, VITAHEAL_CONTENT } from '@/storefront/vitahealDemo'
+import { SEEDED_DEMO_CHANNELS, demoChannelRecord, demoSnapshotOf, replaceStoreRows } from './useSalesChannels'
+import { canApplyTheme } from '@/storefront/demoStores'
+import type { InstallChannel } from '@/storefront/demoStores/install'
 
 // Storefront pages & blog posts (store editor ▸ Pages / Blogs).
 // Legacy parity notes (sandbox crawl 2026-07-10, docs/uat-parity/parity-tracker.md A06b):
@@ -211,11 +213,25 @@ function seedEntries(): ContentEntry[] {
 }
 
 export const useStoreContentStore = defineStore('storeContent', () => {
-  const entries = ref<ContentEntry[]>([...seedEntries(), ...VITAHEAL_CONTENT.map((entry) => ({ ...entry }))])
+  const entries = ref<ContentEntry[]>(seedEntries())
   const blogSeoByChannel = ref<Record<string, BlogSeoSettings>>({
     'retest-sales-notification': { title: 'Atlas Outfitters Journal', metaDescription: 'Guides and stories from the Atlas Outfitters team.' },
-    [VITAHEAL_CHANNEL_ID]: { ...VITAHEAL_BLOG_SEO },
   })
+
+  /** The stores whose pages are seeded (attachStore): each only once. */
+  const attached = new Set<string>()
+
+  /** Puts a store's pages and blog settings in place as the theme it runs now has them. They are not kept in the browser. */
+  function attachStore(channel: InstallChannel): void {
+    if (attached.has(channel.id)) return
+    attached.add(channel.id)
+    const snapshot = demoSnapshotOf(channel)
+    if (!snapshot) return
+    entries.value = replaceStoreRows(entries.value, (entry) => entry.channelId === channel.id, snapshot.content)
+    blogSeoByChannel.value[channel.id] = snapshot.blogSeo
+  }
+  // The demo stores' pages and blog settings (src/storefront/demoStores/), after the others.
+  for (const channel of SEEDED_DEMO_CHANNELS) attachStore(channel)
 
   function entriesForChannel(channelId: string, kind: ContentKind): ContentEntry[] {
     return entries.value.filter((entry) => entry.channelId === channelId && entry.kind === kind)
@@ -265,5 +281,29 @@ export const useStoreContentStore = defineStore('storeContent', () => {
     blogSeoByChannel.value[channelId] = { ...settings }
   }
 
-  return { entries, entriesForChannel, entryByHandle, getEntry, saveEntry, setEntryStatus, deleteEntry, blogSeo, saveBlogSeo }
+  /**
+   * Puts the store's pages, blog posts and policies, and its blog settings, back as the
+   * theme it runs now has them (contract: reseedDemo). Other stores' entries stay.
+   */
+  function reseedDemo(channelId: string): void {
+    const channel = demoChannelRecord(channelId)
+    if (!canApplyTheme(channel)) return
+    attached.add(channelId)
+    const snapshot = demoSnapshotOf(channel)
+    entries.value = replaceStoreRows(entries.value, (entry) => entry.channelId === channelId, snapshot?.content ?? [])
+    if (snapshot) blogSeoByChannel.value[channelId] = snapshot.blogSeo
+    else delete blogSeoByChannel.value[channelId]
+  }
+
+  /**
+   * Brings a store that can take a theme in as the app starts (a store made from a
+   * theme; src/stores/useDemoStores.ts): it gets the pages of the theme it runs.
+   * Does nothing a second time, or for a store that cannot take a theme.
+   */
+  function attachDemo(channelId: string): void {
+    const channel = demoChannelRecord(channelId)
+    if (channel && canApplyTheme(channel)) attachStore(channel)
+  }
+
+  return { entries, entriesForChannel, entryByHandle, getEntry, saveEntry, setEntryStatus, deleteEntry, blogSeo, saveBlogSeo, attachDemo, reseedDemo }
 })
