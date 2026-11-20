@@ -1,0 +1,2606 @@
+{
+  "today": "2026-11-18",
+  "channel": {
+    "id": "vitaheal-demo",
+    "accountId": "2000290",
+    "name": "Vitaheal (demo)",
+    "storeNumber": 12,
+    "type": "web_store",
+    "provider": "maropost_store_builder",
+    "status": "connected",
+    "health": "healthy",
+    "description": "Swedish supplements store. Most orders are subscriptions, and prices are in SEK.",
+    "connectedClouds": [
+      "commerce",
+      "store_builder"
+    ],
+    "createdAt": "2026-11-16T09:00:00Z",
+    "updatedAt": "2026-11-16T09:00:00Z",
+    "lastActivityAt": "2026-11-16T09:00:00Z",
+    "webStore": {
+      "domain": "2000290-12.uat.maropost.store",
+      "storeBuilderEnabled": true,
+      "published": true,
+      "merchandiseConnected": false,
+      "currency": "SEK",
+      "locale": "sv-SE",
+      "demo": true
+    }
+  },
+  "admin": {
+    "revenue": "1.9M kr",
+    "themeName": "Vitaheal 1.0",
+    "business": [
+      {
+        "label": "Legal name",
+        "value": "Vitaheal AB"
+      },
+      {
+        "label": "Business type",
+        "value": "Limited company (aktiebolag)"
+      },
+      {
+        "label": "Reg. number",
+        "value": "559999-0000"
+      },
+      {
+        "label": "Phone",
+        "value": "+46 8 465 004 12"
+      },
+      {
+        "label": "Public email",
+        "value": "hello@vitaheal.example"
+      },
+      {
+        "label": "Support email",
+        "value": "hello@vitaheal.example"
+      },
+      {
+        "label": "Website",
+        "value": "2000290-12.uat.maropost.store"
+      },
+      {
+        "label": "Street",
+        "value": "Hantverkargatan 8"
+      },
+      {
+        "label": "City / region",
+        "value": "112 21 Stockholm"
+      },
+      {
+        "label": "Country",
+        "value": "Sweden"
+      }
+    ]
+  },
+  "photoDir": "/storefront/vitaheal",
+  "products": [
+    {
+      "id": 2001,
+      "name": "Unwind",
+      "sku": "VTH-UNW-BAG",
+      "price": "399.00",
+      "compareAtPrice": "",
+      "inventory": 236,
+      "category": "Beauty & Health",
+      "vendor": "Vitaheal",
+      "images": 2,
+      "variants": 2,
+      "type": "product",
+      "publishStatus": "Published",
+      "collections": [
+        "Sleep",
+        "Subscription"
+      ],
+      "salesChannelNames": [
+        "Vitaheal (demo)"
+      ],
+      "productType": "Physical",
+      "channelIds": [
+        "vitaheal-demo"
+      ],
+      "imageUrls": [
+        "/storefront/vitaheal/unwind-1.jpg",
+        "/storefront/vitaheal/unwind-2.jpg"
+      ],
+      "detail": {
+        "subtitle": "Sleep and calm",
+        "url": "unwind",
+        "description": "An evening drink mix for winding down. Stir one scoop into warm water about an hour before bed. Covered by our 30-day money-back guarantee.",
+        "hasVariants": true,
+        "options": [
+          {
+            "name": "Format",
+            "values": [
+              "Can",
+              "Bag"
+            ]
+          }
+        ],
+        "variantsList": [
+          {
+            "id": 20011,
+            "title": "Can",
+            "sku": "VTH-UNW-CAN",
+            "manageInventory": true,
+            "allowBackorder": false,
+            "costPrice": "134.08",
+            "price": "419.00",
+            "weight": "0.32",
+            "stock": {
+              "Oxford Warehouse": 140
+            }
+          },
+          {
+            "id": 20012,
+            "title": "Bag",
+            "sku": "VTH-UNW-BAG",
+            "manageInventory": true,
+            "allowBackorder": false,
+            "costPrice": "127.68",
+            "price": "399.00",
+            "weight": "0.28",
+            "stock": {
+              "Oxford Warehouse": 96
+            }
+          }
+        ],
+        "taxCategory": "Standard",
+        "material": "",
+        "brand": "Vitaheal",
+        "tag": "Supplements",
+        "collection": "Sleep",
+        "categories": [
+          "Beauty & Health"
+        ],
+        "width": "",
+        "length": "",
+        "height": "",
+        "weight": "0.28",
+        "midCode": "",
+        "hsCode": "2106.90",
+        "countryOfOrigin": "Sweden",
+        "discountable": true,
+        "salesChannels": [
+          "Vitaheal (demo)"
+        ],
+        "seo": {
+          "title": "Unwind | Vitaheal",
+          "metaDescription": "Sleep and calm. An evening drink mix for winding down. Stir one scoop into warm water about an hour before bed. Covered by our 30-day money-back guarantee.",
+          "urlHandle": "unwind",
+          "ogTitle": "Unwind",
+          "ogDescription": "Sleep and calm"
+        }
+      }
+    },
+    {
+      "id": 2002,
+      "name": "Clear Focus",
+      "sku": "VTH-FOC-REF",
+      "price": "389.00",
+      "compareAtPrice": "",
+      "inventory": 208,
+      "category": "Beauty & Health",
+      "vendor": "Vitaheal",
+      "images": 2,
+      "variants": 2,
+      "type": "product",
+      "publishStatus": "Published",
+      "collections": [
+        "Sport",
+        "Subscription"
+      ],
+      "salesChannelNames": [
+        "Vitaheal (demo)"
+      ],
+      "productType": "Physical",
+      "channelIds": [
+        "vitaheal-demo"
+      ],
+      "imageUrls": [
+        "/storefront/vitaheal/clear-focus-1.jpg",
+        "/storefront/vitaheal/clear-focus-2.jpg"
+      ],
+      "detail": {
+        "subtitle": "Focus and steady energy",
+        "url": "clear-focus",
+        "description": "A daily capsule for long working days and hard training blocks. Take two with breakfast.",
+        "hasVariants": true,
+        "options": [
+          {
+            "name": "Format",
+            "values": [
+              "Original",
+              "Refill"
+            ]
+          }
+        ],
+        "variantsList": [
+          {
+            "id": 20021,
+            "title": "Original",
+            "sku": "VTH-FOC-ORG",
+            "manageInventory": true,
+            "allowBackorder": false,
+            "costPrice": "130.88",
+            "price": "409.00",
+            "weight": "0.12",
+            "stock": {
+              "Oxford Warehouse": 120
+            }
+          },
+          {
+            "id": 20022,
+            "title": "Refill",
+            "sku": "VTH-FOC-REF",
+            "manageInventory": true,
+            "allowBackorder": false,
+            "costPrice": "124.48",
+            "price": "389.00",
+            "weight": "0.10",
+            "stock": {
+              "Oxford Warehouse": 88
+            }
+          }
+        ],
+        "taxCategory": "Standard",
+        "material": "",
+        "brand": "Vitaheal",
+        "tag": "Supplements",
+        "collection": "Sport",
+        "categories": [
+          "Beauty & Health"
+        ],
+        "width": "",
+        "length": "",
+        "height": "",
+        "weight": "0.10",
+        "midCode": "",
+        "hsCode": "2106.90",
+        "countryOfOrigin": "Sweden",
+        "discountable": true,
+        "salesChannels": [
+          "Vitaheal (demo)"
+        ],
+        "seo": {
+          "title": "Clear Focus | Vitaheal",
+          "metaDescription": "Focus and steady energy. A daily capsule for long working days and hard training blocks. Take two with breakfast.",
+          "urlHandle": "clear-focus",
+          "ogTitle": "Clear Focus",
+          "ogDescription": "Focus and steady energy"
+        }
+      }
+    },
+    {
+      "id": 2003,
+      "name": "Daily NAD+",
+      "sku": "VTH-NAD-REF",
+      "price": "649.00",
+      "compareAtPrice": "",
+      "inventory": 134,
+      "category": "Beauty & Health",
+      "vendor": "Vitaheal",
+      "images": 2,
+      "variants": 2,
+      "type": "product",
+      "publishStatus": "Published",
+      "collections": [
+        "Longevity",
+        "Subscription"
+      ],
+      "salesChannelNames": [
+        "Vitaheal (demo)"
+      ],
+      "productType": "Physical",
+      "channelIds": [
+        "vitaheal-demo"
+      ],
+      "imageUrls": [
+        "/storefront/vitaheal/daily-nad-1.jpg",
+        "/storefront/vitaheal/daily-nad-2.jpg"
+      ],
+      "detail": {
+        "subtitle": "Longevity and cellular energy",
+        "url": "daily-nad",
+        "description": "Our longevity formula, built around an NAD+ precursor. One capsule each morning.",
+        "hasVariants": true,
+        "options": [
+          {
+            "name": "Format",
+            "values": [
+              "Original",
+              "Refill"
+            ]
+          }
+        ],
+        "variantsList": [
+          {
+            "id": 20031,
+            "title": "Original",
+            "sku": "VTH-NAD-ORG",
+            "manageInventory": true,
+            "allowBackorder": false,
+            "costPrice": "214.08",
+            "price": "669.00",
+            "weight": "0.11",
+            "stock": {
+              "Oxford Warehouse": 74
+            }
+          },
+          {
+            "id": 20032,
+            "title": "Refill",
+            "sku": "VTH-NAD-REF",
+            "manageInventory": true,
+            "allowBackorder": false,
+            "costPrice": "207.68",
+            "price": "649.00",
+            "weight": "0.09",
+            "stock": {
+              "Oxford Warehouse": 60
+            }
+          }
+        ],
+        "taxCategory": "Standard",
+        "material": "",
+        "brand": "Vitaheal",
+        "tag": "Supplements",
+        "collection": "Longevity",
+        "categories": [
+          "Beauty & Health"
+        ],
+        "width": "",
+        "length": "",
+        "height": "",
+        "weight": "0.09",
+        "midCode": "",
+        "hsCode": "2106.90",
+        "countryOfOrigin": "Sweden",
+        "discountable": true,
+        "salesChannels": [
+          "Vitaheal (demo)"
+        ],
+        "seo": {
+          "title": "Daily NAD+ | Vitaheal",
+          "metaDescription": "Longevity and cellular energy. Our longevity formula, built around an NAD+ precursor. One capsule each morning.",
+          "urlHandle": "daily-nad",
+          "ogTitle": "Daily NAD+",
+          "ogDescription": "Longevity and cellular energy"
+        }
+      }
+    },
+    {
+      "id": 2004,
+      "name": "Nasal Strips",
+      "sku": "VTH-NSL-30",
+      "price": "199.00",
+      "compareAtPrice": "",
+      "inventory": 210,
+      "category": "Beauty & Health",
+      "vendor": "Vitaheal",
+      "images": 2,
+      "variants": 1,
+      "type": "product",
+      "publishStatus": "Published",
+      "collections": [
+        "Sleep",
+        "Sport"
+      ],
+      "salesChannelNames": [
+        "Vitaheal (demo)"
+      ],
+      "productType": "Physical",
+      "channelIds": [
+        "vitaheal-demo"
+      ],
+      "imageUrls": [
+        "/storefront/vitaheal/nasal-strips-1.jpg",
+        "/storefront/vitaheal/nasal-strips-2.jpg"
+      ],
+      "detail": {
+        "subtitle": "Easier breathing, day or night",
+        "url": "nasal-strips",
+        "description": "Drug-free strips that gently open the nose. Thirty in a box, for sleep and for training.",
+        "hasVariants": false,
+        "options": [],
+        "variantsList": [
+          {
+            "id": 20041,
+            "title": "Default",
+            "sku": "VTH-NSL-30",
+            "manageInventory": true,
+            "allowBackorder": false,
+            "costPrice": "63.68",
+            "price": "199.00",
+            "weight": "0.04",
+            "stock": {
+              "Oxford Warehouse": 210
+            }
+          }
+        ],
+        "taxCategory": "Standard",
+        "material": "",
+        "brand": "Vitaheal",
+        "tag": "Supplements",
+        "collection": "Sleep",
+        "categories": [
+          "Beauty & Health"
+        ],
+        "width": "",
+        "length": "",
+        "height": "",
+        "weight": "0.04",
+        "midCode": "",
+        "hsCode": "2106.90",
+        "countryOfOrigin": "Sweden",
+        "discountable": true,
+        "salesChannels": [
+          "Vitaheal (demo)"
+        ],
+        "seo": {
+          "title": "Nasal Strips | Vitaheal",
+          "metaDescription": "Easier breathing, day or night. Drug-free strips that gently open the nose. Thirty in a box, for sleep and for training.",
+          "urlHandle": "nasal-strips",
+          "ogTitle": "Nasal Strips",
+          "ogDescription": "Easier breathing, day or night"
+        }
+      }
+    },
+    {
+      "id": 2005,
+      "name": "Vitaheal Electrolytes",
+      "sku": "VTH-ELE-LEM",
+      "price": "279.00",
+      "compareAtPrice": "",
+      "inventory": 396,
+      "category": "Beauty & Health",
+      "vendor": "Vitaheal",
+      "images": 2,
+      "variants": 3,
+      "type": "product",
+      "publishStatus": "Published",
+      "collections": [
+        "Hydrate",
+        "Sport",
+        "Subscription"
+      ],
+      "salesChannelNames": [
+        "Vitaheal (demo)"
+      ],
+      "productType": "Physical",
+      "channelIds": [
+        "vitaheal-demo"
+      ],
+      "imageUrls": [
+        "/storefront/vitaheal/electrolytes-1.jpg",
+        "/storefront/vitaheal/electrolytes-2.jpg"
+      ],
+      "detail": {
+        "subtitle": "Daily hydration, no added sugar",
+        "url": "vitaheal-electrolytes",
+        "description": "Sodium, potassium and magnesium in a single stick. Mix with half a litre of water before, during or after training.",
+        "hasVariants": true,
+        "options": [
+          {
+            "name": "Flavour",
+            "values": [
+              "Lemon & Ginger",
+              "Wild Berries",
+              "Starter Pack (both flavours)"
+            ]
+          }
+        ],
+        "variantsList": [
+          {
+            "id": 20051,
+            "title": "Lemon & Ginger",
+            "sku": "VTH-ELE-LEM",
+            "manageInventory": true,
+            "allowBackorder": false,
+            "costPrice": "89.28",
+            "price": "279.00",
+            "weight": "0.18",
+            "stock": {
+              "Oxford Warehouse": 180
+            }
+          },
+          {
+            "id": 20052,
+            "title": "Wild Berries",
+            "sku": "VTH-ELE-BER",
+            "manageInventory": true,
+            "allowBackorder": false,
+            "costPrice": "89.28",
+            "price": "279.00",
+            "weight": "0.18",
+            "stock": {
+              "Oxford Warehouse": 164
+            }
+          },
+          {
+            "id": 20053,
+            "title": "Starter Pack (both flavours)",
+            "sku": "VTH-ELE-STA",
+            "manageInventory": true,
+            "allowBackorder": false,
+            "costPrice": "159.68",
+            "price": "499.00",
+            "compareAtPrice": "558.00",
+            "weight": "0.36",
+            "stock": {
+              "Oxford Warehouse": 52
+            }
+          }
+        ],
+        "taxCategory": "Standard",
+        "material": "",
+        "brand": "Vitaheal",
+        "tag": "Supplements",
+        "collection": "Hydrate",
+        "categories": [
+          "Beauty & Health"
+        ],
+        "width": "",
+        "length": "",
+        "height": "",
+        "weight": "0.18",
+        "midCode": "",
+        "hsCode": "2106.90",
+        "countryOfOrigin": "Sweden",
+        "discountable": true,
+        "salesChannels": [
+          "Vitaheal (demo)"
+        ],
+        "seo": {
+          "title": "Vitaheal Electrolytes | Vitaheal",
+          "metaDescription": "Daily hydration, no added sugar. Sodium, potassium and magnesium in a single stick. Mix with half a litre of water before, during or after training.",
+          "urlHandle": "vitaheal-electrolytes",
+          "ogTitle": "Vitaheal Electrolytes",
+          "ogDescription": "Daily hydration, no added sugar"
+        }
+      }
+    },
+    {
+      "id": 2006,
+      "name": "Collagen+",
+      "sku": "VTH-COL-REF",
+      "price": "409.00",
+      "compareAtPrice": "",
+      "inventory": 192,
+      "category": "Beauty & Health",
+      "vendor": "Vitaheal",
+      "images": 2,
+      "variants": 2,
+      "type": "product",
+      "publishStatus": "Published",
+      "collections": [
+        "Longevity",
+        "Subscription"
+      ],
+      "salesChannelNames": [
+        "Vitaheal (demo)"
+      ],
+      "productType": "Physical",
+      "channelIds": [
+        "vitaheal-demo"
+      ],
+      "imageUrls": [
+        "/storefront/vitaheal/collagen-1.jpg",
+        "/storefront/vitaheal/collagen-2.jpg"
+      ],
+      "detail": {
+        "subtitle": "Skin, hair and joints",
+        "url": "collagen",
+        "description": "Collagen with vitamin C in an unflavoured powder. One scoop a day, in coffee, a smoothie or water.",
+        "hasVariants": true,
+        "options": [
+          {
+            "name": "Format",
+            "values": [
+              "Original",
+              "Refill"
+            ]
+          }
+        ],
+        "variantsList": [
+          {
+            "id": 20061,
+            "title": "Original",
+            "sku": "VTH-COL-ORG",
+            "manageInventory": true,
+            "allowBackorder": false,
+            "costPrice": "137.28",
+            "price": "429.00",
+            "weight": "0.30",
+            "stock": {
+              "Oxford Warehouse": 110
+            }
+          },
+          {
+            "id": 20062,
+            "title": "Refill",
+            "sku": "VTH-COL-REF",
+            "manageInventory": true,
+            "allowBackorder": false,
+            "costPrice": "130.88",
+            "price": "409.00",
+            "weight": "0.27",
+            "stock": {
+              "Oxford Warehouse": 82
+            }
+          }
+        ],
+        "taxCategory": "Standard",
+        "material": "",
+        "brand": "Vitaheal",
+        "tag": "Supplements",
+        "collection": "Longevity",
+        "categories": [
+          "Beauty & Health"
+        ],
+        "width": "",
+        "length": "",
+        "height": "",
+        "weight": "0.27",
+        "midCode": "",
+        "hsCode": "2106.90",
+        "countryOfOrigin": "Sweden",
+        "discountable": true,
+        "salesChannels": [
+          "Vitaheal (demo)"
+        ],
+        "seo": {
+          "title": "Collagen+ | Vitaheal",
+          "metaDescription": "Skin, hair and joints. Collagen with vitamin C in an unflavoured powder. One scoop a day, in coffee, a smoothie or water.",
+          "urlHandle": "collagen",
+          "ogTitle": "Collagen+",
+          "ogDescription": "Skin, hair and joints"
+        }
+      }
+    },
+    {
+      "id": 2007,
+      "name": "Balance Refill",
+      "sku": "VTH-BAL-REF",
+      "price": "419.00",
+      "compareAtPrice": "",
+      "inventory": 68,
+      "category": "Beauty & Health",
+      "vendor": "Vitaheal",
+      "images": 2,
+      "variants": 1,
+      "type": "product",
+      "publishStatus": "Published",
+      "collections": [
+        "Longevity"
+      ],
+      "salesChannelNames": [
+        "Vitaheal (demo)"
+      ],
+      "productType": "Physical",
+      "channelIds": [
+        "vitaheal-demo"
+      ],
+      "imageUrls": [
+        "/storefront/vitaheal/balance-refill-1.jpg",
+        "/storefront/vitaheal/balance-refill-2.jpg"
+      ],
+      "detail": {
+        "subtitle": "Made for women",
+        "url": "balance-refill",
+        "description": "The refill bag for Balance. Pour it into the can you already own.",
+        "hasVariants": false,
+        "options": [],
+        "variantsList": [
+          {
+            "id": 20071,
+            "title": "Default",
+            "sku": "VTH-BAL-REF",
+            "manageInventory": true,
+            "allowBackorder": false,
+            "costPrice": "134.08",
+            "price": "419.00",
+            "weight": "0.26",
+            "stock": {
+              "Oxford Warehouse": 68
+            }
+          }
+        ],
+        "taxCategory": "Standard",
+        "material": "",
+        "brand": "Vitaheal",
+        "tag": "Supplements",
+        "collection": "Longevity",
+        "categories": [
+          "Beauty & Health"
+        ],
+        "width": "",
+        "length": "",
+        "height": "",
+        "weight": "0.26",
+        "midCode": "",
+        "hsCode": "2106.90",
+        "countryOfOrigin": "Sweden",
+        "discountable": true,
+        "salesChannels": [
+          "Vitaheal (demo)"
+        ],
+        "seo": {
+          "title": "Balance Refill | Vitaheal",
+          "metaDescription": "Made for women. The refill bag for Balance. Pour it into the can you already own.",
+          "urlHandle": "balance-refill",
+          "ogTitle": "Balance Refill",
+          "ogDescription": "Made for women"
+        }
+      }
+    },
+    {
+      "id": 2008,
+      "name": "Balance",
+      "sku": "VTH-BAL-CAN",
+      "price": "419.00",
+      "compareAtPrice": "",
+      "inventory": 90,
+      "category": "Beauty & Health",
+      "vendor": "Vitaheal",
+      "images": 2,
+      "variants": 1,
+      "type": "product",
+      "publishStatus": "Published",
+      "collections": [
+        "Longevity"
+      ],
+      "salesChannelNames": [
+        "Vitaheal (demo)"
+      ],
+      "productType": "Physical",
+      "channelIds": [
+        "vitaheal-demo"
+      ],
+      "imageUrls": [
+        "/storefront/vitaheal/balance-1.jpg",
+        "/storefront/vitaheal/balance-2.jpg"
+      ],
+      "detail": {
+        "subtitle": "Made for women",
+        "url": "balance",
+        "description": "A daily blend for steady energy through the month. One scoop in water, any time of day.",
+        "hasVariants": false,
+        "options": [],
+        "variantsList": [
+          {
+            "id": 20081,
+            "title": "Default",
+            "sku": "VTH-BAL-CAN",
+            "manageInventory": true,
+            "allowBackorder": false,
+            "costPrice": "134.08",
+            "price": "419.00",
+            "weight": "0.30",
+            "stock": {
+              "Oxford Warehouse": 90
+            }
+          }
+        ],
+        "taxCategory": "Standard",
+        "material": "",
+        "brand": "Vitaheal",
+        "tag": "Supplements",
+        "collection": "Longevity",
+        "categories": [
+          "Beauty & Health"
+        ],
+        "width": "",
+        "length": "",
+        "height": "",
+        "weight": "0.30",
+        "midCode": "",
+        "hsCode": "2106.90",
+        "countryOfOrigin": "Sweden",
+        "discountable": true,
+        "salesChannels": [
+          "Vitaheal (demo)"
+        ],
+        "seo": {
+          "title": "Balance | Vitaheal",
+          "metaDescription": "Made for women. A daily blend for steady energy through the month. One scoop in water, any time of day.",
+          "urlHandle": "balance",
+          "ogTitle": "Balance",
+          "ogDescription": "Made for women"
+        }
+      }
+    }
+  ],
+  "collections": [
+    {
+      "title": "Subscription",
+      "productCount": 5
+    },
+    {
+      "title": "Sport",
+      "productCount": 3
+    },
+    {
+      "title": "Longevity",
+      "productCount": 4
+    },
+    {
+      "title": "Sleep",
+      "productCount": 2
+    },
+    {
+      "title": "Hydrate",
+      "productCount": 1
+    }
+  ],
+  "collectionRecords": [
+    {
+      "id": 23,
+      "title": "Subscription",
+      "handle": "subscription-1",
+      "type": "Manual",
+      "parent": "Root",
+      "productCount": 5,
+      "status": "Active",
+      "updatedAt": "2026-11-16T09:00:00Z",
+      "description": "",
+      "matchMode": "all",
+      "rules": [],
+      "productItemIds": [],
+      "seo": {
+        "title": "",
+        "metaDescription": "",
+        "urlHandle": "subscription-1",
+        "ogTitle": "",
+        "ogDescription": ""
+      },
+      "imageName": "",
+      "salesChannels": [
+        "vitaheal-demo"
+      ]
+    },
+    {
+      "id": 24,
+      "title": "Sport",
+      "handle": "sport-1",
+      "type": "Manual",
+      "parent": "Root",
+      "productCount": 3,
+      "status": "Active",
+      "updatedAt": "2026-11-16T09:00:00Z",
+      "description": "",
+      "matchMode": "all",
+      "rules": [],
+      "productItemIds": [],
+      "seo": {
+        "title": "",
+        "metaDescription": "",
+        "urlHandle": "sport-1",
+        "ogTitle": "",
+        "ogDescription": ""
+      },
+      "imageName": "",
+      "salesChannels": [
+        "vitaheal-demo"
+      ]
+    },
+    {
+      "id": 25,
+      "title": "Longevity",
+      "handle": "longevity-1",
+      "type": "Manual",
+      "parent": "Root",
+      "productCount": 4,
+      "status": "Active",
+      "updatedAt": "2026-11-16T09:00:00Z",
+      "description": "",
+      "matchMode": "all",
+      "rules": [],
+      "productItemIds": [],
+      "seo": {
+        "title": "",
+        "metaDescription": "",
+        "urlHandle": "longevity-1",
+        "ogTitle": "",
+        "ogDescription": ""
+      },
+      "imageName": "",
+      "salesChannels": [
+        "vitaheal-demo"
+      ]
+    },
+    {
+      "id": 26,
+      "title": "Sleep",
+      "handle": "sleep-1",
+      "type": "Manual",
+      "parent": "Root",
+      "productCount": 2,
+      "status": "Active",
+      "updatedAt": "2026-11-16T09:00:00Z",
+      "description": "",
+      "matchMode": "all",
+      "rules": [],
+      "productItemIds": [],
+      "seo": {
+        "title": "",
+        "metaDescription": "",
+        "urlHandle": "sleep-1",
+        "ogTitle": "",
+        "ogDescription": ""
+      },
+      "imageName": "",
+      "salesChannels": [
+        "vitaheal-demo"
+      ]
+    },
+    {
+      "id": 27,
+      "title": "Hydrate",
+      "handle": "hydrate-1",
+      "type": "Manual",
+      "parent": "Root",
+      "productCount": 1,
+      "status": "Active",
+      "updatedAt": "2026-11-16T09:00:00Z",
+      "description": "",
+      "matchMode": "all",
+      "rules": [],
+      "productItemIds": [],
+      "seo": {
+        "title": "",
+        "metaDescription": "",
+        "urlHandle": "hydrate-1",
+        "ogTitle": "",
+        "ogDescription": ""
+      },
+      "imageName": "",
+      "salesChannels": [
+        "vitaheal-demo"
+      ]
+    }
+  ],
+  "themeStyles": {
+    "brandColor": "#0a2240",
+    "accentColor": "#0a2240",
+    "background": "#ffffff",
+    "textColor": "#000000",
+    "headingFont": "Figtree",
+    "bodyFont": "Figtree",
+    "cornerRadius": 8,
+    "buttonStyle": "solid",
+    "saleBadgeColor": "#6d52ff",
+    "customBadgeColor": "#e4ff52",
+    "soldOutBadgeColor": "#000000"
+  },
+  "theme": {
+    "id": "theme-vitaheal",
+    "channelId": "vitaheal-demo",
+    "name": "Vitaheal",
+    "status": "Published",
+    "publishedAt": "2026-11-16T09:00:00Z",
+    "updatedAt": "2026-11-16T09:00:00Z",
+    "styles": {
+      "brandColor": "#0a2240",
+      "accentColor": "#0a2240",
+      "background": "#ffffff",
+      "textColor": "#000000",
+      "headingFont": "Figtree",
+      "bodyFont": "Figtree",
+      "cornerRadius": 8,
+      "buttonStyle": "solid",
+      "saleBadgeColor": "#6d52ff",
+      "customBadgeColor": "#e4ff52",
+      "soldOutBadgeColor": "#000000"
+    },
+    "templates": {
+      "home": [
+        {
+          "id": "vitaheal-home-announcement",
+          "kind": "announcement-bar",
+          "label": "Announcement bar",
+          "settings": {
+            "text": "Free shipping over 549 kr · Made in Sweden · 30-day money-back guarantee on Unwind",
+            "link": ""
+          }
+        },
+        {
+          "id": "vitaheal-home-header",
+          "kind": "header",
+          "label": "Header",
+          "settings": {
+            "menuStyle": "Centered",
+            "sticky": true
+          }
+        },
+        {
+          "id": "vitaheal-home-banner",
+          "kind": "image-banner",
+          "label": "Image banner",
+          "settings": {
+            "headline": "Supplements that do one job well",
+            "height": "Large",
+            "subheadline": "Sleep, focus and recovery, made in Sweden and delivered to your door.",
+            "image": "/storefront/vitaheal/hero.jpg"
+          },
+          "blocks": [
+            {
+              "id": "vitaheal-banner-button",
+              "kind": "button",
+              "settings": {
+                "label": "Shop all products",
+                "link": "/collections/all"
+              }
+            }
+          ]
+        },
+        {
+          "id": "vitaheal-home-featured",
+          "kind": "featured-products",
+          "label": "Featured products",
+          "settings": {
+            "title": "Our range",
+            "productCount": 8,
+            "layout": "Grid"
+          }
+        },
+        {
+          "id": "vitaheal-home-story-unwind",
+          "kind": "image-with-text",
+          "label": "Image with text",
+          "settings": {
+            "heading": "Unwind helps you switch off, sleep deeply and wake up ready",
+            "body": "One warm cup about an hour before bed. Nothing in it knocks you out; it helps your body do what it already knows how to do.",
+            "buttonLabel": "Shop Unwind",
+            "buttonLink": "/products/unwind-2001",
+            "imageSide": "Left",
+            "image": "/storefront/vitaheal/story-unwind.jpg"
+          }
+        },
+        {
+          "id": "vitaheal-home-collections",
+          "kind": "collection-grid",
+          "label": "Collection grid",
+          "settings": {
+            "title": "Shop by goal",
+            "columns": 3
+          },
+          "blocks": [
+            {
+              "id": "vitaheal-collection-sleep",
+              "kind": "collection",
+              "settings": {
+                "label": "Sleep",
+                "link": "/collections/sleep",
+                "image": "/storefront/vitaheal/tile-sleep.jpg"
+              }
+            },
+            {
+              "id": "vitaheal-collection-sport",
+              "kind": "collection",
+              "settings": {
+                "label": "Sport",
+                "link": "/collections/sport",
+                "image": "/storefront/vitaheal/tile-sport.jpg"
+              }
+            },
+            {
+              "id": "vitaheal-collection-longevity",
+              "kind": "collection",
+              "settings": {
+                "label": "Longevity",
+                "link": "/collections/longevity",
+                "image": "/storefront/vitaheal/tile-longevity.jpg"
+              }
+            },
+            {
+              "id": "vitaheal-collection-hydrate",
+              "kind": "collection",
+              "settings": {
+                "label": "Hydrate",
+                "link": "/collections/hydrate",
+                "image": "/storefront/vitaheal/tile-hydrate.jpg"
+              }
+            }
+          ]
+        },
+        {
+          "id": "vitaheal-home-story-focus",
+          "kind": "image-with-text",
+          "label": "Image with text",
+          "settings": {
+            "heading": "Clear Focus keeps your mind sharp and your energy steady",
+            "body": "Two capsules with breakfast, for long days at a desk or a long session on the road. No jitters, no afternoon dip.",
+            "buttonLabel": "Shop Clear Focus",
+            "buttonLink": "/products/clear-focus-2002",
+            "imageSide": "Right",
+            "image": "/storefront/vitaheal/story-focus.jpg"
+          }
+        },
+        {
+          "id": "vitaheal-home-subscribe",
+          "kind": "rich-text",
+          "label": "Rich text",
+          "settings": {
+            "heading": "Subscribe and save 20%",
+            "body": "Most of our customers subscribe. You get every delivery for less, and you can skip, pause or cancel whenever you like.",
+            "alignment": "Center"
+          }
+        },
+        {
+          "id": "vitaheal-home-newsletter",
+          "kind": "newsletter",
+          "label": "Newsletter",
+          "settings": {
+            "headline": "Get the Vitaheal letter",
+            "buttonLabel": "Subscribe"
+          }
+        },
+        {
+          "id": "vitaheal-home-footer",
+          "kind": "footer",
+          "label": "Footer",
+          "settings": {
+            "showSocial": false,
+            "columns": 3
+          }
+        }
+      ],
+      "product": [
+        {
+          "id": "vitaheal-product-header",
+          "kind": "header",
+          "label": "Header",
+          "settings": {
+            "menuStyle": "Centered",
+            "sticky": true
+          }
+        },
+        {
+          "id": "vitaheal-product-detail",
+          "kind": "product-detail",
+          "label": "Product detail",
+          "settings": {
+            "galleryLayout": "Thumbnails",
+            "showReviews": true
+          }
+        },
+        {
+          "id": "vitaheal-product-related",
+          "kind": "featured-products",
+          "label": "Featured products",
+          "settings": {
+            "title": "You may also like",
+            "productCount": 4,
+            "layout": "Grid"
+          }
+        },
+        {
+          "id": "vitaheal-product-footer",
+          "kind": "footer",
+          "label": "Footer",
+          "settings": {
+            "showSocial": false,
+            "columns": 3
+          }
+        }
+      ],
+      "collection": [
+        {
+          "id": "vitaheal-collection-header",
+          "kind": "header",
+          "label": "Header",
+          "settings": {
+            "menuStyle": "Centered",
+            "sticky": true
+          }
+        },
+        {
+          "id": "vitaheal-collection-grid",
+          "kind": "collection-grid",
+          "label": "Collection grid",
+          "settings": {
+            "title": "Shop by collection",
+            "columns": 3
+          }
+        },
+        {
+          "id": "vitaheal-collection-footer",
+          "kind": "footer",
+          "label": "Footer",
+          "settings": {
+            "showSocial": false,
+            "columns": 3
+          }
+        }
+      ],
+      "cart": [
+        {
+          "id": "vitaheal-cart-header",
+          "kind": "header",
+          "label": "Header",
+          "settings": {
+            "menuStyle": "Centered",
+            "sticky": true
+          }
+        },
+        {
+          "id": "vitaheal-cart-summary",
+          "kind": "cart-summary",
+          "label": "Cart summary",
+          "settings": {
+            "showNotes": false,
+            "upsells": true
+          }
+        },
+        {
+          "id": "vitaheal-cart-footer",
+          "kind": "footer",
+          "label": "Footer",
+          "settings": {
+            "showSocial": false,
+            "columns": 3
+          }
+        }
+      ]
+    }
+  },
+  "chrome": {
+    "wordmark": "Vitaheal",
+    "wordmarkIcon": null,
+    "announcementAboveHeader": true,
+    "headerTools": [
+      "account"
+    ],
+    "accountHref": "/account",
+    "social": [],
+    "searchPlaceholder": "Search...",
+    "nav": [
+      {
+        "label": "All products",
+        "href": "/collections/all"
+      },
+      {
+        "label": "Sleep",
+        "href": "/collections/sleep"
+      },
+      {
+        "label": "Sport",
+        "href": "/collections/sport"
+      },
+      {
+        "label": "Longevity",
+        "href": "/collections/longevity"
+      },
+      {
+        "label": "Hydrate",
+        "href": "/collections/hydrate"
+      },
+      {
+        "label": "Subscription",
+        "href": "/collections/subscription"
+      },
+      {
+        "label": "About",
+        "href": "/page/about"
+      }
+    ],
+    "mobileNav": [
+      {
+        "label": "All products",
+        "href": "/collections/all"
+      },
+      {
+        "label": "Sleep",
+        "href": "/collections/sleep"
+      },
+      {
+        "label": "Sport",
+        "href": "/collections/sport"
+      },
+      {
+        "label": "Longevity",
+        "href": "/collections/longevity"
+      },
+      {
+        "label": "Hydrate",
+        "href": "/collections/hydrate"
+      },
+      {
+        "label": "Subscription",
+        "href": "/collections/subscription"
+      },
+      {
+        "label": "About",
+        "href": "/page/about"
+      },
+      {
+        "label": "Contact",
+        "href": "/page/contact"
+      },
+      {
+        "label": "My subscription",
+        "href": "/account"
+      },
+      {
+        "label": "Cart",
+        "href": "/cart-page"
+      }
+    ],
+    "footerColumns": [
+      {
+        "heading": {
+          "label": "Shop",
+          "href": "/collections/all"
+        },
+        "items": [
+          {
+            "label": "Sleep",
+            "href": "/collections/sleep"
+          },
+          {
+            "label": "Sport",
+            "href": "/collections/sport"
+          },
+          {
+            "label": "Longevity",
+            "href": "/collections/longevity"
+          },
+          {
+            "label": "Hydrate",
+            "href": "/collections/hydrate"
+          },
+          {
+            "label": "Subscription",
+            "href": "/collections/subscription"
+          }
+        ]
+      },
+      {
+        "heading": {
+          "label": "About Vitaheal",
+          "href": "/page/about"
+        },
+        "items": [
+          {
+            "label": "Our story",
+            "href": "/page/about"
+          },
+          {
+            "label": "Ambassadors",
+            "href": "/page/ambassadors"
+          },
+          {
+            "label": "Contact",
+            "href": "/page/contact"
+          }
+        ]
+      },
+      {
+        "heading": {
+          "label": "Help",
+          "href": "/page/contact"
+        },
+        "items": [
+          {
+            "label": "My subscription",
+            "href": "/account"
+          },
+          {
+            "label": "Money-back guarantee",
+            "href": "/page/money-back-guarantee"
+          },
+          {
+            "label": "Refund policy",
+            "href": "/policies/refund-policy"
+          },
+          {
+            "label": "Privacy policy",
+            "href": "/policies/privacy-policy"
+          },
+          {
+            "label": "Terms of service",
+            "href": "/policies/terms-of-service"
+          },
+          {
+            "label": "Cookies",
+            "href": "/page/cookies"
+          }
+        ]
+      }
+    ],
+    "newsletter": {
+      "heading": "Get the Vitaheal letter",
+      "placeholder": "Email address",
+      "consent": [
+        "I agree to the ",
+        {
+          "label": "terms of service",
+          "href": "/policies/terms-of-service"
+        },
+        " and the ",
+        {
+          "label": "privacy policy",
+          "href": "/policies/privacy-policy"
+        },
+        "."
+      ],
+      "button": "Sign up",
+      "busy": "Signing up...",
+      "success": "Thank you. You are on the list."
+    },
+    "copyright": "© 2026 Vitaheal (demo store). Made in Sweden."
+  },
+  "menus": [
+    {
+      "id": "menu-vitaheal-main",
+      "channelId": "vitaheal-demo",
+      "name": "Main menu",
+      "handle": "main-menu",
+      "status": "Active",
+      "updatedAt": "Nov 16, 2026",
+      "items": [
+        {
+          "id": "mi-vitaheal-main-1",
+          "title": "All products",
+          "linkType": "url",
+          "target": "/collections/all"
+        },
+        {
+          "id": "mi-vitaheal-main-2",
+          "title": "Sleep",
+          "linkType": "url",
+          "target": "/collections/sleep"
+        },
+        {
+          "id": "mi-vitaheal-main-3",
+          "title": "Sport",
+          "linkType": "url",
+          "target": "/collections/sport"
+        },
+        {
+          "id": "mi-vitaheal-main-4",
+          "title": "Longevity",
+          "linkType": "url",
+          "target": "/collections/longevity"
+        },
+        {
+          "id": "mi-vitaheal-main-5",
+          "title": "Hydrate",
+          "linkType": "url",
+          "target": "/collections/hydrate"
+        },
+        {
+          "id": "mi-vitaheal-main-6",
+          "title": "Subscription",
+          "linkType": "url",
+          "target": "/collections/subscription"
+        },
+        {
+          "id": "mi-vitaheal-main-7",
+          "title": "About",
+          "linkType": "url",
+          "target": "/page/about"
+        }
+      ]
+    },
+    {
+      "id": "menu-vitaheal-footer",
+      "channelId": "vitaheal-demo",
+      "name": "Footer menu",
+      "handle": "footer-menu",
+      "status": "Active",
+      "updatedAt": "Nov 16, 2026",
+      "items": [
+        {
+          "id": "mi-vitaheal-footer-1",
+          "title": "Our story",
+          "linkType": "url",
+          "target": "/page/about"
+        },
+        {
+          "id": "mi-vitaheal-footer-2",
+          "title": "Ambassadors",
+          "linkType": "url",
+          "target": "/page/ambassadors"
+        },
+        {
+          "id": "mi-vitaheal-footer-3",
+          "title": "Contact",
+          "linkType": "url",
+          "target": "/page/contact"
+        },
+        {
+          "id": "mi-vitaheal-footer-4",
+          "title": "My subscription",
+          "linkType": "url",
+          "target": "/account"
+        },
+        {
+          "id": "mi-vitaheal-footer-5",
+          "title": "Money-back guarantee",
+          "linkType": "url",
+          "target": "/page/money-back-guarantee"
+        },
+        {
+          "id": "mi-vitaheal-footer-6",
+          "title": "Refund policy",
+          "linkType": "url",
+          "target": "/policies/refund-policy"
+        },
+        {
+          "id": "mi-vitaheal-footer-7",
+          "title": "Privacy policy",
+          "linkType": "url",
+          "target": "/policies/privacy-policy"
+        },
+        {
+          "id": "mi-vitaheal-footer-8",
+          "title": "Terms of service",
+          "linkType": "url",
+          "target": "/policies/terms-of-service"
+        },
+        {
+          "id": "mi-vitaheal-footer-9",
+          "title": "Cookies",
+          "linkType": "url",
+          "target": "/page/cookies"
+        }
+      ]
+    }
+  ],
+  "content": [
+    {
+      "id": "vitaheal-page-about",
+      "channelId": "vitaheal-demo",
+      "kind": "page",
+      "title": "About Vitaheal",
+      "handle": "about",
+      "body": "<h2>Made in Sweden, for every day</h2><p>Vitaheal makes a small range of supplements for sleep, focus, hydration and healthy ageing. Each product does one job, and we only keep the ingredients that earn their place.</p><h3>How we work</h3><ul><li>Everything is blended and packed in Sweden.</li><li>Every batch is tested before it ships.</li><li>Refills come in bags, so one can lasts for years.</li></ul><p>Most customers subscribe, which saves 20% on every delivery. You can skip, pause or cancel at any time.</p>",
+      "status": "Active",
+      "template": "Default",
+      "seoTitle": "About Vitaheal | Vitaheal",
+      "seoDescription": "Vitaheal makes a small range of supplements in Sweden for sleep, focus, hydration and healthy ageing.",
+      "imageName": "",
+      "publishedAt": "",
+      "updatedAt": "Nov 16, 2026"
+    },
+    {
+      "id": "vitaheal-page-contact",
+      "channelId": "vitaheal-demo",
+      "kind": "page",
+      "title": "Contact",
+      "handle": "contact",
+      "body": "<h2>We are here to help</h2><p>Questions about an order, a delivery or a subscription? Write to us and we will answer within one working day.</p><ul><li><strong>Email:</strong> hello@vitaheal.example</li><li><strong>Hours:</strong> Monday to Friday, 09:00 to 17:00 CET</li></ul><h3>Before you write</h3><p>Orders placed before 10:00 CET on a weekday leave our warehouse the same day. Delivery takes 3 to 7 working days.</p>",
+      "status": "Active",
+      "template": "Default",
+      "seoTitle": "Contact | Vitaheal",
+      "seoDescription": "Contact Vitaheal about an order, a delivery or a subscription.",
+      "imageName": "",
+      "publishedAt": "",
+      "updatedAt": "Nov 16, 2026"
+    },
+    {
+      "id": "vitaheal-page-ambassadors",
+      "channelId": "vitaheal-demo",
+      "kind": "page",
+      "title": "Ambassadors",
+      "handle": "ambassadors",
+      "body": "<h2>People who train with Vitaheal</h2><p>Our ambassadors are athletes, coaches and clinicians who already used our products before we asked them. They test new formulas early and tell us plainly what they think.</p><h3>Join the programme</h3><p>We open a few places each season. Tell us about your sport and how you train, and we will be in touch when the next round starts.</p>",
+      "status": "Active",
+      "template": "Default",
+      "seoTitle": "Ambassadors | Vitaheal",
+      "seoDescription": "Meet the athletes, coaches and clinicians who train with Vitaheal.",
+      "imageName": "",
+      "publishedAt": "",
+      "updatedAt": "Nov 16, 2026"
+    },
+    {
+      "id": "vitaheal-page-money-back-guarantee",
+      "channelId": "vitaheal-demo",
+      "kind": "page",
+      "title": "Money-back guarantee terms",
+      "handle": "money-back-guarantee",
+      "body": "<h2>30 days to try Unwind</h2><p>If Unwind is not right for you, tell us within 30 days of delivery and we will refund your first can or bag.</p><h3>What the guarantee covers</h3><ul><li>Your first order of Unwind, in either format.</li><li>One refund per customer and household.</li></ul><h3>What it does not cover</h3><ul><li>Other Vitaheal products.</li><li>Shipping costs for orders outside Sweden.</li></ul><p>Other returns follow our <a href=\"/policies/refund-policy\">refund policy</a>.</p>",
+      "status": "Active",
+      "template": "Default",
+      "seoTitle": "Money-back guarantee terms | Vitaheal",
+      "seoDescription": "The 30-day money-back guarantee for Unwind: what it covers and how to claim it.",
+      "imageName": "",
+      "publishedAt": "",
+      "updatedAt": "Nov 16, 2026"
+    },
+    {
+      "id": "vitaheal-page-cookies",
+      "channelId": "vitaheal-demo",
+      "kind": "page",
+      "title": "Cookies",
+      "handle": "cookies",
+      "body": "<h2>How we use cookies</h2><p>We use a small number of cookies. Some are needed for the store to work, such as the one that remembers your cart. Others help us understand how the store is used, and we only set those with your consent.</p><h3>Your choices</h3><p>You can change your mind at any time from the cookie settings link in the footer.</p>",
+      "status": "Active",
+      "template": "Default",
+      "seoTitle": "Cookies | Vitaheal",
+      "seoDescription": "Which cookies the Vitaheal store sets and how to change your choices.",
+      "imageName": "",
+      "publishedAt": "",
+      "updatedAt": "Nov 16, 2026"
+    },
+    {
+      "id": "vitaheal-policy-refund-policy",
+      "channelId": "vitaheal-demo",
+      "kind": "policy",
+      "title": "Refund policy",
+      "handle": "refund-policy",
+      "body": "<h2>Refund policy</h2><p>You can return unopened products within 14 days of delivery for a full refund. Write to us first and we will send a return label.</p><h3>Refunds</h3><p>We refund to your original payment method within 5 working days of receiving the return.</p><h3>Subscriptions</h3><p>You can cancel a subscription before its next charge date. A delivery that has already been charged can be returned under the same 14-day rule.</p><p>Unwind also has a <a href=\"/page/money-back-guarantee\">30-day money-back guarantee</a>.</p>",
+      "status": "Active",
+      "template": "Default",
+      "seoTitle": "Refund policy | Vitaheal",
+      "seoDescription": "How returns and refunds work at Vitaheal.",
+      "imageName": "",
+      "publishedAt": "",
+      "updatedAt": "Nov 16, 2026"
+    },
+    {
+      "id": "vitaheal-policy-privacy-policy",
+      "channelId": "vitaheal-demo",
+      "kind": "policy",
+      "title": "Privacy policy",
+      "handle": "privacy-policy",
+      "body": "<h2>Privacy policy</h2><p>We collect the details we need to deliver your order and look after your subscription: your name, address, email and order history. Your card details go straight to our payment provider and never reach us.</p><h3>Marketing</h3><p>We only send marketing email if you ask for it, and every message has an unsubscribe link.</p><h3>Your rights</h3><p>You can ask for a copy of your data, or ask us to correct or delete it, by writing to hello@vitaheal.example.</p>",
+      "status": "Active",
+      "template": "Default",
+      "seoTitle": "Privacy policy | Vitaheal",
+      "seoDescription": "What personal data Vitaheal collects, why, and your rights.",
+      "imageName": "",
+      "publishedAt": "",
+      "updatedAt": "Nov 16, 2026"
+    },
+    {
+      "id": "vitaheal-policy-terms-of-service",
+      "channelId": "vitaheal-demo",
+      "kind": "policy",
+      "title": "Terms of service",
+      "handle": "terms-of-service",
+      "body": "<h2>Terms of service</h2><p>These terms apply when you buy from this store. Prices are in Swedish kronor and include VAT.</p><h3>Orders</h3><p>An order is confirmed when you receive our confirmation email. We may cancel an order if a product is out of stock, and we refund it in full if we do.</p><h3>Subscriptions</h3><p>A subscription renews at the interval you chose until you cancel it. We email you before each renewal.</p><h3>Delivery</h3><p>We deliver within 3 to 7 working days. Duties and taxes may apply outside the EU.</p>",
+      "status": "Active",
+      "template": "Default",
+      "seoTitle": "Terms of service | Vitaheal",
+      "seoDescription": "The terms that apply when you buy from the Vitaheal store.",
+      "imageName": "",
+      "publishedAt": "",
+      "updatedAt": "Nov 16, 2026"
+    },
+    {
+      "id": "vitaheal-blog-three-habits-for-better-sleep",
+      "channelId": "vitaheal-demo",
+      "kind": "blog",
+      "title": "Three habits for better sleep",
+      "handle": "three-habits-for-better-sleep",
+      "body": "<p>Good sleep starts hours before bed. These three habits cost nothing and work for most people.</p><h3>1. Keep one wake-up time</h3><p>Getting up at the same time every day, weekends included, does more for your sleep than an early night.</p><h3>2. Dim the lights after dinner</h3><p>Bright light tells your body it is still daytime. Lower lamps and a darker screen help it wind down.</p><h3>3. Give yourself an hour</h3><p>Stop work, put the phone in another room, and do something slow for the last hour of the day.</p>",
+      "status": "Active",
+      "template": "Default",
+      "seoTitle": "Three habits for better sleep | Vitaheal",
+      "seoDescription": "Three simple evening habits that make it easier to fall asleep.",
+      "imageName": "",
+      "publishedAt": "Nov 16, 2026",
+      "updatedAt": "Nov 16, 2026"
+    },
+    {
+      "id": "vitaheal-blog-how-much-water-do-you-need",
+      "channelId": "vitaheal-demo",
+      "kind": "blog",
+      "title": "How much water do you need when you train?",
+      "handle": "how-much-water-do-you-need",
+      "body": "<p>There is no single number. How much you need depends on how long you train, how hard, and how warm it is.</p><h3>A simple check</h3><p>Weigh yourself before and after a session. Each kilo you lose is about a litre of sweat to replace over the next few hours.</p><h3>Why salt matters</h3><p>Sweat carries sodium out with it. On long or hot sessions, water with electrolytes replaces what plain water cannot.</p>",
+      "status": "Active",
+      "template": "Default",
+      "seoTitle": "How much water do you need when you train? | Vitaheal",
+      "seoDescription": "A practical way to work out how much to drink around training.",
+      "imageName": "",
+      "publishedAt": "Nov 16, 2026",
+      "updatedAt": "Nov 16, 2026"
+    },
+    {
+      "id": "vitaheal-blog-why-we-sell-refills",
+      "channelId": "vitaheal-demo",
+      "kind": "blog",
+      "title": "Why we sell refills",
+      "handle": "why-we-sell-refills",
+      "body": "<p>A can is the best way to store a powder: it keeps out light, air and moisture. It is also the heaviest part of the parcel.</p><p>So we sell each product once in a can, and after that in a bag. A refill uses far less packaging, costs a little less, and fits through more letterboxes.</p><p>If you subscribe, your first delivery is a can and the ones after it are refills.</p>",
+      "status": "Active",
+      "template": "Default",
+      "seoTitle": "Why we sell refills | Vitaheal",
+      "seoDescription": "Why Vitaheal sells each product once in a can and then in refill bags.",
+      "imageName": "",
+      "publishedAt": "Nov 16, 2026",
+      "updatedAt": "Nov 16, 2026"
+    }
+  ],
+  "blogSeo": {
+    "title": "The Vitaheal Journal",
+    "metaDescription": "Short, practical reads on sleep, training and healthy ageing from the Vitaheal team."
+  },
+  "plans": [
+    {
+      "id": "plan-3-month",
+      "channelId": "vitaheal-demo",
+      "name": "3-month supply",
+      "intervalCount": 3,
+      "intervalUnit": "month",
+      "unitsPerDelivery": 3,
+      "discountPct": 30,
+      "freeShipping": true,
+      "benefits": [
+        "Our best price per pack",
+        "Skip or cancel anytime"
+      ],
+      "productIds": [
+        2001,
+        2002,
+        2003,
+        2005,
+        2006
+      ],
+      "isDefault": true,
+      "status": "Active"
+    },
+    {
+      "id": "plan-monthly",
+      "channelId": "vitaheal-demo",
+      "name": "Monthly subscription",
+      "intervalCount": 1,
+      "intervalUnit": "month",
+      "unitsPerDelivery": 1,
+      "discountPct": 20,
+      "freeShipping": false,
+      "benefits": [
+        "A fresh pack every month",
+        "Skip or cancel anytime"
+      ],
+      "productIds": [
+        2001,
+        2002,
+        2003,
+        2005,
+        2006
+      ],
+      "isDefault": false,
+      "status": "Active"
+    }
+  ],
+  "campaigns": [
+    {
+      "id": "camp-vitaheal-winter",
+      "channelId": "vitaheal-demo",
+      "name": "Winter wellness week",
+      "targets": [],
+      "startDate": "2026-11-15",
+      "startTime": "08:00",
+      "endDate": "2026-11-29",
+      "endTime": "23:59",
+      "updatedAt": "Nov 15, 2026",
+      "offer": {
+        "message": "Winter wellness week: 15% off everything with code WINTER15",
+        "code": "WINTER15",
+        "discountPct": 15
+      },
+      "orders": 37,
+      "revenue": 2148000
+    },
+    {
+      "id": "camp-vitaheal-sleep",
+      "channelId": "vitaheal-demo",
+      "name": "New year, better sleep",
+      "targets": [
+        "Sleep"
+      ],
+      "startDate": "2026-12-28",
+      "startTime": "08:00",
+      "endDate": "2027-01-11",
+      "endTime": "23:59",
+      "updatedAt": "Nov 17, 2026",
+      "offer": {
+        "message": "Sleep better this year: 20% off the Sleep range with code SLEEP20",
+        "code": "SLEEP20",
+        "discountPct": 20
+      },
+      "orders": 0,
+      "revenue": 0
+    },
+    {
+      "id": "camp-vitaheal-black-week",
+      "channelId": "vitaheal-demo",
+      "name": "Black week",
+      "targets": [],
+      "startDate": "2026-10-19",
+      "startTime": "00:00",
+      "endDate": "2026-10-26",
+      "endTime": "23:59",
+      "updatedAt": "Oct 26, 2026",
+      "offer": {
+        "message": "Black week: 25% off everything with code BLACK25",
+        "code": "BLACK25",
+        "discountPct": 25
+      },
+      "orders": 112,
+      "revenue": 5936000
+    }
+  ],
+  "merchandising": {
+    "synonyms": [
+      {
+        "id": "vh-syn-tired",
+        "channelId": "vitaheal-demo",
+        "status": "active",
+        "type": "one_way",
+        "queries": [
+          "tired",
+          "fatigue",
+          "exhausted"
+        ],
+        "leadsTo": [
+          "energy",
+          "focus"
+        ],
+        "updatedAt": "Nov 16, 2026"
+      },
+      {
+        "id": "vh-syn-insomnia",
+        "channelId": "vitaheal-demo",
+        "status": "active",
+        "type": "one_way",
+        "queries": [
+          "insomnia",
+          "jet lag",
+          "restless"
+        ],
+        "leadsTo": [
+          "sleep"
+        ],
+        "updatedAt": "Nov 16, 2026"
+      },
+      {
+        "id": "vh-syn-ageing",
+        "channelId": "vitaheal-demo",
+        "status": "active",
+        "type": "one_way",
+        "queries": [
+          "ageing",
+          "aging",
+          "anti-ageing"
+        ],
+        "leadsTo": [
+          "longevity"
+        ],
+        "updatedAt": "Nov 16, 2026"
+      },
+      {
+        "id": "vh-syn-hydration",
+        "channelId": "vitaheal-demo",
+        "status": "active",
+        "type": "two_way",
+        "queries": [
+          "hydration",
+          "electrolytes",
+          "rehydrate"
+        ],
+        "leadsTo": [],
+        "updatedAt": "Nov 16, 2026"
+      }
+    ],
+    "redirects": [
+      {
+        "id": "vh-red-returns",
+        "channelId": "vitaheal-demo",
+        "queries": [
+          "returns",
+          "refund",
+          "return policy"
+        ],
+        "leadsTo": "https://2000290-12.uat.maropost.store/policies/refund-policy",
+        "updatedAt": "Nov 16, 2026"
+      },
+      {
+        "id": "vh-red-guarantee",
+        "channelId": "vitaheal-demo",
+        "queries": [
+          "guarantee",
+          "money back"
+        ],
+        "leadsTo": "https://2000290-12.uat.maropost.store/page/money-back-guarantee",
+        "updatedAt": "Nov 16, 2026"
+      }
+    ],
+    "searchPins": [
+      {
+        "id": "vh-pin-sleep",
+        "channelId": "vitaheal-demo",
+        "query": "sleep",
+        "pinnedProductIds": [
+          "2001"
+        ],
+        "updatedAt": "Nov 16, 2026"
+      },
+      {
+        "id": "vh-pin-energy",
+        "channelId": "vitaheal-demo",
+        "query": "energy",
+        "pinnedProductIds": [
+          "2005"
+        ],
+        "updatedAt": "Nov 16, 2026"
+      }
+    ],
+    "engines": [
+      {
+        "id": "vh-engine-goes-with",
+        "channelId": "vitaheal-demo",
+        "name": "Goes well with",
+        "page": "product",
+        "type": "frequently_purchased_together",
+        "status": "active",
+        "minProducts": 2,
+        "maxProducts": 4,
+        "fallbacks": [
+          "Popular products"
+        ],
+        "updatedAt": "Nov 16, 2026 at 10:15 AM"
+      },
+      {
+        "id": "vh-engine-new-in",
+        "channelId": "vitaheal-demo",
+        "name": "New in",
+        "page": "product",
+        "type": "newest_products",
+        "status": "inactive",
+        "minProducts": 2,
+        "maxProducts": 4,
+        "fallbacks": [
+          "Popular products"
+        ],
+        "updatedAt": "Nov 16, 2026 at 10:20 AM"
+      }
+    ]
+  },
+  "chatbot": {
+    "storeName": "Vitaheal",
+    "storeType": "Health & wellness",
+    "brandName": "Vitaheal assistant",
+    "brandSubtitle": "Orders, subscriptions and product advice",
+    "primaryColor": "#0a2240",
+    "position": "right",
+    "launcherText": "Need help?",
+    "launcherTextEnabled": true,
+    "welcomeMessage": "Hi! I’m the Vitaheal assistant. I can look up your order or subscription, or help you find the right product. What can I do for you?",
+    "preChatEnabled": false,
+    "quickPrompts": [
+      {
+        "id": 1,
+        "text": "Where is my order?",
+        "enabled": true
+      },
+      {
+        "id": 2,
+        "text": "When is my next delivery?",
+        "enabled": true
+      },
+      {
+        "id": 3,
+        "text": "Help me sleep better",
+        "enabled": true
+      },
+      {
+        "id": 4,
+        "text": "What helps with focus?",
+        "enabled": true
+      },
+      {
+        "id": 5,
+        "text": "What is your return policy?",
+        "enabled": true
+      }
+    ],
+    "knowledgeSources": [
+      {
+        "id": 1,
+        "name": "Store policies",
+        "icon": "file-text",
+        "items": 4,
+        "meta": "Added 16 Nov 2026",
+        "status": "Active",
+        "enabled": true,
+        "entries": [
+          {
+            "title": "Returns and refunds",
+            "url": "/policies/refund-policy",
+            "text": "You can return unopened products within 14 days of delivery for a full refund. Write to us first and we will send a return label. We refund to your original payment method within 5 working days of receiving the return."
+          },
+          {
+            "title": "Money-back guarantee on Unwind",
+            "url": "/page/money-back-guarantee",
+            "text": "If Unwind is not right for you, tell us within 30 days of delivery and we will refund your first can or bag. The guarantee covers your first order of Unwind, once per household."
+          },
+          {
+            "title": "Privacy and your data",
+            "url": "/policies/privacy-policy",
+            "text": "We keep only what we need to deliver your order and look after your subscription: your name, address, email and order history. Your card details go straight to our payment provider and never reach us."
+          },
+          {
+            "title": "Prices, VAT and payment",
+            "url": "/policies/terms-of-service",
+            "text": "Prices are in Swedish kronor and include VAT. You can pay by card, Apple Pay or Google Pay."
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "name": "Help pages",
+        "icon": "globe",
+        "items": 5,
+        "meta": "Added 16 Nov 2026",
+        "status": "Active",
+        "enabled": true,
+        "entries": [
+          {
+            "title": "Delivery times and shipping cost",
+            "url": "/page/contact",
+            "text": "Orders placed before 10:00 CET on a weekday leave our warehouse the same day. Delivery takes 3 to 7 working days, and shipping is free on orders over 549 kr."
+          },
+          {
+            "title": "Which countries we ship to",
+            "url": "/policies/terms-of-service",
+            "text": "We ship to Sweden, Norway, Denmark, Finland and Iceland, and to the rest of the EU. Duties and taxes may apply outside the EU."
+          },
+          {
+            "title": "How subscriptions work",
+            "url": "/page/about",
+            "text": "A subscription sends your product at the interval you choose and saves 20% to 30% on every delivery. You can skip a delivery, pause or cancel at any time from your account page, before the next charge date."
+          },
+          {
+            "title": "Contact and opening hours",
+            "url": "/page/contact",
+            "text": "Write to hello@vitaheal.example and we answer within one working day. We are here Monday to Friday, 09:00 to 17:00 CET."
+          },
+          {
+            "title": "Where our products are made and tested",
+            "url": "/page/about",
+            "text": "Everything is blended and packed in Sweden, and every batch is tested before it ships. Refills come in bags, so one can lasts for years."
+          }
+        ]
+      }
+    ]
+  },
+  "conversations": [
+    {
+      "visitor": "astrid.lindqvist@example.com",
+      "startedAt": "Today, 8:12 AM",
+      "topic": "Subscription",
+      "resolved": true,
+      "messages": [
+        {
+          "from": "shopper",
+          "text": "When is my next delivery?",
+          "time": "8:12 AM"
+        },
+        {
+          "from": "bot",
+          "text": "Your Unwind subscription is active on the 3-month supply. The next delivery date is below, and you can skip it right here if you have enough at home.",
+          "time": "8:12 AM"
+        },
+        {
+          "from": "shopper",
+          "text": "No, that is fine. Thanks!",
+          "time": "8:13 AM"
+        },
+        {
+          "from": "bot",
+          "text": "You’re welcome. Is there anything else I can help with?",
+          "time": "8:13 AM"
+        }
+      ]
+    },
+    {
+      "visitor": "Guest visitor",
+      "startedAt": "Yesterday, 9:47 PM",
+      "topic": "Product advice",
+      "resolved": true,
+      "messages": [
+        {
+          "from": "shopper",
+          "text": "I keep waking up at night. What do you recommend?",
+          "time": "9:47 PM"
+        },
+        {
+          "from": "bot",
+          "text": "For better sleep, these are the ones we make for it: Unwind and Nasal Strips.",
+          "time": "9:47 PM"
+        },
+        {
+          "from": "shopper",
+          "text": "Is Unwind covered by the guarantee?",
+          "time": "9:48 PM"
+        },
+        {
+          "from": "bot",
+          "text": "If Unwind is not right for you, tell us within 30 days of delivery and we will refund your first can or bag.",
+          "time": "9:48 PM"
+        }
+      ]
+    },
+    {
+      "visitor": "Guest visitor",
+      "startedAt": "Yesterday, 2:05 PM",
+      "topic": "Delivery",
+      "resolved": true,
+      "messages": [
+        {
+          "from": "shopper",
+          "text": "Do you ship to Norway?",
+          "time": "2:05 PM"
+        },
+        {
+          "from": "bot",
+          "text": "We ship to Sweden, Norway, Denmark, Finland and Iceland, and to the rest of the EU. Duties and taxes may apply outside the EU.",
+          "time": "2:05 PM"
+        }
+      ]
+    },
+    {
+      "visitor": "Guest visitor",
+      "startedAt": "Mon, 11:30 AM",
+      "topic": "Health question",
+      "resolved": false,
+      "messages": [
+        {
+          "from": "shopper",
+          "text": "Can I take Clear Focus with my blood pressure medication?",
+          "time": "11:30 AM"
+        },
+        {
+          "from": "bot",
+          "text": "I can’t give medical advice. Please check with your doctor or pharmacist before starting a supplement.",
+          "time": "11:30 AM"
+        }
+      ]
+    }
+  ],
+  "subscriptions": [
+    {
+      "id": "sub-1001",
+      "number": "S-1001",
+      "channelId": "vitaheal-demo",
+      "customer": {
+        "name": "Astrid Lindqvist",
+        "email": "astrid.lindqvist@example.com",
+        "address": {
+          "line1": "Vasagatan 21",
+          "city": "Göteborg",
+          "region": "",
+          "postalCode": "411 24",
+          "country": "Sweden"
+        }
+      },
+      "productId": 2001,
+      "product": "Unwind",
+      "sku": "VTH-UNW-BAG",
+      "qty": 1,
+      "plan": {
+        "id": "plan-3-month",
+        "name": "3-month supply",
+        "intervalCount": 3,
+        "intervalUnit": "month",
+        "unitsPerDelivery": 3,
+        "freeShipping": true
+      },
+      "price": "837.90",
+      "currency": "SEK",
+      "paymentMethod": "Visa •••• 4242",
+      "methodId": "card",
+      "status": "Active",
+      "startedOn": "2026-05-02",
+      "nextChargeOn": "2027-02-02",
+      "history": [
+        {
+          "date": "2026-11-02",
+          "text": "Renewal charged to Visa •••• 4242",
+          "actor": "merchant"
+        },
+        {
+          "date": "2026-08-02",
+          "text": "Renewal charged to Visa •••• 4242",
+          "actor": "merchant"
+        },
+        {
+          "date": "2026-05-02",
+          "text": "Subscription started",
+          "actor": "customer"
+        }
+      ]
+    },
+    {
+      "id": "sub-1002",
+      "number": "S-1002",
+      "channelId": "vitaheal-demo",
+      "customer": {
+        "name": "Erik Johansson",
+        "email": "erik.johansson@example.com",
+        "address": {
+          "line1": "Södra Förstadsgatan 40",
+          "city": "Malmö",
+          "region": "",
+          "postalCode": "211 43",
+          "country": "Sweden"
+        }
+      },
+      "productId": 2005,
+      "product": "Vitaheal Electrolytes",
+      "sku": "VTH-ELE-LEM",
+      "qty": 1,
+      "plan": {
+        "id": "plan-monthly",
+        "name": "Monthly subscription",
+        "intervalCount": 1,
+        "intervalUnit": "month",
+        "unitsPerDelivery": 1,
+        "freeShipping": false
+      },
+      "price": "223.20",
+      "currency": "SEK",
+      "paymentMethod": "Mastercard •••• 5454",
+      "methodId": "card",
+      "status": "Active",
+      "startedOn": "2026-09-04",
+      "nextChargeOn": "2026-12-04",
+      "history": [
+        {
+          "date": "2026-11-04",
+          "text": "Renewal charged to Mastercard •••• 5454",
+          "actor": "merchant"
+        },
+        {
+          "date": "2026-10-04",
+          "text": "Renewal charged to Mastercard •••• 5454",
+          "actor": "merchant"
+        },
+        {
+          "date": "2026-09-04",
+          "text": "Subscription started",
+          "actor": "customer"
+        }
+      ]
+    },
+    {
+      "id": "sub-1003",
+      "number": "S-1003",
+      "channelId": "vitaheal-demo",
+      "customer": {
+        "name": "Maja Nilsson",
+        "email": "maja.nilsson@example.com",
+        "address": {
+          "line1": "Kungsgatan 9",
+          "city": "Uppsala",
+          "region": "",
+          "postalCode": "753 21",
+          "country": "Sweden"
+        }
+      },
+      "productId": 2002,
+      "product": "Clear Focus",
+      "sku": "VTH-FOC-REF",
+      "qty": 1,
+      "plan": {
+        "id": "plan-monthly",
+        "name": "Monthly subscription",
+        "intervalCount": 1,
+        "intervalUnit": "month",
+        "unitsPerDelivery": 1,
+        "freeShipping": false
+      },
+      "price": "311.20",
+      "currency": "SEK",
+      "paymentMethod": "Visa •••• 1881",
+      "methodId": "card",
+      "status": "Active",
+      "startedOn": "2026-07-01",
+      "nextChargeOn": "2026-12-01",
+      "history": [
+        {
+          "date": "2026-11-01",
+          "text": "Renewal charged to Visa •••• 1881",
+          "actor": "merchant"
+        },
+        {
+          "date": "2026-10-01",
+          "text": "Renewal charged to Visa •••• 1881",
+          "actor": "merchant"
+        },
+        {
+          "date": "2026-09-01",
+          "text": "Renewal charged to Visa •••• 1881",
+          "actor": "merchant"
+        },
+        {
+          "date": "2026-08-01",
+          "text": "Renewal charged to Visa •••• 1881",
+          "actor": "merchant"
+        },
+        {
+          "date": "2026-07-01",
+          "text": "Subscription started",
+          "actor": "customer"
+        }
+      ]
+    },
+    {
+      "id": "sub-1004",
+      "number": "S-1004",
+      "channelId": "vitaheal-demo",
+      "customer": {
+        "name": "Oskar Bergström",
+        "email": "oskar.bergstrom@example.com",
+        "address": {
+          "line1": "Drottninggatan 55",
+          "city": "Stockholm",
+          "region": "",
+          "postalCode": "111 21",
+          "country": "Sweden"
+        }
+      },
+      "productId": 2003,
+      "product": "Daily NAD+",
+      "sku": "VTH-NAD-REF",
+      "qty": 1,
+      "plan": {
+        "id": "plan-3-month",
+        "name": "3-month supply",
+        "intervalCount": 3,
+        "intervalUnit": "month",
+        "unitsPerDelivery": 3,
+        "freeShipping": true
+      },
+      "price": "1362.90",
+      "currency": "SEK",
+      "paymentMethod": "Amex •••• 0005",
+      "methodId": "card",
+      "status": "Active",
+      "startedOn": "2026-01-12",
+      "nextChargeOn": "2027-01-12",
+      "history": [
+        {
+          "date": "2026-10-12",
+          "text": "Renewal charged to Amex •••• 0005",
+          "actor": "merchant"
+        },
+        {
+          "date": "2026-07-12",
+          "text": "Renewal charged to Amex •••• 0005",
+          "actor": "merchant"
+        },
+        {
+          "date": "2026-04-12",
+          "text": "Renewal charged to Amex •••• 0005",
+          "actor": "merchant"
+        },
+        {
+          "date": "2026-01-12",
+          "text": "Subscription started",
+          "actor": "customer"
+        }
+      ]
+    },
+    {
+      "id": "sub-1005",
+      "number": "S-1005",
+      "channelId": "vitaheal-demo",
+      "customer": {
+        "name": "Elsa Karlsson",
+        "email": "elsa.karlsson@example.com",
+        "address": {
+          "line1": "Storgatan 3",
+          "city": "Linköping",
+          "region": "",
+          "postalCode": "582 23",
+          "country": "Sweden"
+        }
+      },
+      "productId": 2006,
+      "product": "Collagen+",
+      "sku": "VTH-COL-REF",
+      "qty": 1,
+      "plan": {
+        "id": "plan-monthly",
+        "name": "Monthly subscription",
+        "intervalCount": 1,
+        "intervalUnit": "month",
+        "unitsPerDelivery": 1,
+        "freeShipping": false
+      },
+      "price": "327.20",
+      "currency": "SEK",
+      "paymentMethod": "Visa •••• 7720",
+      "methodId": "card",
+      "status": "Paused",
+      "startedOn": "2026-07-31",
+      "nextChargeOn": "2026-11-30",
+      "history": [
+        {
+          "date": "2026-11-12",
+          "text": "Paused. Nothing is charged or sent until it is resumed",
+          "actor": "customer"
+        },
+        {
+          "date": "2026-10-30",
+          "text": "Renewal charged to Visa •••• 7720",
+          "actor": "merchant"
+        },
+        {
+          "date": "2026-09-30",
+          "text": "Renewal charged to Visa •••• 7720",
+          "actor": "merchant"
+        },
+        {
+          "date": "2026-08-31",
+          "text": "Renewal charged to Visa •••• 7720",
+          "actor": "merchant"
+        },
+        {
+          "date": "2026-07-31",
+          "text": "Subscription started",
+          "actor": "customer"
+        }
+      ]
+    },
+    {
+      "id": "sub-1006",
+      "number": "S-1006",
+      "channelId": "vitaheal-demo",
+      "customer": {
+        "name": "Lucas Andersson",
+        "email": "lucas.andersson@example.com",
+        "address": {
+          "line1": "Nygatan 14",
+          "city": "Örebro",
+          "region": "",
+          "postalCode": "702 11",
+          "country": "Sweden"
+        }
+      },
+      "productId": 2005,
+      "product": "Vitaheal Electrolytes",
+      "sku": "VTH-ELE-LEM",
+      "qty": 1,
+      "plan": {
+        "id": "plan-3-month",
+        "name": "3-month supply",
+        "intervalCount": 3,
+        "intervalUnit": "month",
+        "unitsPerDelivery": 3,
+        "freeShipping": true
+      },
+      "price": "585.90",
+      "currency": "SEK",
+      "paymentMethod": "Mastercard •••• 3102",
+      "methodId": "card",
+      "status": "Payment failed",
+      "startedOn": "2026-05-17",
+      "nextChargeOn": "2026-11-17",
+      "history": [
+        {
+          "date": "2026-11-17",
+          "text": "Renewal payment failed: Mastercard •••• 3102 was declined",
+          "actor": "merchant"
+        },
+        {
+          "date": "2026-08-17",
+          "text": "Renewal charged to Mastercard •••• 3102",
+          "actor": "merchant"
+        },
+        {
+          "date": "2026-05-17",
+          "text": "Subscription started",
+          "actor": "customer"
+        }
+      ]
+    },
+    {
+      "id": "sub-1007",
+      "number": "S-1007",
+      "channelId": "vitaheal-demo",
+      "customer": {
+        "name": "Freja Holm",
+        "email": "freja.holm@example.com",
+        "address": {
+          "line1": "Hamngatan 7",
+          "city": "Kalmar",
+          "region": "",
+          "postalCode": "392 31",
+          "country": "Sweden"
+        }
+      },
+      "productId": 2001,
+      "product": "Unwind",
+      "sku": "VTH-UNW-BAG",
+      "qty": 1,
+      "plan": {
+        "id": "plan-monthly",
+        "name": "Monthly subscription",
+        "intervalCount": 1,
+        "intervalUnit": "month",
+        "unitsPerDelivery": 1,
+        "freeShipping": false
+      },
+      "price": "319.20",
+      "currency": "SEK",
+      "paymentMethod": "Visa •••• 6009",
+      "methodId": "card",
+      "status": "Cancelled",
+      "startedOn": "2026-08-15",
+      "nextChargeOn": null,
+      "cancelReason": "Too expensive",
+      "history": [
+        {
+          "date": "2026-11-06",
+          "text": "Cancelled. Reason: Too expensive",
+          "actor": "customer"
+        },
+        {
+          "date": "2026-10-15",
+          "text": "Renewal charged to Visa •••• 6009",
+          "actor": "merchant"
+        },
+        {
+          "date": "2026-09-15",
+          "text": "Renewal charged to Visa •••• 6009",
+          "actor": "merchant"
+        },
+        {
+          "date": "2026-08-15",
+          "text": "Subscription started",
+          "actor": "customer"
+        }
+      ]
+    },
+    {
+      "id": "sub-1008",
+      "number": "S-1008",
+      "channelId": "vitaheal-demo",
+      "customer": {
+        "name": "Nils Ekström",
+        "email": "nils.ekstrom@example.com",
+        "address": {
+          "line1": "Rådhusesplanaden 2",
+          "city": "Umeå",
+          "region": "",
+          "postalCode": "903 28",
+          "country": "Sweden"
+        }
+      },
+      "productId": 2002,
+      "product": "Clear Focus",
+      "sku": "VTH-FOC-REF",
+      "qty": 1,
+      "plan": {
+        "id": "plan-3-month",
+        "name": "3-month supply",
+        "intervalCount": 3,
+        "intervalUnit": "month",
+        "unitsPerDelivery": 3,
+        "freeShipping": true
+      },
+      "price": "816.90",
+      "currency": "SEK",
+      "paymentMethod": "Visa •••• 4242",
+      "methodId": "card",
+      "status": "Active",
+      "startedOn": "2026-10-19",
+      "nextChargeOn": "2027-01-19",
+      "history": [
+        {
+          "date": "2026-10-19",
+          "text": "Subscription started",
+          "actor": "customer"
+        }
+      ]
+    }
+  ]
+}

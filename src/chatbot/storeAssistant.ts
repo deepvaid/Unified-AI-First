@@ -7,13 +7,19 @@
  * the same question always gets the same answer. When it does not understand, it
  * says what it can help with instead of guessing.
  *
+ * What it knows about the kind of store (the needs it suggests products for, the
+ * questions it answers with care) is the store's assistant profile
+ * (assistantProfiles.ts); the rest is the same for every store.
+ *
  * Pure, with relative `.ts` imports only, so `npm run test:chatbot` runs a whole
  * conversation in Node. The builder's preview keeps its own stand-in
  * (previewResponder.ts), which this reuses for knowledge-base answers.
  */
 
+import type { AssistantProfileId } from '../storefront/demoStores/types.ts'
 import { dayLabel } from '../subscriptions/contracts.ts'
 import type { ContractStatus } from '../subscriptions/contracts.ts'
+import { assistantProfile } from './assistantProfiles.ts'
 import { bestEntry, hits, keywords } from './previewResponder.ts'
 import type { PreviewEntry } from './previewResponder.ts'
 
@@ -68,6 +74,8 @@ export interface AssistantContext {
   demo: boolean
   /** The message of the store's running campaign ("15% off with code WINTER15"), or empty when none runs. */
   promotion?: string
+  /** What kind of store it is (`ChatbotConfig.assistantProfile`). Unset: wellness. */
+  profile?: AssistantProfileId
 }
 
 /** A question waiting for the shopper to say who they are. */
@@ -109,7 +117,6 @@ const ACCOUNT = { label: 'Manage subscription', href: '/account' }
 
 // ── What a message is about ──────────────────────────────────────────────────
 
-const MEDICAL = /\b(pregnan\w*|breast\s?feed\w*|nursing|medication|medicines?|prescription|antidepress\w*|blood pressure|diabet\w*|disease|illness|diagnos\w*|allerg\w*|side effects?|doctor|cure|treat(s|ment)?|my (child|kid|baby|son|daughter)|under 18)\b/
 const SUBSCRIPTION = /\b(subscription|subscrib\w*|next (delivery|charge|order|shipment|box)|renew\w*|skip\w*|paus\w*|resum\w*|my plan|change (my )?plan)\b/
 const ORDER = /\b(orders?|track\w*|parcel|package|shipment|shipped|dispatch\w*|delivery status|where('s| is) my|has it (shipped|arrived))\b/
 const ORDER_NUMBER = /#\s?(\d{4,6})\b|\b(?:order|number)\s*(?:no\.?|number)?\s*#?\s?(\d{4,6})\b|^\s*(\d{5,6})\s*$/
@@ -125,26 +132,14 @@ const PROMOTION = /\b(discounts?|coupons?|promo(tion)?s?|vouchers?|on sale|sales
 const SHOPPING = /\b(recommend\w*|suggest\w*|which (product|one)|what (should|can|do) i (take|buy|use|try)|looking for|help me (choose|pick|find)|what do you (sell|have)|best (product|supplement))\b/
 
 /**
- * Everyday words for a wellness need, and the words products use for it. The
- * need is then matched against each product's own name, subtitle, description
- * and collections, so a product the merchant adds can be suggested too.
+ * The products that fit a need, best first: at most three, and only those close
+ * to the best match. The need is matched against each product's own name,
+ * subtitle, description and collections, so a product the merchant adds can be
+ * suggested too.
  */
-const NEEDS: Array<{ label: string; says: RegExp; means: string[] }> = [
-  { label: 'better sleep', says: /\b(sleep\w*|insomnia|awake|restless|bedtime|wind(ing)? down|at night)\b/, means: ['sleep', 'bed', 'evening'] },
-  { label: 'feeling calmer', says: /\b(stress\w*|anxious|anxiety|calm\w*|relax\w*|overwhelmed)\b/, means: ['calm', 'winding'] },
-  { label: 'focus', says: /\b(focus\w*|concentrat\w*|brain fog|study\w*|sharp\w*|alert\w*|productiv\w*|distract\w*)\b/, means: ['focus'] },
-  { label: 'steady energy', says: /\b(tired\w*|fatigue\w*|exhausted|energy|sluggish|afternoon dip|worn out)\b/, means: ['energy'] },
-  { label: 'hydration and training', says: /\b(hydrat\w*|dehydrat\w*|thirst\w*|cramps?|sweat\w*|electrolytes?|run(ning|ner)?|workouts?|train\w*|gym|sports?|exercis\w*|cycling|marathon)\b/, means: ['hydrat', 'train', 'sport'] },
-  { label: 'skin, hair and joints', says: /\b(skin|hair|nails?|joints?|knees?|collagen|glow\w*|wrinkles?)\b/, means: ['skin', 'hair', 'joint', 'collagen'] },
-  { label: 'healthy ageing', says: /\b(age(ing)?|aging|longevity|getting older|cellular|nad)\b/, means: ['longevity', 'cellular', 'ageing'] },
-  { label: 'easier breathing', says: /\b(snor\w*|breath\w*|blocked nose|stuffy|congest\w*|nasal|nose)\b/, means: ['breath', 'nose'] },
-  { label: 'women’s daily balance', says: /\b(wom[ae]n\w*|cycle|period|hormon\w*|menopause|pms)\b/, means: ['women', 'month'] },
-]
-
-/** The products that fit a need, best first: at most three, and only those close to the best match. */
-export function productsFor(message: string, products: AssistantProduct[]): { label: string | null; productIds: number[] } {
+export function productsFor(message: string, products: AssistantProduct[], profile?: AssistantProfileId): { label: string | null; productIds: number[] } {
   const text = message.toLowerCase()
-  const needs = NEEDS.filter((need) => need.says.test(text))
+  const needs = assistantProfile(profile).needs.filter((need) => need.says.test(text))
   const tokens = needs.length ? needs.flatMap((need) => need.means) : keywords(message)
   if (!tokens.length) return { label: null, productIds: [] }
   const scored = products
@@ -206,7 +201,8 @@ function answerSubscription(question: string, email: string, ctx: AssistantConte
     .sort((a, b) => SUBSCRIPTION_ORDER[a.status] - SUBSCRIPTION_ORDER[b.status])
   const first = mine[0]
   if (!first) {
-    return [{ kind: 'text', text: `I can’t find a subscription for ${email}. You can start one from any product in our Subscription collection.`, link: { label: 'See subscriptions', href: '/collections/subscription' } }]
+    const none = assistantProfile(ctx.profile).noSubscription
+    return [{ kind: 'text', text: `I can’t find a subscription for ${email}. ${none.text}`, link: none.link }]
   }
   const text = question.toLowerCase()
   let lead: string
@@ -224,13 +220,12 @@ function answerKnown(question: string, email: string, ctx: AssistantContext): As
   return SUBSCRIPTION.test(question.toLowerCase()) && !orderNumberIn(question) ? answerSubscription(question, email, ctx) : answerOrder(question, email, ctx)
 }
 
-const HELP = 'I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, skin or healthy ageing, and answer questions about delivery and returns.'
-
 // ── The conversation ─────────────────────────────────────────────────────────
 
 /** What the assistant says to a message, and where the conversation stands after it. */
 export function assistantReply(message: string, ctx: AssistantContext, state: AssistantState = NEW_CONVERSATION): AssistantTurn {
   const text = message.trim().toLowerCase()
+  const profile = assistantProfile(ctx.profile)
   // Whoever is signed in on the store now wins over an email confirmed earlier in the chat:
   // the shopper may have checked out as someone else since.
   const known = ctx.email?.toLowerCase() ?? state.email
@@ -254,13 +249,8 @@ export function assistantReply(message: string, ctx: AssistantContext, state: As
   }
   // Anything else while a question waits is a new question: the old one is dropped.
 
-  // ── Health questions get a careful answer, never a product ─────────
-  if (MEDICAL.test(text)) {
-    return turn([{
-      kind: 'text',
-      text: 'I can’t give medical advice. If you are pregnant, breastfeeding, taking medication, managing a condition or asking for a child, please check with your doctor or pharmacist before starting a supplement. I can tell you what each product contains and what it is made for.',
-    }])
-  }
+  // ── Health questions (for a wellness store) get a careful answer, never a product ──
+  if (profile.caution.says.test(text)) return turn([{ kind: 'text', text: profile.caution.text }])
 
   // ── Orders and subscriptions need to know who is asking ────────────
   const general = GENERAL.test(text) && !/\b(my|next)\b/.test(text)
@@ -287,10 +277,8 @@ export function assistantReply(message: string, ctx: AssistantContext, state: As
   if (PROMOTION.test(text)) {
     return turn([{
       kind: 'text',
-      text: ctx.promotion
-        ? `Yes. ${ctx.promotion}. Type the code in your cart or at checkout.`
-        : 'There is no discount code running right now. A subscription saves 20% to 30% on every delivery, all year.',
-      link: ctx.promotion ? { label: 'Go to your cart', href: '/cart-page' } : { label: 'See subscriptions', href: '/collections/subscription' },
+      text: ctx.promotion ? `Yes. ${ctx.promotion}. Type the code in your cart or at checkout.` : profile.noPromotion.text,
+      link: ctx.promotion ? { label: 'Go to your cart', href: '/cart-page' } : profile.noPromotion.link,
     }])
   }
 
@@ -298,24 +286,24 @@ export function assistantReply(message: string, ctx: AssistantContext, state: As
     return turn([{ kind: 'text', text: 'Of course. Our team answers within one working day. Write to us and say what you need.', link: CONTACT }])
   }
 
-  // ── A wellness need, or a request for a suggestion ─────────────────
-  const wantsProduct = !POLICY.test(text) && (NEEDS.some((need) => need.says.test(text)) || SHOPPING.test(text))
+  // ── A need, or a request for a suggestion ──────────────────────────
+  const wantsProduct = !POLICY.test(text) && (profile.needs.some((need) => need.says.test(text)) || SHOPPING.test(text))
   if (wantsProduct && ctx.shoppingEnabled) {
-    const match = productsFor(message, ctx.products)
+    const match = productsFor(message, ctx.products, profile.id)
     if (match.productIds.length) {
       return turn([{
         kind: 'products',
         text: match.label
-          ? `For ${match.label}, ${match.productIds.length === 1 ? 'this is the one we make for it' : 'these are the ones we make for it'}:`
+          ? `For ${match.label}, ${match.productIds.length === 1 ? profile.suggestionLead.one : profile.suggestionLead.many}:`
           : 'These look like the closest match:',
         productIds: match.productIds,
       }])
     }
-    return turn([{ kind: 'text', text: 'Tell me what you would like help with, for example better sleep, focus, hydration, skin or healthy ageing, and I will suggest a product.' }])
+    return turn([{ kind: 'text', text: profile.askNeed }])
   }
 
   if (text.split(/\s+/).length <= 4) {
-    if (GREETING.test(text)) return turn([{ kind: 'text', text: `Hi! ${HELP}` }], {}, { offerPrompts: true })
+    if (GREETING.test(text)) return turn([{ kind: 'text', text: `Hi! ${profile.help}` }], {}, { offerPrompts: true })
     if (THANKS.test(text)) return turn([{ kind: 'text', text: 'You’re welcome. Is there anything else I can help with?' }])
   }
 
@@ -327,5 +315,5 @@ export function assistantReply(message: string, ctx: AssistantContext, state: As
   }
 
   if (THANKS.test(text)) return turn([{ kind: 'text', text: 'You’re welcome. Is there anything else I can help with?' }])
-  return turn([{ kind: 'text', text: `I’m not sure about that one. ${HELP}` }], {}, { offerPrompts: true })
+  return turn([{ kind: 'text', text: `I’m not sure about that one. ${profile.help}` }], {}, { offerPrompts: true })
 }

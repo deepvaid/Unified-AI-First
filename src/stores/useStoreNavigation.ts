@@ -1,6 +1,8 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
-import { VITAHEAL_MENUS } from '@/storefront/vitahealDemo'
+import { SEEDED_DEMO_CHANNELS, demoChannelRecord, demoSnapshotOf, replaceStoreRows } from './useSalesChannels'
+import { canApplyTheme } from '@/storefront/demoStores'
+import type { InstallChannel } from '@/storefront/demoStores/install'
 
 // Storefront navigation menus (store editor ▸ Navigation).
 // Legacy parity notes (sandbox crawl 2026-07-10, docs/uat-parity/parity-tracker.md A06b):
@@ -246,7 +248,19 @@ function seedMenus(): StoreMenu[] {
 }
 
 export const useStoreNavigationStore = defineStore('storeNavigation', () => {
-  const menus = ref<StoreMenu[]>([...seedMenus(), ...VITAHEAL_MENUS.map((menu) => ({ ...menu, items: menu.items.map((item) => ({ ...item })) }))])
+  const menus = ref<StoreMenu[]>(seedMenus())
+
+  /** The stores whose menus are seeded (attachStore): each only once. */
+  const attached = new Set<string>()
+
+  /** Puts a store's menus in place as the theme it runs now has them. They are not kept in the browser. */
+  function attachStore(channel: InstallChannel): void {
+    if (attached.has(channel.id)) return
+    attached.add(channel.id)
+    menus.value = replaceStoreRows(menus.value, (menu) => menu.channelId === channel.id, demoSnapshotOf(channel)?.menus ?? [])
+  }
+  // The demo stores' menus (src/storefront/demoStores/), after the others.
+  for (const channel of SEEDED_DEMO_CHANNELS) attachStore(channel)
 
   function menusForChannel(channelId: string): StoreMenu[] {
     return menus.value.filter((menu) => menu.channelId === channelId)
@@ -280,5 +294,23 @@ export const useStoreNavigationStore = defineStore('storeNavigation', () => {
     menus.value = menus.value.filter((menu) => menu.id !== menuId)
   }
 
-  return { menus, menusForChannel, getMenu, saveMenu, setMenuStatus, deleteMenu }
+  /** Puts the store's menus back as the theme it runs now has them (contract: reseedDemo). Other stores' menus stay. */
+  function reseedDemo(channelId: string): void {
+    const channel = demoChannelRecord(channelId)
+    if (!canApplyTheme(channel)) return
+    attached.add(channelId)
+    menus.value = replaceStoreRows(menus.value, (menu) => menu.channelId === channelId, demoSnapshotOf(channel)?.menus ?? [])
+  }
+
+  /**
+   * Brings a store that can take a theme in as the app starts (a store made from a
+   * theme; src/stores/useDemoStores.ts): it gets the menus of the theme it runs.
+   * Does nothing a second time, or for a store that cannot take a theme.
+   */
+  function attachDemo(channelId: string): void {
+    const channel = demoChannelRecord(channelId)
+    if (channel && canApplyTheme(channel)) attachStore(channel)
+  }
+
+  return { menus, menusForChannel, getMenu, saveMenu, setMenuStatus, deleteMenu, attachDemo, reseedDemo }
 })

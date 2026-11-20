@@ -1,7 +1,7 @@
 import { parseDecimal, zero } from '@/maropay/money'
 import type { Money } from '@/maropay/money'
 import type { Product } from '@/stores/useCommerce'
-import { toHandle } from '@/stores/useProductExtras'
+import { productHandle, toHandle } from '@/storefront/handles'
 import type { SalesChannel } from '@/stores/useSalesChannels'
 import { catalogFor, hasPriceRange, isAvailable, lowestPrice, storesWithOwnCatalogue } from '@/storefront/catalog'
 import { formatStorePrice } from '@/storefront/price'
@@ -16,10 +16,8 @@ export function storefrontProducts(products: Product[], channelId: string): Prod
   return catalogFor(products, channelId)
 }
 
-/** `/products/<name>-<id>`: the id keeps the link working if the product is renamed. */
-export function productHandle(product: Pick<Product, 'name' | 'id'>): string {
-  return `${toHandle(product.name)}-${product.id}`
-}
+// `/products/<name>-<id>`; the rule lives in src/storefront/handles.ts and is still exported from here.
+export { productHandle }
 
 export function productFromHandle(products: Product[], channelId: string, handle: string): Product | undefined {
   const id = Number(/-(\d+)$/.exec(handle)?.[1] ?? Number.NaN)

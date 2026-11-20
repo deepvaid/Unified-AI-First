@@ -5,6 +5,7 @@ import { cloneFlowNodes, instantiateTemplate, seedJourneyFlows, templateById } f
 import { useOnboardingStore } from '@/stores/useOnboarding'
 import { browserStorage, keepInBrowser } from '@/stores/demoKeep'
 import { demoSlot } from '@/storefront/demoStorage'
+import { VITAHEAL_CHANNEL_ID } from '@/storefront/vitahealDemo'
 
 /** The tag on an email that announces a store's campaign. */
 export const STORE_CAMPAIGN_TAG = 'Store campaign'
@@ -113,6 +114,11 @@ export interface Campaign {
   metrics: CampaignMetrics
   /** Full wizard configuration — present once a campaign has been through the Create Campaign wizard. */
   config?: CampaignDraftInput
+  /**
+   * The web store whose campaign this email announces (tagged STORE_CAMPAIGN_TAG).
+   * An announcement saved before stores were told apart has none: it is Vitaheal's.
+   */
+  storeChannelId?: string
 }
 
 export type JourneyStatus = 'Active' | 'Paused' | 'Draft'
@@ -180,10 +186,13 @@ export const useCampaignsStore = defineStore('campaigns', () => {
   ])
 
   // ── Emails that announce a store's campaign ──────────────────────────
-  // The Vitaheal (demo) store announces its campaigns by email (store editor ›
-  // Campaigns). Those emails are kept in the browser with the rest of that store's
-  // data, so the campaign still shows its email after a reload. Nothing else here is kept.
+  // A demo store (Vitaheal (demo)) announces its campaigns by email (store editor ›
+  // Campaigns). Those emails are kept in the browser, every store's in one slot
+  // (mp.vitaheal-demo.emails.v1, as before), so the campaign still shows its email
+  // after a reload. Each email names its store, so restoring one store removes
+  // only that store's emails. Nothing else here is kept.
   const isAnnouncement = (campaign: Campaign): boolean => campaign.config?.tag === STORE_CAMPAIGN_TAG
+  const storeOf = (email: Campaign): string => email.storeChannelId ?? VITAHEAL_CHANNEL_ID
   const keptAnnouncements = demoSlot('emails', 1, browserStorage(), isCampaignList)
   campaigns.value.unshift(...(keptAnnouncements.load() ?? []))
   const setAnnouncements = (list: Campaign[]): void => {
@@ -191,10 +200,22 @@ export const useCampaignsStore = defineStore('campaigns', () => {
   }
   const keptEmails = keepInBrowser(keptAnnouncements, () => campaigns.value.filter(isAnnouncement), (fromOtherTab) => setAnnouncements(fromOtherTab ?? []))
 
-  /** Removes the demo store's announcement emails. Called by its restore (useCommerce). */
-  function restoreDemo(): void {
+  /** Marks an email as the announcement of a campaign in that store (useStoreCampaigns.setEmailCampaign). */
+  function markAnnouncement(emailId: number, channelId: string): void {
+    const email = campaigns.value.find((c) => c.id === emailId)
+    if (email) email.storeChannelId = channelId
+  }
+
+  /**
+   * Removes a store's announcement emails, on its restore (src/stores/useDemoStores.ts).
+   * Applying a theme keeps them. Other stores' emails stay.
+   */
+  function restoreDemoHistory(channelId: string): void {
+    const others = campaigns.value.filter((c) => isAnnouncement(c) && storeOf(c) !== channelId)
+    setAnnouncements(others)
+    // What is left is saved as a change; with nothing left the slot goes, as it always has.
+    if (others.length > 0) return
     keptAnnouncements.clear()
-    setAnnouncements([])
     keptEmails.adopt()
   }
 
@@ -370,7 +391,7 @@ export const useCampaignsStore = defineStore('campaigns', () => {
   }
 
   return {
-    campaigns, createCampaign, updateCampaignDraft, getCampaign, moveToFolder, duplicateCampaign, deleteCampaigns, reassignFolder, restoreDemo,
+    campaigns, createCampaign, updateCampaignDraft, getCampaign, moveToFolder, duplicateCampaign, deleteCampaigns, reassignFolder, markAnnouncement, restoreDemoHistory,
     journeys, journeyFlows, getFlow, createJourney, setJourneyStatus,
     saveJourneyFlow, duplicateJourney, deleteJourney,
   }
