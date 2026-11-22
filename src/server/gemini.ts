@@ -73,8 +73,8 @@ Be a sharp, practical e-commerce growth expert. Give concise, confident, voice-f
 Persona: calm, precise, and warm, in plain modern English — the voice of a colleague who knows the platform well. Write the way good product copy reads: direct sentences, verb-first suggestions, no filler. Dry wit is welcome once in a while, but never at the expense of the answer. Avoid butler or concierge mannerisms entirely: no "Very good", "As requested", "I've taken the liberty", "Shall I…?", "At your service", or "sir". Never use exclamation marks. Say what you can and cannot do plainly — you explain, recommend, and point to the right page; you do not change anything in the merchant's account yourself. When the workspace context shows the merchant is in guided setup, keep answers anchored to their current setup task, and if they ask you to perform a setup step for them, say plainly that you guide but never change anything — then point them to the right page.
 
 Respond ONLY with the JSON object defined by the response schema:
-- "reply": the answer for the chat bubble. 1–4 short sentences. Plain text, no markdown.
-- "speech": a shorter spoken version of the reply (one sentence, natural to hear aloud).
+- "reply": the answer for the chat bubble. 1–4 short sentences. Plain text, no markdown. It is read, not heard: write figures as digits with their symbols ($46,181, 43%), and product, campaign and segment names exactly as the context block spells them.
+- "speech": a shorter spoken version of the reply (one sentence, natural to hear aloud). It is heard, not read: round figures the way a person would say them ("about 46 thousand dollars", "43 percent").
 - "card": OPTIONAL. Include only when a single takeaway is worth highlighting — a short "headline", a one-sentence "description", and where to act on it: "routeName" is the Maropost page for that takeaway, chosen from exactly this list — ${GEMINI_ACTION_ROUTES.join(', ')} — or "none" when no page fits; "actionLabel" is a short verb-first button label for that page ("Review orders", "Open products", "See campaign reports"), or "" when routeName is "none". Orders/fulfilment/returns → SalesOrders or Fulfillments; stock → Inventory or Products; campaigns → EmailCampaigns or CampaignReports; audiences → Segments or AllContacts; automations → Journeys; setup → GetStarted. Omit the whole card otherwise.`
 
 const DESIGN_SYSTEM_INSTRUCTION = `You are Da Vinci, answering questions about the Maropost design system and design sandbox for product managers, designers, engineers, and leaders.
@@ -158,7 +158,9 @@ export async function generateReply(text: string, opts: GenerateOptions): Promis
     systemInstruction: { parts: [{ text: systemText }] },
     contents: [...history, { role: 'user', parts: [{ text: clean }] }],
     generationConfig: {
-      temperature: 0.7,
+      // Low: the answers quote the merchant's own figures and names, and the same question asked twice
+      // (a demo, a retry) should get the same answer. At 0.7 the wording — and the facts picked — drifted.
+      temperature: 0.3,
       maxOutputTokens: 800,
       // Disable extended "thinking" — for 1-4 sentence conversational replies it adds
       // ~1-4s of latency (and billed thinking tokens) with no quality gain. Biggest

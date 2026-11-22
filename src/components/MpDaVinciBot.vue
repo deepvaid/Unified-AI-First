@@ -967,6 +967,12 @@ function newChat() {
   stopGeneration()
   stopVoiceActivity()
   catalog.exit('user')
+  // A campaign brief that began in passing ("run a campaign") ends with its thread — it used to stay
+  // engaged and take the first message of the new chat as its answer. Guided onboarding is kept.
+  const accountId = targetAccountId.value
+  if (accountId && copilot.activeOnboardingAccountId !== accountId && onboarding.isEngagedFor(accountId)) {
+    onboarding.reset(accountId)
+  }
   copilot.resetConversation()
   inputText.value = ''
   historyOpen.value = false

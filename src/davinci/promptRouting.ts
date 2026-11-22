@@ -120,6 +120,8 @@ function isRevenueStatus(t: string): boolean {
 
 const SEGMENT_NOUN = /\b(?:segments?|audiences?|cohorts?|group of)\b|\b(?:vip|loyal|best|top) (?:customers?|buyers?|shoppers?|subscribers?)\b/
 const SEGMENT_VERB = /\b(?:build|create|make|set ?up|define|save|start|draft|generate|want|need|find|list|show)\b/
+/** A making verb with a segment as its object, close by — "create a segment of…", "build an audience for…". */
+const SEGMENT_MAKE = /\b(?:build|create|make|set ?up|define|save|draft|generate)\b[^.]{0,30}\b(?:segments?|audiences?|cohorts?)\b/
 const isSegmentCreate = (t: string): boolean => SEGMENT_NOUN.test(t) && SEGMENT_VERB.test(t) && !isQuestion(t)
 
 export function classifyIntent(text: string): DvIntentKind {
@@ -143,7 +145,9 @@ export function classifyIntent(text: string): DvIntentKind {
 
   // Goal language without the word "journey" ("win back customers who haven't bought in 90
   // days") — after the campaign check so "run a campaign to lapsed buyers" stays a campaign.
-  if (asksToCreate && JOURNEY_GOAL.test(t)) return 'journey'
+  // A request that names the thing to make as a segment is a segment, whatever goal it describes:
+  // "Build a segment of lapsed customers" used to come back as a win-back journey.
+  if (asksToCreate && JOURNEY_GOAL.test(t) && !SEGMENT_MAKE.test(t)) return 'journey'
 
   if (ENGINE.test(t)) return 'engine'
   if (!isReviewQuestion && !howTo && !asksForAnswer && PRODUCT.test(t) && !NOT_PRODUCT_COPY.test(t)) return 'product'

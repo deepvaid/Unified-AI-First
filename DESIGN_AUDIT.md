@@ -2969,3 +2969,82 @@ Components and tokens (the app looks the same unless stated):
   (`overlayDocs()`); the Controls panel on the Canvas tab does.
 - The Figma ledger in `docs/design-system/figma/` still lists the app bar token as 60 and
   `MpIllustration` / `MpUsageMeter` with their old props.
+
+## Da Vinci demo readiness — 2026-11-23
+
+A QA pass on the Da Vinci voice workspace and copilot ahead of a prospect demo, on
+`fix/davinci-demo-readiness`. Two parts.
+
+### 1. The September fix set, brought up to master
+
+`claude/davinci-flow-ui-bugs-3ef6c2` (the "Da Vinci flow + graph generation — 2026-09-29" entry above,
+PR 2) was never merged, so master still had what it fixed: the voice workspace sent Gemini no store
+data (it invented products and campaigns), an open clarification swallowed the next question, chips
+routed to the wrong lane, history did not restore, draft previews were sample art. Master is merged
+into it here. Merge decisions:
+
+- `MpDaVinciBot.vue`: the September reply path (`useDaVinciResponder`: flows → plan → reply, queued
+  turns, thread epochs) with the Catalog Co-Pilot lane from master inside `runGeneration`. A live
+  catalog context makes the guided flows stand aside; a reply that answers an open clarification never
+  opens the catalog. Composer pills are the derived follow-ups (none under a catalog reply).
+- `component.preview`: master removed `preview.viewport.mobile`; the group now holds only
+  `widgetHeight.{sm,md,lg}` (the live draft preview frames). **Token change:** `component.preview.viewport.mobile` is gone.
+- `ChatComponent.type` no longer has `'insight'` (insights are cards inside `intentCards`); the three
+  catalog types are added.
+- `useWidgetData`: the September ticket fixes (real per-day volume, real channel tally) on master's `visibleTickets`.
+- Stories: master's conventions (`overlayDocs`, `isolateStorage`, scenario names, no re-render shells)
+  on the September component APIs. `DvRefineDialog`: `SingleView`, `TableDraft`, `DashboardFull`;
+  `DvExpandDialog`: `KpiDraft`, `AlreadyAdded`; `MpDaVinciBot`: `AdvisorBusy` kept.
+
+### 2. Fixes found in this pass
+
+- **Segments answer the request** (`src/davinci/segmentRequest.ts`). "Customers who haven't purchased
+  in 90 days" returned a canned "High-intent shoppers" card. A request now maps to the segment it
+  describes (lapsed, inactive, cart, new, repeat, VIP, high-value, engaged) with its window; a segment
+  the account already has is shown with its real count instead of drafted again; a new window is
+  estimated from its nearest relative. `segmentVariants` in `dvIntentData.ts` is no longer read at runtime.
+- **Campaigns keep the occasion** (`src/davinci/campaignBrief.ts`). "Draft a Black Friday campaign for
+  my VIPs" was asked for its goal, then drafted as "First campaign — Special offer". A request that
+  names its goal and audience goes straight to the readiness card; the draft is "Black Friday — Special
+  offer". "First campaign" naming and the `Onboarding` tag are only for an account that has not sent one.
+  `CampaignBrief.topic` is new. Fixed on the way: "Share a newsletter" was filed as an announcement
+  (`new` matched `newsletter`).
+- **Campaign wizard lets go.** A finished draft no longer answers the next message with "Campaign setup
+  is paused"; a request for a segment, journey or engine mid-wizard pauses it instead of becoming its
+  goal; New chat ends a brief that began in passing (the voice workspace used to show the first-campaign
+  welcome screen).
+- **Product descriptions use the catalogue** (`src/davinci/productMatch.ts`). The voice workspace
+  alternated two invented products. It now drafts for the catalogue product named, for whatever was
+  described, or for the best seller; "Open product editor" opens that product. `DvContentCard` gains
+  `productId?`.
+- **One product mix** (`src/stores/dashboards/productMix.ts`): the dashboard's "Sales by product name"
+  widget and the store snapshot Da Vinci answers from read the same list, so "top sellers" agree to the dollar.
+- **Router:** an explicit request to make a segment is a segment whatever goal it describes ("Build a
+  segment of lapsed customers" was a win-back journey). 63,525 generated prompts compared old vs new:
+  3,150 changed, all `journey → segment` with a segment as the verb's object.
+- **Voice workspace (`DaVinciExperience.vue`):**
+  - Typing over a spoken reply interrupts it. Send was disabled until Da Vinci finished talking.
+  - Starter prompts ("Try saying") show until the conversation begins, mic live or not. They appeared only while the text field had focus.
+  - The spoken line is a sentence-case caption on a surface wash, and the greeting is captioned. It was spaced-out capitals, unreadable across the orb's ring.
+  - The "Da Vinci" label above each reply was invisible in both themes: it used `--dv-muted`, a surface colour, as text. Now `--dv-text-secondary`.
+  - A blocked mic always says so under the mic (the first auto-listen failed silently); an unclassified recognition error says the mic stopped.
+  - A thread carried over from the drawer no longer keeps the mic closed after the greeting.
+  - "Thanks, that's all" / "Goodbye" ends a hands-free session with a short reply (`isSignOff` in `phrases.ts`).
+  - Esc in the message box clears it, then blurs; it no longer leaves the page.
+  - A new message scrolls to its start, not its end, so a tall reply shows its own sentence.
+- **Speech stream** (`useDaVinciVoice.ts`): a streamed reply that goes quiet for 8s after it has started
+  ends there instead of hanging the hands-free loop; Interrupt and End abort a reply that is still arriving.
+- **Advisor:** temperature 0.7 → 0.3 (the same question gets the same answer); the written reply uses
+  digits and symbols, the spoken one rounds for the ear.
+- Tab title: "Da vinci experience" → "Da Vinci experience" (`titleFromRouteName`).
+
+### Not done (needs a decision)
+
+- **Cached voice lines.** `public/davinci/lines/` holds 22 lines; none but the greeting is spoken any
+  more, so every reply streams (about 1.5–2.5s to first audio). Re-baking the lines the app now says
+  (campaign wizard, goodbye, offline) needs a run of `scripts/bake-lines.mjs` against the paid TTS key,
+  after `listCannedSpeech()` is updated.
+- The live draft preview's x-axis labels overlap in the 400px drawer for a by-category column chart.
+- Follow-up chips under an advisor answer are the same four every time.
+- On a 13-inch laptop the thread shows about 370px; a smaller mic while a conversation is open would give it more.
+- A real-microphone pass on the fixed build (the test browser cannot grant the mic).

@@ -13,7 +13,10 @@ import {
 } from '@/stores/useDaVinciOnboarding'
 import type { CampaignOnboardingProps } from '@/stores/useCopilot'
 import { trackDaVinciOnboardingEvent } from '@/composables/useDaVinciOnboardingAnalytics'
+import { campaignCopy, objectiveKey, OBJECTIVE_LABELS, readCampaignRequest } from '@/davinci/campaignBrief'
 import { isFlowExit } from '@/davinci/phrases'
+import { classifyIntent } from '@/davinci/promptRouting'
+import { usePlgStore } from '@/stores/usePlg'
 import type {
   DvCardDescriptor,
   DvIntentKind,
@@ -39,43 +42,6 @@ export const CAMPAIGN_OBJECTIVES: DvQuickReply[] = [
 const SKIP_REPLY: DvQuickReply = { label: 'Skip for now', value: 'Skip for now', icon: 'redo-2' }
 const CONTINUE_REPLY: DvQuickReply = { label: 'Continue campaign', value: 'Continue campaign', icon: 'play' }
 
-const OBJECTIVE_COPY = {
-  generic: {
-    name: 'First campaign',
-    subject: 'Your first campaign',
-    preheader: 'Draft created with Da Vinci — you control content, timing, and send.',
-  },
-  promotion: {
-    name: 'First campaign — Special offer',
-    subject: 'A special offer, picked for you',
-    preheader: 'A timely offer for our subscribers.',
-  },
-  announcement: {
-    name: 'First campaign — New announcement',
-    subject: 'Something new is here',
-    preheader: 'Be among the first to see what is new.',
-  },
-  reconnect: {
-    name: 'First campaign — We miss you',
-    subject: 'It’s been a while — here’s what’s new',
-    preheader: 'A personal reason to come back and take another look.',
-  },
-  newsletter: {
-    name: 'First campaign — Newsletter',
-    subject: 'Your latest update',
-    preheader: 'News, ideas, and updates selected for you.',
-  },
-}
-
-function objectiveKey(text: string): keyof typeof OBJECTIVE_COPY {
-  const normalized = text.toLowerCase().trim()
-  if (!normalized) return 'generic'
-  if (/announce|launch|new/.test(normalized)) return 'announcement'
-  if (/reconnect|win.?back|lapsed|miss/.test(normalized)) return 'reconnect'
-  if (/newsletter|update|digest/.test(normalized)) return 'newsletter'
-  return 'promotion'
-}
-
 /**
  * True when mid-setup text is a question or clearly about something other than
  * this campaign — the wizard pauses and lets the normal assistant answer, rather
@@ -86,7 +52,13 @@ function isOffTopic(text: string): boolean {
   if (/\b(recheck|check again|change|different|restart|brief|use)\b/i.test(text)) return false
   if (/\?\s*$/.test(text)) return true
   if (/^(what|how|why|when|where|who|which|can|could|do|does|is|are|show|tell)\b/i.test(text)) return true
-  return /\b(revenue|sales|ticket|widget|dashboard|order|product description|report)\b/i.test(text)
+  if (/\b(revenue|sales|ticket|widget|dashboard|order|product description|report)\b/i.test(text)) return true
+  // Another job entirely ("Build a VIP segment", "Create a welcome journey") is not this campaign's goal —
+  // it used to be recorded as one ("Got it — the goal is “Build a VIP segment”"). Goal language alone
+  // ("win back lapsed customers") stays on-topic: it is a fair objective for a campaign.
+  const intent = classifyIntent(text)
+  if (intent === 'segment' || intent === 'engine') return true
+  return intent === 'journey' && /\b(?:journey|automation|drip|flow|series|sequence)\b/i.test(text)
 }
 
 export function useDaVinciCampaignOnboarding() {
@@ -96,6 +68,7 @@ export function useDaVinciCampaignOnboarding() {
   const cdp = useCdpEntitiesStore()
   const contacts = useContactsStore()
   const content = useContentStore()
+  const plg = usePlgStore()
 
   const session = computed(() => onboarding.activeSession)
 
@@ -195,6 +168,11 @@ export function useDaVinciCampaignOnboarding() {
     onboarding.setInputMode(inputMode)
     onboarding.setStage('objective')
     onboarding.setAudienceHint(options.audienceHint ?? null)
+    // What the request already says. "Draft a Black Friday campaign for my VIPs" names the occasion, the
+    // goal and the audience — asking "what should this campaign achieve?" next ignored all three.
+    const request = readCampaignRequest(options.audienceHint ?? '')
+    onboarding.setTopic(request.topic)
+    if (request.objective) return audiencePrompt(OBJECTIVE_LABELS[request.objective])
     const named = options.audienceHint ? findAudience(options.audienceHint) : null
     return {
       intent: 'campaign',
@@ -215,6 +193,14 @@ export function useDaVinciCampaignOnboarding() {
     return known ? `to ${objective.toLowerCase()}` : `“${objective}”`
   }
 
+  /** What was understood, said back: "a Black Friday campaign to promote an offer", "a campaign with the goal “…”". */
+  function briefPhrase(objective: string): string {
+    const topic = session.value?.brief.topic
+    const subject = topic ? `${/^[aeiou]/i.test(topic) ? 'an' : 'a'} ${topic} campaign` : 'a campaign'
+    const known = CAMPAIGN_OBJECTIVES.some((reply) => reply.value.toLowerCase() === objective.toLowerCase())
+    return known ? `${subject} to ${objective.toLowerCase()}` : `${subject} with the goal ${goalPhrase(objective)}`
+  }
+
   function audiencePrompt(objective: string): CampaignOnboardingResponse {
     onboarding.setObjective(objective)
 
@@ -223,12 +209,14 @@ export function useDaVinciCampaignOnboarding() {
     const named = hint ? findAudience(hint) : null
     if (named) {
       onboarding.setAudienceHint(null)
-      return readinessResponse(named)
+      const response = readinessResponse(named)
+      // Say back what was understood, so the readiness check doesn't arrive out of nowhere.
+      return { ...response, reply: `Got it — ${briefPhrase(objective)}, for ${named.name}. ${response.reply}` }
     }
 
     return {
       intent: 'campaign',
-      reply: `Got it — the goal is ${goalPhrase(objective)}. Who should receive it? I’ll use a real audience from this account.`,
+      reply: `Got it — ${briefPhrase(objective)}. Who should receive it? I’ll use a real audience from this account.`,
       speech: 'Who should receive it?',
       quickReplies: [...audienceReplies(), SKIP_REPLY],
     }
@@ -239,6 +227,11 @@ export function useDaVinciCampaignOnboarding() {
     const items = readinessItems()
     onboarding.setReadiness(items)
     return readinessCardResponse(items)
+  }
+
+  /** Only an account that has never sent a campaign (guided onboarding) is told it is writing its first. */
+  function isFirstCampaign(): boolean {
+    return !!session.value?.freshAccount || (plg.hasExplicitState && setupGuide.completed['first-campaign'] !== true)
   }
 
   function readinessCardResponse(items: CampaignReadinessItem[]): CampaignOnboardingResponse {
@@ -279,14 +272,15 @@ export function useDaVinciCampaignOnboarding() {
     const selectedList = audience.kind === 'list'
       ? cdp.lists.find((list) => list.id === audience.id)
       : cdp.lists[0]
-    const copy = OBJECTIVE_COPY[objectiveKey(active.brief.objective)]
+    const first = isFirstCampaign()
+    const copy = campaignCopy(objectiveKey(active.brief.objective), active.brief.topic ?? null, first)
 
     return {
       kind: 'email',
       name: copy.name,
       subject: copy.subject,
       preheader: copy.preheader,
-      tag: 'Onboarding',
+      tag: first ? 'Onboarding' : '',
       audienceSummary: audience.kind === 'list' ? '1 list' : '1 segment',
       audienceListIds: audience.kind === 'list' ? [audience.id] : [],
       audienceSegmentIds: audience.kind === 'segment' ? [audience.id] : [],
@@ -342,8 +336,8 @@ export function useDaVinciCampaignOnboarding() {
     const card: DvCardDescriptor = {
       type: 'campaign',
       props: {
-        name: campaign?.name ?? 'First campaign',
-        subject: campaign?.config?.subject ?? 'Your first campaign',
+        name: campaign?.name ?? 'New campaign',
+        subject: campaign?.config?.subject ?? '',
         audience: active.brief.audience.name,
         audienceSize: active.brief.audience.count,
         sendTime: 'Not scheduled',
@@ -449,6 +443,10 @@ export function useDaVinciCampaignOnboarding() {
     const trimmed = text.trim()
     if (!trimmed) return null
 
+    // The draft exists: the brief has nothing left to ask, so it claims nothing and pauses nothing. The next
+    // message ("How's revenue this week?") used to be met with "Campaign setup is paused" first.
+    if (active.stage === 'draft' || active.stage === 'handoff') return null
+
     // Paused: only an explicit "continue campaign" re-enters the wizard.
     if (active.paused) {
       if (/\b(continue|resume)\b.*\bcampaign|\bcampaign\b.*\b(continue|resume)\b/i.test(trimmed)) {
@@ -527,8 +525,8 @@ export function useDaVinciCampaignOnboarding() {
     if (active.stage === 'objective') {
       return {
         intent: 'campaign',
-        reply: 'Welcome back. What should your first campaign achieve?',
-        speech: 'Welcome back. What should your first campaign achieve?',
+        reply: 'Welcome back. What should this campaign achieve?',
+        speech: 'Welcome back. What should this campaign achieve?',
         quickReplies: [...CAMPAIGN_OBJECTIVES, SKIP_REPLY],
       }
     }

@@ -39,6 +39,25 @@ export function isDecline(text: string): boolean {
   return parts.length > 0 && parts.every((part) => DECLINE_REST.test(part))
 }
 
+// Dictation drops commas, so the small words around a goodbye are allowed inside one clause ("okay thanks that's all for now").
+const SIGN_OFF_LEAD = '(?:(?:ok(?:ay)?|alright|all right|great|perfect|thanks?(?: you)?|thank you|cheers)\\s+)*'
+const SIGN_OFF_TAIL = '(?:\\s+(?:thanks?(?: you)?|thank you|for now|for today|da ?vinci))*'
+const THANKS = new RegExp(`^${SIGN_OFF_LEAD}(?:ok(?:ay)?|great|perfect|thanks?(?: you)?|thank you|cheers)(?:\\s+(?:a lot|so much|very much))?(?:\\s+da ?vinci)?$`)
+const SIGN_OFF = new RegExp(
+  `^${SIGN_OFF_LEAD}(?:(?:that'?s|that is|that will be|that'll be) (?:all|it|everything)|good ?bye|bye(?: bye)?|see you(?: later)?|talk (?:to you )?later|i'?m (?:done|finished)|we'?re (?:done|finished)|stop listening|end (?:the )?(?:conversation|session|call))${SIGN_OFF_TAIL}$`,
+)
+
+/**
+ * The spoken close of a hands-free session ("Thanks, that's all", "Goodbye Da Vinci"). Every clause is a
+ * thank-you or a goodbye and at least one is a goodbye — "thanks" alone keeps the mic open, and "that's all
+ * the revenue?" is a question, not a goodbye.
+ */
+export function isSignOff(text: string): boolean {
+  if (/\?\s*$/.test(text.trim())) return false
+  const parts = clauses(text)
+  return parts.some((part) => SIGN_OFF.test(part)) && parts.every((part) => SIGN_OFF.test(part) || THANKS.test(part))
+}
+
 const AFFIRM =
   /^(?:yes|yeah|yep|yup|sure|ok(?:ay)?|go(?: ahead)?|do it|let'?s go|sounds good|open(?: it| that| the (?:journey )?wizard)?(?: in the wizard)?)$/
 

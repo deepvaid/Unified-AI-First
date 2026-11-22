@@ -274,3 +274,21 @@ test('a quoted name is ignored only where a cue says it is a name', () => {
   // …but a quote that is the thing to send stays part of the request.
   assert.deepEqual(lane('Send "Summer Newsletter" to VIP customers'), { lane: 'intent', intent: 'campaign' })
 })
+
+test('a request to make a segment is a segment, whatever goal it describes', () => {
+  // The segment is the thing asked for — these used to come back as a win-back journey.
+  for (const prompt of [
+    'Build a segment of lapsed customers',
+    'Create an audience of dormant subscribers',
+    'Make a segment of customers who stopped buying',
+    'Create a segment for cart abandoners to re-engage',
+  ]) assert.equal(classifyIntent(prompt), 'segment', prompt)
+  // Goal language with no segment asked for is still a journey…
+  for (const prompt of [
+    "Win back customers who haven't bought in 90 days",
+    'Re-engage my dormant audience',
+    'Recover abandoned carts',
+  ]) assert.equal(classifyIntent(prompt), 'journey', prompt)
+  // …and so is a journey that merely targets a segment.
+  assert.equal(classifyIntent('Create a win-back journey for my lapsed segment'), 'journey')
+})

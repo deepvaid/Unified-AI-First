@@ -15,8 +15,9 @@ import DvToastStack from '@/components/copilot/DvToastStack.vue'
 import DvToolSteps from '@/components/copilot/DvToolSteps.vue'
 import DvWidgetDraftCard from '@/components/copilot/DvWidgetDraftCard.vue'
 import { useDaVinciVoice, VoiceError } from '@/composables/useDaVinciVoice'
-import type { DvCardDescriptor, DvIntentResult } from '@/composables/useDaVinciIntents'
+import type { DvCardDescriptor, DvIntentResult, DvQuickReply } from '@/composables/useDaVinciIntents'
 import { geminiHistory, makeId } from '@/davinci/conversation'
+import { isSignOff } from '@/davinci/phrases'
 import { useDaVinciResponder, type DvAssistantTurn, type DvFlowResponse } from '@/composables/useDaVinciResponder'
 import {
   useDaVinciCampaignOnboarding,
@@ -64,8 +65,15 @@ const accountId = computed(() => {
 })
 
 const inputText = ref('')
-// Starter chips reveal only while the text field is focused (see template).
-const inputFocused = ref(false)
+// What to say first — one prompt per thing Da Vinci does well aloud. Shown until the conversation begins,
+// mic live or not: an empty orb gave a first-time visitor (and a presenter) nothing to go on. They used to
+// appear only while the text field had focus.
+const STARTERS: DvQuickReply[] = [
+  { label: 'How’s revenue this week?', value: "How's revenue this week?", icon: 'trending-up' },
+  { label: 'What needs my attention today?', value: 'What needs my attention today?', icon: 'list-checks' },
+  { label: 'Draft a flash sale campaign for my VIPs', value: 'Draft a flash sale campaign for my VIP customers', icon: 'megaphone' },
+  { label: 'Win back customers who haven’t bought in 90 days', value: "Win back customers who haven't bought in 90 days", icon: 'user-round-check' },
+]
 const captionText = ref('')
 const voiceRecoveryMessage = ref('')
 const threadEl = ref<HTMLElement | null>(null)
@@ -168,9 +176,22 @@ const stageHint = computed(() => {
   return voice.sttSupported ? 'Tap to talk' : 'Type below to begin'
 })
 
+/**
+ * Brings the newest message into view from its START. Scrolling to the very bottom hid a reply's own
+ * sentence above a tall card (a revenue reply showed the chart's lower half and nothing else on a laptop
+ * screen). A short message still ends up at the bottom — the browser clamps the offset.
+ */
 function scrollThread() {
   nextTick(() => {
-    threadEl.value?.scrollTo({ top: threadEl.value.scrollHeight, behavior: 'smooth' })
+    const thread = threadEl.value
+    if (!thread) return
+    const target = thread.querySelector<HTMLElement>('.dvx__turn:last-child')
+    // Keep the thread's own top inset above the turn, so its label isn't flush against the edge.
+    const inset = parseFloat(getComputedStyle(thread).paddingTop) || 0
+    const top = target
+      ? target.getBoundingClientRect().top - thread.getBoundingClientRect().top + thread.scrollTop - inset
+      : thread.scrollHeight
+    thread.scrollTo({ top, behavior: 'smooth' })
   })
 }
 
@@ -300,7 +321,11 @@ function sendText(raw: string) {
       if (liveActive.value) void armListening()
     })()
   } else {
-    if (busy.value) return
+    // One reply at a time: while an answer is still being worked out, the composer keeps what was typed.
+    if (voice.state.value === 'thinking') return
+    // Typing over a spoken reply (or the greeting) interrupts it, as the live session does — Send used to
+    // be disabled until Da Vinci had finished talking, with nothing to say why.
+    voice.cancelSpeech()
     void respond(text)
   }
 }
@@ -373,28 +398,30 @@ async function enableVoiceOnboarding() {
   void armListening()
 }
 
-// Hide the starter chips on blur, but after a beat so a chip tap still registers.
-function onInputBlur() {
-  setTimeout(() => {
-    inputFocused.value = false
-  }, 150)
-}
-
-function reportVoiceError(err: unknown) {
+/**
+ * Says why the mic stopped. The line under the mic always appears — a session that ended without a word
+ * left the presenter looking at "Tap to talk" with no idea the mic was blocked. `quiet` drops only the toast.
+ */
+function reportVoiceError(err: unknown, { quiet = false } = {}) {
   if (!(err instanceof VoiceError)) return
+  const toast = (input: Parameters<typeof pushToast>[0]) => {
+    if (!quiet) pushToast(input)
+  }
   if (err.code === 'permission') {
     trackDaVinciOnboardingEvent('microphone_permission', accountId.value, { outcome: 'denied' })
     trackDaVinciOnboardingEvent('voice_recovery', accountId.value, { reason: 'permission' })
     voiceRecoveryMessage.value = 'Microphone access is blocked. Allow it in browser settings, or continue by typing.'
-    pushToast({ tone: 'warning', title: 'Microphone blocked', sub: 'Allow microphone access in your browser settings' })
+    toast({ tone: 'warning', title: 'Microphone blocked', sub: 'Allow microphone access in your browser settings' })
   } else if (err.code === 'network') {
     trackDaVinciOnboardingEvent('voice_recovery', accountId.value, { reason: 'network' })
     voiceRecoveryMessage.value = 'Voice is unavailable right now. Check your connection, or continue by typing.'
-    pushToast({ tone: 'warning', title: 'Voice service unavailable', sub: 'Check your connection — you can type instead' })
+    toast({ tone: 'warning', title: 'Voice service unavailable', sub: 'Check your connection — you can type instead' })
   } else if (err.code === 'audio') {
     trackDaVinciOnboardingEvent('voice_recovery', accountId.value, { reason: 'no-microphone' })
     voiceRecoveryMessage.value = 'No microphone was found. Connect one, or continue by typing.'
-    pushToast({ tone: 'warning', title: 'No microphone found' })
+    toast({ tone: 'warning', title: 'No microphone found' })
+  } else if (err.code === 'unknown') {
+    voiceRecoveryMessage.value = 'Voice input stopped. Tap the mic to try again, or continue by typing.'
   }
 }
 
@@ -413,7 +440,7 @@ async function armListening(silent = false) {
     }
   } catch (err) {
     if (disposed) return
-    if (!silent) reportVoiceError(err)
+    reportVoiceError(err, { quiet: silent })
     endLive()
     return
   }
@@ -424,8 +451,22 @@ async function armListening(silent = false) {
     void armListening()
     return
   }
+  if (isSignOff(text)) {
+    await signOff(text)
+    return
+  }
   await respond(text, { awaitSpeech: true })
   if (!disposed && myToken === loopToken && liveActive.value) void armListening()
+}
+
+/** "Thanks, that's all" ends a hands-free session the way it ends a call: a short goodbye, then the mic closes. */
+async function signOff(text: string) {
+  const reply = 'Anytime. I’m here when you need me.'
+  messages.value.push({ id: makeId('u'), role: 'user', text })
+  appendAssistantResponse({ intent: 'fallback', reply, speech: reply, cards: [] })
+  captionText.value = reply
+  await voice.speak(reply)
+  if (!disposed) endLive()
 }
 
 /** Tap to begin a hands-free conversation. */
@@ -456,7 +497,10 @@ function onLiveControl() {
 /** After the greeting finishes speaking, drop into the hands-free listen loop. */
 function listenAfterGreeting() {
   if (disposed) return
-  if (voice.sttSupported && !liveActive.value && messages.value.length === 0) {
+  // A thread carried over from the drawer no longer keeps the mic closed: whoever opens the voice
+  // workspace and is greeted expects to be listened to. (A greeting that is interrupted — by a typed
+  // message, say — never reaches here: `speak` only reports the end of speech that finished.)
+  if (voice.sttSupported && !liveActive.value) {
     liveActive.value = true
     void armListening(true) // silent: no toast if the mic arm is blocked
   }
@@ -483,6 +527,7 @@ async function autoGreet() {
   voice.speak(greetingText.value, {
     onAudible: () => {
       becameAudible = true
+      captionText.value = greetingText.value // the words on screen too — a room may not hear them
     },
     onend: () => {
       if (becameAudible) listenAfterGreeting() // only auto-listen if the greeting truly played
@@ -601,6 +646,7 @@ async function startGreeting() {
   if (disposed) return
   await voice.playChime('open') // comm channel connects
   if (disposed) return
+  captionText.value = greetingText.value // the words on screen too — a room may not hear them
   void voice.speak(greetingText.value, { onend: listenAfterGreeting })
 }
 
@@ -747,8 +793,13 @@ function newChat() {
     copilot.beginOnboarding(accountId.value)
   } else if (campaignEntry.value) {
     onboarding.reset(accountId.value)
-    onboarding.begin(accountId.value, { restart: true })
-    copilot.beginOnboarding(accountId.value)
+    // Only the guided first-campaign arrival starts over at its welcome screen. A brief that began with
+    // "run a campaign" in an ordinary conversation simply ends with the thread — New chat used to answer
+    // it with the "Turn your first idea into an editable email campaign" welcome.
+    if (route.query.onboarding === 'campaign' || copilot.activeOnboardingAccountId === accountId.value) {
+      onboarding.begin(accountId.value, { restart: true })
+      copilot.beginOnboarding(accountId.value)
+    }
   }
   inputText.value = ''
   captionText.value = ''
@@ -769,6 +820,14 @@ function onKeydown(e: KeyboardEvent) {
   // A Refine / Expand dialog or a menu is open: Esc belongs to it. Vuetify closes overlays from a
   // window listener that runs after this document one, so without this check Esc left the page first.
   if (document.querySelector('.v-dialog.v-overlay--active, .v-menu.v-overlay--active')) return
+  // In the message box, Esc clears what was typed, then lets go of the field — it must not leave the page
+  // mid-sentence.
+  const field = (e.target as HTMLElement | null)?.closest<HTMLInputElement>('.dvx__input')
+  if (field) {
+    if (inputText.value) inputText.value = ''
+    else field.blur()
+    return
+  }
   exitExperience()
 }
 
@@ -1081,7 +1140,13 @@ onBeforeUnmount(() => {
             Voice input needs Chrome or Edge — you can type below
           </v-tooltip>
         </button>
-        <p class="dvx__hint" :class="{ 'dvx__hint--live': liveActive && voice.state.value === 'listening' }">
+        <p
+          class="dvx__hint"
+          :class="{
+            'dvx__hint--live': liveActive && voice.state.value === 'listening',
+            'dvx__hint--caption': voice.state.value === 'speaking' && !!captionText,
+          }"
+        >
           {{ stageHint }}
         </p>
         <p v-if="voiceRecoveryMessage" class="text-caption text-error mb-0" role="alert">
@@ -1108,32 +1173,34 @@ onBeforeUnmount(() => {
             placeholder="Message Da Vinci…"
             aria-label="Message Da Vinci"
             class="dvx__input"
-            @focus="inputFocused = true"
-            @blur="onInputBlur"
           />
           <button
             type="submit"
             class="dvx__iconbtn dvx__iconbtn--send"
             aria-label="Send"
-            :disabled="!inputText.trim() || (!liveActive && busy)"
+            :disabled="!inputText.trim() || (!liveActive && voice.state.value === 'thinking')"
           >
             <v-icon size="18">arrow-up</v-icon>
             <v-tooltip activator="parent" location="top">Send</v-tooltip>
           </button>
         </form>
 
-        <!-- Starter suggestion chips — revealed only while the text field is focused -->
-        <div v-if="inputFocused && !hasThread && !liveActive" class="dvx__chips">
-          <button
-            v-for="chip in intents.suggestionChips"
-            :key="chip.value"
-            type="button"
-            class="dvx__chip"
-            @click="onQuickReply(chip.value)"
-          >
-            <v-icon v-if="chip.icon" size="16">{{ chip.icon }}</v-icon>
-            {{ chip.label }}
-          </button>
+        <!-- Starting points, until the conversation begins — also while the mic is live, which is when
+             someone new to Da Vinci needs to know what they can say. -->
+        <div v-if="!hasThread" class="dvx__starters">
+          <span class="dvx__starters-label">{{ voice.sttSupported ? 'Try saying' : 'Try asking' }}</span>
+          <div class="dvx__chips">
+            <button
+              v-for="chip in STARTERS"
+              :key="chip.value"
+              type="button"
+              class="dvx__chip"
+              @click="onQuickReply(chip.value)"
+            >
+              <v-icon v-if="chip.icon" size="16">{{ chip.icon }}</v-icon>
+              {{ chip.label }}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -1299,7 +1366,9 @@ onBeforeUnmount(() => {
   font-weight: var(--mp-fontWeight-medium);
   letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: var(--dv-muted);
+  /* `--dv-muted` is a muted SURFACE (near-white in light, near-black in dark): as a text colour it made
+     the "Da Vinci" label invisible in both themes. */
+  color: var(--dv-text-secondary);
 }
 
 .dvx__turn--user .dvx__role {
@@ -1503,6 +1572,21 @@ onBeforeUnmount(() => {
   line-height: 1.5;
 }
 
+/* The spoken line, as a caption: sentence case on a soft surface wash. As spaced-out capitals it was
+   unreadable where it crossed the orb's ring. */
+.dvx__hint--caption {
+  font-family: inherit;
+  font-size: var(--mp-fontSize-14);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--dv-text-primary);
+  line-height: 1.5;
+  padding: var(--mp-space-6) var(--mp-space-12);
+  border-radius: var(--mp-radius-12);
+  background: color-mix(in srgb, rgb(var(--v-theme-surface)) 72%, transparent);
+  backdrop-filter: blur(8px);
+}
+
 /* ─── Live conversation controls ──────────────────────────────────────────── */
 .dvx__live-controls {
   display: flex;
@@ -1631,6 +1715,22 @@ onBeforeUnmount(() => {
 }
 
 /* ─── Chips / quick replies ───────────────────────────────────────────── */
+.dvx__starters {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--mp-space-10);
+}
+
+.dvx__starters-label {
+  font-family: var(--dvx-mono);
+  font-size: var(--mp-fontSize-11);
+  font-weight: var(--mp-fontWeight-medium);
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--dv-text-secondary);
+}
+
 .dvx__chips {
   display: flex;
   flex-wrap: wrap;
@@ -1673,6 +1773,16 @@ onBeforeUnmount(() => {
 
 .dvx__chip:active {
   transform: scale(0.97);
+}
+
+/* Starters sit over the orb, where its ring can cross them: a soft surface wash keeps the words readable. */
+.dvx__starters .dvx__chip {
+  background: color-mix(in srgb, rgb(var(--v-theme-surface)) 72%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+.dvx__starters .dvx__chip:hover {
+  background: color-mix(in srgb, rgb(var(--v-theme-surface)) 88%, transparent);
 }
 
 @keyframes dvx-rise {

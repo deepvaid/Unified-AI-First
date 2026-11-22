@@ -438,6 +438,8 @@ const cloudAudioCache = new Map<string, ArrayBuffer>()
 // cancelSpeech() stops them all. Gemini streaming TTS is L16 24kHz mono.
 let streamSources: AudioBufferSourceNode[] | null = null
 const CLOUD_PCM_RATE = 24000
+/** How long a streamed reply may go without a chunk, once it has started, before it is taken as over. */
+const STREAM_STALL_MS = 8000
 
 /**
  * Probe whether the browser will let us play audio right now (autoplay granted via
@@ -654,13 +656,16 @@ async function playCloudStream(text: string, token: number, opts: SpeakOptions):
     if (timedOut) return 'unavailable'
     return token !== speakToken || controller.signal.aborted ? 'cancelled' : 'unavailable'
   }
-  if (cloudAbort === controller) cloudAbort = null
+  // `cloudAbort` stays set while the body streams (cleanup clears it): Interrupt and End must be able to
+  // abort a reply that is still arriving, not only one that has not started.
   if (token !== speakToken) {
     clearTimeout(firstByteGuard)
+    if (cloudAbort === controller) cloudAbort = null
     return 'cancelled'
   }
   if (!resp.ok || !resp.body) {
     clearTimeout(firstByteGuard)
+    if (cloudAbort === controller) cloudAbort = null
     return 'unavailable' // 429/503 → browser fallback
   }
 
@@ -677,8 +682,23 @@ async function playCloudStream(text: string, token: number, opts: SpeakOptions):
   let started = false
   speakStartedAt = performance.now()
 
+  // A stream that goes quiet mid-reply used to hang the read for good — the first-byte guard is cleared by
+  // then and nothing else ended it, so the hands-free loop sat on "Starting…" until the mic was tapped.
+  // Once audio is flowing, a gap this long ends the stream: what has arrived plays out as the reply.
+  let stalled = false
+  let stallGuard: ReturnType<typeof setTimeout> | undefined
+  const armStallGuard = () => {
+    clearTimeout(stallGuard)
+    stallGuard = setTimeout(() => {
+      stalled = true
+      controller.abort()
+    }, STREAM_STALL_MS)
+  }
+
   const cleanup = () => {
     clearTimeout(firstByteGuard)
+    clearTimeout(stallGuard)
+    if (cloudAbort === controller) cloudAbort = null
     if (streamSources === sources) streamSources = null
     if (playAnalyser === an) {
       try {
@@ -722,22 +742,26 @@ async function playCloudStream(text: string, token: number, opts: SpeakOptions):
   try {
     const reader = resp.body.getReader()
     for (;;) {
+      if (started) armStallGuard()
       const { done, value } = await reader.read()
       if (token !== speakToken) throw new Error('cancelled')
       if (done) break
       if (value && value.length) scheduleChunk(value)
     }
   } catch {
-    for (const s of sources) {
-      try {
-        s.stop()
-      } catch {
-        /* already stopped */
+    // A stalled stream is not an interruption: fall through and let the audio already scheduled finish.
+    if (!stalled || token !== speakToken) {
+      for (const s of sources) {
+        try {
+          s.stop()
+        } catch {
+          /* already stopped */
+        }
       }
+      cleanup()
+      if (token !== speakToken || controller.signal.aborted) return started ? 'cancelled' : timedOut ? 'unavailable' : 'cancelled'
+      return started ? 'played' : 'unavailable'
     }
-    cleanup()
-    if (token !== speakToken || controller.signal.aborted) return started ? 'cancelled' : timedOut ? 'unavailable' : 'cancelled'
-    return started ? 'played' : 'unavailable'
   }
 
   // Let the last scheduled chunk finish before resolving (so the reply loop waits for TTS).

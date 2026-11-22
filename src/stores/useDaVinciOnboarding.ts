@@ -33,6 +33,8 @@ export interface CampaignAudienceSelection {
 export interface CampaignBrief {
   objective: string
   audience: CampaignAudienceSelection | null
+  /** The occasion the request named ("Black Friday") — leads the draft's name and subject. Optional so sessions persisted before this field read as having none. */
+  topic?: string | null
 }
 
 export interface CampaignReadinessItem {
@@ -170,6 +172,12 @@ export const useDaVinciOnboardingStore = defineStore('daVinciOnboarding', () => 
     persist(session)
   }
 
+  function setTopic(topic: string | null) {
+    const session = requireSession()
+    session.brief.topic = topic
+    persist(session)
+  }
+
   function setPaused(paused: boolean) {
     const session = requireSession()
     session.paused = paused
@@ -241,6 +249,7 @@ export const useDaVinciOnboardingStore = defineStore('daVinciOnboarding', () => 
     setInputMode,
     setObjective,
     setAudienceHint,
+    setTopic,
     setPaused,
     setAudience,
     setReadiness,

@@ -3,6 +3,8 @@ defineProps<{
   type: 'email' | 'product' | 'blog' | 'sms'
   title: string
   content: string
+  /** The catalogue product a product draft is for. The host reads it to open that product; the card shows nothing for it. */
+  productId?: number
 }>()
 
 const emit = defineEmits<{

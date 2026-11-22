@@ -4,24 +4,22 @@ import { askGeminiResult, type GeminiFailure, type GeminiTurn } from '@/services
 import { goalOptions, type JourneyGoal } from '@/composables/useJourneyGenerator'
 import { useDaVinciCampaignOnboarding } from '@/composables/useDaVinciCampaignOnboarding'
 import type { DaVinciToastInput } from '@/composables/useDaVinciToasts'
-import { useCommerceStore } from '@/stores/useCommerce'
+import { generateCreateDraft, generateEnrichDraft, type CatalogVocab } from '@/composables/useCatalogGenerator'
+import { useCommerceStore, type Product } from '@/stores/useCommerce'
 import { useContactsStore } from '@/stores/useContacts'
 import { useAccountsStore } from '@/stores/useAccounts'
-import { useCopilotStore, type AddedWidgetRef } from '@/stores/useCopilot'
+import { useCopilotStore, type AddedWidgetRef, type CampaignOnboardingProps } from '@/stores/useCopilot'
 import { isDashboardSourceAvailable } from '@/stores/dashboards/metricCatalog'
+import { productSalesMix } from '@/stores/dashboards/productMix'
 import type { DashboardMetricId, DashboardMetricUnit } from '@/stores/dashboards/types'
 import { templateById } from '@/stores/journeyFlowData'
 import { templateSetupById } from '@/stores/journeyTemplateSetup'
 import { parseLocalDateKey } from '@/utils/localDate'
 import { classifyIntent, type DvIntentKind } from '@/davinci/promptRouting'
 import { detectEngineKey, detectEnginePage, detectJourneyGoal, slotVerdict, type PendingSlot } from '@/davinci/pendingSlot'
-import {
-  fallbackSpeech,
-  productDrafts,
-  productSpeech,
-  segmentSpeech,
-  segmentVariants,
-} from './dvIntentData'
+import { displayName, matchProductName } from '@/davinci/productMatch'
+import { answerSegmentRequest } from '@/davinci/segmentRequest'
+import { fallbackSpeech, productSpeech, segmentSpeech } from './dvIntentData'
 
 // Unified Da Vinci intent layer — port of the Marojarvis prototype's regex
 // classifier + handlers (formerly https://davinci-ai-first.vercel.app), re-domained
@@ -54,7 +52,13 @@ export type DvCardDescriptor =
     }
   | {
       type: 'content'
-      props: { type: 'email' | 'product' | 'blog' | 'sms'; title: string; content: string }
+      props: {
+        type: 'email' | 'product' | 'blog' | 'sms'
+        title: string
+        content: string
+        /** The catalogue product a product draft is for — "use" opens that product rather than a new one. */
+        productId?: number
+      }
     }
   | {
       type: 'kpis'
@@ -118,6 +122,8 @@ export interface DvIntentResult {
   pending: DvPending | null
   /** Named tool steps behind this reply (DvToolSteps disclosure); omit for plain conversation. */
   steps?: string[]
+  /** The campaign wizard's readiness card, when a request said enough to go straight to it. */
+  onboardingCard?: CampaignOnboardingProps
 }
 
 // ── Mock data (Maropost-flavored) ────────────────────────────────────────────
@@ -155,7 +161,6 @@ export function useDaVinciIntents() {
   const commerce = useCommerceStore()
   const contacts = useContactsStore()
   const accounts = useAccountsStore()
-  let seq = 0
 
   function currentAccountId(): string {
     return String(router.currentRoute.value.params.accountId ?? '2000290')
@@ -176,21 +181,75 @@ export function useDaVinciIntents() {
       speech: response.speech,
       cards: response.cards ?? [],
       quickReplies: response.quickReplies,
+      onboardingCard: response.onboardingCard,
       pending: null,
       steps: INTENT_STEPS.campaign,
     }
   }
 
-  function buildProduct(): DvIntentResult {
-    const draft = productDrafts[seq++ % productDrafts.length] ?? productDrafts[0]!
-    return {
+  /**
+   * A description for the product the request names: one of the merchant's own when it is in the
+   * catalogue, else whatever was described; with nothing named, the current best seller. It used to
+   * alternate between two invented products ("Aurora Trail Jacket", "Coastline Canvas Tote") whatever was
+   * asked. The copy comes from the Catalog Co-Pilot's generator, so every surface writes the same one.
+   */
+  function buildProduct(text: string): DvIntentResult {
+    const vocab: CatalogVocab = {
+      categories: [...new Set(commerce.products.map((product) => product.category))],
+      collections: [],
+      brands: [...new Set(commerce.products.map((product) => product.vendor))],
+    }
+    const describe = (product: Product): string => {
+      const detail = product.detail
+      const outcome = generateEnrichDraft(
+        {
+          name: product.name,
+          subtitle: detail?.subtitle ?? '',
+          sku: product.sku,
+          description: detail?.description ?? '',
+          brand: detail?.brand ?? product.vendor,
+          tag: detail?.tag ?? '',
+          categories: detail?.categories ?? [product.category],
+          collection: detail?.collection ?? '',
+          options: detail?.options ?? [],
+        },
+        'description',
+        text,
+        vocab,
+      )
+      return (outcome.ok && outcome.draft.description) || detail?.description || ''
+    }
+    const result = (title: string, content: string, reply: string, productId?: number): DvIntentResult => ({
       intent: 'product',
-      reply: `Here's a product description draft for "${draft.title}". Use it as-is, or ask me to adjust the tone.`,
-      speech: productSpeech(draft.title),
-      cards: [{ type: 'content', props: { type: 'product', title: draft.title, content: draft.content } }],
+      reply,
+      speech: productSpeech(title),
+      cards: [{ type: 'content', props: { type: 'product', title, content, productId } }],
       pending: null,
       steps: INTENT_STEPS.product,
+    })
+
+    const named = matchProductName(text, commerce.products.map((product) => product.name))
+    const product = named ? commerce.products.find((entry) => entry.name === named) : undefined
+    if (product) {
+      const title = displayName(product.name)
+      return result(title, describe(product), `Here’s a description draft for “${title}”. Copy it, or open the product to use it — nothing changes until you save.`, product.id)
     }
+
+    // Not in the catalogue, but described ("a ceramic mug called Morning Ritual"): draft for that.
+    const fresh = generateCreateDraft(text, vocab)
+    if (fresh.ok && fresh.draft.title && fresh.draft.description) {
+      return result(fresh.draft.title, fresh.draft.description, `Here’s a description draft for “${fresh.draft.title}”. Use it as-is, or ask me to adjust the tone.`)
+    }
+
+    // No product named: the best seller is the one most worth a fresh description.
+    const topName = productSalesMix(1)[0]?.name ?? ''
+    const bestSeller = commerce.products.find((entry) => entry.name.startsWith(topName)) ?? commerce.products[0]
+    if (bestSeller) {
+      const title = displayName(bestSeller.name)
+      return result(title, describe(bestSeller), `You didn’t name a product, so I drafted one for your best seller, “${title}”. Name another and I’ll write that instead.`, bestSeller.id)
+    }
+    const reply = 'There are no products in this catalogue yet. Add one in Products and I’ll draft its description.'
+    return { intent: 'product', reply, speech: reply, cards: [], pending: null, steps: INTENT_STEPS.product }
   }
 
   /**
@@ -285,16 +344,31 @@ export function useDaVinciIntents() {
     }
   }
 
+  /**
+   * The segment the request describes, measured against the segments this account already has
+   * (src/davinci/segmentRequest.ts). It used to be one of two canned cards whatever was asked — "customers
+   * who haven't purchased in 90 days" came back as "High-intent shoppers" with a made-up size.
+   */
   function buildSegment(text: string): DvIntentResult {
-    const isVip = /vip|loyal|best/.test(text.toLowerCase())
-    const variant = isVip ? segmentVariants.vip : segmentVariants.highIntent
-    // A copy per message: the card records `savedSegmentId` on its props, which must never reach the shared variant.
-    const props = { ...variant, rules: [...variant.rules] }
+    const { spec, existing, size } = answerSegmentRequest(text, contacts.segments)
+    const count = size.toLocaleString('en-US')
+    if (existing) {
+      // Already in the account: show it with its real count (the card reads as saved) rather than draft a twin.
+      return {
+        intent: 'segment',
+        reply: `You already have this one: “${existing.name}” holds ${count} contacts. Open it in Segments, or tell me how you’d change it.`,
+        speech: `You already have a ${existing.name} segment, with ${count} contacts.`,
+        cards: [{ type: 'segment', props: { name: existing.name, rules: [...spec.rules], estimatedSize: size, savedSegmentId: existing.id } }],
+        pending: null,
+        steps: INTENT_STEPS.segment,
+      }
+    }
     return {
       intent: 'segment',
-      reply: `Your "${props.name}" segment is ready — about ${props.estimatedSize.toLocaleString()} contacts match right now. It refreshes daily.`,
-      speech: segmentSpeech(props.name, props.estimatedSize),
-      cards: [{ type: 'segment', props }],
+      reply: `“${spec.name}” is drafted — about ${count} contacts match right now. Save it to add it to your segments; nothing is sent to it.`,
+      speech: segmentSpeech(spec.spokenName, size),
+      // A fresh props object per message: the card records `savedSegmentId` on it once saved.
+      cards: [{ type: 'segment', props: { name: spec.name, rules: [...spec.rules], estimatedSize: size } }],
       pending: null,
       steps: INTENT_STEPS.segment,
     }
@@ -533,7 +607,7 @@ export function useDaVinciIntents() {
       case 'campaign':
         return startCampaignDiscovery(trimmed)
       case 'product':
-        return buildProduct()
+        return buildProduct(trimmed)
       case 'revenue':
         return buildRevenue()
       case 'segment':
@@ -670,11 +744,13 @@ export function useDaVinciIntents() {
       }
       const isProduct = card.props.type === 'product'
       const where = isProduct ? 'the product editor' : 'email content'
+      const productId = card.props.productId
       const open = () => {
+        // A draft for a product already in the catalogue opens that product, not a blank new one.
         void router.push(
-          isProduct
-            ? { name: 'ProductNew', params: { accountId }, query: { source: 'davinci' } }
-            : { name: 'EmailContent', params: { accountId }, query: { source: 'davinci' } },
+          !isProduct ? { name: 'EmailContent', params: { accountId }, query: { source: 'davinci' } }
+            : productId != null ? { name: 'ProductEdit', params: { accountId, productId: String(productId) }, query: { source: 'davinci' } }
+              : { name: 'ProductNew', params: { accountId }, query: { source: 'davinci' } },
         )
       }
       // Without the clipboard the draft can't travel — stay put and say so, rather than open an empty editor.

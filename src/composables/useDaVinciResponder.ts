@@ -163,16 +163,19 @@ export function useDaVinciResponder() {
 
   // ── 3. The reply ───────────────────────────────────────────────────────────
   function fromIntentResult(res: DvIntentResult): DvAssistantTurn {
+    const components: ChatComponent[] = []
+    if (res.cards.length || res.quickReplies?.length) {
+      components.push({ type: 'intentCards', props: { cards: res.cards, quickReplies: res.quickReplies, bound: !!res.pending } })
+    }
+    // A campaign request that named its goal and audience goes straight to the wizard's readiness card.
+    if (res.onboardingCard) components.push({ type: 'campaignOnboarding', props: res.onboardingCard })
     return {
       message: {
         id: makeId('a'),
         role: 'assistant',
         text: res.reply,
         toolSteps: res.steps,
-        componentData:
-          res.cards.length || res.quickReplies?.length
-            ? [{ type: 'intentCards', props: { cards: res.cards, quickReplies: res.quickReplies, bound: !!res.pending } }]
-            : undefined,
+        componentData: components.length ? components : undefined,
       },
       speech: res.speech ?? res.reply,
       caption: res.reply,

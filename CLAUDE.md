@@ -424,7 +424,7 @@ changelog in `DESIGN_AUDIT.md`.
 | `npm run qa:export` | QA reference for LiquidSky: screenshots + computed-CSS spec per mapped story → `public/qa-reference/` (needs `build-storybook` first) |
 | `npm run qa:compare` | Design vs LiquidSky build: side-by-side screenshots + a plain list of differences → `output/qa-compare/` (git-ignored; needs `LIQUIDSKY_STORYBOOK` in `.env.local`) |
 | `npm run test:maropay` | Maropay domain + adapter tests (`node:test` over `tests/maropay/`) |
-| `npm run test:davinci` | Da Vinci routing, chart-request, history and conversation tests (`node:test` over `tests/davinci/`) |
+| `npm run test:davinci` | Da Vinci routing, chart-request, history and conversation tests, and what a segment, campaign or product request means (`node:test` over `tests/davinci/`) |
 | `npm run test:catalog` | Da Vinci Catalog Co-Pilot draft-generator tests (`node:test` over `tests/davinci-catalog/`) |
 | `npm run test:chatbot` | Chatbot brand-colour contrast + builder-preview responder tests (`node:test` over `tests/chatbot/`) |
 | `npm run test:plg` | PLG promotion tests — coupon maths and code validation in `src/plg/promo.ts` (`node:test` over `tests/plg/`) |
@@ -470,7 +470,9 @@ Example: `[feat]: add MpDateRangePicker component with story`
 - **`src/davinci/`** — the Da Vinci copilot's rules, in the same pure-module shape: which lane answers a
   prompt (`promptRouting`), which metric and view a chart request means and what to tell the merchant when
   it can't be drawn as asked (`widgetRequest`), clarification slots, follow-up chips, conversation history
-  records and their caps (`history`). Add a row to `tests/davinci/` for any misroute. The audit that started
+  records and their caps (`history`), which segment a request describes and how many contacts it holds
+  (`segmentRequest`), the occasion and goal a campaign request states (`campaignBrief`), and which catalogue
+  product a request names (`productMatch`). Add a row to `tests/davinci/` for any misroute. The audit that started
   it is `docs/davinci-copilot-audit-2026-09.md`; the change log is in `DESIGN_AUDIT.md`.
 - **`docs/davinci-catalog/decisions.md`** — Da Vinci Catalog Co-Pilot in the Products module
   (PRD: Da Vinci Catalog Management): decisions, PRD → prototype map, demo guide with the

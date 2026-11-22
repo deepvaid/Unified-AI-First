@@ -24,6 +24,7 @@ import type {
 } from '@/stores/dashboards/types'
 import { formatCurrency, formatCurrencyCents } from '@/utils/formatCurrency'
 import { parseLocalDateKey } from '@/utils/localDate'
+import { productSalesMix } from '@/stores/dashboards/productMix'
 import { formatCompactValue, formatNumber as formatGroupedNumber, formatPercent } from '@/utils/formatNumber'
 
 function formatNumber(value: number, unit: DashboardMetricUnit): string {
@@ -1253,18 +1254,8 @@ export function useWidgetData(
       case 'commerce_sales_by_product': {
         const ranges = sliceRecordsByWindow(commerce.orders, orderDate, dateWindow)
         const revenue = ranges.current.reduce((sum, order) => sum + parseFloat(order.total), 0)
-        // TODO(mock): fixed product mix. The generated line items cycle evenly
-        // through 40 SKUs, so a real top-5 tally would leave "Other" at ~80% of
-        // the bar; the shares below keep the window's real revenue total.
-        const MIX = [
-          { name: 'Nike Air Max 270', share: 0.28 },
-          { name: 'Sony WH-1000XM5', share: 0.21 },
-          { name: 'Hydro Flask 32oz', share: 0.16 },
-          { name: 'YETI Rambler 20oz', share: 0.12 },
-          { name: 'Kindle Paperwhite', share: 0.09 },
-          { name: 'Other products', share: 0.14 },
-        ]
-        const rows = MIX.map((entry) => ({ name: entry.name, value: Math.round(revenue * entry.share) }))
+        // The mix is shared with Da Vinci's store snapshot (productMix.ts), so both name the same top sellers.
+        const rows = productSalesMix(revenue)
         const grandTotal = Math.max(1, rows.reduce((sum, row) => sum + row.value, 0))
         return {
           kind: 'stacked_bar',

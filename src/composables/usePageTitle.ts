@@ -10,10 +10,12 @@ export function setPageTitle(title?: string) {
   document.title = title ? `${title} · ${SUFFIX}` : SUFFIX
 }
 
-/** `SalesOrders` → `Sales orders`, `CDPHome` → `CDP home`. */
+/** `SalesOrders` → `Sales orders`, `CDPHome` → `CDP home`, `DaVinciExperience` → `Da Vinci experience`. */
 export function titleFromRouteName(name: string): string {
   const words = name.split(/(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])/)
   return words
     .map((w, i) => (w === w.toUpperCase() ? w : i === 0 ? w : w.toLowerCase()))
     .join(' ')
+    // A product name keeps its capitals: the tab read "Da vinci experience".
+    .replace(/\bDa vinci\b/, 'Da Vinci')
 }

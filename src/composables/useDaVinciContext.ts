@@ -5,6 +5,7 @@ import { useCampaignsStore } from '@/stores/useCampaigns'
 import { useCommerceStore } from '@/stores/useCommerce'
 import { useContactsStore } from '@/stores/useContacts'
 import { useDashboardsStore } from '@/stores/useDashboards'
+import { OTHER_PRODUCTS, productSalesMix } from '@/stores/dashboards/productMix'
 import { useDaVinciSetupStore } from '@/stores/useDaVinciSetup'
 import { useOnboardingStore } from '@/stores/useOnboarding'
 import { usePlgStore } from '@/stores/usePlg'
@@ -75,15 +76,11 @@ export function useDaVinciContext() {
       `Orders needing action: ${count(awaitingFulfilment)} awaiting fulfilment, ${count(paymentIssues)} with payment pending, ${count(returns)} return requests`,
     )
 
-    const revenueByProduct = new Map<string, number>()
-    for (const order of last30) {
-      for (const item of order.lineItems ?? []) {
-        revenueByProduct.set(item.product, (revenueByProduct.get(item.product) ?? 0) + item.qty * parseFloat(item.price))
-      }
-    }
-    const topSellers = [...revenueByProduct.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3)
-    if (topSellers.length) {
-      lines.push(`Top sellers (30 days): ${topSellers.map(([name, revenue]) => `${name} ${money(revenue)}`).join(', ')}`)
+    // The same product mix and the same 30 days as the dashboard's "Sales by product name" widget — a tally
+    // of the generated line items named different top sellers from the dashboard behind the conversation.
+    if (last30.length) {
+      const topSellers = productSalesMix(total(last30)).filter((row) => row.name !== OTHER_PRODUCTS).slice(0, 3)
+      lines.push(`Top sellers (30 days): ${topSellers.map((row) => `${row.name} ${money(row.value)}`).join(', ')}`)
     }
 
     const activeProducts = commerce.products.filter((product) => product.status !== 'Archived')
