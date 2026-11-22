@@ -425,12 +425,21 @@ function reportVoiceError(err: unknown, { quiet = false } = {}) {
   }
 }
 
+// A listen that comes back empty almost at once did not hear silence (that takes the browser several
+// seconds): something ended it — another tab or window that starts speech recognition does. Re-arming
+// straight away restarted the mic over a thousand times a second, froze the page, and cut the other tab
+// off just as often. So the loop waits a little longer each time, and after a few in a row stops and says why.
+const CUT_SHORT_MS = 1000
+const MAX_CUT_SHORT = 4
+let cutShort = 0
+
 /** One listen → respond turn, then re-arm — the continuous hands-free loop.
  *  `silent` suppresses the error toast for the first auto-start arm, where a
  *  cold-load mic may be blocked by the browser until the user interacts. */
 async function armListening(silent = false) {
   if (!liveActive.value || disposed) return
   const myToken = ++loopToken
+  const startedAt = performance.now()
   let text = ''
   try {
     text = await voice.startListening({ owner: 'experience', withAnalyser: true })
@@ -448,9 +457,22 @@ async function armListening(silent = false) {
   if (!text) {
     // Silence never ends hands-free — keep listening until the user explicitly
     // ends the conversation (End button / Esc / leaving the page).
+    if (performance.now() - startedAt >= CUT_SHORT_MS) {
+      cutShort = 0
+    } else if (++cutShort >= MAX_CUT_SHORT) {
+      cutShort = 0
+      voiceRecoveryMessage.value =
+        'Voice input keeps being cut off — it may be in use in another tab or window. Close it there, then tap the mic.'
+      endLive()
+      return
+    } else {
+      await new Promise((r) => setTimeout(r, 400 * cutShort))
+      if (disposed || myToken !== loopToken || !liveActive.value) return
+    }
     void armListening()
     return
   }
+  cutShort = 0
   if (isSignOff(text)) {
     await signOff(text)
     return
@@ -474,6 +496,7 @@ function startLive() {
   voice.unlockSpeech() // mic permission + iOS audio unlock happen inside the tap
   if (liveActive.value) return
   voiceRecoveryMessage.value = ''
+  cutShort = 0
   liveActive.value = true
   void armListening()
 }
@@ -1137,7 +1160,7 @@ onBeforeUnmount(() => {
         >
           <v-icon :size="26">{{ liveActive && voice.state.value === 'speaking' ? 'square' : 'mic' }}</v-icon>
           <v-tooltip v-if="!voice.sttSupported" activator="parent" location="top">
-            Voice input needs Chrome or Edge — you can type below
+            Voice input needs Chrome, Edge or Safari — you can type below
           </v-tooltip>
         </button>
         <p
@@ -1149,8 +1172,17 @@ onBeforeUnmount(() => {
         >
           {{ stageHint }}
         </p>
-        <p v-if="voiceRecoveryMessage" class="text-caption text-error mb-0" role="alert">
+        <p v-if="voiceRecoveryMessage" class="dvx__mic-notice text-caption text-error mb-0" role="alert">
           {{ voiceRecoveryMessage }}
+        </p>
+        <!-- The microphone being heard on is silent, or Da Vinci moved to one that is not (useDaVinciVoice). -->
+        <p
+          v-else-if="voice.micNotice.value"
+          class="dvx__mic-notice text-caption mb-0"
+          :class="voice.micNotice.value.tone === 'warning' ? 'text-error' : 'text-medium-emphasis'"
+          role="status"
+        >
+          {{ voice.micNotice.value.text }}
         </p>
         <div v-if="liveActive" class="dvx__live-controls">
           <button v-if="voice.state.value === 'speaking'" type="button" class="dvx__live-btn" @click="voice.cancelSpeech()">
@@ -1585,6 +1617,11 @@ onBeforeUnmount(() => {
   border-radius: var(--mp-radius-12);
   background: color-mix(in srgb, rgb(var(--v-theme-surface)) 72%, transparent);
   backdrop-filter: blur(8px);
+}
+
+/* A line about the microphone: kept to the hint's measure so it wraps instead of running across the orb. */
+.dvx__mic-notice {
+  max-width: min(440px, 88vw);
 }
 
 /* ─── Live conversation controls ──────────────────────────────────────────── */

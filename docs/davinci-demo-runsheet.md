@@ -1,12 +1,17 @@
 # Da Vinci voice demo — run-sheet
 
 For whoever presents Da Vinci's voice workspace to a prospect. Everything below was checked on
-`fix/davinci-demo-readiness` on 2026-11-23, in Chrome, on the demo account (2000290, "Scooter Village").
+`fix/davinci-demo-readiness` on 2026-11-23, in Chrome (and by voice in Safari), on the demo account (2000290, "Scooter Village").
 The figures are what that account shows today; they move with the date.
 
 ## Before the call
 
-1. Use **Chrome or Edge**. Voice input needs one of them; Safari and Firefox can only type.
+1. Use **Chrome, Edge or Safari**. Firefox can only type.
+   - **One voice tab only.** A second tab or window that is listening cuts the first one off. Close every
+     other Da Vinci tab in that browser before you start.
+   - **Chrome and Edge use the microphone picked in their own settings**, not the system's (Safari follows
+     the system). Check it from the mic icon in the address bar. If that microphone is dead, Da Vinci moves
+     to the system microphone after a few seconds and says so under the mic.
 2. Open the app, then open **Da Vinci › AI experience** from the app bar. Opening it from inside the
    app is what lets the greeting play without a click. A pasted link needs one click anywhere first.
 3. Allow the microphone when Chrome asks, once, before the prospect joins. A blocked mic shows a red
@@ -37,8 +42,9 @@ The four prompts under the message box ("Try saying") are safe to read out or cl
 ## If something goes wrong
 
 - **Nothing is heard.** Click anywhere on the page: the browser blocked audio until a click. Then check "Voice on".
-- **It does not hear you.** Look for the red line under the mic. Type the question instead; typing over
-  a spoken reply interrupts it.
+- **It does not hear you.** Read the line under the mic: it names a blocked or silent microphone, or says
+  voice input keeps being cut off (another tab is listening — close it, then tap the mic). Type the
+  question meanwhile; typing over a spoken reply interrupts it.
 - **It is still talking and you want to move on.** Press **Interrupt**, or just type or say the next thing after it.
 - **"Advisor busy" or "Advisor offline".** The open-ended answers need the Gemini connection. Revenue,
   segments, campaigns, journeys and product descriptions work without it. Ask again in a moment.

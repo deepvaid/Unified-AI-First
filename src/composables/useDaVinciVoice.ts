@@ -34,6 +34,13 @@ export interface StartListeningOptions {
   withAnalyser?: boolean
 }
 
+/** Something the merchant should know about the microphone being heard on. */
+export interface MicNotice {
+  /** 'info' — handled, just say so; 'warning' — nothing is being heard and they must act. */
+  tone: 'info' | 'warning'
+  text: string
+}
+
 export interface SpeakOptions {
   rate?: number
   pitch?: number
@@ -98,6 +105,12 @@ function mapRecognitionError(error: string): VoiceErrorCode {
   }
 }
 
+// Identifies the current startListening call: a later call supersedes it, and only the current one may
+// reset the shared listening state.
+let listenCall = 0
+// Set while a call is still opening its microphone and has no recognition to stop yet.
+let cancelPendingStart: (() => void) | null = null
+
 /**
  * Start a dictation session. Resolves the final transcript, '' on silence or
  * abort (incl. another owner re-claiming the mic). Rejects VoiceError on real
@@ -109,29 +122,20 @@ function startListening(opts: StartListeningOptions): Promise<string> {
 
   const Ctor = window.SpeechRecognition ?? window.webkitSpeechRecognition
   if (!Ctor) return Promise.reject(new VoiceError('unsupported'))
-  const recog = new Ctor()
-  recognition = recog
+  const call = ++listenCall
   ownerRef.value = opts.owner
   interimRef.value = ''
   listeningRef.value = true
 
-  recog.lang = opts.lang ?? (hasWindow ? navigator.language || 'en-US' : 'en-US')
-  recog.interimResults = true
-  recog.continuous = false
-  recog.maxAlternatives = 1
-
-  // Analyser failure is non-fatal — STT capture is independent of getUserMedia.
-  // Skipped on Apple WebKit (see isAppleWebKit) to avoid mic contention with STT.
-  if (opts.withAnalyser && !isAppleWebKit) {
-    void openMic().catch(() => {})
-  }
-
   return new Promise<string>((resolve, reject) => {
     let finalText = ''
     let settled = false
+    // The recognition whose events count. Swapped when the session moves to another microphone; events
+    // from the one left behind are ignored.
+    let active: SpeechRecognition | null = null
 
     const cleanup = () => {
-      if (recognition === recog) {
+      if (listenCall === call) {
         recognition = null
         listeningRef.value = false
         interimRef.value = ''
@@ -146,47 +150,107 @@ function startListening(opts: StartListeningOptions): Promise<string> {
       fn()
     }
 
-    recog.onresult = (e) => {
-      let interim = ''
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        const result = e.results[i]
-        if (!result) continue
-        const seg = result[0]?.transcript ?? ''
-        if (result.isFinal) finalText += seg
-        else interim += seg
-      }
-      interimRef.value = finalText || interim
-      if (finalText) {
-        recog.stop()
-        settle(() => resolve(finalText.trim()))
-      }
-    }
-    recog.onerror = (e) => {
-      const code = mapRecognitionError(e.error)
-      // Silence and aborts are normal outcomes, not failures
-      if (code === 'no-speech' || e.error === 'aborted') {
-        settle(() => resolve(''))
-        return
-      }
-      settle(() => reject(new VoiceError(code, e.message)))
-    }
-    recog.onend = () => settle(() => resolve(finalText.trim()))
+    /** Listens on `track` when given (the browser's own microphone otherwise). */
+    const begin = (track?: MediaStreamTrack) => {
+      const recog = new Ctor()
+      active = recog
+      recognition = recog
+      recog.lang = opts.lang ?? (hasWindow ? navigator.language || 'en-US' : 'en-US')
+      recog.interimResults = true
+      recog.continuous = false
+      recog.maxAlternatives = 1
 
-    try {
-      recog.start()
-    } catch (err) {
-      settle(() => reject(new VoiceError('unknown', err instanceof Error ? err.message : undefined)))
+      recog.onresult = (e) => {
+        if (active !== recog) return
+        let interim = ''
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          const result = e.results[i]
+          if (!result) continue
+          const seg = result[0]?.transcript ?? ''
+          if (result.isFinal) finalText += seg
+          else interim += seg
+        }
+        interimRef.value = finalText || interim
+        if (finalText) {
+          micNoticeRef.value = null // heard: whatever was wrong with the microphone no longer is
+          recog.stop()
+          settle(() => resolve(finalText.trim()))
+        }
+      }
+      recog.onerror = (e) => {
+        if (active !== recog) return
+        const code = mapRecognitionError(e.error)
+        // Silence and aborts are normal outcomes, not failures
+        if (code === 'no-speech' || e.error === 'aborted') {
+          settle(() => resolve(''))
+          return
+        }
+        settle(() => reject(new VoiceError(code, e.message)))
+      }
+      recog.onend = () => {
+        if (active === recog) settle(() => resolve(finalText.trim()))
+      }
+
+      try {
+        // Chrome and Edge accept the track to hear on; the DOM types don't know the argument yet.
+        if (track) (recog as unknown as { start(audioTrack: MediaStreamTrack): void }).start(track)
+        else recog.start()
+      } catch (err) {
+        settle(() => reject(new VoiceError('unknown', err instanceof Error ? err.message : undefined)))
+      }
+    }
+
+    // The browser's own microphone proved dead earlier this visit: capture from the one that works and
+    // hand its track to recognition. (Never on Apple WebKit, which always follows the system input.)
+    if (inputOverride && !isAppleWebKit) {
+      const cancel = () => {
+        if (cancelPendingStart === cancel) cancelPendingStart = null
+        settle(() => resolve(''))
+      }
+      cancelPendingStart = cancel
+      void openMic()
+        .catch(() => {})
+        .then(() => {
+          if (cancelPendingStart === cancel) cancelPendingStart = null
+          if (!settled) begin(mediaStream?.getAudioTracks()[0])
+        })
+      return
+    }
+
+    begin()
+    // Analyser failure is non-fatal — STT capture is independent of getUserMedia.
+    // Skipped on Apple WebKit (see isAppleWebKit) to avoid mic contention with STT.
+    if (opts.withAnalyser && !isAppleWebKit) {
+      const wanted = () => !settled && listenCall === call
+      void openMic()
+        .then(() => liveInputInstead(wanted))
+        .then((track) => {
+          if (!track) return
+          if (!wanted()) {
+            closeMic()
+            return
+          }
+          // Move the session to the live microphone: drop the recognition that is hearing silence
+          // (its abort is ignored) and listen again on the working track.
+          const deaf = active
+          active = null
+          deaf?.abort()
+          begin(track)
+        })
+        .catch(() => {})
     }
   })
 }
 
 /** Graceful stop — lets a pending final result flush before resolving. */
 function stopListening() {
+  cancelPendingStart?.()
   recognition?.stop()
 }
 
 /** Hard abort — discards results; the in-flight promise resolves ''. */
 function abortListening() {
+  cancelPendingStart?.()
   recognition?.abort()
 }
 
@@ -930,12 +994,96 @@ const freqData = new Uint8Array(256)
 const bands = new Float32Array(16)
 const frame: OrbAudioFrame = { micActive: false, micLevel: 0, bands, speakEnergy: 0 }
 
-async function openMic(): Promise<void> {
+// ── Which microphone ─────────────────────────────────────────────────────────
+// Chrome and Edge record from the microphone chosen in THEIR settings, not the system's. When that one
+// is dead — a laptop's built-in mic with the lid closed, say — it delivers digital silence: recognition
+// hears nothing, and the session sat on "Listening…" for good while the merchant spoke into a headset.
+// (Safari follows the system input, so the same machine worked there.) The first capture checks the
+// chosen microphone; if it is silent and the system's own input is another, live device, every capture
+// this visit uses that one instead, and the page says so.
+const SYSTEM_INPUT = 'default' // Chrome's and Edge's id for "whatever the system uses"
+const micNoticeRef = ref<MicNotice | null>(null)
+/** The input to capture instead of the browser's own choice, once that proved dead. */
+let inputOverride: string | null = null
+/** The browser's choice has been checked this visit (alive, or dead with nothing better). */
+let inputChecked = false
+
+if (hasWindow && navigator.mediaDevices?.addEventListener) {
+  // A microphone plugged in or pulled out changes the answer: check again on the next capture.
+  navigator.mediaDevices.addEventListener('devicechange', () => {
+    inputOverride = null
+    inputChecked = false
+    micNoticeRef.value = null
+  })
+}
+
+/** "Default - EPOS IMPACT 760T (1395:019f)" → "EPOS IMPACT 760T": a device name as a person would say it. */
+const inputName = (label?: string): string =>
+  (label ?? '').replace(/^Default - /, '').replace(/\s*\([0-9a-f]{4}:[0-9a-f]{4}\)\s*$/i, '').trim() || 'your microphone'
+
+/** True when the open mic delivers nothing but digital silence for `ms` — a live mic, however quiet, never does. */
+async function micIsSilent(ms: number): Promise<boolean> {
+  const node = analyser
+  if (!node) return false
+  const samples = new Float32Array(node.fftSize)
+  const until = performance.now() + ms
+  while (performance.now() < until) {
+    if (analyser !== node) return false // closed meanwhile — nothing learned
+    node.getFloatTimeDomainData(samples)
+    if (samples.some((value) => value !== 0)) return false
+    await new Promise((r) => setTimeout(r, 100))
+  }
+  return analyser === node
+}
+
+/**
+ * Checks the microphone the browser chose (already open). When it is dead and the system's own input is
+ * another, live device, opens that one and returns its track to hear on; otherwise null. `wanted` says
+ * whether the listen that asked is still going — a mic is never left open for one that has ended.
+ */
+async function liveInputInstead(wanted: () => boolean): Promise<MediaStreamTrack | null> {
+  if (inputChecked || !analyser || audioCtx?.state !== 'running') return null
+  const chosen = inputName(mediaStream?.getAudioTracks()[0]?.label)
+  const silent = await micIsSilent(1500)
+  if (!wanted()) return null // ended while checking: check again next time
+  inputChecked = true
+  if (!silent) return null
+
+  closeMic()
+  await openMic(SYSTEM_INPUT).catch(() => {})
+  const track = mediaStream?.getAudioTracks()[0]
+  const system = inputName(track?.label)
+  const alive = !!track && system !== chosen && !(await micIsSilent(1000))
+  if (!wanted()) {
+    closeMic()
+    return null
+  }
+  if (alive && track) {
+    inputOverride = SYSTEM_INPUT
+    micNoticeRef.value = {
+      tone: 'info',
+      text: `“${chosen}” is silent, so I’m listening on “${system}” — the microphone your system uses.`,
+    }
+    return track
+  }
+  // Nothing better to listen on: say so, and keep the chosen one open for the orb.
+  closeMic()
+  await openMic(null).catch(() => {})
+  if (!wanted()) closeMic()
+  micNoticeRef.value = {
+    tone: 'warning',
+    text: `I can’t hear anything from “${chosen}”. Check which microphone your browser is using — the mic icon in the address bar.`,
+  }
+  return null
+}
+
+/** Opens the microphone for the analyser: the override once one is set, else the browser's own choice. */
+async function openMic(deviceId: string | null = inputOverride): Promise<void> {
   if (analyser) return
   const session = micSession
   let stream: MediaStream
   try {
-    stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    stream = await navigator.mediaDevices.getUserMedia({ audio: deviceId ? { deviceId: { exact: deviceId } } : true })
   } catch (err) {
     const name = err instanceof DOMException ? err.name : ''
     throw new VoiceError(
@@ -1046,6 +1194,7 @@ export function useDaVinciVoice() {
     interimTranscript: computed(() => interimRef.value),
     micActive: computed(() => micActiveRef.value),
     micLevel: computed(() => micLevelRef.value),
+    micNotice: computed(() => micNoticeRef.value),
     muted: computed(() => mutedRef.value),
     voiceDebug: computed(() => debugRef.value),
     setMuted,

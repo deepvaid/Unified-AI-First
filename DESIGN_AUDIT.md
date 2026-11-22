@@ -3034,6 +3034,18 @@ into it here. Merge decisions:
   - A new message scrolls to its start, not its end, so a tall reply shows its own sentence.
 - **Speech stream** (`useDaVinciVoice.ts`): a streamed reply that goes quiet for 8s after it has started
   ends there instead of hanging the hands-free loop; Interrupt and End abort a reply that is still arriving.
+- **Chrome heard nothing while Safari worked** (`useDaVinciVoice.ts`). Two causes, both fixed:
+  - Chrome and Edge record from the microphone chosen in their own settings. When that one is dead (a
+    laptop's built-in mic delivering digital silence while the merchant speaks into a headset), the
+    session sat on "Listening…" for good. The first capture now checks the chosen microphone; if it is
+    silent and the system's input is another, live device, recognition restarts on that track
+    (`SpeechRecognition.start(track)`) and a line under the mic says so. With nothing better to use, the
+    line names the silent microphone. `micNotice` is new on the voice composable; a `devicechange` resets the check.
+  - A listen that another tab cut short came back empty at once, and the hands-free loop re-armed
+    immediately: over a thousand restarts a second, a frozen page, and the other tab cut off just as
+    often. The loop now waits longer after each cut-short listen and stops after four with "Voice input
+    keeps being cut off — it may be in use in another tab or window."
+  - The disabled-mic tooltip said voice needs "Chrome or Edge"; Safari supports it too.
 - **Advisor:** temperature 0.7 → 0.3 (the same question gets the same answer); the written reply uses
   digits and symbols, the spoken one rounds for the ear.
 - Tab title: "Da vinci experience" → "Da Vinci experience" (`titleFromRouteName`).
