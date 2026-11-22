@@ -5,9 +5,11 @@ import { useCampaignsStore } from '@/stores/useCampaigns'
 import { useCommerceStore } from '@/stores/useCommerce'
 import { useContactsStore } from '@/stores/useContacts'
 import { useDashboardsStore } from '@/stores/useDashboards'
+import { OTHER_PRODUCTS, productSalesMix } from '@/stores/dashboards/productMix'
 import { useDaVinciSetupStore } from '@/stores/useDaVinciSetup'
 import { useOnboardingStore } from '@/stores/useOnboarding'
 import { usePlgStore } from '@/stores/usePlg'
+import { parseLocalDateKey } from '@/utils/localDate'
 
 // Compact live-workspace context for the Gemini brain — the grounding block the
 // Amboras audit called out (docs/davinci-amboras-audit-2026-07.md, P0-3), extended
@@ -23,7 +25,6 @@ function humanizeRouteName(name: unknown): string {
   return name.replace(/([a-z0-9])([A-Z])/g, '$1 $2')
 }
 
-const DAY = 86_400_000
 const LOW_STOCK_THRESHOLD = 20 // mirrors useCommerce's stockStatus() chip rule
 
 const money = (value: number) =>
@@ -45,18 +46,21 @@ export function useDaVinciContext() {
   /** The merchant's store, in a dozen lines the model may cite as fact. */
   const storeSnapshot = computed(() => {
     const lines: string[] = []
-    const now = Date.now()
-    const orderTime = (order: { date?: string }) => new Date(order.date ?? '').getTime()
-    const ordersSince = (days: number, until = now + DAY) =>
+    // Calendar days in local time — the same windows as the revenue card and the dashboard KPIs, so the
+    // model and the card can never quote different "last 7 days" figures.
+    const today = new Date()
+    const dayStart = (offset: number) => new Date(today.getFullYear(), today.getMonth(), today.getDate() + offset).getTime()
+    const orderTime = (order: { date?: string }) => parseLocalDateKey(order.date).getTime()
+    const ordersBetween = (from: number, to: number) =>
       commerce.orders.filter((order) => {
         const ts = orderTime(order)
-        return ts >= now - days * DAY && ts < until
+        return ts >= from && ts < to
       })
     const total = (orders: Array<{ total: string }>) => orders.reduce((sum, order) => sum + parseFloat(order.total), 0)
 
-    const last7 = ordersSince(7)
-    const prior7 = ordersSince(14, now - 7 * DAY)
-    const last30 = ordersSince(30)
+    const last7 = ordersBetween(dayStart(-6), dayStart(1))
+    const prior7 = ordersBetween(dayStart(-13), dayStart(-6))
+    const last30 = ordersBetween(dayStart(-29), dayStart(1))
     lines.push(
       `Revenue: last 7 days ${money(total(last7))} across ${count(last7.length)} orders (prior 7 days ${money(total(prior7))}); last 30 days ${money(total(last30))} across ${count(last30.length)} orders`,
     )
@@ -72,15 +76,11 @@ export function useDaVinciContext() {
       `Orders needing action: ${count(awaitingFulfilment)} awaiting fulfilment, ${count(paymentIssues)} with payment pending, ${count(returns)} return requests`,
     )
 
-    const revenueByProduct = new Map<string, number>()
-    for (const order of last30) {
-      for (const item of order.lineItems ?? []) {
-        revenueByProduct.set(item.product, (revenueByProduct.get(item.product) ?? 0) + item.qty * parseFloat(item.price))
-      }
-    }
-    const topSellers = [...revenueByProduct.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3)
-    if (topSellers.length) {
-      lines.push(`Top sellers (30 days): ${topSellers.map(([name, revenue]) => `${name} ${money(revenue)}`).join(', ')}`)
+    // The same product mix and the same 30 days as the dashboard's "Sales by product name" widget — a tally
+    // of the generated line items named different top sellers from the dashboard behind the conversation.
+    if (last30.length) {
+      const topSellers = productSalesMix(total(last30)).filter((row) => row.name !== OTHER_PRODUCTS).slice(0, 3)
+      lines.push(`Top sellers (30 days): ${topSellers.map((row) => `${row.name} ${money(row.value)}`).join(', ')}`)
     }
 
     const activeProducts = commerce.products.filter((product) => product.status !== 'Archived')
@@ -157,8 +157,10 @@ export function useDaVinciContext() {
       const goalPart = guide.goal ? `goal = ${guide.goal}; ` : ''
       const nextPart = next ? `; next task: "${next.title}" (about ${next.minutes} min)` : ''
       lines.push(`Setup guide: ${goalPart}${guide.doneCount} of ${guide.totalCount} tasks done${nextPart}`)
+      // Only a session this merchant STARTED on THIS account — `activeSession` is whichever account the
+      // setup store was last pointed at, which after an account switch is not this one.
       const session = setup.activeSession
-      if (session && session.stage !== 'complete') {
+      if (session && setup.isEngagedFor(account.id)) {
         const current = guide.taskById(session.currentTaskId)
         lines.push(
           `Da Vinci guided setup session: stage ${session.stage}${current ? `, guiding "${current.title}"` : ''}`,

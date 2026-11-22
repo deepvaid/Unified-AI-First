@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import MpBanner from '@/components/MpBanner.vue'
+import { useBannerOffset } from '@/composables/useBannerOffset'
 import { usePlgStore } from '@/stores/usePlg'
 import { useAccountsStore } from '@/stores/useAccounts'
 import PlgTalkToSalesDialog from './PlgTalkToSalesDialog.vue'
@@ -15,6 +16,10 @@ const accounts = useAccountsStore()
 const router = useRouter()
 
 const salesDialogOpen = ref(false)
+
+// Pages that fill the viewport below the app bar subtract the banner's height (see useBannerOffset).
+const banner = ref<InstanceType<typeof MpBanner> | null>(null)
+useBannerOffset(computed(() => (banner.value?.$el as HTMLElement | undefined) ?? null))
 
 const visible = computed(() =>
   plg.isTrial && ((plg.isExpiring && !dismissedThisSession.value) || plg.isExpired),
@@ -40,6 +45,7 @@ function dismiss() {
 <template>
   <MpBanner
     v-if="visible"
+    ref="banner"
     :tone="plg.isExpired ? 'error' : 'warning'"
     :icon="icon"
     :message="message"

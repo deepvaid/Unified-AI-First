@@ -62,6 +62,7 @@ export const GEMINI_ACTION_ROUTES = [
 export type GeminiActionRoute = (typeof GEMINI_ACTION_ROUTES)[number]
 
 const API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models'
+const UPSTREAM_TIMEOUT_MS = 9_000
 
 const SYSTEM_INSTRUCTION = `You are Da Vinci, the AI assistant inside Maropost — a commerce + marketing platform for online merchants (think Shopify meets Mailchimp).
 
@@ -72,8 +73,8 @@ Be a sharp, practical e-commerce growth expert. Give concise, confident, voice-f
 Persona: calm, precise, and warm, in plain modern English — the voice of a colleague who knows the platform well. Write the way good product copy reads: direct sentences, verb-first suggestions, no filler. Dry wit is welcome once in a while, but never at the expense of the answer. Avoid butler or concierge mannerisms entirely: no "Very good", "As requested", "I've taken the liberty", "Shall I…?", "At your service", or "sir". Never use exclamation marks. Say what you can and cannot do plainly — you explain, recommend, and point to the right page; you do not change anything in the merchant's account yourself. When the workspace context shows the merchant is in guided setup, keep answers anchored to their current setup task, and if they ask you to perform a setup step for them, say plainly that you guide but never change anything — then point them to the right page.
 
 Respond ONLY with the JSON object defined by the response schema:
-- "reply": the answer for the chat bubble. 1–4 short sentences. Plain text, no markdown.
-- "speech": a shorter spoken version of the reply (one sentence, natural to hear aloud).
+- "reply": the answer for the chat bubble. 1–4 short sentences. Plain text, no markdown. It is read, not heard: write figures as digits with their symbols ($46,181, 43%), and product, campaign and segment names exactly as the context block spells them.
+- "speech": a shorter spoken version of the reply (one sentence, natural to hear aloud). It is heard, not read: round figures the way a person would say them ("about 46 thousand dollars", "43 percent").
 - "card": OPTIONAL. Include only when a single takeaway is worth highlighting — a short "headline", a one-sentence "description", and where to act on it: "routeName" is the Maropost page for that takeaway, chosen from exactly this list — ${GEMINI_ACTION_ROUTES.join(', ')} — or "none" when no page fits; "actionLabel" is a short verb-first button label for that page ("Review orders", "Open products", "See campaign reports"), or "" when routeName is "none". Orders/fulfilment/returns → SalesOrders or Fulfillments; stock → Inventory or Products; campaigns → EmailCampaigns or CampaignReports; audiences → Segments or AllContacts; automations → Journeys; setup → GetStarted. Omit the whole card otherwise.`
 
 const DESIGN_SYSTEM_INSTRUCTION = `You are Da Vinci, answering questions about the Maropost design system and design sandbox for product managers, designers, engineers, and leaders.
@@ -105,6 +106,33 @@ const CONTEXT_LABELS: Record<GeminiMode, string> = {
   'design-system': 'Documentation excerpts (trusted, from the design-system repo docs — cite them freely):',
 }
 
+type ParsedModelOutput = Partial<Omit<GeminiReply, 'card'>> & {
+  card?: Partial<GeminiReply['card'] & { routeName?: string; actionLabel?: string }>
+}
+
+/**
+ * Reads the model's answer. JSON as asked → parsed. Plain prose (the model ignored the MIME type)
+ * → the prose is the reply. Truncated JSON → one complete `"reply"` string salvaged, else null.
+ */
+export function parseModelOutput(raw: string): ParsedModelOutput | null {
+  const text = raw.trim()
+  try {
+    const parsed: unknown = JSON.parse(text)
+    if (typeof parsed === 'string') return { reply: parsed }
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? (parsed as ParsedModelOutput) : null
+  } catch {
+    // fall through
+  }
+  if (!/^[[{]/.test(text)) return { reply: text }
+  const salvaged = text.match(/"reply"\s*:\s*"((?:[^"\\]|\\.)*)"/)
+  if (!salvaged) return null
+  try {
+    return { reply: JSON.parse(`"${salvaged[1]}"`) as string }
+  } catch {
+    return null
+  }
+}
+
 /** Generate a smart open-ended reply via Gemini Flash. Throws GeminiError with an HTTP status. */
 export async function generateReply(text: string, opts: GenerateOptions): Promise<GeminiReply> {
   if (!opts.apiKey) throw new GeminiError(503, 'Gemini not configured (missing GEMINI_API_KEY)')
@@ -130,7 +158,9 @@ export async function generateReply(text: string, opts: GenerateOptions): Promis
     systemInstruction: { parts: [{ text: systemText }] },
     contents: [...history, { role: 'user', parts: [{ text: clean }] }],
     generationConfig: {
-      temperature: 0.7,
+      // Low: the answers quote the merchant's own figures and names, and the same question asked twice
+      // (a demo, a retry) should get the same answer. At 0.7 the wording — and the facts picked — drifted.
+      temperature: 0.3,
       maxOutputTokens: 800,
       // Disable extended "thinking" — for 1-4 sentence conversational replies it adds
       // ~1-4s of latency (and billed thinking tokens) with no quality gain. Biggest
@@ -170,14 +200,19 @@ export async function generateReply(text: string, opts: GenerateOptions): Promis
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),
+      // Under the 10s serverless limit, so the client hears "busy" instead of a dead function.
+      signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
     })
   } catch (err) {
+    if (err instanceof Error && err.name === 'TimeoutError') throw new GeminiError(504, 'Gemini upstream timed out')
     throw new GeminiError(502, `Gemini upstream unreachable: ${err instanceof Error ? err.message : 'fetch failed'}`)
   }
 
   if (!resp.ok) {
     const detail = await resp.text().catch(() => '')
-    throw new GeminiError(502, `Gemini provider error ${resp.status}: ${detail.slice(0, 300)}`)
+    // Rate-limited / overloaded is worth retrying in a moment — say so (429), rather than "offline".
+    const busy = resp.status === 429 || resp.status === 503
+    throw new GeminiError(busy ? 429 : 502, `Gemini provider error ${resp.status}: ${detail.slice(0, 300)}`)
   }
 
   const data = (await resp.json().catch(() => null)) as {
@@ -186,18 +221,14 @@ export async function generateReply(text: string, opts: GenerateOptions): Promis
   const raw = data?.candidates?.[0]?.content?.parts?.map((p) => p.text ?? '').join('') ?? ''
   if (!raw.trim()) throw new GeminiError(502, 'Gemini returned no content')
 
-  // responseMimeType is JSON, so the text should parse — but degrade gracefully
-  // to treating the whole string as the reply if the model ever returns prose.
-  let parsed: Partial<Omit<GeminiReply, 'card'>> & {
-    card?: Partial<GeminiReply['card'] & { routeName?: string; actionLabel?: string }>
-  }
-  try {
-    parsed = JSON.parse(raw)
-  } catch {
-    parsed = { reply: raw.trim() }
-  }
+  // responseMimeType is JSON, so the text should parse. A truncated or malformed response is
+  // salvaged when a whole reply string is recoverable and REJECTED otherwise — it used to fall
+  // back to the raw string, so a merchant could be shown (and read aloud) `{"reply":"Focus on`.
+  const parsed = parseModelOutput(raw)
+  if (!parsed) throw new GeminiError(502, 'Gemini returned malformed output')
 
-  const reply = (parsed.reply ?? '').trim() || raw.trim()
+  const reply = (parsed.reply ?? '').trim()
+  if (!reply) throw new GeminiError(502, 'Gemini returned no reply')
   const speech = (parsed.speech ?? '').trim() || reply
   const card =
     parsed.card && parsed.card.headline && parsed.card.description

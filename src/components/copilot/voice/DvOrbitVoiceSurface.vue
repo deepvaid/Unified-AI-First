@@ -8,12 +8,15 @@ import DvWidgetDraftCard from '../DvWidgetDraftCard.vue'
 import DvLandingHero from '../DvLandingHero.vue'
 import type { OrbitState } from './orbit'
 import type { DashboardFilterState, DashboardWidgetDraft } from '@/stores/dashboards/types'
+import type { AddedWidgetRef } from '@/stores/useCopilot'
 
 // Orbit voice surface — the drawer's entire body + footer while in voice mode.
 // Purely presentational: the host (MpDaVinciBot) owns the state machine.
 const props = withDefaults(
   defineProps<{
     state: OrbitState
+    /** First name shown in the ready hero's greeting ("Hi Ross,"). */
+    name?: string
     /** Live interim transcript (listening) */
     transcript?: string
     /** Echo of the submitted request (thinking) */
@@ -24,30 +27,34 @@ const props = withDefaults(
     speaking?: boolean
     /** Four suggestion chips (ready hero) */
     suggestions?: string[]
-    /** Follow-up ghost chips (responding) */
+    /** Follow-up ghost chips (responding) — the host derives them from the last result. */
     chips?: string[]
     draft?: DashboardWidgetDraft | null
+    /** What differs from what was asked for (renders on the draft card). */
+    draftNote?: string | null
+    /** Set once the draft became a widget — the card derives its "Added" state from it. */
+    draftAdded?: AddedWidgetRef | null
     accountId?: string
     dashboardId?: string
     filters?: DashboardFilterState
-    /** Remount key for the draft card (bumped on Undo) */
-    draftKey?: number
     /** Dashboard name shown in the success strip (added) */
     addedTo?: string
     errorMessage?: string
   }>(),
   {
+    name: undefined,
     transcript: '',
     lastRequest: '',
     caption: '',
     speaking: false,
     suggestions: () => [],
-    chips: () => ['Compare to YoY', 'Segment by region'],
+    chips: () => [],
     draft: null,
+    draftNote: null,
+    draftAdded: null,
     accountId: '',
     dashboardId: '',
     filters: undefined,
-    draftKey: 0,
     addedTo: '',
     errorMessage: 'It was a bit noisy. Try again, or type your request instead.',
   },
@@ -62,8 +69,7 @@ const emit = defineEmits<{
   undo: []
   'open-dashboard': []
   'add-another': []
-  'widget-saved': [payload: { title: string; dashboardName: string; widgetId: string; dashboardId: string; accountId: string }]
-  'widget-refined': []
+  'widget-saved': [payload: AddedWidgetRef]
 }>()
 
 // Footer mic bar per state
@@ -111,6 +117,7 @@ function onGhost() {
 
         <DvLandingHero
           v-if="state === 'ready'"
+          :name="name"
           :suggestions="suggestions"
           @suggestion="emit('suggestion', $event)"
         />
@@ -179,13 +186,14 @@ function onGhost() {
 
         <div v-if="draft" class="dv-orbit__card">
           <DvWidgetDraftCard
-            :key="draftKey"
             :account-id="accountId"
             :dashboard-id="dashboardId"
             :draft="draft"
             :filters="filters"
+            :note="draftNote"
+            :added="draftAdded"
+            :host-announces="false"
             @saved="emit('widget-saved', $event)"
-            @refined="emit('widget-refined')"
           />
         </div>
 

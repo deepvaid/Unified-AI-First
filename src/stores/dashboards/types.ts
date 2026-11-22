@@ -223,6 +223,12 @@ export interface DashboardWidgetDraft {
   lastRefreshedAt?: string
 }
 
+/** Why a draft can't be added to its dashboard (`addWidgetBlocker`). */
+export type DashboardWidgetBlocker =
+  | { reason: 'missing-dashboard' }
+  | { reason: 'dashboard-full'; limit: number; dashboardName: string }
+  | { reason: 'unsupported'; metricLabel: string }
+
 export interface DashboardWidgetLibraryEntry {
   id: string
   title: string

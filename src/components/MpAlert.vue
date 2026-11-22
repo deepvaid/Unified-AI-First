@@ -12,7 +12,9 @@ const props = withDefaults(
     /**
      * Live-region politeness. Defaults by tone: info/success → 'polite',
      * warning/error → 'assertive'. Pass 'polite' explicitly for a warning that
-     * re-renders often (e.g. a live count), 'off' for static page furniture.
+     * re-renders often (e.g. a live count). 'off' makes it a plain block — no role,
+     * no live region — for static page furniture, or for an alert that sits inside
+     * a region that is already live (a chat transcript) and would be read twice.
      */
     live?: 'off' | 'polite' | 'assertive'
     /** Renders a dismiss button; visibility stays consumer-owned (v-if + @dismiss). */
@@ -44,8 +46,16 @@ const TONE_LABELS: Record<MpAlertTone, string> = {
 }
 
 const resolvedIcon = computed(() => (props.icon === false ? null : (props.icon ?? TONE_ICONS[props.tone])))
-const role = computed(() => (props.tone === 'warning' || props.tone === 'error' ? 'alert' : 'status'))
-const ariaLive = computed(() => props.live ?? (props.tone === 'warning' || props.tone === 'error' ? 'assertive' : 'polite'))
+// `status` and `alert` are themselves live-region roles, so 'off' has to drop the role — omitting only
+// aria-live left a "status"/"alert" that announced anyway.
+const role = computed(() => {
+  if (props.live === 'off') return undefined
+  return props.tone === 'warning' || props.tone === 'error' ? 'alert' : 'status'
+})
+const ariaLive = computed(() => {
+  if (props.live === 'off') return undefined
+  return props.live ?? (props.tone === 'warning' || props.tone === 'error' ? 'assertive' : 'polite')
+})
 </script>
 
 <template>
@@ -53,7 +63,7 @@ const ariaLive = computed(() => props.live ?? (props.tone === 'warning' || props
     class="mp-alert"
     :class="`mp-alert--${props.tone}`"
     :role="role"
-    :aria-live="ariaLive === 'off' ? undefined : ariaLive"
+    :aria-live="ariaLive"
   >
     <v-icon v-if="resolvedIcon" size="18" class="mp-alert__icon" aria-hidden="true">{{ resolvedIcon }}</v-icon>
     <div class="mp-alert__body">

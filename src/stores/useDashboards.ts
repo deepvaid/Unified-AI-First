@@ -2,7 +2,6 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { useAccountsStore, type Account } from '@/stores/useAccounts'
 import {
-  getAvailableMetrics,
   getMetricDescriptor,
   isDashboardSourceAvailable,
 } from '@/stores/dashboards/metricCatalog'
@@ -18,6 +17,7 @@ import type {
   DashboardDatePreset,
   DashboardLayout,
   DashboardWidget,
+  DashboardWidgetBlocker,
   DashboardWidgetDraft,
   DashboardWidgetType,
 } from '@/stores/dashboards/types'
@@ -902,13 +902,30 @@ export const useDashboardsStore = defineStore('dashboards', () => {
     writeState()
   }
 
-  function addWidget(accountId: string, draft: DashboardWidgetDraft): DashboardWidget | undefined {
+  /**
+   * Why `addWidget` would refuse this draft, or null when it can be added. Callers show the
+   * reason — `addWidget` used to fail silently, so a full dashboard or an unsupported
+   * chart type just looked like a button that did nothing.
+   */
+  function addWidgetBlocker(accountId: string, draft: DashboardWidgetDraft): DashboardWidgetBlocker | null {
     const dashboard = getDashboardById(accountId, draft.dashboardId)
-    if (!dashboard || dashboard.widgets.length >= MAX_WIDGETS_PER_DASHBOARD) return undefined
-
+    if (!dashboard) return { reason: 'missing-dashboard' }
     const account = getAccountById(accountId, accountsStore.accounts)
     const metric = getMetricDescriptor(draft.metricId)
-    if (!metric || !isDraftSupportedForAccount(account, draft, metric)) return undefined
+    if (!metric || !isDraftSupportedForAccount(account, draft, metric)) {
+      return { reason: 'unsupported', metricLabel: metric?.label ?? draft.title }
+    }
+    if (dashboard.widgets.length >= MAX_WIDGETS_PER_DASHBOARD) {
+      return { reason: 'dashboard-full', limit: MAX_WIDGETS_PER_DASHBOARD, dashboardName: dashboard.name }
+    }
+    return null
+  }
+
+  function addWidget(accountId: string, draft: DashboardWidgetDraft): DashboardWidget | undefined {
+    if (addWidgetBlocker(accountId, draft)) return undefined
+    const dashboard = getDashboardById(accountId, draft.dashboardId)
+    const metric = getMetricDescriptor(draft.metricId)
+    if (!dashboard || !metric) return undefined
 
     const widget: DashboardWidget = {
       id: createWidgetId(),
@@ -1060,55 +1077,6 @@ export const useDashboardsStore = defineStore('dashboards', () => {
     })
   }
 
-  function buildAiWidgetDraft(accountId: string, dashboardId: string, prompt: string): DashboardWidgetDraft | null {
-    const account = getAccountById(accountId, accountsStore.accounts)
-    if (!account) return null
-
-    const availableMetrics = getAvailableMetrics(account)
-    const normalizedPrompt = prompt.toLowerCase()
-    // Whole-word matching (plural tolerated). Substring `includes` used to let
-    // "customers" in "win back customers who haven't bought in 90 days" light up
-    // the Customer Count metric — a keyword must appear as a word to count.
-    const hasKeyword = (keyword: string) =>
-      new RegExp(`\\b${keyword.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}s?\\b`).test(normalizedPrompt)
-
-    const scored = availableMetrics
-      .map((metric) => ({
-        metric,
-        score: metric.aiKeywords.reduce((total, keyword) => total + (hasKeyword(keyword) ? keyword.length : 0), 0),
-      }))
-      .filter((entry) => entry.score > 0 && isDashboardSourceAvailable(entry.metric.dataSource, account))
-      .sort((left, right) => right.score - left.score)
-
-    const bestMatch = scored[0]?.metric
-    if (!bestMatch) return null
-
-    let type: DashboardWidgetType = bestMatch.defaultWidgetType
-    if (bestMatch.supportedWidgetTypes.includes('table') && /(table|list|recent|top)/.test(normalizedPrompt)) {
-      type = 'table'
-    } else if (bestMatch.supportedWidgetTypes.includes('bar') && /(by|channel|segment|status)/.test(normalizedPrompt)) {
-      type = 'bar'
-    } else if (bestMatch.supportedWidgetTypes.includes('timeseries') && /(trend|over time|last|history)/.test(normalizedPrompt)) {
-      type = 'timeseries'
-    } else if (bestMatch.supportedWidgetTypes.includes('kpi') && /(kpi|summary|headline)/.test(normalizedPrompt)) {
-      type = 'kpi'
-    }
-
-    return {
-      dashboardId,
-      type,
-      title: bestMatch.defaultTitle,
-      dataSource: bestMatch.dataSource,
-      metricId: bestMatch.id,
-      drilldown: bestMatch.drilldown,
-      aiProvenance: {
-        prompt,
-        summary: `Da Vinci mapped your prompt to ${bestMatch.label} as a ${type} widget.`,
-      },
-      lastRefreshedAt: nowIso(),
-    }
-  }
-
   const dashboards = computed(() => dashboardsByAccount.value)
 
   return {
@@ -1140,6 +1108,6 @@ export const useDashboardsStore = defineStore('dashboards', () => {
     openWidgetEditor,
     closeWidgetEditor,
     openWidgetEditorForWidget,
-    buildAiWidgetDraft,
+    addWidgetBlocker,
   }
 })

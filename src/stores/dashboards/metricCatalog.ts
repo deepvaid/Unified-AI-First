@@ -30,6 +30,13 @@ export interface DashboardMetricDescriptor {
     label: string
   }
   aiKeywords: string[]
+  /**
+   * What the widget's data actually spans when it does NOT follow the dashboard's
+   * date range: the latest `sends` (per-campaign points), the `latest` records, or
+   * `all_time`. Absent = follows the dashboard range. Drives honest card subtitles
+   * and Da Vinci's "this widget ignores a date range" note.
+   */
+  timeBasis?: 'sends' | 'latest' | 'all_time'
 }
 
 export const DASHBOARD_SOURCE_META: Record<DashboardDataSource, DashboardSourceMeta> = {
@@ -182,6 +189,7 @@ const metricCatalog: Record<DashboardDataSource, DashboardMetricDescriptor[]> = 
     },
     {
       id: 'commerce_recent_orders',
+      timeBasis: 'latest',
       dataSource: 'commerce',
       label: 'Recent Orders',
       description: 'Latest order activity.',
@@ -311,6 +319,7 @@ const metricCatalog: Record<DashboardDataSource, DashboardMetricDescriptor[]> = 
     },
     {
       id: 'commerce_best_sellers',
+      timeBasis: 'all_time',
       dataSource: 'commerce',
       label: 'Best Sellers',
       description: 'Top products by revenue with unit counts.',
@@ -378,6 +387,7 @@ const metricCatalog: Record<DashboardDataSource, DashboardMetricDescriptor[]> = 
     },
     {
       id: 'marketing_open_rate_over_time',
+      timeBasis: 'sends',
       dataSource: 'marketing',
       label: 'Open Rate Trend',
       description: 'Open rate across recent campaigns.',
@@ -390,6 +400,7 @@ const metricCatalog: Record<DashboardDataSource, DashboardMetricDescriptor[]> = 
     },
     {
       id: 'marketing_campaign_revenue',
+      timeBasis: 'all_time',
       dataSource: 'marketing',
       label: 'Campaign Revenue by Folder',
       description: 'Attributed revenue across campaign folders.',
@@ -402,6 +413,7 @@ const metricCatalog: Record<DashboardDataSource, DashboardMetricDescriptor[]> = 
     },
     {
       id: 'marketing_top_campaigns',
+      timeBasis: 'all_time',
       dataSource: 'marketing',
       label: 'Top Campaigns',
       description: 'Top performing campaigns by revenue.',
@@ -414,6 +426,7 @@ const metricCatalog: Record<DashboardDataSource, DashboardMetricDescriptor[]> = 
     },
     {
       id: 'marketing_email_volume',
+      timeBasis: 'sends',
       dataSource: 'marketing',
       label: 'Email Volume',
       description: 'Sent and delivered email volume over time.',
@@ -426,6 +439,7 @@ const metricCatalog: Record<DashboardDataSource, DashboardMetricDescriptor[]> = 
     },
     {
       id: 'marketing_recent_campaigns',
+      timeBasis: 'latest',
       dataSource: 'marketing',
       label: 'Recent Sent Campaigns',
       description: 'Latest campaigns with delivery stats.',
@@ -438,6 +452,7 @@ const metricCatalog: Record<DashboardDataSource, DashboardMetricDescriptor[]> = 
     },
     {
       id: 'marketing_total_campaign_revenue',
+      timeBasis: 'sends',
       dataSource: 'marketing',
       label: 'Total Campaign Revenue',
       description: 'Revenue attributed to email campaigns over time.',
@@ -672,6 +687,7 @@ const metricCatalog: Record<DashboardDataSource, DashboardMetricDescriptor[]> = 
   contacts: [
     {
       id: 'contacts_total',
+      timeBasis: 'all_time',
       dataSource: 'contacts',
       label: 'Total Contacts',
       description: 'All audience records in the workspace.',
@@ -700,7 +716,7 @@ const metricCatalog: Record<DashboardDataSource, DashboardMetricDescriptor[]> = 
       id: 'contacts_growth',
       dataSource: 'contacts',
       label: 'Contact Growth',
-      description: 'Contact creation trend over time.',
+      description: 'Audience size over time — contacts on record at the end of each day.',
       defaultTitle: 'Contact Growth',
       defaultWidgetType: 'timeseries',
       supportedWidgetTypes: ['timeseries'],
@@ -710,6 +726,7 @@ const metricCatalog: Record<DashboardDataSource, DashboardMetricDescriptor[]> = 
     },
     {
       id: 'contacts_top_segments',
+      timeBasis: 'all_time',
       dataSource: 'contacts',
       label: 'Top Segments',
       description: 'Largest segments by count.',
@@ -722,6 +739,7 @@ const metricCatalog: Record<DashboardDataSource, DashboardMetricDescriptor[]> = 
     },
     {
       id: 'contacts_by_domain',
+      timeBasis: 'all_time',
       dataSource: 'contacts',
       label: 'Email Address by Domain',
       description: 'Contact distribution across email domains.',
@@ -734,6 +752,7 @@ const metricCatalog: Record<DashboardDataSource, DashboardMetricDescriptor[]> = 
     },
     {
       id: 'contacts_subscriber_health',
+      timeBasis: 'all_time',
       dataSource: 'contacts',
       label: 'Subscriber Health',
       description: 'Lifetime contacts with subscribed share, opt-ins, opt-outs, and net movement.',
@@ -747,6 +766,7 @@ const metricCatalog: Record<DashboardDataSource, DashboardMetricDescriptor[]> = 
     },
     {
       id: 'contacts_subscriber_summary',
+      timeBasis: 'all_time',
       dataSource: 'contacts',
       label: 'Subscriber Summary',
       description: 'Subscriber and unsubscriber counts with net growth.',
@@ -799,6 +819,7 @@ const metricCatalog: Record<DashboardDataSource, DashboardMetricDescriptor[]> = 
     },
     {
       id: 'service_recent_tickets',
+      timeBasis: 'latest',
       dataSource: 'service',
       label: 'Recent Tickets',
       description: 'Latest ticket activity with status and assignee.',
@@ -863,6 +884,7 @@ const metricCatalog: Record<DashboardDataSource, DashboardMetricDescriptor[]> = 
     },
     {
       id: 'service_tickets_by_channel',
+      timeBasis: 'all_time',
       dataSource: 'service',
       label: 'Tickets by Channel',
       description: 'Ticket distribution across support channels.',
@@ -875,6 +897,7 @@ const metricCatalog: Record<DashboardDataSource, DashboardMetricDescriptor[]> = 
     },
     {
       id: 'service_tickets_by_type',
+      timeBasis: 'all_time',
       dataSource: 'service',
       label: 'Tickets by Type',
       description: 'Ticket count grouped by issue type.',

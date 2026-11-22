@@ -1966,6 +1966,203 @@ fixed here:
   Featured Collections; the builder preview lays collection cards in the section's columns.
 
 
+## Da Vinci flow + graph generation — 2026-09-29
+
+Per CLAUDE.md → "Log every rename or breaking change in the session changelog". Branch
+`claude/davinci-flow-ui-bugs-3ef6c2`, eleven commits. A merchant-facing bug pass on the copilot flow, chiefly
+chart generation: a drafted chart usually could not be added, the requested chart type was ignored, every
+preview was sample art, the in-chat revenue chart had a fake axis and dead buttons, and the full-page
+experience had no chart path. Routing, request resolution, history and conversation rules live in pure
+modules (`src/davinci/`, `npm run test:davinci` — 290 `node:test` tests, also run under
+`TZ=America/Los_Angeles`); the audit that started it is `docs/davinci-copilot-audit-2026-09.md`.
+
+### Fixed
+
+- **Routing** — `src/davinci/promptRouting.ts` picks one of `widget | widget-hint | intent | gemini`. An
+  explicit chart request no longer loses to a keyword intent ("Create a revenue by channel widget" was the
+  canned revenue card); questions ("Which of my products should I put on sale?", "Explain this chart") go to
+  Gemini instead of a canned card; one engine question no longer traps every later prompt (the clarification
+  slot moved into the copilot store, only claims a reply that answers it, and New chat clears it).
+- **Chart requests** — `src/davinci/widgetRequest.ts` resolves a prompt to a metric and a view the catalog can
+  really draw. "Line chart of orders" is a KPI *plus a note saying so*, not a silent KPI; a pie of top products
+  is the ranked list plus a note; variants are always explicit ("Line" no longer renders as an area).
+- **Adding a draft** — Refine offers only the views the metric supports; a full dashboard (24 widgets) or an
+  account without the cloud disables Add with a visible error instead of failing silently; one "Widget added"
+  toast; "Added" persists on the message and clears if the widget is deleted.
+- **Live previews** — draft cards, Refine and Expand render the real `DashboardWidgetCard` on live data
+  (Orders 43, not 14,326). `DvDraftPreview` is deleted.
+- **Data behind the charts** — orders parse as local days (`parseLocalDateKey`; they were a day early west of
+  UTC), contact growth / ticket volume / revenue by channel are real series, per-send widgets say "Last N
+  sends" / "Most recent" / "All time" instead of a range they ignore, and charts re-measure when the docked
+  drawer changes their width.
+- **In-chat revenue chart** — `DvChartCard` composes `DashboardChartWidget` (currency axis, legend, tooltips,
+  dark mode), draws the prior week dashed, and its Save / Download CSV / Enlarge buttons work.
+- **Full-page experience** — the same responder as the drawer (`useDaVinciResponder`): widget drafts, tool
+  steps, Gemini with workspace context and a Stop, a generation token so a reply can't land after New chat or
+  leaving, no listeners or mic after leaving mid-greeting, Esc closes a dialog before it exits.
+- **Gemini reliability** — 9 s upstream timeout, 12 s client timeout, "Advisor busy" vs "Advisor offline",
+  and a truncated model reply is salvaged or rejected, never shown (or read aloud) as raw JSON.
+- **Guided flows** — only a session the merchant *started* answers typed text; visiting a screen or a
+  `?source=davinci` link never creates one; "never mind" pauses the wizard; an explicit campaign ask resumes a
+  paused one. Onboarding stays guide-only (see below).
+- **Drawer lifecycle** — the full-page copilot no longer mounts a second visible drawer; below 960px the
+  drawer no longer closes on every navigation (and drops the reply); hiding keeps a reply in flight; the app
+  bar's "Ask Da Vinci about X" opens on X; the read-aloud menu reflects the voice-onboarding flag.
+- **Honest actions** — Save segment dedupes by name and shows "Saved"; the content card copies then opens the
+  page it names and reports a blocked clipboard; journey offers describe the template the wizard opens;
+  there is no fake "Done" toast.
+- **History** — `davinci-history-v2` records every conversation (was: only widget drafts) with its transcript
+  (40 messages · 30 conversations · ~600 KB, oldest dropped first). Choosing a row restores it on every surface
+  and via `/da-vinci/copilot/:conversationId`; deleting the open conversation clears the screen; Delete all
+  clears the thread.
+- **Accessibility / layout** — transcript is a `role="log"`; closed history overlay is `inert`; history rows
+  are select + sibling delete buttons; Stop sits beside Send; IME Enter no longer sends; the full-page
+  copilot is bounded to the viewport (the composer used to sit thousands of pixels below the fold).
+- **Colour pairing** — `DvInsightCard` is an `MpAlert` (container fill + paired ink, 9.0–11.7:1 in dark);
+  toasts carry a tone with its own icon and pair, so a failure no longer wears the green check.
+
+### Review pass (same day)
+
+An independent review of the finished branch — run against ~150 realistic merchant prompts and a 40k-prompt
+fuzz of the pure modules — found regressions in the routing rules themselves. All fixed, each with a row in
+`tests/davinci/`:
+
+- **Cadence and "by X" words no longer steal actions into the widget lane.** "Send a weekly newsletter to VIP
+  customers", "Build a segment by country" and "Send a weekly digest" drafted charts. `visualAsk` now
+  distinguishes an explicit chart ask from a breakdown-only one; the latter yields to an action intent, and to
+  delivery verbs. Text in quotes is a merchant-authored name — `Review my data journey "Weekly Sales Report"`
+  is no longer a request for a weekly chart (the journey and theme builders' hand-offs quote their names).
+- **A bare metric is only its name.** "boost sales", "sales are slow", "thanks for the orders" drafted a
+  Revenue KPI on a dashboard; `namesOnlyMetric` requires every word to belong to the metric's vocabulary (plus
+  filler, a range, a number, or "by <measure>": "Top campaigns by revenue" stays a widget).
+- **Questions and ideas never launch a wizard.** "What time should I send my campaign?", "I need ideas for a
+  campaign", "Where do I add a product?" started the campaign wizard (and engaged a session) or returned the
+  product card; questions, ideas/subject-line asks and leading negations ("Don't send…") now reach the advisor.
+- **A generic "chart" of a KPI-only metric says so** ("Orders can only be shown as a KPI tile…"), and the
+  over-time note no longer claims a metric "isn't tracked over time" (the tile has a sparkline).
+- **Clarification slots** ("which engine?", "what should the journey do?") only take a bare engine/page name or a
+  short "what about…" — "show revenue trend", "latest orders", "who are my leaders" are other questions.
+- **Gemini context** used the setup session of whichever account the store was last pointed at; it now uses
+  `isEngagedFor(account.id)`.
+- **A queued follow-up is routed when its turn comes** (the reply ahead of it may have started a wizard, and it
+  is that wizard's next answer); Gemini history no longer includes turns queued *after* the one being answered;
+  a stale request can no longer null a newer request's abort controller.
+- **Leaving mid-reply** (the full-page copilot or the experience) no longer strands the question: the answer
+  lands in the shared thread, silently. A reply for a thread that was swapped (New chat, History) is still dropped.
+- **History robustness** — only a full storage (quota) drops the oldest conversation (a blocked storage used
+  to empty the list), one huge message can't evict the others (recorded text is capped), other tabs' changes are
+  adopted (`storage` event) instead of overwritten, and quick-reply chips are no longer restored (they belong to
+  the live moment). `persistList` / `isQuotaError` live in `src/davinci/history.ts` and are tested.
+- **Trial banner vs the full-page copilot** — the expiring-trial banner (53px) sits above the page in the flow, so
+  the bounded copilot page ended 53px past the viewport and its composer was cut off. `PlgTrialBanner` now
+  publishes its height as `--mp-banner-offset` on `<html>` (`useBannerOffset`, released when it is dismissed or
+  gone) and the page subtracts it.
+- **Wizard goal sentence** — "to VIP customers" typed as the objective read "the goal is to to vip customers";
+  a merchant's own words are quoted, the quick replies read as before ("the goal is to promote an offer").
+- **Accessibility / rules** — the draft card's alerts stay quiet inside the transcript (a live log; refined
+  below), and the literals the review flagged are now a computed container threshold (KPI row), the
+  `widgetHeight.lg` token (enlarged chart) and one declared card measure (experience). 2px focus rings and 1px
+  hairlines stay off the scale by the Phase 4 decision.
+
+A second independent review of those fixes (about a thousand prompts, old and new sources side by side) found
+that several of them were too broad. Corrected, with rows in `tests/davinci/` (290 tests now) and a
+~13,000-prompt metric × lead-in × tail differential against the pre-review code — every remaining lane change
+is intended:
+
+- **A bare metric may be put politely.** "Can you show me my open rate", "Give me orders", "today's orders",
+  "orders since Monday", "top campaigns by open rate" went to the advisor; lead-in words (polite frames,
+  discourse words, request verbs incl. create/build/make), trailing date qualifiers and figure words, and a run of
+  measures after "by" are now allowed. "boost sales", "thanks for the orders" and forecasts still are not.
+- **Read asks and metric names are not wizards.** "I want to see campaign revenue by folder" started the campaign
+  wizard; `want`/`need` only count as making something when nothing is being looked at, and "campaign revenue" /
+  "campaign performance" are metric names, not the thing to create.
+- **An errand needs a deliverable.** "Run a report on revenue by channel" and "Show revenue by day since launch"
+  were downgraded because they contain `run` / `launch`; only send/schedule/launch/run + a newsletter, email,
+  campaign, digest… is an errand.
+- **A brief may contain ideas, a subject line or a quoted name.** "Send a newsletter with holiday gift ideas",
+  `Create a campaign with the subject line "Summer sale"`, "Don't forget to send a newsletter", `Send "Summer
+  Newsletter" to VIP customers` went to the advisor; only a request FOR ideas or a subject line does. Quoted
+  spans are ignored only after a naming cue (journey, theme, segment, called…), not everywhere.
+- **`isQuestion` ignores casing and a greeting.** "How many carts were abandoned" (typed or dictated: capital,
+  no "?") was taken as a journey goal, and "Hey Da Vinci, can you create a campaign?" as a question.
+- **Engine follow-ups strip their lead-in first** ("What about", "and", "let's go with", "yes"), then must still be
+  only an engine or page name — "What about cart abandonment rate?" is not one, "Frequently Purchased Together"
+  is.
+- **Restored conversations** keep the chips that are just prompts ("Try one of these:") and drop only the ones
+  bound to a live wizard or clarification (`IntentCardsProps.bound`); a storage too full for even the live
+  conversation no longer evicts the others from memory.
+- **Accessibility** — the toast stack is back to a persistent polite live region with per-toast roles, the
+  repo's own standard (`MpToastStack`); removing it risked silent toasts. The draft card's alerts are quiet only
+  where the host is a live log (`hostAnnounces`), and announce themselves in the voice surface.
+- **Wizard** — the "welcome back" sentence uses the same goal phrase as the acknowledgement.
+
+### API added
+
+- **`src/davinci/`** (pure, relative `.ts` imports, `import type` only): `widgetRequest`, `promptRouting`,
+  `pendingSlot`, `phrases`, `followUps`, `conversation`, `history`. Also `src/utils/localDate.ts`,
+  `src/utils/escapeHtml.ts`, `src/stores/dashboards/rangeLabels.ts`.
+- **Composables** — `useDaVinciResponder` (flows → plan → reply, shared by both surfaces), `useDaVinciTarget`
+  (one account/dashboard resolution); `askGeminiResult` beside `askGemini`; `isEngagedFor` on both onboarding
+  stores.
+- **`useCopilotStore`** — `pendingSlot`, `threadEpoch`, `ensureConversationId`, `markDraftAdded`,
+  `markChartSaved`, `restoreConversation`, `deleteConversation`, `deleteAllConversations`;
+  `DraftSetProps` gained `dashboardName`, `notes`, `added`.
+- **Components** — `MpDaVinciBot` `visible`; `DvOrbitVoiceSurface` `name`, `draftNote`, `draftAdded`;
+  `DvWidgetDraftCard` `note`, `added`, `filters`; `DvRefineDialog` / `DvExpandDialog` `error`;
+  `DvSegmentCard` `savedSegmentId`; `DaVinciToastInput.tone`; `MpAlert` `live="off"` semantics (below).
+- **`useDashboards.addWidgetBlocker`** — why a draft can't be added (missing dashboard, 24-widget cap,
+  unsupported cloud); metric catalog `timeBasis`.
+
+### Renames and breaking changes
+
+- `DvDraftPreview` (+ story) **deleted** — a live `DashboardWidgetCard` replaces it.
+- `DvChartCard` props `bars` / `seriesNames` → `labels`, `series`, `unit`, `saveMetricId`, `savedTo`; it is an
+  Apex chart now, not CSS. The `'insight'` chat-component type is removed (an insight is an `intentCards` card).
+- `DvSegmentCard` emit `preview` → `open` (offered once saved); `DvContentCard` emit `edit` removed and
+  "Use in Campaign" → "Open product editor" / "Open email content".
+- `useDaVinciIntents`: `performCardAction` is async; `pending` lives in the copilot store; `buildAiWidgetDraft`
+  is gone from `useDashboards` (`resolveWidgetRequest` + `addWidgetBlocker`).
+- **`MpAlert live="off"`** now drops the role as well as `aria-live` — `status` / `alert` are live-region
+  roles, so omitting only `aria-live` never turned announcements off. The seven pre-existing call sites
+  (Maropay ×3, Landing block settings, Order detail ×2, DNS setup) are all static blocks, so they now read as
+  plain content; the two new ones are alerts inside the live transcript.
+- `DvInsightCard` composes `MpAlert`; its action button is a flat `surface` button, not a tonal severity one.
+- localStorage: `davinci-history-v1` → `davinci-history-v2` (old title-only history is dropped on load);
+  `davinci-active-conversation-v1` (never written) removed.
+
+### Token added
+
+- `component.preview.widgetHeight.{sm,md,lg}` (200 / 384 / 480) — the definite-height frame a live
+  `DashboardWidgetCard` needs (a chart card is its chrome plus a 240px plot floor).
+
+### Deliberate visual changes
+
+- Seeded dashboards change: contact-growth and ticket-volume charts now vary, revenue by channel splits by
+  real channel, and subtitles say "Last 7 sends" / "Most recent" / "All time" where the widget ignores the range.
+- The revenue chart in chat is the dashboard's chart, with its prior-week comparison.
+- Insight cards recolour to the semantic container pairs; toasts show tone icons; history rows are buttons;
+  the history overlay starts at the 48px header, not 56px.
+
+### Deliberately unchanged
+
+- While an engaged setup / campaign session is active, other requests keep redirecting to the current step
+  (guide-only) — decided with the merchant-facing owner; only account scoping, never-started takeover and
+  wizard exits were fixed.
+- The wizards' use / change / different verbs and setup's "explore" words.
+
+### Follow-ups this opens
+
+- Per-widget date ranges: Da Vinci states the dashboard's range rather than honouring one from the prompt.
+- History and read-aloud keys are global, not account-scoped (restoring a conversation from another demo
+  account shows what was said then). Weekly grain isn't honoured by the widget data.
+- `WidgetWizardDrawer` is silent at the 24-widget cap (the Da Vinci path now says why); marketing KPI deltas
+  are still fabricated.
+- `generateJourneyDraft` (`useJourneyGenerator`) is no longer used by the copilot — the wizard never received
+  its draft. Wire it to Build with AI or delete it.
+- Other viewport-height shells (store editor, retail) still ignore the expiring-trial banner; they can subtract
+  `--mp-banner-offset` the way the copilot page now does.
+- The app-bar Co-pilot entry on the copilot page itself; the header subtitle ellipsis; the px sweep outside
+  touched files; a real-browser check that the mic prompt doesn't appear on a plain dashboard load.
 ## Storefront checkout — 2026-10-05
 
 The merchant's checkout choices (Store › Payments) now show on the store itself. Decisions F1–F4 in
@@ -2772,3 +2969,94 @@ Components and tokens (the app looks the same unless stated):
   (`overlayDocs()`); the Controls panel on the Canvas tab does.
 - The Figma ledger in `docs/design-system/figma/` still lists the app bar token as 60 and
   `MpIllustration` / `MpUsageMeter` with their old props.
+
+## Da Vinci demo readiness — 2026-11-23
+
+A QA pass on the Da Vinci voice workspace and copilot ahead of a prospect demo, on
+`fix/davinci-demo-readiness`. Two parts.
+
+### 1. The September fix set, brought up to master
+
+`claude/davinci-flow-ui-bugs-3ef6c2` (the "Da Vinci flow + graph generation — 2026-09-29" entry above,
+PR 2) was never merged, so master still had what it fixed: the voice workspace sent Gemini no store
+data (it invented products and campaigns), an open clarification swallowed the next question, chips
+routed to the wrong lane, history did not restore, draft previews were sample art. Master is merged
+into it here. Merge decisions:
+
+- `MpDaVinciBot.vue`: the September reply path (`useDaVinciResponder`: flows → plan → reply, queued
+  turns, thread epochs) with the Catalog Co-Pilot lane from master inside `runGeneration`. A live
+  catalog context makes the guided flows stand aside; a reply that answers an open clarification never
+  opens the catalog. Composer pills are the derived follow-ups (none under a catalog reply).
+- `component.preview`: master removed `preview.viewport.mobile`; the group now holds only
+  `widgetHeight.{sm,md,lg}` (the live draft preview frames). **Token change:** `component.preview.viewport.mobile` is gone.
+- `ChatComponent.type` no longer has `'insight'` (insights are cards inside `intentCards`); the three
+  catalog types are added.
+- `useWidgetData`: the September ticket fixes (real per-day volume, real channel tally) on master's `visibleTickets`.
+- Stories: master's conventions (`overlayDocs`, `isolateStorage`, scenario names, no re-render shells)
+  on the September component APIs. `DvRefineDialog`: `SingleView`, `TableDraft`, `DashboardFull`;
+  `DvExpandDialog`: `KpiDraft`, `AlreadyAdded`; `MpDaVinciBot`: `AdvisorBusy` kept.
+
+### 2. Fixes found in this pass
+
+- **Segments answer the request** (`src/davinci/segmentRequest.ts`). "Customers who haven't purchased
+  in 90 days" returned a canned "High-intent shoppers" card. A request now maps to the segment it
+  describes (lapsed, inactive, cart, new, repeat, VIP, high-value, engaged) with its window; a segment
+  the account already has is shown with its real count instead of drafted again; a new window is
+  estimated from its nearest relative. `segmentVariants` in `dvIntentData.ts` is no longer read at runtime.
+- **Campaigns keep the occasion** (`src/davinci/campaignBrief.ts`). "Draft a Black Friday campaign for
+  my VIPs" was asked for its goal, then drafted as "First campaign — Special offer". A request that
+  names its goal and audience goes straight to the readiness card; the draft is "Black Friday — Special
+  offer". "First campaign" naming and the `Onboarding` tag are only for an account that has not sent one.
+  `CampaignBrief.topic` is new. Fixed on the way: "Share a newsletter" was filed as an announcement
+  (`new` matched `newsletter`).
+- **Campaign wizard lets go.** A finished draft no longer answers the next message with "Campaign setup
+  is paused"; a request for a segment, journey or engine mid-wizard pauses it instead of becoming its
+  goal; New chat ends a brief that began in passing (the voice workspace used to show the first-campaign
+  welcome screen).
+- **Product descriptions use the catalogue** (`src/davinci/productMatch.ts`). The voice workspace
+  alternated two invented products. It now drafts for the catalogue product named, for whatever was
+  described, or for the best seller; "Open product editor" opens that product. `DvContentCard` gains
+  `productId?`.
+- **One product mix** (`src/stores/dashboards/productMix.ts`): the dashboard's "Sales by product name"
+  widget and the store snapshot Da Vinci answers from read the same list, so "top sellers" agree to the dollar.
+- **Router:** an explicit request to make a segment is a segment whatever goal it describes ("Build a
+  segment of lapsed customers" was a win-back journey). 63,525 generated prompts compared old vs new:
+  3,150 changed, all `journey → segment` with a segment as the verb's object.
+- **Voice workspace (`DaVinciExperience.vue`):**
+  - Typing over a spoken reply interrupts it. Send was disabled until Da Vinci finished talking.
+  - Starter prompts ("Try saying") show until the conversation begins, mic live or not. They appeared only while the text field had focus.
+  - The spoken line is a sentence-case caption on a surface wash, and the greeting is captioned. It was spaced-out capitals, unreadable across the orb's ring.
+  - The "Da Vinci" label above each reply was invisible in both themes: it used `--dv-muted`, a surface colour, as text. Now `--dv-text-secondary`.
+  - A blocked mic always says so under the mic (the first auto-listen failed silently); an unclassified recognition error says the mic stopped.
+  - A thread carried over from the drawer no longer keeps the mic closed after the greeting.
+  - "Thanks, that's all" / "Goodbye" ends a hands-free session with a short reply (`isSignOff` in `phrases.ts`).
+  - Esc in the message box clears it, then blurs; it no longer leaves the page.
+  - A new message scrolls to its start, not its end, so a tall reply shows its own sentence.
+- **Speech stream** (`useDaVinciVoice.ts`): a streamed reply that goes quiet for 8s after it has started
+  ends there instead of hanging the hands-free loop; Interrupt and End abort a reply that is still arriving.
+- **Chrome heard nothing while Safari worked** (`useDaVinciVoice.ts`). Two causes, both fixed:
+  - Chrome and Edge record from the microphone chosen in their own settings. When that one is dead (a
+    laptop's built-in mic delivering digital silence while the merchant speaks into a headset), the
+    session sat on "Listening…" for good. The first capture now checks the chosen microphone; if it is
+    silent and the system's input is another, live device, recognition restarts on that track
+    (`SpeechRecognition.start(track)`) and a line under the mic says so. With nothing better to use, the
+    line names the silent microphone. `micNotice` is new on the voice composable; a `devicechange` resets the check.
+  - A listen that another tab cut short came back empty at once, and the hands-free loop re-armed
+    immediately: over a thousand restarts a second, a frozen page, and the other tab cut off just as
+    often. The loop now waits longer after each cut-short listen and stops after four with "Voice input
+    keeps being cut off — it may be in use in another tab or window."
+  - The disabled-mic tooltip said voice needs "Chrome or Edge"; Safari supports it too.
+- **Advisor:** temperature 0.7 → 0.3 (the same question gets the same answer); the written reply uses
+  digits and symbols, the spoken one rounds for the ear.
+- Tab title: "Da vinci experience" → "Da Vinci experience" (`titleFromRouteName`).
+
+### Not done (needs a decision)
+
+- **Cached voice lines.** `public/davinci/lines/` holds 22 lines; none but the greeting is spoken any
+  more, so every reply streams (about 1.5–2.5s to first audio). Re-baking the lines the app now says
+  (campaign wizard, goodbye, offline) needs a run of `scripts/bake-lines.mjs` against the paid TTS key,
+  after `listCannedSpeech()` is updated.
+- The live draft preview's x-axis labels overlap in the 400px drawer for a by-category column chart.
+- Follow-up chips under an advisor answer are the same four every time.
+- On a 13-inch laptop the thread shows about 370px; a smaller mic while a conversation is open would give it more.
+- A real-microphone pass on the fixed build (the test browser cannot grant the mic).

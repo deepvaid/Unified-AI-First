@@ -12,12 +12,13 @@ import DvIntentCardList from '@/components/copilot/voice/DvIntentCardList.vue'
 import DvCampaignOnboardingCard from '@/components/copilot/DvCampaignOnboardingCard.vue'
 import DvSetupOnboardingCard from '@/components/copilot/DvSetupOnboardingCard.vue'
 import DvToastStack from '@/components/copilot/DvToastStack.vue'
+import DvToolSteps from '@/components/copilot/DvToolSteps.vue'
+import DvWidgetDraftCard from '@/components/copilot/DvWidgetDraftCard.vue'
 import { useDaVinciVoice, VoiceError } from '@/composables/useDaVinciVoice'
-import {
-  useDaVinciIntents,
-  type DvCardDescriptor,
-  type DvIntentResult,
-} from '@/composables/useDaVinciIntents'
+import type { DvCardDescriptor, DvIntentResult, DvQuickReply } from '@/composables/useDaVinciIntents'
+import { geminiHistory, makeId } from '@/davinci/conversation'
+import { isSignOff } from '@/davinci/phrases'
+import { useDaVinciResponder, type DvAssistantTurn, type DvFlowResponse } from '@/composables/useDaVinciResponder'
 import {
   useDaVinciCampaignOnboarding,
   type CampaignOnboardingResponse,
@@ -33,6 +34,7 @@ import {
   useCopilotStore,
   type CampaignOnboardingProps,
   type ChatMessage,
+  type DraftSetProps,
   type IntentCardsProps,
   type SetupOnboardingProps,
 } from '@/stores/useCopilot'
@@ -44,7 +46,9 @@ import { useUserProfile } from '@/stores/useUserProfile'
 const route = useRoute()
 const router = useRouter()
 const voice = useDaVinciVoice()
-const intents = useDaVinciIntents()
+// One reply path shared with the drawer: flows → lane → reply.
+const responder = useDaVinciResponder()
+const { intents } = responder
 const campaignOnboarding = useDaVinciCampaignOnboarding()
 const setupOnboarding = useDaVinciSetupOnboarding()
 const { pushToast } = useDaVinciToasts()
@@ -61,8 +65,15 @@ const accountId = computed(() => {
 })
 
 const inputText = ref('')
-// Starter chips reveal only while the text field is focused (see template).
-const inputFocused = ref(false)
+// What to say first — one prompt per thing Da Vinci does well aloud. Shown until the conversation begins,
+// mic live or not: an empty orb gave a first-time visitor (and a presenter) nothing to go on. They used to
+// appear only while the text field had focus.
+const STARTERS: DvQuickReply[] = [
+  { label: 'How’s revenue this week?', value: "How's revenue this week?", icon: 'trending-up' },
+  { label: 'What needs my attention today?', value: 'What needs my attention today?', icon: 'list-checks' },
+  { label: 'Draft a flash sale campaign for my VIPs', value: 'Draft a flash sale campaign for my VIP customers', icon: 'megaphone' },
+  { label: 'Win back customers who haven’t bought in 90 days', value: "Win back customers who haven't bought in 90 days", icon: 'user-round-check' },
+]
 const captionText = ref('')
 const voiceRecoveryMessage = ref('')
 const threadEl = ref<HTMLElement | null>(null)
@@ -114,6 +125,9 @@ const welcomeCopy = computed(() => {
   return 'I’ll show you around, explain what matters, and take you to the right pages — you make every change. I never save, publish, or send anything.'
 })
 let micPermissionTracked = false
+// Set the moment the view unmounts. Every async step of the voice flow checks it: an `await` that
+// resolves after the merchant left must not arm listeners, speak, or open the mic on the next page.
+let disposed = false
 
 // ── Live (hands-free) conversation ───────────────────────────────────────────
 const liveActive = ref(false)
@@ -162,56 +176,40 @@ const stageHint = computed(() => {
   return voice.sttSupported ? 'Tap to talk' : 'Type below to begin'
 })
 
-function makeId(prefix = 'x') {
-  return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`
-}
-
+/**
+ * Brings the newest message into view from its START. Scrolling to the very bottom hid a reply's own
+ * sentence above a tall card (a revenue reply showed the chart's lower half and nothing else on a laptop
+ * screen). A short message still ends up at the bottom — the browser clamps the offset.
+ */
 function scrollThread() {
   nextTick(() => {
-    threadEl.value?.scrollTo({ top: threadEl.value.scrollHeight, behavior: 'smooth' })
+    const thread = threadEl.value
+    if (!thread) return
+    const target = thread.querySelector<HTMLElement>('.dvx__turn:last-child')
+    // Keep the thread's own top inset above the turn, so its label isn't flush against the edge.
+    const inset = parseFloat(getComputedStyle(thread).paddingTop) || 0
+    const top = target
+      ? target.getBoundingClientRect().top - thread.getBoundingClientRect().top + thread.scrollTop - inset
+      : thread.scrollHeight
+    thread.scrollTo({ top, behavior: 'smooth' })
   })
 }
 
 type ExperienceResponse = CampaignOnboardingResponse | DvIntentResult | SetupOnboardingResponse
 
-function componentDataFor(response: ExperienceResponse) {
-  const components: ChatMessage['componentData'] = []
-  const cards = 'cards' in response ? response.cards ?? [] : []
-  if (cards.length || response.quickReplies?.length) {
-    components.push({
-      type: 'intentCards',
-      props: { cards, quickReplies: response.quickReplies },
-    })
-  }
-  if ('onboardingCard' in response && response.onboardingCard) {
-    components.push({
-      type: 'campaignOnboarding',
-      props: response.onboardingCard,
-    })
-  }
-  if ('setupCard' in response && response.setupCard) {
-    components.push({
-      type: 'setupOnboarding',
-      props: response.setupCard,
-    })
-  }
-  return components.length ? components : undefined
-}
-
 function appendAssistantResponse(response: ExperienceResponse) {
-  messages.value.push({
-    id: makeId('a'),
-    role: 'assistant',
-    text: response.reply,
-    componentData: componentDataFor(response),
-    toolSteps: 'steps' in response ? response.steps : undefined,
-  })
+  messages.value.push(responder.flowMessage(response))
   chatMode.value = true
   if ('onboardingCard' in response && response.onboardingCard) {
     const blockers = response.onboardingCard.items?.filter((item) => item.status !== 'ready').length ?? 0
     trackDaVinciOnboardingEvent('readiness_shown', accountId.value, { blockers })
   }
   scrollThread()
+}
+
+function draftSetFor(message: ChatMessage): DraftSetProps | null {
+  const component = message.componentData?.find((item) => item.type === 'widgetDraftSet')
+  return component ? component.props as DraftSetProps : null
 }
 
 function intentCardsFor(message: ChatMessage): IntentCardsProps | null {
@@ -229,45 +227,83 @@ function setupCardFor(message: ChatMessage): SetupOnboardingProps | null {
   return component ? component.props as SetupOnboardingProps : null
 }
 
+// A reply still being worked out is dropped if the merchant starts a New chat (or opens another
+// conversation) — it must never land in the fresh thread. If they LEAVE instead, it still lands in
+// the thread it was asked in (the drawer shows it), silently: nothing is spoken after they have gone.
+let generation = 0
+let replyAbort: AbortController | null = null
+
 /** Generate + render a reply; speak it (awaiting in live mode so the loop waits for TTS). */
 async function respond(text: string, { awaitSpeech = false } = {}) {
-  messages.value.push({ id: makeId('u'), role: 'user', text })
+  if (disposed) return
+  const gen = ++generation
+  const epoch = copilot.threadEpoch
+  replyAbort?.abort()
+  const turnId = makeId('u')
+  messages.value.push({ id: turnId, role: 'user', text })
   chatMode.value = true
   inputText.value = ''
   scrollThread()
 
   voice.setThinking(true)
-  // Recent turns give Gemini context for open-ended questions (exclude the just-pushed
-  // current turn — the server appends it). Deterministic flows ignore it.
-  const history = messages.value.slice(0, -1).slice(-6).map((m) => ({ role: m.role, text: m.text }))
   // Small pacing floor so a cached/canned reply doesn't pop in jarringly. Trimmed from
   // ~620-1040ms → ~200-400ms: real TTS latency now supplies the "processing" beat, and
   // for LLM turns this runs concurrently with the (slower) brain call anyway.
   const minDelay = new Promise<void>((r) => setTimeout(r, 200 + Math.random() * 200))
-  // Routing precedence (kept identical to the drawer): guided setup → campaign
-  // wizard → the normal assistant (Gemini for open questions).
-  const setupResponse = setupEntry.value && setupStore.isActive ? setupOnboarding.handleText(text) : null
-  const onboardingResponse = setupResponse
-    ? null
-    : campaignEntry.value && onboarding.isActive
-      ? campaignOnboarding.handleText(text)
-      : null
-  // Either flow pauses itself for off-topic questions; acknowledge the switch once,
-  // then let the normal assistant answer the actual question.
-  const pauseNotice = setupResponse || onboardingResponse
-    ? null
-    : setupOnboarding.consumePauseNotice() ?? campaignOnboarding.consumePauseNotice()
-  const res = setupResponse ?? onboardingResponse ?? await intents.answer(text, { history })
+
+  // Routing precedence is the responder's, identical to the drawer: guided setup →
+  // campaign wizard → widget drafts / canned intents / the advisor (with the workspace context).
+  const flow = responder.flowTurn(text, accountId.value)
+  let flowResponse: DvFlowResponse | null = null
+  let notices: DvFlowResponse[] = []
+  let turn: DvAssistantTurn | null = null
+  if (flow.kind === 'pass') {
+    notices = flow.notices
+    const plan = responder.plan(text)
+    const controller = plan.lane === 'gemini' ? new AbortController() : null
+    replyAbort = controller
+    try {
+      turn = await responder.reply(plan, text, { history: geminiHistory(messages.value, turnId), signal: controller?.signal })
+    } catch {
+      if (gen !== generation || epoch !== copilot.threadEpoch) return // superseded (New chat / another conversation) — never lands
+      turn = responder.offlineTurn()
+    } finally {
+      // Only this turn's controller: a stale finally must not null a newer turn's.
+      if (replyAbort === controller) replyAbort = null
+    }
+  } else {
+    flowResponse = flow.response
+  }
   await minDelay
-  voice.setThinking(false)
-  if (pauseNotice) appendAssistantResponse(pauseNotice)
-  appendAssistantResponse(res)
-  const speech = res.speech ?? res.reply
-  captionText.value = speech
-  if ('exitToDashboard' in res && res.exitToDashboard) {
-    exitSetupToDashboard()
+  if (gen !== generation || epoch !== copilot.threadEpoch) return
+  if (disposed) {
+    // Left mid-reply: the answer belongs to the thread it was asked in, so it lands — but silently
+    // (no speech, no mic, no navigation).
+    notices.forEach((notice) => appendAssistantResponse(notice))
+    if (flowResponse) appendAssistantResponse(flowResponse)
+    else if (turn) messages.value.push(turn.message)
     return
   }
+
+  voice.setThinking(false)
+  notices.forEach((notice) => appendAssistantResponse(notice))
+  let speech: string
+  if (flowResponse) {
+    appendAssistantResponse(flowResponse)
+    speech = flowResponse.speech ?? flowResponse.reply
+    if ('exitToDashboard' in flowResponse && flowResponse.exitToDashboard) {
+      captionText.value = speech
+      exitSetupToDashboard()
+      return
+    }
+  } else {
+    const landed = turn!
+    messages.value.push(landed.message)
+    chatMode.value = true
+    scrollThread()
+    speech = landed.speech
+  }
+  captionText.value = speech
   if (awaitSpeech) await voice.speak(speech)
   else void voice.speak(speech)
 }
@@ -285,7 +321,11 @@ function sendText(raw: string) {
       if (liveActive.value) void armListening()
     })()
   } else {
-    if (busy.value) return
+    // One reply at a time: while an answer is still being worked out, the composer keeps what was typed.
+    if (voice.state.value === 'thinking') return
+    // Typing over a spoken reply (or the greeting) interrupts it, as the live session does — Send used to
+    // be disabled until Da Vinci had finished talking, with nothing to say why.
+    voice.cancelSpeech()
     void respond(text)
   }
 }
@@ -333,6 +373,7 @@ function continueByTyping() {
 }
 
 async function enableVoiceOnboarding() {
+  if (disposed) return
   prepareOnboardingSession()
   voiceRecoveryMessage.value = ''
   copilot.setReadAloud(true)
@@ -345,47 +386,60 @@ async function enableVoiceOnboarding() {
   const greeting = appendGreeting()
   captionText.value = greeting
   await voice.playChime('open')
+  if (disposed) return
   await voice.speak(greeting)
+  if (disposed) return
   const response = startFlowResponse('voice')
   appendAssistantResponse(response)
   captionText.value = response.speech ?? response.reply
   await voice.speak(response.speech ?? response.reply)
-  if (!voice.sttSupported) return
+  if (disposed || !voice.sttSupported) return
   liveActive.value = true
   void armListening()
 }
 
-// Hide the starter chips on blur, but after a beat so a chip tap still registers.
-function onInputBlur() {
-  setTimeout(() => {
-    inputFocused.value = false
-  }, 150)
-}
-
-function reportVoiceError(err: unknown) {
+/**
+ * Says why the mic stopped. The line under the mic always appears — a session that ended without a word
+ * left the presenter looking at "Tap to talk" with no idea the mic was blocked. `quiet` drops only the toast.
+ */
+function reportVoiceError(err: unknown, { quiet = false } = {}) {
   if (!(err instanceof VoiceError)) return
+  const toast = (input: Parameters<typeof pushToast>[0]) => {
+    if (!quiet) pushToast(input)
+  }
   if (err.code === 'permission') {
     trackDaVinciOnboardingEvent('microphone_permission', accountId.value, { outcome: 'denied' })
     trackDaVinciOnboardingEvent('voice_recovery', accountId.value, { reason: 'permission' })
     voiceRecoveryMessage.value = 'Microphone access is blocked. Allow it in browser settings, or continue by typing.'
-    pushToast({ title: 'Microphone blocked', sub: 'Allow microphone access in your browser settings' })
+    toast({ tone: 'warning', title: 'Microphone blocked', sub: 'Allow microphone access in your browser settings' })
   } else if (err.code === 'network') {
     trackDaVinciOnboardingEvent('voice_recovery', accountId.value, { reason: 'network' })
     voiceRecoveryMessage.value = 'Voice is unavailable right now. Check your connection, or continue by typing.'
-    pushToast({ title: 'Voice service unavailable', sub: 'Check your connection — you can type instead' })
+    toast({ tone: 'warning', title: 'Voice service unavailable', sub: 'Check your connection — you can type instead' })
   } else if (err.code === 'audio') {
     trackDaVinciOnboardingEvent('voice_recovery', accountId.value, { reason: 'no-microphone' })
     voiceRecoveryMessage.value = 'No microphone was found. Connect one, or continue by typing.'
-    pushToast({ title: 'No microphone found' })
+    toast({ tone: 'warning', title: 'No microphone found' })
+  } else if (err.code === 'unknown') {
+    voiceRecoveryMessage.value = 'Voice input stopped. Tap the mic to try again, or continue by typing.'
   }
 }
+
+// A listen that comes back empty almost at once did not hear silence (that takes the browser several
+// seconds): something ended it — another tab or window that starts speech recognition does. Re-arming
+// straight away restarted the mic over a thousand times a second, froze the page, and cut the other tab
+// off just as often. So the loop waits a little longer each time, and after a few in a row stops and says why.
+const CUT_SHORT_MS = 1000
+const MAX_CUT_SHORT = 4
+let cutShort = 0
 
 /** One listen → respond turn, then re-arm — the continuous hands-free loop.
  *  `silent` suppresses the error toast for the first auto-start arm, where a
  *  cold-load mic may be blocked by the browser until the user interacts. */
 async function armListening(silent = false) {
-  if (!liveActive.value) return
+  if (!liveActive.value || disposed) return
   const myToken = ++loopToken
+  const startedAt = performance.now()
   let text = ''
   try {
     text = await voice.startListening({ owner: 'experience', withAnalyser: true })
@@ -394,19 +448,47 @@ async function armListening(silent = false) {
       trackDaVinciOnboardingEvent('microphone_permission', accountId.value, { outcome: 'allowed' })
     }
   } catch (err) {
-    if (!silent) reportVoiceError(err)
+    if (disposed) return
+    reportVoiceError(err, { quiet: silent })
     endLive()
     return
   }
-  if (myToken !== loopToken || !liveActive.value) return // superseded by a typed turn / ended
+  if (disposed || myToken !== loopToken || !liveActive.value) return // superseded by a typed turn / ended / left
   if (!text) {
     // Silence never ends hands-free — keep listening until the user explicitly
     // ends the conversation (End button / Esc / leaving the page).
+    if (performance.now() - startedAt >= CUT_SHORT_MS) {
+      cutShort = 0
+    } else if (++cutShort >= MAX_CUT_SHORT) {
+      cutShort = 0
+      voiceRecoveryMessage.value =
+        'Voice input keeps being cut off — it may be in use in another tab or window. Close it there, then tap the mic.'
+      endLive()
+      return
+    } else {
+      await new Promise((r) => setTimeout(r, 400 * cutShort))
+      if (disposed || myToken !== loopToken || !liveActive.value) return
+    }
     void armListening()
     return
   }
+  cutShort = 0
+  if (isSignOff(text)) {
+    await signOff(text)
+    return
+  }
   await respond(text, { awaitSpeech: true })
-  if (myToken === loopToken && liveActive.value) void armListening()
+  if (!disposed && myToken === loopToken && liveActive.value) void armListening()
+}
+
+/** "Thanks, that's all" ends a hands-free session the way it ends a call: a short goodbye, then the mic closes. */
+async function signOff(text: string) {
+  const reply = 'Anytime. I’m here when you need me.'
+  messages.value.push({ id: makeId('u'), role: 'user', text })
+  appendAssistantResponse({ intent: 'fallback', reply, speech: reply, cards: [] })
+  captionText.value = reply
+  await voice.speak(reply)
+  if (!disposed) endLive()
 }
 
 /** Tap to begin a hands-free conversation. */
@@ -414,6 +496,7 @@ function startLive() {
   voice.unlockSpeech() // mic permission + iOS audio unlock happen inside the tap
   if (liveActive.value) return
   voiceRecoveryMessage.value = ''
+  cutShort = 0
   liveActive.value = true
   void armListening()
 }
@@ -436,7 +519,11 @@ function onLiveControl() {
 
 /** After the greeting finishes speaking, drop into the hands-free listen loop. */
 function listenAfterGreeting() {
-  if (voice.sttSupported && !liveActive.value && messages.value.length === 0) {
+  if (disposed) return
+  // A thread carried over from the drawer no longer keeps the mic closed: whoever opens the voice
+  // workspace and is greeted expects to be listened to. (A greeting that is interrupted — by a typed
+  // message, say — never reaches here: `speak` only reports the end of speech that finished.)
+  if (voice.sttSupported && !liveActive.value) {
     liveActive.value = true
     void armListening(true) // silent: no toast if the mic arm is blocked
   }
@@ -456,11 +543,14 @@ async function autoGreet() {
   if (voice.muted.value) return // respect "Voice off"
   voice.unlockSpeech()
   await greetingReady() // let the pre-baked WAV land so the speak is a cache hit
+  if (disposed) return
   await voice.playChime('open') // comm channel connects (no-op while autoplay is blocked)
+  if (disposed) return
   let becameAudible = false
   voice.speak(greetingText.value, {
     onAudible: () => {
       becameAudible = true
+      captionText.value = greetingText.value // the words on screen too — a room may not hear them
     },
     onend: () => {
       if (becameAudible) listenAfterGreeting() // only auto-listen if the greeting truly played
@@ -474,6 +564,7 @@ async function autoGreet() {
   // Chrome onset (after the voices gate + retry) isn't cut off.
   greetProbe = setTimeout(() => {
     greetProbe = null
+    if (disposed) return
     if (!becameAudible && !liveActive.value && messages.value.length === 0) {
       voice.cancelSpeech()
       // The tap-to-start affordance is the focal mic — only offer it where the mic
@@ -494,7 +585,7 @@ async function autoGreet() {
  *  a conversation starts or the view unmounts. Skips while the user is typing (composer
  *  focused) — the send flow owns that path. */
 function armGrantReprobe() {
-  if (grantProbeCleanup) return
+  if (grantProbeCleanup || disposed) return
   let fired = false
   let tries = 0
   let timer: ReturnType<typeof setTimeout> | null = null
@@ -502,13 +593,17 @@ function armGrantReprobe() {
     !liveActive.value && messages.value.length === 0 && !voice.muted.value && voice.state.value === 'idle'
   const composerFocused = () => !!(document.activeElement as HTMLElement | null)?.closest('.dvx__composer')
   const fire = () => {
+    if (disposed) {
+      disarmGrantReprobe()
+      return
+    }
     if (fired || !atRest() || composerFocused()) return
     fired = true
     void startGreeting() // disarms this probe + the gesture listener internally
   }
   const check = async () => {
     if (fired) return
-    if (!atRest()) {
+    if (disposed || !atRest()) {
       disarmGrantReprobe()
       return
     }
@@ -541,7 +636,7 @@ function disarmGrantReprobe() {
 /** Arm a one-shot listener: the first gesture anywhere (except typing in the
  *  composer or tapping the mic, which have their own flows) speaks the greeting. */
 function armGestureGreeting() {
-  if (gestureGreetCleanup) return
+  if (gestureGreetCleanup || disposed) return
   const handler = (e: Event) => {
     const target = e.target as HTMLElement | null
     if (target?.closest('.dvx__composer, .dvx__centermic')) return // let typing / mic do their thing
@@ -571,7 +666,10 @@ async function startGreeting() {
   audioBlocked.value = false
   voice.unlockSpeech() // synchronously within the gesture, before any await
   await greetingReady() // cache-hit the pre-baked WAV instead of streaming
+  if (disposed) return
   await voice.playChime('open') // comm channel connects
+  if (disposed) return
+  captionText.value = greetingText.value // the words on screen too — a room may not hear them
   void voice.speak(greetingText.value, { onend: listenAfterGreeting })
 }
 
@@ -699,12 +797,16 @@ function onCardAction(payload: { card: DvCardDescriptor; action: string }) {
       return
     }
   }
-  // Shared with the drawer: creates the segment / copies the draft and navigates,
-  // then reports what actually happened.
-  pushToast(intents.performCardAction(payload.card, payload.action) ?? { title: 'Done' })
+  // Shared with the drawer: creates the segment / copies the draft and navigates, then reports
+  // what actually happened — and stays quiet when nothing did.
+  void intents.performCardAction(payload.card, payload.action).then((toast) => {
+    if (toast) pushToast(toast)
+  })
 }
 
 function newChat() {
+  generation++ // a reply still being worked out must not land in the fresh thread
+  replyAbort?.abort()
   endLive()
   intents.reset()
   copilot.resetConversation()
@@ -714,8 +816,13 @@ function newChat() {
     copilot.beginOnboarding(accountId.value)
   } else if (campaignEntry.value) {
     onboarding.reset(accountId.value)
-    onboarding.begin(accountId.value, { restart: true })
-    copilot.beginOnboarding(accountId.value)
+    // Only the guided first-campaign arrival starts over at its welcome screen. A brief that began with
+    // "run a campaign" in an ordinary conversation simply ends with the thread — New chat used to answer
+    // it with the "Turn your first idea into an editable email campaign" welcome.
+    if (route.query.onboarding === 'campaign' || copilot.activeOnboardingAccountId === accountId.value) {
+      onboarding.begin(accountId.value, { restart: true })
+      copilot.beginOnboarding(accountId.value)
+    }
   }
   inputText.value = ''
   captionText.value = ''
@@ -732,7 +839,19 @@ function exitExperience() {
 }
 
 function onKeydown(e: KeyboardEvent) {
-  if (e.key === 'Escape') exitExperience()
+  if (e.key !== 'Escape' || e.isComposing || e.defaultPrevented) return
+  // A Refine / Expand dialog or a menu is open: Esc belongs to it. Vuetify closes overlays from a
+  // window listener that runs after this document one, so without this check Esc left the page first.
+  if (document.querySelector('.v-dialog.v-overlay--active, .v-menu.v-overlay--active')) return
+  // In the message box, Esc clears what was typed, then lets go of the field — it must not leave the page
+  // mid-sentence.
+  const field = (e.target as HTMLElement | null)?.closest<HTMLInputElement>('.dvx__input')
+  if (field) {
+    if (inputText.value) inputText.value = ''
+    else field.blur()
+    return
+  }
+  exitExperience()
 }
 
 onMounted(() => {
@@ -773,7 +892,9 @@ onMounted(() => {
     if (route.query.voice === 'granted' && voice.sttSupported && session.stage === 'welcome') {
       voiceHandoff.value = true
       void (async () => {
-        if (await voice.tryUnlockAudio()) void enableVoiceOnboarding()
+        const unlocked = await voice.tryUnlockAudio()
+        if (disposed) return
+        if (unlocked) void enableVoiceOnboarding()
         else voiceHandoff.value = false // autoplay still blocked → normal welcome, never a dead end
       })()
       return
@@ -790,7 +911,9 @@ onMounted(() => {
     if (route.query.voice === 'granted' && voice.sttSupported && session.stage === 'welcome') {
       voiceHandoff.value = true
       void (async () => {
-        if (await voice.tryUnlockAudio()) void enableVoiceOnboarding()
+        const unlocked = await voice.tryUnlockAudio()
+        if (disposed) return
+        if (unlocked) void enableVoiceOnboarding()
         else voiceHandoff.value = false // autoplay still blocked → normal welcome, never a dead end
       })()
       return
@@ -822,6 +945,7 @@ watch(
 )
 
 onBeforeUnmount(() => {
+  disposed = true // a reply in flight still lands in the shared thread, silently — see respond()
   document.removeEventListener('keydown', onKeydown)
   if (greetProbe) clearTimeout(greetProbe)
   disarmGestureGreeting()
@@ -959,7 +1083,25 @@ onBeforeUnmount(() => {
           :class="msg.role === 'user' ? 'dvx__turn--user' : 'dvx__turn--ai'"
         >
           <span class="dvx__role">{{ msg.role === 'user' ? 'You' : 'Da Vinci' }}</span>
+          <DvToolSteps
+            v-if="msg.toolSteps?.length"
+            class="dvx__steps"
+            :steps="msg.toolSteps.map((label) => ({ label, status: 'done' as const }))"
+          />
           <p class="dvx__msg">{{ msg.text }}</p>
+          <div v-if="draftSetFor(msg)" class="dvx__drafts">
+            <p v-if="draftSetFor(msg)?.rationale" class="dvx__rationale">{{ draftSetFor(msg)?.rationale }}</p>
+            <DvWidgetDraftCard
+              v-for="(draft, idx) in draftSetFor(msg)?.drafts ?? []"
+              :key="`${msg.id}-${idx}`"
+              :account-id="accountId"
+              :dashboard-id="responder.target.dashboard.value?.id ?? ''"
+              :draft="draft"
+              :note="draftSetFor(msg)?.notes?.[idx] ?? null"
+              :added="draftSetFor(msg)?.added?.[idx] ?? null"
+              @saved="responder.announceDraftAdded($event, msg.id, idx)"
+            />
+          </div>
           <DvIntentCardList
             v-if="intentCardsFor(msg)?.cards.length"
             :cards="intentCardsFor(msg)!.cards"
@@ -1018,14 +1160,29 @@ onBeforeUnmount(() => {
         >
           <v-icon :size="26">{{ liveActive && voice.state.value === 'speaking' ? 'square' : 'mic' }}</v-icon>
           <v-tooltip v-if="!voice.sttSupported" activator="parent" location="top">
-            Voice input needs Chrome or Edge — you can type below
+            Voice input needs Chrome, Edge or Safari — you can type below
           </v-tooltip>
         </button>
-        <p class="dvx__hint" :class="{ 'dvx__hint--live': liveActive && voice.state.value === 'listening' }">
+        <p
+          class="dvx__hint"
+          :class="{
+            'dvx__hint--live': liveActive && voice.state.value === 'listening',
+            'dvx__hint--caption': voice.state.value === 'speaking' && !!captionText,
+          }"
+        >
           {{ stageHint }}
         </p>
-        <p v-if="voiceRecoveryMessage" class="text-caption text-error mb-0" role="alert">
+        <p v-if="voiceRecoveryMessage" class="dvx__mic-notice text-caption text-error mb-0" role="alert">
           {{ voiceRecoveryMessage }}
+        </p>
+        <!-- The microphone being heard on is silent, or Da Vinci moved to one that is not (useDaVinciVoice). -->
+        <p
+          v-else-if="voice.micNotice.value"
+          class="dvx__mic-notice text-caption mb-0"
+          :class="voice.micNotice.value.tone === 'warning' ? 'text-error' : 'text-medium-emphasis'"
+          role="status"
+        >
+          {{ voice.micNotice.value.text }}
         </p>
         <div v-if="liveActive" class="dvx__live-controls">
           <button v-if="voice.state.value === 'speaking'" type="button" class="dvx__live-btn" @click="voice.cancelSpeech()">
@@ -1048,32 +1205,34 @@ onBeforeUnmount(() => {
             placeholder="Message Da Vinci…"
             aria-label="Message Da Vinci"
             class="dvx__input"
-            @focus="inputFocused = true"
-            @blur="onInputBlur"
           />
           <button
             type="submit"
             class="dvx__iconbtn dvx__iconbtn--send"
             aria-label="Send"
-            :disabled="!inputText.trim() || (!liveActive && busy)"
+            :disabled="!inputText.trim() || (!liveActive && voice.state.value === 'thinking')"
           >
             <v-icon size="18">arrow-up</v-icon>
             <v-tooltip activator="parent" location="top">Send</v-tooltip>
           </button>
         </form>
 
-        <!-- Starter suggestion chips — revealed only while the text field is focused -->
-        <div v-if="inputFocused && !hasThread && !liveActive" class="dvx__chips">
-          <button
-            v-for="chip in intents.suggestionChips"
-            :key="chip.value"
-            type="button"
-            class="dvx__chip"
-            @click="onQuickReply(chip.value)"
-          >
-            <v-icon v-if="chip.icon" size="16">{{ chip.icon }}</v-icon>
-            {{ chip.label }}
-          </button>
+        <!-- Starting points, until the conversation begins — also while the mic is live, which is when
+             someone new to Da Vinci needs to know what they can say. -->
+        <div v-if="!hasThread" class="dvx__starters">
+          <span class="dvx__starters-label">{{ voice.sttSupported ? 'Try saying' : 'Try asking' }}</span>
+          <div class="dvx__chips">
+            <button
+              v-for="chip in STARTERS"
+              :key="chip.value"
+              type="button"
+              class="dvx__chip"
+              @click="onQuickReply(chip.value)"
+            >
+              <v-icon v-if="chip.icon" size="16">{{ chip.icon }}</v-icon>
+              {{ chip.label }}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -1105,6 +1264,8 @@ onBeforeUnmount(() => {
 .dvx {
   /* prototype micro-label character without shipping a new font */
   --dvx-mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, monospace;
+  /* The thread's card measure — a measure sizes a surface to its content, so it stays off the spacing scale. */
+  --dvx-card-measure: 430px;
   position: fixed;
   inset: 0;
   overflow: hidden;
@@ -1237,7 +1398,9 @@ onBeforeUnmount(() => {
   font-weight: var(--mp-fontWeight-medium);
   letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: var(--dv-muted);
+  /* `--dv-muted` is a muted SURFACE (near-white in light, near-black in dark): as a text colour it made
+     the "Da Vinci" label invisible in both themes. */
+  color: var(--dv-text-secondary);
 }
 
 .dvx__turn--user .dvx__role {
@@ -1259,8 +1422,29 @@ onBeforeUnmount(() => {
 
 .dvx__cards {
   width: 100%;
-  max-width: 430px;
+  max-width: var(--dvx-card-measure);
   margin-top: var(--mp-space-4);
+}
+
+/* Tool steps and widget drafts share the thread's card measure. */
+.dvx__steps {
+  max-width: var(--dvx-card-measure);
+}
+
+.dvx__drafts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-10);
+  width: 100%;
+  max-width: var(--dvx-card-measure);
+  margin-top: var(--mp-space-4);
+}
+
+.dvx__rationale {
+  margin: 0;
+  font-size: var(--mp-fontSize-12);
+  line-height: 1.5;
+  color: var(--dv-text-secondary);
 }
 
 /* ─── First-run campaign welcome ─────────────────────────────────────── */
@@ -1420,6 +1604,26 @@ onBeforeUnmount(() => {
   line-height: 1.5;
 }
 
+/* The spoken line, as a caption: sentence case on a soft surface wash. As spaced-out capitals it was
+   unreadable where it crossed the orb's ring. */
+.dvx__hint--caption {
+  font-family: inherit;
+  font-size: var(--mp-fontSize-14);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--dv-text-primary);
+  line-height: 1.5;
+  padding: var(--mp-space-6) var(--mp-space-12);
+  border-radius: var(--mp-radius-12);
+  background: color-mix(in srgb, rgb(var(--v-theme-surface)) 72%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+/* A line about the microphone: kept to the hint's measure so it wraps instead of running across the orb. */
+.dvx__mic-notice {
+  max-width: min(440px, 88vw);
+}
+
 /* ─── Live conversation controls ──────────────────────────────────────────── */
 .dvx__live-controls {
   display: flex;
@@ -1548,6 +1752,22 @@ onBeforeUnmount(() => {
 }
 
 /* ─── Chips / quick replies ───────────────────────────────────────────── */
+.dvx__starters {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--mp-space-10);
+}
+
+.dvx__starters-label {
+  font-family: var(--dvx-mono);
+  font-size: var(--mp-fontSize-11);
+  font-weight: var(--mp-fontWeight-medium);
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--dv-text-secondary);
+}
+
 .dvx__chips {
   display: flex;
   flex-wrap: wrap;
@@ -1590,6 +1810,16 @@ onBeforeUnmount(() => {
 
 .dvx__chip:active {
   transform: scale(0.97);
+}
+
+/* Starters sit over the orb, where its ring can cross them: a soft surface wash keeps the words readable. */
+.dvx__starters .dvx__chip {
+  background: color-mix(in srgb, rgb(var(--v-theme-surface)) 72%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+.dvx__starters .dvx__chip:hover {
+  background: color-mix(in srgb, rgb(var(--v-theme-surface)) 88%, transparent);
 }
 
 @keyframes dvx-rise {

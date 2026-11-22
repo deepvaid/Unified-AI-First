@@ -5,7 +5,7 @@ import type {
   DashboardWidgetDraft,
   DashboardWidgetType,
 } from '@/stores/dashboards/types'
-import type { DashboardMetricDescriptor } from '@/stores/dashboards/metricCatalog'
+import { getMetricDescriptor, type DashboardMetricDescriptor } from '@/stores/dashboards/metricCatalog'
 
 export interface PreviewWidgetInput {
   draft?: DashboardWidgetDraft | null
@@ -42,4 +42,30 @@ export function buildPreviewWidget(input: PreviewWidgetInput): DashboardWidget {
     drilldown: input.descriptor.drilldown,
     aiProvenance: input.draft?.aiProvenance,
   }
+}
+
+/**
+ * The widget a Da Vinci draft would become, for a live `DashboardWidgetCard` preview.
+ * `view` overrides how it is drawn (Refine's tile picker); without it the draft's own
+ * type and variant are used.
+ */
+export function buildDraftPreviewWidget(
+  draft: DashboardWidgetDraft,
+  view?: { type: DashboardWidgetType; chartVariant?: DashboardChartVariant },
+): DashboardWidget | null {
+  const descriptor = getMetricDescriptor(draft.metricId)
+  if (!descriptor) return null
+  const type = view?.type ?? draft.type
+  const widget = buildPreviewWidget({
+    draft,
+    type,
+    title: draft.title,
+    subtitle: draft.subtitle,
+    dataSource: draft.dataSource,
+    metricId: draft.metricId,
+    descriptor,
+    chartVariant: view ? view.chartVariant : draft.chartVariant,
+  })
+  // `buildPreviewWidget` falls back to the draft's variant; a view without one must not inherit it.
+  return view && !view.chartVariant ? { ...widget, chartVariant: undefined } : widget
 }

@@ -11,6 +11,15 @@ export type DaVinciOnboardingStage =
   | 'handoff'
   | 'complete'
 
+/**
+ * The wizard is past its welcome / consent screens and not finished: the merchant has actually
+ * started a campaign brief. A session created merely by opening a screen (or a hand-off link)
+ * sits at `welcome` and must not swallow what they type later.
+ */
+export function isStartedCampaignStage(stage: DaVinciOnboardingStage): boolean {
+  return stage !== 'welcome' && stage !== 'consent' && stage !== 'complete'
+}
+
 export type DaVinciInputMode = 'voice' | 'text'
 export type CampaignReadinessStatus = 'ready' | 'needs-setup' | 'unknown'
 
@@ -24,6 +33,8 @@ export interface CampaignAudienceSelection {
 export interface CampaignBrief {
   objective: string
   audience: CampaignAudienceSelection | null
+  /** The occasion the request named ("Black Friday") — leads the draft's name and subject. Optional so sessions persisted before this field read as having none. */
+  topic?: string | null
 }
 
 export interface CampaignReadinessItem {
@@ -111,6 +122,17 @@ export const useDaVinciOnboardingStore = defineStore('daVinciOnboarding', () => 
     }
   }
 
+  /** Existing session for an account (memory or storage) without creating one. */
+  function peek(accountId: string): DaVinciOnboardingSession | null {
+    return sessions.value[accountId] ?? readSession(accountId)
+  }
+
+  /** True only for a STARTED, unfinished session that belongs to `accountId` — the only kind that may answer typed text. */
+  function isEngagedFor(accountId?: string | null): boolean {
+    const session = activeSession.value
+    return !!accountId && activeAccountId.value === accountId && !!session && isStartedCampaignStage(session.stage)
+  }
+
   function begin(accountId: string, options: { restart?: boolean; freshAccount?: boolean } = {}) {
     activeAccountId.value = accountId
     const existing = options.restart ? null : (sessions.value[accountId] ?? readSession(accountId))
@@ -147,6 +169,12 @@ export const useDaVinciOnboardingStore = defineStore('daVinciOnboarding', () => 
   function setAudienceHint(hint: string | null) {
     const session = requireSession()
     session.audienceHint = hint
+    persist(session)
+  }
+
+  function setTopic(topic: string | null) {
+    const session = requireSession()
+    session.brief.topic = topic
     persist(session)
   }
 
@@ -214,11 +242,14 @@ export const useDaVinciOnboardingStore = defineStore('daVinciOnboarding', () => 
     activeAccountId,
     activeSession,
     isActive,
+    isEngagedFor,
+    peek,
     begin,
     setStage,
     setInputMode,
     setObjective,
     setAudienceHint,
+    setTopic,
     setPaused,
     setAudience,
     setReadiness,

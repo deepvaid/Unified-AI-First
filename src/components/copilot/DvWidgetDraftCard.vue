@@ -1,180 +1,145 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
-import DvDraftPreview from '@/components/copilot/DvDraftPreview.vue'
-import DvRefineDialog from '@/components/copilot/DvRefineDialog.vue'
+import DashboardWidgetCard from '@/components/dashboards/DashboardWidgetCard.vue'
 import DvExpandDialog from '@/components/copilot/DvExpandDialog.vue'
-import type { DashboardFilterState, DashboardWidgetDraft, DashboardWidgetType, DashboardChartVariant } from '@/stores/dashboards/types'
+import DvRefineDialog from '@/components/copilot/DvRefineDialog.vue'
+import MpAlert from '@/components/MpAlert.vue'
+import { buildDraftPreviewWidget } from '@/components/dashboards/wizard/buildPreviewWidget'
+import { useDaVinciTarget } from '@/composables/useDaVinciTarget'
+import { addBlockerMessage, optionFor, timeBasisLabel } from '@/davinci/widgetRequest'
+import { DASHBOARD_SOURCE_META, getMetricDescriptor } from '@/stores/dashboards/metricCatalog'
+import type {
+  DashboardChartVariant,
+  DashboardFilterState,
+  DashboardWidgetDraft,
+  DashboardWidgetType,
+} from '@/stores/dashboards/types'
+import type { AddedWidgetRef } from '@/stores/useCopilot'
 import { useDashboardsStore } from '@/stores/useDashboards'
+
+// A Da Vinci draft, drawn as the REAL dashboard widget it would become — same card, same
+// data, same numbers as the dashboard (the old preview was hard-coded sample art that
+// contradicted the KPIs on the page it was about to join).
 
 const props = withDefaults(defineProps<{
   accountId: string
   dashboardId: string
   draft: DashboardWidgetDraft
+  /** Dashboard filters to preview with; defaults to the target dashboard's own. */
   filters?: DashboardFilterState
+  /** What differs from what was asked for ("Orders can only be shown as a KPI tile…"). */
+  note?: string | null
+  /** Set once this draft became a widget; persisted on the message so a remount can't offer Add twice. */
+  added?: AddedWidgetRef | null
   selected?: boolean
+  /**
+   * The host is already a live region (the chat transcript, a `role="log"`), so this card's alerts stay quiet
+   * rather than be read twice. A host that isn't (the voice surface) passes `false` and they announce themselves.
+   */
+  hostAnnounces?: boolean
 }>(), {
-  filters: () => ({
-    rangePreset: 'last_30_days',
-    grain: 'daily',
-    comparison: 'previous_period',
-  }),
+  filters: undefined,
+  note: null,
+  added: null,
   selected: false,
+  hostAnnounces: true,
 })
 
 const emit = defineEmits<{
-  saved: [payload: { title: string; dashboardName: string; widgetId: string; dashboardId: string; accountId: string }]
-  refined: [payload: { title: string }]
+  saved: [payload: AddedWidgetRef]
 }>()
 
-const route = useRoute()
 const dashboardsStore = useDashboardsStore()
-const isAdded = ref(false)
+
+// "Add widget" lands the widget on the dashboard the merchant is looking at; the host's target
+// (and finally the dashboard the draft was made for) only apply off a dashboard route.
+const { dashboard: target } = useDaVinciTarget({
+  accountId: () => props.accountId,
+  dashboardId: () => props.dashboardId || props.draft.dashboardId,
+})
+const effectiveAccountId = computed(() => target.value?.accountId ?? props.accountId)
+const effectiveDashboardId = computed(() => target.value?.id ?? props.dashboardId)
+
+const DEFAULT_FILTERS: DashboardFilterState = { rangePreset: 'last_30_days', grain: 'daily', comparison: 'previous_period' }
+const previewFilters = computed(() => props.filters ?? target.value?.filters ?? DEFAULT_FILTERS)
+
 const localDraft = ref<DashboardWidgetDraft>({ ...props.draft })
+watch(() => props.draft, (next) => { localDraft.value = { ...next } }, { deep: true })
+
 const refineOpen = ref(false)
 const expandOpen = ref(false)
+const addError = ref('')
+const savedHere = ref<AddedWidgetRef | null>(null)
 
-watch(
-  () => props.draft,
-  (next) => {
-    localDraft.value = { ...next }
-    isAdded.value = false
-  },
-  { deep: true },
-)
-
-const currentAccountId = computed(() => {
-  const routeAccountId = Array.isArray(route.params.accountId)
-    ? route.params.accountId[0]
-    : route.params.accountId
-  return routeAccountId ?? props.accountId
-})
-
-const routeDashboardId = computed(() => {
-  const id = Array.isArray(route.params.dashboardId)
-    ? route.params.dashboardId[0]
-    : route.params.dashboardId
-  return id || undefined
-})
-
-// The draft bakes the dashboard it was generated for (buildAiWidgetDraft), but
-// the user may have navigated since. Used only as a last resort below.
-const pinnedDashboard = computed(() => {
-  const id = localDraft.value.dashboardId
-  if (!id) return undefined
-  return dashboardsStore.getDashboardById(props.accountId || currentAccountId.value, id)
-})
-
-// "Add widget" must land the widget on the dashboard the user is actually
-// looking at. Resolve the live target first, then the host-provided target,
-// and only fall back to the draft's origin. Every lookup uses a truthy id, so
-// we never hit getDashboardById's undefined → silent-default branch.
-const currentDashboard = computed(() => {
-  // 1. On a dashboard route → the dashboard currently being viewed.
-  if (routeDashboardId.value) {
-    const routed = dashboardsStore.getDashboardById(currentAccountId.value, routeDashboardId.value)
-    if (routed) return routed
-  }
-  // 2. Off a dashboard route (full-page copilot, drawer over other pages) → the
-  //    target the host (MpDaVinciBot) resolved: the current / last-viewed
-  //    dashboard, passed down via props.dashboardId.
-  if (props.dashboardId) {
-    const propTarget = dashboardsStore.getDashboardById(props.accountId || currentAccountId.value, props.dashboardId)
-    if (propTarget) return propTarget
-  }
-  // 3. Last resort → the dashboard the draft was generated for.
-  return pinnedDashboard.value
-})
-
-const effectiveAccountId = computed(() => currentDashboard.value?.accountId ?? currentAccountId.value)
-const effectiveDashboardId = computed(() => currentDashboard.value?.id ?? props.dashboardId)
-
-const TYPE_META: Record<DashboardWidgetType, { label: string; icon: string }> = {
-  kpi: { label: 'KPI summary', icon: 'layout-grid' },
-  bar: { label: 'Bar chart', icon: 'bar-chart-3' },
-  timeseries: { label: 'Time series', icon: 'line-chart' },
-  pie: { label: 'Donut chart', icon: 'pie-chart' },
-  table: { label: 'Table', icon: 'table' },
-  setup: { label: 'Setup guide', icon: 'list-checks' },
-  activity: { label: 'Activity feed', icon: 'list' },
-  attention: { label: 'Attention list', icon: 'bell-ring' },
-  insights: { label: 'Da Vinci insights', icon: 'sparkles' },
-  metric_explorer: { label: 'Metric explorer', icon: 'chart-spline' },
-  funnel: { label: 'Funnel', icon: 'filter' },
-  donut: { label: 'Donut chart', icon: 'chart-pie' },
-  gauge: { label: 'Goal gauge', icon: 'goal' },
-  bar_list: { label: 'Progress list', icon: 'list-ordered' },
-  breakdown: { label: 'Breakdown list', icon: 'list' },
-  palette: { label: 'Palette review', icon: 'palette' },
-  stacked_bar: { label: 'Stacked bars', icon: 'bar-chart-3' },
-  tabs: { label: 'Tabbed lists', icon: 'layout-list' },
-  heatmap: { label: 'Heatmap', icon: 'grid-3x3' },
-}
-
-const typeMeta = computed(() => {
-  const meta = TYPE_META[localDraft.value.type] ?? TYPE_META.kpi
-  if (localDraft.value.type === 'timeseries') {
-    if (localDraft.value.chartVariant === 'area') return { label: 'Area chart', icon: 'area-chart' }
-    return { label: 'Line chart', icon: 'line-chart' }
-  }
-  return meta
-})
-
-const draftTitle = computed(() => localDraft.value.title || 'Widget draft')
-const draftSubtitle = computed(() => localDraft.value.subtitle || 'Sourced from your account data')
+const descriptor = computed(() => getMetricDescriptor(localDraft.value.metricId))
+const option = computed(() => optionFor(localDraft.value.type, localDraft.value.chartVariant))
+const previewWidget = computed(() => buildDraftPreviewWidget(localDraft.value))
+const isKpiPreview = computed(() => localDraft.value.type === 'kpi')
 
 const sourceLabel = computed(() => {
-  const sourceMap: Record<string, string> = {
-    marketing: 'Marketing → Email Campaigns',
-    commerce: 'Commerce → Orders',
-    contacts: 'Contacts → All contacts',
-    service: 'Service → Tickets',
-    products: 'Products → Catalogue',
-  }
-  const key = localDraft.value.dataSource as string
-  return `${sourceMap[key] ?? 'Workspace data'} · Last 30 days`
+  const metric = descriptor.value
+  if (!metric) return 'Workspace data'
+  return `${DASHBOARD_SOURCE_META[metric.dataSource].label} → ${metric.label} · ${timeBasisLabel(metric, previewFilters.value.rangePreset)}`
 })
 
+/** Added — and the widget is still on that dashboard (Undo or a manual delete re-enables Add). */
+const isAdded = computed(() => {
+  const ref = props.added ?? savedHere.value
+  if (!ref) return false
+  return !!dashboardsStore.getDashboardById(ref.accountId, ref.dashboardId)?.widgets.some((w) => w.id === ref.widgetId)
+})
+
+const blocker = computed(() => {
+  if (isAdded.value) return null
+  return dashboardsStore.addWidgetBlocker(effectiveAccountId.value, { ...localDraft.value, dashboardId: effectiveDashboardId.value })
+})
+const errorText = computed(() => addError.value || (blocker.value ? addBlockerMessage(blocker.value) : ''))
+
 function handleAdd() {
-  if (isAdded.value) return
+  if (isAdded.value || blocker.value) return
+  addError.value = ''
   refineOpen.value = true
 }
 
-function commitDraft() {
-  if (isAdded.value) return
-  if (!currentDashboard.value) return
-
-  const widget = dashboardsStore.addWidget(effectiveAccountId.value, {
+/** Returns true when the widget was added. Refine and Expand stay open on failure so the error is visible. */
+function commit(view?: { type: DashboardWidgetType; chartVariant?: DashboardChartVariant }): boolean {
+  if (isAdded.value) return true
+  const draft: DashboardWidgetDraft = {
     ...localDraft.value,
+    ...(view ? { type: view.type, chartVariant: view.chartVariant } : {}),
     dashboardId: effectiveDashboardId.value,
-  })
-  if (widget) {
-    isAdded.value = true
-    emit('saved', {
-      title: widget.title || localDraft.value.title || 'Widget',
-      dashboardName: currentDashboard.value.name,
-      widgetId: widget.id,
-      dashboardId: effectiveDashboardId.value,
-      accountId: effectiveAccountId.value,
-    })
   }
+  const refused = dashboardsStore.addWidgetBlocker(effectiveAccountId.value, draft)
+  if (refused) {
+    addError.value = addBlockerMessage(refused)
+    return false
+  }
+  const widget = dashboardsStore.addWidget(effectiveAccountId.value, draft)
+  if (!widget) {
+    addError.value = 'Da Vinci couldn’t add this widget. Try again, or add it from the dashboard’s Add widget menu.'
+    return false
+  }
+  addError.value = ''
+  localDraft.value = draft
+  const added: AddedWidgetRef = {
+    title: widget.title || draft.title || 'Widget',
+    dashboardName: target.value?.name ?? 'your dashboard',
+    widgetId: widget.id,
+    dashboardId: effectiveDashboardId.value,
+    accountId: effectiveAccountId.value,
+  }
+  savedHere.value = added
+  emit('saved', added)
+  return true
 }
 
 function handleRefineApply(payload: { title: string; type: DashboardWidgetType; chartVariant?: DashboardChartVariant }) {
-  localDraft.value = {
-    ...localDraft.value,
-    title: payload.title,
-    type: payload.type,
-    chartVariant: payload.chartVariant,
-  }
-  emit('refined', { title: payload.title })
-  refineOpen.value = false
-  commitDraft()
+  localDraft.value = { ...localDraft.value, title: payload.title }
+  if (commit({ type: payload.type, chartVariant: payload.chartVariant })) refineOpen.value = false
 }
 
 function handleExpandAdd() {
-  expandOpen.value = false
-  commitDraft()
+  if (commit()) expandOpen.value = false
 }
 </script>
 
@@ -182,8 +147,8 @@ function handleExpandAdd() {
   <article class="dv-draft" :class="{ 'is-selected': selected, 'is-added': isAdded }">
     <header class="dv-draft__top">
       <span class="dv-draft__type">
-        <v-icon size="14">{{ typeMeta.icon }}</v-icon>
-        {{ typeMeta.label }}
+        <v-icon size="14">{{ option.icon }}</v-icon>
+        {{ option.noun }}
       </span>
       <span class="dv-draft__badge">
         <v-icon size="11">sparkles</v-icon>
@@ -191,21 +156,30 @@ function handleExpandAdd() {
       </span>
     </header>
 
-    <div class="dv-draft__title-block">
-      <h3 class="dv-draft__title">{{ draftTitle }}</h3>
-      <div class="dv-draft__sub">{{ draftSubtitle }}</div>
-    </div>
+    <MpAlert v-if="note && !isAdded" tone="info" icon="info" :live="hostAnnounces ? 'off' : undefined" class="dv-draft__alert">{{ note }}</MpAlert>
 
     <div class="dv-draft__preview">
-      <DvDraftPreview :draft="localDraft" />
+      <div class="dv-draft__frame" :class="{ 'dv-draft__frame--kpi': isKpiPreview }">
+        <DashboardWidgetCard
+          v-if="previewWidget"
+          :key="`${previewWidget.type}-${previewWidget.chartVariant ?? ''}`"
+          :account-id="effectiveAccountId"
+          :widget="previewWidget"
+          :filters="previewFilters"
+          preview
+          :show-actions="false"
+        />
+      </div>
     </div>
+
+    <MpAlert v-if="errorText && !isAdded" tone="error" icon="circle-alert" :live="hostAnnounces ? 'off' : undefined" class="dv-draft__alert">{{ errorText }}</MpAlert>
 
     <footer class="dv-draft__actions">
       <v-btn
         class="dv-draft__btn dv-draft__btn--primary text-none"
         variant="flat"
         color="primary"
-        :disabled="isAdded"
+        :disabled="isAdded || !!blocker"
         density="comfortable"
         @click="handleAdd"
       >
@@ -228,15 +202,21 @@ function handleExpandAdd() {
     <DvRefineDialog
       v-model="refineOpen"
       :draft="localDraft"
+      :account-id="effectiveAccountId"
+      :filters="previewFilters"
       :source-label="sourceLabel"
+      :error="errorText"
       @apply="handleRefineApply"
     />
 
     <DvExpandDialog
       v-model="expandOpen"
       :draft="localDraft"
-      :type-label="typeMeta.label"
+      :account-id="effectiveAccountId"
+      :filters="previewFilters"
+      :type-label="option.label"
       :is-added="isAdded"
+      :error="errorText"
       @add="handleExpandAdd"
     />
   </article>
@@ -266,7 +246,7 @@ function handleExpandAdd() {
 }
 
 .dv-draft__top {
-  padding: var(--mp-space-12) var(--mp-space-14) 0;
+  padding: var(--mp-space-12) var(--mp-space-14) var(--mp-space-8);
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -309,30 +289,23 @@ function handleExpandAdd() {
   color: var(--dv-accent) !important;
 }
 
-.dv-draft__title-block {
-  padding: var(--mp-space-8) var(--mp-space-14) var(--mp-space-12);
-}
-
-.dv-draft__title {
-  font-size: var(--mp-fontSize-15);
-  font-weight: 600;
-  line-height: 1.25;
-  letter-spacing: -0.1px;
-  color: rgb(var(--v-theme-on-surface));
-  margin: 0 0 var(--mp-space-2);
-}
-
-.dv-draft__sub {
-  font-size: var(--mp-fontSize-13);
-  font-weight: 400;
-  color: rgb(var(--v-theme-on-surface-variant));
-  line-height: 1.35;
+/* The note and any error sit inside the card's inset, like the preview. */
+.dv-draft__alert {
+  margin: 0 var(--mp-space-14) var(--mp-space-10);
 }
 
 .dv-draft__preview {
   padding: 0 var(--mp-space-14) var(--mp-space-14);
 }
 
+/* A live DashboardWidgetCard sizes its chart from its own body, so the frame needs a definite height. */
+.dv-draft__frame {
+  height: var(--mp-component-preview-widgetHeight-md);
+}
+
+.dv-draft__frame--kpi {
+  height: var(--mp-component-preview-widgetHeight-sm);
+}
 
 .dv-draft__actions {
   display: flex;
@@ -350,11 +323,6 @@ function handleExpandAdd() {
   font-size: var(--mp-fontSize-13) !important;
   font-weight: 600 !important;
   letter-spacing: 0;
-}
-
-.dv-draft__btn--ghost {
-  color: rgb(var(--v-theme-on-surface-variant)) !important;
-  font-weight: 500 !important;
 }
 
 .dv-draft__actions-spacer {

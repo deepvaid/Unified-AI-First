@@ -67,9 +67,12 @@ const revenueCards: DvCardDescriptor[] = [
     props: {
       title: 'Revenue · last 7 days',
       subtitle: '$128.4k total · +12.4% vs prior week',
-      bars: [[14.2], [16.8], [12.4], [18.1], [20.6], [17.9], [28.4]],
       labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-      seriesNames: ['Revenue ($k)'],
+      series: [
+        { name: 'Revenue', data: [14200, 16800, 12400, 18100, 20600, 17900, 28400] },
+        { name: 'Previous 7 days', data: [12100, 13400, 15200, 14800, 16100, 15500, 21900], isComparison: true },
+      ],
+      unit: 'currency',
     },
   },
 ]

@@ -13,6 +13,7 @@
     "tokens:watch": "node src/design-tokens/build.mjs --watch",
     "type-check": "vue-tsc -b --noEmit",
     "test:maropay": "node --experimental-strip-types --test 'tests/maropay/*.test.ts'",
+    "test:davinci": "node --experimental-strip-types --test 'tests/davinci/*.test.ts'",
     "test:catalog": "node --experimental-strip-types --test 'tests/davinci-catalog/*.test.ts'",
     "test:pos": "node --experimental-strip-types --test 'tests/pos/*.test.ts'",
     "test:chatbot": "node --experimental-strip-types --test 'tests/chatbot/*.test.ts'",

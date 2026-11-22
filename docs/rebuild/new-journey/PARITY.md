@@ -18,7 +18,7 @@ graphs in [journeyFlowData.ts](../../../src/stores/journeyFlowData.ts).
 
 The previous `CreateJourney.vue` (a two-step gallery + Da Vinci brief/draft generator) was an
 invented design with no production counterpart and has been deleted. The copilot deep link
-`/journeys/new?ai=1` still works — it lands on the Build-with-AI path.
+`/journeys/new?ai=1` still works — it lands on the Build-with-AI path. With `&goal=<template id>` (Da Vinci's journey offer, e.g. `?ai=1&goal=lapsed-buyer`) it opens that template's wizard instead.
 
 ## Journey Selection — `/journeys/new`
 
