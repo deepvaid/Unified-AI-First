@@ -1,11 +1,15 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, useId, watch } from 'vue'
 import { useRoute, type RouteLocationRaw } from 'vue-router'
 
 // In-content section rail for shell layouts (store editor, Settings-style
 // workspaces): back link, optional entity identity + switcher, optional search,
 // grouped section links with icons/counts and an active accent bar, and a
 // #footer slot for actions. Sits beside the global AppSidebar — never replaces it.
+//
+// At 900px and below the shell stacks, and the rail collapses to one row: a
+// disclosure button naming the current section, which opens the same content
+// (search, links, footer) in a capped scroll box. CSS decides which mode shows.
 
 export interface MpSectionRailItem {
   slug: string
@@ -83,10 +87,39 @@ const filteredGroups = computed<MpSectionRailGroup[]>(() => {
 function isActive(item: MpSectionRailItem): boolean {
   return typeof route.name === 'string' && (item.match?.includes(route.name) ?? false)
 }
+
+// ── Narrow screens: the collapsed rail ──────────────────────────────────────
+const menuId = useId()
+const menuOpen = ref(false)
+/** What the collapsed row calls the rail, and the section the user is in. */
+const railName = computed(() => props.title ?? props.identity?.name ?? '')
+const activeLabel = computed(
+  () => props.groups.flatMap((group) => group.items).find(isActive)?.label ?? (railName.value ? '' : 'Menu'),
+)
+// Picking a section navigates; the menu has done its job.
+watch(() => route.fullPath, () => { menuOpen.value = false })
 </script>
 
 <template>
-  <aside class="mp-section-rail" :aria-label="ariaLabel">
+  <aside class="mp-section-rail" :class="{ 'mp-section-rail--open': menuOpen }" :aria-label="ariaLabel">
+    <!-- Narrow screens only (hidden by CSS above 900px): the whole rail as one row. -->
+    <button
+      type="button"
+      class="mp-section-rail__toggle"
+      :aria-expanded="menuOpen"
+      :aria-controls="menuId"
+      @click="menuOpen = !menuOpen"
+    >
+      <span class="mp-section-rail__toggle-copy text-truncate">
+        <span v-if="railName" class="mp-section-rail__toggle-name">{{ railName }}</span>
+        <span v-if="railName && activeLabel" aria-hidden="true" class="mp-section-rail__toggle-sep">/</span>
+        <span v-if="activeLabel" class="mp-section-rail__toggle-current">{{ activeLabel }}</span>
+      </span>
+      <v-icon size="18" class="mp-section-rail__toggle-icon">{{ menuOpen ? 'chevron-up' : 'chevron-down' }}</v-icon>
+    </button>
+
+    <!-- Wide: `display: contents`, so the rail lays its parts out as before. -->
+    <div :id="menuId" class="mp-section-rail__menu">
     <router-link v-if="backTo" class="mp-section-rail__back" :to="backTo">
       <v-icon size="14">arrow-left</v-icon>
       {{ backLabel }}
@@ -154,6 +187,7 @@ function isActive(item: MpSectionRailItem): boolean {
 
     <div v-if="$slots.footer" class="mp-section-rail__footer">
       <slot name="footer" />
+    </div>
     </div>
   </aside>
 </template>
@@ -384,13 +418,59 @@ function isActive(item: MpSectionRailItem): boolean {
   border-top: 1px solid var(--border-subtle);
 }
 
+/* ── The collapsed rail (900px and below) ──────────────────────────────────
+   Above that the toggle doesn't exist and the menu wrapper is transparent to
+   layout, so the rail is exactly the column it always was. */
+.mp-section-rail__toggle {
+  display: none;
+  align-items: center;
+  gap: var(--mp-space-8);
+  width: 100%;
+  min-height: var(--mp-component-control-height);
+  padding: 0 var(--mp-component-listItem-paddingInline);
+  border: 0;
+  border-radius: var(--mp-component-nav-itemRadius);
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: var(--mp-fontSize-14);
+  text-align: left;
+  cursor: pointer;
+}
+.mp-section-rail__toggle:hover { background: var(--surface-secondary); }
+.mp-section-rail__toggle:focus-visible {
+  outline: 2px solid color-mix(in oklch, rgb(var(--v-theme-primary)) 42%, transparent);
+  outline-offset: 2px;
+}
+.mp-section-rail__toggle-copy { flex: 1 1 auto; min-width: 0; }
+.mp-section-rail__toggle-name,
+.mp-section-rail__toggle-sep { color: var(--muted); }
+.mp-section-rail__toggle-sep { margin-inline: var(--mp-space-6); }
+.mp-section-rail__toggle-current { font-weight: var(--mp-fontWeight-semibold); }
+.mp-section-rail__toggle-icon { flex-shrink: 0; color: var(--muted); }
+
+.mp-section-rail__menu { display: contents; }
+
 @media (max-width: 900px) {
   .mp-section-rail {
     width: 100%;
-    /* Scroll measure for the collapsed rail, not a spacing step. */
-    max-height: 320px;
     border-right: 0;
     border-bottom: 1px solid var(--border-subtle);
+  }
+  .mp-section-rail__toggle { display: flex; }
+  .mp-section-rail__menu { display: none; }
+  .mp-section-rail--open .mp-section-rail__menu {
+    display: flex;
+    flex-direction: column;
+    gap: var(--mp-space-12);
+  }
+  /* The toggle already says which rail this is. */
+  .mp-section-rail__title { display: none; }
+  /* The stacked shell has no height to share out, so the list sizes to its
+     links, up to a cap it scrolls past — a scroll measure, not a spacing step. */
+  .mp-section-rail__nav {
+    flex: 0 1 auto;
+    max-height: 320px;
   }
 }
 

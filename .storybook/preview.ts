@@ -1,7 +1,8 @@
 import type { Preview } from '@storybook/vue3'
 import { setup } from '@storybook/vue3'
 import { createPinia } from 'pinia'
-import { createMemoryHistory, createRouter } from 'vue-router'
+import { reactive, watchEffect } from 'vue'
+import { createMemoryHistory, createRouter, type RouteLocationRaw, type RouteRecordNameGeneric, type Router } from 'vue-router'
 
 // Vuetify — full import to ensure all component styles are available in stories
 import '@mdi/font/css/materialdesignicons.css' // fallback for any residual mdi-* strings
@@ -17,6 +18,7 @@ import '../src/styles/app-styles'
 import './preview.css'
 
 import { maropostDark, maropostDefaults, maropostLight } from '../src/plugins/maropostTheme'
+import { useAppTheme } from '../src/composables/useAppTheme'
 
 const vuetify = createVuetify({
   components,
@@ -34,16 +36,44 @@ const vuetify = createVuetify({
   defaults: maropostDefaults,
 })
 
+const routeStub = { template: '<div />' }
+
 const storybookRouter = createRouter({
   history: createMemoryHistory(),
   routes: [
-    {
-      path: '/:pathMatch(.*)*',
-      name: 'StorybookRoute',
-      component: { template: '<div />' },
-    },
+    // Every app route sits under an account, and components read `route.params.accountId`.
+    { path: '/accounts/:accountId/:pathMatch(.*)*', name: 'StorybookRoute', component: routeStub },
+    { path: '/:pathMatch(.*)*', name: 'StorybookFallback', component: routeStub },
   ],
 })
+
+/**
+ * Components link to app routes by name (`:to="{ name: 'Settings' }"`). Storybook has none of
+ * the app's routes and vue-router throws on an unknown name, which blanked every story that
+ * rendered such a link. The first request for a name registers a stub route for it.
+ */
+const stubParams = new Map<RouteRecordNameGeneric, Set<string>>()
+
+function ensureNamedRoute(to: RouteLocationRaw) {
+  if (typeof to !== 'object' || !('name' in to) || to.name == null) return
+  const known = stubParams.get(to.name) ?? new Set<string>()
+  const wanted = Object.keys(to.params ?? {}).filter((key) => key !== 'accountId' && !known.has(key))
+  if (storybookRouter.hasRoute(to.name) && !wanted.length) return
+  // A name asked for again with a param it did not have before replaces its stub (same name).
+  wanted.forEach((key) => known.add(key))
+  stubParams.set(to.name, known)
+  storybookRouter.addRoute({
+    // `accountId` is required so a named link inherits the current account (2000290).
+    path: `/accounts/:accountId/sb/${String(to.name)}${[...known].map((key) => `/:${key}?`).join('')}`,
+    name: to.name,
+    component: routeStub,
+  })
+}
+
+const { resolve, push, replace } = storybookRouter
+storybookRouter.resolve = ((to, from) => { ensureNamedRoute(to); return resolve(to, from) }) as Router['resolve']
+storybookRouter.push = (to) => { ensureNamedRoute(to); return push(to) }
+storybookRouter.replace = (to) => { ensureNamedRoute(to); return replace(to) }
 
 void storybookRouter.push('/accounts/2000290/dashboard')
 
@@ -58,6 +88,9 @@ setup((app) => {
   app.use(createPinia())
   app.use(storybookRouter)
 })
+
+/** The Theme and Accent toolbar values, shared by every mounted story. */
+const toolbar = reactive({ theme: 'light' as ThemeMode, accent: 'cyan' as AccentKey })
 
 function normalizeTheme(theme: string): ThemeMode {
   return theme === 'maropostDark' || theme === 'dark' ? 'dark' : 'light'
@@ -145,42 +178,48 @@ const preview: Preview = {
     accent: 'cyan',
   },
   decorators: [
-    (story, context) => ({
-      components: { story },
-      setup() {
-        const theme = normalizeTheme(String(context.globals.theme ?? 'light'))
-        const accent = normalizeAccent(String(context.globals.accent ?? 'cyan'))
-        const vuetifyTheme = theme === 'dark' ? 'maropostDark' : 'maropostLight'
-        const canvas = normalizeCanvas(context.parameters.canvas)
+    (story, context) => {
+      // Storybook calls the decorator again when a toolbar global changes but does not remount
+      // the story, so `setup()` below never re-runs. Reading the globals here, into reactive
+      // state the mounted template is bound to, is what makes the Theme and Accent toolbars
+      // change a story that is already open.
+      toolbar.theme = normalizeTheme(String(context.globals.theme ?? 'light'))
+      toolbar.accent = normalizeAccent(String(context.globals.accent ?? 'cyan'))
+      syncDocumentTheme(toolbar.theme)
+      syncDocumentAccent(toolbar.accent)
+      // Chart widgets read Vuetify's global theme, not the nearest <v-app :theme>.
+      vuetify.theme.change(toolbar.theme === 'dark' ? 'maropostDark' : 'maropostLight')
 
-        syncDocumentTheme(theme)
-        syncDocumentAccent(accent)
-
-        return {
-          theme,
-          accent,
-          vuetifyTheme,
-          canvas,
-        }
-      },
-      template: `
-        <div
-          class="mp-storybook-root"
-          :class="theme === 'dark' ? 'mp-storybook-root--dark' : 'mp-storybook-root--light'"
-          :data-theme="theme"
-          :data-accent="accent === 'cyan' ? undefined : accent"
-          data-visual-root
-        >
-          <v-app :theme="vuetifyTheme">
-            <div class="mp-story-canvas" :data-canvas="canvas">
-              <div class="mp-story-canvas__content">
-                <story />
+      return {
+        components: { story },
+        setup() {
+          // Charts and the Da Vinci orb take their mode and accent from useAppTheme.
+          const { mode, accent } = useAppTheme()
+          watchEffect(() => {
+            mode.value = toolbar.theme
+            accent.value = toolbar.accent
+          })
+          return { toolbar, canvas: normalizeCanvas(context.parameters.canvas) }
+        },
+        template: `
+          <div
+            class="mp-storybook-root"
+            :class="toolbar.theme === 'dark' ? 'mp-storybook-root--dark' : 'mp-storybook-root--light'"
+            :data-theme="toolbar.theme"
+            :data-accent="toolbar.accent === 'cyan' ? undefined : toolbar.accent"
+            data-visual-root
+          >
+            <v-app :theme="toolbar.theme === 'dark' ? 'maropostDark' : 'maropostLight'">
+              <div class="mp-story-canvas" :data-canvas="canvas">
+                <div class="mp-story-canvas__content">
+                  <story />
+                </div>
               </div>
-            </div>
-          </v-app>
-        </div>
-      `,
-    }),
+            </v-app>
+          </div>
+        `,
+      }
+    },
   ],
   parameters: {
     // The decorator owns padding and background (.storybook/preview.css), so
@@ -217,6 +256,16 @@ const preview: Preview = {
           styles: { width: '375px', height: '812px' },
           type: 'mobile' as const,
         },
+        tablet768: {
+          name: 'Tablet 768',
+          styles: { width: '768px', height: '1024px' },
+          type: 'tablet' as const,
+        },
+        desktop1280: {
+          name: 'Desktop 1280',
+          styles: { width: '1280px', height: '800px' },
+          type: 'desktop' as const,
+        },
       },
     },
     options: {
@@ -226,14 +275,15 @@ const preview: Preview = {
       storySort: {
         order: [
           'Introduction',
+          'LiquidSky',
           'Foundations', [
             'Overview', 'Colors', 'Typography', 'Spacing', 'Radius & Shadows',
-            'Icons', 'Buttons', 'Tooltips',
+            'Icons', 'Buttons', 'Tooltips', 'QA Reference',
           ],
           'Atoms',
           'Molecules',
-          'Patterns', ['Data Table', 'Form Fields', 'Layering', 'Module Landing Page', 'App Shell', 'Builder Shell', 'Settings'],
-          'Product', ['Da Vinci', 'Dashboards', 'Maropay', 'Marketing', 'Merchandising', 'PLG', 'RBAC', 'Sales Channels'],
+          'Patterns', ['Data Table', 'Form Fields', 'Layering', 'Module Landing Page', 'App Shell', 'Builder Shell', 'Wizard Shell', 'Settings'],
+          'Product', ['Chatbot', 'Da Vinci', 'Dashboards', 'Maropay', 'Marketing', 'Merchandising', 'Onboarding', 'PLG', 'POS', ['Overview', 'Foundations', ['Colors', 'Type & Targets'], 'Components', 'Patterns'], 'RBAC', 'Sales Channels', 'Service', 'Trial Lab'],
           '*',
         ],
       },

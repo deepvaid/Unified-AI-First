@@ -90,6 +90,8 @@ function discard() {}
           label="Language"
           v-model="company.language"
           :items="['English (US)','English (UK)','French','Spanish','German','Portuguese']"
+          hint="The default for new users. Each user can choose their own language from the user menu."
+          persistent-hint
         />
 
         <v-text-field

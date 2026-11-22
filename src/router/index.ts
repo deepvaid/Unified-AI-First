@@ -2,6 +2,7 @@ import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { useAccountsStore, type SubscriptionKey } from '@/stores/useAccounts'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import { trialLabRoutes } from '@/views/TrialLab/trialLabRoutes'
+import { setPageTitle, titleFromRouteName } from '@/composables/usePageTitle'
 
 declare module 'vue-router' {
   interface RouteMeta {
@@ -208,6 +209,8 @@ const routes: RouteRecordRaw[] = [
       { path: 'settings',     name: 'RetailSettings',      component: () => import('@/views/Retail/RetailSettings.vue') },
     ],
   },
+  // Receipt designer: a builder, so it sits outside the rail shell like the landing-page editor.
+  { path: '/commerce/:accountId/retail/receipts/:templateId/design', name: 'RetailReceiptDesigner', component: () => import('@/views/Retail/ReceiptDesigner.vue'), meta: { ...retailGate, builderShell: true } },
   // Full-screen POS device mock stays outside the rail shell.
   { path: '/commerce/:accountId/retail/pos-preview', name: 'RetailPosPreview', component: () => import('@/views/Retail/PosPreview.vue'), meta: { ...retailGate, fullPage: true } },
   // Locations live with the POS sales channel that owns them; resolve the
@@ -260,8 +263,12 @@ const routes: RouteRecordRaw[] = [
       { path: 'assets', name: 'StoreAssets', component: () => import('@/views/SalesChannels/StoreAssets.vue') },
       // Installed themes: the current theme, the library themes on the store, and a way into the builder.
       { path: 'themes', name: 'StoreThemes', component: () => import('@/views/SalesChannels/StoreThemes.vue') },
-      // Maropay for this store: activation checklist, methods, capture and the switch itself.
-      { path: 'payments', name: 'StorePayments', component: () => import('@/views/Maropay/StorePaymentsPage.vue') },
+      // The store's Payments: every provider it has, Maropay sold at the top (the Shopify Payments model).
+      { path: 'payments', name: 'StorePayments', component: () => import('@/views/SalesChannels/StorePaymentsPage.vue') },
+      // The store's chatbot: its status and links into the one builder, or the way to add one.
+      { path: 'chatbot', name: 'StoreChatbot', component: () => import('@/views/SalesChannels/StoreChatbotPage.vue') },
+      // Maropay on this store: activation checklist, methods, capture and the switch itself.
+      { path: 'payments/maropay', name: 'StorePaymentsMaropay', component: () => import('@/views/Maropay/StoreMaropayPage.vue') },
     ],
   },
 
@@ -275,7 +282,11 @@ const routes: RouteRecordRaw[] = [
       { path: '', name: 'StorefrontHome', component: () => import('@/views/Storefront/StorefrontHome.vue') },
       { path: 'page/:handle', name: 'StorefrontPage', component: () => import('@/views/Storefront/StorefrontContent.vue'), meta: { contentKind: 'page' } },
       { path: 'policies/:handle', name: 'StorefrontPolicy', component: () => import('@/views/Storefront/StorefrontContent.vue'), meta: { contentKind: 'policy' } },
+      { path: 'collections/:handle', name: 'StorefrontCollection', component: () => import('@/views/Storefront/StorefrontCollection.vue') },
+      { path: 'products/:handle', name: 'StorefrontProduct', component: () => import('@/views/Storefront/StorefrontProduct.vue') },
       { path: 'cart-page', name: 'StorefrontCart', component: () => import('@/views/Storefront/StorefrontCart.vue') },
+      // Takes the payment through the store's Maropay setup; query: buy/qty (express buy-now), express, session.
+      { path: 'checkout', name: 'StorefrontCheckout', component: () => import('@/views/Storefront/StorefrontCheckout.vue'), meta: { minimalChrome: true } },
       { path: ':pathMatch(.*)*', name: 'StorefrontNotFound', component: () => import('@/views/Storefront/StorefrontNotFound.vue') },
     ],
   },
@@ -297,7 +308,8 @@ const routes: RouteRecordRaw[] = [
       { path: 'disputes', name: 'MaropayDisputes', component: () => import('@/views/Maropay/MaropayDisputes.vue') },
       { path: 'disputes/:disputeId', name: 'MaropayDisputeDetail', component: () => import('@/views/Maropay/MaropayDisputeDetail.vue') },
       { path: 'settings', name: 'MaropaySettings', component: () => import('@/views/Maropay/MaropaySettings.vue') },
-      { path: 'checkout-preview', name: 'MaropayCheckoutPreview', component: () => import('@/views/Maropay/MaropayCheckoutPreview.vue') },
+      // Maropay on one store, inside Maropay's frame — the same page the store editor shows as StorePaymentsMaropay.
+      { path: 'stores/:channelId', name: 'MaropayStorePayments', component: () => import('@/views/Maropay/StoreMaropayPage.vue'), props: { frame: 'maropay' } },
       // Unknown sub-paths land on the overview (Merchandising precedent).
       { path: ':pathMatch(.*)*', redirect: (to) => ({ name: 'MaropayOverview', params: { accountId: to.params.accountId } }) },
     ],
@@ -380,6 +392,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/accounts/:accountId/service', redirect: (to) => ({ name: 'Tickets', params: { accountId: to.params.accountId } }) },
   { path: '/accounts/:accountId/chatbot', name: 'ChatbotList', component: () => import('@/views/Service/ChatbotList.vue') },
   { path: '/accounts/:accountId/chatbot/archived', name: 'ChatbotArchived', component: () => import('@/views/Service/ChatbotArchived.vue') },
+  { path: '/accounts/:accountId/chatbot/:id/conversations', name: 'ChatbotConversations', component: () => import('@/views/Service/ChatbotConversations.vue') },
   { path: '/accounts/:accountId/chatbot/:id', name: 'ChatbotBuilder', component: () => import('@/views/Service/ChatbotBuilder.vue'), meta: { builderShell: true } },
 
   // 8. Da Vinci
@@ -426,7 +439,16 @@ const routes: RouteRecordRaw[] = [
       { path: 'store-profile',       name: 'SettingsStoreProfile',       component: () => import('@/views/Settings/pages/StoreProfilePage.vue') },
       { path: 'sales-channels',      name: 'SettingsSalesChannels',      component: () => import('@/views/Settings/pages/SalesChannelsPage.vue') },
       { path: 'payment-account',     name: 'SettingsPaymentAccount',     component: () => import('@/views/Settings/pages/PaymentAccountPage.vue') },
-      { path: 'service',             name: 'SettingsService',            component: () => import('@/views/Settings/pages/ServicePage.vue') },
+      // Service — one rail group. An inbox opens a detail page (tabs in ?tab=);
+      // creating one is a 2-step wizard. `service` stays as the entry point.
+      { path: 'service',                  name: 'SettingsService',               redirect: to => ({ name: 'SettingsServiceInboxes', params: to.params }) },
+      { path: 'service/inboxes',          name: 'SettingsServiceInboxes',        component: () => import('@/views/Settings/pages/service/ServiceInboxesPage.vue') },
+      { path: 'service/inboxes/new',      name: 'SettingsServiceInboxCreate',    component: () => import('@/views/Settings/pages/service/ServiceInboxCreatePage.vue') },
+      { path: 'service/inboxes/:inboxId', name: 'SettingsServiceInbox',          component: () => import('@/views/Settings/pages/service/ServiceInboxPage.vue') },
+      { path: 'service/reply-templates',  name: 'SettingsServiceReplyTemplates', component: () => import('@/views/Settings/pages/service/ServiceReplyTemplatesPage.vue') },
+      { path: 'service/ticket-types',     name: 'SettingsServiceTicketTypes',    component: () => import('@/views/Settings/pages/service/ServiceTicketTypesPage.vue') },
+      { path: 'service/tags',             name: 'SettingsServiceTags',           component: () => import('@/views/Settings/pages/service/ServiceTagsPage.vue') },
+      { path: 'service/agents',           name: 'SettingsServiceAgents',         component: () => import('@/views/Settings/pages/service/ServiceAgentsPage.vue') },
       { path: 'ai-settings',         name: 'SettingsAiSettings',         component: () => import('@/views/Settings/pages/AiSettingsPage.vue') },
     ],
   },
@@ -516,6 +538,11 @@ router.beforeEach((to) => {
   if (!required) return true
   if (accounts.hasSubscription(required)) return true
   return denied
+})
+
+// Fallback title from the route name; a level-1 MpPageHeader replaces it with its heading.
+router.afterEach((to) => {
+  setPageTitle(typeof to.name === 'string' ? titleFromRouteName(to.name) : undefined)
 })
 
 export default router

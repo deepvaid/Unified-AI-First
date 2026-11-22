@@ -1,0 +1,52 @@
+{
+  "key": "index-page",
+  "liquidsky": [
+    "GenericIndexWrapper",
+    "GenericIndexPage"
+  ],
+  "status": "matched",
+  "reference": "Data Table pattern + MpFolderSelect, MpManageFoldersDrawer, MpMoveToFolderDialog",
+  "note": "The page frame is MpPageHeader above the Data Table pattern. Folders are a menu in the toolbar, managed in a drawer.",
+  "stories": [
+    {
+      "id": "patterns-data-table--default",
+      "label": "List page",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-data-table--default",
+      "png": {
+        "light": "png/index-page/patterns-data-table--default--light.png",
+        "dark": "png/index-page/patterns-data-table--default--dark.png"
+      },
+      "parts": []
+    },
+    {
+      "id": "molecules-mpfolderselect--open-menu",
+      "label": "Folder menu",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpfolderselect--open-menu",
+      "png": {
+        "light": "png/index-page/molecules-mpfolderselect--open-menu--light.png",
+        "dark": "png/index-page/molecules-mpfolderselect--open-menu--dark.png"
+      },
+      "parts": []
+    },
+    {
+      "id": "molecules-mpmanagefoldersdrawer--campaigns",
+      "label": "Manage folders",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpmanagefoldersdrawer--campaigns",
+      "png": {
+        "light": "png/index-page/molecules-mpmanagefoldersdrawer--campaigns--light.png",
+        "dark": "png/index-page/molecules-mpmanagefoldersdrawer--campaigns--dark.png"
+      },
+      "parts": []
+    },
+    {
+      "id": "molecules-mpmovetofolderdialog--default",
+      "label": "Move to folder",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpmovetofolderdialog--default",
+      "png": {
+        "light": "png/index-page/molecules-mpmovetofolderdialog--default--light.png",
+        "dark": "png/index-page/molecules-mpmovetofolderdialog--default--dark.png"
+      },
+      "parts": []
+    }
+  ]
+}

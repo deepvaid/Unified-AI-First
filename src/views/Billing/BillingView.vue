@@ -465,7 +465,7 @@ const usageRows = computed(() => {
               <span class="billing-row__name">{{ u.label }}</span>
               <span class="billing-row__meta tabular">{{ u.used }} / {{ u.limit }}</span>
             </div>
-            <v-progress-linear v-if="!u.unlimited" :model-value="u.pct" color="primary" rounded height="6" />
+            <v-progress-linear v-if="!u.unlimited" :aria-label="`${u.label}: ${u.used} of ${u.limit}`" :model-value="u.pct" color="primary" rounded height="6" />
             <div v-else class="usage-card__unlimited">Unlimited</div>
           </div>
         </div>

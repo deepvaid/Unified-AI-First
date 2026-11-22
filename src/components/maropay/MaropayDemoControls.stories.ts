@@ -1,15 +1,16 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MaropayDemoControls from './MaropayDemoControls.vue'
-import { surfaceFrame } from '@/stories/decorators'
+import { isolateStorage, overlayDocs, surfaceFrame } from '@/stories/decorators'
 
 const meta = {
   title: 'Product/Maropay/MaropayDemoControls',
   component: MaropayDemoControls,
   tags: ['autodocs'],
-  decorators: [surfaceFrame({ width: '360px' })],
+  // Loading a scenario or switching role saves `mp.maropay.v1:<account>`; put it back on unmount.
+  decorators: [surfaceFrame({ width: '360px' }), isolateStorage],
   parameters: {
     docs: {
-      story: { inline: false, height: '360px' },
+      ...overlayDocs('360px').docs,
       description: {
         component: `
 ### Overview

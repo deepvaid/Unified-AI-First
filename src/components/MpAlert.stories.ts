@@ -1,15 +1,17 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import { ref } from 'vue'
 import MpAlert from './MpAlert.vue'
+import { liquidskyDocs, stack } from '@/stories/storyTemplate'
+import { constrain } from '@/stories/decorators'
 
 const meta = {
   title: 'Molecules/MpAlert',
   component: MpAlert,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'liquidsky'],
   parameters: {
     docs: {
       description: {
-        component: `
+        component: liquidskyDocs('molecules-mpalert') + `
 ### Overview
 \`MpAlert\` is the one in-page feedback block: a rounded, borderless soft-fill callout in four
 semantic tones, with an optional title, actions row and dismiss button. It enforces the
@@ -71,6 +73,7 @@ Emits \`dismiss\`. Slots: default (body), \`#actions\`.
       },
     },
   },
+  decorators: [constrain('dialog')],
   args: {
     tone: 'info',
   },
@@ -94,9 +97,12 @@ Emits \`dismiss\`. Slots: default (body), \`#actions\`.
       description: 'Renders a dismiss button. Visibility stays consumer-owned: v-if + @dismiss.',
     },
     icon: {
-      control: 'text',
+      control: 'select',
+      options: ['Tone default', 'false (hidden)', 'megaphone', 'shield-alert', 'clock'],
+      mapping: { 'Tone default': undefined, 'false (hidden)': false },
       description: 'Lucide icon override; pass `false` to hide. Defaults per tone.',
     },
+    onDismiss: { action: 'dismiss', table: { disable: true } },
     default: {
       control: false,
       description: 'Slot — the alert body. Keep it to one or two sentences.',
@@ -117,32 +123,22 @@ export const Default: Story = {
   render: (args) => ({
     components: { MpAlert },
     setup: () => ({ args }),
-    template: `
-      <div style="max-width: 560px;">
-        <MpAlert v-bind="args">Contacts imported from a CSV keep their original subscription status.</MpAlert>
-      </div>
-    `,
+    template: `<MpAlert v-bind="args">Contacts imported from a CSV keep their original subscription status.</MpAlert>`,
   }),
 }
 
 /** The four semantic tones on the contrast-checked container pairs. Info tints from the
  * accent container (info === primary — there is deliberately no separate info container). */
 export const Variants: Story = {
-  render: () => ({
-    components: { MpAlert },
-    template: `
-      <div class="d-flex flex-column ga-3" style="max-width: 560px;">
-        <MpAlert tone="info">Contacts imported from a CSV keep their original subscription status.</MpAlert>
-        <MpAlert tone="success">Domain verified — campaigns now send from your own address.</MpAlert>
-        <MpAlert tone="warning">This segment references a deleted field and may match fewer contacts than expected.</MpAlert>
-        <MpAlert tone="error">The audience exceeds your plan's send limit. Reduce the selection to continue.</MpAlert>
-      </div>
-    `,
-  }),
-  args: {} as never,
+  render: stack({ MpAlert }, [
+    { label: 'tone="info"', args: { tone: 'info' }, slot: 'Contacts imported from a CSV keep their original subscription status.' },
+    { label: 'tone="success"', args: { tone: 'success' }, slot: 'Domain verified — campaigns now send from your own address.' },
+    { label: 'tone="warning"', args: { tone: 'warning' }, slot: 'This segment references a deleted field and may match fewer contacts than expected.' },
+    { label: 'tone="error"', args: { tone: 'error' }, slot: 'The audience exceeds your plan’s send limit. Reduce the selection to continue.' },
+  ]),
 }
 
-/** Title, actions, dismissible, and a long body wrapping inside the block. */
+/** Title, actions, dismissible, no icon, and a long body wrapping inside the block. */
 export const States: Story = {
   render: () => ({
     components: { MpAlert },
@@ -151,7 +147,7 @@ export const States: Story = {
       return { visible }
     },
     template: `
-      <div class="d-flex flex-column ga-3" style="max-width: 560px;">
+      <div class="d-flex flex-column ga-3">
         <MpAlert tone="warning" title="Sync issue">
           3 products failed to sync to this channel.
           <template #actions>
@@ -161,6 +157,9 @@ export const States: Story = {
         </MpAlert>
         <MpAlert v-if="visible" tone="info" dismissible @dismiss="visible = false">
           Dismissible — visibility is owned by the consumer (v-if + @dismiss).
+        </MpAlert>
+        <MpAlert tone="success" :icon="false">
+          No icon (<code>:icon="false"</code>) — the tint and the screen-reader prefix still carry the tone.
         </MpAlert>
         <MpAlert tone="error" title="Import failed">
           214 rows were rejected because the email column contained values that are not valid

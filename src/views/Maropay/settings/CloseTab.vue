@@ -9,9 +9,10 @@ import MaropayStepUpDialog from '@/components/maropay/MaropayStepUpDialog.vue'
 import { useToast } from '@/composables/useToast'
 import { useMaropayStore } from '@/stores/useMaropay'
 import { PROVIDER_LABELS } from '@/maropay/model'
+import { cardGateway } from '@/maropay/providers'
 import type { StoreBinding } from '@/maropay/model'
 import type { ClosureCheck } from '@/maropay/readiness'
-import { formatDay } from '@/maropay/readiness'
+import { formatDay, storePaymentsTarget } from '@/maropay/readiness'
 
 // Settings → Stop or close. Stopping changes where new checkouts go and
 // nothing else (M14). Closing ends the account once nothing is left in
@@ -28,9 +29,10 @@ const live = computed(() => maropay.bindings.filter((b) => b.activation === 'liv
 
 /** What happens to a store's new checkouts once Maropay stops — a clause, lower case. */
 function fallback(binding: StoreBinding): string {
-  return binding.previousProvider
-    ? `new checkouts go back to ${PROVIDER_LABELS[binding.previousProvider.provider]}`
-    : 'new checkouts can’t take online payments until you set up a provider'
+  const gateway = cardGateway(maropay.storeProvidersFor(binding.channelId))
+  return gateway
+    ? `cards go back to ${PROVIDER_LABELS[gateway.kind]}`
+    : 'new checkouts can’t take card payments until you set up a provider'
 }
 
 const stopBlocker = computed(() => {
@@ -111,7 +113,7 @@ function onVerified(): void {
         v-for="binding in live"
         :key="binding.id"
         variant="divided"
-        :to="maropay.routeFor({ name: 'StorePayments', params: { channelId: binding.channelId } })"
+        :to="maropay.routeFor(storePaymentsTarget(binding.channelId))"
       >
         <template #lead><v-icon size="18" class="maropay-close__muted">globe</v-icon></template>
         <span class="maropay-close__title">{{ maropay.channelName(binding.channelId) }}</span>

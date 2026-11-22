@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpListRow from '@/components/MpListRow.vue'
 import MpSectionHeader from '@/components/MpSectionHeader.vue'
 import type { PaymentEvent, PaymentEventKind } from '@/maropay/model'
@@ -47,26 +48,23 @@ const rows = computed(() => [...props.events]
 </script>
 
 <template>
-  <v-card flat border rounded="lg" class="maropay-timeline">
+  <v-card flat border rounded="lg" class="mp-card-inset">
     <MpSectionHeader :title="title" :heading-level="headingLevel" />
-    <div role="list">
-      <MpListRow v-for="event in rows" :key="event.id" variant="divided" role="listitem">
+    <div v-if="rows.length" role="list">
+      <MpListRow v-for="event in rows" :key="event.id" variant="divided" role="listitem" :subtitle="event.when">
         <template #lead>
-          <v-icon size="18" :class="`maropay-timeline__icon--${event.tone}`">{{ event.icon }}</v-icon>
+          <v-icon size="16" :class="`maropay-timeline__icon--${event.tone}`">{{ event.icon }}</v-icon>
         </template>
-        <span class="maropay-timeline__text" :class="{ 'maropay-timeline__text--muted': event.tone === 'muted' }">{{ event.text }}</span>
-        <span class="maropay-timeline__when">{{ event.when }}</span>
+        <template #title>
+          <span :class="{ 'maropay-timeline__text--muted': event.tone === 'muted' }">{{ event.text }}</span>
+        </template>
       </MpListRow>
     </div>
-    <p v-if="!rows.length" class="maropay-timeline__empty">Nothing has happened yet.</p>
+    <MpEmptyState v-else icon="history" title="Nothing has happened yet" :heading-level="3" />
   </v-card>
 </template>
 
 <style scoped>
-.maropay-timeline {
-  padding: var(--mp-component-card-padding);
-}
-
 .maropay-timeline__icon--neutral {
   color: var(--icon-secondary);
 }
@@ -79,30 +77,8 @@ const rows = computed(() => [...props.events]
   color: var(--neg-ink);
 }
 
-.maropay-timeline__icon--muted {
-  color: var(--muted);
-}
-
-.maropay-timeline__text {
-  font-size: var(--mp-fontSize-14);
-  line-height: var(--mp-lineHeight-snug);
-  color: var(--text-primary);
-}
-
+.maropay-timeline__icon--muted,
 .maropay-timeline__text--muted {
-  color: var(--text-secondary);
-}
-
-.maropay-timeline__when {
-  margin-top: var(--mp-space-2);
-  font-size: var(--mp-fontSize-12);
-  font-variant-numeric: tabular-nums;
-  color: var(--text-secondary);
-}
-
-.maropay-timeline__empty {
-  margin: 0;
-  font-size: var(--mp-fontSize-13);
-  color: var(--muted);
+  color: var(--on-surface-muted);
 }
 </style>

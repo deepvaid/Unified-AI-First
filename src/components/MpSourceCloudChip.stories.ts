@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpSourceCloudChip from './MpSourceCloudChip.vue'
+import { grid } from '@/stories/storyTemplate'
 // The app loads the --cloud-* accent tokens via main.ts; preview.ts doesn't.
 import '@/styles/source-cloud-colors.css'
 
@@ -61,8 +62,7 @@ export const Default: Story = {
   args: { dataSource: 'marketing', size: 'md' },
 }
 
-/** Every source cloud the platform knows about, in one row. */
-/** Variants — every source cloud. The per-cloud colour is the variant axis here. */
+/** Every source cloud the platform knows about, in one row. The per-cloud colour is the variant axis here. */
 export const Variants: Story = {
   render: () => ({
     components: { MpSourceCloudChip },
@@ -81,52 +81,18 @@ export const Variants: Story = {
 
 /** Every size on the shared chip ramp — 20 / 24 / 32, from component.chip.height.*. */
 export const Sizes: Story = {
-  render: () => ({
-    components: { MpSourceCloudChip },
-    setup: () => ({ sizes: ['sm', 'md', 'lg'] }),
-    template: `
-      <div class="d-flex flex-column ga-4">
-        <div v-for="size in sizes" :key="size" class="d-flex align-center ga-3">
-          <span class="text-caption text-medium-emphasis" style="width: 2rem;">{{ size }}</span>
-          <MpSourceCloudChip data-source="marketing" :size="size" />
-          <MpSourceCloudChip data-source="marketing" :size="size" icon-only />
-        </div>
-      </div>
-    `,
-  }),
+  render: grid({ MpSourceCloudChip }, (['sm', 'md', 'lg'] as const).map((size) => ({
+    label: size,
+    args: { dataSource: 'marketing', size },
+  }))),
   args: { dataSource: 'marketing' },
 }
 
-/** States — label vs icon-only, at every size, so the square collapse is verifiable. */
+/** Label vs icon-only, at every size, so the round collapse is verifiable. */
 export const States: Story = {
-  render: () => ({
-    components: { MpSourceCloudChip },
-    template: `
-      <div class="d-flex flex-column ga-4">
-        <div class="d-flex align-center ga-3">
-          <span class="text-caption text-medium-emphasis" style="width: 5rem;">with label</span>
-          <MpSourceCloudChip data-source="commerce" />
-        </div>
-        <div class="d-flex align-center ga-3">
-          <span class="text-caption text-medium-emphasis" style="width: 5rem;">icon only</span>
-          <MpSourceCloudChip data-source="commerce" icon-only />
-        </div>
-      </div>
-    `,
-  }),
+  render: grid({ MpSourceCloudChip }, [
+    { label: 'with label', args: {} },
+    ...(['sm', 'md', 'lg'] as const).map((size) => ({ label: `icon only · ${size}`, args: { iconOnly: true, size } })),
+  ]),
   args: { dataSource: 'commerce' },
-}
-
-// ── Scenarios ───────────────────────────────────────────────────────────────
-
-export const Commerce: Story = {
-  args: { dataSource: 'commerce', size: 'md' },
-}
-
-export const Service: Story = {
-  args: { dataSource: 'service', size: 'md' },
-}
-
-export const Neto: Story = {
-  args: { dataSource: 'neto', size: 'md' },
 }

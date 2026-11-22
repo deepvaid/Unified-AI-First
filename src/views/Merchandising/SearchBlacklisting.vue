@@ -38,7 +38,7 @@ function addTerm() {
 const termHeaders = [
   { title: 'Logic', key: 'logic', sortable: false, width: 160 },
   { title: 'Term', key: 'term', sortable: true },
-  { title: '', key: 'actions', sortable: false, align: 'end' as const, width: 64 },
+  { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, sortable: false, align: 'end' as const, width: 64 },
 ]
 
 const deleteDialog = ref(false)

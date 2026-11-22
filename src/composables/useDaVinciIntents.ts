@@ -101,6 +101,8 @@ export interface DvQuickReply {
   label: string
   value: string
   icon?: string
+  /** Secondary line, shown by the 'list' layout only. */
+  hint?: string
 }
 
 export type DvPending = PendingSlot

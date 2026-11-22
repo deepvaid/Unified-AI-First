@@ -218,7 +218,7 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
               <span class="text-caption text-medium-emphasis font-weight-medium">Contact Score</span>
               <span class="text-caption font-weight-bold" :class="contact.score >= 70 ? 'text-success' : contact.score >= 40 ? 'text-warning' : 'text-error'">{{ contact.score }}/100</span>
             </div>
-            <v-progress-linear :model-value="contact.score" :color="contact.score >= 70 ? 'success' : contact.score >= 40 ? 'warning' : 'error'" rounded height="6" bg-color="surface-variant" />
+            <v-progress-linear :aria-label="`Contact score: ${contact.score} of 100`" :model-value="contact.score" :color="contact.score >= 70 ? 'success' : contact.score >= 40 ? 'warning' : 'error'" rounded height="6" bg-color="surface-variant" />
           </div>
 
           <v-divider />
@@ -363,11 +363,11 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
           <div class="dc-sublabel mb-2">eRFM Customer Group</div>
           <dl class="mp-label-value dc-label-value mb-4">
             <div>
-              <dt>RFM Group</dt>
+              <dt>RFM group</dt>
               <dd>{{ detail.erfm.rfmGroup }}</dd>
             </div>
             <div>
-              <dt>Engagement Level</dt>
+              <dt>Engagement level</dt>
               <dd>{{ detail.erfm.engagementLevel }}</dd>
             </div>
           </dl>

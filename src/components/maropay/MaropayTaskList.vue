@@ -41,21 +41,21 @@ function dueLabel(task: ActionTask): string | null {
 </script>
 
 <template>
-  <v-card flat border rounded="lg" class="maropay-tasks">
+  <v-card flat border rounded="lg" class="mp-card-inset">
     <MpSectionHeader :title="title" :heading-level="headingLevel" :description="`${items.length} open`" />
     <MpListRow
       v-for="{ task, to } in items"
       :key="task.id"
       variant="divided"
       :to="to"
+      :title="task.title"
+      :subtitle="task.description"
     >
       <template #lead>
-        <v-icon size="18" class="maropay-tasks__icon" :class="{ 'maropay-tasks__icon--urgent': task.blocking && task.status === 'open' }">
+        <v-icon size="16" class="maropay-tasks__icon" :class="{ 'maropay-tasks__icon--urgent': task.blocking && task.status === 'open' }">
           {{ ICONS[task.kind] }}
         </v-icon>
       </template>
-      <span class="maropay-tasks__title">{{ task.title }}</span>
-      <span class="maropay-tasks__sub">{{ task.description }}</span>
       <template #trailing>
         <span class="maropay-tasks__meta">
           <span v-if="dueLabel(task)" class="maropay-tasks__due" :class="{ 'maropay-tasks__due--waiting': task.status === 'waiting_review' }">{{ dueLabel(task) }}</span>
@@ -68,30 +68,12 @@ function dueLabel(task: ActionTask): string | null {
 </template>
 
 <style scoped>
-.maropay-tasks {
-  padding: var(--mp-component-card-padding);
-}
-
 .maropay-tasks__icon {
   color: var(--icon-secondary);
 }
 
 .maropay-tasks__icon--urgent {
   color: var(--warn-ink);
-}
-
-.maropay-tasks__title {
-  font-size: var(--mp-fontSize-14);
-  font-weight: var(--mp-fontWeight-medium);
-  color: var(--text-primary);
-  line-height: var(--mp-lineHeight-snug);
-}
-
-.maropay-tasks__sub {
-  margin-top: var(--mp-space-2);
-  font-size: var(--mp-fontSize-13);
-  color: var(--text-secondary);
-  line-height: var(--mp-lineHeight-normal);
 }
 
 .maropay-tasks__meta {
@@ -111,15 +93,15 @@ function dueLabel(task: ActionTask): string | null {
 
 .maropay-tasks__due--waiting {
   font-weight: var(--mp-fontWeight-medium);
-  color: var(--text-secondary);
+  color: var(--on-surface-muted);
 }
 
 .maropay-tasks__role {
   font-size: var(--mp-fontSize-12);
-  color: var(--muted);
+  color: var(--on-surface-muted);
 }
 
 .maropay-tasks__chevron {
-  color: var(--muted);
+  color: var(--icon-secondary);
 }
 </style>

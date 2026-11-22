@@ -1,0 +1,11 @@
+{
+  "key": "expandable-list",
+  "liquidsky": [
+    "MpVExpansionPanels",
+    "MpVExpansionPanel"
+  ],
+  "status": "no-reference",
+  "reference": "None",
+  "note": "Marobase has no expansion-panel component. Needs a design decision before it can be reviewed.",
+  "stories": []
+}

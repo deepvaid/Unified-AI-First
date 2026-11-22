@@ -586,7 +586,7 @@ Built 2026-07-07 from Part A (all 11 modules) diffed against `src/router/index.t
 | 2 | Themes page | StoreThemes | missing→built | done | 0f20cb2 | Current card + Show store, installed table, pencil → builder `?theme=`. Rail "Theme" → "Themes". Upload / menus / In Focus pending crawl |
 | 3 | Storefront — home, pages, policies, cart, 404 | StorefrontHome · StorefrontPage · StorefrontPolicy · StorefrontCart · StorefrontNotFound | missing→built | done | 0f20cb2 | Aurora as crawled; merchant simulation under the P4-8 exemption |
 | 4 | General, Blogs, Policies admin, Navigation menus, Campaigns, Assets, Integrations, Store Settings | — | — | pending | | Blocked by the UAT outage |
-| 5 | Collections, product, search, cart line items, checkout (Maropay replaces the checkout preview) | — | missing | pending | | Blocked (search service down; no cart) |
+| 5 | Collections, product, search, cart line items, checkout (Maropay replaces the checkout preview) | StorefrontCollection · StorefrontProduct · StorefrontCart · StorefrontCheckout | missing→stand-in | partial | | Built 2026-10-05 as stand-ins on the Commerce catalogue (owner decision F3); search still 404s; real layouts pending the crawl |
 
 ### B-A07 — Retail  _(provisional — deep crawl pending)_
 | # | UAT page/flow | Prototype route | Verdict | Build | Commit | Notes |

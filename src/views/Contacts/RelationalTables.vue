@@ -28,7 +28,7 @@ const headers = [
   { title: 'Rows', key: 'rows', align: 'end' as const },
   { title: 'Primary Key', key: 'primaryKey', hideBelow: 'sm' as const },
   { title: 'Last Updated', key: 'updated', hideBelow: 'md' as const },
-  { title: '', key: 'actions', sortable: false, width: 48 },
+  { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, sortable: false, width: 48 },
 ]
 
 // Row identity + its headline count always show; supporting columns drop out

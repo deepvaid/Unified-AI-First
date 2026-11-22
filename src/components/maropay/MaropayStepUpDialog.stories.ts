@@ -1,5 +1,7 @@
+import { ref } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MaropayStepUpDialog from './MaropayStepUpDialog.vue'
+import { overlayDocs } from '@/stories/decorators'
 
 const meta = {
   title: 'Product/Maropay/MaropayStepUpDialog',
@@ -7,7 +9,7 @@ const meta = {
   tags: ['autodocs'],
   parameters: {
     docs: {
-      story: { inline: false, height: '520px' },
+      ...overlayDocs('520px').docs,
       description: {
         component: `
 ### Overview
@@ -31,6 +33,20 @@ attempt. The prototype prints its code, **246810**, because there is no authenti
     modelValue: true,
     purpose: 'Changing where payouts go needs a fresh check.',
   },
+  // Storybook does not write `update:modelValue` back into args, so the story holds the open state.
+  render: (args) => ({
+    components: { MaropayStepUpDialog },
+    setup() {
+      const open = ref(args.modelValue)
+      return { args, open }
+    },
+    template: `
+      <div>
+        <v-btn variant="outlined" @click="open = true">Reopen</v-btn>
+        <MaropayStepUpDialog v-bind="args" v-model="open" />
+      </div>
+    `,
+  }),
 } satisfies Meta<typeof MaropayStepUpDialog>
 
 export default meta

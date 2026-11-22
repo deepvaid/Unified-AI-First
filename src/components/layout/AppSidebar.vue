@@ -235,7 +235,6 @@ function buildNavGroups(accountId: string): NavGroup[] {
     {
       title: 'Service',
       icon: 'headset',
-      dividerAfter: true,
       requires: 'service',
       singleRoute: `/service/${accountId}/tickets`,
       items: [
@@ -286,6 +285,37 @@ const drawerModel = computed<boolean>({
 const sidebarMode = computed<'expanded' | 'rail'>(() => effectiveRail.value ? 'rail' : 'expanded')
 const railHoveredSubGroup = ref<string | null>(null)
 const railOpenGroup = ref<string | null>(null)
+
+// Rail flyouts are teleported, so Tab from a rail icon skipped its open flyout and
+// landed in the app bar (WCAG 2.4.3 — W-14). Tab now steps into the flyout; Vuetify
+// hands focus back to the icon after its last item, and the icon's next Tab moves
+// on — the one-shot flag stops the icon's open-on-focus flyout catching it again.
+const railTabOut = ref<string | null>(null)
+const railFlyoutId = (group: NavGroup) => `rail-flyout-${group.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
+
+function enterRailFlyout(event: KeyboardEvent, group: NavGroup) {
+  if (railOpenGroup.value !== group.title) return
+  const first = document.getElementById(railFlyoutId(group))?.querySelector<HTMLElement>('.rail-flyout-item')
+  if (!first) return
+  event.preventDefault()
+  first.focus()
+}
+
+function onRailIconTab(event: KeyboardEvent, group: NavGroup) {
+  if (railTabOut.value === group.title) {
+    railTabOut.value = null
+    return
+  }
+  enterRailFlyout(event, group)
+}
+
+function onRailFlyoutKeydown(event: KeyboardEvent, group: NavGroup) {
+  if (event.key !== 'Tab' || event.shiftKey) return
+  const items = event.currentTarget instanceof HTMLElement
+    ? [...event.currentTarget.querySelectorAll<HTMLElement>('.rail-flyout-item')]
+    : []
+  if (items[items.length - 1] === event.target) railTabOut.value = group.title
+}
 const appsExpanded = ref(false)
 const flyoutOpen = ref(false)
 const flyoutGroupTitle = ref<string | null>(null)
@@ -626,7 +656,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
         v-if="!effectiveRail"
         type="button"
         class="sidebar-get-started"
-        aria-label="Get started checklist"
+        :aria-label="`Get started checklist, ${onboardingDone} of ${onboardingTotal} done`"
         @click="goTo(`/accounts/${resolvedAccountId}/get-started`)"
       >
         <div class="sidebar-get-started__row">
@@ -635,6 +665,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
           <span class="sidebar-get-started__count">{{ onboardingDone }}/{{ onboardingTotal }}</span>
         </div>
         <v-progress-linear
+          aria-hidden="true"
           :model-value="onboardingProgress"
           color="primary"
           height="4"
@@ -657,9 +688,10 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
       </v-tooltip>
     </template>
 
-    <!-- Navigation List -->
+    <!-- Navigation List — `group`, not Vuetify's `list`: its children are links,
+         buttons and separators, not list items (WCAG W-01) -->
     <div class="sidebar-scroll">
-    <v-list density="compact" class="py-1">
+    <v-list density="compact" class="py-1" role="group" aria-label="Main navigation">
       <template v-for="group in navGroups" :key="group.title">
         <template v-if="isAppsGroup(group) && !effectiveRail">
           <v-list-item
@@ -667,7 +699,6 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
             @click="group.singleRoute && goTo(group.singleRoute)"
             :prepend-icon="group.icon"
             :title="group.title"
-            :value="group.title"
             rounded="lg"
             :active="isModuleActive(group)"
             active-class="active-nav-item"
@@ -725,7 +756,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
               @click="group.singleRoute && goTo(group.singleRoute)"
               :prepend-icon="group.icon"
               :title="!effectiveRail ? group.title : ''"
-              :value="group.title"
+              :aria-label="effectiveRail ? group.title : undefined"
               rounded="lg"
               :active="isModuleActive(group)"
               active-class="active-nav-item"
@@ -760,7 +791,9 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
           <v-list-item
             :prepend-icon="group.icon"
             :title="group.title"
-            :value="group.title"
+            role="button"
+            aria-haspopup="menu"
+            :aria-expanded="flyoutOpen && flyoutGroupTitle === group.title"
             rounded="lg"
             :active="isModuleActive(group)"
             active-class="active-nav-item"
@@ -792,6 +825,8 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
           :close-delay="120"
           offset="8"
           :close-on-content-click="false"
+          :id="railFlyoutId(group)"
+          :content-props="{ onKeydown: (e: KeyboardEvent) => onRailFlyoutKeydown(e, group) }"
           @update:model-value="(v: boolean) => {
             if (v) {
               railOpenGroup = group.title
@@ -806,10 +841,16 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
               v-bind="menuProps"
               :prepend-icon="group.icon"
               :title="''"
-              :value="group.title"
+              link
+              role="button"
+              :aria-label="group.title"
               rounded="lg"
               class="sidebar-text mb-1"
               :class="{ 'rail-icon-hovered': railOpenGroup === group.title }"
+              @keydown.tab.exact="onRailIconTab($event, group)"
+              @keydown.enter="enterRailFlyout($event, group)"
+              @keydown.space="enterRailFlyout($event, group)"
+              @blur="railTabOut = null"
             />
           </template>
 
@@ -1034,7 +1075,11 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
 </template>
 
 <style scoped lang="scss">
-.mp-sidebar {
+/* Defaults at zero specificity: the skins in sidebar-*.css redefine these same variables on
+   `[data-sidebar] .mp-sidebar`, and a scoped rule of equal weight beat them whenever this
+   component's stylesheet loaded after theirs (Storybook, where it loads lazily). With :where()
+   the skin wins in any load order, as it does in the app. */
+:where(.mp-sidebar) {
   --sidebar-bg: var(--mp-color-sidebar-surface, var(--surface-primary));
   --sidebar-border: var(--mp-color-sidebar-border, var(--border-subtle));
   --sidebar-line: var(--sidebar-border);
@@ -1049,6 +1094,9 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
   --sidebar-radius: var(--mp-component-nav-itemRadius);
   --sidebar-radius-sm: var(--mp-component-input-radius);
   --sidebar-transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+}
+
+.mp-sidebar {
   background: var(--sidebar-bg) !important;
   border-right: 1px solid var(--sidebar-border) !important;
   color: var(--sidebar-text);
@@ -1067,9 +1115,9 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
   display: flex;
   align-items: center;
   gap: var(--mp-space-10);
-  /* Height matches the app bar (56px + 1px divider) so the two header dividers
-     line up. A shell-alignment constant, not a spacing step. */
-  height: 57px;
+  /* Height matches the app bar (layout.appbarHeight + its 1px divider) so the two
+     header dividers line up. A shell-alignment constant, not a spacing step. */
+  height: calc(var(--mp-layout-appbarHeight) + 1px);
   padding: 0 var(--mp-space-16) 0 var(--mp-space-20);
   margin-bottom: var(--mp-space-6);
   border-bottom: 1px solid var(--sidebar-border);
@@ -1492,7 +1540,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
 }
 
 /* Rail flyout — single card (tokens: sidebar-dark.css + light defaults below) */
-.rail-flyout-card {
+:where(.rail-flyout-card) {
   --sidebar-border: var(--border-subtle);
   --sidebar-text: var(--text-primary);
   --sidebar-muted: color-mix(in oklch, var(--text-primary) 62%, transparent);
@@ -1500,6 +1548,9 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
   --sidebar-active-bg: color-mix(in oklch, var(--sidebar-text) 11%, transparent);
   --sidebar-active-text: var(--sidebar-text);
   --sidebar-radius: var(--mp-component-nav-itemRadius);
+}
+
+.rail-flyout-card {
   background: var(--surface-primary);
   /* Shared popover chrome (matches .v-menu overlay surfaces in global.scss) */
   border: 1px solid var(--mp-border-subtle);

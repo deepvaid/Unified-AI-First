@@ -11,6 +11,8 @@ export interface MpSegmentedItem {
   disabled?: boolean
   /** Wraps the segment in a v-tooltip — pass the label here too for icon segments. */
   tooltip?: string
+  /** Short qualifier shown as a pill after the label, e.g. a saving ("−20%"). Text segments only. */
+  badge?: string
 }
 
 const props = withDefaults(
@@ -40,6 +42,7 @@ function onUpdate(value: unknown) {
     :class="{ 'mp-segmented--sm': props.size === 'sm' }"
     :model-value="props.modelValue ?? undefined"
     :mandatory="props.mandatory"
+    role="group"
     :aria-label="props.ariaLabel"
     :divided="false"
     @update:model-value="onUpdate"
@@ -59,7 +62,10 @@ function onUpdate(value: unknown) {
             variant="text"
           >
             <v-icon v-if="item.icon">{{ item.icon }}</v-icon>
-            <template v-else>{{ item.label }}</template>
+            <template v-else>
+              {{ item.label }}
+              <span v-if="item.badge" class="mp-segmented__badge">{{ item.badge }}</span>
+            </template>
           </v-btn>
         </template>
       </v-tooltip>
@@ -73,7 +79,10 @@ function onUpdate(value: unknown) {
         variant="text"
       >
         <v-icon v-if="item.icon">{{ item.icon }}</v-icon>
-        <template v-else>{{ item.label }}</template>
+        <template v-else>
+          {{ item.label }}
+          <span v-if="item.badge" class="mp-segmented__badge">{{ item.badge }}</span>
+        </template>
       </v-btn>
     </template>
   </v-btn-toggle>
@@ -144,6 +153,20 @@ function onUpdate(value: unknown) {
 .v-theme--maropostDark .mp-segmented :deep(.v-btn--active) {
   background: var(--surface-overlay);
   box-shadow: var(--elevation-raised);
+}
+
+/* A qualifier on a segment (a saving, a count). A painted pill, so it sets
+   both halves of the positive-soft pair. */
+.mp-segmented__badge {
+  margin-left: var(--mp-space-6);
+  padding: var(--mp-space-2) var(--mp-space-6);
+  border-radius: var(--mp-radius-full);
+  background: var(--pos-soft);
+  color: var(--pos-ink);
+  font-size: var(--mp-fontSize-11);
+  font-weight: var(--mp-fontWeight-semibold);
+  line-height: 1.2;
+  white-space: nowrap;
 }
 
 .mp-segmented--sm {

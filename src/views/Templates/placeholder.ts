@@ -57,7 +57,7 @@ export const RECORD_HEADERS: (ResponsiveHeader & { title: string; key: string })
   { title: 'Column C · Owner', key: 'owner', hideBelow: 'lg' as const },
   { title: 'Column D · Updated', key: 'updated', sortable: true, hideBelow: 'lg' as const },
   { title: 'Column E · Value', key: 'amount', align: 'end' as const },
-  { title: '', key: 'actions', sortable: false, align: 'end' as const },
+  { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, sortable: false, align: 'end' as const },
 ]
 
 /** Label/value pairs for the `<dl class="mp-label-value">` grids. */

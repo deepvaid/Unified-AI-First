@@ -62,7 +62,7 @@ const headers = [
   { title: 'Collection', key: 'name', sortable: true },
   { title: 'Filter Type', key: 'filterType', sortable: false, width: 160 },
   { title: 'Last Update', key: 'updatedAt', sortable: true, align: 'end' as const, width: 220 },
-  { title: '', key: 'actions', sortable: false, width: 64 },
+  { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, sortable: false, width: 64 },
 ]
 
 const filteredCollections = computed(() => {

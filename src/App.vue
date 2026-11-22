@@ -24,6 +24,8 @@ import { useAccountsStore } from '@/stores/useAccounts'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import { usePlgStore, isPlgDemoPreset } from '@/stores/usePlg'
 import { useMaropayStore, isMaropayScenarioKey } from '@/stores/useMaropay'
+import { useCatalogCopilotStore } from '@/stores/useCatalogCopilot'
+import { isCatalogScenario } from '@/composables/catalogCopilotConfig'
 import PlgTrialBanner from '@/components/plg/PlgTrialBanner.vue'
 
 // Apply stored accent and theme to Vuetify on initial mount
@@ -73,8 +75,8 @@ watch(() => route.query.frame, (f) => {
 
 // Dashboard chart palette: a ?chart=grayBlue|grayBlueGold|social|ocean query
 // param (stakeholder demo), same in-memory-per-tab handling as ?nav=.
-// Independent of, and composes with, ?nav=. Unknown values fall back to grayBlue
-// (the default — focal blue + gray de-emphasis with a monochrome blue ramp).
+// Independent of, and composes with, ?nav=. Unknown values fall back to ocean
+// (the default — Ocean colours on the standard flat treatment, no gradients).
 const VALID_CHART_PALETTES: readonly ChartPalette[] = [
   'grayBlue', 'grayBlueGold', 'social', 'ocean', 'merchant', 'shopify', 'shopifyAdmin', 'bloomreach', 'stripe',
   'socialGradient', 'grayBlueGradient', 'grayBlueGoldGradient', 'oceanGradient',
@@ -85,7 +87,7 @@ const chartOverride = ref<ChartPalette | null>(isChartPalette(route.query.chart)
 watch(() => route.query.chart, (chart) => {
   if (isChartPalette(chart)) chartOverride.value = chart
 })
-watch(() => chartOverride.value ?? 'grayBlue', applyChartPalette, { immediate: true })
+watch(() => chartOverride.value ?? 'ocean', applyChartPalette, { immediate: true })
 
 // PLG demo state: a ?plg=trial-d3|trial-d12|trial-expired|paid-build|...|grace
 // query param (stakeholder share links) applies a subscription preset to the
@@ -93,6 +95,14 @@ watch(() => chartOverride.value ?? 'grayBlue', applyChartPalette, { immediate: t
 const plgStore = usePlgStore()
 watch(() => route.query.plg, (p) => {
   if (isPlgDemoPreset(p)) plgStore.applyDemoPreset(p)
+}, { immediate: true })
+
+// Catalog Co-Pilot entitlement scenario: ?catalog=trial|trial_exhausted|no_pack|
+// pack_exhausted|kill_switch|flag_off|view_only|auto — same idiom as ?plg=, saved
+// per account by the catalog store (re-applying the same scenario changes nothing).
+const catalogCopilot = useCatalogCopilotStore()
+watch(() => route.query.catalog, (scenario) => {
+  if (isCatalogScenario(scenario)) catalogCopilot.setScenario(scenario)
 }, { immediate: true })
 
 // Maropay owns payment records and projects them onto Commerce orders, so it
@@ -296,62 +306,8 @@ const copilotDrawerWidth = computed(() => {
   top: 16px;
 }
 
-/* Studio frame — the working area floats as one rounded surface on the
-   canvas. Sub-shells that size themselves against the viewport subtract
-   --mp-frame-offset (top gap + bottom inset); it resolves to 0 outside
-   the frame (flush/fullPage routes), so those keep exact old behavior. */
-.mp-content-frame {
-  /* margins (4 + 12) + borders (2) + the 4px slack the old 52px constant
-     absorbed — keeps viewport-sized sub-shells exactly flush inside. */
-  --mp-frame-offset: 22px;
-  position: relative;
-  isolation: isolate;
-  margin: 4px 12px 12px 4px;
-  min-height: calc(100vh - 56px - 16px);
-  /* A hair off-white so the white widget cards read against the bed. */
-  background: #f9f9f9;
-  border: 1px solid var(--mp-border-subtle);
-  border-radius: var(--mp-component-card-radius);
-  overflow: hidden;
-}
-
-html[data-theme='dark'] .mp-content-frame {
-  background: rgb(var(--v-theme-surface));
-}
-
-/* Faint Da Vinci-orb stipple on the content bed. A ::before overlay (not the
-   element's background) so the white-sidebar variant's `background !important`
-   override can't wipe it. Two mismatched dot periods break the visible grid. */
-.mp-content-frame::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background-image:
-    radial-gradient(circle, rgba(var(--v-theme-on-surface), 0.08) 1px, transparent 1.1px),
-    radial-gradient(circle, rgba(var(--v-theme-on-surface), 0.08) 1px, transparent 1.1px);
-  background-size: 22px 22px, 34px 34px;
-  background-position: 0 0, 11px 17px;
-  /* the global reset defaults pseudo-elements to no-repeat */
-  background-repeat: repeat;
-}
-
-.mp-main-shell {
-  padding: var(--mp-layout-shellInsetBlock) var(--mp-layout-shellInsetInline) !important;
-}
-
-@media (max-width: 1024px) {
-  .mp-main-shell {
-    padding: var(--mp-layout-shellInsetMedium) !important;
-  }
-}
-
-@media (max-width: 640px) {
-  .mp-main-shell {
-    padding: var(--mp-layout-shellInsetCompact) !important;
-  }
-}
+/* The studio content frame and .mp-main-shell live in styles/shell-variants.css, so
+   Storybook's shell stories render them too. */
 
 /* Copilot floats as a rounded surface like .mp-content-frame — same 4px top /
    12px right+bottom gutters, radius, border, and soft shadow. Vuetify's layout

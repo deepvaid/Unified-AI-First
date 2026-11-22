@@ -39,7 +39,10 @@ defineSlots<{
       <slot name="toolbar" />
     </template>
 
-    <div class="mp-builder-preview__stage">
+    <!-- A preview is usually not interactive, so the stage takes focus itself —
+         with focus inside the scrolling body the keyboard can scroll it
+         (WCAG 2.1.1 — W-13). -->
+    <div class="mp-builder-preview__stage" tabindex="0" role="group" :aria-label="title">
       <slot />
     </div>
   </MpDialog>

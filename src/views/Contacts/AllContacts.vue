@@ -240,7 +240,7 @@ const headers = [
   { title: 'Status', key: 'status' },
   { title: 'Score', key: 'score', align: 'end' as const, hideBelow: 'md' as const },
   { title: 'Last Active', key: 'lastActive', align: 'end' as const, hideBelow: 'md' as const },
-  { title: '', key: 'actions', align: 'end' as const, sortable: false, width: '48px' },
+  { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, align: 'end' as const, sortable: false, width: '48px' },
 ]
 
 // Column visibility — manual hide menu + breakpoint-driven priority hiding
@@ -385,6 +385,23 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
         class="flex-grow-1 contacts-table"
         @click:row="handleContactRowClick"
       >
+        <!-- Labelled select boxes (WCAG W-04). aria-checked is dropped: Vuetify's "mixed" is invalid on a native checkbox. -->
+        <template #header.data-table-select="{ allSelected, selectAll, someSelected }">
+          <v-checkbox-btn
+            :model-value="allSelected"
+            :indeterminate="someSelected && !allSelected"
+            :aria-checked="undefined"
+            aria-label="Select all rows"
+            @update:model-value="selectAll(!allSelected)"
+          />
+        </template>
+        <template #item.data-table-select="{ internalItem, isSelected, toggleSelect }">
+          <v-checkbox-btn
+            :model-value="isSelected(internalItem)"
+            :aria-label="`Select ${internalItem.raw.firstName} ${internalItem.raw.lastName}`"
+            @update:model-value="toggleSelect(internalItem)"
+          />
+        </template>
         <template v-slot:item.contact="{ item }">
           <div class="d-flex align-center py-2">
             <v-avatar size="36" class="mr-3 border contact-avatar">

@@ -106,10 +106,10 @@ const headers = [
   { title: 'Actor', key: 'actorName', hideBelow: 'md' as const },
   { title: 'Action', key: 'action', sortable: false },
   { title: 'Target', key: 'targetLabel', hideBelow: 'lg' as const },
-  { title: 'Details', key: 'summary', sortable: false },
+  { title: 'Details', key: 'summary', sortable: false, hideBelow: 'sm' as const },
 ]
 const hiddenColumns = ref<string[]>([])
-const { visibleHeaders } = useResponsiveTableHeaders(headers, hiddenColumns)
+const { visibleHeaders, isVisible } = useResponsiveTableHeaders(headers, hiddenColumns)
 
 const exactFmt = new Intl.DateTimeFormat('en-US', {
   month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit',
@@ -232,6 +232,10 @@ function actionMeta(event: AuditEvent) {
             <v-chip size="x-small" variant="tonal" :color="actionMeta(item as AuditEvent).color" class="text-no-wrap">
               {{ actionMeta(item as AuditEvent).label }}
             </v-chip>
+            <!-- On a phone the Details column has no room, so its text folds in under the action. -->
+            <div v-if="!isVisible('summary')" class="audit-summary text-body-2 text-medium-emphasis mt-1">
+              {{ (item as AuditEvent).summary }}
+            </div>
           </template>
 
           <template v-slot:item.targetLabel="{ item }">
@@ -297,12 +301,13 @@ function actionMeta(event: AuditEvent) {
   color: var(--muted);
 }
 
+/* Two lines, then clipped (the tooltip has the full text). A one-line ellipsis kept the column
+   320px wide, which pushed the table past its card. */
 .audit-summary {
-  display: inline-block;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   max-width: 320px;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  vertical-align: middle;
 }
 </style>

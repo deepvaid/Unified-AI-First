@@ -9,7 +9,15 @@
 // destructive group).
 //
 // Everything else v-list-item accepts (disabled, subtitle, @click, to, …) falls
-// through via attrs; slots pass through untouched.
+// through via attrs; slots pass through untouched. A disabled item also gets
+// `aria-disabled`, which v-list-item doesn't set: without it a screen reader
+// doesn't hear "dimmed", and the greyed label isn't recognised as an inactive
+// control (WCAG 1.4.3 exempts those from contrast).
+import { computed, useAttrs } from 'vue'
+
+const attrs = useAttrs()
+const disabled = computed(() => attrs.disabled === '' || attrs.disabled === true || attrs.disabled === 'true')
+
 withDefaults(defineProps<{
   /** Verb-first label ("Edit", "Duplicate", "Delete"). */
   title: string
@@ -25,6 +33,7 @@ withDefaults(defineProps<{
 <template>
   <v-list-item
     role="menuitem"
+    :aria-disabled="disabled ? 'true' : undefined"
     :title="title"
     :prepend-icon="icon"
     :class="{ 'text-error': danger }"

@@ -69,7 +69,7 @@ const headers = [
   { title: 'Theme name', key: 'name', sortable: true },
   { title: 'Created by', key: 'createdBy', sortable: true },
   { title: 'Last update', key: 'updatedAt', sortable: true },
-  { title: '', key: 'actions', align: 'end' as const, sortable: false },
+  { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, align: 'end' as const, sortable: false },
 ]
 </script>
 

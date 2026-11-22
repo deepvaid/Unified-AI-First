@@ -2163,3 +2163,809 @@ is intended:
   `--mp-banner-offset` the way the copilot page now does.
 - The app-bar Co-pilot entry on the copilot page itself; the header subtitle ellipsis; the px sweep outside
   touched files; a real-browser check that the mic prompt doesn't appear on a plain dashboard load.
+## Storefront checkout — 2026-10-05
+
+The merchant's checkout choices (Store › Payments) now show on the store itself. Decisions F1–F4 in
+`docs/maropay/decisions.md`.
+
+- **New storefront pages** (P4-8, out of system like the rest of `src/views/Storefront/`):
+  `StorefrontCollection` (`/collections/:handle`), `StorefrontProduct` (`/products/:handle`), a real
+  `StorefrontCart`, and `StorefrontCheckout` (`/checkout`, distraction-free header via route meta
+  `minimalChrome`). Shared bits: `StorefrontProductCard`, `StorefrontPayMark` (text marks — no brand
+  artwork), `StorefrontExpressButtons`, `StorefrontCheckoutSheet` (wallet sheet, 3-D Secure, provider
+  page). Their controls share `storefront-controls.css`, loaded scoped per page (TrialLab precedent).
+- **One shopper derivation:** `src/maropay/storefront.ts` (`storefrontOffer`, `payButtonText`,
+  `flowForMethod`, `TEST_CARDS`, `cardErrors`, `orderedCheckoutMethods`), unit-tested.
+- **Breaking (zero consumers):** `CheckoutSession.lineItem` → `lineItems: CheckoutLineItem[]` and
+  `CheckoutInput` likewise; old saves migrate in `parseState`. `PaymentMethodCatalogEntry.redirects` added.
+- **Added:** `paypal` method; `updateCheckoutOptions` adapter op + store action; Store › Payments
+  "Checkout options" card (design-system components only); `useStorefrontCart` (sessionStorage).
+- **Removed:** the Maropay Checkout preview — `MaropayCheckoutPreview` view and route, the rail item,
+  `CheckoutPreviewFrame` + its story, `CHECKOUT_FLOWS` / `methodsForFlow` / `flowUnavailableReason` and
+  their test; token `component.preview.viewport.mobile`, whose only consumer was the frame. Links that
+  opened the preview now open the store.
+- **Seed:** Commerce product prices are deterministic (were random per load), so the product page, cart
+  and order agree across reloads.
+- **Accessibility:** axe-core clean inside `.storefront` on home, collection, product, cart and checkout,
+  including the error state and an open payment sheet. Errors move focus to the first invalid field;
+  sheets take focus, close on Escape and hand focus back to Pay.
+
+## Maropay aesthetic pass — 2026-10
+
+Maropay landed after the app-wide aesthetic waves, so it gets its own pass (tracker Wave 5 / Module 15),
+in four sub-waves with an owner check-in after each. References: Stripe Home, Balances, payment
+methods and payment-link pages; Stripe hosted checkout; Shopify settings (Mobbin).
+
+### W1 — shared building blocks (2026-10-05)
+
+- **New tokens:** `color.methodMark.<id>.{tile,onTile}` for 14 methods (theme-independent brand
+  colours; every pair in `$contrastPairs`, lowest Mastercard 4.62:1) and `component.methodMark.*`
+  (height / minWidth / paddingInline / radius / fontSize / glyphSize × sm·md·lg). Eight more contrast
+  pairs check `.mp-link` (each accent preset on the light and dark surface).
+- **New components:** `MaropayMethodMark` (brand tile; `markFor()` / `methodCaption()` in the pure
+  `src/maropay/methodMarks.ts`, tested) and `MaropayDemoPanel` (one quiet dashed `<details>` for
+  reviewer controls, last on the page).
+- **API additions (no breaking change):** `MpListRow` `subtitle` prop + `#title` / `#subtitle` slots
+  (two-line rows: 14 title that wraps, muted 13 subtitle); the single-line title's literal
+  `line-height: 1.35` → `--mp-lineHeight-snug`. `MpPageHeader` `#title-append` (status chip beside the
+  title).
+- **Global (`src/styles/global.scss`):**
+  - **Breaking, app-wide:** `.mp-label-value dt` is sentence case, caption 12/500, `--on-surface-muted`
+    (was the uppercase 11/600 metaLabel). The shared selector with `.mp-meta-label` is split; the
+    eyebrow is unchanged. Closes the tracker's open decision (recipe C2/F5 amended).
+  - `.mp-label-value--inline` (label | value rows, label column `fit-content(45%)`), `.mp-link`,
+    `.mp-card-inset` (+ `--compact`, `--spacious`). The base 640px query uses the Sass breakpoint.
+- **Follow-on edits:** explicit `mp-meta-label` removed from dt in TicketWorkspace, Reservations,
+  ProductRecommendations, TemplateDetailPage, TemplateWizardPage; ContactDetail eRFM labels sentence
+  case; OrderDetail's local dt override removed.
+- **Demo pages:** `MaropayRatesTable` shows a mark per method (Overview discovery, Settings › Payment
+  methods, setup wizard). `MaropayPaymentDetail`: amount + status chip inline, subtitle customer ·
+  store · date, primary action last, Details on `.mp-label-value--inline` with a method mark and the
+  payment id, `.mp-link`, two-line refund rows, Simulate card → `MaropayDemoPanel`.
+- **Bug caught in review:** Vue scoped CSS compiles `:global(.a) .b` to `.a` alone, which put an inset
+  ring on every dark-theme element; the rule now wraps the whole selector in `:global()`.
+
+### W2 — money pages (2026-10-06)
+
+- **Breaking (removed):** `MaropayBalanceCards` (+ story) is deleted. **Replacement:**
+  `MaropayBalanceSummary` (`balance`, `upcoming`, `destination?`, `title?`, `description?`,
+  `upcomingTo?`, `headingLevel?`, `#actions`): next payout leads (≈ amount, estimate and bank, "See
+  what's in it"), then Available / Pending / In transit as subtitle rows; a container query on the card
+  sets them side by side above 560px.
+- **API additions:** `MaropayReadinessCard` `density` (`'default' | 'compact'`; compact is one row once
+  live) and a `#footer` slot; `MaropaySupportAlert` `emphasis` (`'default'` is now a quiet "Need help
+  with this?" card; `'prominent'` is the previous alert, kept for the declined review on Overview and
+  the setup wizard). **Visual default change:** every other support block is now the quiet card.
+- **New pure module:** `src/maropay/volume.ts` (`volumeSeries`, `dayLabel`; 5 tests). Gross volume is
+  Maropay captures by capture day, account currency only, DST-safe day keys. `storeCheckoutNote()` in
+  `readiness.ts` derives a store row's checkout line.
+- **Shared rows:** Timeline, TaskList and LedgerBreakdown use `MpListRow` subtitle rows, 16px icons,
+  `--on-surface-muted`, `.mp-link`, `.mp-card-inset`; the timeline's bare "nothing yet" is an
+  `MpEmptyState`.
+- **Pages:** Overview (gross volume card beside the balance summary, compact readiness, one merged
+  milestone alert), Transactions (9 → 6 columns, method marks; fits at 1440 and 1280, where Status
+  used to clip), Payouts (balance summary replaces the KPI row; filter tabs on the table), payout
+  detail (chip beside the title, estimate → ledger caption, retry → History row, no upcoming payout
+  is an empty state), Disputes and dispute detail (sub-lines, tiered columns, deadline stated once).
+- **One page-state pattern** on every Maropay page: header (with back link) → card → `MpEmptyState`
+  (no access, nothing yet) or `MpErrorState` (not found).
+- **Verification:** every table measured at the table (`scrollWidth === clientWidth`), not the
+  document: all fit at 375 after tiering Payouts and Disputes. axe clean on 10 page states (m03, m04,
+  m10, m11). Muted text moved to `--on-surface-muted`, which reads slightly dimmer in dark mode.
+
+### W3a — stores inside Maropay, store Payments, store shell and Overview (2026-10-06)
+
+- **New route `MaropayStorePayments`** (`/maropay/stores/:channelId`) renders `StorePaymentsPage`
+  with `frame="maropay"`; the store editor's `StorePayments` passes nothing (`frame="store"`).
+  `readiness.ts` adds `MAROPAY_STORE_ROUTE`, `storePaymentsTarget()` and `joinList()`; every Maropay
+  link to a store moved to it. Maropay's rail highlights the active store by giving only it `match`
+  (no MpSectionRail change).
+- **`StorePaymentsPage` split** (973 → 600 lines) into `views/Maropay/store/`:
+  `StorePaymentMethodsCard`, `StoreCheckoutOptionsCard`, `StoreActivationImpactCard`,
+  `StorePaymentsPreview`. The "Checkout provider" card is gone (header chip + routing subtitle).
+- **New tokens:** `layout.previewPanelWidth` (360), `layout.previewSplitWidth` (840, Sass-only,
+  a container query). `.mp-frame-fill` exposes `--mp-frame-height` for sticky panels.
+- **Storefront (out of system):** `StorefrontPaymentOptions`, `StorefrontCardFields`,
+  `StorefrontPayButton` extracted from the checkout (md5-identical captures before/after),
+  `StorefrontPaymentPreview`, `storefront-surface.css` (`.sf-surface`), `storefrontThemeVars()` in
+  `themeBuilderData.ts` (replaces two copies). `storefrontOffer(..., { asIfLive })`. Checkout options
+  now lead with `MaropayMethodMark`s.
+- **API change:** `MaropayMethodRow` renders `MpListRow :title :subtitle` with a md mark in `#lead`
+  (hand-rolled spans and CSS deleted). `MaropayActivationChecklist` uses `.mp-card-inset`, 16px
+  icons and subtitle rows. `methodMarks` maps a "PayPal …" label to the PayPal mark.
+  `model.ts` adds `HISTORY_KIND_ICONS`; `MigrationRow` carries `methodId`.
+- **Store shell:** `StoreEditorLayout` on `.mp-frame-fill` + shell-inset tokens (raw px gone).
+- **SalesChannelDetail:** MpPageHeader + MpFilterTabs (tabpanels), payments setup row always first
+  with its mark, business info `.mp-label-value`, apps as boxed `MpListRow`s with marks and
+  connection chips (colour-only dot gone). A `.sc-setup-row span` rule was restyling the mark's root
+  span; it now targets the text block. The page's column children no longer shrink (the tabs
+  collapsed to 0 height in the `h-100` column).
+- **Verification:** axe clean on both store-payments frames (m06, m10, m15) and every
+  SalesChannelDetail tab; 375 has no overflow (the comparison table becomes a list below 640);
+  sticky preview capped and internally scrolling at 1440×900; live preview follows methods,
+  approvals, express, order, default and pay label.
+
+### G — the providers model and the store's Payments page (2026-10-08)
+
+The owner's correction: Maropay is one payment channel on a store, not the whole of payments — sell it the way Shopify
+sells Shopify Payments. Research first (Mobbin: two generations of Shopify's Settings › Payments, its four-step setup
+and "Update details" page, Squarespace, Wix, Uvodo; help.shopify.com and shopify.com/pricing for the coexistence rule and
+the 2% / 1% / 0.6% / 0.2% third-party fee; galaxy.maropost.com for the real product's provider set), then four owner
+decisions (decisions.md G1–G4).
+
+**Domain (`src/maropay/providers.ts`, 176 tests).** Per-store provider connections with a card-processor pointer; the
+Stripe default for untouched stores; the flat illustrative 1% platform fee rule (never on Maropay or manual methods;
+PayPal waived once Maropay takes cards); `storefrontOffer(state, channelId, …)` merges every active provider into one
+ordered list (cards and wallets from one processor, the merchant's own PayPal/Afterpay win, one order and default across
+providers); `activateStore({ takeCards })`; `markManualPayment`; connect / switch / remove / update ops; `parseState`
+migrates `previousProvider`, `stripe-legacy`/`manual` ids and the `legacy` marker. New marks `stripe`, `eway`, `zip`,
+`bankDeposit`, `cheque`, `cod` (six token pairs, 272/272 enforced). `MpStatusChip` `connection` gains Active / Setup
+incomplete / Inactive. Scenarios: every live store keeps PayPal Checkout and bank deposit beside Maropay; m05 Stripe +
+bank deposit; m06/m14 PayPal with cards; m15 Stripe (the dialog's choice); new **m18** Australian store on eWay,
+Afterpay, Zip, bank deposit and cash on delivery, in AUD.
+
+**Admin.** `StorePayments` is now the providers index (`views/SalesChannels/StorePaymentsPage.vue`): the Maropay card
+(`MaropayProviderCard`, driven by `deriveMaropayCard` — twelve states, no second state machine: account states read the
+overview's instruction), Payment providers and Manual payment methods (`StoreProviderListCard` over `StoreProviderRow`:
+`MpListRow` + `connection` chip + kebab, never a clickable row), a Checkout summary with deep links, the chooser
+(`StoreProviderChooserDrawer`, `MpOptionCard` gallery), the provider and manual drawers, and the remove confirm. Maropay's
+own page for the store moved one level down as `StoreMaropayPage.vue` (`StorePaymentsMaropay`; still
+`MaropayStorePayments` inside Maropay) and gained the `MaropayActivateDialog` (composes `MpDialog`; `MpConfirmDialog`
+has no room for a control), a segmented "Maropay takes cards | Keep {gateway} for cards" preview on the impact card that
+the live preview follows, a hash-aware scroll, and an "Other providers on {store}" card in Maropay's frame. Activation
+and stop copy live once, in `useStoreActivation`. Ripples: the store overview's Online payments row and Apps tab, the
+Maropay overview's shared benefits and store rows, Transactions/Payment detail captions ("Through PayPal" vs "before
+Maropay"), the order page's Provider row and a "Mark as paid" path for manual payments, the Payment Account signpost.
+
+**Not in this check-in (next):** the shopper pages (product page, cart, checkout, manual-instructions confirmation)
+and `StoreCheckoutOptionsCard` over the merged list; the storefront already lists the extra providers from the shared
+offer, with the old not-live placeholder still in place.
+
+### H — the Claude Design UI pass on Maropay (2026-10-10)
+
+Five surfaces rebuilt from the owner's Claude Design mocks, **design-system tokens only** (the owner's rule: no new
+colour). What the pass added to the system and what it decided:
+
+- **Shopify-compact sell card.** `MaropayProviderCard` is one shape in twelve states: wordmark row, one line of copy,
+  a three-fact row (`factStrip`), the accepted marks, actions. A tall hero with a live checkout picture was built and
+  taken down the same day on the owner's call — logged as H1 in `docs/maropay/decisions.md`.
+- **One ordered lineup.** `StoreLineupRow` is a new shared row geometry (grip + position, tile, title/subtitle, a
+  right-aligned money block, status, actions); `StoreProviderRow` composes it; `StoreLineupCard` drags rows with native
+  HTML5 DnD and offers Move up / Move down in the kebab for keyboard users. The order lives on
+  `StoreProviderSetup.lineup` and the storefront sorts by it (H2).
+- **Ink money panel.** `MaropayMoneyPanel` is the first consumer of the `--ink-panel-*` pair at page scale. The skin
+  sets the text aliases (`--text-*`, `--on-surface*`) on its root, so token-driven children (`MaropayMoney`, labels)
+  take the pair without per-component overrides — the pattern to reuse for any inverted surface. A proportional bar,
+  legend and timestamp were removed as noise (H3).
+- **Vertical timeline.** `MaropaySetupTimeline` (discs on `--pos`/`--on-pos`, `--neg-soft`/`--neg-ink`, connector on
+  `--border-default`) over a pure `setupTimeline`. The DS still has no generic vertical stepper; if a second product
+  needs one, lift this into `Mp*`.
+- **Headless step cards.** `MpWizardStepCard headless` keeps an sr-only heading so the wizard's outline stays
+  h1 → h2 → h3 when the shell's header carries the step. `DIAL_CODES` joins `COUNTRY_LABELS` in the model.
+- **Storefront receipt.** `StorefrontReceipt.vue` (out of system, P4-8): till-slip card, the card actually typed
+  (`cardLabel` → `CheckoutSession.cardLabel`), `shopperReference`, a 10-second way back (paused on hover/focus,
+  cancelled by a key, off under reduced motion, never twice per receipt).
+- **Gotchas recorded.** A container query can't target the container itself (put the grid on an inner wrapper); a
+  `<style scoped>` without `lang="scss"` silently drops `#{$mp-layout-*}` media queries; dark mode in the app is
+  `localStorage['app-theme-mode']`, not `prefers-color-scheme`.
+
+Gates at the end of the pass: 182 Maropay tests, type-check, build, Storybook build, contrast 272/272, axe 0 on each
+surface (the only notes left are pre-existing: `MpWizardSteps`' role, the Da Vinci bot's tooltips), no horizontal
+overflow at 375, dark checked.
+## Dark studio gutter — 2026-10-14
+
+Owner's dark-mode screenshot: the gutter behind the rounded content frame read as a black band, unlike light.
+Nothing painted black — `v-main` sat on the canvas token (`#17191C`) while the sidebar, app bar and frame all
+painted the L1 surface (`#1F2226`), so the gutter was the darkest fill on screen. Light studio already dissolves
+its gutter into the nav gray (`shell-variants.css`, the `.v-main` rule) and its comment declared dark out of scope.
+- **Fix:** the same rule for `html[data-theme="dark"][data-shell="studio"] .v-main` → `--mp-nav-surface`. Measured
+  after: sidebar, app bar, gutter and frame all `rgb(31, 34, 38)`; light untouched (`#eaedf2` / frame `#f9f9f9`).
+  The frame is now told apart by its hairline and the stipple, exactly as cards already were inside it.
+- **Considered, not taken:** lifting the dark frame one tier to `--surface-raised` (`#24272C`) so it floats as
+  the light one does. Previewed in the browser — the 1.08:1 step is not perceptible at the screenshot's crop, and
+  it would put L1 cards a hair darker than their bed. Classic/rail dark shells (no frame) keep the canvas gutter by
+  design: the canvas→card step is the ladder's largest.
+- **Follow-up the same day (owner):** "make the dotted bed behind the cards ~20% darker" in dark. The bed now
+  paints `--surface-canvas` (`#17191C`, ≈26% darker per channel than the `#1F2226` it was on), so the dark ladder
+  reads canvas bed → L1 cards → L1 nav and gutter around it; the stipple stays on-surface at 0.08. Light bed
+  unchanged (`#f9f9f9`).
+- **Sidenav:** the group divider after Service (the one closing Marketing … Service, above Da Vinci AI) is removed
+  in both themes at the owner's request; the dividers after Analytics, Products and Da Vinci AI stay.
+- **Sidenav brand hairline (dark):** the gray skin already clears the `.sidebar-header` border so the brand sits on
+  the panel; the dark skin kept the base rule's line under MAROPOST. `sidebar-dark.css` now clears it the same way.
+
+## WCAG 2.2 AA fixes, steps 1–3 — 2026-10-16
+
+Fix order steps 1–3 from `docs/ui-system-audit/04-wcag-compliance-2026-10.md` (the 2026-10-15 audit, on branch
+`claude/wcag-compliance-check-c3372b`). One commit per finding; each re-checked with axe-core 4.12 in the dev app.
+Contrast was measured from computed styles, because axe `color-contrast` is unreliable in the hidden pane.
+**W-09 (outlined-button border) is untouched:** it is still waiting on a design decision.
+
+- [x] **W-01 sidebar names and roles** (`AppSidebar.vue`). Vuetify turned every nav item with `:value` into a
+  listbox `option` with `aria-selected`, inside `role="list"`.
+  - `:value` is dropped; the active state was already explicit through `:active`.
+  - The nav `v-list` is now `role="group"` with `aria-label="Main navigation"`, because its children are links,
+    buttons and separators.
+  - Rail flyout activators and expanded parent rows are `role="button"`. The parent rows also carry
+    `aria-haspopup` / `aria-expanded`.
+  - Rail items and the rail Apps link get `aria-label` set to the group title.
+  - Result: axe finds 0 violations in the sidebar, in both rail and expanded mode.
+  - Side effect: clicking a rail icon no longer leaves Vuetify's "selected" tint on it. It was never the
+    active-module marker.
+- [x] **W-02 page titles.** New helper `src/composables/usePageTitle.ts`.
+  - `router.afterEach` sets `<route name> · Maropost` as a fallback, so `SalesOrders` becomes "Sales orders".
+  - A level-1 `MpPageHeader` then replaces that with its own heading. `index.html` now says `Maropost`.
+- [x] **W-05 app-bar combobox** (`AppBar.vue`). The `role` prop on `v-text-field` painted `combobox` on both the
+  input and the `.v-field` wrapper.
+  - The role is now set on the `<input>` alone, on mount. A ref on the field doesn't work here, because the
+    menu activator's own ref overwrites it.
+  - Result: axe `aria-required-attr` is 0.
+- [x] **W-03 hint opacity** (`settings-form.scss`).
+  - Added `.v-input:not(.v-input--disabled) .v-messages { opacity: 1 }`. Vuetify's 0.6 opacity had faded hints
+    to 2.56:1.
+  - Added `background` / `surface` / `surfaceOverlay` × `textMuted` pairs, light and dark, to `$contrastPairs`.
+  - All six pass; the lowest is dark overlay at 4.70, so `textMuted` is unchanged. contrast:check: 278/278.
+  - Measured on Contacts › New: 5.93:1 in light, 4.70–6.26:1 in dark.
+- [x] **W-04 table select boxes.** The ProductsList `#header/#item.data-table-select` override is now on every
+  `show-select` table. That covers the 10 audited routes, gift cards, registers, staff, synonyms, optimize on open,
+  image library, `/templates/list`, Patterns/Data Table and MpDataTableToolbar › In context.
+  - The header box gets `:aria-checked="undefined"`. Vuetify's `aria-checked="mixed"` on a native checkbox
+    fails axe `aria-conditional-attr`; this was confirmed on ProductsList. The same line is added to the 8
+    existing overrides.
+  - The pattern docs (story text and template spec) now describe the slots.
+- [x] **W-06 progress names.**
+  - The 23 hand-placed `v-progress-*` elements now carry a value label, or `aria-hidden` where the same words sit
+    next to them.
+  - The sidebar Get-started count moves into the button's name.
+- [x] **W-07 wizard steps** (`MpWizardSteps.vue`).
+  - Non-current steps changed from `rgba(on-surface, 0.5)` to `--text-secondary`.
+  - Measured on Products › New: 6.33:1 in light (was 3.3) and 9.39:1 in dark (was 4.4).
+
+### Follow-ups this opens
+- **W-08** is listed in the report's step 2 but was not in this session's brief. It covers the rail-active,
+  warning-on-canvas and builder-chip pairs, and needs token nudges.
+- **Vuetify-internal loaders still have no name:** the `v-btn :loading` spinner (29 sites) and the field
+  `loading` bar. Neither takes a label prop, so the fix is a `#loader` slot per site or a shared wrapper.
+- **The app-bar search palette didn't open** on focus or typing in the hidden browser pane, with or without
+  this change. This needs a check in a visible window.
+
+## WCAG 2.2 AA fixes, W-08 … W-19 — 2026-10-16
+
+This is the rest of `docs/ui-system-audit/04-wcag-compliance-2026-10.md`, done after the owner said "fix all and push".
+There is one commit per finding, and each was re-verified in the dev app or Storybook. axe-core 4.12 was used for
+structure; contrast was measured from computed styles. Gates at the end: type-check, build, contrast:check 296/296,
+test:maropay 182/182, test:catalog 22/22.
+
+- [x] **W-08 near-miss pairs.**
+  - Three light tokens are 1.5–7.5% darker:
+    - `primary` #0073AB → #0071A8
+    - `success` #1a7f54 → #197a51
+    - `warning` #a8630f → #9b5c0e
+  - Primary is the brand fill, so this is a deliberate visual change: buttons and links shift by about 1%.
+  - 18 new `$contrastPairs` entries cover {primary, success, warning} × {background, surface, surfaceVariant}, in
+    light and dark.
+  - MpBuilderShell's status chip now uses the declared `--pos-soft`/`--pos-ink` and `--warn-soft`/`--warn-ink` pairs.
+  - The journey-builder palette labels and the MpBuilderPreviewDialog story caption use `--text-secondary` instead
+    of opacity.
+  - Measured: rail active 4.53, canvas chips ≥4.94, palette 5.35, builder chip 7.64.
+- [x] **W-09 outlined borders (own commit, revertable alone). Closes A11Y-002.**
+  - `.v-btn--variant-outlined` and the MpDataTableToolbar search pill now use `--border-strong`, the field-border
+    token already gated at 3:1 (controlBoundary), so the toolbar row stays one family.
+  - Measured: 3.28–3.45:1 in light, 4.22–4.66:1 in dark.
+  - The A11Y-002 comment in MpDataTableToolbar is rewritten to describe this.
+- [x] **W-10 nested interactive content.**
+  - Apex chart wrappers are now `role="group"`, not `img`. Apex renders its own focusable SVG and legend buttons,
+    which `img` hid.
+  - **API added: `MpListRow #actions`.** On an interactive row the body becomes the link or button, stretched over
+    the row with `::after`, and the actions sit beside it. NotificationRow uses it for the download button.
+  - StorefrontPreview sections drop `role="button"` and get a stretched "Edit <section>" button instead.
+- [x] **W-11** The Da Vinci history drawer now gets `inert` whenever it is `aria-hidden`.
+- [x] **W-12** The storefront carousel dots and search submit now have 24px targets, drawn with `::before`. The visual
+  mark is unchanged and dot centres sit 24px apart.
+- [x] **W-13** These scroll areas are now `tabindex=0` groups with a name: the dashboard table widget, the
+  MpWizardShell body and the MpBuilderPreviewDialog stage.
+  - Left as is: the Form Fields many-options select. It's Vuetify's managed listbox, reached with the arrow keys.
+- [x] **W-14 rail focus order.**
+  - Tab, Enter or Space on a rail icon whose flyout is open moves focus into the flyout. Vuetify returns focus to the
+    icon after the last item.
+  - A one-shot flag stops the icon's open-on-focus flyout from catching the next Tab.
+  - **This also fixes a W-01 regression.** With `:value` gone, Vuetify stopped treating the hover-menu icons as
+    clickable, so they lost their tabindex. They are marked `link` again.
+- [x] **W-15** The app-bar icon buttons, and the mobile hamburger and search buttons, keep the shared 2px
+  `--focus-ring` on `:focus-visible`.
+- [x] **W-16 — documented, no change.** A closed `v-tooltip` keeps its overlay root with `role="tooltip"` and hides
+  the content. The role is set on Vuetify's root, which neither props nor defaults can reach, so there is no cheap
+  global fix. Every icon button checked has its own `aria-label`.
+- [x] **W-17** Settings › General's profile-image actions now wrap. At 320px, Remove sits inside the frame.
+- [x] **W-18 structure.**
+  - 11 nested `<main>` elements became `div`s, so `v-main` is the only main landmark.
+  - Actions, thumbnail, open and expand columns get a header name that is hidden visually: 78 headers using
+    `headerProps: { class: 'mp-th-sr' }`, with the rule in global.scss.
+  - MpBuilderShell's title is an `<h1>`, and so are the theme builder and code editor titles. The journey and
+    landing-page builders get a screen-reader-only `<h1>`.
+  - App Store card titles changed from h3 to h2. Product edit's MpFormSections use level 2.
+- [x] **W-19 store preview isolation.** `storefrontThemeVars` now derives `--sf-on-brand` from the store's own brand
+  colour (near-black or white, whichever has more contrast), so the admin's `--accent-on` no longer reaches inside
+  the preview. "See More" in dark: 11.62:1, was 1.43.
+
+### Follow-ups this opens
+- **Pages with no `<h1>`:**
+  - Settings pages use `MpPageHeader :level="2"`. Their `document.title` also falls back to the route name, for
+    example "Settings general".
+  - Ask Da Vinci has a custom hero.
+  - Both are outside the audit's W-18 list and need a call on heading levels.
+- **Vuetify-internal loaders (still open from steps 1–3):** the `v-btn :loading` spinners and the field loading bar.
+- **Screen-reader pass:** none was done; the audit's "What this does not prove" section still applies.
+
+## POS cashier pass (AU / CA) — 2026-10-27
+
+Sale screen of `/retail/pos-preview`, reviewed for a counter cashier in Sydney or Vancouver (70% iPad, 30% Android
+tablet). Totals now come from a pure model, `src/views/Retail/pos/saleModel.ts`, tested in `tests/pos/sale.test.ts`
+(`npm run test:pos`). Every visible totals row adds up to the Charge amount; the test checks 300 random baskets in
+6 markets.
+
+- [x] **Totals reconcile.**
+  - AU/NZ GST is included in prices and shown as "Includes GST $x" under the total.
+  - CA tax is added on top as separate rows: BC GST + PST, ON HST, QC GST + QST.
+  - Coupons and whole-sale discounts are children of "Discounts", not extra rows to subtract.
+- [x] **Item-level discount notes.**
+  - Automatic promotions and manual line discounts (% or $, with a required reason) show as notes on the line, each with an icon and its amount.
+  - The line shows its final total, with the catalog price struck through.
+- [x] **Stock before the tap.**
+  - Tiles and variant rows carry Low / Out-of-stock badges.
+  - Adding past what's on hand opens a sheet with "Sell anyway" or "Check other stores". An oversold line keeps a "1 more than in stock" note.
+- [x] **Coupons are checked at the counter** against `commerce.promotions`, with a reason a cashier can say out loud: expired, online-only, switched off, limit reached.
+- [x] **Cash:**
+  - AU/CA cash totals round to 5c; card stays exact.
+  - Quick-tender amounts and change due are shown.
+  - The change line and the charge button are pinned to the bottom of the sheet.
+- [x] **One customer sheet for New and Edit.** It is used from three places: Customers › New customer, "Create new customer" in the
+  sale's picker, and Edit (from the cart chip or a profile). Every path gets the same checks:
+  - first and last name as separate fields;
+  - phone checked for the store's country;
+  - a number typed with `+` and a country code is accepted at any store (a visitor's number), and every number is saved
+    with its country code;
+  - a duplicate email or phone offers the existing profile ("Use" from the sale, "Open" from Customers);
+  - receipt and marketing consent are separate switches, all off by default;
+  - unsaved changes are guarded.
+  Create prefills from the search query (email, number or name). From the sale it reads "Create & add to sale".
+- [x] **Accessibility floor on the Sale, cart and payment surfaces:**
+  - status text uses ≥4.5:1 inks;
+  - 44px targets;
+  - labelled cart actions, with Clear set apart and undoable;
+  - Charge is a real `disabled` button;
+  - a polite live region announces adds, stock warnings and scan misses;
+  - `aria-current` on the rail.
+- [x] **Fixed: collection chips now filter the Sale catalog.** They were dead before.
+
+### Renames and breaking changes
+- **`MpSegmentedControl`** now renders `role="group"`, so its `aria-label` names a real group. This applies to every consumer.
+- **`RetailLocation.region?`** is a new field. New store **`loc-robson`** (Robson Street, Vancouver BC), with two registers, staff member `assoc-9`
+  and two Vancouver loyalty customers. The POS channel now includes it.
+- **PosPreview:**
+  - `posSettings.taxInclusive` is removed (tax follows the location);
+  - `discountPct` is replaced by `orderDiscount` + `appliedCoupon`;
+  - `customerName` is now derived from the attached profile;
+  - `fmt()` formats in the location's currency.
+  - "Add custom sale" opens a name-and-price sheet instead of adding a silent $25 line.
+  - The page-level "New customer" `MpDialog` and the picker's inline create form are deleted. `newCustomerOpen`,
+    `newCustomerDraft`, `saveNewCustomer`, `customerPickerMode` and `createAndAttachCustomer` are gone.
+  - `saveCustomerEdit` is now `saveCustomer`.
+  - The model's `normalizePhone` is replaced by `canonicalPhone`, which produces "+<country code><number>".
+  - `$pos-muted` is now `#646b78` (was `#6b7280`, 4.40:1 on `$pos-bg`).
+  - Bondi Junction stock is pinned for SNEAK-A1 (0) and BAG-LTH (2), so the default store shows every stock state.
+
+### Not done here (native app / follow-ups)
+- Dynamic Type and Android font scaling, safe areas, VoiceOver/TalkBack grouping, scanner focus while a sheet is open, haptics. These live in the
+  native app; see the audit report.
+- GST-free lines, CA status-card exemption, fr-CA copy, age-restricted items, split tender, returns, manager PIN
+  above a discount threshold, and a real Park & resume list.
+
+## Retail receipt templates — 2026-10-27
+
+Retail › Receipts is now a receipt-template gallery, built on the landing-page template pattern:
+Library | My templates, a Blank card first, and Customise opening a designer in `MpBuilderShell`. It
+mirrors the live app's Retail › Template screen: Standard, Compact (58 mm), Detailed and Branded,
+plus your own, each with Customise / Assign / Delete and "Based on …" lineage. A template is
+assigned to a **POS channel**. Each store fills in its own tax and legal lines, so one template
+works in Sydney and Vancouver.
+
+- [x] **Receipt model:** `src/views/Retail/receipts/receiptModel.ts`, tested in `tests/pos/receipt.test.ts`
+  under `npm run test:pos`.
+  - It renders a sale at real printer widths: 48 columns at 80 mm, 32 at 58 mm. Long names wrap.
+  - Totals come from the sale model, so a receipt always matches the Charge amount.
+  - AU prints TAX INVOICE, the ABN and "Includes GST". CA prints the GST/HST number, with GST + PST
+    (or HST) on top. Cash shows rounding and change. Gift receipts hide every price.
+- [x] **`ReceiptPaper`** (`src/components/retail/`, story under Product/Retail): the receipt as
+  thermal paper. It stays white in both themes because real paper does, using the light surface/ink
+  token pair. It's used for gallery thumbnails, the designer canvas and the POS receipt sheet.
+- [x] **Gallery:**
+  - live thumbnails, and "Used by POS Store" / "Not assigned" chips;
+  - an Assign dialog that says what changes per channel;
+  - Delete confirms which channels fall back to Standard;
+  - Delivery settings move into a drawer.
+- [x] **Designer** (`RetailReceiptDesigner`, `builderShell`):
+  - sections can be reordered, hidden, removed or added; Store, Items and Totals are required;
+  - 80/58 mm, a Bondi (AU) / Robson (CA) preview, and a gift receipt toggle;
+  - explicit Save with a leave guard, because a template can be printing at live registers;
+  - the toolbar says where it prints;
+  - a ready-made template opens as your copy.
+- [x] **POS end to end:**
+  - Print and Email receipt render the sale from the channel's template, captured before the cart
+    clears.
+  - Print names the register's paired printer. With no printer it says so and offers email.
+  - Email uses the attached customer's address, or asks for one and checks it.
+  - POS Settings shows the template in use instead of its own footer field.
+- [x] The "Receipt template" setup items on Retail Home and the POS channel page now go to Receipts,
+  not Settings.
+
+### Renames and breaking changes
+- **`ReceiptSettings`** drops `headerText`, `footerText`, `showLogo` and `showTaxNumber`, which are now
+  template sections. It keeps `defaultDelivery`, `emailSubject` and `giftReceiptsEnabled`.
+- **`RetailLocation`** gains `phone?` and `taxId?`: an ABN for the AU stores, a BN/RT for Robson, and a
+  GST number for Newmarket.
+- **New store state and actions:** `receiptTemplates` (custom templates), `receiptAssignments` (channel →
+  template; POS Store prints Standard and Mall Kiosk POS prints Compact), `createReceiptTemplate`,
+  `updateReceiptTemplate`, `deleteReceiptTemplate`, `setReceiptTemplateChannels`, `templateForChannel`,
+  `channelsUsing` and `receiptLocationFor`.
+- **PosPreview:** `posSettings.receiptFooter` and the hard-coded receipt mini-preview are removed.
+  `completeApproved()` now takes the delivery (`'print' | 'email' | null`).
+- **`saleModel`** exports `isEmail`.
+
+### Not done here
+- Reprinting a past sale from POS History still shows a toast. Orders don't store their discount and tax
+  breakdown, so the receipt can't be rebuilt faithfully yet.
+- Logo upload: the logo section draws the brand initials.
+
+## Receipt designer — benchmark follow-ups — 2026-10-28
+
+This round compared our receipt designer with Shopify POS, Square, Clover, Lightspeed X/R-Series, Toast, Revel, Heartland, Odoo, Loyverse and SumUp, plus the ATO, CRA, BC PST and Revenu Québec rules and Epson/Star printer specs. The benchmark report artifact has the full write-up.
+
+- [x] **Templates survive a reload.** Custom templates and channel assignments are saved under `mp.retail.receipts.v1`, using the `useDashboards` pattern. Data read back is shape-checked with `isReceiptTemplate`. A designer deep link such as `/receipts/rt-2/design` used to open on "doesn't exist" after a reload; it now loads the template.
+- [x] **ATO: AU tax invoices of $1,000 or more name the buyer.**
+  - The Buyer row (and Buyer ABN) prints inside the store block, which can't be hidden.
+  - The POS payment sheet shows a notice when there is no customer on the sale.
+  - The POS receipt sheet has buyer name and ABN fields that update the receipt as you type.
+- [x] **58 mm stays at 32 columns.** Epson fits 35 in Font A, but Star prints narrower, so 32 is the width every supported printer can print. This is documented on `COLUMNS` and in the designer.
+- [x] **New sections:**
+  - **Promotion:** coupon picker from POS Promotions, headline, code as text, barcode or QR, valid-until or N days, and a minimum spend.
+  - **QR link:** a label and an `https://` URL.
+- [x] **New toggles:** "Points earned" (customer) and "You saved" (totals).
+- [x] **Placeholders:** `{{store}}` and `{{first_name}}`, with a chip to insert each.
+- [x] **Logo upload:** PNG or JPG under 1 MB, scaled to at most 576 / 384 dots, then Floyd–Steinberg dithered to 1-bit. It's previewed exactly as it will print. The helper is `src/views/Retail/receipts/logoImage.ts`.
+- [x] **Designer Test menu:** print a test receipt to any register with a printer, or send a test email. Both send what's on screen, saved or not.
+- [x] **Reset to [base]:** shown for templates based on a library template. The name and assignments are kept, and the reset still needs Save.
+- [x] **New seed coupon:** BACK15 ("Come back 15%", POS, active). It prints on receipts and can be redeemed at the register.
+
+### Renames and breaking changes
+- `SectionKind` gains `promo` and `qr`.
+- `SectionSettings` gains `image`, `showPointsEarned`, `showSavings`, `headline`, `code`, `codeFormat`, `validUntil`, `validDays`, `minSpend`, `label` and `url`.
+- `ReceiptSale.customer` gains `pointsEarned`, and `ReceiptSale` gains `buyer`.
+- `sampleSale()` now includes `pointsEarned: 147`.
+- POS: `receiptSheet` holds the sale and re-renders through `receiptDoc`.
+
+### Not done (in the report)
+- Sale / Gift / Return and Printed / Email preview modes.
+- Québec French receipts and the QST number.
+- Marking GST-free lines.
+- Per-location template overrides.
+- Reprinting from History.
+
+## POS design system in Storybook — 2026-10-28
+
+The register's look gets its own group, **Product › POS** (Overview, Foundations, Components, Patterns), built from real components the register itself uses, so Storybook and `PosPreview` can't drift.
+
+- [x] **Tokens.** `color.light.pos.*` (18 colours: ink, onInk, muted, hairline, surface, background, subtle, scrim, accent, onAccent and the accent/success/warn/danger Ink + Soft pairs) and `component.pos.*` (touchTarget 44, touchTargetLarge 52, thumb 44, tileImageHeight 88, radius control/card/sheet). Light-only by design: there is no `color.dark.pos`. 21 pairs added to `$contrastPairs`; all pass. `PosPreview`'s `$pos-*` SCSS variables now point at the tokens.
+- [x] **Components** in `src/components/pos/`, named after the POS Figma kit (`2sd3oLBQHRXDE5KUwMgiPB`): `PosButton`, `PosChip`, `PosBadge`, `PosTierChip`, `PosNotice`, `PosField`, `PosProductTile`, `PosCartLine`, `PosTotals`, `PosCustomerChip`, `PosTenderRow`, `PosSheet`, plus `posArt.ts` (`posArt`, `posInitials`, `posStock`). Each has Default / Variants / Sizes / States stories on a `posSurface` frame.
+- [x] **Foundations:** POS Colors (palette plus every enforced pair with its ratio, read from `$contrastPairs`) and Type & Targets. **Patterns:** Cart and Line discount sheet. **Overview** MDX with the rules and the Figma mapping.
+- [x] **PosPreview composes the components.** It drops from 6,284 to 5,111 lines. Before/after captures of 16 states on the iPad and Android tablet frames match, apart from the fixes below.
+- [x] **Fixes on the way:**
+  - Every sheet is a modal dialog named by its title, keeps Tab inside (`useFocusTrap`, as `MpDialog`), closes on Escape and returns focus to its trigger. The variant, line-action, customer-picker, other-locations, transaction and payment sheets had no dialog role.
+  - The quantity stepper (32 → 44), empty-cart chips (~30 → 44) and sheet close buttons (26 → 44 hit area) reach the touch target.
+  - The Products view's Add to Cart is disabled for real when out of stock (it was disabled by class only).
+  - Stock badges, sale statuses, tier chips, the danger ghost button (`#dc2626`) and the grey icons (`#6b7280`, `#9ca3af`) use contrast-checked tokens. Stock badges carry an icon.
+  - Sheet titles go from 13 to 15px and wrap to two lines instead of truncating ("All 3 on hand are already on the sale").
+  - The customer picker's Remove is a 44px danger ghost button (it was a 26px grey text button).
+
+### Renames and breaking changes
+- `ReceiptPaper` story: `Product/Retail/ReceiptPaper` → `Product/POS/Components/ReceiptPaper`.
+- `SwatchGrid` moved out of `Foundations/Colors` into `src/stories/Foundation/SwatchGrid.ts`.
+- New story frames in `src/stories/decorators.ts`: `posSurface`, `posScreen(height)`.
+- `useFocusTrap` no longer pulls focus to the panel when the host already focused something inside it on open (the customer picker focuses its search box). `MpDialog`, `MpFormDrawer` and `DvHistoryDrawer` behave as before unless they do the same.
+- `PosPreview`: `tileGradient` → `posArt`, `customerInitials` → `posInitials`, `stockBadge()` → `posStock()` (returns `{ label, tone, icon }`); `STATUS_PILL_META` entries carry `tone` instead of `cls`. "In Stock" now reads "In stock". VIP tier text is white on ink (was teal).
+- Removed `PosPreview` classes: `.pos-chip`, `.pos-product-tile*`, `.pos-tile-stock`, `.pos-customer-chip*`, `.pos-empty-chip`, `.pos-line*`, `.pos-line-note*`, `.pos-total-row*`, `.pos-icon-btn`, `.pos-qty-btn`, `.pos-secondary-btn`, `.pos-charge-btn*`, `.pos-status-pill`, `.pos-tender-row*`, `.pos-sheet-cancel`, `.pos-receipt-action*`, `.pos-variant-overlay`, `.pos-variant-sheet*`, `.pos-stock-badge`, `.pos-tier-chip`, `.pos-inline-alert`, `.pos-link-btn`, `.pos-line-sheet__{field-label,input,textarea,hint,primary,ghost}`. New layout hooks: `.pos-sheet-list`, `.pos-sheet-thumb`, `.pos-group-label`, `.pos-chevron`.
+
+### Not done here
+- The payment sheet keeps its own centred shell (it is a dialog now, but not a `PosSheet`).
+- The Figma kit's **POS Tokens** collection (28 vars) predates `color.light.pos.*` and needs re-syncing to it.
+- Customer, Settings and History rows, the smart-grid tile and the rail are still inline in `PosPreview`.
+
+## Receipts gallery — preview, no Blank card — 2026-10-28
+
+- [x] **No Blank template card** (PR #7). The header's **Start from scratch** already did the same thing; the library now opens on Standard.
+- [x] **Preview.** Each card's thumbnail is a button with a visible Preview pill (no hover needed on a tablet). It opens an `MpDialog` with the whole receipt at full size, the designer's Bondi (AU) / Robson (CA) switch and a Gift receipt toggle, plus Customise in the footer.
+
+### Renames and breaking changes
+- `ReceiptDesigner`'s local `SAMPLE_STORES` → `PREVIEW_STORES`, exported from `receiptModel.ts` and shared with the gallery.
+- `.receipt-card__media` is a `<button>` now (was an `aria-hidden` div); `.receipt-card__media--blank` is gone.
+
+## POS register gestures — 2026-10-29
+
+The register is a touch device (70% iPad, 30% Android tablet), but every action was a tap. Each gesture is a shortcut with a tap or keyboard twin (WCAG 2.5.1); the thresholds live in `src/components/pos/posGestures.ts`, tested in `tests/pos/gestures.test.ts`.
+
+- [x] **Swipe left to remove** (`PosCartLine`). A partial swipe reveals a red Remove; past half the row (or a flick from past the action) removes the line at once. `PosPreview` removes it with the existing Undo toast. A vertical drag still scrolls the cart; one line is revealed at a time.
+- [x] **Long press a product tile → quick look** (`PosProductTile` emits `hold`; also right-click and Shift+F10 / the Menu key). The sheet shows the variant, stock here and at every other store, and a quantity: "Add 3 to sale" in one go. If the store is short, an inline warning and "Add 3 anyway" replace the separate oversell sheet; the line gets its usual "N more than in stock" note.
+- [x] **"N in sale"** on Sale-screen tiles once the product is on the sale. It takes the "N variants" pill's place: at the tablet breakpoint the grid's three columns leave tiles near 100px wide, room for one flag.
+- [x] `PosProductTile` stories fill their grid column (`itemClass: 'w-100'`). A `<button>` shrinks to its content in a block cell, so the Low stock badge was clipped there before.
+- [x] **Drag a sheet down to close** (`PosSheet` grabber and header): past 30% of its height or a flick; a shorter drag springs back. The body never drags.
+- [x] **No text selection on a long press.** Cart lines and tiles set `user-select: none` and `-webkit-touch-callout: none`. A long press on a cart line used to highlight its SKU.
+- [x] **Haptic tick on Android** (`navigator.vibrate`) when a hold fires or a swipe removes a line. iPad Safari has no vibration API.
+
+### Renames and breaking changes
+- `PosCartLine`: `inheritAttrs: false`. Attributes (`aria-label`, `data-line-id`, …) land on the tappable `.pos-line__face`, not the outer `.pos-line`. New emit `remove`. `PosLineNote` moves to the component's plain `<script>` block (same export).
+- `PosProductTile`: `click` is a declared emit (it no longer falls through to the button), so a hold can drop the click that ends it. New emit `hold`, new prop `inSale`.
+- New token `component.pos.swipeAction` (88). New contrast pair `pos.dangerInk × pos.onInk` (6.47:1; also covers `PosButton tone="danger"` primary).
+- `PosPreview`: `addToCart(item, qty = 1)` and `pushLine(l, qty = 1)` take a quantity; `removeLine(line)` is the one removal with Undo (the sheet's Remove and the swipe share it).
+
+### Not done here
+- The payment sheet and the phone cart slide-up are not `PosSheet`s, so they don't drag to close yet.
+- Hold-to-repeat on the quantity buttons and a typed quantity were offered and not picked.
+
+## MpRichTextArea + MpTagChip — 2026-11-05
+
+- [x] Added **MpRichTextArea** (Molecule; Tiptap 3.32 — toolbar, link popover, Insert tag `{{KEY}}`) and **MpTagChip** (Atom; the eight service-desk tag swatches). New tokens: `color.{light,dark}.tag.{sky,green,slate,amber,violet,blue,orange,red}.{container,onContainer}` (16 text pairs in `$contrastPairs`, 6.37–10.07:1), `component.field.borderWidth` (1) / `borderWidthActive` (2) and `component.menu.formWidth` (320). No renames.
+
+## MpSplitPane + inbox one-container layout — 2026-11-06
+
+- [x] Added **MpSplitPane** (Molecule; WAI-ARIA window splitter — pointer drag, ←/→ by 16, Home/End, Enter/double-click reset; renders clamped to `min … container × maxRatio` without overwriting the user's width; `stacked` for narrow screens). New tokens: `layout.inboxListMinWidth` (320), `layout.splitHandleWidth` (12), `component.menu.panelWidth` (360) and `component.menu.panelMaxHeight` (420) for the inbox `TicketViewSwitcher` (Product tier). The Service inbox list and ticket now share one card. No renames; Tickets bulk "Delete" is now "Move to trash" (copy only).
+- [x] 2026-11-06: **MpConfirmDialog** gains `cancelLabel?` (default "Cancel", non-breaking) — a "Cancel" next to "Cancel order" read as two ways to cancel; the ticket's order panel uses "Keep order". New Product component `TicketOrdersPanel` (ticket → Commerce order drill-in).
+
+## MpMenuItem disabled semantics — 2026-11-10
+
+- [x] **MpMenuItem** now sets `aria-disabled="true"` when it is disabled. `v-list-item` only adds a class, so screen readers never heard "dimmed", and axe flagged the greyed label for contrast because nothing marked it as an inactive control (WCAG 1.4.3 exempts those). This fixes every disabled action-menu item, including the orders panel's Refund/Cancel and the new view Move up/down. Non-breaking; no renames.
+- [x] The Service tickets list and title now use **MpTagChip** for ticket tags (T6), and saved views are reorderable in `TicketViewSwitcher` (T2). Both are Product-tier changes with no DS API changes.
+## MpSplitHandle, MpChatBubble actions, MpSectionRail narrow menu — 2026-11-12
+
+- [x] Added **MpSplitHandle** (Atom): the window-splitter separator lifted out of `MpSplitPane`, which now composes it. `side="end"` sizes a pane docked after the handle; the ticket's side panel uses it. `MpSplitPane`'s API, look and `.mp-split-pane__handle` class are unchanged.
+- [x] **MpChatBubble** gained an `#actions` slot at the end of its meta row, for a per-message ⋯ menu. Non-breaking.
+- [x] **MpSectionRail** collapses to a one-row disclosure at 900px and below ("Settings / Inboxes"), opening the same search, links and footer in a 320px scroll box. Before, its nav list rendered 0px tall there (`flex: 1 1 0` in an auto-height column), so every rail shell lost its navigation on tablets and phones. Wide screens are unchanged.
+- [x] New tokens: `layout.inboxRailPanelMinWidth` (260) and `layout.inboxThreadMinWidth` (360). No renames.
+
+## Settings tables fit their own width — 2026-11-13
+
+Measured all nine Settings tables at 375, 768, 901, 1024, 1100, 1280 and 1440px. Before: 23 of 63
+table-and-width combinations scrolled sideways, including Inboxes, Users and Audit log at 1440px
+(Inboxes squeezed its first column to 112px and hid the row menu off-screen). After: none.
+
+- [x] **`useResponsiveTableHeaders`** can measure the table's own width instead of the window's. A shell provides `TABLE_FITS_CONTAINER`; its tables then drop `hideBelow` columns at `layout.tableColumns{Sm,Md,Lg}` (480 / 720 / 900). `SettingsLayout` provides it: a Settings table is about 800px wide on a 1440px window, so window breakpoints kept every column. Tables outside Settings are unchanged. Also returns `isVisible(key)` so a page can fold a dropped column's content into another cell. Non-breaking.
+- [x] Dropped columns fold into the first cell so nothing is lost: Inboxes (default address), Users (roles, status), Audit log (details), Support emails (address, now by table width rather than `xs`).
+- [x] One-line ellipses that pinned a column's width now wrap: role description, audit details (two-line clamp, tooltip keeps the full text), user name and email, role chips.
+- [x] New tokens: `layout.tableColumnsSm` (480), `layout.tableColumnsMd` (720), `layout.tableColumnsLg` (900). No renames.
+
+## Chatbot new-UI gaps — 2026-11-10
+
+From the "Gaps in Chatbot design in the new UI" call. A migration pass: behaviour and content
+change, the builder's frame, rail and cards do not. Roadmap items (auto-sync / resync,
+merchant-authored FAQs, configurable pre-chat forms, a full test environment) are not built.
+
+- **Conversations** — the list's count is a link and the row menu has "View conversations";
+  both open the new `ChatbotConversations` page (list + transcript, mock data).
+- **Edit lands on Knowledge base** (`?section=knowledge`); creation keeps its Appearance-first flow.
+- **One brand colour** — `src/utils/brandContrast.ts` derives the ink on the brand fill
+  (`onBrand`: black or white) and the brand as text on a surface (`brandInk`: same hue, toned
+  until 4.5:1). The widget preview no longer hardcodes `#fff` on `var(--brand)`.
+- **Chat bubble text** — configurable, or off for a logo-only launcher; the preview shows the launcher.
+- **Knowledge base website source** — `ChatbotSiteCrawl`: find pages → pick → Extract text, with
+  crawling / empty / failed / extracting / done states. Sources land Active.
+- **Preview** — the composer is live in every scenario tab and answers from the knowledge base
+  (`src/chatbot/previewResponder.ts`); order and invoice questions say they need the live store.
+- **Sales Channel › Chatbot** — new store-editor section (`StoreChatbot`): linked chatbot summary,
+  an add-a-chatbot state, and a plan-limit state.
+
+### Renames and breaking changes
+
+- `QuickPrompt.intent` and `QuickPromptIntent` removed (the assistant infers intent); prompts cap
+  at `MAX_QUICK_PROMPTS` (5).
+- `ShoppingConfig.greeting` removed.
+- `Chatbot.channelId` added; `useChatbotStore.create()` takes an optional `channelId`.
+- `KnowledgeSource.entries` added; the builder's "Preview Chatbot" header button and the
+  no-op Re-sync button are deleted.
+- Builder subtitle now names the open section instead of a fixed "appearance & branding".
+- `SalesChannelDetail`'s "Service chatbot" card routes to `StoreChatbot`, not the global list.
+
+### Not done here
+
+- `themeBuilderData.ts` keeps its private `onBrandColor`; it could adopt `brandContrast.ts`.
+- The chatbot widget preview is still inline in `ChatbotBuilder.vue` (builder audit B4).
+- "CRM" on the call was read as the store association (the Sales channel select in General).
+
+## Storybook for LiquidSky developers — 2026-11-17
+
+LiquidSky (`@maropost-ui/liquidsky-ui`) rebuilds its `App*` / `The*` / `MpV*` components to this
+design and uses this Storybook as the reference. Nothing here used their names, so finding the
+design for, say, `AppDialogWrapper` meant already knowing it is `MpDialog`.
+
+- **New page `LiquidSky`** (`src/stories/LiquidSky.mdx`), sorted right after Introduction. It is
+  one docs page like Introduction, not a new bucket. It lists every LiquidSky name with its design
+  here, grouped Matched / Partial / Not designed yet, with links to the stories, and explains the
+  naming, theme and icon differences.
+- **"In LiquidSky" line** at the top of the 27 reference docs pages, from the new
+  `liquidskyDocs()` in `src/stories/storyTemplate.ts`. Those files also carry a `liquidsky` tag, so
+  the sidebar tag filter shows only the reference pages.
+- **`liquidskyMap.ts` now covers all of LiquidSky's exported components** (17 → 35 entries, 84 names).
+  New entries without measured parts use `parts: []`, as the map already did for empty and
+  loading states, so `qa:export` screenshots them and measures nothing.
+
+### Renames and breaking changes
+
+- `liquidskyMap.ts` LiquidSky names corrected to their exported names: `Header` →
+  `TheHeader`, `user / account menu` → `TheUserDropdown`. `MpV*` wrapper names were added to the
+  existing entries they belong to.
+
+### Not done here
+
+- No per-component spec table on the docs pages (the values are on Foundations › QA Reference).
+- No full Lucide → MDI icon map, and no "copy-safe" marker on components.
+- Eight groups of LiquidSky components still have no design: `TheAppsDropdown`, `TheTimezone`,
+  `AppSplitButton`, `ClassicFolderTree` / `SlVueTreeNext`, `AppNumber` / `AppPriceDisplay` /
+  `AppMultiCellValue` / `AppClipboard` (formatting only), `AppExpandableList`, `AppTreeDropdown`,
+  `AppGridTable`.
+
+## Storybook review — 2026-11-18
+
+A review of the whole Storybook (three agents reading every story file, and every story opened in a
+browser) found 74 stories that threw and rendered blank, a Theme toolbar that did nothing to an open
+story, docs pages where every example was a full screen tall, dialogs and drawers stacking open on
+docs pages, and a dev server that reloaded the page for each new Vuetify import. It also found
+stories that rendered but showed the wrong thing, about 240 duplicate or empty stories, and nine
+points from the LiquidSky developers about the reference.
+
+### Check added
+
+- `npm run storybook:smoke` (`scripts/storybook-smoke.mjs`). Builds a copy of the Storybook in
+  development mode (`NODE_ENV=development`: a production build compiles Vue's warnings out, and the
+  SFC compiler drops `required` from props, so a missing prop would pass unseen), opens every story
+  on a clean page and fails on one that throws, logs a console error or a Vue warning, requests a
+  missing same-origin file, or renders nothing. Proven with a deliberately broken canary story
+  (missing required prop) that it fails on. It also checks that the Theme toolbar changes an open story, that a docs example is not
+  a full screen tall, and that every story the LiquidSky map links to exists.
+  Before the fixes: 74 of 991 stories failed. After: 810 of 810 pass.
+
+### Fixed in the Storybook itself
+
+- **Router.** The preview router carries `accountId` and stubs any route name a component links to.
+  Eleven stories were blank only because of this (AppSidebar in-context, TicketOrdersPanel,
+  TrialReviewerPanel, StoreEditorSidebar).
+- **Theme and Accent toolbars** now change a story that is already open, and drive Vuetify's global
+  theme and `useAppTheme` (three chart widgets and the Da Vinci orb read those, not the nearest
+  `<v-app>`).
+- **Docs pages.** `.mp-story-canvas` and Vuetify's layout wrap carried a full-viewport minimum
+  height into docs, so each example was 800px (MpStatusChip's page was 16,700px). Now only the
+  canvas fills the viewport.
+- **Dev server.** `main.ts` registered the Vuetify plugin, alias and SCSS prelude a second time, and
+  Vite found Vuetify's component imports one at a time and reloaded for each (213 reloads in one
+  pass over the stories). `main.ts` now relies on `vite.config.ts`, pre-bundles the Vuetify entries
+  and ignores build output. Cold start over 50 stories: 0 reloads.
+- **Overlays.** `overlayDocs()` gives an open-on-mount story its own frame on the docs page (45
+  stories). Stories whose open state could never be closed now use a local ref and a Reopen button.
+- **State leaks.** `isolateStorage` restores `localStorage` when a story unmounts (11 stories);
+  toast, notification and folder stories restore their stores.
+- **Wrong things shown.** MpKpiCard "hero" used a prop that does not exist; MpErrorState "no retry"
+  specimens showed the retry button; MpStatusChip lacked `stock` and `report` and used three labels
+  that map to nothing; no MpSectionRail example had an active row; every floating bulk bar landed
+  on the same spot; the "narrow container" wizard-steps specimen could not collapse; two AppSidebar
+  stories used a drawer outside a layout; `MobileTemporary` could never open its drawer.
+- **Bulk action bar.** Every story that shows `MpFloatingBulkBar` (the component, the toolbar, both
+  Data Table patterns) now takes its buttons from one helper, `bulkActions()` in
+  `storyTemplate.ts`: the same text button, the same label and icon per action (Export was
+  `download` in one story and `share` in another), the destructive action last. The folders story
+  is the Campaigns page's own bar, Move to folder and Delete (confirmed).
+- **Data Table › With Folders** gained Delete (row menu and bar, behind `MpConfirmDialog`); checked
+  in a browser: folder filter and "Folder: name" chip, Clear, row and bulk move, delete.
+- **QA Reference** loads its spec files by URL (35 Vite warnings per start gone) and links to
+  stories in the Storybook it is open in.
+- **Docs pages.** Colors groups its roles by family instead of one grid of 230; Typography shows all
+  eleven text roles; Radius & Shadows shows only what its headings say; Introduction lists the real
+  Product areas; `CLAUDE.md` updated (stale counts, appbar 56px, light primary `#0071A8`, the
+  two documentation-only pages, the story helpers).
+- Brand spelling in the manager theme, `@storybook/addon-a11y` pinned to 9.1.20, tablet and
+  desktop viewport presets, `storySort` lists every live group (Wizard Shell, Chatbot, Onboarding,
+  Service, Trial Lab were missing).
+
+### Renames and breaking changes
+
+Stories (no `title` changed; none of the removed ids is referenced by the QA map, any MDX page or
+`docs/`):
+
+- 227 story exports removed and 44 added (136 story files edited). Removed: the empty `Variants` / `Sizes` /
+  `States` shells in Product (the template now applies to the design-system tiers only, see
+  `CLAUDE.md`), near-duplicates in the design-system tiers, and stories folded into a grid.
+- Renamed because the component has no `size` prop: `Sizes` → `Emphasis` (MpEmptyState),
+  `TabCount` (MpFilterTabs), `RowBaseline` (MpSectionRail), `Limits` (MpSplitPane, MpSplitHandle),
+  `HeadingLevels` (MpPageHeader, MpSectionHeader, MpFormSection), `Dimensions` (MpTableSkeleton),
+  `DensityAndEmphasis` (MpListRow), `ControlHeight` (MpFolderSelect), `Alignment` (MpFormField),
+  `ContainerWidths` (MpFormGrid), `Columns` (MpComingSoonTiles), `SharedControlHeight`
+  (MpDataTableToolbar). Other renames: `MpFormDrawer` `WidgetEditFlyout` → `Default`,
+  `MpWizardShell` `Measures` → `Sizes`, `MpUsageMeter` `DenseWithHint` → `CompactWithHint`.
+- New: `patterns-form-fields--date-field(-open)`, `patterns-data-table--with-folders`,
+  `--overflow-cell(-open)`, `product-onboarding-get-started--default` / `--task-open`,
+  `product-onboarding-onboardingprogressbanner--*`, `molecules-mppageheader--with-eyebrow` (now the
+  breadcrumb reference).
+- `sidebarSkin` decorator → `appShell` (also stamps `data-shell` and `data-frame`, the app's
+  defaults).
+
+Components and tokens (the app looks the same unless stated):
+
+- `layout.appbarHeight` 60px → **56px**: the height the bar always rendered at. `AppBar.vue`, the
+  page-height calculation in `App.vue` and the sidebar header now read the token. Not changed
+  because their 56 is not the app bar's: the builder toolbar (`MpBuilderShell`), the Da Vinci
+  history drawer; `--copilot-top` in `App.vue` is still a literal 60px.
+- New token pair `inkPanel.danger` (`--ink-panel-danger`, `#F4A199`): a destructive action on the
+  dark bulk bar was the error red at 3.3:1; now 8.8:1 on the light-theme bar and 5.7:1 on the
+  dark-theme bar, in `$contrastPairs`. `MpFloatingBulkBar` applies it to `.text-error` buttons, so
+  the destructive action looks lighter in every bar in the app that has one.
+- `MpUsageMeter` `dense` → `density: 'default' | 'compact'`.
+- `SettingsSection` `compact` → `density: 'default' | 'compact'`.
+- `MpIllustration` `size` number → `'sm' | 'md' | 'lg'`; new tokens `component.illustration.size.*`
+  (120 / 160 / 180px).
+- `MpTagChip` default `size` `sm` → `md`; the three call sites that passed none got `size="sm"`.
+- `MpComingSoonTiles` `headingLevel` `'h2' | 'h3' | 'h4'` → `2 | 3 | 4`.
+- `MpKpiCard` `trendPositive` now defaults to `true` (it read an omitted value as a downtrend). Two
+  Showcase wall cards that showed "+12.4%" and "+0.02%" with a down arrow now point up.
+- `AppSidebar.vue`: the default `--sidebar-*` variables are at zero specificity (`:where()`), so
+  the skin stylesheets win whatever order the styles load in. See the developer feedback below.
+- `.mp-content-frame` and `.mp-main-shell` moved from `App.vue` to `styles/shell-variants.css` so
+  Storybook renders the content frame; no rule changed.
+- New `OnboardingProgressBanner` (the progress card of Get Started, extracted; Get Started renders
+  byte-identical).
+
+### Developer feedback (nine points)
+
+- **TheUnifiedNavigation background.** Cause: the sidebar's own scoped defaults and the skin
+  stylesheet had equal specificity, so whichever loaded last won. In the app the skin wins
+  (`#eaedf2`); in Storybook the component's lazily loaded stylesheet won (`#f0f0f0`). Fixed in
+  `AppSidebar.vue` (above). The reference now measures `rgb(234, 237, 242)` and the app-bar height
+  56px. Shell stories also stamp the app's default shell and frame.
+- **AppBreadcrumb**: the breadcrumb is `MpPageHeader`'s `eyebrow`; own map entry, story
+  `molecules-mppageheader--with-eyebrow` (two and three levels). The note saying Marobase has no
+  breadcrumb was wrong and is removed.
+- **AppDataTable**: bulk bar buttons and folder functionality, see below.
+- **AppDatePicker**: single-date field stories added; the date range stays a separate entry.
+- **TheOnboardingScreenChecklists / TheOnboardingBanner**: stories of the real Get Started page and
+  of the extracted banner (with the task-page form).
+- **AppExpandableList** → the overflow cell story. **AppTreeDropdown** and **AppGridTable** list the
+  existing parts to build from; their own designs are not done.
+- **Their three limits** (own loading indicator, one-line empty state, label inside the field) are
+  recorded on the map entries as "Not required in this phase".
+
+### Decisions needed
+
+- **Bulk action buttons.** The app composes the bar three ways: text buttons (14 bars, the most
+  common), white flat pills (11, including Sales Orders and the list template page), tonal (2),
+  default (2); none is outlined. The stories now show text buttons, which is also what the QA map
+  measures. The template page and Sales Orders should follow, or this should be reversed.
+- `AppBar.stories.ts` and `MpFloatingBulkBar` docs now describe what the app does; the
+  comparison script (`qa-compare`) measures a floating label that the developers said they keep as
+  is. Remove the `label` pair in `liquidskyPairs.ts` if design review should not list it.
+
+### Not done (deferred)
+
+- Tier moves: `MpListRow` → Molecules; `MpFormGrid`, `MpFormSection` → Atoms;
+  `MpBuilderPreviewDialog` → Molecules; `SettingsSection` → Molecules or Product;
+  `SettingsPlaceholder` → Product. These change story ids and every QA reference file name.
+- New Foundations pages (component tokens, motion, layering).
+- Stories for 12 Product components with none (`DtRingDonut`, `MaropayMoneyPanel`,
+  `MaropaySetupTimeline`, `MaropayStoreMark`, `MaropayStoreNag`, `StoreLineupRow`,
+  `StoreManualMethodDrawer`, `StoreProviderDrawer`, `TicketWorkspace`, `TicketWorkspaceActions`,
+  `DynamicContentBlockEditor`, `FooterRender`).
+- Prop vocabulary: `MpBuilderShell` `leftWidth` / `rightWidth` take raw px.
+- `MpMoveToFolderDialog` does not preselect `currentFolderId` when mounted already open.
+- Full designs for the tree dropdown, grid table and the other groups in the previous entry.
+- `StorefrontPreview` `device="tablet"` has no story (the stories sit in a 720px frame, narrower
+  than the 768px tablet width).
+- `qa:compare` keys its pairs by story id, so a story borrowed by an interim entry
+  (`tree-dropdown`, `grid-table`) shows its own comparison under that card too.
+- On a docs page the Controls table cannot drive a story rendered in its own frame
+  (`overlayDocs()`); the Controls panel on the Canvas tab does.
+- The Figma ledger in `docs/design-system/figma/` still lists the app bar token as 60 and
+  `MpIllustration` / `MpUsageMeter` with their old props.

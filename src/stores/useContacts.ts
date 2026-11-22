@@ -176,6 +176,8 @@ export const useContactsStore = defineStore('contacts', () => {
     { name: 'Henry Adler',   email: 'henry.adler@example.com',   phone: '+1 (212) 555-0184', tier: 'vip',    points: 8930, spend: 8927.10, visits: 22, since: '2023-09-14', homeLocationId: 'loc-soho' },
     { name: 'Maya Diaz',     email: 'maya.diaz@example.com',     phone: '+1 (917) 555-0142', tier: 'gold',   points: 4210, spend: 4212.85, visits: 13, since: '2024-02-23', homeLocationId: 'loc-soho',      notes: 'Stylist appointments first Friday of the month.' },
     { name: 'Owen Castillo', email: 'owen.castillo@example.com', phone: '+1 (646) 555-0117', tier: 'member', points: 450,  spend: 446.00,  visits: 2,  since: '2025-09-30', homeLocationId: 'loc-soho',      notes: 'Refund processed on sneakers — sizing issue.' },
+    { name: 'Olivia Tremblay', email: 'olivia.tremblay@example.ca', phone: '+1 (604) 555-0123', tier: 'gold', points: 2215, spend: 2214.60, visits: 12, since: '2024-05-18', homeLocationId: 'loc-robson', notes: 'Emails receipts only — no marketing.' },
+    { name: 'Arjun Gill',      email: 'arjun.gill@example.ca',      phone: '+1 (778) 555-0167', tier: 'member', points: 420, spend: 418.90, visits: 4, since: '2025-07-02', homeLocationId: 'loc-robson' },
   ]
 
   contacts.value.push(

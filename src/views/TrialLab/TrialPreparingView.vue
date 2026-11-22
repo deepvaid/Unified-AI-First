@@ -54,6 +54,7 @@ watch(status, (s) => {
 
       <v-progress-linear
         v-if="status !== 'failed'"
+        aria-label="Preparing your trial"
         :model-value="status === 'ready' ? 100 : Math.min(96, (elapsed / (STEP_MS * STEPS.length)) * 100)"
         color="primary"
         rounded
@@ -64,7 +65,7 @@ watch(status, (s) => {
         <MpListRow v-for="(label, i) in STEPS" :key="label" :title="label" density="compact">
           <template #lead>
             <v-icon v-if="i < doneCount" size="18" color="success">circle-check</v-icon>
-            <v-progress-circular v-else-if="i === doneCount && status === 'preparing'" indeterminate size="16" width="2" color="primary" />
+            <v-progress-circular v-else-if="i === doneCount && status === 'preparing'" aria-label="In progress" indeterminate size="16" width="2" color="primary" />
             <v-icon v-else size="18" class="tl-preparing__todo">circle</v-icon>
           </template>
         </MpListRow>

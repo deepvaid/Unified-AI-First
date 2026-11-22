@@ -52,6 +52,7 @@ const toneMap: Record<string, Record<string, Tone>> = {
     'under review': 'warning', 'action required': 'danger', verified: 'success', rejected: 'danger', declined: 'danger',
     'not enabled': 'neutral', enabled: 'success', restricted: 'danger', disabled: 'neutral',
     ready: 'success', paused: 'warning', inactive: 'neutral', 'needs setup': 'warning', 'ready to activate': 'brand', live: 'success',
+    pending: 'warning',
   },
   campaign: {
     sent: 'success', scheduled: 'brand', draft: 'neutral', sending: 'warning',
@@ -80,6 +81,8 @@ const toneMap: Record<string, Record<string, Tone>> = {
     connected: 'success', disconnected: 'neutral', 'needs setup': 'warning',
     'sync issue': 'danger', 'auth expired': 'danger', syncing: 'warning',
     error: 'danger', healthy: 'success',
+    // A store's payment providers: connected and offering, connected but not finished, or switched off.
+    active: 'success', 'setup incomplete': 'warning', inactive: 'neutral',
   },
   stock: {
     'in stock': 'success', 'low stock': 'warning', 'out of stock': 'danger',
@@ -155,6 +158,7 @@ const iconMap: Record<string, Record<string, string>> = {
     'under review': 'clock', 'action required': 'alert-circle', verified: 'check-circle', rejected: 'x-circle', declined: 'x-circle',
     'not enabled': 'circle-dashed', enabled: 'check-circle', restricted: 'ban', disabled: 'ban',
     ready: 'check-circle', paused: 'pause-circle', inactive: 'circle-dashed', 'needs setup': 'list-checks', 'ready to activate': 'rocket', live: 'check-circle',
+    pending: 'clock',
   },
   priority: {
     critical: 'alert-octagon', urgent: 'alert-octagon', high: 'alert-triangle',
@@ -163,6 +167,7 @@ const iconMap: Record<string, Record<string, string>> = {
   connection: {
     connected: 'check-circle', disconnected: 'circle-x',
     'needs setup': 'wrench', 'sync issue': 'refresh-cw', 'auth expired': 'key-round',
+    active: 'check-circle', 'setup incomplete': 'wrench', inactive: 'circle-dashed',
   },
   stock: {
     'in stock': 'circle-check', 'low stock': 'alert-triangle', 'out of stock': 'circle-x',

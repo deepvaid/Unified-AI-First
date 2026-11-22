@@ -7,16 +7,14 @@
    *Suggested spec:* an `MpRichTextArea` molecule wrapping one sanctioned editor with the
    field-label contract and a `component.field.*`-aligned toolbar.
 
-2. **Grouped "views" menu** — the inbox × view picker (group subheaders, per-inbox
-   repetition, Trash) has no design-system equivalent; closest is `MpFolderSelect` (flat,
-   count-oriented). Built as a composed `v-menu` + `MpMenuItem` panel. *Suggested spec:*
-   `MpViewSwitcher` — grouped single-select menu with subheaders, active state, and a
-   pinned footer item.
+2. **Grouped "views" menu** — ✅ closed 2026-11-06 by `TicketViewSwitcher`
+   (src/components/service): search, collapsible inbox groups, open counts, Spam + Trash
+   pinned. Kept at the Product tier; promote to an `Mp*` molecule if a second screen needs
+   a grouped picker.
 
-3. **Resizable split layout** — UAT has a draggable divider between list and detail
-   ("Resize the list and detail panes"). Not reproduced (fixed 380px list). *Suggested
-   spec:* an `MpSplitPane` layout utility with keyboard-resizable separator
-   (`role="separator"` + arrow keys), min/max widths from layout tokens.
+3. **Resizable split layout** — ✅ closed 2026-11-06 by `MpSplitPane` (window-splitter
+   separator, keyboard + pointer, clamped to `layout.inboxListMinWidth` … 50%, width
+   remembered by the page).
 
 4. **Red-dot row marker** — one UAT row showed a red dot in the chip slot; meaning
    undiscoverable and unverified. Deliberately not reproduced rather than inventing

@@ -45,13 +45,14 @@ This is NOT a production app — it uses mock data and has no backend API.
 │   └── personas/              ← 4 merchant personas
 ├── maropost-screenshots/      ← 50+ screenshots of the real app
 ├── src/
-│   ├── components/            ← 112 components, all with stories (see Component Inventory)
+│   ├── components/            ← components and their co-located stories (see Component Inventory); a few Product parts have no story yet (DESIGN_AUDIT.md)
 │   │   ├── Mp*.vue / ModuleLandingPage.vue ← 30 top-level design-system components
 │   │   ├── layout/            ← AppBar (top bar) + AppSidebar (left nav, collapsible rail)
-│   │   ├── copilot/           ← 17 Dv* Da Vinci surfaces + voice/ (7 orbit voice components)
+│   │   ├── copilot/           ← 21 Dv* Da Vinci surfaces (4 Catalog Co-Pilot) + voice/ (7 orbit voice components)
 │   │   ├── dashboards/        ← 7 dashboard containers + widgets/ (5) + wizard/ (2)
 │   │   ├── marketing/         ← Journey flow column, mini preview, add-step menu
-│   │   ├── maropay/           ← 16 Maropay* product surfaces (Product/Maropay stories)
+│   │   ├── maropay/           ← 23 Maropay* product surfaces (Product/Maropay stories), incl. the Maropay card a store's Payments page sells from, the overview's money panel and the setup timeline
+│   │   ├── chatbot/           ← ChatbotSiteCrawl — the Knowledge base's website source: find pages, pick, extract (Product/Chatbot story)
 │   │   ├── merchandising/     ← MerchProductCard
 │   │   └── settings/          ← SettingsSection, SettingsPlaceholder, settingsMenu (rail = MpSectionRail)
 │   ├── maropay/               ← Maropay domain logic — pure TS, node:test-importable (see docs/maropay/)
@@ -75,6 +76,7 @@ This is NOT a production app — it uses mock data and has no backend API.
 │   │   ├── Products/          ← ProductsList, Inventory, Recommendations, TaxCategories
 │   │   ├── Service/           ← Tickets
 │   │   ├── Settings/          ← Settings, Billing, Users, Profile
+│   │   ├── Storefront/        ← Shopper storefront of a web store: home, collections, product, cart, checkout (P4-8, out of system)
 │   │   └── Templates/         ← /templates page-archetype gallery (engineer reference, placeholder data)
 │   ├── stores/                ← 6 Pinia stores with mock data
 │   ├── plugins/vuetify.ts     ← Vuetify theme (light + dark) + global defaults
@@ -95,7 +97,7 @@ This is NOT a production app — it uses mock data and has no backend API.
 
 ### Layout & structure
 
-- **MpPageHeader** — `title`, `subtitle?`, `backTo?`, `level?`, `density?`, `eyebrow?`, `emphasis?` ('default'|'prominent') · slots `#actions`, `#tabs`. Every page's top section; `backTo` renders the back link on detail pages; `emphasis="prominent"` is the two-tone display masthead used on module landing pages.
+- **MpPageHeader** — `title`, `subtitle?`, `backTo?`, `level?`, `density?`, `eyebrow?`, `emphasis?` ('default'|'prominent') · slots `#actions`, `#tabs`, `#title-append` (a status chip beside the title — never squeeze it into `#tabs`). Every page's top section; `backTo` renders the back link on detail pages; `emphasis="prominent"` is the two-tone display masthead used on module landing pages.
 - **MpSectionHeader** — `title`, `headingLevel?` · slot `#actions`. Section headings inside dashboard cards.
 - **ModuleLandingPage** — `title`, `childPages`, `primaryActions?`, `quickActions?`, `recentActivity?`, `setupCard?`, `daVinciCard?`. Prop-driven module landing (Marketing/Content).
 
@@ -104,7 +106,8 @@ This is NOT a production app — it uses mock data and has no backend API.
 - **MpKpiCard** — `label`, `value`, `icon?`, `color?`, `trend?`, `trendPositive?`, `subStat?`, `period?` · slot `#sparkline`. Dashboard metric cards, 4-column row.
 - **MpStatusChip** — `status`, `type?` ('order'|'fulfillment'|'payment'|'payout'|'dispute'|'method'|'readiness'|'campaign'|'contact'|'ticket'|'coupon'|'priority'|'connection'|'stock'|'report'|'general'), `size?` ('sm'|'md'|'lg'), `variant?` ('tonal'|'flat'|'outlined'), `showIcon?`. Workflow states in tables; color maps are automatic per type. Use `size="sm"` in data tables. `readiness` is Maropay's one map for its account/store state dimensions (Submitted ≠ Verified ≠ Ready to activate ≠ Live).
 - **MpSourceCloudChip** — `dataSource`, `size?` ('sm'|'md'|'lg'), `iconOnly?`. Identifies a widget/KPI's source cloud.
-- **MpListRow** — `title?`, `eyebrow?`, `meta?`, `variant?` ('plain'|'divided'|'boxed'), `emphasis?`, `density?`, `to?`/`href?`/`clickable?` · slots `#lead`, default, `#trailing`. The one list-row geometry — activity feeds, checklists, suggestion menus. Resolves its own tag from whichever target prop is set. Never hand-roll a repeating row.
+- **MpTagChip** — `name`, `color` (`TagColor`: sky|green|slate|amber|violet|blue|orange|red), `size?` ('sm'|'md'), `removable?` · emits `remove`. A user-defined tag (service desk tags): soft pill on the theme-flipping `--tag-<hue>-container` / `--tag-<hue>-on-container` aliases (`mp-theme-aliases.css`, from the `color.{light,dark}.tag.<hue>` pairs), long names truncate with a `title`, the remove button is named "Remove tag <name>". Categorical, not a state — states stay `MpStatusChip`.
+- **MpListRow** — `title?`, `subtitle?`, `eyebrow?`, `meta?`, `variant?` ('plain'|'divided'|'boxed'), `emphasis?`, `density?`, `to?`/`href?`/`clickable?` · slots `#lead`, default, `#title`, `#subtitle`, `#trailing`. The one list-row geometry — activity feeds, checklists, suggestion menus. `subtitle` makes a two-line row (14 title that wraps + muted 13 line); `#title`/`#subtitle` take rich content and keep the styling. Resolves its own tag from whichever target prop is set. Never hand-roll a repeating row, or its title/subtitle spans.
 - **MpDataTableToolbar** — `searchPlaceholder?`, `activeFilters?`, `totalCount?`, `headers?`, `quickFilter?` ({ key, label, icon?, multiple?, options }) · models `v-model:search`, `v-model:quickFilterValue` · slots `#title`, `#actions`, `#filter-content` (filter drawer). Always above `v-data-table`. `quickFilter` promotes one high-traffic filter to a checkbox pill at the **head of the control row, before the Filter button** — the long tail stays in the drawer, and the consumer still owns filtering, its `activeFilters` entry and clearing the model. `multiple: false` makes it an exclusive mode toggle (list panel, no Clear, closes on pick, model holds exactly one value). The Filter button badges `activeFilters` minus the promoted key; when the promoted filter was the table's only one, drop `#filter-content` and the Filter button goes with it. Every control in the row is `component.control.height` (40) — give a new one the token, not a number.
 - **MpFolderSelect** — `folders`, `counts?`, `totalCount?`, `label?` · emits `manage`. Folder filter menu above foldered lists.
 
@@ -112,12 +115,12 @@ This is NOT a production app — it uses mock data and has no backend API.
 
 - **MpAlert** — `tone?` ('info'|'success'|'warning'|'error'), `title?`, `live?` ('off'|'polite'|'assertive', auto by tone), `dismissible?`, `icon?` (string|false) · emits `dismiss` · slots default (body), `#actions`. **The one in-page feedback block** — rounded, borderless soft fill on the semantic container pairs, enforced role/aria-live (`live="off"` = a plain block: no role, no live region — for static furniture or an alert inside an already-live region such as the Da Vinci transcript). **Never a raw `v-alert` in new code.** Transient = `useToast`; frame-wide = `MpBanner`; whole-surface failure = `MpErrorState`.
 - **MpBanner** — `tone?` (same 4), `message?` (or default slot), `icon?` (string|false), `dismissible?`, `dismissLabel?` · emits `dismiss` · slot `#actions`. **The full-width edge strip** (square, bottom hairline, `component.banner.minHeight` 44) — mounts at the top of `<v-main>` or a page region. PlgTrialBanner composes it. Alert = in-page block · banner = edge strip; don't swap.
-- **MpChatBubble** — `side?` ('start'|'end'), `tone?` ('neutral'|'accent'|'solid'), `author?`, `time?`, `loading?` · slots `#avatar`, default (pre-wrap body), `#footer`. **The one transcript message** on `component.bubble.*`; side and tone are independent axes (the Tickets thread left-aligns both roles, tint carries the role). Re-skin via the `--mp-bubble-*` custom-prop seam, never `:deep`. Merchant-chrome simulations (chatbot widget preview, SMS phone mock) and the flagship Da Vinci bot stay bespoke.
+- **MpChatBubble** — `side?` ('start'|'end'), `tone?` ('neutral'|'accent'|'solid'), `author?`, `time?`, `loading?` · slots `#avatar`, default (pre-wrap body), `#footer`, `#actions` (a per-message ⋯ menu at the end of the meta row). **The one transcript message** on `component.bubble.*`; side and tone are independent axes (the Tickets thread left-aligns both roles, tint carries the role). Re-skin via the `--mp-bubble-*` custom-prop seam, never `:deep`. Merchant-chrome simulations (chatbot widget preview, SMS phone mock) and the flagship Da Vinci bot stay bespoke.
 - **MpEmptyState** — `title`, `icon?`, `description?`, `actionLabel?`, `actionIcon?`, `headingLevel?`, `variant?` ('stack'|'launcher'), `emphasis?` ('default'|'prominent'), `illustration?`, `tone?` ('neutral'|'error') · emits `action`. Every table/list MUST have one (empty = nothing to show).
 - **MpErrorState** — composes `MpEmptyState` with `role="alert"`, the error tone and retry defaults. Error = something failed; don't merge with empty states.
 - **MpFloatingBulkBar** — `count`, `total?` · emits `clear` · default slot (actions). Shows on row selection; auto-hides at 0.
 - **MpTableSkeleton** — `rows?`, `columns?`, `showHeader?`. Loading placeholder inside table cards.
-- **MpComingSoonTiles** — `icon`, `title`, `description?`, `tiles` ({ icon, title, desc }[]), `smCols?`, `mdCols?`, `headingLevel?`. "Planned, not built yet" panel. Coming-soon = the surface doesn't exist yet; don't use it where `MpEmptyState` belongs.
+- **MpComingSoonTiles** — `icon`, `title`, `description?`, `tiles` ({ icon, title, desc }[]), `smCols?`, `mdCols?`, `headingLevel?` (2|3|4, default 3). "Planned, not built yet" panel. Coming-soon = the surface doesn't exist yet; don't use it where `MpEmptyState` belongs.
 
 ### Forms & selection
 
@@ -125,6 +128,9 @@ This is NOT a production app — it uses mock data and has no backend API.
 - **MpFormGrid** — `cols?` (1|2) · slot default. **The one form layout container.** Its gap *is* the field rhythm (`component.field.groupGap`); child classes `mp-form-grid__full` (span both columns) and `mp-form-grid__trailing` (field + trailing icon button in its own fixed `control.height` track, so the input's right edge still lands on the form's right edge). A field never sets its own margin.
 - **MpFormSection** — `title`, `description?`, `required?`, `headingLevel?` (3). **The one in-form section heading** ("GENERAL", "EXPIRATION DATE"). Owns the space above and below itself via `component.field.sectionGap`. Replaced seven hand-rolled patterns.
 - **MpFormField** — `label`, `required?`, `hint?`, `error?` · slot default exposes `{ labelId, descriptionId }`. Label + hint/error + aria for **composite** controls only (chip groups, radio groups, tile pickers). **Never wrap a Vuetify input** — those own their own label via the `label` prop, which renders as an identical static top label.
+- **MpSplitPane** — `size` (v-model, start-pane px), `defaultSize`, `min`, `maxRatio?` (0.5), `ariaLabel`, `controls?`, `stacked?` ('start'|'end'|null), `step?` (16) · slots `#start`, `#end`. **The one resizable master–detail split** (Service inbox list | ticket). WAI-ARIA window splitter: drag, ←/→, Home/End, Enter/double-click resets. Renders clamped to the container but only the user changes the model — persist it yourself. `stacked` = one pane at a time, both kept mounted. Tokens `layout.inboxListMinWidth`, `layout.splitHandleWidth`. Its separator is `MpSplitHandle`.
+- **MpSplitHandle** — `size` (v-model, px of the pane it sizes), `min`, `max`, `defaultSize`, `ariaLabel`, `controls?`, `side?` ('start'|'end'), `step?` (16) · emits `dragging`. **The separator on its own** (hairline, grip, drag, keys, aria): use it directly only when the sized pane is docked at the end of a layout `MpSplitPane` can't wrap (the ticket's side panel, `side="end"`); the consumer lays out the panes and clamps the width.
+- **MpRichTextArea** — `modelValue` (HTML; empty emits `''`), `label?`/`ariaLabel?`, `required?`, `hint?`, `error?`, `placeholder?`, `rows?` (min lines, default 5; scrolls past 2×), `disabled?`, `tagGroups?` ({ title, tags: { key, label }[] }[]) · `v-model`. **The one rich-text field** (Tiptap 3): Bold/Italic/Underline · lists · Link popover · Quote · Insert tag (types `{{KEY}}`), in the outlined-field look with the static top label. `role="toolbar"` with roving tabindex; the editable is `role="textbox"` wired to label/hint/error. Plain text stays `v-textarea`.
 - **MpOptionCard** — `selected?`, `title`, `description?`, `icon?`, `to?`/`href?`, `headingLevel?` · slots default, `#title-append`, `#media`. The chooser-gallery card in two modes (resolve-your-own-tag): pass `selected` for a keyboard-operable toggle (wizard select-then-commit galleries); pass `to`/`href` for a real link (click-to-go choosers) — never `:selected="false"` to fake a plain card.
 - **MpSegmentedControl** — `modelValue` (v-model, `string | null`), `items` ({ value, label?, icon?, disabled?, tooltip? }[]), `size?` ('sm'|'md', md = `control.height`), `mandatory?` (default true), `ariaLabel` (required). **The one segmented toggle** — padded track + pill segments on `component.segmented.*`. An `icon` makes a segment icon-only (square) and its `label` becomes the `aria-label`. **Never a raw `v-btn-toggle` for a new switcher** — the global normalization only keeps legacy sites presentable.
 - **MpStatusToggle** — `status` ('Active'|'Paused'|'Draft') · emits `toggle`. Status switch + label cell; disabled on Draft.
@@ -134,16 +140,20 @@ This is NOT a production app — it uses mock data and has no backend API.
 ### Navigation
 
 - **MpFilterTabs** — `tabs` ({ label, key, count? }[]), `ariaLabel?`, `controlsId?` · model `v-model` (active key). Tab filtering above data tables.
-- **MpSectionRail** — **the one in-content rail** (Settings, Retail, Merchandising and the store editor all compose it; a bespoke `SettingsSidebar` was deleted in Phase 4). `ariaLabel` (required), `groups` ({ title?, items: { slug, label, icon?, to, match?, count?, external? }[] }[]), `title?`, `backTo?`/`backLabel?`, `identity?` ({ name, caption?, icon? }), `switcherOptions?`/`switcherLabel?`, `searchable?`/`searchPlaceholder?` · slot `#footer` · emits `switch`. In-content 260px section rail for shell layouts (store editor, Settings-style workspaces); active = `route.name` ∈ item.match. The global AppSidebar auto-minimizes while a rail shell is on screen (route meta `railShell`/`storeEditor`).
+- **MpSectionRail** — **the one in-content rail** (Settings, Retail, Merchandising and the store editor all compose it; a bespoke `SettingsSidebar` was deleted in Phase 4). `ariaLabel` (required), `groups` ({ title?, items: { slug, label, icon?, to, match?, count?, external? }[] }[]), `title?`, `backTo?`/`backLabel?`, `identity?` ({ name, caption?, icon? }), `switcherOptions?`/`switcherLabel?`, `searchable?`/`searchPlaceholder?` · slot `#footer` · emits `switch`. In-content 260px section rail for shell layouts (store editor, Settings-style workspaces); active = `route.name` ∈ item.match. The global AppSidebar auto-minimizes while a rail shell is on screen (route meta `railShell`/`storeEditor`). At 900px and below the rail collapses to one disclosure row naming the current section, which opens the same content in a capped scroll box.
 - **MpWizardSteps** — `steps` (string[]), `current` (1-based). Passive wizard step indicator with `aria-current`.
 
 ### Overlays
 
 - **MpDialog** — `title`, `subtitle?`, `eyebrow?`, `icon?`, `tone?` ('neutral'|'error'), `size?` ('sm'|'md'|'lg'), `fullscreen?`, `persistent?`, `flush?`, `guarded?` · model `v-model` · emits `close` · slots default, `#lead`, `#headerActions`, `#footer`, `#footerStart`. **The one modal shell.** Header / body / footer all on `component.dialog.padding`; the body is a flex column on `component.dialog.gap`, so form fields are spaced by the shell. This is what "never raw `v-dialog`" means — compose this. The header has a `headerMinHeight` floor so the band does not jump when the subtitle is absent, and it is a grid so the close button sits on the *title's* optical centre. `flush` is the supported way to drop the body inset — never `:deep(.mp-dialog__body)`.
-- **MpConfirmDialog** — model `v-model`, `title`, `message`, `confirmLabel?`, `danger?`, `consequences?` · emits `confirm`. Composes `MpDialog` at `size="sm"`. All confirm prompts (destructive → `danger`).
+- **MpConfirmDialog** — model `v-model`, `title`, `message`, `confirmLabel?`, `cancelLabel?` ('Cancel'), `danger?`, `consequences?` · emits `confirm`. Composes `MpDialog` at `size="sm"`. All confirm prompts (destructive → `danger`). When the action is itself a cancel ("Cancel order"), rename the dismiss ("Keep order").
 - **MpRowActionsMenu** — `ariaLabel` (required), `itemLabel?` · default slot (`MpMenuItem`s). Kebab row-actions menu for list views: `role="menu"` panel opening `bottom end`, 40px trigger hit-area, click-swallowing trigger.
-- **MpMenuItem** — `title`, `icon?`, `danger?`. The one action-menu item (`v-list-item` with `role="menuitem"` baked in; attrs/slots pass through). Destructive = `danger`, last, behind `<v-divider class="my-1" />`. Never a raw `v-list-item` in an action menu.
+- **MpMenuItem** — `title`, `icon?`, `danger?`. The one action-menu item (`v-list-item` with `role="menuitem"` baked in; attrs/slots pass through; a `disabled` item also gets `aria-disabled`, which v-list-item omits). Destructive = `danger`, last, behind `<v-divider class="my-1" />`. Never a raw `v-list-item` in an action menu.
 - **MpNotificationsMenu** — no props, store-driven (`useNotifications`): bell trigger whose unread badge **wraps** the button (the app's v-badge convention, capped 99+), `aria-haspopup="dialog"` panel of notification rows mirroring the real UAT centre — **one generic icon** (the real feed has no classification; never invent severity here), absolute timestamps, a download action on report/export rows, See all (→ the `/accounts/:id/notifications` page) + Mark-all-read, `MpEmptyState` when caught up. The row is the shared `notifications/NotificationRow` (panel + page). One per app frame; attrs fall through to the bell (`class="appbar-action-btn"`). Transient confirmations stay `useToast`'s job.
+
+### POS (Product › POS)
+
+- **`Pos*`** in `src/components/pos/` — the in-store register's own kit (`PosButton`, `PosChip`, `PosBadge`, `PosTierChip`, `PosNotice`, `PosField`, `PosProductTile`, `PosCartLine`, `PosTotals`, `PosCustomerChip`, `PosTenderRow`, `PosSheet`). **Light-only** on `color.light.pos.*` + `component.pos.*` (44px touch floor); never alias them to `--pos-*`, which means *positive*. Used by `PosPreview` and documented under Storybook › Product › POS (Overview has the rules and the Figma kit mapping). Money arrives formatted; stock wording comes from `posStock()`.
 
 ### AI
 
@@ -196,7 +206,9 @@ rhythm so a modal and a drawer cannot drift apart. **Never a hand-rolled rail** 
   property on the same element
 - **Always** use `<style scoped>` (never global styles in components)
 - **Prefer** Vuetify utility classes (`d-flex`, `pa-4`, `gap-3`, `text-medium-emphasis`)
-- **Cards**: Always `flat border rounded="lg"` (no elevation shadows)
+- **Cards**: Always `flat border rounded="lg"` (no elevation shadows); the inset is `class="mp-card-inset"` (`--compact`, `--spacious`), never a per-page padding rule
+- **Links** in copy and table cells: `class="mp-link"` (global — accent colour, underline on hover/focus, focus ring)
+- **Label/value pairs**: `<dl class="mp-label-value">` (labels sentence case, muted 12px); add `mp-label-value--inline` for label | value rows in a narrow panel
 - **Buttons**: `text-transform: none` (already set in Vuetify defaults)
 - **Font**: Inter (already configured globally)
 - **Global stylesheets**: add to `src/styles/app-styles.ts` (the shared manifest), never directly to `src/main.ts` or `.storybook/preview.ts` — this keeps Storybook rendering identical to the app. See `.claude/rules/global-styles.md`
@@ -330,7 +342,8 @@ Reach for a role token when the system has already made the decision, a primitiv
   `sectionGap` 24 · `height.{sm,md,lg}` 32/40/48 (mapped from the `density` prop; md =
   `control.height`) · `labelHeight` 18 (the static top label's line box — a labelled field
   reserves `labelHeight + labelGap` of headroom). `groupGap` is what `MpFormGrid` gaps on;
-  `sectionGap` is the air `MpFormSection` puts around a heading
+  `sectionGap` is the air `MpFormSection` puts around a heading · `actionCollapseWidth` 260
+  (a field narrower than this shows a label-row action as its mark only — container query)
 - **States** `component.state.*` → `padding` 32 · `paddingProminent` 48 · `gap` 8 ·
   `minHeight` 240 · `minHeightProminent` 320 · `measure` 420 · `measureWide` 480 · `iconDisc` 80
 - **Chips** `component.chip.height.{sm,md,lg}` → 20 / 24 / 32 · `paddingInline` 8
@@ -346,17 +359,24 @@ Reach for a role token when the system has already made the decision, a primitiv
 - **Drawers** `component.drawer.width.{sm,md,lg}` → 440 / 480 / 640, default md. Everything else
   about a drawer is `component.dialog.*`; only the width ramp differs. `layout.drawerWidth` is a
   legacy alias for the md stop
-- **Toolbars** `component.toolbar.*` → `minHeight` 64 · `searchWidth` 300 · `searchMinWidth` 240
+- **Toolbars** `component.toolbar.*` → `minHeight` 64 · `searchWidth` 300 · `searchMinWidth` 240 ·
+  `titleMinWidth` 160 (the title column's floor before the controls wrap; the toolbar also stacks
+  by its own width via a container query, so a docked drawer stacks it like a phone does)
+- **Page header** `component.pageHeader.titleMinWidth` → 280 (the actions wrap under the title past it)
 - **Nav** `component.nav.*` → `itemRadius` 8 · `groupGap` 16 · `activeBarInset` 6. Item height,
   padding and gap come from `component.listItem.*` — there is no second nav sizing scale
 - **Widget actions** `component.widget.*` → `actionSize` 32 · `actionGap` 2 · `actionInset` 12.
   Widget *insets* come from `component.card.*`; this group is only the floating action overlay
-- **Previews** `component.preview.viewport.mobile` → 390, the phone width for shopper-side
-  simulations (Maropay's `CheckoutPreviewFrame`); desktop previews simply fill their column
-- Colors: light theme primary `#0073AB`, secondary `#1a1814`, background `#f4f6fa` (dark theme
+- Colors: light theme primary `#0071A8`, secondary `#1a1814`, background `#f4f6fa` (dark theme
   under `color.dark.*`). **Every surface token has a declared foreground — see below**
 - Shadows: sm (1px), md (4px), lg (8px) — use sparingly, prefer border
-- Layout: sidebar 248px, rail 72px, section rail 260px, appbar 60px, drawer 480px, content max 1280px
+- Layout: sidebar 248px, rail 72px, section rail 260px, appbar 56px (`layout.appbarHeight`, the height the bar renders at; the app bar, the sidebar header and the content frame read the token), drawer 480px, content max 1280px,
+  shopper preview 360px (`layout.previewPanelWidth`; side by side from a 840px page, `previewSplitWidth`)
+- **Table column stops** `layout.tableColumns{Sm,Md,Lg}` → 480 / 720 / 900. The *table's own* width
+  below which `hideBelow: 'sm' | 'md' | 'lg'` columns drop, for shells that provide
+  `TABLE_FITS_CONTAINER` (Settings does: its tables are ~800px on a 1440px window, so window
+  breakpoints kept columns that did not fit). `useResponsiveTableHeaders` also returns
+  `isVisible(key)`: fold a dropped column's content into the first cell rather than lose it
 
 ### Colour pairing (non-negotiable)
 
@@ -371,7 +391,7 @@ surface when a theme flips. The pairs:
 | Surface | Foreground |
 |---|---|
 | `--surface-*` (the whole ladder) | `--on-surface` · `--on-surface-muted` |
-| `--ink-panel-bg` | `--ink-panel-fg` · `--ink-panel-muted-fg` · `--ink-panel-accent` |
+| `--ink-panel-bg` | `--ink-panel-fg` · `--ink-panel-muted-fg` · `--ink-panel-accent` · `--ink-panel-danger` |
 | `--accent-default` / `--accent-container` | `--accent-on` / `--accent-on-container` |
 | `--pos` / `--neg` / `--warn` | `--on-pos` / `--on-neg` / `--on-warn` |
 | `--pos-soft` / `--neg-soft` / `--warn-soft` | `--pos-ink` / `--neg-ink` / `--warn-ink` |
@@ -398,10 +418,16 @@ changelog in `DESIGN_AUDIT.md`.
 | `npm run build` | TypeScript check + Vite production build |
 | `npm run storybook` | Start Storybook on :6006 |
 | `npm run build-storybook` | Build Storybook to dist-storybook/ |
+| `npm run storybook:smoke` | Builds `dist-storybook-smoke/` with Vue's development warnings on (a production build compiles them out), opens every story and fails on one that throws, logs an error or a Vue warning, or renders nothing; also checks the Theme toolbar, docs example heights and the LiquidSky map's story links |
 | `npm run tokens:build` | Generate SCSS/CSS/TS from tokens.json |
 | `npm run contrast:check` | WCAG 2.1 ratios for every declared surface/foreground token pair |
+| `npm run qa:export` | QA reference for LiquidSky: screenshots + computed-CSS spec per mapped story → `public/qa-reference/` (needs `build-storybook` first) |
+| `npm run qa:compare` | Design vs LiquidSky build: side-by-side screenshots + a plain list of differences → `output/qa-compare/` (git-ignored; needs `LIQUIDSKY_STORYBOOK` in `.env.local`) |
 | `npm run test:maropay` | Maropay domain + adapter tests (`node:test` over `tests/maropay/`) |
 | `npm run test:davinci` | Da Vinci routing, chart-request, history and conversation tests (`node:test` over `tests/davinci/`) |
+| `npm run test:catalog` | Da Vinci Catalog Co-Pilot draft-generator tests (`node:test` over `tests/davinci-catalog/`) |
+| `npm run test:chatbot` | Chatbot brand-colour contrast + builder-preview responder tests (`node:test` over `tests/chatbot/`) |
+| `npm run test:plg` | PLG promotion tests — coupon maths and code validation in `src/plg/promo.ts` (`node:test` over `tests/plg/`) |
 | `npm run tokens:watch` | Watch tokens.json and regenerate on save |
 | `npm run type-check` | Run vue-tsc type checking |
 | `npm run preview` | Preview production build locally |
@@ -428,6 +454,15 @@ Example: `[feat]: add MpDateRangePicker component with story`
   module landing, wizard, builder shell, surface states. Each renders in the real app chrome with
   structural placeholder data and a toggleable spec panel (component tree, source file, the product
   pages that follow it, which token owns each gap). Reference only — never a product surface.
+- **`docs/qa/`** — LiquidSky design QA without Figma, as three steps: **Compare** (`qa:compare`
+  lists design-vs-build differences), **Approve** (designer tags Blocker / Must-fix / Nice-to-have),
+  **Lock** (QA's Playwright baseline comes from the LiquidSky Storybook at approval, with a few
+  full-page baselines so a component update cannot break a page unnoticed).
+  `liquidsky-design-qa-process.md` is the process, `playwright-example.md` the two files QA needs.
+  Reference parts live in `src/stories/qa/liquidskyMap.ts`, the matching LiquidSky stories and
+  selectors in `liquidskyPairs.ts` (like-for-like parts only); Storybook shows the reference at
+  Foundations › QA Reference. After changing a mapped component, re-run `qa:export` and commit the
+  diff. Findings about the build never go in this repo — `output/qa-compare/` is ignored.
 - **`docs/maropay/`** — Maropay payments prototype: `decisions.md` (locked decisions, limitations,
   production gaps) and `implementation-report.md` (review entry point, M01–M15 scenarios, results).
   Pure modules under `src/maropay/` and `src/services/maropay/` import each other by relative
@@ -437,6 +472,10 @@ Example: `[feat]: add MpDateRangePicker component with story`
   it can't be drawn as asked (`widgetRequest`), clarification slots, follow-up chips, conversation history
   records and their caps (`history`). Add a row to `tests/davinci/` for any misroute. The audit that started
   it is `docs/davinci-copilot-audit-2026-09.md`; the change log is in `DESIGN_AUDIT.md`.
+- **`docs/davinci-catalog/decisions.md`** — Da Vinci Catalog Co-Pilot in the Products module
+  (PRD: Da Vinci Catalog Management): decisions, PRD → prototype map, demo guide with the
+  `?catalog=` entitlement scenarios, analytics, limitations. Da Vinci drafts, Apply fills the form
+  in memory, the form's own Save / Publish persists; credits move on Apply only.
 
 ---
 
@@ -458,7 +497,7 @@ Marobase is Maropost's design system, compliant with Liquid Sky. It currently ha
 
 ## Story hierarchy
 
-Five top-level buckets, and only these five. The tier a component belongs to is decided by one rule:
+Five top-level buckets, and only these five. Two documentation-only pages sit above them: *Introduction* and *LiquidSky* (the map for developers of the LiquidSky production library); they hold no components and are not buckets. The tier a component belongs to is decided by one rule:
 
 > **Atom** — a single control or mark: no internal regions, no `Mp*` dependency.
 > **Molecule** — has internal regions (header/body/footer, trigger+panel) **or** composes another `Mp*`.
@@ -466,14 +505,29 @@ Five top-level buckets, and only these five. The tier a component belongs to is 
 > **Product** — a surface specific to one Maropost feature area.
 
 **Why Product exists (Phase 5 decision, 2026-08-28).** The four design-system tiers were the
-original rule, but 77 of 123 stories are feature surfaces — Da Vinci, Dashboards, Marketing,
-Merchandising, PLG, RBAC, Sales Channels — that are *not* reusable patterns. Filing them under
-`Patterns/` would have buried the 10 that are. `Product/` keeps the design-system tiers honest and
+original rule, but most stories were feature surfaces — Da Vinci, Dashboards, Maropay, Marketing,
+Merchandising, PLG, POS, RBAC, Sales Channels and others — that are *not* reusable patterns. Filing
+them under `Patterns/` would have buried the ones that are. `Product/` keeps the design-system tiers honest and
 signals "reference, not API" to anyone reading the sidebar. Logged in the Phase 5 changelog in
 `DESIGN_AUDIT.md`.
 
-`Foundations/Overview` and `Introduction` are MDX pages (`src/stories/**/*.mdx`); everything else is
-CSF. The order is set once in `.storybook/preview.ts` → `storySort`.
+`Foundations/Overview`, `Introduction`, `LiquidSky` and `Product/POS/Overview` are MDX pages
+(`src/stories/**/*.mdx`, `src/components/pos/`); everything else is CSF. The order is set once in `.storybook/preview.ts` → `storySort`.
+
+**The Variants / Sizes / States template is for the design-system tiers** (Foundations, Atoms,
+Molecules, Patterns): `Default` bound to args, then `Variants`, `Sizes` (only if the component has a
+`size` or measure prop; otherwise name the real axis: `Density`, `HeadingLevels`…) and `States`.
+**Product stories are reference surfaces:** `Default` plus real scenario stories. A story that only
+renders `<X v-bind="args" />` again is deleted, not kept as a template shell.
+
+**Story helpers** (`src/stories/decorators.ts`, `storyTemplate.ts`): `overlayDocs()` on every story
+that opens a dialog, drawer, menu or toast on mount (it gets its own frame on the docs page, so
+overlays cannot stack and a play function only finds its own story); `isolateStorage` on a story that
+seeds a store that persists to `localStorage`; `appShell` for the shell stories (stamps the app's
+default `data-sidebar`, `data-shell` and `data-frame`); `grid()` / `stack()` take the component as an
+object keyed by tag name: `grid({ MpAlert }, specimens)`. The preview router stubs any named route a
+component links to, and carries `accountId` `2000290`. Run `npm run storybook:smoke` before pushing
+story changes.
 
 **No per-story dark clones.** The toolbar **Theme** global flips every story; a `DarkMode` twin of a
 story is duplicated sidebar noise. The only exceptions are stories where the dark *palette itself* is
@@ -481,8 +535,11 @@ the subject (`Foundations/Colors`) or where dark is a different axis entirely (t
 skins).
 
 **Shared story helpers** live in `src/stories/`: `storyTemplate.ts` (the Variants/Sizes/States grid
-renderer), `fixtures.ts` (realistic data), `decorators.ts` (the `measure` scale, `surfaceFrame`,
-`railFrame`, `sidebarSkin`). Reach for these before writing another inline wrapper `<div style="…">`.
+renderer, and `bulkActions()`: a story that shows `MpFloatingBulkBar` names its actions and takes the
+buttons from it, so every bar has the same button, label and icon per action), `fixtures.ts`
+(realistic data), `decorators.ts` (the `measure` scale, `constrain`, `surfaceFrame`, `railFrame`,
+`appShell`, `overlayDocs`, `isolateStorage`). Reach for these before writing another inline wrapper
+`<div style="…">`.
 
 ## Token discipline
 

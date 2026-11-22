@@ -108,7 +108,8 @@ const chipLabel = () => {
       <div class="min-width-0 flex-grow-1 d-flex align-center ga-3">
         <slot name="title">
           <div class="min-width-0">
-            <div class="text-subtitle-2 font-weight-bold text-truncate">{{ title }}</div>
+            <!-- The builder's page heading (WCAG best practice — W-18): an h1 at the toolbar's size. -->
+            <h1 class="text-subtitle-2 font-weight-bold text-truncate ma-0">{{ title }}</h1>
             <div v-if="subtitle" class="text-caption text-medium-emphasis text-truncate">{{ subtitle }}</div>
           </div>
         </slot>
@@ -141,9 +142,10 @@ const chipLabel = () => {
       <aside v-if="$slots.left" class="mp-builder__left">
         <slot name="left" />
       </aside>
-      <main class="mp-builder__canvas flex-grow-1 overflow-auto">
+      <!-- A div, not <main>: v-main is already the page's main landmark (WCAG W-18). -->
+      <div class="mp-builder__canvas flex-grow-1 overflow-auto">
         <slot />
-      </main>
+      </div>
       <aside v-if="$slots.right" class="mp-builder__right">
         <slot name="right" />
       </aside>
@@ -179,15 +181,17 @@ const chipLabel = () => {
   gap: 6px;
   font-size: 0.75rem;
   font-weight: 600;
-  color: rgb(var(--v-theme-success));
+  /* Declared soft pairs, not a tinted fill under the full-strength ink
+     (that read 4.49 / 4.13:1 — WCAG W-08). */
+  color: var(--pos-ink);
   padding: 4px 10px;
   border-radius: 999px;
-  background: rgba(var(--v-theme-success), 0.08);
+  background: var(--pos-soft);
   flex-shrink: 0;
 }
 .mp-builder__chip--dirty {
-  color: rgb(var(--v-theme-warning));
-  background: rgba(var(--v-theme-warning), 0.10);
+  color: var(--warn-ink);
+  background: var(--warn-soft);
 }
 .mp-builder__chip-dot {
   width: 6px;

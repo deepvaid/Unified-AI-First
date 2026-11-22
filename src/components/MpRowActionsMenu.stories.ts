@@ -3,15 +3,17 @@ import MpMenuItem from './MpMenuItem.vue'
 import MpRowActionsMenu from './MpRowActionsMenu.vue'
 import MpStatusChip from './MpStatusChip.vue'
 import { ORDERS } from '@/stories/fixtures'
+import { liquidskyDocs } from '@/stories/storyTemplate'
+import { overlayDocs } from '@/stories/decorators'
 
 const meta = {
   title: 'Molecules/MpRowActionsMenu',
   component: MpRowActionsMenu,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'liquidsky'],
   parameters: {
     docs: {
       description: {
-        component: `
+        component: liquidskyDocs('molecules-mprowactionsmenu') + `
 ### Overview
 \`MpRowActionsMenu\` is the kebab ("more-vertical") actions menu used in the trailing column of
 data-table rows. The component owns the trigger button and the compact list container; the view
@@ -100,7 +102,7 @@ export const Default: Story = {
           <MpMenuItem icon="bar-chart-2" title="View analytics" />
           <MpMenuItem icon="copy" title="Duplicate" />
           <MpMenuItem icon="circle-pause" title="Pause" />
-          <v-divider></v-divider>
+          <v-divider class="my-1" />
           <MpMenuItem icon="trash-2" title="Delete" danger />
         </MpRowActionsMenu>
       </div>
@@ -108,23 +110,31 @@ export const Default: Story = {
   }),
 }
 
-/** The menu opened automatically, in a tall canvas so the popover has room. */
+/**
+ * The menu opened on load (it gets its own frame on the docs page). The trigger is a small icon
+ * button sized to sit inside a table row without stretching it. The panel is
+ * `component.menu.minWidth` (180) wide at minimum with a `component.menu.radius` (12) corner,
+ * and its rows are `component.menu.itemHeight` (36) with `component.menu.itemPaddingBlock` (6) —
+ * deliberately denser than the 40px in-page row floor, because a menu is transient chrome, not
+ * content.
+ */
 export const OpenMenu: Story = {
   render: (args) => ({
     components: { MpMenuItem, MpRowActionsMenu },
     setup: () => ({ args }),
     template: `
-      <div class="d-flex justify-center pt-4" style="min-height: 320px;">
+      <div class="d-flex justify-center pt-4">
         <MpRowActionsMenu v-bind="args">
           <MpMenuItem icon="bar-chart-2" title="View analytics" />
           <MpMenuItem icon="copy" title="Duplicate" />
-          <v-divider></v-divider>
+          <v-divider class="my-1" />
           <MpMenuItem icon="trash-2" title="Delete" danger />
         </MpRowActionsMenu>
       </div>
     `,
   }),
   args: { ariaLabel: 'Welcome Series actions' },
+  parameters: overlayDocs('320px'),
   play: async ({ canvasElement }) => {
     await new Promise(resolve => setTimeout(resolve, 300))
     const trigger = canvasElement.querySelector<HTMLElement>('[aria-label="Welcome Series actions"]')
@@ -132,63 +142,7 @@ export const OpenMenu: Story = {
   },
 }
 
-/**
- * `itemLabel` appends the row's identity to `ariaLabel`, giving each row in a table its own
- * accessible name (e.g. "Contact actions for James Anderson") instead of one repeated static
- * string. Omitting `itemLabel` leaves behavior unchanged.
- */
-export const WithItemLabel: Story = {
-  render: (args) => ({
-    components: { MpMenuItem, MpRowActionsMenu },
-    setup: () => ({ args }),
-    template: `
-      <div class="d-flex justify-center pt-4" style="min-height: 320px;">
-        <MpRowActionsMenu v-bind="args">
-          <MpMenuItem icon="bar-chart-2" title="View analytics" />
-          <MpMenuItem icon="copy" title="Duplicate" />
-          <v-divider></v-divider>
-          <MpMenuItem icon="trash-2" title="Delete" danger />
-        </MpRowActionsMenu>
-      </div>
-    `,
-  }),
-  args: { ariaLabel: 'Contact actions', itemLabel: 'James Anderson' },
-  play: async ({ canvasElement }) => {
-    await new Promise(resolve => setTimeout(resolve, 300))
-    const trigger = canvasElement.querySelector<HTMLElement>('[aria-label="Contact actions for James Anderson"]')
-    trigger?.click()
-  },
-}
-
-/**
- * Actions that don't apply to the row's state stay visible but disabled, keeping the
- * menu shape stable across rows.
- */
-export const DisabledItems: Story = {
-  render: (args) => ({
-    components: { MpMenuItem, MpRowActionsMenu },
-    setup: () => ({ args }),
-    template: `
-      <div class="d-flex justify-center pt-4" style="min-height: 320px;">
-        <MpRowActionsMenu v-bind="args">
-          <MpMenuItem icon="bar-chart-2" title="View analytics" />
-          <MpMenuItem icon="circle-pause" title="Pause" disabled />
-          <MpMenuItem icon="circle-play" title="Resume" disabled />
-          <v-divider></v-divider>
-          <MpMenuItem icon="trash-2" title="Delete" danger />
-        </MpRowActionsMenu>
-      </div>
-    `,
-  }),
-  args: { ariaLabel: 'Draft journey actions' },
-  play: async ({ canvasElement }) => {
-    await new Promise(resolve => setTimeout(resolve, 300))
-    const trigger = canvasElement.querySelector<HTMLElement>('[aria-label="Draft journey actions"]')
-    trigger?.click()
-  },
-}
-
-// ── Template: Variants · Sizes · States ──────────────────────────────────────
+// ── Template: Variants · States ──────────────────────────────────────────────
 
 /**
  * One structure — a kebab trigger opening a `v-list`. What varies is the content you slot in:
@@ -230,31 +184,9 @@ export const Variants: Story = {
 }
 
 /**
- * There is no `size` prop. The trigger is a small icon button sized to sit inside a table row
- * without stretching it, and the panel's rows are `component.menu.itemHeight` (36) with
- * `component.menu.itemPaddingBlock` (6) — deliberately denser than the 40px in-page row floor,
- * because a menu is transient chrome, not content. Inline inset stays `component.listItem.paddingInline`
- * (12). The panel is `component.menu.minWidth` (180) wide at minimum and its corner is
- * `component.menu.radius` (12), the menu step of the concentric radius scale.
- */
-export const Sizes: Story = {
-  render: () => ({
-    components: { MpMenuItem, MpRowActionsMenu },
-    template: `
-      <div class="d-flex align-center ga-4">
-        <MpRowActionsMenu ariaLabel="Row actions">
-          <MpMenuItem title="View" icon="eye" />
-          <MpMenuItem title="Duplicate" icon="copy" />
-        </MpRowActionsMenu>
-        <div class="text-body-2 text-medium-emphasis">Open the menu — its rows sit on the 36px menu floor, denser than in-page rows.</div>
-      </div>
-    `,
-  }),
-  args: {} as never,
-}
-
-/**
- * Item states inside the panel: resting, disabled, destructive, and a row with a trailing hint.
+ * Item states inside the panel: resting, disabled (an action that does not apply to this row
+ * stays visible, so the menu keeps its shape across rows), and destructive. `itemLabel` appends
+ * the row's identity to `ariaLabel`, so this trigger is named "Row actions for Order #10002".
  * The trigger itself has resting, hover and focus states — tab to it to see the ring.
  */
 export const States: Story = {
@@ -291,7 +223,7 @@ export const InContextOrdersTable: Story = {
         { title: 'Customer', key: 'customer' },
         { title: 'Total', key: 'total', align: 'end' as const },
         { title: 'Status', key: 'status' },
-        { title: '', key: 'actions', sortable: false, align: 'end' as const },
+        { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, sortable: false, align: 'end' as const },
       ],
     }),
     template: `

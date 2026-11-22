@@ -5,15 +5,18 @@ import MpFormGrid from './MpFormGrid.vue'
 import MpFormSection from './MpFormSection.vue'
 import MpFormField from './MpFormField.vue'
 import MpStatusChip from './MpStatusChip.vue'
+import MpAlert from './MpAlert.vue'
+import { liquidskyDocs } from '@/stories/storyTemplate'
+import { overlayDocs } from '@/stories/decorators'
 
 const meta = {
   title: 'Molecules/MpFormDrawer',
   component: MpFormDrawer,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'liquidsky'],
   parameters: {
     docs: {
       description: {
-        component: `
+        component: liquidskyDocs('molecules-mpformdrawer') + `
 ### Overview
 \`MpFormDrawer\` is the right-side drawer used for every create/edit form (\`size="md"\`, 480px, by default). It's a
 floating rounded shell: \`--mp-component-dialog-radius\` (16px) on all corners, a 1px
@@ -37,9 +40,8 @@ the panel on open, Tab is trapped inside, Escape closes, and focus returns to th
   <v-text-field label="Name" />
   <v-select label="Source list" :items="lists" />
   <template #footer>
-    <v-spacer />
     <v-btn variant="text" @click="drawer = false">Cancel</v-btn>
-    <v-btn color="primary" @click="save">Save</v-btn>
+    <v-btn color="primary" variant="flat" @click="save">Save</v-btn>
   </template>
 </MpFormDrawer>
 \`\`\`
@@ -72,10 +74,9 @@ the panel on open, Tab is trapped inside, Escape closes, and focus returns to th
 The Filters drawer pattern (\`MpDataTableToolbar\`'s filter panel, see \`FilterDrawer\`) is a
 short-body variant of this component with two conventions:
 - **Subtitle:** default to "Changes apply immediately" so users know filters aren't staged.
-- **Selects:** every filter \`v-select\` is \`outlined\`, with \`placeholder="All"\` and
-  \`persistent-placeholder\` — this keeps the placeholder visible even when a value is cleared, so
-  a null filter reads as "All" rather than looking like an empty/broken field. Pair with
-  \`clearable\` and \`hide-details\`.
+- **Selects:** every filter \`v-select\` has \`placeholder="All"\` and \`clearable\`, so a cleared
+  filter reads as "All" rather than looking like an empty or broken field. The outlined look and
+  the always-visible placeholder are theme defaults — don't restate them on the tag.
 - **Footer:** \`Clear all\` goes in \`#footerStart\` and \`Done\` in \`#footer\`. The shell holds them
   at opposite ends itself — the hand-rolled \`<div class="d-flex align-center w-100">\` wrapper this
   pattern used to need was one of five copies of the shell's own footer layout (P6-5).
@@ -96,11 +97,12 @@ short-body variant of this component with two conventions:
     },
   },
   args: {
+    modelValue: true,
     title: 'Edit widget',
     subtitle: 'Revenue Share (Top 10)',
   },
   argTypes: {
-    guarded: { control: 'boolean', description: 'Routes Esc, the X and the scrim through the `close` emit instead of closing directly, so the host can confirm before discarding unsaved work. Off by default \u2014 turn it on for any drawer with a form in it.' },
+    guarded: { control: 'boolean', description: 'Routes Esc, the X and the scrim through the `close` emit instead of closing directly, so the host can confirm before discarding unsaved work. Off by default — turn it on for any drawer with a form in it.' },
     modelValue: { control: 'boolean', description: 'v-model — drawer visibility.' },
     title: { control: 'text', description: 'Required header title; also the dialog\'s accessible name (aria-labelledby).' },
     subtitle: { control: 'text', description: 'Optional supporting line under the title.' },
@@ -114,23 +116,35 @@ short-body variant of this component with two conventions:
     footerStart: { control: false, description: 'Slot — left-aligned footer zone (a "Back" step, a "Clear all"), held away from the primary pair by the shell.', table: { category: 'slots' } },
     close: { control: false, description: 'Event — emitted instead of closing when `guarded` is set.', table: { category: 'events' } },
   },
+} satisfies Meta<typeof MpFormDrawer>
+
+export default meta
+type Story = StoryObj<typeof meta>
+
+const components = { MpFormDrawer, MpFormGrid, MpFormSection, MpFormField, MpAlert, MpStatusChip }
+
+/**
+ * Open state that starts from the `modelValue` control and follows it, so a drawer can be closed
+ * and reopened from the Controls panel as well as from its trigger button.
+ */
+function useOpen(args: { modelValue?: boolean }) {
+  const open = ref(args.modelValue ?? false)
+  watch(() => args.modelValue, (value) => { open.value = value ?? false })
+  return open
+}
+
+/**
+ * Bound to the Controls panel on the Canvas tab (the docs page frames it, and the Controls table there cannot drive a frame). Stories that show a drawer open on load carry `overlayDocs()`,
+ * which gives each its own frame on the docs page; the grids below start closed behind buttons.
+ */
+export const Default: Story = {
+  parameters: overlayDocs(),
   render: (args) => ({
-    components: { MpFormDrawer, MpFormGrid, MpFormSection, MpFormField },
-    setup() {
-      const open = ref(true)
-
-      watch(
-        () => args.title,
-        () => {
-          open.value = true
-        },
-      )
-
-      return { args, open }
-    },
+    components,
+    setup: () => ({ args, open: useOpen(args) }),
     template: `
-      <section style="min-height:720px;background:rgb(var(--v-theme-background));padding:24px;">
-        <v-btn variant="outlined" prepend-icon="panel-right" @click="open = true">Open flyout</v-btn>
+      <div>
+        <v-btn variant="outlined" prepend-icon="panel-right" @click="open = true">Edit widget</v-btn>
         <MpFormDrawer v-bind="args" v-model="open">
           <MpFormGrid>
             <v-text-field label="Title" model-value="Revenue Share (Top 10)" />
@@ -139,324 +153,14 @@ short-body variant of this component with two conventions:
             <v-select label="Metric" :items="['Revenue', 'Orders', 'Customers']" model-value="Revenue" />
             <v-select label="Group by" :items="['Product', 'Channel', 'Segment']" model-value="Product" />
             <v-select label="Date range" :items="['Last 7 days', 'Last 30 days', 'Last 90 days']" model-value="Last 30 days" />
-            <v-switch label="Compare with previous period" color="primary" inset density="compact" hide-details :model-value="true" />
+            <v-switch label="Compare with previous period" inset :model-value="true" />
           </MpFormGrid>
           <template #footer>
-            <v-spacer />
             <v-btn variant="text" @click="open = false">Cancel</v-btn>
-            <v-btn color="primary" @click="open = false">Save changes</v-btn>
+            <v-btn color="primary" variant="flat" @click="open = false">Save changes</v-btn>
           </template>
         </MpFormDrawer>
-      </section>
-    `,
-  }),
-} satisfies Meta<typeof MpFormDrawer>
-
-export default meta
-type Story = StoryObj<typeof meta>
-
-export const WidgetEditFlyout: Story = {}
-
-export const DataSourceForm: Story = {
-  args: {
-    title: 'New data source',
-    subtitle: 'Connect a workspace data source',
-  },
-  render: (args) => ({
-    components: { MpFormDrawer, MpFormGrid, MpFormSection, MpFormField },
-    setup() {
-      const open = ref(true)
-      return { args, open }
-    },
-    template: `
-      <section style="min-height:720px;background:rgb(var(--v-theme-background));padding:24px;">
-        <v-btn color="primary" prepend-icon="database" @click="open = true">Add data source</v-btn>
-        <MpFormDrawer v-bind="args" v-model="open">
-          <MpFormGrid>
-            <v-text-field label="Name" placeholder="Marketing Cloud - production" />
-            <v-select label="Type" :items="['Marketing Cloud', 'Commerce Cloud', 'Service Cloud', 'Snowflake', 'BigQuery']" model-value="Marketing Cloud" />
-            <v-text-field label="Endpoint" placeholder="https://..." />
-            <v-text-field label="API key" type="password" placeholder="sk-..." />
-            <v-alert type="info" variant="tonal" density="compact">
-              Da Vinci can only read metadata until the connection is approved.
-            </v-alert>
-          </MpFormGrid>
-          <template #footer>
-            <v-spacer />
-            <v-btn variant="text" @click="open = false">Cancel</v-btn>
-            <v-btn color="primary" @click="open = false">Connect</v-btn>
-          </template>
-        </MpFormDrawer>
-      </section>
-    `,
-  }),
-}
-
-/**
- * A long grouped form: the body is the only scroll container, so the header and the pinned
- * footer stay visible while the fields scroll.
- */
-export const LongScrollingContent: Story = {
-  args: {
-    title: 'Edit product',
-    subtitle: 'SV-2200 Commuter Scooter',
-  },
-  render: (args) => ({
-    components: { MpFormDrawer, MpFormGrid, MpFormSection, MpFormField },
-    setup() {
-      const open = ref(true)
-      const sections = [
-        'General', 'Pricing', 'Inventory', 'Shipping', 'SEO', 'Attributes',
-      ]
-      return { args, open, sections }
-    },
-    template: `
-      <section style="min-height:720px;background:rgb(var(--v-theme-background));padding:24px;">
-        <v-btn variant="outlined" prepend-icon="panel-right" @click="open = true">Edit product</v-btn>
-        <MpFormDrawer v-bind="args" v-model="open">
-          <template v-for="section in sections" :key="section">
-            <MpFormSection :title="section" />
-            <MpFormGrid>
-              <v-text-field :label="section + ' field A'" />
-              <v-text-field :label="section + ' field B'" />
-              <v-select :label="section + ' option'" :items="['One', 'Two', 'Three']" />
-            </MpFormGrid>
-          </template>
-          <template #footer>
-            <v-spacer />
-            <v-btn variant="text" @click="open = false">Cancel</v-btn>
-            <v-btn color="primary" @click="open = false">Save changes</v-btn>
-          </template>
-        </MpFormDrawer>
-      </section>
-    `,
-  }),
-}
-
-/** `size="lg"` (640) — the wide stop, for a form that is genuinely two-column. */
-export const CustomWidth640: Story = {
-  args: {
-    title: 'Edit shipping rules',
-    subtitle: 'Zone matrix with per-carrier overrides',
-    size: 'lg',
-  },
-  render: (args) => ({
-    components: { MpFormDrawer, MpFormGrid, MpFormSection, MpFormField },
-    setup() {
-      const open = ref(true)
-      return { args, open }
-    },
-    template: `
-      <section style="min-height:720px;background:rgb(var(--v-theme-background));padding:24px;">
-        <v-btn variant="outlined" prepend-icon="panel-right" @click="open = true">Edit shipping rules</v-btn>
-        <MpFormDrawer v-bind="args" v-model="open">
-          <v-row dense>
-            <v-col cols="6"><v-text-field label="Zone name" model-value="Domestic" /></v-col>
-            <v-col cols="6"><v-select label="Carrier" :items="['Auspost', 'DHL', 'FedEx']" model-value="Auspost" /></v-col>
-            <v-col cols="6"><v-text-field label="Base rate" prefix="$" model-value="9.95" /></v-col>
-            <v-col cols="6"><v-text-field label="Per kg" prefix="$" model-value="1.20" /></v-col>
-            <v-col cols="6"><v-text-field label="Free over" prefix="$" model-value="150.00" /></v-col>
-            <v-col cols="6"><v-select label="Fallback zone" :items="['None', 'International']" model-value="None" /></v-col>
-          </v-row>
-          <template #footer>
-            <v-spacer />
-            <v-btn variant="text" @click="open = false">Cancel</v-btn>
-            <v-btn color="primary" @click="open = false">Save rules</v-btn>
-          </template>
-        </MpFormDrawer>
-      </section>
-    `,
-  }),
-}
-
-/**
- * Field-level validation errors visible on submit attempt: invalid fields get `error` + an
- * `error-messages` string, plus a summary alert at the top of the body. The footer stays
- * enabled so the user can retry immediately.
- */
-export const ValidationErrors: Story = {
-  args: {
-    title: 'New segment',
-    subtitle: 'Define who belongs',
-  },
-  render: (args) => ({
-    components: { MpFormDrawer, MpFormGrid, MpFormSection, MpFormField },
-    setup() {
-      const open = ref(true)
-      return { args, open }
-    },
-    template: `
-      <section style="min-height:720px;background:rgb(var(--v-theme-background));padding:24px;">
-        <v-btn variant="outlined" prepend-icon="panel-right" @click="open = true">New segment</v-btn>
-        <MpFormDrawer v-bind="args" v-model="open">
-          <v-alert type="error" variant="tonal" density="compact" class="mb-4">
-            2 fields need attention before this segment can be saved.
-          </v-alert>
-          <MpFormGrid>
-            <v-text-field
-              label="Name"
-              model-value=""
-              error
-              error-messages="Name is required"
-            />
-            <v-select label="Source list" :items="['Newsletter', 'VIP Circle', 'Win-Back']" model-value="Newsletter" />
-            <v-text-field
-              label="Min. lifetime spend"
-              prefix="$"
-              model-value="-50"
-              error
-              error-messages="Must be zero or greater"
-            />
-          </MpFormGrid>
-          <template #footer>
-            <v-spacer />
-            <v-btn variant="text" @click="open = false">Cancel</v-btn>
-            <v-btn color="primary" @click="open = false">Save</v-btn>
-          </template>
-        </MpFormDrawer>
-      </section>
-    `,
-  }),
-}
-
-/**
- * Submitting state: the primary action shows a spinner via \`loading\`, both footer buttons are
- * disabled, and the body fields are disabled so no further edits land mid-submit.
- */
-export const Submitting: Story = {
-  args: {
-    title: 'New data source',
-    subtitle: 'Connect a workspace data source',
-  },
-  render: (args) => ({
-    components: { MpFormDrawer, MpFormGrid, MpFormSection, MpFormField },
-    setup() {
-      const open = ref(true)
-      return { args, open }
-    },
-    template: `
-      <section style="min-height:720px;background:rgb(var(--v-theme-background));padding:24px;">
-        <v-btn color="primary" prepend-icon="database" @click="open = true">Add data source</v-btn>
-        <MpFormDrawer v-bind="args" v-model="open">
-          <MpFormGrid>
-            <v-text-field label="Name" model-value="Marketing Cloud - production" disabled />
-            <v-select label="Type" :items="['Marketing Cloud', 'Commerce Cloud', 'Service Cloud']" model-value="Marketing Cloud" disabled />
-            <v-text-field label="Endpoint" model-value="https://mc-prod.maropost.io" disabled />
-          </MpFormGrid>
-          <template #footer>
-            <v-spacer />
-            <v-btn variant="text" disabled @click="open = false">Cancel</v-btn>
-            <v-btn color="primary" loading disabled>Connecting…</v-btn>
-          </template>
-        </MpFormDrawer>
-      </section>
-    `,
-  }),
-}
-
-/**
- * The Filters drawer pattern used above data tables (\`MpDataTableToolbar\`): a short body of
- * outlined selects with \`placeholder="All"\` + \`persistent-placeholder\` so a cleared filter still
- * reads as "All" rather than an empty field, and \`Clear all\` held at the far left by
- * \`#footerStart\` against \`Done\` at the right. The wrapper div this used to need is gone — the
- * shell does that itself now.
- */
-export const FilterDrawer: Story = {
-  args: {
-    title: 'Filters',
-    subtitle: 'Changes apply immediately',
-  },
-  render: (args) => ({
-    components: { MpFormDrawer, MpFormGrid, MpFormSection, MpFormField },
-    setup() {
-      const open = ref(true)
-      return { args, open }
-    },
-    template: `
-      <section style="min-height:720px;background:rgb(var(--v-theme-background));padding:24px;">
-        <v-btn variant="outlined" prepend-icon="filter" @click="open = true">Filters</v-btn>
-        <MpFormDrawer v-bind="args" v-model="open">
-          <MpFormGrid>
-            <v-select
-              label="Order status"
-              :items="['Open', 'Pending', 'Completed', 'Cancelled']"
-              placeholder="All"
-              persistent-placeholder
-              clearable
-              hide-details
-              variant="outlined"
-              :model-value="null"
-            />
-            <v-select
-              label="Fulfillment"
-              :items="['Unfulfilled', 'Partial', 'Fulfilled']"
-              placeholder="All"
-              persistent-placeholder
-              clearable
-              hide-details
-              variant="outlined"
-              :model-value="null"
-            />
-            <v-select
-              label="Payment status"
-              :items="['Paid', 'Pending', 'Refunded']"
-              placeholder="All"
-              persistent-placeholder
-              clearable
-              hide-details
-              variant="outlined"
-              :model-value="null"
-            />
-          </MpFormGrid>
-          <template #footerStart>
-            <v-btn variant="text" @click="open = false">Clear all</v-btn>
-          </template>
-          <template #footer>
-            <v-btn variant="flat" color="primary" @click="open = false">Done</v-btn>
-          </template>
-        </MpFormDrawer>
-      </section>
-    `,
-  }),
-}
-
-/**
- * The drawer at a 375px viewport (canvas only — the docs page doesn't resize). The
- * \`@media (max-width: 640px)\` breakpoint clamps the panel to a full-bleed \`100vw\` sheet — the
- * 12px gutters and rounded corners drop out so the panel fills the viewport edge-to-edge instead
- * of the 480px panel overflowing the screen, as it used to before the clamp was added.
- */
-export const Mobile375: Story = {
-  args: {
-    title: 'New segment',
-    subtitle: 'Define who belongs',
-  },
-  globals: {
-    viewport: { value: 'mobile375', isRotated: false },
-  },
-  render: (args) => ({
-    components: { MpFormDrawer, MpFormGrid, MpFormSection, MpFormField },
-    setup() {
-      const open = ref(true)
-      return { args, open }
-    },
-    template: `
-      <section style="min-height:720px;background:rgb(var(--v-theme-background));padding:16px;">
-        <v-btn variant="outlined" prepend-icon="panel-right" @click="open = true">New segment</v-btn>
-        <MpFormDrawer v-bind="args" v-model="open">
-          <MpFormGrid>
-            <v-text-field label="Name" placeholder="VIP repeat buyers" />
-            <v-select label="Source list" :items="['Newsletter', 'VIP Circle', 'Win-Back']" model-value="Newsletter" />
-            <v-select label="Match" :items="['All conditions', 'Any condition']" model-value="All conditions" />
-            <v-text-field label="Min. lifetime spend" prefix="$" model-value="500" />
-          </MpFormGrid>
-          <template #footer>
-            <v-spacer />
-            <v-btn variant="text" @click="open = false">Cancel</v-btn>
-            <v-btn color="primary" @click="open = false">Save</v-btn>
-          </template>
-        </MpFormDrawer>
-      </section>
+      </div>
     `,
   }),
 }
@@ -469,25 +173,27 @@ export const Mobile375: Story = {
  */
 export const Variants: Story = {
   render: () => ({
-    components: { MpFormDrawer, MpFormGrid, MpFormSection, MpFormField },
-    data: () => ({ which: 'footer' as string }),
+    components,
+    data: () => ({ which: '' as string }),
     template: `
       <div class="d-flex ga-2 flex-wrap">
-        <v-btn variant="outlined" class="text-none" @click="which = 'footer'">With footer</v-btn>
-        <v-btn variant="outlined" class="text-none" @click="which = 'nofooter'">No footer</v-btn>
+        <v-btn variant="outlined" @click="which = 'footer'">With footer</v-btn>
+        <v-btn variant="outlined" @click="which = 'nofooter'">No footer</v-btn>
 
         <MpFormDrawer :model-value="which === 'footer'" title="New segment" subtitle="Contacts matching these rules" @update:model-value="which = ''">
-          <v-text-field label="Segment name" variant="outlined" density="comfortable" hide-details />
-          <v-select label="Match" :items="['All rules','Any rule']" variant="outlined" density="comfortable" hide-details />
+          <v-text-field label="Segment name" />
+          <v-select label="Match" :items="['All rules', 'Any rule']" />
           <template #footer>
-            <v-btn variant="text" class="text-none" @click="which = ''">Cancel</v-btn>
-            <v-btn color="primary" variant="flat" class="text-none" @click="which = ''">Create segment</v-btn>
+            <v-btn variant="text" @click="which = ''">Cancel</v-btn>
+            <v-btn color="primary" variant="flat" @click="which = ''">Create segment</v-btn>
           </template>
         </MpFormDrawer>
 
         <MpFormDrawer :model-value="which === 'nofooter'" title="Contact details" subtitle="Read only" @update:model-value="which = ''">
-          <div><div class="text-caption text-medium-emphasis">Email</div><div>james.anderson@example.com</div></div>
-          <div><div class="text-caption text-medium-emphasis">Lifetime value</div><div>$4,180.00</div></div>
+          <dl class="mp-label-value">
+            <div><dt>Email</dt><dd>james.anderson@example.com</dd></div>
+            <div><dt>Lifetime value</dt><dd>$4,180.00</dd></div>
+          </dl>
         </MpFormDrawer>
       </div>
     `,
@@ -499,18 +205,19 @@ export const Variants: Story = {
  * The width ramp — `component.drawer.width.*`, the same `sm | md | lg` vocabulary every other
  * sized component uses. It replaced a free-form `width` number that had reached eight distinct
  * values between 420 and 680; `md` is the default and is what every previously-unset drawer
- * rendered at. Below `layout.breakpointCompact` the drawer goes full-bleed and drops its gutters,
- * radius and border whatever the size — see `Mobile375`.
+ * rendered at. `lg` is for a form that is genuinely two-column (`MpFormGrid :cols="2"`). Below
+ * `layout.breakpointCompact` the drawer goes full-bleed and drops its gutters, radius and border
+ * whatever the size — see `Mobile375`.
  */
 export const Sizes: Story = {
   render: () => ({
-    components: { MpFormDrawer, MpFormGrid, MpFormSection, MpFormField },
+    components,
     data: () => ({ which: '' as string }),
     template: `
       <div class="d-flex ga-2 flex-wrap">
-        <v-btn variant="outlined" class="text-none" @click="which = 'sm'">sm — 440</v-btn>
-        <v-btn variant="outlined" class="text-none" @click="which = 'md'">md — 480</v-btn>
-        <v-btn variant="outlined" class="text-none" @click="which = 'lg'">lg — 640</v-btn>
+        <v-btn variant="outlined" @click="which = 'sm'">sm — 440</v-btn>
+        <v-btn variant="outlined" @click="which = 'md'">md — 480</v-btn>
+        <v-btn variant="outlined" @click="which = 'lg'">lg — 640</v-btn>
 
         <MpFormDrawer :model-value="which === 'sm'" size="sm" title="sm — 440px" subtitle="A single-column form with a few fields" @update:model-value="which = ''">
           <MpFormGrid>
@@ -528,9 +235,11 @@ export const Sizes: Story = {
 
         <MpFormDrawer :model-value="which === 'lg'" size="lg" title="lg — 640px" subtitle="For genuinely two-column forms" @update:model-value="which = ''">
           <MpFormGrid :cols="2">
-            <v-text-field label="First name" />
-            <v-text-field label="Last name" />
-            <v-text-field label="Email" type="email" class="mp-form-grid__full" />
+            <v-text-field label="Zone name" model-value="Domestic" />
+            <v-select label="Carrier" :items="['Auspost', 'DHL', 'FedEx']" model-value="Auspost" />
+            <v-text-field label="Base rate" prefix="$" model-value="9.95" />
+            <v-text-field label="Per kg" prefix="$" model-value="1.20" />
+            <v-select label="Fallback zone" class="mp-form-grid__full" :items="['None', 'International']" model-value="None" />
           </MpFormGrid>
         </MpFormDrawer>
       </div>
@@ -540,55 +249,138 @@ export const Sizes: Story = {
 }
 
 /**
- * Resting, validating, submitting, and a body long enough to scroll — header and footer stay
- * pinned while only the body moves. `guarded` routes Esc/X/scrim through the `close` emit so a
- * host can confirm before discarding unsaved work.
+ * Resting, validation errors (a summary `MpAlert` above the fields, each invalid field with its
+ * own `error-messages`), submitting (fields and Cancel disabled, the primary action `loading`),
+ * a body long enough to scroll (header and footer stay pinned and cast an edge shadow), and
+ * `guarded`, which routes Esc, the X and the scrim through the `close` emit so a host can
+ * confirm before discarding unsaved work.
  */
 export const States: Story = {
   render: () => ({
-    components: { MpFormDrawer, MpFormGrid, MpFormSection, MpFormField },
-    data: () => ({ which: '' as string, rows: Array.from({ length: 14 }, (_, i) => i + 1) }),
+    components,
+    data: () => ({ which: '' as string, guardNote: '', rows: Array.from({ length: 14 }, (_, i) => i + 1) }),
     template: `
       <div class="d-flex ga-2 flex-wrap">
-        <v-btn variant="outlined" class="text-none" @click="which = 'rest'">Resting</v-btn>
-        <v-btn variant="outlined" class="text-none" @click="which = 'error'">Validation error</v-btn>
-        <v-btn variant="outlined" class="text-none" @click="which = 'busy'">Submitting</v-btn>
-        <v-btn variant="outlined" class="text-none" @click="which = 'scroll'">Scrolling body</v-btn>
+        <v-btn variant="outlined" @click="which = 'rest'">Resting</v-btn>
+        <v-btn variant="outlined" @click="which = 'error'">Validation errors</v-btn>
+        <v-btn variant="outlined" @click="which = 'busy'">Submitting</v-btn>
+        <v-btn variant="outlined" @click="which = 'scroll'">Scrolling body</v-btn>
+        <v-btn variant="outlined" @click="which = 'guarded'">Guarded</v-btn>
 
         <MpFormDrawer :model-value="which === 'rest'" title="New segment" @update:model-value="which = ''">
-          <v-text-field label="Segment name" variant="outlined" density="comfortable" hide-details />
-          <template #footer><v-btn color="primary" variant="flat" class="text-none" @click="which = ''">Create</v-btn></template>
-        </MpFormDrawer>
-
-        <MpFormDrawer :model-value="which === 'error'" title="New segment" @update:model-value="which = ''">
-          <v-text-field label="Segment name" variant="outlined" density="comfortable" :error-messages="['A segment with this name already exists.']" />
-          <v-select label="Match" :items="['All rules','Any rule']" variant="outlined" density="comfortable" :error-messages="['Choose how rules combine.']" />
+          <v-text-field label="Segment name" />
           <template #footer>
-            <v-btn variant="text" class="text-none" @click="which = ''">Cancel</v-btn>
-            <v-btn color="primary" variant="flat" class="text-none" disabled>Create segment</v-btn>
+            <v-btn color="primary" variant="flat" @click="which = ''">Create</v-btn>
           </template>
         </MpFormDrawer>
 
-        <MpFormDrawer :model-value="which === 'busy'" title="New segment" @update:model-value="which = ''">
-          <v-text-field label="Segment name" model-value="VIP — Repeat Buyers" variant="outlined" density="comfortable" hide-details disabled />
+        <MpFormDrawer :model-value="which === 'error'" title="New segment" subtitle="Define who belongs" @update:model-value="which = ''">
+          <MpAlert tone="error">2 fields need attention before this segment can be saved.</MpAlert>
+          <MpFormGrid>
+            <v-text-field label="Segment name *" model-value="" error-messages="A segment name is required." />
+            <v-select label="Source list" :items="['Newsletter', 'VIP Circle', 'Win-Back']" model-value="Newsletter" />
+            <v-text-field label="Min. lifetime spend" prefix="$" model-value="-50" error-messages="Must be zero or greater." />
+          </MpFormGrid>
           <template #footer>
-            <v-btn variant="text" class="text-none" disabled>Cancel</v-btn>
-            <v-btn color="primary" variant="flat" class="text-none" loading>Creating…</v-btn>
+            <v-btn variant="text" @click="which = ''">Cancel</v-btn>
+            <v-btn color="primary" variant="flat" @click="which = ''">Create segment</v-btn>
           </template>
         </MpFormDrawer>
 
-        <MpFormDrawer :model-value="which === 'scroll'" title="Filter orders" subtitle="Changes apply immediately" @update:model-value="which = ''">
-          <v-text-field v-for="n in rows" :key="n" :label="'Field ' + n" variant="outlined" density="comfortable" hide-details />
+        <MpFormDrawer :model-value="which === 'busy'" title="New data source" subtitle="Connect a workspace data source" @update:model-value="which = ''">
+          <MpFormGrid>
+            <v-text-field label="Name" model-value="Marketing Cloud - production" disabled />
+            <v-select label="Type" :items="['Marketing Cloud', 'Commerce Cloud', 'Service Cloud']" model-value="Marketing Cloud" disabled />
+            <v-text-field label="Endpoint" model-value="https://mc-prod.maropost.io" disabled />
+          </MpFormGrid>
           <template #footer>
-            <v-btn variant="text" class="text-none" @click="which = ''">Clear all</v-btn>
-            <v-spacer />
-            <v-btn color="primary" variant="flat" class="text-none" @click="which = ''">Done</v-btn>
+            <v-btn variant="text" disabled>Cancel</v-btn>
+            <v-btn color="primary" variant="flat" loading>Connecting…</v-btn>
+          </template>
+        </MpFormDrawer>
+
+        <MpFormDrawer :model-value="which === 'scroll'" title="Edit product" subtitle="SV-2200 Commuter Scooter" @update:model-value="which = ''">
+          <v-text-field v-for="n in rows" :key="n" :label="'Field ' + n" />
+          <template #footer>
+            <v-btn variant="text" @click="which = ''">Cancel</v-btn>
+            <v-btn color="primary" variant="flat" @click="which = ''">Save changes</v-btn>
+          </template>
+        </MpFormDrawer>
+
+        <MpFormDrawer
+          :model-value="which === 'guarded'"
+          guarded
+          title="Edit segment"
+          subtitle="You have unsaved changes"
+          @close="guardNote = 'close was emitted: the host decides what happens next'"
+        >
+          <p class="ma-0">Press Esc, the close button or the scrim: the drawer emits <code>close</code> and stays open.</p>
+          <p v-if="guardNote" class="ma-0 text-medium-emphasis">{{ guardNote }}</p>
+          <template #footer>
+            <v-btn variant="text" @click="which = ''; guardNote = ''">Discard</v-btn>
+            <v-btn color="primary" variant="flat" @click="which = ''; guardNote = ''">Save</v-btn>
           </template>
         </MpFormDrawer>
       </div>
     `,
   }),
   args: {} as never,
+}
+
+// ── Scenarios ───────────────────────────────────────────────────────────────
+
+/**
+ * The Filters drawer pattern used above data tables (`MpDataTableToolbar`): a short body of
+ * selects with `placeholder="All"` and `clearable`, so a cleared filter still reads as "All"
+ * rather than an empty field, and `Clear all` held at the far left by `#footerStart` against
+ * `Done` at the right.
+ */
+export const FilterDrawer: Story = {
+  args: {
+    title: 'Filters',
+    subtitle: 'Changes apply immediately',
+  },
+  parameters: overlayDocs(),
+  render: (args) => ({
+    components,
+    setup: () => ({ args, open: useOpen(args) }),
+    template: `
+      <div>
+        <v-btn variant="outlined" prepend-icon="filter" @click="open = true">Filters</v-btn>
+        <MpFormDrawer v-bind="args" v-model="open">
+          <MpFormGrid>
+            <v-select
+              label="Order status"
+              :items="['Open', 'Pending', 'Completed', 'Cancelled']"
+              placeholder="All"
+              clearable
+              :model-value="null"
+            />
+            <v-select
+              label="Fulfillment"
+              :items="['Unfulfilled', 'Partial', 'Fulfilled']"
+              placeholder="All"
+              clearable
+              :model-value="null"
+            />
+            <v-select
+              label="Payment status"
+              :items="['Paid', 'Pending', 'Refunded']"
+              placeholder="All"
+              clearable
+              :model-value="null"
+            />
+          </MpFormGrid>
+          <template #footerStart>
+            <v-btn variant="text" @click="open = false">Clear all</v-btn>
+          </template>
+          <template #footer>
+            <v-btn variant="flat" color="primary" @click="open = false">Done</v-btn>
+          </template>
+        </MpFormDrawer>
+      </div>
+    `,
+  }),
 }
 
 /**
@@ -607,19 +399,19 @@ export const TwoColumnWithTrailingRow: Story = {
     subtitle: 'Denominations and delivery',
     size: 'lg',
   },
+  parameters: overlayDocs('720px'),
   render: (args) => ({
-    components: { MpFormDrawer, MpFormGrid, MpFormSection, MpFormField },
+    components,
     setup() {
-      const open = ref(true)
       const denominations = ref([
         { id: 1, label: 'Small', amount: 25 },
         { id: 2, label: 'Medium', amount: 50 },
         { id: 3, label: 'Large', amount: 100 },
       ])
-      return { args, open, denominations }
+      return { args, open: useOpen(args), denominations }
     },
     template: `
-      <section style="min-height:720px;background:rgb(var(--v-theme-background));padding:24px;">
+      <div>
         <v-btn variant="outlined" prepend-icon="panel-right" @click="open = true">Open gift card form</v-btn>
         <MpFormDrawer v-bind="args" v-model="open">
           <MpFormSection title="General" />
@@ -647,7 +439,7 @@ export const TwoColumnWithTrailingRow: Story = {
               </MpFormGrid>
               <v-btn icon="trash-2" variant="text" size="small" density="comfortable" :aria-label="'Remove ' + d.label" />
             </div>
-            <v-btn variant="text" class="text-none mp-form-grid__full align-self-start" prepend-icon="plus">Add denomination</v-btn>
+            <v-btn variant="text" class="mp-form-grid__full align-self-start" prepend-icon="plus">Add denomination</v-btn>
           </MpFormGrid>
 
           <template #footer>
@@ -655,25 +447,22 @@ export const TwoColumnWithTrailingRow: Story = {
             <v-btn color="primary" variant="flat" @click="open = false">Save gift card</v-btn>
           </template>
         </MpFormDrawer>
-      </section>
+      </div>
     `,
   }),
 }
 
-// ── Composed example ────────────────────────────────────────────────────────
-
 /**
- * **In context.** A real create-segment form. Nothing in this body sets a margin or a
- * `mb-*` utility: since Phase 4 the drawer's body is a flex column on
- * `component.dialog.gap`, the same rhythm `MpDialog` uses, so a drawer form and a modal form
- * are spaced identically. That closes the Phase 3 follow-up "drawer and dialog form bodies
- * still space their fields ad hoc".
+ * **In context.** A real create-segment form, opened from the page's primary action (it starts
+ * closed: press **New segment**). Nothing in this body sets a margin or a `mb-*` utility: the
+ * drawer's body is a flex column on `component.dialog.gap`, the same rhythm `MpDialog` uses, so
+ * a drawer form and a modal form are spaced identically.
  */
 export const InContextCreateSegment: Story = {
   render: () => ({
-    components: { MpFormDrawer, MpFormGrid, MpFormSection, MpFormField, MpStatusChip },
+    components,
     data: () => ({
-      open: true,
+      open: false,
       name: 'VIP — Repeat Buyers',
       match: 'All rules',
       rules: [
@@ -683,40 +472,76 @@ export const InContextCreateSegment: Story = {
     }),
     template: `
       <div>
-        <v-btn variant="flat" color="primary" class="text-none" prepend-icon="plus" @click="open = true">New segment</v-btn>
+        <v-btn variant="flat" color="primary" prepend-icon="plus" @click="open = true">New segment</v-btn>
         <MpFormDrawer v-model="open" title="New segment" subtitle="Contacts matching these rules, refreshed hourly">
-          <v-text-field v-model="name" label="Segment name" variant="outlined" density="comfortable" hide-details />
+          <v-text-field v-model="name" label="Segment name" />
+          <v-select v-model="match" label="Contacts must match" :items="['All rules', 'Any rule']" />
 
-          <v-select v-model="match" label="Contacts must match" :items="['All rules','Any rule']" variant="outlined" density="comfortable" hide-details />
-
-          <div>
-            <div class="text-caption text-medium-emphasis mb-2">Rules</div>
+          <MpFormField label="Rules">
             <div class="d-flex flex-column ga-2">
-              <v-card v-for="(r, i) in rules" :key="i" flat border rounded="lg" class="pa-3 d-flex align-center ga-2">
+              <v-card v-for="(r, i) in rules" :key="i" flat border rounded="lg" class="mp-card-inset mp-card-inset--compact d-flex align-center ga-2">
                 <span class="text-body-2 font-weight-medium">{{ r.field }}</span>
                 <span class="text-body-2 text-medium-emphasis">{{ r.op }}</span>
                 <span class="text-body-2 font-weight-medium">{{ r.value }}</span>
                 <v-spacer />
-                <v-btn icon="x" variant="text" size="x-small" aria-label="Remove rule" />
+                <v-btn icon="x" variant="text" size="x-small" :aria-label="'Remove rule: ' + r.field" />
               </v-card>
+              <v-btn variant="text" size="small" class="align-self-start" prepend-icon="plus">Add rule</v-btn>
             </div>
-            <v-btn variant="text" size="small" class="text-none mt-2" prepend-icon="plus">Add rule</v-btn>
-          </div>
+          </MpFormField>
 
-          <v-alert type="info" variant="tonal" density="compact" class="text-body-2">
+          <MpAlert tone="info">
             <span class="d-inline-flex align-center ga-2">
               About <strong>1,284</strong> contacts match right now
               <MpStatusChip status="Active" type="contact" size="sm" />
             </span>
-          </v-alert>
+          </MpAlert>
 
           <template #footer>
-            <v-btn variant="text" class="text-none" @click="open = false">Cancel</v-btn>
-            <v-btn color="primary" variant="flat" class="text-none" @click="open = false">Create segment</v-btn>
+            <v-btn variant="text" @click="open = false">Cancel</v-btn>
+            <v-btn color="primary" variant="flat" @click="open = false">Create segment</v-btn>
           </template>
         </MpFormDrawer>
       </div>
     `,
   }),
   args: {} as never,
+}
+
+/**
+ * The drawer at a 375px viewport (canvas only; a docs frame is as wide as the page). The
+ * `@media (max-width: 640px)` breakpoint clamps the panel to a full-bleed `100vw` sheet — the
+ * 12px gutters and rounded corners drop out so the panel fills the viewport edge-to-edge instead
+ * of the 480px panel overflowing the screen.
+ */
+export const Mobile375: Story = {
+  args: {
+    title: 'New segment',
+    subtitle: 'Define who belongs',
+  },
+  globals: {
+    viewport: { value: 'mobile375', isRotated: false },
+  },
+  parameters: overlayDocs(),
+  render: (args) => ({
+    components,
+    setup: () => ({ args, open: useOpen(args) }),
+    template: `
+      <div>
+        <v-btn variant="outlined" prepend-icon="panel-right" @click="open = true">New segment</v-btn>
+        <MpFormDrawer v-bind="args" v-model="open">
+          <MpFormGrid>
+            <v-text-field label="Name" placeholder="VIP repeat buyers" />
+            <v-select label="Source list" :items="['Newsletter', 'VIP Circle', 'Win-Back']" model-value="Newsletter" />
+            <v-select label="Match" :items="['All conditions', 'Any condition']" model-value="All conditions" />
+            <v-text-field label="Min. lifetime spend" prefix="$" model-value="500" />
+          </MpFormGrid>
+          <template #footer>
+            <v-btn variant="text" @click="open = false">Cancel</v-btn>
+            <v-btn color="primary" variant="flat" @click="open = false">Save</v-btn>
+          </template>
+        </MpFormDrawer>
+      </div>
+    `,
+  }),
 }

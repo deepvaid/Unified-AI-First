@@ -36,7 +36,7 @@ const rows = computed(() =>
 // progressively so the table never side-scrolls on a phone. The occurrence
 // child rows render the same visible columns.
 const headers = [
-  { title: '', key: 'data-table-expand', sortable: false, width: 48 },
+  { title: 'Details', key: 'data-table-expand', headerProps: { class: 'mp-th-sr' }, sortable: false, width: 48 },
   { title: 'Name', key: 'name', sortable: true },
   { title: 'Sent', key: 'sent', align: 'end' as const, hideBelow: 'md' as const },
   { title: 'Delivered', key: 'delivered', align: 'end' as const, hideBelow: 'lg' as const },

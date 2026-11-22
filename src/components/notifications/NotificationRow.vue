@@ -33,19 +33,20 @@ const emit = defineEmits<{
       </div>
       <div class="notification-row__time">{{ props.notification.time }}</div>
     </div>
-    <template #trailing>
-      <div class="notification-row__trailing">
-        <v-btn
-          v-if="props.notification.downloadable"
-          icon="download"
-          variant="text"
-          size="x-small"
-          class="text-medium-emphasis"
-          :aria-label="`Download — ${props.notification.title}`"
-          @click.stop="emit('download')"
-        />
-        <span v-if="!props.notification.read" class="notification-row__dot" aria-hidden="true" />
-      </div>
+    <!-- #actions, not #trailing: the row itself is a link/button, and a button
+         nested inside it is invalid (WCAG W-10). MpListRow keeps it beside. -->
+    <template v-if="props.notification.downloadable" #actions>
+      <v-btn
+        icon="download"
+        variant="text"
+        size="x-small"
+        class="text-medium-emphasis"
+        :aria-label="`Download — ${props.notification.title}`"
+        @click.stop="emit('download')"
+      />
+    </template>
+    <template v-if="!props.notification.read" #trailing>
+      <span class="notification-row__dot" aria-hidden="true" />
     </template>
   </MpListRow>
 </template>
@@ -88,12 +89,6 @@ const emit = defineEmits<{
   margin-top: var(--mp-space-2);
   font-size: var(--mp-fontSize-12);
   color: var(--text-muted);
-}
-
-.notification-row__trailing {
-  display: flex;
-  align-items: center;
-  gap: var(--mp-space-6);
 }
 
 .notification-row__dot {

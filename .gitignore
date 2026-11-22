@@ -11,6 +11,7 @@ node_modules
 dist
 dist-ssr
 dist-storybook
+dist-storybook-smoke
 storybook-static
 *.local
 .env
@@ -39,6 +40,9 @@ maropost-screenshots/uat/
 
 # Ad-hoc Playwright CLI inspection artifacts (scratch screenshots/snapshots)
 output/playwright/
+
+# LiquidSky comparison (npm run qa:compare) — findings about the build stay off the public repo
+output/qa-compare/
 .playwright-cli/
 
 # Editor directories and files

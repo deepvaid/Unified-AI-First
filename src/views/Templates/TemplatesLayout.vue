@@ -15,7 +15,7 @@ import {
 
 // Shell of the page-archetype gallery. Same three moves as SettingsLayout — the
 // route's railShell meta collapses the global AppSidebar, MpSectionRail becomes
-// the visible navigation, and <main> is the single scroller — plus a spec aside
+// the visible navigation, and the content column is the single scroller — plus a spec aside
 // and a fill mode for the two children that host a standalone wizard/builder.
 
 const route = useRoute()
@@ -93,12 +93,13 @@ const specYielded = computed(() => specOpen.value && !!spec.value && !roomForSpe
       </template>
     </MpSectionRail>
 
-    <main
+    <!-- A div, not <main>: v-main is already the page's main landmark (WCAG W-18). -->
+    <div
       class="templates-shell__content"
       :class="{ 'templates-shell__content--fill': fill }"
     >
       <router-view />
-    </main>
+    </div>
 
     <TemplateSpecPanel
       v-if="specVisible && spec"

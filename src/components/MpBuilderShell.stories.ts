@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
+import { ref } from 'vue'
 import MpBuilderShell from './MpBuilderShell.vue'
+import MpSegmentedControl from './MpSegmentedControl.vue'
 import MpWizardSteps from './MpWizardSteps.vue'
 
 const meta = {
@@ -91,25 +93,41 @@ export const Default: Story = {
   }),
 }
 
-export const DirtyAutosave: Story = {
-  args: {
-    title: 'Spring promo',
-    subtitle: 'Landing page',
-    dirty: true,
-    persistenceMode: 'autosave',
-    standalone: true,
-  },
-  render: Default.render,
-}
-
-export const LiveDraft: Story = {
-  args: {
-    title: 'Dawn theme',
-    dirty: true,
-    persistenceMode: 'live',
-    standalone: true,
-  },
-  render: Default.render,
+/**
+ * The status chip is the shell's one state. Each `persistenceMode` words its clean and dirty
+ * half differently; `statusLabel` replaces the copy and `hideStatus` removes the chip. The
+ * specimens are the toolbar alone: no panels, and a plain label in the `#title` slot.
+ */
+export const States: Story = {
+  args: { title: '', standalone: true },
+  render: () => ({
+    components: { MpBuilderShell },
+    setup: () => ({
+      specimens: [
+        { label: 'explicit · clean', props: { persistenceMode: 'explicit', dirty: false }, action: 'Save' },
+        { label: 'explicit · dirty', props: { persistenceMode: 'explicit', dirty: true }, action: 'Save' },
+        { label: 'autosave · clean', props: { persistenceMode: 'autosave', dirty: false }, action: 'Done' },
+        { label: 'autosave · dirty', props: { persistenceMode: 'autosave', dirty: true }, action: 'Done' },
+        { label: 'live · clean', props: { persistenceMode: 'live', dirty: false }, action: 'Publish' },
+        { label: 'live · dirty', props: { persistenceMode: 'live', dirty: true }, action: 'Publish' },
+        { label: 'statusLabel override', props: { dirty: true, statusLabel: 'Publishing…' }, action: 'Publish' },
+        { label: 'hideStatus', props: { hideStatus: true }, action: 'Save' },
+      ],
+    }),
+    template: `
+      <div class="d-flex flex-column ga-6">
+        <MpBuilderShell v-for="s in specimens" :key="s.label" :title="s.label" v-bind="s.props" standalone>
+          <template #title>
+            <div class="text-subtitle-2 font-weight-bold">{{ s.label }}</div>
+          </template>
+          <div class="pa-4 text-body-2 text-medium-emphasis">Canvas</div>
+          <template #actions>
+            <v-btn color="primary" variant="flat" class="text-none">{{ s.action }}</v-btn>
+          </template>
+        </MpBuilderShell>
+      </div>
+    `,
+  }),
 }
 
 export const WithStepsRow: Story = {
@@ -149,16 +167,20 @@ export const WithCenterToolbar: Story = {
     rightWidth: 320,
   },
   render: (args) => ({
-    components: { MpBuilderShell },
-    setup: () => ({ args }),
+    components: { MpBuilderShell, MpSegmentedControl },
+    setup() {
+      const device = ref<string | null>('desktop')
+      const devices = [
+        { value: 'desktop', icon: 'monitor', label: 'Desktop preview' },
+        { value: 'mobile', icon: 'smartphone', label: 'Mobile preview' },
+      ]
+      return { args, device, devices }
+    },
     template: `
       <div style="height:480px">
         <MpBuilderShell v-bind="args">
           <template #toolbar-center>
-            <v-btn-toggle density="compact" mandatory model-value="desktop">
-              <v-btn value="desktop" size="small" icon="monitor" aria-label="Desktop preview" />
-              <v-btn value="mobile" size="small" icon="smartphone" aria-label="Mobile preview" />
-            </v-btn-toggle>
+            <MpSegmentedControl v-model="device" :items="devices" size="sm" ariaLabel="Preview device" />
           </template>
           <div class="pa-8 text-body-2">Storefront preview</div>
           <template #right>

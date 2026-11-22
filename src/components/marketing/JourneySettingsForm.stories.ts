@@ -1,11 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import { ref } from 'vue'
 import JourneySettingsForm, { type JourneySettingsValue } from './JourneySettingsForm.vue'
+import { constrain } from '@/stories/decorators'
 
 const meta = {
   title: 'Product/Marketing/Journeys/JourneySettingsForm',
   component: JourneySettingsForm,
   tags: ['autodocs'],
+  decorators: [constrain('dialog')],
   parameters: {
     docs: {
       description: {
@@ -30,7 +32,7 @@ form. Duplicate names error inline instead of production's vanishing toast.
       return { args, value, valid }
     },
     template: `
-      <div style="max-width: 640px;">
+      <div>
         <JourneySettingsForm v-model="value" :existing-names="args.existingNames" @update:valid="valid = $event" />
         <p class="text-caption text-medium-emphasis mt-4">valid: {{ valid }}</p>
       </div>

@@ -136,7 +136,7 @@ export const Variants: Story = {
  * is a single token (`component.field.groupGap`, 16) rather than a ramp. The column count is a
  * structural choice, so it is `cols`, not `size`.
  */
-export const Sizes: Story = {
+export const ContainerWidths: Story = {
   render: () => ({
     components: { MpFormGrid },
     template: `

@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>BKM on Commerce Cloud</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Inconsolata:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column, summary first, evidence tables next, then the filterable gap matrix as the working surface. */
+:root {
+  --bg: #f5f7fb; --surface: #ffffff; --ink: #0a2240; --text: #1d2c42; --muted: #5a6a81; --line: #d9e0ea;
+  --accent: #0a2240; --accent-soft: #e7edf6; --on-accent: #ffffff;
+  --have: #17693f; --have-bg: #e2f3e9; --have-solid: #2e9a63;
+  --partial: #8a5700; --partial-bg: #fcefd3; --partial-solid: #d99a1c;
+  --wip: #4f35c9; --wip-bg: #ebe6ff; --wip-solid: #6d52ff;
+  --missing: #a8231b; --missing-bg: #fce6e4; --missing-solid: #d2463c;
+  --unverified: #4f5f76; --unverified-bg: #e8ecf2; --unverified-solid: #98a5b7;
+  --font: "Figtree", "Helvetica Neue", Arial, sans-serif;
+  --mono: "Inconsolata", ui-monospace, "SF Mono", Menlo, monospace;
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px; --s7: 56px;
+  --r1: 6px; --r2: 10px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #071426; --surface: #0d1e36; --ink: #f1f5fb; --text: #d3dcea; --muted: #93a3ba; --line: #20344f;
+  --accent: #a9c3ee; --accent-soft: #14294a; --on-accent: #071426;
+  --have: #84d9a8; --have-bg: #10331f; --have-solid: #3fae76;
+  --partial: #f0c56f; --partial-bg: #3a2c0b; --partial-solid: #d99a1c;
+  --wip: #bcacff; --wip-bg: #251d52; --wip-solid: #8a73ff;
+  --missing: #ffa39b; --missing-bg: #43191a; --missing-solid: #e0584e;
+  --unverified: #aab7ca; --unverified-bg: #1a2940; --unverified-solid: #6f7f96;
+  color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #071426; --surface: #0d1e36; --ink: #f1f5fb; --text: #d3dcea; --muted: #93a3ba; --line: #20344f;
+  --accent: #a9c3ee; --accent-soft: #14294a; --on-accent: #071426;
+  --have: #84d9a8; --have-bg: #10331f; --have-solid: #3fae76;
+  --partial: #f0c56f; --partial-bg: #3a2c0b; --partial-solid: #d99a1c;
+  --wip: #bcacff; --wip-bg: #251d52; --wip-solid: #8a73ff;
+  --missing: #ffa39b; --missing-bg: #43191a; --missing-solid: #e0584e;
+  --unverified: #aab7ca; --unverified-bg: #1a2940; --unverified-solid: #6f7f96;
+  color-scheme: dark }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 16px; line-height: 1.55; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-block: var(--s7); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: var(--s7); }
+.wrap > * { min-width: 0; }
+h1, h2, h3 { color: var(--ink); margin: 0; text-wrap: balance; font-weight: 600; }
+h1 { font-size: clamp(30px, 5vw, 44px); line-height: 1.08; letter-spacing: -0.01em; max-width: 18ch; }
+h2 { font-size: 24px; line-height: 1.2; }
+h3 { font-size: 16px; line-height: 1.3; }
+p { margin: 0; max-width: 68ch; }
+a { color: var(--accent); }
+code { font-family: var(--mono); font-size: 0.93em; background: var(--accent-soft); color: var(--ink); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+.label { font-family: var(--mono); font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.muted { color: var(--muted); }
+section { display: grid; gap: var(--s5); }
+section > * { min-width: 0; }
+.head { display: grid; gap: var(--s2); }
+.hero { display: grid; gap: var(--s4); }
+.hero .lede { font-size: 19px; line-height: 1.5; color: var(--text); max-width: 60ch; }
+.note { border-left: 3px solid var(--accent); padding: var(--s2) var(--s4); background: var(--accent-soft); color: var(--text); border-radius: 0 var(--r1) var(--r1) 0; font-size: 15px; max-width: 78ch; }
+
+/* status distribution */
+.dist { display: grid; gap: var(--s4); }
+.dist-row { display: grid; grid-template-columns: 96px 1fr 40px; gap: var(--s3); align-items: center; }
+.dist-row .name { font-weight: 600; color: var(--ink); }
+.dist-row .tot { font-family: var(--mono); text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+.bar { display: flex; height: 22px; border-radius: var(--r1); overflow: hidden; background: var(--line); }
+.bar span { display: block; height: 100%; }
+.seg-Have { background: var(--have-solid); } .seg-Partial { background: var(--partial-solid); } .seg-WIP { background: var(--wip-solid); }
+.seg-Missing { background: var(--missing-solid); } .seg-Unverified { background: var(--unverified-solid); }
+.legend { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s5); font-size: 14px; }
+.legend li { display: flex; align-items: center; gap: var(--s2); }
+.legend b { font-family: var(--mono); font-weight: 500; font-variant-numeric: tabular-nums; color: var(--ink); }
+.dot { width: 10px; height: 10px; border-radius: 2px; flex: none; }
+ul, ol { margin: 0; padding: 0; list-style: none; }
+
+/* blockers */
+.blockers { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: var(--s5) var(--s6); }
+.blockers li { display: grid; gap: var(--s1); border-top: 1px solid var(--line); padding-top: var(--s3); }
+.blockers p { font-size: 15px; }
+.ids { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+
+/* tables */
+.scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--r2); background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 14.5px; }
+th { text-align: left; font-family: var(--mono); font-weight: 500; font-size: 12.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); padding: var(--s3) var(--s4); border-bottom: 1px solid var(--line); white-space: nowrap; background: var(--surface); }
+td { padding: var(--s3) var(--s4); border-bottom: 1px solid var(--line); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+td.id { font-family: var(--mono); color: var(--muted); white-space: nowrap; }
+td.req { font-weight: 600; color: var(--ink); min-width: 150px; }
+.pill { display: inline-block; font-size: 12.5px; font-weight: 600; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
+.pill-Have { color: var(--have); background: var(--have-bg); } .pill-Partial { color: var(--partial); background: var(--partial-bg); }
+.pill-WIP { color: var(--wip); background: var(--wip-bg); } .pill-Missing { color: var(--missing); background: var(--missing-bg); }
+.pill-Unverified { color: var(--unverified); background: var(--unverified-bg); }
+.size { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); gap: var(--s5); align-items: start; }
+.two > * { min-width: 0; display: grid; gap: var(--s3); }
+
+/* facts */
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(210px, 100%), 1fr)); gap: var(--s4) var(--s6); margin: 0; }
+.facts div { display: grid; gap: 2px; border-top: 1px solid var(--line); padding-top: var(--s3); }
+.facts dt { font-family: var(--mono); font-size: 12.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.facts dd { margin: 0; color: var(--ink); font-weight: 500; }
+
+/* section sources */
+.sources { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap: var(--s5); }
+.sources > div { display: grid; gap: var(--s3); align-content: start; border-top: 1px solid var(--line); padding-top: var(--s3); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips li { font-size: 13.5px; padding: 3px 9px; border: 1px solid var(--line); border-radius: var(--r1); background: var(--surface); }
+
+/* filters */
+.filters { display: grid; gap: var(--s3); }
+.frow { display: flex; flex-wrap: wrap; gap: var(--s2); align-items: center; }
+.frow .label { min-width: 62px; }
+.fbtn { font: inherit; font-size: 14px; font-weight: 500; color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 5px 13px; cursor: pointer; }
+.fbtn:hover { border-color: var(--accent); }
+.fbtn[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.fbtn:focus-visible, #q:focus-visible, .reset:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+#q { font: inherit; font-size: 14.5px; color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r1); padding: 7px 12px; width: min(100%, 300px); }
+.count { font-family: var(--mono); font-size: 13.5px; color: var(--muted); }
+.reset { font: inherit; font-size: 14px; color: var(--accent); background: none; border: 0; padding: 0; text-decoration: underline; cursor: pointer; }
+#matrix { min-width: 940px; }
+.empty { padding: var(--s6) var(--s4); text-align: center; color: var(--muted); }
+
+/* phases */
+.phases { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: var(--s5); align-items: start; }
+.phase { border: 1px solid var(--line); border-radius: var(--r2); background: var(--surface); padding: var(--s5); display: grid; gap: var(--s4); min-width: 0; }
+.phase h3 { font-size: 18px; }
+.phase .grp { display: grid; gap: var(--s2); }
+.phase .items { display: grid; gap: 4px; font-size: 14.5px; }
+.phase .items li { display: grid; grid-template-columns: 36px 1fr auto; gap: var(--s2); align-items: baseline; }
+.phase .items .i { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+.verify { display: grid; gap: var(--s2); font-size: 15px; }
+.verify li { display: grid; grid-template-columns: 36px 1fr; gap: var(--s2); border-top: 1px solid var(--line); padding-top: var(--s2); }
+.verify .i { font-family: var(--mono); font-size: 13px; color: var(--muted); padding-top: 2px; }
+.method { display: grid; gap: var(--s2); font-size: 15px; color: var(--text); }
+.method li { padding-left: var(--s4); position: relative; max-width: 80ch; }
+.method li::before { content: ""; position: absolute; left: 0; top: 0.7em; width: 6px; height: 1px; background: var(--muted); }
+@media (max-width: 560px) { .dist-row { grid-template-columns: 72px 1fr 28px; } .hero .lede { font-size: 17px; } }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header class="hero">
+    <span class="label">Reference store 01 · crawled 13 Nov 2026</span>
+    <h1>What it takes to run BKM Health on Commerce Cloud</h1>
+    <p class="lede">BKM sells 8 supplements, mostly on subscription, to 33 countries from a Shopify store at bkm.health. This page lists what that store needs from a theme and from the platform, and how much of it Commerce Cloud has today.</p>
+    <p class="note">Commerce Cloud statuses come from the UAT capture in the design-system repo (Sept to Oct 2026), not the live product. The capture holds real section and file names but stand-in contents, so <strong>Missing</strong> means "not found in the capture". The last section lists what engineering should confirm.</p>
+  </header>
+
+  <section aria-labelledby="h-sum">
+    <div class="head"><span class="label">Summary</span><h2 id="h-sum"><span id="n-rows"></span> requirements, by status</h2></div>
+    <div class="dist" id="dist"></div>
+    <ul class="legend" id="legend"></ul>
+  </section>
+
+  <section aria-labelledby="h-block">
+    <div class="head"><span class="label">Launch blockers</span><h2 id="h-block">Eight things stand between BKM and a launch</h2></div>
+    <ul class="blockers">
+      <li><h3>Subscriptions</h3><p>Plans, prepaid supplies, recurring billing and a self-service portal. Nothing exists, and it is BKM's core revenue model.</p><span class="ids">P01 to P05, T38</span></li>
+      <li><h3>Selling across markets</h3><p>Per-market currency and prices, market URLs, shipping zones and rates, VAT, and European payment methods.</p><span class="ids">P06, P07, P09 to P11, T06</span></li>
+      <li><h3>Structured product content</h3><p>Subtitle, chips, ingredients, supplement facts and FAQs have nowhere to live on a product. Several product-page sections read from it.</p><span class="ids">P13</span></li>
+      <li><h3>A template per product, and sections in code</h3><p>Every BKM product page is its own composition; Commerce Cloud has one template per type. Whether a developer can add a coded section to the builder is unconfirmed.</p><span class="ids">T11, T12</span></li>
+      <li><h3>A handful of universal sections</h3><p>Video hero, tabbed collections, accordion, comparison table, announcement bar.</p><span class="ids">T01, T22, T24, T30, T43, T48</span></li>
+      <li><h3>Reviews</h3><p>Only a rating snippet exists. BKM shows stars on every card and a review list on each product.</p><span class="ids">P17, T35</span></li>
+      <li><h3>Consent, pixels and a place for scripts</h3><p>Needed to trade in the EU and to keep BKM's ad attribution working.</p><span class="ids">T07, T13, P21, P22</span></li>
+      <li><h3>Migration</h3><p>Live subscriptions and their stored payment methods are the risky part.</p><span class="ids">P27</span></li>
+    </ul>
+    <p class="muted">Already covered: catalog basics, collections, promotions, customer accounts, blog, search, policy pages and most plain content sections. Email, SMS, popups, chat and helpdesk can come from Marketing Cloud and Service Cloud.</p>
+  </section>
+
+  <section aria-labelledby="h-store">
+    <div class="head"><span class="label">Store profile</span><h2 id="h-store">What BKM is running</h2></div>
+    <dl class="facts">
+      <div><dt>Platform</dt><dd>Shopify, Palo Alto 5.6 theme plus about 20 custom-coded sections</dd></div>
+      <div><dt>Catalog</dt><dd>8 products, 14 variants, 12 collections</dd></div>
+      <div><dt>Content</dt><dd>10 pages, 5 blogs, 6 articles</dd></div>
+      <div><dt>Markets</dt><dd>Sweden (SEK), UK (GBP), Poland; English only</dd></div>
+      <div><dt>Ships to</dt><dd>33 countries: EU, UK, NO, CH, IS, US, UAE</dd></div>
+      <div><dt>Offers</dt><dd>Free shipping over 549 kr, 30-day money-back guarantee</dd></div>
+    </dl>
+    <div class="two">
+      <div>
+        <h3>Purchase options on one product page</h3>
+        <div class="scroll"><table>
+          <thead><tr><th>Plan</th><th>Ships</th><th class="num">Units</th><th class="num">Discount</th><th class="num">Electrolytes</th></tr></thead>
+          <tbody>
+            <tr><td>3-month supply</td><td>Every 3 months</td><td class="num">3</td><td class="num">30%</td><td class="num">586 kr</td></tr>
+            <tr><td>Monthly</td><td>Every month</td><td class="num">1</td><td class="num">20%</td><td class="num">223 kr</td></tr>
+            <tr><td>One-time</td><td>Once</td><td class="num">1</td><td class="num">none</td><td class="num">279 kr</td></tr>
+          </tbody>
+        </table></div>
+        <p class="muted" style="font-size:14.5px">Run by Recharge. The account icon leads to Recharge's portal, which signs customers in with a code sent by SMS and email. Tranquil also carries a pre-order plan.</p>
+      </div>
+      <div>
+        <h3>Prices are set per market, not converted</h3>
+        <div class="scroll"><table>
+          <thead><tr><th>Market</th><th>URL</th><th>Currency</th><th class="num">Tranquil</th></tr></thead>
+          <tbody>
+            <tr><td>Sweden</td><td><code>/</code></td><td>SEK</td><td class="num">399 to 419</td></tr>
+            <tr><td>United Kingdom</td><td><code>/en-gb</code></td><td>GBP</td><td class="num">£33.99</td></tr>
+            <tr><td>Poland</td><td><code>/en-pl</code></td><td>PLN (inferred)</td><td class="num">159.00</td></tr>
+          </tbody>
+        </table></div>
+        <p class="muted" style="font-size:14.5px">Payment methods shown: cards, Apple Pay, Google Pay, Klarna, iDEAL, Bancontact, BLIK, MobilePay, MB WAY, Bizum, Satispay.</p>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-apps">
+    <div class="head"><span class="label">App stack</span><h2 id="h-apps">Eleven apps, and where each job would go</h2></div>
+    <div class="scroll"><table>
+      <thead><tr><th>App</th><th>What it does for BKM</th><th>Commerce Cloud route</th></tr></thead>
+      <tbody>
+        <tr><td class="req">Recharge</td><td>Subscription plans, recurring billing, customer portal and login</td><td>Build in platform</td></tr>
+        <tr><td class="req">Klaviyo</td><td>Email and SMS, onsite signup forms; also review requests, star ratings and the review list</td><td>Marketing Cloud for messaging; reviews are a build, or a third party at launch</td></tr>
+        <tr><td class="req">Gorgias</td><td>Live chat, help centre, proactive chat campaigns, tickets</td><td>Service Cloud and Chatbot</td></tr>
+        <tr><td class="req">Instant</td><td>Visual page builder, used for two landing pages</td><td>Store Builder</td></tr>
+        <tr><td class="req">Restock Rocket</td><td>Back-in-stock alerts, and probably the pre-order plan on Tranquil (inferred)</td><td>Marketing Cloud journey on stock change; pre-orders in platform</td></tr>
+        <tr><td class="req">Transcy</td><td>Currency and language switcher</td><td>Build in theme, on top of markets</td></tr>
+        <tr><td class="req">Cookiebot</td><td>Cookie consent</td><td>Third party, through a script surface</td></tr>
+        <tr><td class="req">Triple Whale</td><td>Ad attribution pixel</td><td>Third party, through a pixel surface</td></tr>
+        <tr><td class="req">Meta and TikTok pixels</td><td>Ad tracking (TikTok inferred from pixel config)</td><td>Pixel surface</td></tr>
+        <tr><td class="req">Microsoft Clarity</td><td>Session recording and heatmaps</td><td>Pixel surface</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section aria-labelledby="h-src">
+    <div class="head"><span class="label">Theme</span><h2 id="h-src">About half of the storefront was written by an agency</h2>
+      <p>If Commerce Cloud lets a developer add a coded section with settings (T12), most of the middle column can be built per brand the same way. If it cannot, each one becomes a native section to build.</p></div>
+    <div class="sources">
+      <div><h3>Stock theme sections (23)</h3><ul class="chips"><li>Announcement bar</li><li>Header</li><li>Footer</li><li>Video hero</li><li>Image with text</li><li>Tabbed collections</li><li>Overlapping images</li><li>Divider</li><li>Text</li><li>Icons row</li><li>Collection grid</li><li>Product buy box</li><li>Accordions</li><li>Related products</li><li>Page hero</li><li>Blog posts</li><li>Article</li><li>Recommended posts</li><li>Contact form</li><li>Mosaic</li><li>Cart</li><li>Search</li><li>Page</li></ul></div>
+      <div><h3>Custom-coded for BKM (about 20)</h3><ul class="chips"><li>Logo slider</li><li>Benefit pillars</li><li>Dosing steps</li><li>Comparison table</li><li>Ingredient science</li><li>Ingredient cards</li><li>How to use</li><li>Athlete grid</li><li>Sticky add-to-cart bar</li><li>USP marquee</li><li>Persona stats</li><li>Curated reviews grid</li><li>Quote grid</li><li>Instagram feed</li><li>Landing promo</li><li>Landing buy box</li><li>Embedded tool</li><li>Button variant picker</li><li>Delivery estimator</li><li>Add-on offer</li></ul></div>
+      <div><h3>Injected by apps</h3><ul class="chips"><li>Purchase options (Recharge)</li><li>Rating stars (Klaviyo)</li><li>Review list (Klaviyo)</li><li>Chat bubble (Gorgias)</li><li>Cookie banner (Cookiebot)</li><li>Landing page body (Instant)</li><li>Currency switcher (Transcy)</li></ul></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-mx">
+    <div class="head"><span class="label">Gap matrix</span><h2 id="h-mx">Every requirement against the capture</h2>
+      <p class="muted">Size: S days, M weeks, L a quarter-scale project, XL a multi-quarter programme. Rough, from the outside.</p></div>
+    <div class="filters">
+      <div class="frow" role="group" aria-label="Track"><span class="label">Track</span><span id="f-track"></span></div>
+      <div class="frow" role="group" aria-label="Status"><span class="label">Status</span><span id="f-status"></span></div>
+      <div class="frow" role="group" aria-label="Phase"><span class="label">Phase</span><span id="f-phase"></span></div>
+      <div class="frow"><label class="label" for="q">Find</label><input id="q" type="search" placeholder="subscription, hero, Klaviyo" autocomplete="off"><span class="count" id="count" aria-live="polite"></span><button class="reset" id="reset" type="button">Reset filters</button></div>
+    </div>
+    <div class="scroll"><table id="matrix">
+      <thead><tr><th>ID</th><th>Requirement</th><th>BKM today</th><th>Status</th><th>Commerce Cloud capture</th><th>Route</th><th>Size</th><th>Phase</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table><div class="empty" id="empty" hidden>No requirements match these filters.</div></div>
+  </section>
+
+  <section aria-labelledby="h-ph">
+    <div class="head"><span class="label">Build list</span><h2 id="h-ph">What to build, in three phases</h2>
+      <p class="muted">Only rows that need work are listed. Rows already covered are left out.</p></div>
+    <div class="phases" id="phases"></div>
+  </section>
+
+  <section aria-labelledby="h-ver">
+    <div class="head"><span class="label">Open questions</span><h2 id="h-ver">Verify with engineering</h2>
+      <p class="muted">The capture cannot answer these. Each one changes a status above. Every Missing row is also worth a quick confirmation, Phase 0 first.</p></div>
+    <ul class="verify" id="verify"></ul>
+  </section>
+
+  <section aria-labelledby="h-me">
+    <div class="head"><span class="label">Method</span><h2 id="h-me">How this was gathered, and what was not seen</h2></div>
+    <ul class="method">
+      <li>Public pages only, read-only requests. No login, nothing added to the cart, no checkout started.</li>
+      <li>Read: home, two collections, the Electrolytes and Tranquil product pages (Swedish and UK), cart, search, blog and two articles, all 10 content pages, policies, account login.</li>
+      <li>Not seen: checkout, the logged-in account and subscription portal, transactional emails, the other six product pages, mobile layouts beyond the navigation drawer.</li>
+      <li>The full written version, with the catalog table, design tokens, section order per template and migration notes, is in the repo at <code>docs/store-builder/bkm-health-requirements.md</code>.</li>
+    </ul>
+  </section>
+</main>
+
+<script>
+const ROWS = [{"id": "T01", "track": "Theme", "area": "Global chrome", "req": "Announcement bar", "bkm": "Navy strip with three certifications", "status": "Missing", "mcc": "Not in the Lumos section list", "route": "Theme", "size": "S", "phase": 0}, {"id": "T02", "track": "Theme", "area": "Global chrome", "req": "Header over hero", "bkm": "Transparent sticky header, centred logo, account and cart icons", "status": "Partial", "mcc": "`header` section exists; transparent and sticky options not captured", "route": "Theme", "size": "S", "phase": 0}, {"id": "T03", "track": "Theme", "area": "Global chrome", "req": "Dropdown navigation", "bkm": "One dropdown with 7 links; drawer menu on mobile", "status": "Partial", "mcc": "Menus are flat lists with no nesting; `nav-drawer.js` exists", "route": "Platform", "size": "M", "phase": 0}, {"id": "T04", "track": "Theme", "area": "Global chrome", "req": "Cart drawer", "bkm": "Slide-in cart: free-shipping progress, pair-with upsell, terms checkbox, express checkout", "status": "Missing", "mcc": "Cart page only (`cart` section, `cart.js`)", "route": "Theme", "size": "L", "phase": 1}, {"id": "T05", "track": "Theme", "area": "Global chrome", "req": "Footer", "bkm": "Two link columns, newsletter signup, Instagram, payment icons", "status": "Have", "mcc": "`footer`, `newsletter`, `social-icons`, payment mark images", "route": "Configure", "size": "S", "phase": 0}, {"id": "T06", "track": "Theme", "area": "Global chrome", "req": "Country and currency selector", "bkm": "Transcy switcher slot in the footer; three market URLs", "status": "Missing", "mcc": "No selector section or snippet", "route": "Theme", "size": "M", "phase": 0}, {"id": "T07", "track": "Theme", "area": "Global chrome", "req": "Cookie consent banner", "bkm": "Cookiebot banner", "status": "Missing", "mcc": "Privacy & Consent settings page is a placeholder", "route": "Third party", "size": "M", "phase": 0}, {"id": "T08", "track": "Theme", "area": "Global chrome", "req": "Chat bubble and help centre", "bkm": "Gorgias chat, help centre and proactive campaigns", "status": "Partial", "mcc": "Store editor has a Chatbot page; Service Cloud handles tickets", "route": "Maropost cloud", "size": "M", "phase": 1}, {"id": "T09", "track": "Theme", "area": "Global chrome", "req": "Motion", "bkm": "Scroll-reveal on sections, second image on card hover", "status": "Unverified", "mcc": "Not visible in file names", "route": "Theme", "size": "S", "phase": 1}, {"id": "T10", "track": "Theme", "area": "Global chrome", "req": "Search", "bkm": "No search in the header; results page with sort, availability and price filters", "status": "Have", "mcc": "`search` layout and section, `autocomplete.js`, `filters.js`, `sorting.js`", "route": "Configure", "size": "S", "phase": 0}, {"id": "T11", "track": "Theme", "area": "Builder", "req": "Template per product", "bkm": "Electrolytes and Tranquil use different section stacks; landing pages have their own", "status": "Missing", "mcc": "One `default.json` per template type; the builder dropdown shows only Default", "route": "Platform", "size": "L", "phase": 0}, {"id": "T12", "track": "Theme", "area": "Builder", "req": "Custom sections in code", "bkm": "About 20 section types were custom-coded by BKM's agency (`shopdev_*`, `bkm-*`)", "status": "Unverified", "mcc": "Code editor exposes `sections/*.html` + `.json`; unknown whether a new file shows up in Add Section", "route": "Platform", "size": "L", "phase": 0}, {"id": "T13", "track": "Theme", "area": "Builder", "req": "Script and embed surface", "bkm": "Chat, consent, pixels and review widgets load as app embeds", "status": "Missing", "mcc": "No app-block or app-embed concept in the theme", "route": "Platform", "size": "M", "phase": 0}, {"id": "T21", "track": "Theme", "area": "Builder", "req": "Theme settings", "bkm": "Figtree + Inconsolata, navy scheme, 8px buttons, badge colours", "status": "Partial", "mcc": "Logo, Theme Colors, Typography, Buttons, Product Card groups; font list and badge colours not captured", "route": "Theme", "size": "S", "phase": 0}, {"id": "T14", "track": "Theme", "area": "Page templates", "req": "Landing pages with commerce", "bkm": "Five landing pages: two built in Instant, one with its own buy box and sticky shop-now bar, two embedded tools", "status": "Partial", "mcc": "Store Pages (Default / Full width) and Marketing landing pages; product sections on pages not captured", "route": "Theme", "size": "M", "phase": 1}, {"id": "T15", "track": "Theme", "area": "Page templates", "req": "Embedded tool pages", "bkm": "Sleep-debt and breathwork pages are full-page custom embeds", "status": "Partial", "mcc": "No custom HTML section; the code editor can edit templates", "route": "Custom code", "size": "S", "phase": 1}, {"id": "T16", "track": "Theme", "area": "Page templates", "req": "Blog", "bkm": "5 blogs; index with hero and paginated grid; article with author, date, share, recommended posts", "status": "Partial", "mcc": "`blog` and `blogpost` sections, Blogs admin; share and recommended posts not captured", "route": "Theme", "size": "S", "phase": 1}, {"id": "T17", "track": "Theme", "area": "Page templates", "req": "Contact page", "bkm": "Form with a topic dropdown, plus FAQ accordion", "status": "Missing", "mcc": "No contact-form section; forms live in Marketing (acquisition forms)", "route": "Maropost cloud", "size": "M", "phase": 1}, {"id": "T18", "track": "Theme", "area": "Page templates", "req": "Policy pages", "bkm": "Refund, terms, privacy", "status": "Have", "mcc": "`policy` template and section", "route": "Configure", "size": "S", "phase": 0}, {"id": "T19", "track": "Theme", "area": "Page templates", "req": "Collection page", "bkm": "Heading, optional icons row, 3-column grid; no filters or sort", "status": "Have", "mcc": "`collection` section; filter and sorting scripts exist", "route": "Configure", "size": "S", "phase": 0}, {"id": "T20", "track": "Theme", "area": "Page templates", "req": "Account pages", "bkm": "Login, register, order history", "status": "Have", "mcc": "Templates for login, signup, orders, order, profile, addresses", "route": "Configure", "size": "S", "phase": 0}, {"id": "T22", "track": "Theme", "area": "Content sections", "req": "Video hero", "bkm": "Autoplay background video with headline", "status": "WIP", "mcc": "`hero-video` under `sections_wip`", "route": "Theme", "size": "M", "phase": 0}, {"id": "T23", "track": "Theme", "area": "Content sections", "req": "Image with text", "bkm": "Split media and copy with a button", "status": "Partial", "mcc": "`image-banner-with-cta`, `multi-column-horizontal-items`; no split layout by name", "route": "Theme", "size": "S", "phase": 0}, {"id": "T24", "track": "Theme", "area": "Content sections", "req": "Tabbed collections", "bkm": "Tabs switch between product carousels", "status": "Partial", "mcc": "`featured-collections-slider`, `featured-products`; no tabs", "route": "Theme", "size": "M", "phase": 0}, {"id": "T25", "track": "Theme", "area": "Content sections", "req": "Logo slider", "bkm": "Auto-scrolling partner logos", "status": "Partial", "mcc": "`brands` is a static logo row; Swiper is bundled", "route": "Theme", "size": "S", "phase": 1}, {"id": "T26", "track": "Theme", "area": "Content sections", "req": "Overlapping images story", "bkm": "Two layered images with copy and Buy now", "status": "Missing", "mcc": "No equivalent", "route": "Theme", "size": "S", "phase": 1}, {"id": "T27", "track": "Theme", "area": "Content sections", "req": "Page hero banner", "bkm": "Image band with page title (About, Contact, Blog)", "status": "Have", "mcc": "`image-banner`, `hero`", "route": "Configure", "size": "S", "phase": 0}, {"id": "T28", "track": "Theme", "area": "Content sections", "req": "Text and divider", "bkm": "Rich text blocks, thin dividers", "status": "Partial", "mcc": "`rich-content`; no divider or spacer", "route": "Theme", "size": "S", "phase": 0}, {"id": "T29", "track": "Theme", "area": "Content sections", "req": "Icons row", "bkm": "USP icons above the subscription grid", "status": "Have", "mcc": "`benefits`, `info-card` with icon", "route": "Configure", "size": "S", "phase": 0}, {"id": "T30", "track": "Theme", "area": "Content sections", "req": "FAQ accordion", "bkm": "On product pages and Contact", "status": "Missing", "mcc": "No accordion or collapsible section or block", "route": "Theme", "size": "S", "phase": 0}, {"id": "T31", "track": "Theme", "area": "Content sections", "req": "Mosaic and quote grid", "bkm": "Ambassadors page: mosaic header, cards with photo, role and quote", "status": "Partial", "mcc": "`multi-column`, `testimonial-card`, `category-grid`", "route": "Theme", "size": "S", "phase": 1}, {"id": "T32", "track": "Theme", "area": "Content sections", "req": "Instagram feed", "bkm": "Nine embedded posts", "status": "Missing", "mcc": "No social feed section", "route": "Third party", "size": "S", "phase": 2}, {"id": "T33", "track": "Theme", "area": "Content sections", "req": "Newsletter signup", "bkm": "Footer form", "status": "Have", "mcc": "`newsletter` section and block", "route": "Configure", "size": "S", "phase": 0}, {"id": "T34", "track": "Theme", "area": "Product page", "req": "Media gallery", "bkm": "Thumbnail strip, zoom lightbox, badge over the image", "status": "Partial", "mcc": "`product` section, `magnify.js`; gallery options not captured", "route": "Theme", "size": "M", "phase": 0}, {"id": "T35", "track": "Theme", "area": "Product page", "req": "Rating stars", "bkm": "On cards and in the buy box, with the average", "status": "Partial", "mcc": "`rating` snippet and Show rating option; no review data behind it", "route": "Theme", "size": "S", "phase": 0}, {"id": "T36", "track": "Theme", "area": "Product page", "req": "Subtitle, badges, chips", "bkm": "Tagline, NEW and Try for 30 nights badges, No added sugar and Vegan chips", "status": "Partial", "mcc": "`product-badge` snippet; needs product content fields", "route": "Theme", "size": "S", "phase": 0}, {"id": "T37", "track": "Theme", "area": "Product page", "req": "Button variant picker", "bkm": "Flavour, or Can / Bag, as labelled buttons", "status": "Unverified", "mcc": "`product.js` exists; picker style not captured", "route": "Theme", "size": "S", "phase": 0}, {"id": "T38", "track": "Theme", "area": "Product page", "req": "Purchase options", "bkm": "Three cards: 3-month supply, monthly, one-time, with savings badges and a benefit list", "status": "Missing", "mcc": "No subscription widget", "route": "Theme", "size": "M", "phase": 0}, {"id": "T39", "track": "Theme", "area": "Product page", "req": "Add to cart and express pay", "bkm": "Add to cart; wallets at checkout", "status": "Partial", "mcc": "Add to cart exists; express buttons on the product page not captured", "route": "Theme", "size": "S", "phase": 0}, {"id": "T40", "track": "Theme", "area": "Product page", "req": "Payment icons", "bkm": "16 method icons under the button", "status": "Partial", "mcc": "Visa, Mastercard, PayPal, Afterpay, Zip images in assets", "route": "Theme", "size": "S", "phase": 1}, {"id": "T41", "track": "Theme", "area": "Product page", "req": "Delivery estimator", "bkm": "Country picker (33), same-day cut-off, 3 to 7 day estimate, duties note", "status": "Missing", "mcc": "No equivalent", "route": "Theme", "size": "M", "phase": 1}, {"id": "T42", "track": "Theme", "area": "Product page", "req": "Guarantee callout", "bkm": "30-day money-back block", "status": "Have", "mcc": "`info-banner-block`, `info-card`", "route": "Configure", "size": "S", "phase": 0}, {"id": "T43", "track": "Theme", "area": "Product page", "req": "Buy-box accordions", "bkm": "What is it, How to use, Key ingredients, Why subscribe, Supplement Facts", "status": "Missing", "mcc": "No accordion block", "route": "Theme", "size": "S", "phase": 0}, {"id": "T44", "track": "Theme", "area": "Product page", "req": "Add-on offer", "bkm": "Pair with Nasal Strips at a special price, added from the product page", "status": "Partial", "mcc": "`recommendation` block; no discounted add-on", "route": "Theme", "size": "M", "phase": 1}, {"id": "T45", "track": "Theme", "area": "Product page", "req": "Sticky add-to-cart bar", "bkm": "Appears on scroll with title, USPs and button", "status": "Missing", "mcc": "No equivalent", "route": "Theme", "size": "S", "phase": 1}, {"id": "T46", "track": "Theme", "area": "Product page", "req": "USP marquee", "bkm": "Scrolling certification strip", "status": "Missing", "mcc": "No equivalent", "route": "Theme", "size": "S", "phase": 1}, {"id": "T47", "track": "Theme", "area": "Product page", "req": "Benefit pillars", "bkm": "Five benefit cards", "status": "Have", "mcc": "`benefits`, `multi-column`", "route": "Configure", "size": "S", "phase": 0}, {"id": "T48", "track": "Theme", "area": "Product page", "req": "Comparison table", "bkm": "Us vs them, in two versions", "status": "Missing", "mcc": "No table section", "route": "Theme", "size": "M", "phase": 0}, {"id": "T49", "track": "Theme", "area": "Product page", "req": "Ingredient cards", "bkm": "11 active ingredients rendered from structured data", "status": "Missing", "mcc": "No structured product content to drive it", "route": "Theme", "size": "M", "phase": 0}, {"id": "T50", "track": "Theme", "area": "Product page", "req": "Steps and persona stats", "bkm": "How to use steps, dosing ritual, Which sleeper are you", "status": "Partial", "mcc": "`multi-column-horizontal-items`, `hero-stat`, `info-list`", "route": "Theme", "size": "S", "phase": 1}, {"id": "T51", "track": "Theme", "area": "Product page", "req": "Athlete grid", "bkm": "Athletes with sport and title", "status": "Partial", "mcc": "`multi-column`, `testimonial-card`", "route": "Theme", "size": "S", "phase": 1}, {"id": "T52", "track": "Theme", "area": "Product page", "req": "Curated reviews grid", "bkm": "Hand-picked quotes with the product's average", "status": "Partial", "mcc": "`testimonial-card`; no link to review data", "route": "Theme", "size": "S", "phase": 1}, {"id": "T53", "track": "Theme", "area": "Product page", "req": "Related products", "bkm": "You may also like", "status": "Have", "mcc": "`recommendation` block, `featured-products`", "route": "Configure", "size": "S", "phase": 0}, {"id": "T54", "track": "Theme", "area": "Product page", "req": "Product card", "bkm": "Second image on hover, subtitle, From price, stars", "status": "Partial", "mcc": "`product-card`, `price`, `rating`, `product-badge`; hover image and subtitle not captured", "route": "Theme", "size": "S", "phase": 0}, {"id": "P01", "track": "Platform", "area": "Subscriptions", "req": "Subscription plans", "bkm": "Recharge: monthly (20% off) and 3-month prepaid of 3 units (30% off), per variant", "status": "Missing", "mcc": "No selling-plan concept in products or promotions", "route": "Platform", "size": "XL", "phase": 0}, {"id": "P02", "track": "Platform", "area": "Subscriptions", "req": "Recurring billing", "bkm": "Stored payment method, scheduled renewals, retries on failure", "status": "Missing", "mcc": "Maropay mentions saved cards only as a migration risk", "route": "Platform", "size": "XL", "phase": 0}, {"id": "P03", "track": "Platform", "area": "Subscriptions", "req": "Subscriber portal", "bkm": "Passwordless login by SMS and email code; skip, cancel, manage", "status": "Missing", "mcc": "Account templates exist; no subscription management", "route": "Platform", "size": "L", "phase": 0}, {"id": "P04", "track": "Platform", "area": "Subscriptions", "req": "Subscription pricing rules", "bkm": "Free shipping on the 3-month plan; a subscription collection", "status": "Missing", "mcc": "Promotions have no plan condition", "route": "Platform", "size": "M", "phase": 0}, {"id": "P05", "track": "Platform", "area": "Subscriptions", "req": "Subscription messages", "bkm": "Renewal, failed payment and cancellation emails", "status": "Partial", "mcc": "Marketing Cloud journeys can send; no subscription triggers", "route": "Maropost cloud", "size": "M", "phase": 0}, {"id": "P06", "track": "Platform", "area": "Markets", "req": "Market currencies and prices", "bkm": "SEK, GBP and a Polish price set per market, not converted", "status": "Partial", "mcc": "Price lists adjust by channel and audience; no currency per market", "route": "Platform", "size": "XL", "phase": 0}, {"id": "P07", "track": "Platform", "area": "Markets", "req": "Market URLs", "bkm": "`/en-gb`, `/en-pl`, hreflang tags, country detection", "status": "Missing", "mcc": "No market or locale routing", "route": "Platform", "size": "L", "phase": 0}, {"id": "P08", "track": "Platform", "area": "Markets", "req": "Languages", "bkm": "English only", "status": "Have", "mcc": "Lumos ships locale files (en, ru, uk)", "route": "Configure", "size": "S", "phase": 2}, {"id": "P09", "track": "Platform", "area": "Markets", "req": "Shipping zones and rates", "bkm": "33 countries, free over 549 kr, same-day dispatch", "status": "Missing", "mcc": "Rates are hard-coded in the prototype; no zones or rates screen captured", "route": "Platform", "size": "L", "phase": 0}, {"id": "P10", "track": "Platform", "area": "Markets", "req": "VAT per country", "bkm": "VAT-inclusive prices; a 25% tax collection", "status": "Partial", "mcc": "Tax categories exist; country VAT rules not captured", "route": "Platform", "size": "M", "phase": 0}, {"id": "P11", "track": "Platform", "area": "Markets", "req": "Payment methods", "bkm": "Cards, Apple Pay, Google Pay, Klarna, iDEAL, Bancontact, BLIK, MobilePay and more", "status": "Partial", "mcc": "Maropay, PayPal, Stripe, Afterpay, Zip; Maropay currencies exclude SEK and PLN", "route": "Third party", "size": "L", "phase": 0}, {"id": "P12", "track": "Platform", "area": "Markets", "req": "Checkout", "bkm": "Express wallets, discount code, terms, marketing opt-in", "status": "Unverified", "mcc": "Real checkout is a 3-step flow; discount field seen on the Neto storefront reference only", "route": "Platform", "size": "M", "phase": 0}, {"id": "P13", "track": "Platform", "area": "Catalog and content", "req": "Structured product content", "bkm": "Subtitle, chips, ingredients, supplement facts, FAQs, comparison rows per product", "status": "Missing", "mcc": "Products have fixed fields, attributes and tags; custom fields exist for Contacts only", "route": "Platform", "size": "L", "phase": 0}, {"id": "P14", "track": "Platform", "area": "Catalog and content", "req": "Catalog basics", "bkm": "8 products, single option, SKUs, compare-at, refill and starter-pack variants", "status": "Have", "mcc": "Options, variants, compare-at, kits, collections, inventory by location", "route": "Configure", "size": "S", "phase": 0}, {"id": "P15", "track": "Platform", "area": "Catalog and content", "req": "Add-on discount", "bkm": "Special price when bought with another product", "status": "Partial", "mcc": "Product and order promotions; no buy-with condition captured", "route": "Platform", "size": "M", "phase": 1}, {"id": "P16", "track": "Platform", "area": "Catalog and content", "req": "Returns and guarantee", "bkm": "30-day money-back on Tranquil; withdrawal rights", "status": "Partial", "mcc": "Refund on an order; no returns flow", "route": "Platform", "size": "M", "phase": 1}, {"id": "P17", "track": "Platform", "area": "Catalog and content", "req": "Reviews", "bkm": "Klaviyo Reviews: request, moderate, stars, list; 36 Tranquil reviews", "status": "Missing", "mcc": "Rating snippet only", "route": "Platform", "size": "L", "phase": 0}, {"id": "P18", "track": "Platform", "area": "Catalog and content", "req": "Customer accounts", "bkm": "Register, login, orders", "status": "Have", "mcc": "Account templates in Lumos; passwordless login not captured", "route": "Configure", "size": "S", "phase": 0}, {"id": "P19", "track": "Platform", "area": "Catalog and content", "req": "Back-in-stock alerts", "bkm": "Restock Rocket (STOQ)", "status": "Missing", "mcc": "No stock alert feature", "route": "Maropost cloud", "size": "M", "phase": 1}, {"id": "P28", "track": "Platform", "area": "Catalog and content", "req": "Pre-orders", "bkm": "Tranquil carries a Preorder purchase plan with no discount", "status": "Partial", "mcc": "Variants have an allow-backorder switch; no pre-order plan or shopper messaging", "route": "Platform", "size": "M", "phase": 1}, {"id": "P20", "track": "Platform", "area": "Growth and operations", "req": "Email, SMS and signup forms", "bkm": "Klaviyo flows, onsite forms, footer signup", "status": "Partial", "mcc": "Marketing Cloud has campaigns, journeys, SMS and popup forms; storefront event feed not captured", "route": "Maropost cloud", "size": "M", "phase": 0}, {"id": "P21", "track": "Platform", "area": "Growth and operations", "req": "Pixels and attribution", "bkm": "Meta, TikTok (inferred), Triple Whale, Microsoft Clarity", "status": "Missing", "mcc": "Tracking & Analytics settings page is a placeholder", "route": "Platform", "size": "L", "phase": 0}, {"id": "P22", "track": "Platform", "area": "Growth and operations", "req": "Consent management", "bkm": "Cookiebot gates tags by consent", "status": "Missing", "mcc": "Privacy & Consent is a placeholder", "route": "Third party", "size": "M", "phase": 0}, {"id": "P23", "track": "Platform", "area": "Growth and operations", "req": "Helpdesk", "bkm": "Gorgias tickets tied to orders and subscriptions", "status": "Partial", "mcc": "Service Cloud tickets with order context", "route": "Maropost cloud", "size": "M", "phase": 1}, {"id": "P24", "track": "Platform", "area": "Growth and operations", "req": "SEO and structured data", "bkm": "Product, Organization, WebSite and Article JSON-LD; canonical, sitemap", "status": "Partial", "mcc": "SEO fields on products, collections, pages; JSON-LD, sitemap and redirects not captured", "route": "Platform", "size": "M", "phase": 0}, {"id": "P25", "track": "Platform", "area": "Growth and operations", "req": "Order tracking and dispatch", "bkm": "Ships from Sweden; tracking FAQ", "status": "Partial", "mcc": "Orders and fulfilment exist; shopper tracking page not captured", "route": "Platform", "size": "S", "phase": 1}, {"id": "P26", "track": "Platform", "area": "Growth and operations", "req": "Agentic commerce endpoints", "bkm": "UCP / MCP and agents.md (a Shopify default)", "status": "Missing", "mcc": "No equivalent", "route": "Platform", "size": "L", "phase": 2}, {"id": "P27", "track": "Platform", "area": "Growth and operations", "req": "Migration", "bkm": "Products, customers, live subscriptions and payment tokens, reviews, redirects, blog", "status": "Partial", "mcc": "Product CSV import; nothing captured for the rest", "route": "Platform", "size": "L", "phase": 0}];
+const STATUSES = ["Have", "Partial", "WIP", "Missing", "Unverified"];
+const PHASES = { 0: "Launch", 1: "Parity", 2: "Beyond" };
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const rich = (s) => esc(s).replace(/`([^`]+)`/g, "<code>$1</code>");
+const count = (rows, k, v) => rows.filter((r) => r[k] === v).length;
+
+// summary
+$("n-rows").textContent = ROWS.length;
+$("dist").innerHTML = ["Theme", "Platform"].map((t) => {
+  const rs = ROWS.filter((r) => r.track === t);
+  const segs = STATUSES.map((s) => { const n = count(rs, "status", s); return n ? `<span class="seg-${s}" style="flex:${n}" title="${s}: ${n}"></span>` : ""; }).join("");
+  return `<div class="dist-row"><span class="name">${t}</span><div class="bar" role="img" aria-label="${t}: ${STATUSES.map((s) => s + " " + count(rs, "status", s)).join(", ")}">${segs}</div><span class="tot">${rs.length}</span></div>`;
+}).join("");
+$("legend").innerHTML = STATUSES.map((s) => `<li><span class="dot seg-${s}"></span>${s} <b>${count(ROWS, "status", s)}</b></li>`).join("");
+
+// matrix + filters
+const state = { track: "All", status: new Set(), phase: "All", q: "" };
+const btn = (group, value, label, pressed) => `<button class="fbtn" type="button" data-g="${group}" data-v="${value}" aria-pressed="${pressed}">${label}</button> `;
+function drawFilters() {
+  $("f-track").innerHTML = ["All", "Theme", "Platform"].map((v) => btn("track", v, v, state.track === v)).join("");
+  $("f-status").innerHTML = STATUSES.map((v) => btn("status", v, `${v} ${count(ROWS, "status", v)}`, state.status.has(v))).join("");
+  $("f-phase").innerHTML = ["All", "0", "1", "2"].map((v) => btn("phase", v, v === "All" ? "All" : `${v} ${PHASES[v]}`, state.phase === v)).join("");
+}
+function drawRows() {
+  const q = state.q.trim().toLowerCase();
+  const rs = ROWS.filter((r) => (state.track === "All" || r.track === state.track) && (!state.status.size || state.status.has(r.status)) && (state.phase === "All" || String(r.phase) === state.phase) && (!q || [r.id, r.area, r.req, r.bkm, r.mcc, r.route].join(" ").toLowerCase().includes(q)));
+  $("rows").innerHTML = rs.map((r) => `<tr><td class="id">${r.id}</td><td class="req">${esc(r.req)}<div class="muted" style="font-weight:400;font-size:13px">${esc(r.area)}</div></td><td>${rich(r.bkm)}</td><td><span class="pill pill-${r.status}">${r.status}</span></td><td>${rich(r.mcc)}</td><td>${esc(r.route)}</td><td class="size">${r.size}</td><td class="size">${r.phase}</td></tr>`).join("");
+  $("empty").hidden = rs.length > 0;
+  $("count").textContent = `Showing ${rs.length} of ${ROWS.length}`;
+}
+document.addEventListener("click", (e) => {
+  const b = e.target.closest(".fbtn"); if (!b) return;
+  const g = b.dataset.g, v = b.dataset.v;
+  if (g === "status") { state.status.has(v) ? state.status.delete(v) : state.status.add(v); } else { state[g] = v; }
+  drawFilters(); drawRows();
+});
+$("q").addEventListener("input", (e) => { state.q = e.target.value; drawRows(); });
+$("reset").addEventListener("click", () => { state.track = "All"; state.status.clear(); state.phase = "All"; state.q = ""; $("q").value = ""; drawFilters(); drawRows(); });
+drawFilters(); drawRows();
+
+// phases
+const todo = ROWS.filter((r) => r.route !== "Configure");
+$("phases").innerHTML = [0, 1, 2].map((p) => {
+  const rs = todo.filter((r) => r.phase === p);
+  const areas = [...new Set(rs.map((r) => r.area))];
+  return `<div class="phase"><div><span class="label">Phase ${p}</span><h3>${PHASES[p]} · ${rs.length} items</h3></div>${areas.map((a) => `<div class="grp"><span class="label">${esc(a)}</span><ul class="items">${rs.filter((r) => r.area === a).map((r) => `<li><span class="i">${r.id}</span><span>${esc(r.req)}</span><span class="size">${r.size}</span></li>`).join("")}</ul></div>`).join("")}</div>`;
+}).join("");
+
+// verify
+const verify = ROWS.filter((r) => r.status === "Unverified" || /not captured|unknown whether/.test(r.mcc));
+$("verify").innerHTML = verify.map((r) => `<li><span class="i">${r.id}</span><span><strong>${esc(r.req)}.</strong> ${rich(r.mcc)}</span></li>`).join("");
+</script>
+</body>
+</html>

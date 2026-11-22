@@ -15,15 +15,16 @@ exists, what each part is for, and what it looks like in light and dark.
 
 ## The sidebar
 
-Five buckets, in the order you should read them:
+Two documentation pages sit at the top: this one, and **LiquidSky**, the page for developers of
+the LiquidSky production library. Under them are five buckets, in the order you should read them:
 
 | Bucket | What lives there |
 |---|---|
-| **Foundations** | The token scales themselves — colour, type, spacing, radius, icons, and the two stock Vuetify controls (buttons, tooltips) the system styles globally rather than wrapping. |
+| **Foundations** | The token scales themselves — colour, type, spacing, radius, icons, and the two stock Vuetify controls (buttons, tooltips) the system styles globally rather than wrapping. The QA Reference for the LiquidSky build is the last page. |
 | **Atoms** | One control or mark, no internal regions: `MpStatusChip`, `MpListRow`, `MpFilterTabs`, `MpTableSkeleton`… |
-| **Molecules** | Has internal regions, or composes an atom: `MpDialog`, `MpFormDrawer`, `MpDataTableToolbar`, `MpEmptyState`, `MpSectionRail`… |
-| **Patterns** | Reusable multi-component compositions and app shells: the Data Table pattern, Form Fields, Layering, the app bar and sidebar, the builder shell. |
-| **Product** | Surfaces specific to one Maropost feature area — Da Vinci, Dashboards, Marketing, Merchandising, PLG, RBAC, Sales Channels. Useful as reference, **not** as a general-purpose API. |
+| **Molecules** | Has internal regions (header / body / footer, trigger + panel), or composes another `Mp*`: `MpDialog`, `MpFormDrawer`, `MpDataTableToolbar`, `MpEmptyState`, `MpSectionRail`… |
+| **Patterns** | Reusable multi-component compositions and app shells: the Data Table pattern, Form Fields, Layering, the Module Landing Page, the app bar and sidebar, the builder shell, the wizard shell, the Settings sections. |
+| **Product** | Surfaces specific to one Maropost feature area — Chatbot, Da Vinci, Dashboards, Maropay, Marketing, Merchandising, Onboarding, PLG, POS, RBAC, Sales Channels, Service, Trial Lab. Useful as reference, **not** as a general-purpose API. |
 
 Use the toolbar **Theme** (light / dark) and **Accent** (cyan / blue / gray / purple) globals to
 check a component across themes. There are no per-story dark twins — that is what the toggle is for.
@@ -42,10 +43,10 @@ has already made the decision, a primitive otherwise.
 | `radius.*` | 4 · 8 · 10 · 12 · 16 · 20 · `full` — one concentric language: 16 outer surfaces, 12 nested, 10 controls, 8 chips and menu items, 4 micro-marks, `full` for pills |
 | `fontSize.*` | 10 · 11 · 12 · 13 · 14 · 15 · 16 · 18 · 20 · 24 · 28 · 32 · 40 · 48. **Body is 14px.** No fractional sizes exist |
 | `component.*` | Role aliases: `control.height` 40 · `card.padding` 20 · `dialog.padding` 20 · `listItem.minHeight` 40 · `table.rowMinHeight` 48 · `chip.height` 20/24/32 |
-| `layout.*` | sidebar 248 · rail 72 · section rail 260 · appbar 60 · drawer 480 · content max 1280 |
+| `layout.*` | sidebar 248 · rail 72 · section rail 260 · appbar 56 · drawer 480 · content max 1280 |
 
-**Foundations → Overview** renders all three primitive scales as live specimens; the deeper
-Foundations pages break each one down.
+**Foundations → Overview** renders the spacing, radius and colour scales as live specimens; the
+deeper Foundations pages break each one down.
 
 ---
 
@@ -62,6 +63,8 @@ npm run dev              # the prototype app, on :5173
 
 `npm run tokens:watch` regenerates on every save to `tokens.json`, which is what you want while
 working on Foundations.
+
+`npm run storybook:smoke` builds a copy of this Storybook, opens every story and fails on a broken one.
 
 ---
 

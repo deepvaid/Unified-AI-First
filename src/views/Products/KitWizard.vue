@@ -108,7 +108,7 @@ const kitHeaders = [
   { title: 'SKU', key: 'sku' },
   { title: 'In Stock', key: 'inStock', align: 'end' as const },
   { title: 'Price', key: 'price', align: 'end' as const },
-  { title: '', key: 'actions', sortable: false, width: 64 },
+  { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, sortable: false, width: 64 },
 ]
 
 function nextStep() {

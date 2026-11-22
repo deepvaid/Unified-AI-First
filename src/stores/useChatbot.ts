@@ -1,12 +1,19 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-export type QuickPromptIntent = 'shopping' | 'track' | 'support' | 'faq'
+/** A prompt is just its text — the assistant works out the intent itself. */
 export interface QuickPrompt {
   id: number
   text: string
-  intent: QuickPromptIntent
   enabled: boolean
+}
+export const MAX_QUICK_PROMPTS = 5
+
+/** One indexed piece of a source: a crawled page, a questionnaire answer, a file section. */
+export interface KnowledgeEntry {
+  title: string
+  text: string
+  url?: string
 }
 
 export interface KnowledgeSource {
@@ -17,6 +24,8 @@ export interface KnowledgeSource {
   meta: string
   status: 'Active' | 'Disabled' | 'Indexing'
   enabled: boolean
+  /** What the source contributed. The builder preview answers from these. */
+  entries?: KnowledgeEntry[]
 }
 
 export type PreChatFieldType = 'Text' | 'Email' | 'Phone' | 'Text Area'
@@ -37,7 +46,6 @@ export interface BusinessHour {
 
 export interface ShoppingConfig {
   enabled: boolean
-  greeting: string
   source: 'catalog' | 'featured'
   showPrices: boolean
   allowAddToCart: boolean
@@ -66,6 +74,9 @@ export interface ChatbotConfig {
   logoName: string | null
   primaryColor: string
   position: 'left' | 'right'
+  /** Text shown beside the launcher; off = the launcher shows the logo alone. */
+  launcherText: string
+  launcherTextEnabled: boolean
   welcomeMessage: string
   // Sections
   businessHours: BusinessHour[]
@@ -83,12 +94,29 @@ export interface Chatbot {
   id: number
   store: string
   storeUrl: string
+  /** The sales channel (web store) this chatbot serves, if it is linked to one. */
+  channelId: string | null
   status: ChatbotStatus
   conversations: number
   createdOn: string
   lastModified: string
   archivedOn?: string
   config: ChatbotConfig
+}
+
+export interface ChatbotMessage {
+  from: 'shopper' | 'bot'
+  text: string
+  time: string
+}
+export interface ChatbotConversation {
+  id: string
+  chatbotId: number
+  visitor: string
+  startedAt: string
+  topic: string
+  resolved: boolean
+  messages: ChatbotMessage[]
 }
 
 export interface PreviewProduct {
@@ -112,6 +140,8 @@ function defaultConfig(store: string, storeUrl: string): ChatbotConfig {
     logoName: null,
     primaryColor: '#2563EB',
     position: 'left',
+    launcherText: 'Need help?',
+    launcherTextEnabled: true,
     welcomeMessage: 'Hello! How can I help you today?',
     businessHours: [
       { day: 'Monday', enabled: true, open: '09:00', close: '17:00' },
@@ -123,14 +153,27 @@ function defaultConfig(store: string, storeUrl: string): ChatbotConfig {
       { day: 'Sunday', enabled: false, open: '10:00', close: '14:00' },
     ],
     quickPrompts: [
-      { id: 1, text: 'Track my order', intent: 'track', enabled: true },
-      { id: 2, text: 'Shop for items', intent: 'shopping', enabled: true },
-      { id: 3, text: 'Email invoice', intent: 'support', enabled: true },
-      { id: 4, text: 'FAQs & Help', intent: 'faq', enabled: true },
+      { id: 1, text: 'Track my order', enabled: true },
+      { id: 2, text: 'Shop for items', enabled: true },
+      { id: 3, text: 'Email invoice', enabled: true },
+      { id: 4, text: 'FAQs & Help', enabled: true },
     ],
     knowledgeSources: [
-      { id: 1, name: 'Frequently asked questions', icon: 'globe', items: 12, meta: 'Last synced 16 Jul 2026', status: 'Active', enabled: true },
-      { id: 2, name: 'Help Articles', icon: 'file-text', items: 12, meta: 'Uploaded 16 Jul 2026', status: 'Active', enabled: true },
+      {
+        id: 1, name: 'Frequently asked questions', icon: 'globe', items: 12, meta: 'Added 16 Jul 2026', status: 'Active', enabled: true,
+        entries: [
+          { title: 'Shipping and delivery', text: 'Standard delivery takes 3–5 business days and is free on orders over $75. Express delivery arrives in 1–2 business days.', url: `${storeUrl}/shipping` },
+          { title: 'Returns and refunds', text: 'You can return unworn items within 30 days for a full refund. Refunds go back to the original payment method within 5 business days.', url: `${storeUrl}/returns` },
+          { title: 'Payment methods', text: 'We accept Visa, Mastercard, American Express, PayPal and Apple Pay.', url: `${storeUrl}/payments` },
+        ],
+      },
+      {
+        id: 2, name: 'Help Articles', icon: 'file-text', items: 12, meta: 'Uploaded 16 Jul 2026', status: 'Active', enabled: true,
+        entries: [
+          { title: 'Sizing guide', text: 'Our sizes run true to size. Each product page has a size chart, and you can exchange for a different size free of charge.' },
+          { title: 'Gift cards', text: 'Gift cards are delivered by email, never expire, and can be used with any other discount.' },
+        ],
+      },
       { id: 3, name: 'Complete Website (34 pages)', icon: 'globe', items: 10, meta: 'Last updated 15 Jul 2026', status: 'Disabled', enabled: false },
       { id: 4, name: 'Support Docs', icon: 'file-text', items: 8, meta: 'Uploaded 14 Jul 2026', status: 'Indexing', enabled: true },
     ],
@@ -144,7 +187,6 @@ function defaultConfig(store: string, storeUrl: string): ChatbotConfig {
     ],
     shopping: {
       enabled: true,
-      greeting: "I'd love to help you find something! What are you looking for? (e.g. 'red boots size 11')",
       source: 'catalog',
       showPrices: true,
       allowAddToCart: true,
@@ -160,6 +202,59 @@ function defaultConfig(store: string, storeUrl: string): ChatbotConfig {
   }
 }
 
+const CONVERSATION_SEED: Omit<ChatbotConversation, 'id' | 'chatbotId'>[] = [
+  {
+    visitor: 'Priya Nair', startedAt: 'Today, 10:42 AM', topic: 'Order status', resolved: true,
+    messages: [
+      { from: 'shopper', text: 'Hi, where is my order #88592?', time: '10:42 AM' },
+      { from: 'bot', text: 'Order #88592 is out for delivery and should arrive today before 6 PM.', time: '10:42 AM' },
+      { from: 'shopper', text: 'Great, thank you!', time: '10:43 AM' },
+      { from: 'bot', text: 'You’re welcome. Anything else I can help with?', time: '10:43 AM' },
+    ],
+  },
+  {
+    visitor: 'Guest visitor', startedAt: 'Today, 9:15 AM', topic: 'Returns', resolved: true,
+    messages: [
+      { from: 'shopper', text: 'What is your return policy?', time: '9:15 AM' },
+      { from: 'bot', text: 'You can return unworn items within 30 days for a full refund. Refunds go back to the original payment method within 5 business days.', time: '9:15 AM' },
+      { from: 'shopper', text: 'Do I pay for return shipping?', time: '9:16 AM' },
+      { from: 'bot', text: 'Returns are free — you’ll get a prepaid label by email once you start the return.', time: '9:16 AM' },
+    ],
+  },
+  {
+    visitor: 'Marcus Lee', startedAt: 'Yesterday, 6:08 PM', topic: 'Product search', resolved: true,
+    messages: [
+      { from: 'shopper', text: 'Looking for red boots in size 11', time: '6:08 PM' },
+      { from: 'bot', text: 'Here are a few great matches: Crimson Leather Boots, Cherry Ankle Boots and Ruby Chelsea Boots.', time: '6:08 PM' },
+      { from: 'shopper', text: 'Add the Crimson ones to my cart', time: '6:10 PM' },
+      { from: 'bot', text: 'Added Crimson Leather Boots (size 11) to your cart.', time: '6:10 PM' },
+    ],
+  },
+  {
+    visitor: 'Guest visitor', startedAt: 'Yesterday, 2:31 PM', topic: 'Delivery area', resolved: false,
+    messages: [
+      { from: 'shopper', text: 'Do you deliver to postcode 4870?', time: '2:31 PM' },
+      { from: 'bot', text: 'I don’t have delivery details for that postcode yet. I can create a ticket so the team gets back to you — what’s your name and email?', time: '2:31 PM' },
+      { from: 'shopper', text: 'Sam Carter, sam@example.com', time: '2:33 PM' },
+      { from: 'bot', text: 'Thanks, Sam. I’ve raised a ticket and the team will reply by email.', time: '2:33 PM' },
+    ],
+  },
+  {
+    visitor: 'Elena Rossi', startedAt: 'Mon, 11:20 AM', topic: 'Invoice', resolved: true,
+    messages: [
+      { from: 'shopper', text: 'Can you email me the invoice for my last order?', time: '11:20 AM' },
+      { from: 'bot', text: 'Done — I’ve sent the invoice for order #88410 to the email on your account.', time: '11:20 AM' },
+    ],
+  },
+  {
+    visitor: 'Guest visitor', startedAt: 'Mon, 8:02 AM', topic: 'Sizing', resolved: true,
+    messages: [
+      { from: 'shopper', text: 'Do your shoes run small?', time: '8:02 AM' },
+      { from: 'bot', text: 'Our sizes run true to size. Each product page has a size chart, and exchanges for a different size are free.', time: '8:02 AM' },
+    ],
+  },
+]
+
 let seq = 0
 function make(
   store: string,
@@ -168,7 +263,7 @@ function make(
   conversations: number,
   createdOn: string,
   lastModified: string,
-  extra: Partial<Pick<Chatbot, 'archivedOn'>> & { primaryColor?: string } = {},
+  extra: Partial<Pick<Chatbot, 'archivedOn' | 'channelId'>> & { primaryColor?: string } = {},
 ): Chatbot {
   const config = defaultConfig(store, storeUrl)
   if (extra.primaryColor) config.primaryColor = extra.primaryColor
@@ -176,6 +271,7 @@ function make(
     id: ++seq,
     store,
     storeUrl,
+    channelId: extra.channelId ?? null,
     status,
     conversations,
     createdOn,
@@ -187,10 +283,10 @@ function make(
 
 export const useChatbotStore = defineStore('chatbot', () => {
   const chatbots = ref<Chatbot[]>([
-    make('Johny Style Store', 'https://johny-style.sss.com', 'Active', 1298, 'Jan 1, 2025', 'Nov 11, 2025'),
+    make('Johny Style Store', 'https://johny-style.sss.com', 'Active', 1298, 'Jan 1, 2025', 'Nov 11, 2025', { channelId: 'neelam-store' }),
     make('Tech Gizmo Store', 'https://techgizmo.store.com', 'Active', 1298, 'Jan 1, 2025', 'Nov 11, 2025', { primaryColor: '#6D28D9' }),
     make('Gourmet Delights', 'https://gourmet-delights.com', 'Disabled', 752, 'Feb 15, 2023', 'Dec 31, 2024', { primaryColor: '#DD7A3B' }),
-    make('Fashion Hub', 'https://fashionhub.com', 'Inactive', 2014, 'Mar 10, 2023', 'Aug 15, 2024', { primaryColor: '#C0559A' }),
+    make('Fashion Hub', 'https://fashionhub.com', 'Inactive', 2014, 'Mar 10, 2023', 'Aug 15, 2024', { primaryColor: '#C0559A', channelId: 'shopify-fashion' }),
     make('Home Essentials', 'https://homeessentials.org', 'Active', 890, 'Jun 5, 2024', 'May 20, 2026', { primaryColor: '#7BC67B' }),
     make('Eco-Friendly Goods', 'https://ecofriendlygoods.net', 'Active', 1120, 'Apr 12, 2023', 'Jan 5, 2026', { primaryColor: '#7BC67B' }),
     make('Pet Paradise', 'https://petparadise.com', 'Active', 1450, 'Dec 9, 2022', 'Nov 30, 2025', { primaryColor: '#E9C74A' }),
@@ -206,12 +302,17 @@ export const useChatbotStore = defineStore('chatbot', () => {
   function getById(id: number) {
     return chatbots.value.find(c => c.id === id)
   }
-  function create(store: string, storeUrl: string): number {
+  /** The live (non-archived) chatbot serving a sales channel, if any. */
+  function getByChannel(channelId: string) {
+    return chatbots.value.find(c => c.channelId === channelId && c.status !== 'Archived')
+  }
+  function create(store: string, storeUrl: string, channelId: string | null = null): number {
     const id = ++seq
     chatbots.value.unshift({
       id,
       store,
       storeUrl,
+      channelId,
       status: 'Inactive',
       conversations: 0,
       createdOn: 'Just now',
@@ -240,5 +341,15 @@ export const useChatbotStore = defineStore('chatbot', () => {
     { id: 3, name: 'Ruby Chelsea Boots', icon: 'footprints', price: 120.0, salePrice: 99.0 },
   ])
 
-  return { chatbots, MAX_CHATBOTS, getById, create, setStatus, archive, restore, previewProducts }
+  /**
+   * Recent conversations for a chatbot. Mock: every chatbot with traffic shows the same
+   * handful of transcripts, so the page has realistic content without a backend.
+   */
+  function conversationsFor(chatbotId: number): ChatbotConversation[] {
+    const bot = getById(chatbotId)
+    if (!bot || bot.conversations === 0) return []
+    return CONVERSATION_SEED.map((c, i) => ({ ...c, id: `${chatbotId}-${i + 1}`, chatbotId }))
+  }
+
+  return { chatbots, MAX_CHATBOTS, getById, getByChannel, create, setStatus, archive, restore, conversationsFor, previewProducts }
 })

@@ -61,7 +61,7 @@ const filteredApps = computed(() => {
           </div>
 
           <div class="d-flex flex-column ga-1 flex-grow-1">
-            <h3 class="mp-section-title">{{ app.name }}</h3>
+            <h2 class="mp-section-title">{{ app.name }}</h2>
             <p class="text-body-2 text-medium-emphasis mb-0">{{ app.desc }}</p>
           </div>
 

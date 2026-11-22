@@ -1,10 +1,15 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, provide } from 'vue'
 import { useRoute } from 'vue-router'
 import MpSectionRail from '@/components/MpSectionRail.vue'
 import { settingsRailGroups } from '@/components/settings/settingsMenu'
+import { TABLE_FITS_CONTAINER } from '@/composables/useResponsiveTableHeaders'
 
 const route = useRoute()
+
+// The rail and the page's reading width leave a Settings table about 800px even on a wide
+// window, so its tables choose columns by their own width rather than the window's.
+provide(TABLE_FITS_CONTAINER, true)
 
 const accountId = computed(() => {
   const id = Array.isArray(route.params.accountId) ? route.params.accountId[0] : route.params.accountId
@@ -26,9 +31,10 @@ const groups = computed(() => settingsRailGroups(accountId.value))
       search-placeholder="Search Settings"
       :groups="groups"
     />
-    <main class="settings-shell__content">
+    <!-- A div, not <main>: v-main is already the page's main landmark (WCAG W-18). -->
+    <div class="settings-shell__content">
       <router-view />
-    </main>
+    </div>
   </div>
 </template>
 

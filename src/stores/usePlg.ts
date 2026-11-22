@@ -86,7 +86,7 @@ export interface PlanFeature {
 export interface PlanDef {
   tier: PlanTier
   name: string
-  /** USD per month, monthly billing. Annual = monthly × 12 × 0.9. */
+  /** USD per month, monthly billing. Annual = monthly × 12 × (1 − ANNUAL_DISCOUNT). */
   monthly: number
   badge: string
   features: PlanFeature[]
@@ -100,7 +100,7 @@ export interface CloudCatalog {
   plans: PlanDef[]
 }
 
-export const ANNUAL_DISCOUNT = 0.1
+export const ANNUAL_DISCOUNT = 0.2
 
 export function planPrice(def: PlanDef, cycle: BillingCycle): number {
   return cycle === 'annual' ? Math.round(def.monthly * 12 * (1 - ANNUAL_DISCOUNT)) : def.monthly

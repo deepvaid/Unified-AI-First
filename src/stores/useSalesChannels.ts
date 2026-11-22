@@ -206,12 +206,13 @@ const seedChannels: SalesChannel[] = [
     updatedAt: '2026-05-26T04:12:00Z',
     lastActivityAt: '2026-05-26T04:12:00Z',
     offlineStore: {
-      locationIds: ['loc-bondi', 'loc-chadstone', 'loc-auckland'],
+      locationIds: ['loc-bondi', 'loc-chadstone', 'loc-auckland', 'loc-robson'],
       posSetupComplete: true,
       locationRoles: {
         'loc-bondi': ['pos_selling', 'pickup'],
         'loc-chadstone': ['pos_selling', 'fulfillment'],
         'loc-auckland': ['pos_selling'],
+        'loc-robson': ['pos_selling'],
       },
     },
   },

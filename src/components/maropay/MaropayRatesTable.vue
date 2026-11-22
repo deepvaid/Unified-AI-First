@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
+import MaropayMethodMark from './MaropayMethodMark.vue'
+import { markFor } from '@/maropay/methodMarks'
 import { METHOD_CATEGORY_LABELS, METHOD_STATUS_LABELS } from '@/maropay/model'
 import type { MethodCategory, PaymentMethodCatalogEntry } from '@/maropay/model'
 
@@ -26,6 +28,7 @@ const rows = computed(() =>
       .filter((m) => m.category === category && (!props.hideUnavailable || m.availability !== 'unavailable'))
       .map((m) => ({
         id: m.id,
+        mark: markFor(m.id),
         label: m.label,
         category: METHOD_CATEGORY_LABELS[category],
         rate: m.rate.label,
@@ -49,7 +52,12 @@ const rows = computed(() =>
       </thead>
       <tbody>
         <tr v-for="row in rows" :key="row.id">
-          <td class="maropay-rates__method">{{ row.label }}</td>
+          <td>
+            <span class="maropay-rates__method">
+              <MaropayMethodMark :mark="row.mark" size="sm" decorative />
+              {{ row.label }}
+            </span>
+          </td>
           <td class="text-medium-emphasis">{{ row.category }}</td>
           <td class="text-end maropay-rates__rate">{{ row.rate }}</td>
           <td>
@@ -71,6 +79,9 @@ const rows = computed(() =>
 }
 
 .maropay-rates__method {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mp-space-8);
   font-weight: var(--mp-fontWeight-medium);
   white-space: nowrap;
 }
@@ -82,13 +93,13 @@ const rows = computed(() =>
 
 .maropay-rates__note {
   font-size: var(--mp-fontSize-12);
-  color: var(--muted);
+  color: var(--on-surface-muted);
 }
 
 .maropay-rates__caption {
   margin: var(--mp-space-12) 0 0;
   font-size: var(--mp-fontSize-12);
   line-height: var(--mp-lineHeight-normal);
-  color: var(--muted);
+  color: var(--on-surface-muted);
 }
 </style>

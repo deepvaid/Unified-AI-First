@@ -18,20 +18,31 @@ withDefaults(defineProps<{
   headingLevel?: 2 | 3
   /** Divider between the preamble and the content (skip for dense gallery cards). */
   divider?: boolean
+  /**
+   * The shell's header already carries the step's title and description (eyebrow "Step N of M",
+   * title, subtitle), so the card renders only its fields. `title` still names the card for
+   * assistive tech.
+   */
+  headless?: boolean
 }>(), {
   headingLevel: 2,
   divider: true,
+  headless: false,
 })
 </script>
 
 <template>
   <v-card variant="flat" border rounded="lg" class="mp-wizard-step-card">
-    <div class="d-flex align-center ga-2" :class="description ? 'mb-1' : 'mb-4'">
-      <component :is="`h${headingLevel}`" class="text-h6 font-weight-bold">{{ title }}</component>
-      <slot name="title-append" />
-    </div>
-    <p v-if="description" class="text-body-2 text-medium-emphasis mb-6">{{ description }}</p>
-    <v-divider v-if="divider" class="mb-6" />
+    <!-- Headless keeps the outline intact: the heading is still there for assistive tech, just not drawn twice. -->
+    <component :is="`h${headingLevel}`" v-if="headless" class="d-sr-only">{{ title }}</component>
+    <template v-if="!headless">
+      <div class="d-flex align-center ga-2" :class="description ? 'mb-1' : 'mb-4'">
+        <component :is="`h${headingLevel}`" class="text-h6 font-weight-bold">{{ title }}</component>
+        <slot name="title-append" />
+      </div>
+      <p v-if="description" class="text-body-2 text-medium-emphasis mb-6">{{ description }}</p>
+      <v-divider v-if="divider" class="mb-6" />
+    </template>
     <slot />
   </v-card>
 </template>

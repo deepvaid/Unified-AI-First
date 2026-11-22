@@ -24,7 +24,7 @@ const headers = [
   { title: 'Assigned', key: 'assigned', align: 'end' as const },
   { title: 'Created', key: 'createdAt', sortable: true },
   { title: 'Updated', key: 'updatedAt', sortable: true },
-  { title: '', key: 'actions', sortable: false, align: 'end' as const },
+  { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, sortable: false, align: 'end' as const },
 ]
 
 // ── Create / edit drawer ─────────────────────────────────────────────────

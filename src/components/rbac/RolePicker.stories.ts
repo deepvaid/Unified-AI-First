@@ -1,11 +1,13 @@
 import { ref } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 import RolePicker from './RolePicker.vue'
+import { constrain } from '@/stories/decorators'
 
 const meta = {
   title: 'Product/RBAC/RolePicker',
   component: RolePicker,
   tags: ['autodocs'],
+  decorators: [constrain('dialog')],
   parameters: {
     docs: {
       description: {
@@ -44,10 +46,10 @@ final validation happens on save via \`rbac.validateAssignment\`.
       return { args, model }
     },
     template: `
-      <section style="padding:24px;background:rgb(var(--v-theme-background));max-width:560px;">
+      <div>
         <RolePicker v-model="model" :disabled="args.disabled" />
         <p class="text-caption text-medium-emphasis mt-4">Selected: {{ model.join(', ') || 'none' }}</p>
-      </section>
+      </div>
     `,
   }),
   argTypes: {

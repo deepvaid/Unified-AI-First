@@ -634,7 +634,7 @@ function enterMaropost() {
           <div class="plg-signup__checklist" role="status">
             <div v-for="(item, i) in checklist" :key="i" class="plg-signup__checklist-row">
               <span class="plg-signup__checklist-status">
-                <v-progress-circular v-if="!item.done" indeterminate size="16" width="2" color="primary" />
+                <v-progress-circular v-if="!item.done" aria-label="In progress" indeterminate size="16" width="2" color="primary" />
                 <v-icon v-else size="18" color="success">check</v-icon>
               </span>
               <span :class="item.done ? 'text-high-emphasis' : 'text-medium-emphasis'">{{ item.label }}</span>

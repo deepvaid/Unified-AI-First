@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/vue3'
 import DvOrbitVoiceSurface from './DvOrbitVoiceSurface.vue'
 import { useDashboardsStore } from '@/stores/useDashboards'
 import type { DashboardWidgetDraft } from '@/stores/dashboards/types'
+import { isolateStorage, surfaceFrame } from '@/stories/decorators'
 // Global orbit keyframes (ripple, bars, dots, blink, shimmer) — imported by
 // src/main.ts in the app; pulled in here for the Storybook preview bundle.
 import '@/styles/dv-orbit.css'
@@ -35,6 +36,19 @@ const meta = {
   title: 'Product/Da Vinci/Voice/DvOrbitVoiceSurface',
   component: DvOrbitVoiceSurface,
   tags: ['autodocs'],
+  decorators: [
+    // Seed the dashboards store so the hosted DvWidgetDraftCard can commit.
+    () => ({
+      setup() {
+        useDashboardsStore().ensureAccountDashboards(ACCOUNT_ID)
+      },
+      template: '<div style="height: 100%; display: flex; flex-direction: column;"><story /></div>',
+    }),
+    // The drawer-shaped frame the surface fills.
+    surfaceFrame({ width: '420px', height: '640px' }),
+    // Outermost: the dashboards store persists to localStorage, so put it back on unmount.
+    isolateStorage,
+  ],
   args: {
     state: 'ready',
     suggestions: SUGGESTIONS,
@@ -105,19 +119,6 @@ host a live \`DvWidgetDraftCard\` (dashboards store seeded with account 2000290)
       },
     },
   },
-  render: (args) => ({
-    components: { DvOrbitVoiceSurface },
-    setup() {
-      // Seed the dashboards store so the hosted DvWidgetDraftCard can commit.
-      useDashboardsStore().ensureAccountDashboards(ACCOUNT_ID)
-      return { args }
-    },
-    template: `
-      <div style="width: 420px; height: 640px; display: flex; flex-direction: column; border: 1px solid rgb(var(--v-theme-outline-variant)); border-radius: 16px; overflow: hidden; background: rgb(var(--v-theme-surface));">
-        <DvOrbitVoiceSurface v-bind="args" />
-      </div>
-    `,
-  }),
 } satisfies Meta<typeof DvOrbitVoiceSurface>
 
 export default meta
@@ -178,33 +179,4 @@ export const PermissionDenied: Story = {
 /** Paused — dim slow orb, muted mic with slash. */
 export const Paused: Story = {
   args: { state: 'paused' },
-}
-
-// ── Template: Variants · Sizes · States ──────────────────────────────────────
-
-/** One structure — the voice surface — in each of the orb's conversational modes. The modes are states rather than structures; see `States`. */
-export const Variants: Story = {
-  render: (args) => ({
-    components: { DvOrbitVoiceSurface },
-    setup: () => ({ args }),
-    template: `<DvOrbitVoiceSurface v-bind="args" />`,
-  }),
-}
-
-/** There is no `size` prop — the surface fills the copilot panel. Its layout insets, gaps and type are tokens; the **orb geometry itself** (wave-bar widths, the 2.5px stroke, the glyph baseline nudges) is canvas geometry and stays deliberately off the spacing scale, the same exemption the chart canvases carry. */
-export const Sizes: Story = {
-  render: (args) => ({
-    components: { DvOrbitVoiceSurface },
-    setup: () => ({ args }),
-    template: `<DvOrbitVoiceSurface v-bind="args" />`,
-  }),
-}
-
-/** The full conversational cycle — ready, listening, thinking, responding — plus the two failure states (error, permission denied) and paused. */
-export const States: Story = {
-  render: (args) => ({
-    components: { DvOrbitVoiceSurface },
-    setup: () => ({ args }),
-    template: `<DvOrbitVoiceSurface v-bind="args" />`,
-  }),
 }

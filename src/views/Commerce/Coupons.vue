@@ -190,7 +190,7 @@ const headers = [
   { title: 'Start Date', key: 'startDate', hideBelow: 'md' as const },
   { title: 'End Date', key: 'endDate', hideBelow: 'md' as const },
   { title: 'Status', key: 'status' },
-  { title: '', key: 'actions', align: 'end' as const, sortable: false },
+  { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, align: 'end' as const, sortable: false },
 ]
 
 const { visibleHeaders } = useResponsiveTableHeaders(headers)
@@ -272,6 +272,23 @@ onMounted(() => {
         fixed-header
         class="flex-grow-1"
       >
+        <!-- Labelled select boxes (WCAG W-04). aria-checked is dropped: Vuetify's "mixed" is invalid on a native checkbox. -->
+        <template #header.data-table-select="{ allSelected, selectAll, someSelected }">
+          <v-checkbox-btn
+            :model-value="allSelected"
+            :indeterminate="someSelected && !allSelected"
+            :aria-checked="undefined"
+            aria-label="Select all rows"
+            @update:model-value="selectAll(!allSelected)"
+          />
+        </template>
+        <template #item.data-table-select="{ internalItem, isSelected, toggleSelect }">
+          <v-checkbox-btn
+            :model-value="isSelected(internalItem)"
+            :aria-label="`Select ${internalItem.raw.title}`"
+            @update:model-value="toggleSelect(internalItem)"
+          />
+        </template>
         <template v-slot:item.title="{ item }">
           <div class="text-body-2 font-weight-medium">{{ item.title }}</div>
           <div v-if="item.description" class="text-caption text-medium-emphasis text-truncate promo-desc">{{ item.description }}</div>
@@ -300,7 +317,7 @@ onMounted(() => {
         <template v-slot:item.usage="{ item }">
           <div class="promo-usage">
             <span class="font-weight-bold text-body-2">{{ item.usage.toLocaleString() }}</span>
-            <v-progress-linear v-if="item.limit" :model-value="(item.usage/item.limit)*100"
+            <v-progress-linear v-if="item.limit" :aria-label="`Usage: ${item.usage.toLocaleString()} of ${item.limit.toLocaleString()}`" :model-value="(item.usage/item.limit)*100"
               :color="item.usage/item.limit>0.9?'error':'primary'" height="4" rounded class="mt-1"></v-progress-linear>
             <div v-else class="text-caption text-medium-emphasis">∞ Unlimited</div>
           </div>

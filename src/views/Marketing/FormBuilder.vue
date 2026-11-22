@@ -679,7 +679,8 @@ function publishForm() {
           </aside>
 
           <!-- canvas -->
-          <main class="fb-canvas flex-grow-1 pa-6 d-flex flex-column align-center overflow-y-auto">
+          <!-- A div, not <main>: v-main is already the page's main landmark (WCAG W-18). -->
+          <div class="fb-canvas flex-grow-1 pa-6 d-flex flex-column align-center overflow-y-auto">
             <MpSegmentedControl
               :model-value="contentTab"
               :items="CONTENT_TAB_ITEMS"
@@ -729,7 +730,7 @@ function publishForm() {
                 </div>
               </div>
             </div>
-          </main>
+          </div>
 
           <!-- settings -->
           <aside class="fb-settings pa-4">

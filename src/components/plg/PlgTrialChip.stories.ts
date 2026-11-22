@@ -1,17 +1,20 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import PlgTrialChip from './PlgTrialChip.vue'
 import { usePlgStore, type PlgDemoPreset } from '@/stores/usePlg'
+import { isolateStorage, overlayDocs } from '@/stories/decorators'
 
 const meta = {
   title: 'Product/PLG/PlgTrialChip',
   component: PlgTrialChip,
   tags: ['autodocs'],
+  // applyDemoPreset() persists the PLG state to localStorage: put it back on unmount.
+  decorators: [isolateStorage],
   parameters: {
     // Every story seeds the same shared usePlgStore singleton via applyDemoPreset() so it can
-    // show a different trial state — render docs examples in isolated iframes (same idiom as
-    // MpToastStack.stories.ts) so one story's preset can't overwrite what another just rendered.
+    // show a different trial state — a frame per story on the docs page keeps one story's
+    // preset from overwriting what another just rendered.
     docs: {
-      story: { inline: false, height: '440px' },
+      ...overlayDocs('440px').docs,
       description: {
         component: `
 ### Overview
@@ -75,11 +78,7 @@ function presetStory(preset: PlgDemoPreset): Story {
         plg.applyDemoPreset(preset)
         return {}
       },
-      template: `
-        <div style="min-height: 100px; padding: 24px; display: flex; align-items: center;">
-          <PlgTrialChip />
-        </div>
-      `,
+      template: `<PlgTrialChip />`,
     }),
   }
 }
@@ -106,7 +105,7 @@ export const OpenPopover: Story = {
       return {}
     },
     template: `
-      <div style="min-height: 420px; padding: 24px; display: flex; justify-content: flex-end;">
+      <div class="d-flex justify-end">
         <PlgTrialChip />
       </div>
     `,

@@ -2,11 +2,11 @@ import { create } from 'storybook/theming/create'
 
 export default create({
   base: 'light',
-  brandTitle: 'MaroBase Design System',
+  brandTitle: 'Marobase Design System',
   brandUrl: 'https://maropost.com',
   brandTarget: '_self',
 
-  // Colors — MaroBase cyan + neutral cool-grey
+  // Colors — Marobase cyan + neutral cool-grey
   colorPrimary: '#1ab7ea',
   colorSecondary: '#1a1814',
 

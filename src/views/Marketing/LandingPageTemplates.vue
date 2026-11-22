@@ -173,7 +173,7 @@ const savedHeaders = [
   { title: 'Name', key: 'name', sortable: true, minWidth: '220px' },
   { title: 'Updated At', key: 'updatedAt', sortable: true, minWidth: '170px' },
   { title: 'Created At', key: 'createdAt', sortable: true, minWidth: '170px' },
-  { title: '', key: 'actions', sortable: false, width: 56 },
+  { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, sortable: false, width: 56 },
 ]
 
 function formatDateTime(iso: string) {

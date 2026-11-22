@@ -76,7 +76,7 @@ function makeToastStory(seeds: DaVinciToastInput[]): Story {
         return { pushTransient }
       },
       template: `
-        <div style="min-height: 220px; padding: 24px;">
+        <div>
           <v-btn color="primary" variant="tonal" class="text-none" @click="pushTransient">
             Push transient toast (4.2s)
           </v-btn>

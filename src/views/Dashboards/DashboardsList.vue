@@ -27,7 +27,7 @@ const headers = [
   { title: 'Widgets', key: 'widgetCount', align: 'end' as const, sortable: true, width: '120px', hideBelow: 'lg' as const },
   { title: 'Updated', key: 'updatedAt', sortable: true, width: '140px', hideBelow: 'md' as const },
   { title: 'Last Viewed', key: 'lastViewedAt', sortable: true, width: '150px', hideBelow: 'lg' as const },
-  { title: '', key: 'actions', align: 'end' as const, sortable: false },
+  { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, align: 'end' as const, sortable: false },
 ]
 
 const route = useRoute()
@@ -294,6 +294,23 @@ function handleDashboardCreated(dashboardId: string) {
         class="flex-grow-1 dashboards-table"
         @click:row="handleDashboardRowClick"
       >
+        <!-- Labelled select boxes (WCAG W-04). aria-checked is dropped: Vuetify's "mixed" is invalid on a native checkbox. -->
+        <template #header.data-table-select="{ allSelected, selectAll, someSelected }">
+          <v-checkbox-btn
+            :model-value="allSelected"
+            :indeterminate="someSelected && !allSelected"
+            :aria-checked="undefined"
+            aria-label="Select all rows"
+            @update:model-value="selectAll(!allSelected)"
+          />
+        </template>
+        <template #item.data-table-select="{ internalItem, isSelected, toggleSelect }">
+          <v-checkbox-btn
+            :model-value="isSelected(internalItem)"
+            :aria-label="`Select ${internalItem.raw.name}`"
+            @update:model-value="toggleSelect(internalItem)"
+          />
+        </template>
         <template #item.name="{ item }">
           <div class="d-flex align-center ga-3 py-2 min-width-0">
             <v-avatar size="36" variant="tonal" :color="accentToVuetifyColor(item.accent)" class="flex-shrink-0">

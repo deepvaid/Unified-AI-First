@@ -32,7 +32,8 @@ export function useFocusTrap(
     if (open) {
       lastFocused = document.activeElement as HTMLElement | null
       await nextTick()
-      panel.value?.focus()
+      // A host that focused its own field on open (a search box) keeps that focus.
+      if (!panel.value?.contains(document.activeElement)) panel.value?.focus()
     } else if (lastFocused) {
       lastFocused.focus?.()
       lastFocused = null

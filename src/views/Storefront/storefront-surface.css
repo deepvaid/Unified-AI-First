@@ -1,0 +1,17 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+ * The store's theme surface: background, text and type from its theme (--sf-*),
+ * with the storefront's fallbacks. The storefront's root carries it, and so does
+ * the admin's "What shoppers see" preview, so both draw the same store.
+ * P4-8 — DELIBERATELY OUT OF SYSTEM, like the rest of the storefront: it never
+ * follows the app's dark mode.
+ * ───────────────────────────────────────────────────────────────────────────── */
+.sf-surface {
+  --sf-bg-fallback: #ffffff;
+  --sf-text-fallback: #121011;
+  --sf-divider: #f0f0f0;
+  background: var(--sf-bg, var(--sf-bg-fallback));
+  color: var(--sf-text, var(--sf-text-fallback));
+  font-family: var(--sf-body-font, system-ui), -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 24px;
+}

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MpAlert from '@/components/MpAlert.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
@@ -7,21 +7,34 @@ import MpListRow from '@/components/MpListRow.vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpSectionHeader from '@/components/MpSectionHeader.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
-import MaropayBalanceCards from '@/components/maropay/MaropayBalanceCards.vue'
+import DashboardChartWidget from '@/components/dashboards/widgets/DashboardChartWidget.vue'
+import MaropayMethodMark from '@/components/maropay/MaropayMethodMark.vue'
 import MaropayMoney from '@/components/maropay/MaropayMoney.vue'
+import MaropayMoneyPanel from '@/components/maropay/MaropayMoneyPanel.vue'
 import MaropayRatesTable from '@/components/maropay/MaropayRatesTable.vue'
 import MaropayReadinessCard from '@/components/maropay/MaropayReadinessCard.vue'
+import MaropayStoreMark from '@/components/maropay/MaropayStoreMark.vue'
+import MaropayStoreNag from '@/components/maropay/MaropayStoreNag.vue'
 import MaropaySupportAlert from '@/components/maropay/MaropaySupportAlert.vue'
 import MaropayTaskList from '@/components/maropay/MaropayTaskList.vue'
 import { useToast } from '@/composables/useToast'
 import { useMaropayStore } from '@/stores/useMaropay'
-import { PROVIDER_LABELS, STORE_ACTIVATION_LABELS } from '@/maropay/model'
-import { formatDay, taskTarget } from '@/maropay/readiness'
+import { toDecimal } from '@/maropay/money'
+import { MAROPAY_BENEFITS } from '@/maropay/benefits'
+import { markFor } from '@/maropay/methodMarks'
+import { PAYMENT_STATUS_LABELS, PROVIDER_LABELS, STORE_ACTIVATION_LABELS } from '@/maropay/model'
+import { activeConnections, cardGateway, connectionOfferedMethods, providerLabel } from '@/maropay/providers'
+import { deadlineLabel } from '@/maropay/disputes'
+import { checklistProgress, formatDay, moneyNow, storeCheckoutNote, storeNag, storePaymentsTarget, taskTarget } from '@/maropay/readiness'
+import { dayLabel, volumeDelta, volumeSeries } from '@/maropay/volume'
+import type { DashboardSeriesData } from '@/stores/dashboards/types'
 
 // Maropay → Overview: "Can I trade, and where is my money?" (plan §2). Before
 // setup it is the discovery page — value, cost, what's needed and what happens
-// to the current provider (plan §3B). After that it leads with one instruction,
-// then tasks, balances, stores and recent activity.
+// to the current provider (plan §3B). After that it leads with one instruction
+// (a quiet row once the business is trading), then the money — the next payout
+// and where the balance sits, on the ink panel — then the store still to move,
+// tasks, gross volume beside the stores, recent payments and activity.
 
 const route = useRoute()
 const router = useRouter()
@@ -39,13 +52,15 @@ const dismissed = computed(() => maropay.discoveryDismissedAt !== null)
 
 // ── Discovery ──────────────────────────────────────────────────────
 
-const BENEFITS = [
-  { icon: 'receipt', title: 'Payments beside your orders', desc: 'Capture, refund and investigate a payment from the order you’re already looking at.' },
-  { icon: 'landmark', title: 'Payouts you can trace', desc: 'Every payout breaks down into the payments, fees, refunds and disputes inside it.' },
-  { icon: 'shield-alert', title: 'Disputes with the deadline up front', desc: 'Respond with an evidence checklist before the shopper’s bank decides.' },
-  { icon: 'store', title: 'One business, every store', desc: 'Verify your business once, then switch stores on one at a time.' },
-  { icon: 'life-buoy', title: 'Maropost support first', desc: 'One place to ask about an order and the payment behind it.' },
-]
+// The same list the store's Payments page sells from (src/maropay/benefits.ts).
+const BENEFITS = MAROPAY_BENEFITS
+
+/** "Pays through Stripe, Bank deposit today" — what each store runs on before Maropay. */
+function storeProviderNote(channelId: string): string {
+  const setup = maropay.storeProvidersFor(channelId)
+  const names = activeConnections(setup).filter((c) => connectionOfferedMethods(c, setup).length > 0).map((c) => providerLabel(c.kind))
+  return names.length ? `Pays through ${names.join(', ')} today` : 'No payment provider yet'
+}
 
 const NEEDS = [
   { icon: 'building-2', title: 'Business details', desc: 'Legal name, registration number and address.' },
@@ -59,6 +74,11 @@ function scrollToRates(): void {
   el?.focus({ preventScroll: true })
 }
 
+// The store's Payments page links straight to the rates ("Compare with Stripe").
+onMounted(() => {
+  if (route.hash === '#maropay-rates') nextTick(scrollToRates)
+})
+
 function keepCurrentProvider(): void {
   maropay.dismissDiscovery()
   toast.success('Your current payment setup stays as it is. Maropay is here whenever you want it.')
@@ -69,6 +89,11 @@ function keepCurrentProvider(): void {
 const actionTo = computed(() => (maropay.overview.action ? maropay.routeFor(maropay.overview.action.target) : null))
 const taskItems = computed(() => maropay.openTasks.map((task) => ({ task, to: maropay.routeFor(taskTarget(task)) })))
 const hasLiveStore = computed(() => maropay.bindings.some((b) => b.activation === 'live'))
+/** The first live store's storefront, where shoppers pay with Maropay. */
+const liveStoreHref = computed(() => {
+  const live = maropay.bindings.find((b) => b.activation === 'live')
+  return live ? router.resolve({ name: 'StorefrontHome', params: { ...params.value, channelId: live.channelId } }).href : null
+})
 const hasMoney = computed(() => hasLiveStore.value || maropay.state.movements.length > 0 || maropay.payouts.length > 0)
 const businessName = computed(() => maropay.business?.legalName || maropay.onboarding.business.legalName || 'Your business')
 
@@ -79,19 +104,88 @@ const subtitle = computed(() => {
   return `${businessName.value} · ${account.currency} · ${liveStores} of ${linkedStores} ${linkedStores === 1 ? 'store' : 'stores'} live`
 })
 
+/** Each linked store: live since when, or what it still checks out with and how far along it is. */
 const storeRows = computed(() => maropay.bindings.map((binding) => {
-  const channel = maropay.eligibleChannels.find((c) => c.id === binding.channelId)
   const state = maropay.storeStateFor(binding.channelId) ?? 'inactive'
-  const provider = binding.previousProvider ? PROVIDER_LABELS[binding.previousProvider.provider] : null
+  const live = binding.activation === 'live'
+  const gateway = cardGateway(maropay.storeProvidersFor(binding.channelId))
+  const checklist = !live && state === 'needs_setup' ? maropay.checklistFor(binding.channelId) : null
+  const progress = checklist ? checklistProgress(checklist) : null
   return {
     id: binding.channelId,
     name: maropay.channelName(binding.channelId),
-    domain: channel?.domain ?? null,
     status: STORE_ACTIVATION_LABELS[state],
-    note: state === 'live' ? 'Checkout uses Maropay' : provider ? `Checkout uses ${provider}` : 'Keeps its current payment setup',
-    to: { name: 'StorePayments', params: { accountId: accountId.value, channelId: binding.channelId } },
+    progress,
+    note: live && binding.activatedAt
+      ? `On Maropay since ${formatDay(binding.activatedAt)}`
+      : !live && gateway ? `Checks out with ${providerLabel(gateway.kind)}` : storeCheckoutNote(state, maropay.storeProvidersFor(binding.channelId)),
+    to: maropay.routeFor(storePaymentsTarget(binding.channelId)),
   }
 }))
+
+/** The store still to move, once another is live. */
+const nag = computed(() => {
+  const n = storeNag(maropay.state, maropay.now, maropay.channelFacts)
+  return n ? { ...n, name: maropay.channelName(n.channelId), to: maropay.routeFor(storePaymentsTarget(n.channelId)) } : null
+})
+
+/** Disputes waiting for a reply, soonest deadline first. */
+const openDisputes = computed(() => [...maropay.disputes].filter((d) => d.status === 'needs_response').sort((a, b) => Date.parse(a.respondBy) - Date.parse(b.respondBy)))
+const disputeTile = computed(() => {
+  const first = openDisputes.value[0]
+  if (!first) return null
+  const payment = maropay.paymentById(first.paymentId)
+  const count = openDisputes.value.length
+  return {
+    title: count === 1 ? '1 dispute needs a reply' : `${count} disputes need a reply`,
+    detail: `${payment?.customer.name ?? 'A shopper'} · ${first.amount.currency} ${toDecimal(first.amount)} · ${deadlineLabel(first.respondBy, maropay.now).toLowerCase()}`,
+    to: count === 1 ? { name: 'MaropayDisputeDetail', params: { ...params.value, disputeId: first.id } } : { name: 'MaropayDisputes', params: params.value },
+  }
+})
+
+/** Trading: the status is good news, so it's one quiet row. */
+const readinessDensity = computed(() => (maropay.overview.key === 'active' || maropay.overview.key === 'activate_more' ? 'compact' : 'default'))
+
+// ── Money ──────────────────────────────────────────────────────────
+
+const currency = computed(() => maropay.account?.currency ?? 'USD')
+const RANGES = [{ value: 7, title: 'Last 7 days' }, { value: 30, title: 'Last 30 days' }, { value: 90, title: 'Last 90 days' }]
+const days = ref(30)
+const volume = computed(() => volumeSeries(maropay.payments, maropay.now, days.value, currency.value))
+const delta = computed(() => volumeDelta(maropay.payments, maropay.now, days.value, currency.value))
+const volumeChart = computed<DashboardSeriesData>(() => ({
+  kind: 'series',
+  unit: 'currency',
+  labels: volume.value.days.map((d) => dayLabel(d.day)),
+  series: [{ name: 'Gross volume', data: volume.value.days.map((d) => Number(toDecimal(d.amount))) }],
+}))
+const payoutDestination = computed(() => {
+  const d = maropay.account?.payoutDestination
+  return d ? `${d.bankName} •••• ${d.last4}` : null
+})
+const upcomingRoute = computed(() => ({ name: 'MaropayPayoutDetail', params: { ...params.value, payoutId: 'upcoming' } }))
+
+// Store operations see their stores' payments; owners and finance see them all.
+const recentPayments = computed(() => {
+  const assigned = maropay.actingRole === 'store_ops' ? maropay.assignedChannelIds ?? [] : null
+  return [...maropay.payments]
+    .filter((p) => !assigned || assigned.includes(p.channelId))
+    .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
+    .slice(0, 5)
+})
+const PAYMENT_HEADERS = [
+  { title: 'Customer', key: 'customer', sortable: false },
+  { title: 'Amount', key: 'amount', align: 'end' as const, sortable: false },
+  { title: 'Paid with', key: 'method', sortable: false },
+  { title: 'Status', key: 'status', sortable: false },
+  { title: 'Store', key: 'store', sortable: false },
+  { title: 'Date', key: 'date', align: 'end' as const, sortable: false },
+]
+const DATE_TIME = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+
+function openStore(): void {
+  if (liveStoreHref.value) window.open(liveStoreHref.value, '_blank', 'noopener')
+}
 
 const unlinkedStores = computed(() => maropay.eligibleChannels.filter((c) => !maropay.bindings.some((b) => b.channelId === c.id)))
 
@@ -103,7 +197,10 @@ const activity = computed(() => {
 
 /** Declined or unsupported: nothing to activate, and the stores keep their current setup. */
 const unavailable = computed(() => maropay.overview.key === 'unavailable' || maropay.overview.key === 'declined')
-const keptProviders = computed(() => [...new Set(maropay.bindings.flatMap((b) => (b.previousProvider ? [PROVIDER_LABELS[b.previousProvider.provider]] : [])))])
+const keptProviders = computed(() => [...new Set(maropay.bindings.flatMap((b) => {
+  const gateway = cardGateway(maropay.storeProvidersFor(b.channelId))
+  return gateway ? [PROVIDER_LABELS[gateway.kind]] : []
+}))])
 const supportReferences = computed(() => [
   { label: 'Maropost account', value: accountId.value },
   { label: 'Maropay account', value: maropay.account?.processorAccountRef ?? '—' },
@@ -127,6 +224,23 @@ const firstPayout = computed(() => {
   const payout = maropay.payoutById(id)
   return payout && maropay.now - Date.parse(payout.createdAt) < RECENT_MS ? payout : null
 })
+
+/** One celebration at a time: the first payment and first payout share an alert. */
+const milestone = computed(() => {
+  const payment = firstPayment.value
+  const payout = firstPayout.value
+  if (!payment && !payout) return null
+  const title = payment && payout
+    ? 'Your first payment and payout came through'
+    : payment ? 'Your first Maropay payment came through'
+      : payout!.status === 'paid' ? 'Your first payout was sent to your bank' : 'Your first payout is on its way'
+  return { title, payment, payout }
+})
+
+function dismissMilestone(): void {
+  if (firstPayment.value) maropay.dismissMilestone('first_payment')
+  if (firstPayout.value) maropay.dismissMilestone('first_payout')
+}
 
 function openPayment(paymentId: string): void {
   void router.push({ name: 'MaropayPaymentDetail', params: { ...params.value, paymentId } })
@@ -172,32 +286,28 @@ function openPayout(payoutId: string): void {
     </MpPageHeader>
 
     <div class="maropay-overview__split">
-      <v-card flat border rounded="lg" class="maropay-card">
+      <v-card flat border rounded="lg" class="mp-card-inset">
         <MpSectionHeader title="What you get" :heading-level="2" />
-        <MpListRow v-for="item in BENEFITS" :key="item.title" variant="divided">
-          <template #lead><v-icon size="18" class="maropay-overview__icon">{{ item.icon }}</v-icon></template>
-          <span class="maropay-overview__row-title">{{ item.title }}</span>
-          <span class="maropay-overview__row-sub">{{ item.desc }}</span>
+        <MpListRow v-for="item in BENEFITS" :key="item.title" variant="divided" :title="item.title" :subtitle="item.desc">
+          <template #lead><v-icon size="16" class="maropay-overview__icon">{{ item.icon }}</v-icon></template>
         </MpListRow>
       </v-card>
 
-      <v-card flat border rounded="lg" class="maropay-card">
+      <v-card flat border rounded="lg" class="mp-card-inset">
         <MpSectionHeader title="What you’ll need" description="About 10 minutes. Your progress is saved as you go." :heading-level="2" />
-        <MpListRow v-for="item in NEEDS" :key="item.title" variant="divided">
-          <template #lead><v-icon size="18" class="maropay-overview__icon">{{ item.icon }}</v-icon></template>
-          <span class="maropay-overview__row-title">{{ item.title }}</span>
-          <span class="maropay-overview__row-sub">{{ item.desc }}</span>
+        <MpListRow v-for="item in NEEDS" :key="item.title" variant="divided" :title="item.title" :subtitle="item.desc">
+          <template #lead><v-icon size="16" class="maropay-overview__icon">{{ item.icon }}</v-icon></template>
         </MpListRow>
       </v-card>
     </div>
 
-    <v-card id="maropay-rates" flat border rounded="lg" class="maropay-card" tabindex="-1">
+    <v-card id="maropay-rates" flat border rounded="lg" class="mp-card-inset" tabindex="-1">
       <MpSectionHeader title="What it costs" description="You pay per transaction. There’s no monthly Maropay fee." :heading-level="2" />
       <MaropayRatesTable :methods="maropay.methods" hide-unavailable />
     </v-card>
 
     <div class="maropay-overview__split">
-      <v-card flat border rounded="lg" class="maropay-card">
+      <v-card flat border rounded="lg" class="mp-card-inset">
         <MpSectionHeader
           title="Your stores"
           description="Each store keeps its current payment setup until you activate Maropay on it."
@@ -208,11 +318,12 @@ function openPayout(payoutId: string): void {
             v-for="store in maropay.eligibleChannels"
             :key="store.id"
             variant="divided"
-            :eyebrow="store.domain ?? undefined"
             :title="store.name"
+            :subtitle="storeProviderNote(store.id)"
             meta="Keeps its current setup"
+            :to="{ name: 'StorePayments', params: { ...params, channelId: store.id } }"
           >
-            <template #lead><v-icon size="18" class="maropay-overview__icon">globe</v-icon></template>
+            <template #lead><v-icon size="16" class="maropay-overview__icon">globe</v-icon></template>
           </MpListRow>
         </template>
         <MpEmptyState
@@ -226,10 +337,14 @@ function openPayout(payoutId: string): void {
         />
       </v-card>
 
-      <MpAlert tone="info" live="off" icon="shield-check" title="How verification works">
-        Our payments partner verifies your business and the people behind it, and you’ll review their agreement
-        before you submit. Submitting isn’t approval — once you’re verified, you choose when each store switches.
-      </MpAlert>
+      <v-card flat border rounded="lg" class="mp-card-inset">
+        <MpSectionHeader
+          icon="shield-check"
+          title="How verification works"
+          description="Our payments partner verifies your business and the people behind it, and you’ll review their agreement before you submit. Submitting isn’t approval — once you’re verified, you choose when each store switches."
+          :heading-level="2"
+        />
+      </v-card>
     </div>
   </div>
 
@@ -237,90 +352,147 @@ function openPayout(payoutId: string): void {
   <div v-else class="d-flex flex-column gap-5">
     <MpPageHeader title="Maropay" :subtitle="subtitle">
       <template #actions>
+        <!-- hide-details: a toolbar control with no message of its own, kept flush at control height. -->
+        <v-select
+          v-if="hasMoney"
+          v-model="days"
+          :items="RANGES"
+          aria-label="Volume window"
+          density="compact"
+          hide-details
+          prepend-inner-icon="calendar"
+          class="maropay-overview__range"
+        />
         <v-btn
-          v-if="hasLiveStore"
+          v-if="liveStoreHref"
           variant="outlined"
           class="text-none"
-          prepend-icon="monitor-smartphone"
-          :to="{ name: 'MaropayCheckoutPreview', params }"
+          prepend-icon="store"
+          append-icon="external-link"
+          :href="liveStoreHref"
+          target="_blank"
+          rel="noopener"
         >
-          Checkout preview
+          View your store
         </v-btn>
       </template>
     </MpPageHeader>
 
-    <MaropayReadinessCard :instruction="maropay.overview" :dimensions="maropay.dimensions" :action-to="actionTo" />
+    <MaropayReadinessCard :instruction="maropay.overview" :dimensions="maropay.dimensions" :action-to="actionTo" :density="readinessDensity">
+      <template v-if="unavailable" #footer>
+        <p class="maropay-overview__note">
+          Nothing changed at checkout. {{ keptProviders.length
+            ? `Your stores keep taking payments with ${keptProviders.join(' and ')}.`
+            : 'Your stores keep their current payment setup.' }}
+        </p>
+      </template>
+    </MaropayReadinessCard>
 
-    <template v-if="unavailable">
-      <MpAlert tone="info" live="off" title="Nothing changed at checkout">
-        {{ keptProviders.length
-          ? `Your stores keep taking payments with ${keptProviders.join(' and ')}.`
-          : 'Your stores keep their current payment setup.' }}
-      </MpAlert>
-      <!-- Only a declined verification is a decision; an unsupported country is still the merchant's answer. -->
-      <MaropaySupportAlert
-        v-if="maropay.account?.verification === 'rejected'"
-        title="Ask for this decision to be reviewed"
-        message="Maropost support can ask our payments partner to look at the decision again. Approval isn’t guaranteed."
-        :references="supportReferences"
-      />
-    </template>
+    <!-- Only a declined verification is a decision; an unsupported country is still the merchant's answer. -->
+    <MaropaySupportAlert
+      v-if="unavailable && maropay.account?.verification === 'rejected'"
+      emphasis="prominent"
+      title="Ask for this decision to be reviewed"
+      message="Maropost support can ask our payments partner to look at the decision again. Approval isn’t guaranteed."
+      :references="supportReferences"
+    />
 
-    <MpAlert v-if="firstPayment" tone="success" title="Your first Maropay payment came through" dismissible @dismiss="maropay.dismissMilestone('first_payment')">
-      {{ firstPayment.orderNumber ? `Order ${firstPayment.orderNumber} · ` : '' }}<MaropayMoney :amount="firstPayment.amount" /> · {{ firstPayment.methodLabel }}.
-      The money reaches your bank with a payout, which happens separately.
+    <MpAlert v-if="milestone" tone="success" :title="milestone.title" dismissible @dismiss="dismissMilestone">
+      <template v-if="milestone.payment">
+        {{ milestone.payment.orderNumber ? `Order ${milestone.payment.orderNumber} · ` : '' }}<MaropayMoney :amount="milestone.payment.amount" /> · {{ milestone.payment.methodLabel }}.
+      </template>
+      <template v-if="milestone.payout">
+        <MaropayMoney :amount="milestone.payout.amount" /> to {{ milestone.payout.destination.bankName }} •••• {{ milestone.payout.destination.last4 }}{{ milestone.payout.arrivalEstimate && milestone.payout.status === 'in_transit' ? ` — estimated arrival ${formatDay(milestone.payout.arrivalEstimate)}` : '' }}.
+      </template>
+      {{ milestone.payout ? '“Sent to bank” means we sent it; your bank shows it once it clears.' : 'The money reaches your bank with a payout, which happens separately.' }}
       <template #actions>
-        <v-btn size="small" variant="outlined" class="text-none" @click="openPayment(firstPayment.id)">View payment</v-btn>
+        <v-btn v-if="milestone.payment" size="small" variant="outlined" class="text-none" @click="openPayment(milestone.payment.id)">View payment</v-btn>
+        <v-btn v-if="milestone.payout" size="small" variant="outlined" class="text-none" @click="openPayout(milestone.payout.id)">View payout</v-btn>
       </template>
     </MpAlert>
 
-    <MpAlert v-if="firstPayout" tone="success" :title="firstPayout.status === 'paid' ? 'Your first payout was sent to your bank' : 'Your first payout is on its way'" dismissible @dismiss="maropay.dismissMilestone('first_payout')">
-      <MaropayMoney :amount="firstPayout.amount" /> to {{ firstPayout.destination.bankName }} •••• {{ firstPayout.destination.last4 }}{{ firstPayout.arrivalEstimate && firstPayout.status === 'in_transit' ? ` — estimated arrival ${formatDay(firstPayout.arrivalEstimate)}` : '' }}.
-      “Sent to bank” means we sent it; your bank shows it once it clears.
-      <template #actions>
-        <v-btn size="small" variant="outlined" class="text-none" @click="openPayout(firstPayout.id)">View payout</v-btn>
-      </template>
-    </MpAlert>
-
-    <MaropayTaskList v-if="taskItems.length" :items="taskItems" :now="maropay.now" />
-
-    <section v-if="hasMoney" aria-label="Balance" class="d-flex flex-column">
-      <MpSectionHeader
-        title="Balance"
-        :description="maropay.account ? `${maropay.account.currency} · daily payouts, estimated from what has settled` : undefined"
-        :heading-level="2"
-      />
+    <!-- The money leads once there is any: the next payout and where the balance sits, one panel per currency. -->
+    <template v-if="hasMoney">
       <template v-if="maropay.can('view_balances')">
-        <MaropayBalanceCards
+        <MaropayMoneyPanel
           v-for="balance in maropay.balances"
           :key="balance.currency"
           :balance="balance"
           :upcoming="maropay.upcomingPayout"
+          :buckets="moneyNow(maropay.state, balance, maropay.now)"
+          :destination="payoutDestination"
+          :upcoming-to="upcomingRoute"
         />
       </template>
-      <MpAlert v-else tone="info" icon="lock" live="off">
-        Balances and payouts are visible to owners and finance users. You can still see payments for your stores in Transactions.
-      </MpAlert>
-    </section>
+      <v-card v-else flat border rounded="lg" class="mp-card-inset">
+        <MpSectionHeader title="Balance" :heading-level="2" />
+        <MpEmptyState
+          icon="lock"
+          title="Balances are for owners and finance"
+          description="You can still see payments for your stores in Transactions."
+          :heading-level="3"
+        />
+      </v-card>
+    </template>
+
+    <MaropayStoreNag v-if="nag" :store-name="nag.name" :gateway="nag.gateway" :done="nag.done" :total="nag.total" :to="nag.to" />
+
+    <MaropayTaskList v-if="taskItems.length" :items="taskItems" :now="maropay.now" />
 
     <div class="maropay-overview__split">
-      <v-card flat border rounded="lg" class="maropay-card">
+      <v-card flat border rounded="lg" class="mp-card-inset">
+        <MpSectionHeader title="Gross volume" :description="`${RANGES.find((r) => r.value === days)?.title} · ${currency}`" :heading-level="2">
+          <template #actions>
+            <v-btn size="small" variant="text" class="text-none" append-icon="arrow-right" :to="{ name: 'MaropayTransactions', params }">Transactions</v-btn>
+          </template>
+        </MpSectionHeader>
+        <template v-if="volume.count">
+          <div class="maropay-overview__total">
+            <MaropayMoney :amount="volume.total" emphasis="prominent" />
+            <v-chip
+              v-if="delta.pct !== null"
+              size="x-small"
+              variant="tonal"
+              :color="delta.pct >= 0 ? 'success' : 'error'"
+              :prepend-icon="delta.pct >= 0 ? 'trending-up' : 'trending-down'"
+              class="maropay-overview__delta"
+            >
+              <span class="d-sr-only">{{ delta.pct >= 0 ? 'Up' : 'Down' }}</span>{{ Math.abs(delta.pct) }}%<span class="d-sr-only"> against the previous {{ days }} days</span>
+            </v-chip>
+            <span class="maropay-overview__caption">{{ volume.count }} {{ volume.count === 1 ? 'payment' : 'payments' }} captured</span>
+          </div>
+          <DashboardChartWidget :data="volumeChart" widget-type="timeseries" chart-variant="stacked-column" />
+        </template>
+        <MpEmptyState
+          v-else
+          icon="chart-line"
+          :title="`No payments in the last ${days} days`"
+          :description="liveStoreHref ? 'Payments show up here as soon as a shopper pays.' : 'Payments show up here once a store is live on Maropay.'"
+          :action-label="liveStoreHref ? 'Open your store' : undefined"
+          action-icon="external-link"
+          :heading-level="3"
+          @action="openStore"
+        />
+      </v-card>
+
+      <v-card flat border rounded="lg" class="mp-card-inset">
         <MpSectionHeader title="Stores" :heading-level="2" description="Activation is per store — linking a store doesn’t switch its checkout." />
         <MpListRow
           v-for="store in storeRows"
           :key="store.id"
           variant="divided"
           :to="store.to"
+          :title="store.name"
+          :subtitle="store.note"
         >
-          <template #lead><v-icon size="18" class="maropay-overview__icon">globe</v-icon></template>
-          <span class="maropay-overview__row-title">{{ store.name }}</span>
-          <span class="maropay-overview__row-sub">{{ store.note }}</span>
+          <template #lead><MaropayStoreMark :name="store.name" /></template>
           <template #trailing>
-            <MpStatusChip :status="store.status" type="readiness" size="sm" show-icon />
-            <v-icon size="16" class="ms-2 maropay-overview__chevron">chevron-right</v-icon>
+            <v-chip v-if="store.progress" size="small" variant="tonal" color="warning" class="maropay-overview__progress">{{ store.progress.done }} of {{ store.progress.total }}</v-chip>
+            <MpStatusChip v-else :status="store.status" type="readiness" size="sm" show-icon />
+            <v-icon size="16" class="ms-2 maropay-overview__icon">chevron-right</v-icon>
           </template>
         </MpListRow>
-        <p v-if="!storeRows.length" class="maropay-overview__empty">No stores are linked to Maropay yet.</p>
+        <MpEmptyState v-if="!storeRows.length" icon="store" title="No stores linked yet" :heading-level="3" />
         <div v-if="unlinkedStores.length && maropay.account?.setup === 'submitted' && !unavailable && !maropay.account.closedAt && maropay.can('link_store')" class="maropay-overview__more">
           <span>{{ unlinkedStores.length }} more Maropost {{ unlinkedStores.length === 1 ? 'store can' : 'stores can' }} use Maropay.</span>
           <v-btn
@@ -333,25 +505,56 @@ function openPayout(payoutId: string): void {
             Link a store
           </v-btn>
         </div>
-      </v-card>
-
-      <v-card flat border rounded="lg" class="maropay-card">
-        <MpSectionHeader title="Recent activity" :heading-level="2" />
-        <MpListRow v-for="entry in activity" :key="entry.id" variant="divided">
-          <span class="maropay-overview__row-sub mt-0">{{ formatDay(entry.at) }}</span>
-          <span class="maropay-overview__row-title">{{ entry.text }}</span>
-        </MpListRow>
-        <p v-if="!activity.length" class="maropay-overview__empty">Nothing yet.</p>
+        <MpAlert v-if="disputeTile" tone="error" live="off" :title="disputeTile.title" class="maropay-overview__dispute">
+          {{ disputeTile.detail }}
+          <template #actions>
+            <v-btn size="small" variant="text" class="text-none" append-icon="arrow-right" :to="disputeTile.to">Respond</v-btn>
+          </template>
+        </MpAlert>
       </v-card>
     </div>
+
+    <v-card v-if="hasMoney" flat border rounded="lg" class="mp-card-inset">
+      <MpSectionHeader title="Recent payments" :heading-level="2">
+        <template #actions>
+          <v-btn size="small" variant="text" class="text-none" append-icon="arrow-right" :to="{ name: 'MaropayTransactions', params }">View all</v-btn>
+        </template>
+      </MpSectionHeader>
+      <v-data-table
+        v-if="recentPayments.length"
+        :headers="PAYMENT_HEADERS"
+        :items="recentPayments"
+        item-value="id"
+        hide-default-footer
+        class="maropay-overview__payments"
+        @click:row="(_: unknown, row: { item: (typeof recentPayments)[number] }) => openPayment(row.item.id)"
+      >
+        <template #item.customer="{ item }"><span class="font-weight-medium">{{ item.customer.name }}</span></template>
+        <template #item.amount="{ item }">
+          <MaropayMoney :amount="item.amount" :class="{ 'mp-strike': item.status === 'refunded' }" />
+        </template>
+        <template #item.method="{ item }">
+          <span class="d-inline-flex align-center ga-2">
+            <MaropayMethodMark :mark="markFor(item.methodId, item.methodLabel)" size="sm" decorative />
+            {{ item.methodLabel }}
+          </span>
+        </template>
+        <template #item.status="{ item }"><MpStatusChip :status="PAYMENT_STATUS_LABELS[item.status]" type="payment" size="sm" /></template>
+        <template #item.store="{ item }">{{ maropay.channelName(item.channelId) }}</template>
+        <template #item.date="{ item }"><span class="text-medium-emphasis">{{ DATE_TIME.format(new Date(item.createdAt)) }}</span></template>
+      </v-data-table>
+      <MpEmptyState v-else icon="receipt" title="No payments yet" description="Payments show up here as soon as a shopper pays." :heading-level="3" />
+    </v-card>
+
+    <v-card flat border rounded="lg" class="mp-card-inset">
+      <MpSectionHeader title="Recent activity" :heading-level="2" />
+      <MpListRow v-for="entry in activity" :key="entry.id" variant="divided" :title="entry.text" :subtitle="formatDay(entry.at)" />
+      <MpEmptyState v-if="!activity.length" icon="history" title="Nothing yet" :heading-level="3" />
+    </v-card>
   </div>
 </template>
 
 <style scoped lang="scss">
-.maropay-card {
-  padding: var(--mp-component-card-padding);
-}
-
 /* Two cards side by side, stacking on their own below the split breakpoint. */
 .maropay-overview__split {
   display: grid;
@@ -366,32 +569,52 @@ function openPayout(payoutId: string): void {
   }
 }
 
-.maropay-overview__icon {
-  color: var(--icon-secondary);
+/* The window select is a toolbar control: control height, searchWidth-ish, no message headroom. */
+.maropay-overview__range {
+  flex: 0 1 auto;
+  min-width: var(--mp-space-80);
+  width: calc(var(--mp-component-toolbar-searchMinWidth) * 0.7);
 }
 
-.maropay-overview__chevron {
-  color: var(--muted);
+.maropay-overview__total {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--mp-space-4) var(--mp-space-12);
+  margin-bottom: var(--mp-space-8);
 }
 
-.maropay-overview__row-title {
-  font-size: var(--mp-fontSize-14);
-  font-weight: var(--mp-fontWeight-medium);
-  line-height: var(--mp-lineHeight-snug);
-  color: var(--text-primary);
+.maropay-overview__delta {
+  align-self: center;
+  font-variant-numeric: tabular-nums;
 }
 
-.maropay-overview__row-sub {
-  margin-top: var(--mp-space-2);
+.maropay-overview__progress {
+  font-variant-numeric: tabular-nums;
+}
+
+.maropay-overview__dispute {
+  margin-top: var(--mp-space-16);
+}
+
+/* Rows open the payment; the cursor says so. */
+.maropay-overview__payments :where(tbody tr) {
+  cursor: pointer;
+}
+
+.maropay-overview__caption,
+.maropay-overview__note {
   font-size: var(--mp-fontSize-13);
   line-height: var(--mp-lineHeight-normal);
-  color: var(--text-secondary);
+  color: var(--on-surface-muted);
 }
 
-.maropay-overview__empty {
+.maropay-overview__note {
   margin: 0;
-  font-size: var(--mp-fontSize-13);
-  color: var(--muted);
+}
+
+.maropay-overview__icon {
+  color: var(--icon-secondary);
 }
 
 .maropay-overview__more {
@@ -402,7 +625,7 @@ function openPayout(payoutId: string): void {
   flex-wrap: wrap;
   margin-top: var(--mp-space-12);
   font-size: var(--mp-fontSize-13);
-  color: var(--text-secondary);
+  color: var(--on-surface-muted);
 }
 
 #maropay-rates:focus-visible {

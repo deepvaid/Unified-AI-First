@@ -1,7 +1,11 @@
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useCommerceStore } from '@/stores/useCommerce'
 import { useSalesChannelsStore, type SalesChannel } from '@/stores/useSalesChannels'
+import {
+  RECEIPT_LIBRARY, copyName, copyTemplate, isReceiptTemplate, libraryTemplate, resolveTemplate, section, uniqueName,
+  type ReceiptLocation, type ReceiptTemplate,
+} from '@/views/Retail/receipts/receiptModel'
 
 /* ── Types ─────────────────────────────────────────────────────── */
 
@@ -12,6 +16,12 @@ export interface RetailLocation {
   name: string
   address: string
   country: Country
+  /** State or province code — sets the register's tax (e.g. BC = GST + PST). */
+  region?: string
+  /** Printed on receipts. */
+  phone?: string
+  /** Tax registration printed on receipts: ABN (AU), GST/HST number (CA), GST number (NZ). */
+  taxId?: string
   /** Stores sell at a register; warehouses only hold stock. */
   kind: 'store' | 'warehouse'
   registerCount: number
@@ -67,12 +77,8 @@ export interface PaymentsSettings {
   cashRoundingEnabled: boolean
 }
 
-/** What the shopper walks away with. */
+/** How receipts reach the shopper. What's printed on them lives in receipt templates. */
 export interface ReceiptSettings {
-  headerText: string
-  footerText: string
-  showLogo: boolean
-  showTaxNumber: boolean
   defaultDelivery: 'print' | 'email' | 'both' | 'ask'
   emailSubject: string
   giftReceiptsEnabled: boolean
@@ -86,6 +92,9 @@ const locations: RetailLocation[] = [
     name: 'Bondi Junction',
     address: '500 Oxford St, Bondi Junction NSW 2022',
     country: 'AU',
+    region: 'NSW',
+    phone: '+61 2 9387 1000',
+    taxId: '12 345 678 901',
     kind: 'store',
     registerCount: 3,
     staffCount: 5,
@@ -97,6 +106,9 @@ const locations: RetailLocation[] = [
     name: 'Chadstone',
     address: '1341 Dandenong Rd, Chadstone VIC 3148',
     country: 'AU',
+    region: 'VIC',
+    phone: '+61 3 9563 3355',
+    taxId: '12 345 678 901',
     kind: 'store',
     registerCount: 2,
     staffCount: 4,
@@ -108,6 +120,8 @@ const locations: RetailLocation[] = [
     name: 'Newmarket',
     address: '277 Broadway, Newmarket, Auckland 1023',
     country: 'NZ',
+    phone: '+64 9 520 1000',
+    taxId: '123-456-789',
     kind: 'store',
     registerCount: 2,
     staffCount: 3,
@@ -115,10 +129,26 @@ const locations: RetailLocation[] = [
     status: 'open',
   },
   {
+    id: 'loc-robson',
+    name: 'Robson Street',
+    address: '1025 Robson St, Vancouver BC V6E 1A9',
+    country: 'CA',
+    region: 'BC',
+    phone: '+1 (604) 555-0100',
+    taxId: '123456789 RT0001',
+    kind: 'store',
+    registerCount: 2,
+    staffCount: 3,
+    todaysSales: 4385.75,
+    status: 'open',
+  },
+  {
     id: 'loc-soho',
     name: 'SoHo Flagship',
     address: '460 Broadway, New York, NY 10013',
     country: 'US',
+    region: 'NY',
+    phone: '+1 (212) 555-0100',
     kind: 'store',
     registerCount: 4,
     staffCount: 6,
@@ -168,6 +198,8 @@ const registers: Register[] = [
   { id: 'reg-chad-2',  name: 'Register 2',     locationId: 'loc-chadstone', deviceType: 'Android Tablet', deviceModel: 'Galaxy Tab S9',    appVersion: '1.3.9', status: 'offline', lastSeenAt: '2026-05-23T11:12:00Z', pendingOfflineTxns: 7, pairedTerminal: 'Stripe S700',     pairedPrinter: 'Star mC-Print3' },
   { id: 'reg-auck-1',  name: 'Counter',        locationId: 'loc-auckland',  deviceType: 'iPad',           deviceModel: 'iPad Air',         appVersion: '1.4.2', status: 'online',  lastSeenAt: '2026-05-23T14:50:00Z', pendingOfflineTxns: 0, pairedTerminal: 'Stripe M2',       pairedPrinter: 'Star mC-Print3' },
   { id: 'reg-auck-2',  name: 'Floor roaming',  locationId: 'loc-auckland',  deviceType: 'iPhone',         deviceModel: 'iPhone 14',        appVersion: '1.4.2', status: 'online',  lastSeenAt: '2026-05-23T14:51:00Z', pendingOfflineTxns: 0, pairedTerminal: 'Tap to Pay',       pairedPrinter: undefined },
+  { id: 'reg-robson-1', name: 'Front counter', locationId: 'loc-robson',    deviceType: 'iPad',           deviceModel: 'iPad Air',         appVersion: '1.4.2', status: 'online',  lastSeenAt: '2026-05-23T14:56:00Z', pendingOfflineTxns: 0, pairedTerminal: 'Stripe S700',     pairedPrinter: 'Star mC-Print3' },
+  { id: 'reg-robson-2', name: 'Counter 2',     locationId: 'loc-robson',    deviceType: 'Android Tablet', deviceModel: 'Galaxy Tab S9 FE', appVersion: '1.4.2', status: 'online',  lastSeenAt: '2026-05-23T14:54:00Z', pendingOfflineTxns: 0, pairedTerminal: 'Stripe S700',     pairedPrinter: 'Epson TM-m30III' },
   { id: 'reg-soho-1',  name: 'Flagship 1',     locationId: 'loc-soho',      deviceType: 'iPad',           deviceModel: 'iPad Pro 11"',     appVersion: '1.4.2', status: 'online',  lastSeenAt: '2026-05-23T14:55:00Z', pendingOfflineTxns: 0, pairedTerminal: 'Stripe S700',     pairedPrinter: 'Star mC-Print3' },
   { id: 'reg-soho-2',  name: 'Flagship 2',     locationId: 'loc-soho',      deviceType: 'iPad',           deviceModel: 'iPad Pro 11"',     appVersion: '1.4.2', status: 'online',  lastSeenAt: '2026-05-23T14:52:00Z', pendingOfflineTxns: 0, pairedTerminal: 'Stripe S700',     pairedPrinter: 'Star mC-Print3' },
   { id: 'reg-soho-3',  name: 'Pop-up',         locationId: 'loc-soho',      deviceType: 'iPhone',         deviceModel: 'iPhone 15',        appVersion: '1.4.2', status: 'online',  lastSeenAt: '2026-05-23T14:49:00Z', pendingOfflineTxns: 0, pairedTerminal: 'Tap to Pay',       pairedPrinter: undefined },
@@ -181,6 +213,7 @@ const staff: StaffMember[] = [
   { id: 'assoc-4', name: 'Marcus Lee',       role: 'manager',          locationIds: ['loc-chadstone'],                   pinSet: true, active: true,  lastLoginAt: '2026-05-23T09:18:00Z' },
   { id: 'assoc-5', name: 'Olivia Walsh',     role: 'staff',        locationIds: ['loc-chadstone'],                   pinSet: false, active: false, lastLoginAt: '2026-05-19T15:20:00Z' },
   { id: 'assoc-6', name: 'Ethan Park',       role: 'senior_staff', locationIds: ['loc-auckland'],                    pinSet: true, active: true,  lastLoginAt: '2026-05-23T11:00:00Z' },
+  { id: 'assoc-9', name: 'Noah Tremblay',    role: 'senior_staff', locationIds: ['loc-robson'],                      pinSet: true, active: true,  lastLoginAt: '2026-05-23T14:20:00Z' },
   { id: 'assoc-7', name: 'Ava Brennan',      role: 'manager',          locationIds: ['loc-soho'],                        pinSet: true, active: true,  lastLoginAt: '2026-05-23T13:55:00Z' },
   { id: 'assoc-8', name: 'Daniel Rivera',    role: 'staff',        locationIds: ['loc-soho'],                        pinSet: true, active: true,  lastLoginAt: '2026-05-23T14:11:00Z' },
 ]
@@ -212,10 +245,6 @@ export const useRetailStore = defineStore('retail', () => {
   })
 
   const receiptSettings = ref<ReceiptSettings>({
-    headerText: 'Thanks for shopping with us',
-    footerText: 'Returns accepted within 30 days with proof of purchase.',
-    showLogo: true,
-    showTaxNumber: true,
     defaultDelivery: 'ask',
     emailSubject: 'Your receipt from {{store}}',
     giftReceiptsEnabled: true,
@@ -227,6 +256,109 @@ export const useRetailStore = defineStore('retail', () => {
 
   function updateReceiptSettings(patch: Partial<ReceiptSettings>) {
     receiptSettings.value = { ...receiptSettings.value, ...patch }
+  }
+
+  /* ── Receipt templates — the ready-made ones live in the model; these are the merchant's own ── */
+  const bondiPromo = copyTemplate(libraryTemplate('standard')!, 'rt-1', 'Standard — Bondi promo', '2026-10-20')
+  bondiPromo.description = 'Standard with a spring-sale message under the store details.'
+  bondiPromo.sections.splice(1, 0, section('header', { text: 'Spring sale: 30% off tees and hoodies' }))
+  const receiptTemplates = ref<ReceiptTemplate[]>([bondiPromo])
+  /** POS channel id → template id. A channel with none prints Standard. */
+  const receiptAssignments = ref<Record<string, string>>({ 'pos-store': 'standard', 'mall-kiosk-pos': 'compact' })
+  let receiptSeq = 2
+
+  // Kept in this browser, so a template survives a reload and its designer link
+  // keeps working (the prototype has no backend). Bad or old data is dropped.
+  const RECEIPTS_STORAGE_KEY = 'mp.retail.receipts.v1'
+  try {
+    const raw = typeof window !== 'undefined' ? window.localStorage.getItem(RECEIPTS_STORAGE_KEY) : null
+    const saved = raw ? JSON.parse(raw) as { templates?: unknown[]; assignments?: Record<string, unknown>; seq?: number } : null
+    if (saved) {
+      if (Array.isArray(saved.templates)) receiptTemplates.value = saved.templates.filter(isReceiptTemplate)
+      if (saved.assignments && typeof saved.assignments === 'object') {
+        receiptAssignments.value = Object.fromEntries(
+          Object.entries(saved.assignments).filter((e): e is [string, string] => typeof e[1] === 'string'),
+        )
+      }
+      const highest = receiptTemplates.value.reduce((n, t) => Math.max(n, Number(t.id.replace('rt-', '')) || 0), 1)
+      receiptSeq = Math.max(saved.seq ?? 0, highest + 1)
+    }
+  } catch {
+    // Unreadable or blocked storage: start from the seeded templates
+  }
+  watch([receiptTemplates, receiptAssignments], () => {
+    try {
+      window.localStorage.setItem(RECEIPTS_STORAGE_KEY, JSON.stringify({
+        templates: receiptTemplates.value,
+        assignments: receiptAssignments.value,
+        seq: receiptSeq,
+      }))
+    } catch {
+      // Full or blocked storage: the change still applies for this session
+    }
+  }, { deep: true })
+
+  const today = () => new Date().toISOString().slice(0, 10)
+  const allReceiptTemplates = computed(() => [...RECEIPT_LIBRARY, ...receiptTemplates.value])
+
+  function receiptTemplate(id: string): ReceiptTemplate | undefined {
+    return receiptTemplates.value.find((t) => t.id === id) ?? libraryTemplate(id)
+  }
+
+  /** A new custom template from a ready-made or custom one, or blank (null). */
+  function createReceiptTemplate(fromId: string | null): ReceiptTemplate {
+    const source = fromId ? receiptTemplate(fromId) ?? null : null
+    const taken = allReceiptTemplates.value.map((t) => t.name)
+    const name = source ? copyName(source.name, taken) : uniqueName('Untitled receipt', taken)
+    const created = copyTemplate(source, `rt-${receiptSeq++}`, name, today())
+    receiptTemplates.value.push(created)
+    return created
+  }
+
+  function updateReceiptTemplate(id: string, next: ReceiptTemplate) {
+    const i = receiptTemplates.value.findIndex((t) => t.id === id)
+    if (i !== -1) receiptTemplates.value[i] = { ...next, id, source: 'custom', updatedAt: today() }
+  }
+
+  function templateForChannel(channelId: string): ReceiptTemplate {
+    return resolveTemplate(receiptAssignments.value, receiptTemplates.value, channelId)
+  }
+
+  /** Of `channelIds`, the ones that print this template. */
+  function channelsUsing(templateId: string, channelIds: string[]): string[] {
+    return channelIds.filter((c) => templateForChannel(c).id === templateId)
+  }
+
+  /** Exactly these channels print the template; any that stop fall back to Standard. */
+  function setReceiptTemplateChannels(templateId: string, channelIds: string[], allChannelIds: string[]) {
+    const next = { ...receiptAssignments.value }
+    for (const c of allChannelIds) {
+      if (channelIds.includes(c)) next[c] = templateId
+      else if (templateForChannel(c).id === templateId) next[c] = 'standard'
+    }
+    receiptAssignments.value = next
+  }
+
+  /** A store as its receipts print it. The brand is the merchant's trading name. */
+  function receiptLocationFor(locationId: string): ReceiptLocation {
+    const loc = locationList.value.find((l) => l.id === locationId) ?? activeLocation.value
+    return {
+      brand: 'Maropost Apparel',
+      name: loc.name,
+      address: loc.address,
+      country: loc.country,
+      region: loc.region,
+      phone: loc.phone,
+      taxId: loc.taxId,
+    }
+  }
+
+  /** Deletes a custom template; the channels that printed it go back to Standard. */
+  function deleteReceiptTemplate(id: string) {
+    receiptTemplates.value = receiptTemplates.value.filter((t) => t.id !== id)
+    const next = { ...receiptAssignments.value }
+    for (const [c, t] of Object.entries(next)) if (t === id) next[c] = 'standard'
+    receiptAssignments.value = next
   }
 
   const isAllLocations = computed(() => activeLocationId.value === ALL_LOCATIONS)
@@ -402,6 +534,17 @@ export const useRetailStore = defineStore('retail', () => {
     receiptSettings,
     updatePaymentsSettings,
     updateReceiptSettings,
+    receiptTemplates,
+    receiptAssignments,
+    allReceiptTemplates,
+    receiptTemplate,
+    createReceiptTemplate,
+    updateReceiptTemplate,
+    deleteReceiptTemplate,
+    templateForChannel,
+    channelsUsing,
+    setReceiptTemplateChannels,
+    receiptLocationFor,
     storeLocations,
     ALL_LOCATIONS,
     offlineMode,

@@ -165,7 +165,7 @@ watch(channelId, () => {
     persistence-mode="explicit"
   >
     <template #title>
-      <div class="font-weight-bold text-body-1 text-truncate">{{ theme.name }}</div>
+      <h1 class="font-weight-bold text-body-1 text-truncate ma-0">{{ theme.name }}</h1>
       <MpStatusChip status="Theme code" type="general" size="sm" />
     </template>
 

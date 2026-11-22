@@ -1,0 +1,41 @@
+{
+  "key": "buttons",
+  "liquidsky": [
+    "AppButton",
+    "MpVBtn"
+  ],
+  "status": "matched",
+  "reference": "v-btn on the global baseline (Foundations › Buttons)",
+  "stories": [
+    {
+      "id": "foundations-buttons--variants",
+      "label": "Variants",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/foundations-buttons--variants",
+      "png": {
+        "light": "png/buttons/foundations-buttons--variants--light.png",
+        "dark": "png/buttons/foundations-buttons--variants--dark.png"
+      },
+      "parts": []
+    },
+    {
+      "id": "foundations-buttons--sizes",
+      "label": "Sizes",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/foundations-buttons--sizes",
+      "png": {
+        "light": "png/buttons/foundations-buttons--sizes--light.png",
+        "dark": "png/buttons/foundations-buttons--sizes--dark.png"
+      },
+      "parts": []
+    },
+    {
+      "id": "foundations-buttons--interaction-states",
+      "label": "Interaction states",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/foundations-buttons--interaction-states",
+      "png": {
+        "light": "png/buttons/foundations-buttons--interaction-states--light.png",
+        "dark": "png/buttons/foundations-buttons--interaction-states--dark.png"
+      },
+      "parts": []
+    }
+  ]
+}

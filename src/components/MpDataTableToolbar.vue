@@ -112,7 +112,7 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
         <slot name="title" />
       </div>
 
-      <div class="d-flex align-center ga-2 flex-wrap justify-end">
+      <div class="d-flex align-center ga-2 flex-wrap mp-toolbar-controls">
         <!-- Quick filter: the one promoted filter, leading the control
              cluster — it is the cut people reach for before the drawer. -->
         <v-menu
@@ -352,9 +352,12 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
   </MpFormDrawer>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
+/* A query container, so the toolbar stacks when its card is narrow — not only when
+   the viewport is (see the @container block at the end). */
 .mp-toolbar-shell {
   background: rgb(var(--v-theme-surface));
+  container-type: inline-size;
 }
 
 /* P4-5: a table toolbar is not app-shell chrome. This used to borrow
@@ -362,6 +365,7 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
    toolbar. `component.toolbar.minHeight` is its own decision. */
 .mp-toolbar-row {
   min-height: var(--mp-component-toolbar-minHeight);
+  flex-wrap: wrap;
 }
 
 /* P4-4: every control in this row is one height — the shared 40px control
@@ -374,6 +378,12 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
   min-width: var(--mp-component-control-height);
   width: var(--mp-component-control-height);
   padding-inline: 0;
+}
+
+/* In CSS, not a `justify-end` utility: Vuetify utilities are !important, so the
+   stacked layout below could never left-align the cluster. */
+.mp-toolbar-controls {
+  justify-content: flex-end;
 }
 
 .mp-toolbar-search {
@@ -404,30 +414,18 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
    toolbar shell), not a gray ghost fill. Vuetify's own outline is hidden
    below (opacity 0) since this draws its own border instead.
 
-   That border reuses --mp-border-subtle: the SAME custom property global.scss
-   (".v-btn--variant-outlined") sets on every outlined button, so this field and
-   the Filter / column-toggle buttons beside it in the same row cannot drift
-   apart in either theme (#e2e8f0 light, #33373D dark).
-
-   Consistency was chosen over contrast here, with eyes open: --mp-border-subtle
-   is ~1.2:1 on white, under the WCAG 1.4.11 3:1 non-text floor, so this reverses
-   the A11Y-001 finding *for this one field* (recorded under A11Y-002 in
-   docs/ui-system-audit/03-accessibility-audit.md). The sibling buttons were always
-   at this value, so matching them makes the row uniformly low-contrast rather than
-   mixed. Focus state below is unchanged and still compliant.
-
-   Still true after P5.5-12 (2026-08-28), which raised --border-strong so every
-   OTHER outlined field is compliant again (3.19:1+ light / 3.17:1+ dark). This row
-   is now the only outlined-control family left under the floor, and it stays that
-   way only because the field is matched to the buttons — so the open question is
-   the BUTTON border, not this line. Raising --mp-border-subtle here alone would
-   re-create exactly the mismatch that caused the earlier revert.
+   That border reuses --border-strong: the SAME token global.scss
+   (".v-btn--variant-outlined") sets on every outlined button and every outlined
+   field, so this pill and the Filter / column-toggle buttons beside it cannot
+   drift apart in either theme, and all of them clear the WCAG 1.4.11 3:1 floor
+   (gated as controlBoundary in tokens.json). Until 2026-10-16 the row shared
+   --mp-border-subtle at ~1.2:1 (A11Y-002, closed by W-09).
 
    If the outlined-button border ever changes, change this line with it. */
 .mp-toolbar-search :deep(.v-field) {
   border-radius: var(--r-pill);
   background: var(--surface-primary);
-  border: 1px solid var(--mp-border-subtle);
+  border: 1px solid var(--border-strong);
 }
 
 .mp-toolbar-search :deep(.v-field__outline) {
@@ -487,7 +485,11 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
 
 /* The heading block owns the space between its title, its record count and any
    slotted content — that used to be an `mt-1` the count carried itself. */
+/* The title keeps its minimum width; past that the controls wrap under it.
+   Content-driven, not viewport-driven: a docked Da Vinci drawer narrows the card
+   without changing the viewport, and used to squeeze the title to a letter a line. */
 .mp-toolbar-heading {
+  flex: 1 1 var(--mp-component-toolbar-titleMinWidth);
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -499,13 +501,18 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
   font-size: var(--mp-fontSize-13);
 }
 
-@media (max-width: 959px) {
+@mixin toolbar-stacked {
   .mp-toolbar-row {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .mp-toolbar-row > .d-flex.align-center.flex-wrap {
+  /* Stacked, the main axis is vertical — the title's width basis would become a height. */
+  .mp-toolbar-heading {
+    flex: none;
+  }
+
+  .mp-toolbar-controls {
     width: 100%;
     justify-content: flex-start;
   }
@@ -515,5 +522,14 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
     min-width: 0;
     max-width: none;
   }
+}
+
+@media (max-width: 959px) {
+  @include toolbar-stacked;
+}
+
+/* A docked Da Vinci drawer narrows the card without changing the viewport. */
+@container (max-width: #{$mp-layout-breakpointCompact}) {
+  @include toolbar-stacked;
 }
 </style>

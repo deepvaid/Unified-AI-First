@@ -103,7 +103,7 @@ const options = computed<ApexOptions>(() => {
 
 <template>
   <div class="scn-chart">
-    <div role="img" :aria-label="chartLabel" :style="{ minHeight: `${height}px` }">
+    <div role="group" :aria-label="chartLabel" :style="{ minHeight: `${height}px` }">
       <VueApexCharts v-if="ready" type="donut" :height="height" :options="options" :series="series" />
     </div>
     <div class="scn-chart__legend" aria-hidden="true">

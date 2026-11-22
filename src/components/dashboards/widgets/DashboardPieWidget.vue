@@ -208,7 +208,7 @@ const options = computed<ApexOptions>(() => {
 </script>
 
 <template>
-  <div class="dashboard-pie-widget" role="img" :aria-label="chartAriaLabel">
+  <div class="dashboard-pie-widget" role="group" :aria-label="chartAriaLabel">
     <ApexChart
       v-if="chartReady"
       :height="chartHeight"

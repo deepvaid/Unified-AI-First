@@ -1,0 +1,1152 @@
+{
+  "links": {
+    "marobaseStorybook": "https://ai-first-maropost.vercel.app/storybook/",
+    "reference": "https://ai-first-maropost.vercel.app/qa-reference/"
+  },
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "themes": [
+    "light",
+    "dark"
+  ],
+  "components": [
+    {
+      "key": "unified-navigation",
+      "liquidsky": [
+        "TheUnifiedNavigation",
+        "TheAppSidebar",
+        "MarobaseSidebar"
+      ],
+      "status": "matched",
+      "reference": "AppSidebar (Patterns › App Shell)",
+      "spec": "spec/unified-navigation.json",
+      "stories": [
+        {
+          "id": "patterns-app-shell-appsidebar--expanded",
+          "label": "Expanded",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-app-shell-appsidebar--expanded",
+          "png": {
+            "light": "png/unified-navigation/patterns-app-shell-appsidebar--expanded--light.png",
+            "dark": "png/unified-navigation/patterns-app-shell-appsidebar--expanded--dark.png"
+          }
+        },
+        {
+          "id": "patterns-app-shell-appsidebar--collapsed-rail",
+          "label": "Collapsed rail",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-app-shell-appsidebar--collapsed-rail",
+          "png": {
+            "light": "png/unified-navigation/patterns-app-shell-appsidebar--collapsed-rail--light.png",
+            "dark": "png/unified-navigation/patterns-app-shell-appsidebar--collapsed-rail--dark.png"
+          }
+        }
+      ]
+    },
+    {
+      "key": "header",
+      "liquidsky": [
+        "TheHeader",
+        "TheUserDropdown"
+      ],
+      "status": "matched",
+      "reference": "AppBar (Patterns › App Shell), MpNotificationsMenu",
+      "note": "The bar and its controls are covered. The profile and create menus open from a click, so they are checked by eye in the AppBar stories.",
+      "spec": "spec/header.json",
+      "stories": [
+        {
+          "id": "patterns-app-shell-appbar--default",
+          "label": "Default",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-app-shell-appbar--default",
+          "png": {
+            "light": "png/header/patterns-app-shell-appbar--default--light.png",
+            "dark": "png/header/patterns-app-shell-appbar--default--dark.png"
+          }
+        }
+      ]
+    },
+    {
+      "key": "page-title",
+      "liquidsky": [
+        "AppPageTitle"
+      ],
+      "status": "matched",
+      "reference": "MpPageHeader",
+      "spec": "spec/page-title.json",
+      "stories": [
+        {
+          "id": "molecules-mppageheader--default",
+          "label": "Title + subtitle",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mppageheader--default",
+          "png": {
+            "light": "png/page-title/molecules-mppageheader--default--light.png",
+            "dark": "png/page-title/molecules-mppageheader--default--dark.png"
+          }
+        },
+        {
+          "id": "molecules-mppageheader--with-back-link",
+          "label": "Detail page with back link",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mppageheader--with-back-link",
+          "png": {
+            "light": "png/page-title/molecules-mppageheader--with-back-link--light.png",
+            "dark": "png/page-title/molecules-mppageheader--with-back-link--dark.png"
+          }
+        }
+      ]
+    },
+    {
+      "key": "breadcrumb",
+      "liquidsky": [
+        "AppBreadcrumb"
+      ],
+      "status": "matched",
+      "reference": "The `eyebrow` of MpPageHeader",
+      "note": "The trail is one line of text above the title: the levels joined by a middle dot, uppercase and muted. It is text, not links; a detail page has the back link (`backTo`) for going up a level.",
+      "spec": "spec/breadcrumb.json",
+      "stories": [
+        {
+          "id": "molecules-mppageheader--with-eyebrow",
+          "label": "Eyebrow above the title",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mppageheader--with-eyebrow",
+          "png": {
+            "light": "png/breadcrumb/molecules-mppageheader--with-eyebrow--light.png",
+            "dark": "png/breadcrumb/molecules-mppageheader--with-eyebrow--dark.png"
+          }
+        }
+      ]
+    },
+    {
+      "key": "tooltip",
+      "liquidsky": [
+        "AppTooltip",
+        "MpVTooltip"
+      ],
+      "status": "matched",
+      "reference": "v-tooltip on the global baseline (Foundations › Tooltips)",
+      "spec": "spec/tooltip.json",
+      "stories": [
+        {
+          "id": "foundations-tooltips--placements",
+          "label": "Placements",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/foundations-tooltips--placements",
+          "png": {
+            "light": "png/tooltip/foundations-tooltips--placements--light.png",
+            "dark": "png/tooltip/foundations-tooltips--placements--dark.png"
+          }
+        }
+      ]
+    },
+    {
+      "key": "data-table",
+      "liquidsky": [
+        "AppDataTable",
+        "MpVDataTable",
+        "MpVDataTableServer",
+        "MpVDataTableVirtual",
+        "MpVPagination"
+      ],
+      "status": "matched",
+      "reference": "Data Table pattern: MpFilterTabs + MpDataTableToolbar + v-data-table + MpFloatingBulkBar",
+      "note": "Cell content (chips, switches) follows its own component; this contract covers the table frame only.",
+      "notRequired": [
+        "Skeleton loading. A loading indicator is fine.",
+        "The empty state with an icon, a title and an action. A one-line empty message is fine."
+      ],
+      "spec": "spec/data-table.json",
+      "stories": [
+        {
+          "id": "patterns-data-table--default",
+          "label": "Default",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-data-table--default",
+          "png": {
+            "light": "png/data-table/patterns-data-table--default--light.png",
+            "dark": "png/data-table/patterns-data-table--default--dark.png"
+          }
+        },
+        {
+          "id": "patterns-data-table--with-selection",
+          "label": "Rows selected (bulk bar)",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-data-table--with-selection",
+          "png": {
+            "light": "png/data-table/patterns-data-table--with-selection--light.png",
+            "dark": "png/data-table/patterns-data-table--with-selection--dark.png"
+          }
+        },
+        {
+          "id": "patterns-data-table--empty",
+          "label": "Empty",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-data-table--empty",
+          "png": {
+            "light": "png/data-table/patterns-data-table--empty--light.png",
+            "dark": "png/data-table/patterns-data-table--empty--dark.png"
+          }
+        },
+        {
+          "id": "patterns-data-table--loading",
+          "label": "Loading",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-data-table--loading",
+          "png": {
+            "light": "png/data-table/patterns-data-table--loading--light.png",
+            "dark": "png/data-table/patterns-data-table--loading--dark.png"
+          }
+        },
+        {
+          "id": "patterns-data-table--with-folders",
+          "label": "With folders",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-data-table--with-folders",
+          "png": {
+            "light": "png/data-table/patterns-data-table--with-folders--light.png",
+            "dark": "png/data-table/patterns-data-table--with-folders--dark.png"
+          }
+        }
+      ]
+    },
+    {
+      "key": "table-actions",
+      "liquidsky": [
+        "AppTableActionMenu",
+        "AppFilterButton",
+        "MpVMenu",
+        "MpVList",
+        "MpVListItem"
+      ],
+      "status": "matched",
+      "reference": "MpRowActionsMenu + MpMenuItem; the Filter button of MpDataTableToolbar",
+      "spec": "spec/table-actions.json",
+      "stories": [
+        {
+          "id": "molecules-mprowactionsmenu--open-menu",
+          "label": "Row actions menu open",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mprowactionsmenu--open-menu",
+          "png": {
+            "light": "png/table-actions/molecules-mprowactionsmenu--open-menu--light.png",
+            "dark": "png/table-actions/molecules-mprowactionsmenu--open-menu--dark.png"
+          }
+        },
+        {
+          "id": "molecules-mpdatatabletoolbar--with-single-filter",
+          "label": "Toolbar with Filter button",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpdatatabletoolbar--with-single-filter",
+          "png": {
+            "light": "png/table-actions/molecules-mpdatatabletoolbar--with-single-filter--light.png",
+            "dark": "png/table-actions/molecules-mpdatatabletoolbar--with-single-filter--dark.png"
+          }
+        }
+      ]
+    },
+    {
+      "key": "overflow-cell",
+      "liquidsky": [
+        "AppExpandableList"
+      ],
+      "status": "matched",
+      "reference": "The overflow cell of the Data Table pattern: the first value, then \"+N more\" that shows the rest",
+      "spec": "spec/overflow-cell.json",
+      "stories": [
+        {
+          "id": "patterns-data-table--overflow-cell",
+          "label": "Overflow cell",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-data-table--overflow-cell",
+          "png": {
+            "light": "png/overflow-cell/patterns-data-table--overflow-cell--light.png",
+            "dark": "png/overflow-cell/patterns-data-table--overflow-cell--dark.png"
+          }
+        },
+        {
+          "id": "patterns-data-table--overflow-cell-open",
+          "label": "Overflow cell, list shown",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-data-table--overflow-cell-open",
+          "png": {
+            "light": "png/overflow-cell/patterns-data-table--overflow-cell-open--light.png",
+            "dark": "png/overflow-cell/patterns-data-table--overflow-cell-open--dark.png"
+          }
+        }
+      ]
+    },
+    {
+      "key": "dialogs",
+      "liquidsky": [
+        "AppDialogWrapper",
+        "AppConfirmationDialog",
+        "AppDrawerWrapper",
+        "MpVDialog",
+        "MpVNavigationDrawer"
+      ],
+      "status": "matched",
+      "reference": "MpDialog, MpConfirmDialog, MpFormDrawer",
+      "spec": "spec/dialogs.json",
+      "stories": [
+        {
+          "id": "molecules-mpdialog--default",
+          "label": "Dialog",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpdialog--default",
+          "png": {
+            "light": "png/dialogs/molecules-mpdialog--default--light.png",
+            "dark": "png/dialogs/molecules-mpdialog--default--dark.png"
+          }
+        },
+        {
+          "id": "molecules-mpconfirmdialog--default",
+          "label": "Confirm dialog",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpconfirmdialog--default",
+          "png": {
+            "light": "png/dialogs/molecules-mpconfirmdialog--default--light.png",
+            "dark": "png/dialogs/molecules-mpconfirmdialog--default--dark.png"
+          }
+        },
+        {
+          "id": "molecules-mpformdrawer--filter-drawer",
+          "label": "Drawer",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpformdrawer--filter-drawer",
+          "png": {
+            "light": "png/dialogs/molecules-mpformdrawer--filter-drawer--light.png",
+            "dark": "png/dialogs/molecules-mpformdrawer--filter-drawer--dark.png"
+          }
+        }
+      ]
+    },
+    {
+      "key": "alert-modal",
+      "liquidsky": [
+        "AlertModal"
+      ],
+      "status": "partial",
+      "reference": "MpConfirmDialog with `danger` (shell only)",
+      "note": "AlertModal is a corner notice with a call to action, not a confirm prompt. Marobase has no such surface; only the card, type and button styling of the dialog shell carry over.",
+      "spec": "spec/alert-modal.json",
+      "stories": [
+        {
+          "id": "molecules-mpconfirmdialog--danger",
+          "label": "Destructive confirm",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpconfirmdialog--danger",
+          "png": {
+            "light": "png/alert-modal/molecules-mpconfirmdialog--danger--light.png",
+            "dark": "png/alert-modal/molecules-mpconfirmdialog--danger--dark.png"
+          }
+        },
+        {
+          "id": "molecules-mpconfirmdialog--with-consequences",
+          "label": "With consequences list",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpconfirmdialog--with-consequences",
+          "png": {
+            "light": "png/alert-modal/molecules-mpconfirmdialog--with-consequences--light.png",
+            "dark": "png/alert-modal/molecules-mpconfirmdialog--with-consequences--dark.png"
+          }
+        }
+      ]
+    },
+    {
+      "key": "snackbar",
+      "liquidsky": [
+        "AppSnackbar",
+        "MpVSnackbar"
+      ],
+      "status": "matched",
+      "reference": "MpToastStack (driven by useToast)",
+      "spec": "spec/snackbar.json",
+      "stories": [
+        {
+          "id": "molecules-mptoaststack--success",
+          "label": "Success",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mptoaststack--success",
+          "png": {
+            "light": "png/snackbar/molecules-mptoaststack--success--light.png",
+            "dark": "png/snackbar/molecules-mptoaststack--success--dark.png"
+          }
+        },
+        {
+          "id": "molecules-mptoaststack--persistent-error",
+          "label": "Error",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mptoaststack--persistent-error",
+          "png": {
+            "light": "png/snackbar/molecules-mptoaststack--persistent-error--light.png",
+            "dark": "png/snackbar/molecules-mptoaststack--persistent-error--dark.png"
+          }
+        },
+        {
+          "id": "molecules-mptoaststack--warning",
+          "label": "Warning",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mptoaststack--warning",
+          "png": {
+            "light": "png/snackbar/molecules-mptoaststack--warning--light.png",
+            "dark": "png/snackbar/molecules-mptoaststack--warning--dark.png"
+          }
+        },
+        {
+          "id": "molecules-mptoaststack--info",
+          "label": "Info",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mptoaststack--info",
+          "png": {
+            "light": "png/snackbar/molecules-mptoaststack--info--light.png",
+            "dark": "png/snackbar/molecules-mptoaststack--info--dark.png"
+          }
+        },
+        {
+          "id": "molecules-mptoaststack--with-action",
+          "label": "With action",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mptoaststack--with-action",
+          "png": {
+            "light": "png/snackbar/molecules-mptoaststack--with-action--light.png",
+            "dark": "png/snackbar/molecules-mptoaststack--with-action--dark.png"
+          }
+        }
+      ]
+    },
+    {
+      "key": "stepper",
+      "liquidsky": [
+        "AppStepper",
+        "MpVStepper"
+      ],
+      "status": "matched",
+      "reference": "MpWizardSteps",
+      "spec": "spec/stepper.json",
+      "stories": [
+        {
+          "id": "atoms-mpwizardsteps--four-steps-mid-progress",
+          "label": "Four steps, mid progress",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/atoms-mpwizardsteps--four-steps-mid-progress",
+          "png": {
+            "light": "png/stepper/atoms-mpwizardsteps--four-steps-mid-progress--light.png",
+            "dark": "png/stepper/atoms-mpwizardsteps--four-steps-mid-progress--dark.png"
+          }
+        }
+      ]
+    },
+    {
+      "key": "date-picker",
+      "liquidsky": [
+        "AppDatePicker",
+        "MpVDatePicker"
+      ],
+      "status": "matched",
+      "reference": "The single-date field (Patterns › Form Fields): a field that opens a calendar and takes one date",
+      "spec": "spec/date-picker.json",
+      "stories": [
+        {
+          "id": "patterns-form-fields--date-field",
+          "label": "Date field",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-form-fields--date-field",
+          "png": {
+            "light": "png/date-picker/patterns-form-fields--date-field--light.png",
+            "dark": "png/date-picker/patterns-form-fields--date-field--dark.png"
+          }
+        },
+        {
+          "id": "patterns-form-fields--date-field-open",
+          "label": "Calendar open",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-form-fields--date-field-open",
+          "png": {
+            "light": "png/date-picker/patterns-form-fields--date-field-open--light.png",
+            "dark": "png/date-picker/patterns-form-fields--date-field-open--dark.png"
+          }
+        }
+      ]
+    },
+    {
+      "key": "date-range",
+      "liquidsky": [],
+      "status": "matched",
+      "reference": "MpDateRangeSelect",
+      "note": "Not a LiquidSky component today. This is the design for picking a date range (presets and custom range fields), as used on reports and dashboards. One date is the date-picker entry.",
+      "spec": "spec/date-range.json",
+      "stories": [
+        {
+          "id": "molecules-mpdaterangeselect--menu-open",
+          "label": "Preset menu open",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpdaterangeselect--menu-open",
+          "png": {
+            "light": "png/date-range/molecules-mpdaterangeselect--menu-open--light.png",
+            "dark": "png/date-range/molecules-mpdaterangeselect--menu-open--dark.png"
+          }
+        },
+        {
+          "id": "molecules-mpdaterangeselect--custom-panel-open",
+          "label": "Custom range open",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpdaterangeselect--custom-panel-open",
+          "png": {
+            "light": "png/date-range/molecules-mpdaterangeselect--custom-panel-open--light.png",
+            "dark": "png/date-range/molecules-mpdaterangeselect--custom-panel-open--dark.png"
+          }
+        }
+      ]
+    },
+    {
+      "key": "dropdown",
+      "liquidsky": [
+        "AppDropdown",
+        "MpVSelect",
+        "MpVAutocomplete",
+        "MpVCombobox"
+      ],
+      "status": "matched",
+      "reference": "v-select / v-autocomplete on the form-field baseline (Patterns › Form Fields)",
+      "notRequired": [
+        "The label above the field. A floating label inside the field is fine."
+      ],
+      "spec": "spec/dropdown.json",
+      "stories": [
+        {
+          "id": "patterns-form-fields--selected-with-checkmark",
+          "label": "Select, menu open",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-form-fields--selected-with-checkmark",
+          "png": {
+            "light": "png/dropdown/patterns-form-fields--selected-with-checkmark--light.png",
+            "dark": "png/dropdown/patterns-form-fields--selected-with-checkmark--dark.png"
+          }
+        },
+        {
+          "id": "patterns-form-fields--all-states",
+          "label": "Field states",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-form-fields--all-states",
+          "png": {
+            "light": "png/dropdown/patterns-form-fields--all-states--light.png",
+            "dark": "png/dropdown/patterns-form-fields--all-states--dark.png"
+          }
+        }
+      ]
+    },
+    {
+      "key": "onboarding-banner",
+      "liquidsky": [
+        "TheOnboardingBanner"
+      ],
+      "status": "matched",
+      "reference": "OnboardingProgressBanner (Product › Onboarding)",
+      "note": "The progress card that opens Get started. On a task page it takes the task as its title, puts the count on its own line and ends in a link back to the list.",
+      "spec": "spec/onboarding-banner.json",
+      "stories": [
+        {
+          "id": "product-onboarding-onboardingprogressbanner--default",
+          "label": "On Get started",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/product-onboarding-onboardingprogressbanner--default",
+          "png": {
+            "light": "png/onboarding-banner/product-onboarding-onboardingprogressbanner--default--light.png",
+            "dark": "png/onboarding-banner/product-onboarding-onboardingprogressbanner--default--dark.png"
+          }
+        },
+        {
+          "id": "product-onboarding-onboardingprogressbanner--on-task-page",
+          "label": "On a task page",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/product-onboarding-onboardingprogressbanner--on-task-page",
+          "png": {
+            "light": "png/onboarding-banner/product-onboarding-onboardingprogressbanner--on-task-page--light.png",
+            "dark": "png/onboarding-banner/product-onboarding-onboardingprogressbanner--on-task-page--dark.png"
+          }
+        }
+      ]
+    },
+    {
+      "key": "onboarding-checklists",
+      "liquidsky": [
+        "TheOnboardingScreenChecklists"
+      ],
+      "status": "matched",
+      "reference": "The Get started page (Product › Onboarding)",
+      "note": "The card at the top of the page is the onboarding-banner entry.",
+      "spec": "spec/onboarding-checklists.json",
+      "stories": [
+        {
+          "id": "product-onboarding-get-started--default",
+          "label": "Get started",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/product-onboarding-get-started--default",
+          "png": {
+            "light": "png/onboarding-checklists/product-onboarding-get-started--default--light.png",
+            "dark": "png/onboarding-checklists/product-onboarding-get-started--default--dark.png"
+          }
+        },
+        {
+          "id": "product-onboarding-get-started--task-open",
+          "label": "A task open",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/product-onboarding-get-started--task-open",
+          "png": {
+            "light": "png/onboarding-checklists/product-onboarding-get-started--task-open--light.png",
+            "dark": "png/onboarding-checklists/product-onboarding-get-started--task-open--dark.png"
+          }
+        }
+      ]
+    },
+    {
+      "key": "buttons",
+      "liquidsky": [
+        "AppButton",
+        "MpVBtn"
+      ],
+      "status": "matched",
+      "reference": "v-btn on the global baseline (Foundations › Buttons)",
+      "spec": "spec/buttons.json",
+      "stories": [
+        {
+          "id": "foundations-buttons--variants",
+          "label": "Variants",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/foundations-buttons--variants",
+          "png": {
+            "light": "png/buttons/foundations-buttons--variants--light.png",
+            "dark": "png/buttons/foundations-buttons--variants--dark.png"
+          }
+        },
+        {
+          "id": "foundations-buttons--sizes",
+          "label": "Sizes",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/foundations-buttons--sizes",
+          "png": {
+            "light": "png/buttons/foundations-buttons--sizes--light.png",
+            "dark": "png/buttons/foundations-buttons--sizes--dark.png"
+          }
+        },
+        {
+          "id": "foundations-buttons--interaction-states",
+          "label": "Interaction states",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/foundations-buttons--interaction-states",
+          "png": {
+            "light": "png/buttons/foundations-buttons--interaction-states--light.png",
+            "dark": "png/buttons/foundations-buttons--interaction-states--dark.png"
+          }
+        }
+      ]
+    },
+    {
+      "key": "segmented-control",
+      "liquidsky": [
+        "MpVBtnToggle"
+      ],
+      "status": "matched",
+      "reference": "MpSegmentedControl",
+      "spec": "spec/segmented-control.json",
+      "stories": [
+        {
+          "id": "atoms-mpsegmentedcontrol--default",
+          "label": "Default",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/atoms-mpsegmentedcontrol--default",
+          "png": {
+            "light": "png/segmented-control/atoms-mpsegmentedcontrol--default--light.png",
+            "dark": "png/segmented-control/atoms-mpsegmentedcontrol--default--dark.png"
+          }
+        },
+        {
+          "id": "atoms-mpsegmentedcontrol--sizes",
+          "label": "Sizes",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/atoms-mpsegmentedcontrol--sizes",
+          "png": {
+            "light": "png/segmented-control/atoms-mpsegmentedcontrol--sizes--light.png",
+            "dark": "png/segmented-control/atoms-mpsegmentedcontrol--sizes--dark.png"
+          }
+        }
+      ]
+    },
+    {
+      "key": "text-fields",
+      "liquidsky": [
+        "MpVTextField",
+        "MpVTextarea",
+        "MpVMaskInput",
+        "MpVFileInput",
+        "MpVDateInput",
+        "AppNumberInput",
+        "MpVForm"
+      ],
+      "status": "matched",
+      "reference": "Vuetify fields on the form-field baseline (Patterns › Form Fields)",
+      "note": "One label style (static top label), one size ramp (32 / 40 / 48 from the density prop). A number input is a text field with a suffix.",
+      "notRequired": [
+        "The label above the field. A floating label inside the field is fine."
+      ],
+      "spec": "spec/text-fields.json",
+      "stories": [
+        {
+          "id": "patterns-form-fields--all-states",
+          "label": "Field states",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-form-fields--all-states",
+          "png": {
+            "light": "png/text-fields/patterns-form-fields--all-states--light.png",
+            "dark": "png/text-fields/patterns-form-fields--all-states--dark.png"
+          }
+        },
+        {
+          "id": "patterns-form-fields--sizes",
+          "label": "Sizes",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-form-fields--sizes",
+          "png": {
+            "light": "png/text-fields/patterns-form-fields--sizes--light.png",
+            "dark": "png/text-fields/patterns-form-fields--sizes--dark.png"
+          }
+        },
+        {
+          "id": "patterns-form-fields--prefix-suffix",
+          "label": "Prefix and suffix",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-form-fields--prefix-suffix",
+          "png": {
+            "light": "png/text-fields/patterns-form-fields--prefix-suffix--light.png",
+            "dark": "png/text-fields/patterns-form-fields--prefix-suffix--dark.png"
+          }
+        },
+        {
+          "id": "patterns-form-fields--form-layout",
+          "label": "Form layout",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-form-fields--form-layout",
+          "png": {
+            "light": "png/text-fields/patterns-form-fields--form-layout--light.png",
+            "dark": "png/text-fields/patterns-form-fields--form-layout--dark.png"
+          }
+        }
+      ]
+    },
+    {
+      "key": "selection-controls",
+      "liquidsky": [
+        "MpVCheckbox",
+        "MpVCheckboxBtn",
+        "MpVRadio",
+        "MpVRadioGroup",
+        "MpVSwitch"
+      ],
+      "status": "partial",
+      "reference": "Vuetify selection controls on the theme defaults; MpFormField labels a group",
+      "note": "There is no dedicated story for checkbox, radio or switch yet. A radio group with its label is shown in MpFormField.",
+      "spec": "spec/selection-controls.json",
+      "stories": [
+        {
+          "id": "molecules-mpformfield--default",
+          "label": "Radio group with label",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpformfield--default",
+          "png": {
+            "light": "png/selection-controls/molecules-mpformfield--default--light.png",
+            "dark": "png/selection-controls/molecules-mpformfield--default--dark.png"
+          }
+        }
+      ]
+    },
+    {
+      "key": "tabs",
+      "liquidsky": [
+        "MpVTabs",
+        "MpVTab"
+      ],
+      "status": "matched",
+      "reference": "MpFilterTabs",
+      "spec": "spec/tabs.json",
+      "stories": [
+        {
+          "id": "atoms-mpfiltertabs--default",
+          "label": "Default",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/atoms-mpfiltertabs--default",
+          "png": {
+            "light": "png/tabs/atoms-mpfiltertabs--default--light.png",
+            "dark": "png/tabs/atoms-mpfiltertabs--default--dark.png"
+          }
+        },
+        {
+          "id": "atoms-mpfiltertabs--states",
+          "label": "States",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/atoms-mpfiltertabs--states",
+          "png": {
+            "light": "png/tabs/atoms-mpfiltertabs--states--light.png",
+            "dark": "png/tabs/atoms-mpfiltertabs--states--dark.png"
+          }
+        }
+      ]
+    },
+    {
+      "key": "status-chip",
+      "liquidsky": [
+        "MpVStatusChip",
+        "MpVChip"
+      ],
+      "status": "matched",
+      "reference": "MpStatusChip",
+      "spec": "spec/status-chip.json",
+      "stories": [
+        {
+          "id": "atoms-mpstatuschip--variants",
+          "label": "Variants",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/atoms-mpstatuschip--variants",
+          "png": {
+            "light": "png/status-chip/atoms-mpstatuschip--variants--light.png",
+            "dark": "png/status-chip/atoms-mpstatuschip--variants--dark.png"
+          }
+        },
+        {
+          "id": "atoms-mpstatuschip--sizes",
+          "label": "Sizes",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/atoms-mpstatuschip--sizes",
+          "png": {
+            "light": "png/status-chip/atoms-mpstatuschip--sizes--light.png",
+            "dark": "png/status-chip/atoms-mpstatuschip--sizes--dark.png"
+          }
+        },
+        {
+          "id": "atoms-mpstatuschip--all-types",
+          "label": "All status types",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/atoms-mpstatuschip--all-types",
+          "png": {
+            "light": "png/status-chip/atoms-mpstatuschip--all-types--light.png",
+            "dark": "png/status-chip/atoms-mpstatuschip--all-types--dark.png"
+          }
+        }
+      ]
+    },
+    {
+      "key": "alert",
+      "liquidsky": [
+        "MpVAlert"
+      ],
+      "status": "matched",
+      "reference": "MpAlert",
+      "spec": "spec/alert.json",
+      "stories": [
+        {
+          "id": "molecules-mpalert--variants",
+          "label": "Tones",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpalert--variants",
+          "png": {
+            "light": "png/alert/molecules-mpalert--variants--light.png",
+            "dark": "png/alert/molecules-mpalert--variants--dark.png"
+          }
+        },
+        {
+          "id": "molecules-mpalert--states",
+          "label": "States",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpalert--states",
+          "png": {
+            "light": "png/alert/molecules-mpalert--states--light.png",
+            "dark": "png/alert/molecules-mpalert--states--dark.png"
+          }
+        }
+      ]
+    },
+    {
+      "key": "search-bar",
+      "liquidsky": [
+        "TheSearchBar"
+      ],
+      "status": "partial",
+      "reference": "The search in AppBar (Patterns › App Shell)",
+      "note": "In Marobase the search field opens a command palette with grouped results. The field in the bar is covered by the header entry.",
+      "spec": "spec/search-bar.json",
+      "stories": [
+        {
+          "id": "patterns-app-shell-appbar--search-open",
+          "label": "Search open",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-app-shell-appbar--search-open",
+          "png": {
+            "light": "png/search-bar/patterns-app-shell-appbar--search-open--light.png",
+            "dark": "png/search-bar/patterns-app-shell-appbar--search-open--dark.png"
+          }
+        },
+        {
+          "id": "patterns-app-shell-appbar--search-open-with-type-tabs",
+          "label": "Search with type tabs",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-app-shell-appbar--search-open-with-type-tabs",
+          "png": {
+            "light": "png/search-bar/patterns-app-shell-appbar--search-open-with-type-tabs--light.png",
+            "dark": "png/search-bar/patterns-app-shell-appbar--search-open-with-type-tabs--dark.png"
+          }
+        }
+      ]
+    },
+    {
+      "key": "user-menu",
+      "liquidsky": [
+        "TheAccountDropdown",
+        "TheThemeSwitcher"
+      ],
+      "status": "matched",
+      "reference": "The profile menu in AppBar (Patterns › App Shell)",
+      "note": "As in LiquidSky, switching account and the light / dark theme both live in the profile menu.",
+      "spec": "spec/user-menu.json",
+      "stories": [
+        {
+          "id": "patterns-app-shell-appbar--profile-menu-open",
+          "label": "Profile menu open",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-app-shell-appbar--profile-menu-open",
+          "png": {
+            "light": "png/user-menu/patterns-app-shell-appbar--profile-menu-open--light.png",
+            "dark": "png/user-menu/patterns-app-shell-appbar--profile-menu-open--dark.png"
+          }
+        }
+      ]
+    },
+    {
+      "key": "notifications",
+      "liquidsky": [
+        "MpNotificationsMenu",
+        "TheNotificationIcon",
+        "TheNotificationDrawer"
+      ],
+      "status": "partial",
+      "reference": "MpNotificationsMenu",
+      "note": "The bell opens a menu panel in Marobase, not a side drawer. The bell, badge and rows carry over to TheNotificationDrawer; the drawer frame follows MpFormDrawer.",
+      "spec": "spec/notifications.json",
+      "stories": [
+        {
+          "id": "molecules-mpnotificationsmenu--open-panel",
+          "label": "Panel open",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpnotificationsmenu--open-panel",
+          "png": {
+            "light": "png/notifications/molecules-mpnotificationsmenu--open-panel--light.png",
+            "dark": "png/notifications/molecules-mpnotificationsmenu--open-panel--dark.png"
+          }
+        },
+        {
+          "id": "molecules-mpnotificationsmenu--empty",
+          "label": "Nothing new",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpnotificationsmenu--empty",
+          "png": {
+            "light": "png/notifications/molecules-mpnotificationsmenu--empty--light.png",
+            "dark": "png/notifications/molecules-mpnotificationsmenu--empty--dark.png"
+          }
+        }
+      ]
+    },
+    {
+      "key": "section-rail",
+      "liquidsky": [
+        "MpSectionRail",
+        "StoreSectionRail",
+        "TheSecondaryNavigation"
+      ],
+      "status": "matched",
+      "reference": "MpSectionRail",
+      "spec": "spec/section-rail.json",
+      "stories": [
+        {
+          "id": "molecules-mpsectionrail--settings-flavor",
+          "label": "Settings",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpsectionrail--settings-flavor",
+          "png": {
+            "light": "png/section-rail/molecules-mpsectionrail--settings-flavor--light.png",
+            "dark": "png/section-rail/molecules-mpsectionrail--settings-flavor--dark.png"
+          }
+        },
+        {
+          "id": "molecules-mpsectionrail--store-editor",
+          "label": "Store editor",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpsectionrail--store-editor",
+          "png": {
+            "light": "png/section-rail/molecules-mpsectionrail--store-editor--light.png",
+            "dark": "png/section-rail/molecules-mpsectionrail--store-editor--dark.png"
+          }
+        }
+      ]
+    },
+    {
+      "key": "app-shell",
+      "liquidsky": [
+        "TheAppShell",
+        "TheNavigation"
+      ],
+      "status": "matched",
+      "reference": "AppBar + AppSidebar together (Patterns › App Shell)",
+      "spec": "spec/app-shell.json",
+      "stories": [
+        {
+          "id": "patterns-app-shell-appsidebar--in-context-app-shell",
+          "label": "Sidebar in the shell",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-app-shell-appsidebar--in-context-app-shell",
+          "png": {
+            "light": "png/app-shell/patterns-app-shell-appsidebar--in-context-app-shell--light.png",
+            "dark": "png/app-shell/patterns-app-shell-appsidebar--in-context-app-shell--dark.png"
+          }
+        },
+        {
+          "id": "patterns-app-shell-appbar--in-context-app-shell",
+          "label": "App bar in the shell",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-app-shell-appbar--in-context-app-shell",
+          "png": {
+            "light": "png/app-shell/patterns-app-shell-appbar--in-context-app-shell--light.png",
+            "dark": "png/app-shell/patterns-app-shell-appbar--in-context-app-shell--dark.png"
+          }
+        }
+      ]
+    },
+    {
+      "key": "index-page",
+      "liquidsky": [
+        "GenericIndexWrapper",
+        "GenericIndexPage"
+      ],
+      "status": "matched",
+      "reference": "Data Table pattern + MpFolderSelect, MpManageFoldersDrawer, MpMoveToFolderDialog",
+      "note": "The page frame is MpPageHeader above the Data Table pattern. Folders are a menu in the toolbar, managed in a drawer.",
+      "spec": "spec/index-page.json",
+      "stories": [
+        {
+          "id": "patterns-data-table--default",
+          "label": "List page",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-data-table--default",
+          "png": {
+            "light": "png/index-page/patterns-data-table--default--light.png",
+            "dark": "png/index-page/patterns-data-table--default--dark.png"
+          }
+        },
+        {
+          "id": "molecules-mpfolderselect--open-menu",
+          "label": "Folder menu",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpfolderselect--open-menu",
+          "png": {
+            "light": "png/index-page/molecules-mpfolderselect--open-menu--light.png",
+            "dark": "png/index-page/molecules-mpfolderselect--open-menu--dark.png"
+          }
+        },
+        {
+          "id": "molecules-mpmanagefoldersdrawer--campaigns",
+          "label": "Manage folders",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpmanagefoldersdrawer--campaigns",
+          "png": {
+            "light": "png/index-page/molecules-mpmanagefoldersdrawer--campaigns--light.png",
+            "dark": "png/index-page/molecules-mpmanagefoldersdrawer--campaigns--dark.png"
+          }
+        },
+        {
+          "id": "molecules-mpmovetofolderdialog--default",
+          "label": "Move to folder",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpmovetofolderdialog--default",
+          "png": {
+            "light": "png/index-page/molecules-mpmovetofolderdialog--default--light.png",
+            "dark": "png/index-page/molecules-mpmovetofolderdialog--default--dark.png"
+          }
+        }
+      ]
+    },
+    {
+      "key": "apps-dropdown",
+      "liquidsky": [
+        "TheAppsDropdown"
+      ],
+      "status": "no-reference",
+      "reference": "None",
+      "note": "Marobase has no product switcher in the bar; the clouds are sections of one sidebar. Needs a design decision if LiquidSky keeps it.",
+      "spec": "spec/apps-dropdown.json",
+      "stories": []
+    },
+    {
+      "key": "timezone",
+      "liquidsky": [
+        "TheTimezone"
+      ],
+      "status": "no-reference",
+      "reference": "None",
+      "note": "Marobase shows no live clock in the bar. Needs a design decision if LiquidSky keeps it.",
+      "spec": "spec/timezone.json",
+      "stories": []
+    },
+    {
+      "key": "split-button",
+      "liquidsky": [
+        "AppSplitButton"
+      ],
+      "status": "no-reference",
+      "reference": "None",
+      "note": "No split button in Marobase. The button follows Foundations › Buttons and the menu follows MpRowActionsMenu; the joined shape needs a design decision.",
+      "spec": "spec/split-button.json",
+      "stories": []
+    },
+    {
+      "key": "folder-tree",
+      "liquidsky": [
+        "ClassicFolderTree",
+        "SlVueTreeNext"
+      ],
+      "status": "no-reference",
+      "reference": "None",
+      "note": "Marobase files items through a folder menu (MpFolderSelect), not a tree. These stay Classic-only unless a tree is designed.",
+      "spec": "spec/folder-tree.json",
+      "stories": []
+    },
+    {
+      "key": "value-display",
+      "liquidsky": [
+        "AppNumber",
+        "AppPriceDisplay",
+        "AppMultiCellValue",
+        "AppClipboard"
+      ],
+      "status": "no-reference",
+      "reference": "None",
+      "note": "Formatting helpers with no design of their own: text follows the body or table-cell type around them.",
+      "spec": "spec/value-display.json",
+      "stories": []
+    },
+    {
+      "key": "expandable-list",
+      "liquidsky": [
+        "MpVExpansionPanels",
+        "MpVExpansionPanel"
+      ],
+      "status": "no-reference",
+      "reference": "None",
+      "note": "Marobase has no expansion-panel component. Needs a design decision before it can be reviewed.",
+      "spec": "spec/expandable-list.json",
+      "stories": []
+    },
+    {
+      "key": "tree-dropdown",
+      "liquidsky": [
+        "AppTreeDropdown"
+      ],
+      "status": "partial",
+      "reference": "No dedicated design yet. Build from these parts",
+      "note": "The closed field and the menu panel are the dropdown in Patterns › Form Fields. A tree row is a menu row at the menu density (`component.menu.itemHeight`, `component.menu.itemPaddingBlock`) with a checkbox from the selection controls. The expand arrow, the indent of a child level and the child count have no design yet.",
+      "spec": "spec/tree-dropdown.json",
+      "stories": [
+        {
+          "id": "patterns-form-fields--selected-with-checkmark",
+          "label": "Field and menu panel",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-form-fields--selected-with-checkmark",
+          "png": {
+            "light": "png/tree-dropdown/patterns-form-fields--selected-with-checkmark--light.png",
+            "dark": "png/tree-dropdown/patterns-form-fields--selected-with-checkmark--dark.png"
+          }
+        },
+        {
+          "id": "molecules-mpformfield--default",
+          "label": "Selection control with its label",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mpformfield--default",
+          "png": {
+            "light": "png/tree-dropdown/molecules-mpformfield--default--light.png",
+            "dark": "png/tree-dropdown/molecules-mpformfield--default--dark.png"
+          }
+        },
+        {
+          "id": "molecules-mprowactionsmenu--open-menu",
+          "label": "Menu row density",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/molecules-mprowactionsmenu--open-menu",
+          "png": {
+            "light": "png/tree-dropdown/molecules-mprowactionsmenu--open-menu--light.png",
+            "dark": "png/tree-dropdown/molecules-mprowactionsmenu--open-menu--dark.png"
+          }
+        }
+      ]
+    },
+    {
+      "key": "grid-table",
+      "liquidsky": [
+        "AppGridTable"
+      ],
+      "status": "partial",
+      "reference": "No dedicated design yet. Build from these parts",
+      "note": "The header and cell rhythm are the Data Table pattern (`component.table.*`). An editor inside a cell is a compact field (`component.field.height.sm`) with no visible label; name it with `aria-label`. Grid lines between columns and a pinned first column have no design yet.",
+      "spec": "spec/grid-table.json",
+      "stories": [
+        {
+          "id": "patterns-data-table--default",
+          "label": "Header and cell rhythm",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-data-table--default",
+          "png": {
+            "light": "png/grid-table/patterns-data-table--default--light.png",
+            "dark": "png/grid-table/patterns-data-table--default--dark.png"
+          }
+        },
+        {
+          "id": "patterns-form-fields--sizes",
+          "label": "Compact field for a cell editor",
+          "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-form-fields--sizes",
+          "png": {
+            "light": "png/grid-table/patterns-form-fields--sizes--light.png",
+            "dark": "png/grid-table/patterns-form-fields--sizes--dark.png"
+          }
+        }
+      ]
+    }
+  ]
+}

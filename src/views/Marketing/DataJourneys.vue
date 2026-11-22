@@ -192,6 +192,7 @@ function confirmBulkDelete() {
           <v-checkbox-btn
             :model-value="allSelected"
             :indeterminate="someSelected && !allSelected"
+            :aria-checked="undefined"
             aria-label="Select all data journeys"
             @update:model-value="selectAll(!allSelected)"
           ></v-checkbox-btn>

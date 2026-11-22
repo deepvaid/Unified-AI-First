@@ -40,6 +40,15 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {}
 
+/** One structure; `density` is the axis — compact once the business is trading. */
+export const Variants: Story = {
+  render: grid({ MaropayReadinessCard }, [
+    { label: 'density="default"', args: storyReadiness(storyState('m10')) },
+    { label: 'density="compact" — trading (M10)', args: { ...storyReadiness(storyState('m10')), density: 'compact' } },
+    { label: 'density="compact" — another store to activate (M07)', args: { ...storyReadiness(storyState('m07')), density: 'compact' } },
+  ], { columns: '1fr' }),
+}
+
 /** Every headline the overview can show, in priority order. */
 export const States: Story = {
   render: grid({ MaropayReadinessCard }, [

@@ -1,9 +1,8 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { money } from '../../src/maropay/money.ts'
-import { checkoutMethods } from '../../src/maropay/readiness.ts'
 import { buildScenario } from '../../src/maropay/scenarios.ts'
-import { TRANSACTION_TABS, flowUnavailableReason, inTab, methodsForFlow, transactionCsvRow } from '../../src/maropay/transactions.ts'
+import { TRANSACTION_TABS, inTab, transactionCsvRow } from '../../src/maropay/transactions.ts'
 import { refundPayment } from '../../src/services/maropay/mockAdapter.ts'
 import { context, env } from './fixtures.ts'
 
@@ -37,18 +36,4 @@ test('payments an earlier provider took export without guessed fees', () => {
   assert.equal(row.Provider, 'PayPal')
   assert.equal(row.Fee, '')
   assert.equal(row.Net, '')
-})
-
-test('checkout preview flows run only on methods that can produce them', () => {
-  const state = buildScenario('m10', context())
-  const methods = checkoutMethods(state, state.bindings[0]!)
-  assert.deepEqual(methodsForFlow('auth_required', methods).map((m) => m.id), ['card'])
-  assert.deepEqual(methodsForFlow('success', methods).map((m) => m.id), ['card', 'apple_pay', 'google_pay'])
-  assert.equal(flowUnavailableReason('success', methods), null)
-  assert.match(flowUnavailableReason('redirect', methods) ?? '', /Afterpay/)
-  assert.match(flowUnavailableReason('delayed', methods) ?? '', /ACH/)
-
-  const m13 = buildScenario('m13', context())
-  const withDebit = checkoutMethods(m13, m13.bindings[0]!)
-  assert.deepEqual(methodsForFlow('delayed', withDebit).map((m) => m.id), ['us_bank_account'])
 })

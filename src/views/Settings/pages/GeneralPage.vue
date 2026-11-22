@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import SettingsSection from '@/components/settings/SettingsSection.vue'
-import { useUserProfile } from '@/stores/useUserProfile'
+import { LANGUAGES, useUserProfile } from '@/stores/useUserProfile'
 import { useToast } from '@/composables/useToast'
 
 const toast = useToast()
@@ -17,7 +17,6 @@ const profile = ref({
   email: 'Ross@maropost.com',
   phone: '+1 (555) 000-0000',
   timezone: 'America/New_York',
-  language: 'English (US)',
 })
 
 const security = ref({
@@ -59,7 +58,8 @@ function onFile(e: Event) {
           <div v-else class="profile-image-fallback">{{ profileInitials }}</div>
         </v-avatar>
         <div class="profile-image-actions">
-          <div class="d-flex align-center gap-2">
+          <!-- Wraps at narrow widths so Remove is never clipped (WCAG 1.4.10 — W-17). -->
+          <div class="d-flex flex-wrap align-center gap-2">
             <v-btn
               variant="outlined"
               size="small"
@@ -104,10 +104,15 @@ function onFile(e: Event) {
           v-model="profile.timezone"
           :items="['America/New_York','UTC','Europe/London','Asia/Tokyo']"
         />
+        <!-- Same setting as the user menu's Language switch: both read and write the store. -->
         <v-select
           label="Preferred Language"
-          v-model="profile.language"
-          :items="['English (US)','French','Spanish','German']"
+          v-model="profileStore.language"
+          :items="LANGUAGES"
+          item-title="label"
+          item-value="code"
+          hint="You can also switch from the user menu at the top right."
+          persistent-hint
         />
       </MpFormGrid>
     </SettingsSection>
@@ -138,6 +143,7 @@ function onFile(e: Event) {
   display: flex;
   flex-direction: column;
   gap: var(--mp-space-6);
+  min-width: 0;
 }
 
 .profile-image-fallback {

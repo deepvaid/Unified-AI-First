@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 import PlgTalkToSalesDialog from './PlgTalkToSalesDialog.vue'
+import { overlayDocs } from '@/stories/decorators'
 
 const meta = {
   title: 'Product/PLG/PlgTalkToSalesDialog',
@@ -8,6 +9,8 @@ const meta = {
   tags: ['autodocs'],
   parameters: {
     docs: {
+      // Every story opens the dialog on mount, so each gets its own frame on the docs page.
+      ...overlayDocs().docs,
       description: {
         component: `
 ### Overview
@@ -63,10 +66,10 @@ detail (that needs a real form flow, not this demo dialog), or the decision is a
       return { args, open }
     },
     template: `
-      <section style="min-height:460px;background:rgb(var(--v-theme-background));padding:24px;">
+      <div>
         <v-btn variant="outlined" prepend-icon="messages-square" @click="open = true">Talk to sales</v-btn>
         <PlgTalkToSalesDialog v-bind="args" v-model="open" />
-      </section>
+      </div>
     `,
   }),
 } satisfies Meta<typeof PlgTalkToSalesDialog>
@@ -83,54 +86,24 @@ export const Default: Story = {}
  */
 export const FilledIn: Story = {
   play: async () => {
-    // Dialog content teleports to <body> via v-dialog/v-overlay, so it's queried from
-    // `document` rather than canvasElement. Give the open transition a beat to settle.
+    // The dialog teleports to the overlay container, outside canvasElement, so the open dialog
+    // is found in `document` and its fields are queried inside it. Give the open transition a
+    // beat to settle.
     await new Promise(resolve => setTimeout(resolve, 400))
-    const select = document.querySelector<HTMLElement>('.v-select')
-    select?.click()
+    const dialog = document.querySelector<HTMLElement>('.mp-dialog.v-overlay--active')
+    if (!dialog) return
+    dialog.querySelector<HTMLElement>('.v-select')?.click()
     await new Promise(resolve => setTimeout(resolve, 200))
-    const option = Array.from(document.querySelectorAll<HTMLElement>('.v-list-item'))
+    // The option list is the select's own overlay, a sibling of the dialog.
+    const option = Array.from(document.querySelectorAll<HTMLElement>('.v-select__content .v-list-item'))
       .find(item => item.textContent?.includes('Enterprise pricing'))
     option?.click()
 
-    const textarea = document.querySelector<HTMLTextAreaElement>('textarea')
+    const textarea = dialog.querySelector<HTMLTextAreaElement>('textarea')
     if (textarea) {
       const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set
       setter?.call(textarea, 'We\'re evaluating a move from Marketing Cloud + a legacy help desk — want to understand migration effort.')
       textarea.dispatchEvent(new Event('input', { bubbles: true }))
     }
   },
-}
-
-// ── Template: Variants · Sizes · States ──────────────────────────────────────
-
-/** One structure — a short contact form. Nothing about it varies by prop. */
-export const Variants: Story = {
-  render: (args) => ({
-    components: { PlgTalkToSalesDialog },
-    setup: () => ({ args }),
-    template: `<PlgTalkToSalesDialog v-bind="args" />`,
-  }),
-}
-
-/**
- * There is no `size` prop — this is `MpDialog`'s `sm` (440px). Phase 4 replaced this file's
- * `pa-1` card, Vuetify's default card insets and the `gap-2` / `gap-4` global shims with the
- * shell: one 20px inset, and a body whose field rhythm is `component.dialog.gap`.
- */
-export const Sizes: Story = {
-  render: (args) => ({
-    components: { PlgTalkToSalesDialog },
-    setup: () => ({ args }),
-    template: `<PlgTalkToSalesDialog v-bind="args" />`,
-  }),
-}
-
-/** Empty and filled in — submitting closes the dialog and raises a toast. */
-export const States: Story = {
-  render: (args) => ({
-    components: { PlgTalkToSalesDialog },
-    setup: () => ({ args }),
-    template: `<PlgTalkToSalesDialog v-bind="args" />`,
-  }),
 }

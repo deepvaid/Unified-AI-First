@@ -1,0 +1,22 @@
+{
+  "key": "user-menu",
+  "liquidsky": [
+    "TheAccountDropdown",
+    "TheThemeSwitcher"
+  ],
+  "status": "matched",
+  "reference": "The profile menu in AppBar (Patterns › App Shell)",
+  "note": "As in LiquidSky, switching account and the light / dark theme both live in the profile menu.",
+  "stories": [
+    {
+      "id": "patterns-app-shell-appbar--profile-menu-open",
+      "label": "Profile menu open",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-app-shell-appbar--profile-menu-open",
+      "png": {
+        "light": "png/user-menu/patterns-app-shell-appbar--profile-menu-open--light.png",
+        "dark": "png/user-menu/patterns-app-shell-appbar--profile-menu-open--dark.png"
+      },
+      "parts": []
+    }
+  ]
+}

@@ -1,13 +1,18 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import TrialReviewerPanel from './TrialReviewerPanel.vue'
 import { useTrialLabStore } from '@/stores/useTrialLab'
+import { isolateStorage, overlayDocs } from '@/stories/decorators'
 
 const meta = {
   title: 'Product/Trial Lab/TrialReviewerPanel',
   component: TrialReviewerPanel,
   tags: ['autodocs'],
+  // The story seeds a run, which the store persists to localStorage: put it back on unmount.
+  decorators: [isolateStorage],
   parameters: {
     docs: {
+      // "Reset this run" navigates the router, so the story gets its own frame (and router).
+      ...overlayDocs('720px').docs,
       description: {
         component: `
 ### Overview
@@ -24,9 +29,9 @@ customer UI. Store-bound — it reads and writes \`useTrialLabStore\` for the gi
     components: { TrialReviewerPanel },
     setup() {
       const store = useTrialLabStore()
-      if (!store.run('b')?.account.signedUpAt) {
-        store.ensureRun('b')
-        store.completeSignup('b', 'alex.rivera@northwind.example')
+      if (!store.run(args.variant)?.account.signedUpAt) {
+        store.ensureRun(args.variant)
+        store.completeSignup(args.variant, 'alex.rivera@northwind.example')
       }
       return { args }
     },

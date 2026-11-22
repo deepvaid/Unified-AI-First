@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed, ref, watch, nextTick, mergeProps } from 'vue'
+import { computed, ref, watch, nextTick, mergeProps, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAccountsStore } from '@/stores/useAccounts'
 import { useCopilotStore } from '@/stores/useCopilot'
-import { useUserProfile } from '@/stores/useUserProfile'
+import { LANGUAGES, useUserProfile, type LanguageCode } from '@/stores/useUserProfile'
 import { useAppTheme, type ThemeMode } from '@/composables/useAppTheme'
 import { useMobileNav } from '@/composables/useMobileNav'
+import { mp_layout_appbarHeight } from '@/design-tokens/generated/tokens'
 import { useToast } from '@/composables/useToast'
 import DvOrbitOrb from '@/components/copilot/voice/DvOrbitOrb.vue'
 import MpNotificationsMenu from '@/components/MpNotificationsMenu.vue'
@@ -13,6 +14,8 @@ import MpSegmentedControl from '@/components/MpSegmentedControl.vue'
 import PlgTrialChip from '@/components/plg/PlgTrialChip.vue'
 import MaropayDemoControls from '@/components/maropay/MaropayDemoControls.vue'
 import { usePlgStore, PLG_DEMO_PRESETS, type PlgDemoPreset } from '@/stores/usePlg'
+import { useCatalogCopilotStore } from '@/stores/useCatalogCopilot'
+import { CATALOG_SCENARIOS, isCatalogScenario } from '@/composables/catalogCopilotConfig'
 import { useTrialLabStore } from '@/stores/useTrialLab'
 
 const copilot = useCopilotStore()
@@ -50,6 +53,12 @@ function initialsOf(name: string | null): string {
 }
 const searchOpen = ref(false)
 const searchQuery = ref('')
+// The combobox role belongs on the <input> alone. v-text-field's `role` prop also
+// paints it on the .v-field wrapper — a second combobox with no aria-expanded
+// (WCAG W-05) — so it is set here instead; the aria-* attrs reach the input as attrs.
+// (A ref on the field itself would be overwritten by the menu activator's own ref.)
+const searchGroup = ref<HTMLElement | null>(null)
+onMounted(() => searchGroup.value?.querySelector('.appbar-search input')?.setAttribute('role', 'combobox'))
 
 const currentAccountId = computed(() => accountsStore.activeId)
 const settingsRoute = computed(() => ({ name: 'Settings' as const, params: { accountId: currentAccountId.value } }))
@@ -94,20 +103,43 @@ function accountColor(id: string): string {
 }
 
 const userMenuOpen = ref(false)
-const switchAccountOpen = ref(false)
+// The user menu has one side panel; it shows the account list or the language list, never both.
+const sidePanel = ref<'accounts' | 'language' | null>(null)
+const switchAccountOpen = computed(() => sidePanel.value === 'accounts')
+const languageOpen = computed(() => sidePanel.value === 'language')
+
+function toggleSidePanel(panel: 'accounts' | 'language') {
+  sidePanel.value = sidePanel.value === panel ? null : panel
+}
 
 function closeUserMenu() {
   userMenuOpen.value = false
-  switchAccountOpen.value = false
+  sidePanel.value = null
   accountSearch.value = ''
 }
 
 watch(userMenuOpen, (open) => {
   if (!open) {
-    switchAccountOpen.value = false
+    sidePanel.value = null
     accountSearch.value = ''
   }
 })
+
+// A v-menu that stays open on content click cancels Enter, which leaves its buttons reachable
+// but only operable with Space. This gives Enter back to the user menu's buttons.
+function activateOnEnter(event: KeyboardEvent) {
+  const button = (event.target as HTMLElement).closest('button')
+  if (!button || button.disabled) return
+  event.preventDefault()
+  button.click()
+}
+
+// The menu stays open so the Language row shows the new choice.
+function chooseLanguage(code: LanguageCode) {
+  profileStore.setLanguage(code)
+  sidePanel.value = null
+  toast.success(`Language changed to ${profileStore.currentLanguage.label}`)
+}
 
 function switchAccount(id: string) {
   accountsStore.switchTo(id)
@@ -208,6 +240,20 @@ function resetPlgState() {
   plgStore.resetAccount()
   plgPresetValue.value = null
   showAppbarNotice('PLG demo state reset for this account.')
+}
+
+// Catalog Co-Pilot demo state — entitlement scenarios for the Products Da Vinci
+// CTAs (per account, like the PLG state). Demo control, not product UI.
+const catalogCopilot = useCatalogCopilotStore()
+function onCatalogScenario(value: unknown) {
+  if (!isCatalogScenario(value)) return
+  catalogCopilot.setScenario(value)
+  const label = CATALOG_SCENARIOS.find(s => s.key === value)?.label ?? value
+  showAppbarNotice(`Catalog Co-Pilot demo state: ${label}`)
+}
+function resetCatalogDemo() {
+  catalogCopilot.reset()
+  showAppbarNotice('Catalog Co-Pilot demo state reset for this account.')
 }
 
 const createOpen = ref(false)
@@ -392,9 +438,9 @@ function onSearchKeydown(event: KeyboardEvent) {
 </script>
 
 <template>
-  <v-app-bar height="56" color="surface" flat class="mp-appbar">
+  <v-app-bar :height="Number.parseInt(mp_layout_appbarHeight, 10)" color="surface" flat class="mp-appbar">
     <div class="mp-appbar-shell w-100 d-flex align-center px-4 gap-2">
-      <div class="appbar-search-group">
+      <div ref="searchGroup" class="appbar-search-group">
         <button
           type="button"
           class="appbar-hamburger-btn"
@@ -419,7 +465,6 @@ function onSearchKeydown(event: KeyboardEvent) {
               class="appbar-search appbar-search--inline"
               bg-color="surface"
               clearable
-              role="combobox"
               aria-controls="cmd-palette-list"
               :aria-expanded="searchOpen"
               :aria-activedescendant="searchOpen ? `palette-opt-${activeIndex}` : undefined"
@@ -620,7 +665,7 @@ function onSearchKeydown(event: KeyboardEvent) {
             </v-avatar>
           </button>
         </template>
-          <div class="um-cascade-wrap">
+          <div class="um-cascade-wrap" @keydown.enter="activateOnEnter">
             <div v-if="switchAccountOpen" class="um-cascade-card">
               <div class="um-cascade-card__header">All accounts</div>
               <div class="um-switch-search">
@@ -672,6 +717,28 @@ function onSearchKeydown(event: KeyboardEvent) {
               </button>
             </div>
 
+            <div v-else-if="languageOpen" class="um-cascade-card">
+              <div class="um-cascade-card__header">Language</div>
+              <div class="um-switch-list">
+                <button
+                  v-for="entry in LANGUAGES"
+                  :key="entry.code"
+                  type="button"
+                  class="um-item"
+                  :class="{ 'um-item--active': entry.code === profileStore.language }"
+                  :aria-pressed="entry.code === profileStore.language"
+                  :lang="entry.code"
+                  @click="chooseLanguage(entry.code)"
+                >
+                  <div class="um-item__body">
+                    <div class="um-item__title">{{ entry.label }}</div>
+                    <div class="um-item__sub" lang="en">{{ entry.english }}</div>
+                  </div>
+                  <v-icon v-if="entry.code === profileStore.language" size="16" color="primary" class="ml-auto">check-circle-2</v-icon>
+                </button>
+              </div>
+            </div>
+
             <div class="user-menu-card">
               <div class="um-header">
                 <v-avatar size="56" class="flex-shrink-0">
@@ -707,6 +774,20 @@ function onSearchKeydown(event: KeyboardEvent) {
                     <div class="um-item__sub">View and edit your info</div>
                   </div>
                 </button>
+                <button
+                  type="button"
+                  class="um-item um-language-trigger"
+                  :class="{ 'um-item--active': languageOpen }"
+                  :aria-expanded="languageOpen"
+                  @click.stop="toggleSidePanel('language')"
+                >
+                  <v-icon class="um-item__icon" size="20">languages</v-icon>
+                  <div class="um-item__body">
+                    <div class="um-item__title">Language</div>
+                    <div class="um-item__sub">{{ profileStore.currentLanguage.label }}</div>
+                  </div>
+                  <v-icon size="16" class="um-item__chevron">chevron-right</v-icon>
+                </button>
               </div>
 
               <div class="um-divider" />
@@ -726,7 +807,7 @@ function onSearchKeydown(event: KeyboardEvent) {
                   class="um-item um-account-trigger"
                   :class="{ 'um-item--active': switchAccountOpen }"
                   :aria-expanded="switchAccountOpen"
-                  @click.stop="switchAccountOpen = !switchAccountOpen"
+                  @click.stop="toggleSidePanel('accounts')"
                 >
                   <v-avatar size="28" variant="tonal" :color="accountColor(activeAccount.id)" class="flex-shrink-0 um-item__avatar">
                     {{ activeAccount.name.slice(0, 2).toUpperCase() }}
@@ -796,6 +877,36 @@ function onSearchKeydown(event: KeyboardEvent) {
                     class="text-none"
                     :disabled="!plgStore.hasExplicitState"
                     @click="resetPlgState"
+                  >
+                    Reset
+                  </v-btn>
+                </div>
+                <div class="um-item" role="group" aria-label="Catalog Co-Pilot demo state">
+                  <v-icon class="um-item__icon" size="20">flask-conical</v-icon>
+                  <div class="um-item__body">
+                    <div class="um-item__title">Catalog Co-Pilot demo</div>
+                    <div class="um-item__sub">Demo controls — not part of the product</div>
+                  </div>
+                </div>
+                <div class="um-plg-demo">
+                  <!-- Compact menu control: detail-free so the user menu can't
+                       resize under the pointer while it is open. -->
+                  <v-select
+                    :model-value="catalogCopilot.scenario"
+                    :items="CATALOG_SCENARIOS"
+                    item-title="label"
+                    item-value="key"
+                    hide-details
+                    label="Entitlement state"
+                    class="um-plg-demo__select"
+                    @update:model-value="onCatalogScenario"
+                  />
+                  <v-btn
+                    size="small"
+                    variant="text"
+                    class="text-none"
+                    :disabled="!catalogCopilot.hasDemoState"
+                    @click="resetCatalogDemo"
                   >
                     Reset
                   </v-btn>
@@ -977,7 +1088,13 @@ function onSearchKeydown(event: KeyboardEvent) {
 .appbar-utilities :deep(.appbar-action-btn:focus-visible) {
   background: var(--surface-interactive-hover);
   color: var(--text-primary);
-  outline: none;
+}
+
+/* Focus keeps the shell's shared 2px accent ring (global.scss) on top of the
+   hover tint; the tint alone was ~1.5:1 (WCAG 2.4.7 consistency — W-15). */
+.appbar-utilities :deep(.appbar-action-btn:focus-visible) {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }
 
 .appbar-utilities :deep(.appbar-action-btn .v-icon) {
@@ -1795,7 +1912,13 @@ function onSearchKeydown(event: KeyboardEvent) {
   .appbar-mobile-search-btn:hover,
   .appbar-mobile-search-btn:focus-visible {
     background: var(--surface-interactive-hover);
-    outline: none;
+  }
+
+  /* Same shared ring as the desktop utilities (W-15). */
+  .appbar-hamburger-btn:focus-visible,
+  .appbar-mobile-search-btn:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
   }
 
 }

@@ -79,7 +79,7 @@ const options = computed<ApexOptions>(() => {
         {{ s.name }}
       </span>
     </div>
-    <div role="img" :aria-label="chartLabel" :style="{ minHeight: `${height}px` }">
+    <div role="group" :aria-label="chartLabel" :style="{ minHeight: `${height}px` }">
       <VueApexCharts v-if="ready" type="line" :height="height" :options="options" :series="series" />
     </div>
   </div>

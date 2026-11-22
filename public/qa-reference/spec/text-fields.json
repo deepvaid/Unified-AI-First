@@ -1,0 +1,60 @@
+{
+  "key": "text-fields",
+  "liquidsky": [
+    "MpVTextField",
+    "MpVTextarea",
+    "MpVMaskInput",
+    "MpVFileInput",
+    "MpVDateInput",
+    "AppNumberInput",
+    "MpVForm"
+  ],
+  "status": "matched",
+  "reference": "Vuetify fields on the form-field baseline (Patterns › Form Fields)",
+  "note": "One label style (static top label), one size ramp (32 / 40 / 48 from the density prop). A number input is a text field with a suffix.",
+  "notRequired": [
+    "The label above the field. A floating label inside the field is fine."
+  ],
+  "stories": [
+    {
+      "id": "patterns-form-fields--all-states",
+      "label": "Field states",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-form-fields--all-states",
+      "png": {
+        "light": "png/text-fields/patterns-form-fields--all-states--light.png",
+        "dark": "png/text-fields/patterns-form-fields--all-states--dark.png"
+      },
+      "parts": []
+    },
+    {
+      "id": "patterns-form-fields--sizes",
+      "label": "Sizes",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-form-fields--sizes",
+      "png": {
+        "light": "png/text-fields/patterns-form-fields--sizes--light.png",
+        "dark": "png/text-fields/patterns-form-fields--sizes--dark.png"
+      },
+      "parts": []
+    },
+    {
+      "id": "patterns-form-fields--prefix-suffix",
+      "label": "Prefix and suffix",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-form-fields--prefix-suffix",
+      "png": {
+        "light": "png/text-fields/patterns-form-fields--prefix-suffix--light.png",
+        "dark": "png/text-fields/patterns-form-fields--prefix-suffix--dark.png"
+      },
+      "parts": []
+    },
+    {
+      "id": "patterns-form-fields--form-layout",
+      "label": "Form layout",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/patterns-form-fields--form-layout",
+      "png": {
+        "light": "png/text-fields/patterns-form-fields--form-layout--light.png",
+        "dark": "png/text-fields/patterns-form-fields--form-layout--dark.png"
+      },
+      "parts": []
+    }
+  ]
+}

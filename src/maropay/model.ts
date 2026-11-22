@@ -11,19 +11,21 @@
  */
 import { money, zero } from './money.ts'
 import type { Money, RateCard } from './money.ts'
+import { DEFAULT_PROVIDERS_SINCE, PROVIDER_SPECS, cardGateway, isOwnProviderKind } from './providers.ts'
+import type { ManualMethodSettings, ProviderConnection, ProviderKind, ProviderMethod, StoreProviderSetup } from './providers.ts'
 
 // ── Vocabulary ────────────────────────────────────────────────────────────
 
-/** Who processed a payment. Anything but 'maropay' is a previous provider kept for history. */
-export type MaropayProvider = 'maropay' | 'stripe-legacy' | 'paypal' | 'manual'
-export type LegacyProvider = Exclude<MaropayProvider, 'maropay'>
+/** Who takes a payment: Maropay, or one of the providers a merchant connects themselves (providers.ts). */
+export type MaropayProvider = 'maropay' | 'stripe' | 'paypal' | 'eway' | 'afterpay' | 'zip' | 'bank_deposit' | 'cheque' | 'cod'
 
 export const PROVIDER_LABELS: Record<MaropayProvider, string> = {
   maropay: 'Maropay',
-  'stripe-legacy': 'Stripe',
-  paypal: 'PayPal',
-  manual: 'Manual payment',
+  ...(Object.fromEntries(Object.entries(PROVIDER_SPECS).map(([kind, spec]) => [kind, spec.label])) as Record<Exclude<MaropayProvider, 'maropay'>, string>),
 }
+
+/** Provider ids a first-phase save used; parseState maps them onto today's. */
+export const LEGACY_PROVIDER_IDS: Record<string, MaropayProvider> = { 'stripe-legacy': 'stripe', manual: 'bank_deposit' }
 
 /** The reviewer-selectable persona the prototype acts as (plan §2 access model). */
 export type MaropayActingRole = 'owner' | 'finance' | 'store_ops'
@@ -130,12 +132,14 @@ export type PayoutCapability = 'inactive' | 'ready' | 'action_required' | 'pause
 export type StoreActivationState = 'inactive' | 'needs_setup' | 'ready_to_activate' | 'live'
 export type MethodStatus = 'available' | 'setup_required' | 'pending_approval' | 'enabled' | 'unavailable'
 
-export type MethodCategory = 'cards' | 'wallets' | 'bnpl' | 'local'
+/** `manual` is paid outside the store (bank deposit, cheque, cash on delivery) — never in Maropay's own catalogue. */
+export type MethodCategory = 'cards' | 'wallets' | 'bnpl' | 'local' | 'manual'
 export const METHOD_CATEGORY_LABELS: Record<MethodCategory, string> = {
   cards: 'Cards',
   wallets: 'Wallets',
   bnpl: 'Buy now, pay later',
   local: 'Bank and local methods',
+  manual: 'Manual payments',
 }
 
 /** Account-level availability of a method (store enablement lives on the binding). */
@@ -147,7 +151,7 @@ export const ONBOARDING_STEPS: OnboardingStepKey[] = ['business', 'terms', 'veri
 
 export type MaropayScenarioKey =
   | 'm01' | 'm02' | 'm03' | 'm04' | 'm05' | 'm06' | 'm07' | 'm08'
-  | 'm09' | 'm10' | 'm11' | 'm12' | 'm13' | 'm14' | 'm15' | 'm16' | 'm17'
+  | 'm09' | 'm10' | 'm11' | 'm12' | 'm13' | 'm14' | 'm15' | 'm16' | 'm17' | 'm18'
 
 // ── Results ───────────────────────────────────────────────────────────────
 
@@ -334,25 +338,11 @@ export interface MaropayAccount {
   closedAt: string | null
 }
 
-export interface PreviousProviderMethod {
-  label: string
-  /** Maropay equivalent, or null when the method has none. */
-  maropayMethodId: string | null
-  rate: RateCard
-  /** Stays connected through the previous provider after the switch. */
-  keepSeparately: boolean
-}
-
-export interface PreviousProvider {
-  provider: LegacyProvider
-  methods: PreviousProviderMethod[]
-  captureMode: CaptureMode
-  /** Saved cards/mandates. `blocking` = they back charges that need a supported migration first. */
-  savedCredentials: { count: number; blocking: boolean } | null
-  connectedSince: string
-}
-
-/** A sales channel linked to the Maropay account. One business, many bindings. */
+/**
+ * A sales channel linked to the Maropay account — Maropay's own connection on
+ * that store. One business, many bindings. The store's other providers live in
+ * `MaropayAccountState.storeProviders` (providers.ts).
+ */
 export interface StoreBinding {
   id: string
   accountId: string
@@ -361,7 +351,6 @@ export interface StoreBinding {
   /** Methods the merchant wants on this store; checkout offers only the available ones. */
   enabledMethodIds: string[]
   captureMode: CaptureMode
-  previousProvider: PreviousProvider | null
   checkoutValidation: { status: 'not_run' | 'passed' | 'failed'; at: string | null; failureReason: string | null }
   impactReviewedAt: string | null
   linkedAt: string
@@ -383,7 +372,7 @@ export interface CheckoutSettings {
   logo: { name: string; sizeLabel: string } | null
   payButtonLabel: PayButtonLabel
   showSupportContact: boolean
-  /** Apple Pay and Google Pay as express buttons above the form. */
+  /** Apple Pay, Google Pay and PayPal as one-tap express buttons above the checkout form. */
   expressWallets: boolean
 }
 
@@ -415,6 +404,8 @@ export interface PaymentMethodCatalogEntry {
   supportsManualCapture: boolean
   /** Confirmation can take days (bank debits). */
   delayed: boolean
+  /** The shopper approves on the provider's own page (PayPal, buy now pay later). */
+  redirects: boolean
   availability: MethodAvailability
   reviewNote: string | null
   /** Maropost's pre-screening answers sent with a review request — kept account-side because approval is account-wide. Not partner data. */
@@ -426,7 +417,8 @@ export type PaymentStatus =
   | 'processing' | 'authorised' | 'captured' | 'partially_refunded'
   | 'refunded' | 'failed' | 'voided' | 'disputed'
 
-export type ShopperFlow = 'success' | 'auth_required' | 'declined' | 'redirect' | 'delayed'
+/** `manual`: the order is placed now and the merchant records the money when it arrives. */
+export type ShopperFlow = 'success' | 'auth_required' | 'declined' | 'redirect' | 'delayed' | 'manual'
 
 export interface Capture {
   id: string
@@ -488,6 +480,8 @@ export interface Payment {
   expectedResolutionAt: string | null
   failure: { code: string; message: string } | null
   flow: ShopperFlow | null
+  /** Taken by another provider before the store used Maropay (fixture history). Present only when true. */
+  legacy?: boolean
   timeline: PaymentEvent[]
   /** Processor event ids already applied — late or duplicated deliveries are ignored. */
   appliedEventIds: string[]
@@ -680,13 +674,21 @@ export interface OnboardingDraft {
   submittedAt: string | null
 }
 
+/** One cart line at checkout; `price` is the unit price as a decimal string. */
+export interface CheckoutLineItem {
+  product: string
+  sku: string
+  qty: number
+  price: string
+}
+
 /** Enough of a checkout-created order to rebuild it after reload (Commerce is not persisted). */
 export interface CheckoutOrderSnapshot {
   id: number
   orderNumber: string
   date: string
   customer: { name: string; email: string }
-  lineItems: Array<{ product: string; sku: string; qty: number; price: string }>
+  lineItems: CheckoutLineItem[]
   shipping: string
   total: string
 }
@@ -696,12 +698,18 @@ export interface CheckoutSession {
   channelId: string
   amount: Money
   methodId: string
+  /** Who takes this payment — resolved from the store's offer when the session opens. */
+  providerId: MaropayProvider
+  /** The method as the shopper chose it ("Zip", "Direct bank transfer"), for pages that outlive the offer. */
+  methodLabel: string
+  /** Cards: the brand and last four of the number typed ("Mastercard •••• 8810"), so the receipt and the records agree. */
+  cardLabel: string | null
   flow: ShopperFlow
   state: 'open' | 'requires_action' | 'redirected' | 'processing' | 'complete' | 'failed'
   paymentId: string | null
   order: CheckoutOrderSnapshot | null
   customer: { name: string; email: string }
-  lineItem: { product: string; sku: string; price: string }
+  lineItems: CheckoutLineItem[]
   createdAt: string
 }
 
@@ -714,6 +722,21 @@ export interface HistoryEntry {
   kind: HistoryKind
   channelId: string | null
   text: string
+}
+
+/** A quiet glyph per history kind (Lucide names), for activity rows. */
+export const HISTORY_KIND_ICONS: Record<HistoryKind, string> = {
+  setup: 'list-checks',
+  terms: 'file-text',
+  verification: 'shield-check',
+  business: 'building-2',
+  store: 'store',
+  account: 'wallet',
+  methods: 'credit-card',
+  bank: 'landmark',
+  payout: 'banknote',
+  refund: 'undo-2',
+  dispute: 'shield-alert',
 }
 
 export interface MaropayAccountState {
@@ -730,6 +753,8 @@ export interface MaropayAccountState {
   terms: CommercialTerms
   onboarding: OnboardingDraft
   bindings: StoreBinding[]
+  /** Each store's own providers and card processor; a store with no record has the default (providers.ts). */
+  storeProviders: StoreProviderSetup[]
   methods: PaymentMethodCatalogEntry[]
   payments: Payment[]
   disputes: Dispute[]
@@ -757,6 +782,11 @@ export const COUNTRY_LABELS: Record<string, string> = {
   BR: 'Brazil', IN: 'India', NG: 'Nigeria',
 }
 
+/** The phone field's prefix per registration country. */
+export const DIAL_CODES: Record<string, string> = {
+  US: '+1', CA: '+1', AU: '+61', NZ: '+64', GB: '+44', BR: '+55', IN: '+91', NG: '+234',
+}
+
 function rate(percentBps: number, fixedMinor: number, label: string, capMinor?: number): RateCard {
   return capMinor === undefined ? { percentBps, fixedMinor, label } : { percentBps, fixedMinor, label, capMinor }
 }
@@ -766,15 +796,16 @@ function rate(percentBps: number, fixedMinor: number, label: string, capMinor?: 
  * and availability are placeholders for the approved launch matrix (plan §5).
  */
 export const METHOD_CATALOG: ReadonlyArray<Omit<PaymentMethodCatalogEntry, 'availability' | 'reviewNote' | 'requested' | 'declineReason'>> = [
-  { id: 'card', label: 'Cards', category: 'cards', currencies: ['USD', 'CAD', 'AUD', 'NZD', 'GBP', 'EUR'], rate: rate(290, 30, '2.9% + 30¢'), requirements: [], supportsManualCapture: true, delayed: false },
-  { id: 'apple_pay', label: 'Apple Pay', category: 'wallets', currencies: ['USD', 'CAD', 'AUD', 'NZD', 'GBP', 'EUR'], rate: rate(290, 30, '2.9% + 30¢'), requirements: [], supportsManualCapture: true, delayed: false },
-  { id: 'google_pay', label: 'Google Pay', category: 'wallets', currencies: ['USD', 'CAD', 'AUD', 'NZD', 'GBP', 'EUR'], rate: rate(290, 30, '2.9% + 30¢'), requirements: [], supportsManualCapture: true, delayed: false },
-  { id: 'klarna', label: 'Klarna', category: 'bnpl', currencies: ['USD', 'AUD', 'NZD', 'GBP', 'EUR'], rate: rate(599, 30, '5.99% + 30¢'), requirements: ['Refund and returns policy URL', 'Typical order value range'], supportsManualCapture: true, delayed: false },
-  { id: 'afterpay_clearpay', label: 'Afterpay', category: 'bnpl', currencies: ['USD', 'CAD', 'AUD', 'NZD', 'GBP'], rate: rate(600, 30, '6% + 30¢'), requirements: [], supportsManualCapture: true, delayed: false },
-  { id: 'affirm', label: 'Affirm', category: 'bnpl', currencies: ['USD', 'CAD'], rate: rate(599, 0, '5.99%'), requirements: [], supportsManualCapture: false, delayed: false },
-  { id: 'us_bank_account', label: 'ACH Direct Debit', category: 'local', currencies: ['USD'], rate: rate(80, 0, '0.8%, max $5.00', 500), requirements: [], supportsManualCapture: false, delayed: true },
-  { id: 'ideal', label: 'iDEAL', category: 'local', currencies: ['EUR'], rate: rate(0, 29, '€0.29'), requirements: [], supportsManualCapture: false, delayed: false },
-  { id: 'sepa_debit', label: 'SEPA Direct Debit', category: 'local', currencies: ['EUR'], rate: rate(80, 0, '0.8%, max €5.00', 500), requirements: [], supportsManualCapture: false, delayed: true },
+  { id: 'card', label: 'Cards', category: 'cards', currencies: ['USD', 'CAD', 'AUD', 'NZD', 'GBP', 'EUR'], rate: rate(290, 30, '2.9% + 30¢'), requirements: [], supportsManualCapture: true, delayed: false, redirects: false },
+  { id: 'apple_pay', label: 'Apple Pay', category: 'wallets', currencies: ['USD', 'CAD', 'AUD', 'NZD', 'GBP', 'EUR'], rate: rate(290, 30, '2.9% + 30¢'), requirements: [], supportsManualCapture: true, delayed: false, redirects: false },
+  { id: 'google_pay', label: 'Google Pay', category: 'wallets', currencies: ['USD', 'CAD', 'AUD', 'NZD', 'GBP', 'EUR'], rate: rate(290, 30, '2.9% + 30¢'), requirements: [], supportsManualCapture: true, delayed: false, redirects: false },
+  { id: 'paypal', label: 'PayPal', category: 'wallets', currencies: ['USD', 'CAD', 'AUD', 'NZD', 'GBP', 'EUR'], rate: rate(349, 49, '3.49% + 49¢'), requirements: [], supportsManualCapture: true, delayed: false, redirects: true },
+  { id: 'klarna', label: 'Klarna', category: 'bnpl', currencies: ['USD', 'AUD', 'NZD', 'GBP', 'EUR'], rate: rate(599, 30, '5.99% + 30¢'), requirements: ['Refund and returns policy URL', 'Typical order value range'], supportsManualCapture: true, delayed: false, redirects: true },
+  { id: 'afterpay_clearpay', label: 'Afterpay', category: 'bnpl', currencies: ['USD', 'CAD', 'AUD', 'NZD', 'GBP'], rate: rate(600, 30, '6% + 30¢'), requirements: [], supportsManualCapture: true, delayed: false, redirects: true },
+  { id: 'affirm', label: 'Affirm', category: 'bnpl', currencies: ['USD', 'CAD'], rate: rate(599, 0, '5.99%'), requirements: [], supportsManualCapture: false, delayed: false, redirects: true },
+  { id: 'us_bank_account', label: 'ACH Direct Debit', category: 'local', currencies: ['USD'], rate: rate(80, 0, '0.8%, max $5.00', 500), requirements: [], supportsManualCapture: false, delayed: true, redirects: false },
+  { id: 'ideal', label: 'iDEAL', category: 'local', currencies: ['EUR'], rate: rate(0, 29, '€0.29'), requirements: [], supportsManualCapture: false, delayed: false, redirects: false },
+  { id: 'sepa_debit', label: 'SEPA Direct Debit', category: 'local', currencies: ['EUR'], rate: rate(80, 0, '0.8%, max €5.00', 500), requirements: [], supportsManualCapture: false, delayed: true, redirects: false },
 ]
 
 /** Account-scoped copy of the catalogue: methods the settlement currency can't present are unavailable. */
@@ -854,6 +885,7 @@ export function emptyState(accountId: string, now: number, currency = 'USD'): Ma
     terms: illustrativeTerms(currency),
     onboarding: emptyOnboarding(),
     bindings: [],
+    storeProviders: [],
     methods: catalogFor(currency),
     payments: [],
     disputes: [],
@@ -998,6 +1030,97 @@ function migrateTask(task: ActionTask): ActionTask {
   return task
 }
 
+/** A first-phase session held one product as `lineItem`, and every session was Maropay's. */
+function migrateSession(session: CheckoutSession & { lineItem?: Omit<CheckoutLineItem, 'qty'> }): CheckoutSession {
+  const { lineItem, ...rest } = session
+  return {
+    ...rest,
+    providerId: typeof rest.providerId === 'string' ? rest.providerId : 'maropay',
+    methodLabel: typeof rest.methodLabel === 'string' ? rest.methodLabel : rest.methodId,
+    cardLabel: typeof rest.cardLabel === 'string' ? rest.cardLabel : null,
+    lineItems: Array.isArray(session.lineItems) ? session.lineItems : lineItem ? [{ ...lineItem, qty: 1 }] : [],
+  }
+}
+
+/** Provider ids from a first-phase save, and the "before Maropay" marker those payments carried only implicitly. */
+function migratePayment(p: Payment): Payment {
+  const provider = LEGACY_PROVIDER_IDS[p.provider as string] ?? p.provider
+  const legacy = p.legacy ?? (provider !== 'maropay' && p.flow === null)
+  return {
+    ...p,
+    provider,
+    refunds: Array.isArray(p.refunds) ? p.refunds.map((r) => ({ ...r, provider: LEGACY_PROVIDER_IDS[r.provider as string] ?? r.provider })) : [],
+    orderId: typeof p.orderId === 'number' ? p.orderId : null,
+    ...(legacy ? { legacy: true } : {}),
+  }
+}
+
+/** A saved store setup, with the fields later saves added and unknown providers dropped. */
+function withSetupDefaults(raw: unknown): StoreProviderSetup | null {
+  const r = record(raw)
+  if (!r || typeof r.channelId !== 'string') return null
+  const connections = (Array.isArray(r.connections) ? r.connections : []).flatMap((c): ProviderConnection[] => {
+    const rc = record(c)
+    if (!rc || !isOwnProviderKind(rc.kind)) return []
+    return [{
+      kind: rc.kind,
+      status: rc.status === 'inactive' || rc.status === 'setup_incomplete' ? rc.status : 'active',
+      methods: Array.isArray(rc.methods) ? (rc.methods as ProviderMethod[]) : [],
+      captureMode: rc.captureMode === 'manual' ? 'manual' : 'automatic',
+      savedCredentials: (record(rc.savedCredentials) as ProviderConnection['savedCredentials']) ?? null,
+      connectedSince: typeof rc.connectedSince === 'string' ? rc.connectedSince : DEFAULT_PROVIDERS_SINCE,
+      manual: (record(rc.manual) as ManualMethodSettings | null) ?? null,
+    }]
+  })
+  const setup: StoreProviderSetup = { channelId: r.channelId, connections, cardProcessor: null }
+  // Only a save that predates the pointer gets it derived; an explicit null means nobody takes cards.
+  const pointer = r.cardProcessor
+  setup.cardProcessor = !('cardProcessor' in r)
+    ? cardGateway(setup)?.kind ?? null
+    : pointer === 'maropay' || isOwnProviderKind(pointer) ? pointer : null
+  const lineup = Array.isArray(r.lineup) ? (r.lineup as unknown[]).filter((k): k is ProviderKind => k === 'maropay' || isOwnProviderKind(k)) : []
+  if (lineup.length) setup.lineup = lineup
+  return setup
+}
+
+/** A first-phase binding carried the store's previous provider; it is one of the store's connections now. */
+function legacySetup(raw: Raw): StoreProviderSetup | null {
+  const prev = record(raw.previousProvider)
+  if (!prev || typeof raw.channelId !== 'string') return null
+  const kind = LEGACY_PROVIDER_IDS[prev.provider as string] ?? prev.provider
+  if (!isOwnProviderKind(kind)) return null
+  const spec = PROVIDER_SPECS[kind]
+  const legacyMethods = Array.isArray(prev.methods) ? (prev.methods as Array<{ label: string; maropayMethodId: string | null; rate: RateCard }>) : []
+  const methods = legacyMethods.flatMap((m): ProviderMethod[] => {
+    const methodId = m.maropayMethodId ?? (/^paypal\b/i.test(m.label) ? 'paypal' : null)
+    return methodId ? [{ methodId, label: m.label, rate: m.rate }] : []
+  })
+  return {
+    channelId: raw.channelId,
+    connections: [{
+      kind,
+      status: 'active',
+      methods: methods.length ? methods : spec.methods.map((m) => ({ ...m })),
+      captureMode: prev.captureMode === 'manual' ? 'manual' : 'automatic',
+      savedCredentials: (record(prev.savedCredentials) as ProviderConnection['savedCredentials']) ?? null,
+      connectedSince: typeof prev.connectedSince === 'string' ? prev.connectedSince : DEFAULT_PROVIDERS_SINCE,
+      manual: spec.manual ? { ...spec.manual } : null,
+    }],
+    cardProcessor: raw.activation === 'live' ? 'maropay' : kind,
+  }
+}
+
+/** Saved methods in catalogue order; methods added to the catalogue since the save (PayPal) join with their fresh availability. */
+function migrateMethods(saved: PaymentMethodCatalogEntry[], fresh: PaymentMethodCatalogEntry[]): PaymentMethodCatalogEntry[] {
+  const known = new Set(fresh.map((m) => m.id))
+  const restore = (m: PaymentMethodCatalogEntry, f?: PaymentMethodCatalogEntry): PaymentMethodCatalogEntry =>
+    ({ ...m, redirects: m.redirects ?? f?.redirects ?? false, requested: m.requested ?? null, declineReason: m.declineReason ?? null })
+  return [
+    ...fresh.map((f) => { const m = saved.find((s) => s.id === f.id); return m ? restore(m, f) : f }),
+    ...saved.filter((m) => !known.has(m.id)).map((m) => restore(m)),
+  ]
+}
+
 /**
  * Reads a persisted state back, or null when it is missing, from another
  * account, from a different version, or malformed. Arrays missing from older
@@ -1022,6 +1145,14 @@ export function parseState(raw: string | null, accountId: string, now: number): 
   const settleIn = account && account.setup !== 'submitted' && account.currency !== currencyFor(account.country) ? currencyFor(account.country) : null
   if (account && settleIn) account.currency = settleIn
   const terms = { ...base.terms, ...(parsed.terms ?? {}) }
+  // A first-phase binding carried its previous provider; that is one of the store's connections now.
+  const rawBindings = list(parsed.bindings, []) as Array<StoreBinding & { previousProvider?: unknown }>
+  const storeProviders = list(parsed.storeProviders as unknown[] | undefined, []).map(withSetupDefaults).filter((s): s is StoreProviderSetup => s !== null)
+  for (const b of rawBindings) {
+    if (!b.previousProvider || storeProviders.some((s) => s.channelId === b.channelId)) continue
+    const legacy = legacySetup(b as unknown as Raw)
+    if (legacy) storeProviders.push(legacy)
+  }
   return {
     ...base,
     ...parsed,
@@ -1032,7 +1163,7 @@ export function parseState(raw: string | null, accountId: string, now: number): 
     account,
     milestones: { ...base.milestones, ...(parsed.milestones ?? {}) },
     terms: settleIn ? { ...terms, disputeFee: money(terms.disputeFee.amount, settleIn) } : terms,
-    bindings: list(parsed.bindings, []).map((b) => ({
+    bindings: rawBindings.map(({ previousProvider: _legacy, ...b }) => ({
       ...b,
       checkout: { ...defaultCheckoutSettings(), ...(record(b.checkout) ?? {}) },
       methodOrder: Array.isArray(b.methodOrder) ? b.methodOrder : [],
@@ -1040,15 +1171,16 @@ export function parseState(raw: string | null, accountId: string, now: number): 
       methodSettings: record(b.methodSettings) ? (b.methodSettings as Record<string, MethodSettings>) : {},
       activationNoticeDismissedAt: b.activationNoticeDismissedAt ?? null,
     })),
+    storeProviders,
     methods: settleIn
       ? catalogFor(settleIn)
-      : list(parsed.methods, base.methods).map((m) => ({ ...m, requested: m.requested ?? null, declineReason: m.declineReason ?? null })),
-    payments: list(parsed.payments, []).filter((p) => isMoney(p.amount)).map((p) => ({ ...p, orderId: typeof p.orderId === 'number' ? p.orderId : null })),
+      : migrateMethods(list(parsed.methods, base.methods), base.methods),
+    payments: list(parsed.payments, []).filter((p) => isMoney(p.amount)).map(migratePayment),
     disputes: list(parsed.disputes, []),
     payouts: list(parsed.payouts, []).map((po) => ({ ...po, destination: withBankDefaults(po.destination, country) })),
     movements: list(parsed.movements, []).filter((m) => isMoney(m.net)),
     tasks: list(parsed.tasks, []).map(migrateTask),
-    sessions: list(parsed.sessions, []),
+    sessions: list(parsed.sessions, []).map(migrateSession),
     history: list(parsed.history, []),
     defaultMethodIds: list(parsed.defaultMethodIds, base.defaultMethodIds),
     counters: parsed.counters && typeof parsed.counters === 'object' ? parsed.counters : {},

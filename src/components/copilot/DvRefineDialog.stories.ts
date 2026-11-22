@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from '@storybook/vue3'
 import DvRefineDialog from './DvRefineDialog.vue'
 import { useDashboardsStore } from '@/stores/useDashboards'
 import type { DashboardFilterState, DashboardWidgetDraft } from '@/stores/dashboards/types'
+import { isolateStorage, overlayDocs } from '@/stories/decorators'
 
 const ACCOUNT_ID = '2000290'
 const DASHBOARD_ID = '2000290-home'
@@ -24,6 +25,8 @@ const meta = {
   title: 'Product/Da Vinci/DvRefineDialog',
   component: DvRefineDialog,
   tags: ['autodocs'],
+  // The render seeds the dashboards store, which persists to localStorage: put it back on unmount.
+  decorators: [isolateStorage],
   args: {
     modelValue: true,
     draft: MULTI_VIEW_DRAFT,
@@ -41,6 +44,8 @@ const meta = {
   },
   parameters: {
     docs: {
+      // Every story opens the dialog on mount, so each gets its own frame on the docs page.
+      ...overlayDocs().docs,
       description: {
         component: `
 ## Overview
@@ -61,12 +66,12 @@ Applying emits the chosen \`DashboardWidgetType\` + \`chartVariant\` back to the
       return { args, open }
     },
     template: `
-      <section style="min-height: 640px;">
+      <div>
         <v-btn color="primary" class="text-none" prepend-icon="plus" @click="open = true">
           Add widget
         </v-btn>
         <DvRefineDialog v-bind="args" v-model="open" @apply="open = false" />
-      </section>
+      </div>
     `,
   }),
 } satisfies Meta<typeof DvRefineDialog>
@@ -77,19 +82,17 @@ type Story = StoryObj<typeof meta>
 /** Email volume — four views; switch tiles to see the live preview swap. */
 export const Default: Story = {}
 
-// ── Template: Variants · Sizes · States ──────────────────────────────────────
-
-/** Dialogs overlay, so variants are one story each: the views a metric offers decide the picker. This is the single-view case — Orders can only be a KPI tile. */
-export const Variants: Story = {
+/** Orders can only be a KPI tile — with one view the picker is a static row instead of tiles. */
+export const SingleView: Story = {
   args: { draft: SINGLE_VIEW_DRAFT, sourceLabel: 'Commerce → Orders · Last 30 days' },
 }
 
-/** There is no `size` prop — this is `MpDialog`'s `md` (640px); the only inset the file owns is the gap between its two columns. A table draft shows the preview as a grid rather than a chart. */
-export const Sizes: Story = {
+/** Table draft — Top Campaigns has one view too, and its preview is a grid rather than a chart. */
+export const TableDraft: Story = {
   args: { draft: TABLE_DRAFT, sourceLabel: 'Marketing → Top Campaigns · All time' },
 }
 
-/** The draft cannot be added: the reason shows and "Add to dashboard" is disabled. */
-export const States: Story = {
+/** The dashboard is full, so the draft cannot be added: the reason shows and "Add to dashboard" is disabled. */
+export const DashboardFull: Story = {
   args: { error: 'Overview already has 24 widgets, the most a dashboard can hold. Remove one, or add this to another dashboard.' },
 }

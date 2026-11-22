@@ -1,7 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
-import { VContainer } from 'vuetify/components'
 import {
-  mp_radius_12,
   mp_color_dark_background,
   mp_color_dark_border,
   mp_color_dark_surface,
@@ -12,19 +10,15 @@ import {
   mp_color_light_surface,
   mp_color_light_textMuted,
   mp_color_light_textPrimary,
-  mp_space_12,
-  mp_space_24,
-  mp_fontFamily_mono,
-  mp_fontSize_12,
-  mp_fontSize_11,
 } from '@/design-tokens/generated/tokens'
-import { tokensByPrefix } from './foundationTokens'
+import { tokensByPrefix, type TokenEntry } from './foundationTokens'
+import { SwatchGrid } from './SwatchGrid'
 
-const meta = {
+const meta: Meta = {
   title: 'Foundations/Colors',
-  component: VContainer,
   tags: ['autodocs'],
   parameters: {
+    controls: { disable: true },
     docs: {
       description: {
         component: `
@@ -44,6 +38,10 @@ wrong here, fix it in \`tokens.json\` — never in a component.
 Light theme roles · Dark theme roles · **semantic aliases** (surface, text, border, accent, feedback) ·
 primitive scales (blue / neutral / sidebar) · chart series.
 
+Each theme's roles are split by family: the **core roles** every component may use come first, then
+one grid per family (\`color.light.accent.*\`, \`color.light.tag.*\`, …). A family that belongs to one
+product area says so in its caption: the Da Vinci and POS palettes are not general-purpose colours.
+
 Semantic aliases (\`--surface-*\`, \`--text-*\`, \`--border-*\`, \`--accent-*\`) resolve through
 \`mp-theme-aliases.css\` and switch with the Storybook **Theme** and **Accent** toolbars — the same
 path as the app. Never hardcode hex in components; use aliases or Vuetify theme channels.
@@ -51,61 +49,76 @@ path as the app. Never hardcode hex in components; use aliases or Vuetify theme 
       },
     },
   },
-} satisfies Meta<typeof VContainer>
+}
 
 export default meta
 type Story = StoryObj<typeof meta>
 
-const lightColors = tokensByPrefix('mp_color_light_')
-const darkColors = tokensByPrefix('mp_color_dark_')
+/**
+ * The families under `color.<theme>.*`, in display order, with a caption for the ones that are
+ * scoped to one area. A family that is in tokens.json but not listed here still renders, after
+ * these, under its own key.
+ */
+const FAMILIES: { key: string; label: string; caption: string }[] = [
+  { key: 'accent', label: 'Accent presets', caption: 'The four Accent presets (cyan is the default). Components read the active one through the --accent-* aliases, never a preset directly.' },
+  { key: 'blue', label: 'Blue ramp', caption: 'The dark-theme counterpart of color.blue.*.' },
+  { key: 'neutral', label: 'Neutral ramp', caption: 'The dark-theme counterpart of color.neutral.*.' },
+  { key: 'inkPanel', label: 'Ink panel', caption: 'The inverted ink panel and its foregrounds (--ink-panel-*).' },
+  { key: 'cloud', label: 'Cloud identity', caption: 'One accent and one text ink per cloud. Used by MpSourceCloudChip.' },
+  { key: 'tag', label: 'Tag hues', caption: 'Service desk tags (MpTagChip): a container and its ink per hue. Categories, not states.' },
+  { key: 'moduleTile', label: 'Module tiles', caption: 'Categorical tile accents for ModuleLandingPage cards.' },
+  { key: 'flowLogic', label: 'Flow logic', caption: 'Journey builder only: the logic / filter step category.' },
+  { key: 'aiAccent', label: 'AI accent', caption: 'Da Vinci only: AI surfaces.' },
+  { key: 'aiMetric', label: 'AI metric', caption: 'Da Vinci only: draft metric deltas.' },
+  { key: 'dv', label: 'Da Vinci', caption: 'Da Vinci only: the copilot and Orbit voice palette.' },
+  { key: 'pos', label: 'POS', caption: 'POS only: the in-store register palette. Light-only by design, so there is no color.dark.pos.' },
+]
+
+interface ColorFamily {
+  key: string
+  heading: string
+  caption?: string
+  swatches: TokenEntry[]
+}
+
+/** One theme's roles, grouped by the first sub-key after `mp_color_<theme>_`. Core roles (no sub-key) first. */
+function colorFamilies(theme: 'light' | 'dark'): ColorFamily[] {
+  const core: TokenEntry[] = []
+  const byFamily = new Map<string, TokenEntry[]>()
+  for (const entry of tokensByPrefix(`mp_color_${theme}_`)) {
+    const split = entry.name.indexOf('_')
+    if (split === -1) {
+      core.push(entry)
+      continue
+    }
+    const key = entry.name.slice(0, split)
+    if (!byFamily.has(key)) byFamily.set(key, [])
+    byFamily.get(key)!.push({ ...entry, name: entry.name.slice(split + 1) })
+  }
+
+  const known = FAMILIES.filter((family) => byFamily.has(family.key))
+  const unlisted = [...byFamily.keys()]
+    .filter((key) => !FAMILIES.some((family) => family.key === key))
+    .map((key) => ({ key, label: key, caption: undefined }))
+
+  return [
+    { key: 'core', heading: `Core roles — color.${theme}.* (${core.length})`, swatches: core },
+    ...[...known, ...unlisted].map(({ key, label, caption }) => ({
+      key,
+      heading: `${label} — color.${theme}.${key}.* (${byFamily.get(key)!.length})`,
+      caption,
+      swatches: byFamily.get(key)!,
+    })),
+  ]
+}
+
+const lightFamilies = colorFamilies('light')
+const darkFamilies = colorFamilies('dark')
 const blueScale = tokensByPrefix('mp_color_blue_')
 const neutralScale = tokensByPrefix('mp_color_neutral_')
 const sidebarColors = tokensByPrefix('mp_color_sidebar_')
 const chartLight = tokensByPrefix('mp_color_chart_light_')
 const chartDark = tokensByPrefix('mp_color_chart_dark_')
-
-/** Reusable swatch-grid section. `panel` styles let dark tokens render on a dark canvas. */
-const SwatchGrid = {
-  props: ['swatches', 'heading', 'panelBg', 'panelText', 'panelMuted', 'panelBorder'],
-  setup() {
-    return {
-      mp_radius_12,
-      mp_space_12,
-      mp_space_24,
-      mp_fontFamily_mono,
-      mp_fontSize_12,
-      mp_fontSize_11,
-    }
-  },
-  template: `
-    <section
-      :style="{
-        background: panelBg,
-        color: panelText,
-        padding: mp_space_24,
-        borderRadius: mp_radius_12,
-        border: '1px solid ' + panelBorder,
-        marginBottom: mp_space_24,
-      }"
-    >
-      <p class="text-overline" :style="{ color: panelMuted, marginBottom: mp_space_12 }">{{ heading }}</p>
-      <div :style="{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: mp_space_12 }">
-        <div v-for="s in swatches" :key="s.token">
-          <div
-            :style="{
-              background: s.value,
-              height: '56px',
-              borderRadius: mp_radius_12,
-              border: '1px solid ' + panelBorder,
-            }"
-          />
-          <div :style="{ fontSize: mp_fontSize_12, fontWeight: 600, marginTop: '6px', wordBreak: 'break-all' }">{{ s.name }}</div>
-          <div :style="{ fontFamily: mp_fontFamily_mono, fontSize: mp_fontSize_11, color: panelMuted, wordBreak: 'break-all' }">{{ s.value }}</div>
-        </div>
-      </div>
-    </section>
-  `,
-}
 
 const lightPanel = {
   panelBg: mp_color_light_background,
@@ -125,9 +138,20 @@ export const LightTheme: Story = {
   render: () => ({
     components: { SwatchGrid },
     setup() {
-      return { lightColors, lightPanel }
+      return { lightFamilies, lightPanel }
     },
-    template: `<SwatchGrid :heading="'Light theme — color.light.* (' + lightColors.length + ' roles)'" :swatches="lightColors" v-bind="lightPanel" />`,
+    template: `
+      <div>
+        <SwatchGrid
+          v-for="family in lightFamilies"
+          :key="family.key"
+          :heading="family.heading"
+          :caption="family.caption"
+          :swatches="family.swatches"
+          v-bind="lightPanel"
+        />
+      </div>
+    `,
   }),
 }
 
@@ -135,9 +159,21 @@ export const DarkTheme: Story = {
   render: () => ({
     components: { SwatchGrid },
     setup() {
-      return { darkColors, darkPanel }
+      return { darkFamilies, darkPanel }
     },
-    template: `<SwatchGrid heading="Dark theme — color.dark.* (rendered on the dark background token)" :swatches="darkColors" v-bind="darkPanel" />`,
+    template: `
+      <div>
+        <p class="text-caption text-medium-emphasis mb-4">Every grid below is drawn on the dark background token, whatever the toolbar Theme is.</p>
+        <SwatchGrid
+          v-for="family in darkFamilies"
+          :key="family.key"
+          :heading="family.heading"
+          :caption="family.caption"
+          :swatches="family.swatches"
+          v-bind="darkPanel"
+        />
+      </div>
+    `,
   }),
 }
 
@@ -241,21 +277,63 @@ const accentRows = [
   { label: 'Accent active', alias: '--accent-active', swatch: 'var(--accent-active)' },
   { label: 'Selected background', alias: '--accent-selected-bg', swatch: 'var(--accent-selected-bg)' },
   { label: 'Subtle background', alias: '--accent-subtle-bg', swatch: 'var(--accent-subtle-bg)' },
-  { label: 'On accent (foreground)', alias: '--accent-on', swatch: 'var(--accent-on)' },
-  { label: 'Container / on-container', alias: '--accent-container', swatch: 'var(--accent-container)' },
 ]
 
-const feedbackRows = [
-  { label: 'Success (--pos)', alias: '--pos', swatch: 'rgb(var(--v-theme-success))' },
-  { label: 'Success container', alias: '--pos-soft', swatch: 'rgb(var(--v-theme-success-container))' },
-  { label: 'Danger (--neg)', alias: '--neg', swatch: 'rgb(var(--v-theme-error))' },
-  { label: 'Danger container', alias: '--neg-soft', swatch: 'rgb(var(--v-theme-error-container))' },
-  { label: 'Warning fill', alias: 'rgb(var(--v-theme-warning))', swatch: 'rgb(var(--v-theme-warning))' },
-  { label: 'Info fill', alias: 'rgb(var(--v-theme-info))', swatch: 'rgb(var(--v-theme-info))' },
+/**
+ * Surface / foreground pairs: each row is painted with its surface and written in the foreground
+ * declared for it (CLAUDE.md, "Colour pairing"). `surface` and `on` are CSS values; a bare
+ * `--name` is an alias from mp-theme-aliases.css.
+ */
+const PairRow = {
+  props: ['rows', 'heading'],
+  setup() {
+    const paint = (name: string) => (name.startsWith('--') ? `var(${name})` : name)
+    return { paint }
+  },
+  template: `
+    <section class="mb-6">
+      <p class="text-overline text-medium-emphasis mb-3">{{ heading }}</p>
+      <div class="d-flex flex-column ga-3">
+        <div
+          v-for="row in rows"
+          :key="row.surface"
+          class="d-flex flex-wrap align-center justify-space-between ga-2 pa-3"
+          :style="{
+            background: paint(row.surface),
+            color: paint(row.on),
+            border: '1px solid var(--border-subtle)',
+            borderRadius: 'var(--mp-radius-8)',
+          }"
+        >
+          <span class="text-body-2 font-weight-medium">{{ row.label }}</span>
+          <span class="text-caption" style="font-family: var(--mp-fontFamily-mono);">{{ row.on }} on {{ row.surface }}</span>
+        </div>
+      </div>
+    </section>
+  `,
+}
+
+const accentPairs = [
+  { label: 'Accent fill', surface: '--accent-default', on: '--accent-on' },
+  { label: 'Accent container', surface: '--accent-container', on: '--accent-on-container' },
+]
+
+const feedbackPairs = [
+  { label: 'Success, solid', surface: '--pos', on: '--on-pos' },
+  { label: 'Success, soft', surface: '--pos-soft', on: '--pos-ink' },
+  { label: 'Danger, solid', surface: '--neg', on: '--on-neg' },
+  { label: 'Danger, soft', surface: '--neg-soft', on: '--neg-ink' },
+  { label: 'Warning, solid', surface: '--warn', on: '--on-warn' },
+  { label: 'Warning, soft', surface: '--warn-soft', on: '--warn-ink' },
+]
+
+/** Info has no alias of its own: the solid fill is the Vuetify channel, the soft block is the accent container. */
+const infoPairs = [
+  { label: 'Info, solid (Vuetify channel)', surface: 'rgb(var(--v-theme-info))', on: 'rgb(var(--v-theme-on-info))' },
+  { label: 'Info, soft (what MpAlert paints)', surface: '--accent-container', on: '--accent-on-container' },
 ]
 
 export const SemanticSurfaces: Story = {
-  parameters: { controls: { disable: true } },
   render: () => ({
     components: { AliasRow },
     setup() {
@@ -266,7 +344,6 @@ export const SemanticSurfaces: Story = {
 }
 
 export const SemanticTextAndIcons: Story = {
-  parameters: { controls: { disable: true } },
   render: () => ({
     components: { AliasRow },
     setup() {
@@ -287,7 +364,6 @@ export const SemanticTextAndIcons: Story = {
 }
 
 export const SemanticBordersAndFocus: Story = {
-  parameters: { controls: { disable: true } },
   render: () => ({
     components: { AliasRow },
     setup() {
@@ -298,11 +374,10 @@ export const SemanticBordersAndFocus: Story = {
 }
 
 export const SemanticAccents: Story = {
-  parameters: { controls: { disable: true } },
   render: () => ({
-    components: { AliasRow },
+    components: { AliasRow, PairRow },
     setup() {
-      return { accentRows }
+      return { accentRows, accentPairs }
     },
     template: `
       <div>
@@ -311,25 +386,29 @@ export const SemanticAccents: Story = {
           <code>data-accent</code> — same as the app.
         </p>
         <AliasRow heading="Accent roles — active accent + theme" :rows="accentRows" />
+        <PairRow heading="Accent pairs — foreground on its surface" :rows="accentPairs" />
       </div>
     `,
   }),
 }
 
 export const SemanticFeedback: Story = {
-  parameters: { controls: { disable: true } },
   render: () => ({
-    components: { AliasRow },
+    components: { PairRow },
     setup() {
-      return { feedbackRows }
+      return { feedbackPairs, infoPairs }
     },
-    template: `<AliasRow heading="Feedback colours — active theme" :rows="feedbackRows" />`,
+    template: `
+      <div>
+        <PairRow heading="Feedback pairs — foreground on its surface, active theme" :rows="feedbackPairs" />
+        <PairRow heading="Info — no alias of its own" :rows="infoPairs" />
+      </div>
+    `,
   }),
 }
 
 /** Side-by-side light and dark surface tiers using generated token literals (not Storybook-only). */
 export const LightDarkSurfaceComparison: Story = {
-  parameters: { controls: { disable: true } },
   render: () => ({
     setup() {
       return {

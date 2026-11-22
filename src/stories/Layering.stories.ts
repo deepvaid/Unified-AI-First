@@ -11,8 +11,10 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import { nextTick, onMounted, ref } from 'vue'
 import MpRowActionsMenu from '../components/MpRowActionsMenu.vue'
+import MpMenuItem from '../components/MpMenuItem.vue'
 import MpConfirmDialog from '../components/MpConfirmDialog.vue'
 import MpFormDrawer from '../components/MpFormDrawer.vue'
+import { constrain, overlayDocs } from './decorators'
 
 const meta: Meta = {
   title: 'Patterns/Layering',
@@ -27,7 +29,8 @@ teleported Vuetify overlay (\`v-menu\`, \`v-tooltip\`, \`v-dialog\` via \`MpConf
 container that could plausibly clip or out-stack it: a card grid, a data table with a sticky
 header, a scrolling drawer-style body, and a form drawer. Every example ships already open (via
 \`v-model\` or \`play()\`, same idiom as \`MpRowActionsMenu.stories.ts\`'s \`OpenMenu\`) so reviewers see
-the actual stacking, not a description of it. See
+the actual stacking, not a description of it. On this page each example sits in its own frame, so
+one story's overlay never lands on another's. See
 \`docs/overlay-audit/01-overlay-component-audit.md\` §§4/6 for the full z-index token table and the
 portal/teleport/clipping risk list this file works through.
 
@@ -93,8 +96,10 @@ type Story = StoryObj<typeof meta>
  * `overflow: hidden` — the menu paints in front of the whole grid regardless.
  */
 export const MenuOverCardGrid: Story = {
+  parameters: overlayDocs('360px'),
+  decorators: [constrain('section')],
   render: () => ({
-    components: { MpRowActionsMenu },
+    components: { MpRowActionsMenu, MpMenuItem },
     setup() {
       const cards = [
         { id: 'a', name: 'Welcome Series', meta: 'Journey · 3 steps' },
@@ -107,12 +112,12 @@ export const MenuOverCardGrid: Story = {
       return { cards }
     },
     template: `
-      <div style="display: grid; grid-template-columns: repeat(3, minmax(150px, 1fr)); gap: 16px; max-width: 620px;">
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--mp-space-16);">
         <v-card
           v-for="card in cards"
           :key="card.id"
           flat border rounded="lg"
-          class="pa-4"
+          class="mp-card-inset mp-card-inset--compact"
           :style="card.constrained ? 'overflow: hidden;' : undefined"
         >
           <div class="d-flex align-start justify-space-between ga-2">
@@ -121,10 +126,10 @@ export const MenuOverCardGrid: Story = {
               <div class="text-caption text-medium-emphasis mt-1">{{ card.meta }}</div>
             </div>
             <MpRowActionsMenu ariaLabel="Card actions" :itemLabel="card.name">
-              <v-list-item prepend-icon="pencil" title="Edit"></v-list-item>
-              <v-list-item prepend-icon="copy" title="Duplicate"></v-list-item>
-              <v-divider class="my-1" style="opacity: 0.4"></v-divider>
-              <v-list-item prepend-icon="trash-2" title="Delete" class="text-error"></v-list-item>
+              <MpMenuItem icon="pencil" title="Edit" />
+              <MpMenuItem icon="copy" title="Duplicate" />
+              <v-divider class="my-1" />
+              <MpMenuItem icon="trash-2" title="Delete" danger />
             </MpRowActionsMenu>
           </div>
         </v-card>
@@ -146,7 +151,10 @@ export const MenuOverCardGrid: Story = {
  * of being trapped behind it.
  */
 export const MenuOverStickyHeaderTable: Story = {
+  parameters: overlayDocs('360px'),
+  decorators: [constrain('drawer')],
   render: () => ({
+    components: { MpMenuItem },
     setup() {
       const menuOpen = ref(true)
       const scrollBody = ref<HTMLElement | null>(null)
@@ -160,26 +168,28 @@ export const MenuOverStickyHeaderTable: Story = {
         { id: 7, name: 'MB-1035', date: 'Jul 14, 2026', total: '$540.00' },
         { id: 8, name: 'MB-1034', date: 'Jul 14, 2026', total: '$147.35' },
       ]
-      // Pre-scroll so the sticky header is proven mid-scroll (not just a plain top header),
-      // with the open-menu row landing directly beneath it.
+      const stickyHeader = 'position: sticky; top: 0; z-index: var(--mp-zIndex-stickyHeader); background: var(--surface-primary); color: var(--on-surface); border-bottom: 1px solid var(--border-subtle);'
+      // Pre-scroll by one row so the sticky header is proven mid-scroll (not just a plain top
+      // header), with the open-menu row landing directly beneath it.
       onMounted(async () => {
         await nextTick()
-        if (scrollBody.value) scrollBody.value.scrollTop = 60
+        const firstRow = scrollBody.value?.querySelector<HTMLElement>('tbody tr')
+        if (scrollBody.value && firstRow) scrollBody.value.scrollTop = firstRow.offsetHeight
       })
-      return { menuOpen, scrollBody, rows }
+      return { menuOpen, scrollBody, rows, stickyHeader }
     },
     template: `
       <div
         ref="scrollBody"
-        style="max-width: 460px; max-height: 210px; overflow-y: auto; border: 1px solid var(--border-default); border-radius: 12px;"
+        style="max-height: var(--mp-component-state-minHeight); overflow-y: auto; border: 1px solid var(--border-default); border-radius: var(--mp-radius-12);"
       >
         <v-table density="comfortable">
           <thead>
             <tr>
-              <th style="position: sticky; top: 0; z-index: var(--mp-zIndex-stickyHeader); background: var(--surface-primary); border-bottom: 1px solid var(--border-subtle);">Order</th>
-              <th style="position: sticky; top: 0; z-index: var(--mp-zIndex-stickyHeader); background: var(--surface-primary); border-bottom: 1px solid var(--border-subtle);">Date</th>
-              <th class="text-right" style="position: sticky; top: 0; z-index: var(--mp-zIndex-stickyHeader); background: var(--surface-primary); border-bottom: 1px solid var(--border-subtle);">Total</th>
-              <th style="position: sticky; top: 0; z-index: var(--mp-zIndex-stickyHeader); background: var(--surface-primary); border-bottom: 1px solid var(--border-subtle); width: 48px;"></th>
+              <th :style="stickyHeader">Order</th>
+              <th :style="stickyHeader">Date</th>
+              <th class="text-right" :style="stickyHeader">Total</th>
+              <th :style="stickyHeader"><span class="d-sr-only">Actions</span></th>
             </tr>
           </thead>
           <tbody>
@@ -192,11 +202,11 @@ export const MenuOverStickyHeaderTable: Story = {
                   <template #activator="{ props }">
                     <v-btn v-bind="props" icon="more-vertical" variant="text" size="x-small" aria-label="MB-1039 actions"></v-btn>
                   </template>
-                  <v-list density="compact" min-width="170">
-                    <v-list-item prepend-icon="eye" title="View order"></v-list-item>
-                    <v-list-item prepend-icon="printer" title="Print invoice"></v-list-item>
-                    <v-divider class="my-1" style="opacity: 0.4"></v-divider>
-                    <v-list-item prepend-icon="ban" title="Cancel order" class="text-error"></v-list-item>
+                  <v-list density="compact" role="menu">
+                    <MpMenuItem icon="eye" title="View order" />
+                    <MpMenuItem icon="printer" title="Print invoice" />
+                    <v-divider class="my-1" />
+                    <MpMenuItem icon="ban" title="Cancel order" danger />
                   </v-list>
                 </v-menu>
                 <v-btn v-else icon="more-vertical" variant="text" size="x-small" :aria-label="row.name + ' actions'"></v-btn>
@@ -214,6 +224,8 @@ export const MenuOverStickyHeaderTable: Story = {
  * `overflow-y: auto` — Vuetify's teleport-based overlay escapes it instead of being cut off.
  */
 export const TooltipInScrollContainer: Story = {
+  parameters: overlayDocs('360px'),
+  decorators: [constrain('narrow')],
   render: () => ({
     setup() {
       const tooltipOpen = ref(true)
@@ -222,7 +234,7 @@ export const TooltipInScrollContainer: Story = {
     },
     template: `
       <div
-        style="max-width: 360px; height: 200px; overflow-y: auto; border: 1px solid var(--border-default); border-radius: 12px; padding: 4px 16px; background: var(--surface-primary);"
+        style="height: var(--mp-component-state-minHeight); overflow-y: auto; border: 1px solid var(--border-default); border-radius: var(--mp-radius-12); padding: var(--mp-space-4) var(--mp-space-16); background: var(--surface-primary); color: var(--on-surface);"
       >
         <div v-for="n in items" :key="n" class="d-flex align-center justify-space-between py-2">
           <span class="text-body-2">Segment rule {{ n }}</span>
@@ -236,7 +248,7 @@ export const TooltipInScrollContainer: Story = {
               <v-icon v-bind="props" size="18" class="text-medium-emphasis">info</v-icon>
             </template>
           </v-tooltip>
-          <v-icon v-else size="18" class="text-medium-emphasis" style="opacity: 0.35;">info</v-icon>
+          <v-icon v-else size="18" class="text-disabled">info</v-icon>
         </div>
       </div>
     `,
@@ -248,6 +260,7 @@ export const TooltipInScrollContainer: Story = {
  * trapped behind its scrim — a "discard changes" confirm over a form drawer.
  */
 export const DialogInsideFormDrawer: Story = {
+  parameters: overlayDocs(),
   render: () => ({
     components: { MpFormDrawer, MpConfirmDialog },
     setup() {
@@ -256,15 +269,14 @@ export const DialogInsideFormDrawer: Story = {
       return { drawerOpen, confirmOpen }
     },
     template: `
-      <div style="min-height: 480px; background: rgb(var(--v-theme-background)); padding: 24px;">
+      <div>
+        <v-btn variant="outlined" prepend-icon="panel-right" @click="drawerOpen = true">Edit campaign details</v-btn>
         <MpFormDrawer v-model="drawerOpen" title="Edit campaign details" subtitle="Welcome Series — Step 2">
-          <div class="d-flex flex-column ga-4">
-            <v-text-field label="Campaign name" model-value="Welcome Series — Step 2" variant="outlined" density="comfortable" hide-details></v-text-field>
-            <v-textarea label="Subject line" model-value="Thanks for joining us!" variant="outlined" density="comfortable" rows="2" hide-details></v-textarea>
-          </div>
+          <v-text-field label="Campaign name" model-value="Welcome Series — Step 2" />
+          <v-textarea label="Subject line" model-value="Thanks for joining us!" rows="3" />
           <template #footer>
-            <v-btn variant="text" class="text-none" @click="confirmOpen = true">Cancel</v-btn>
-            <v-btn color="primary" variant="flat" class="text-none">Save</v-btn>
+            <v-btn variant="text" @click="confirmOpen = true">Cancel</v-btn>
+            <v-btn color="primary" variant="flat">Save</v-btn>
           </template>
         </MpFormDrawer>
 

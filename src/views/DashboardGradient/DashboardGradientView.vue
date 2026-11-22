@@ -62,7 +62,7 @@ onMounted(pinGradientPalette)
 watch(() => route.query.chart, pinGradientPalette)
 onBeforeUnmount(() => {
   const q = route.query.chart
-  applyChartPalette(typeof q === 'string' && q in CHART_THEMES ? (q as ChartPalette) : 'grayBlue')
+  applyChartPalette(typeof q === 'string' && q in CHART_THEMES ? (q as ChartPalette) : 'ocean')
 })
 const createDashboardOpen = ref(false)
 const editDashboardOpen = ref(false)

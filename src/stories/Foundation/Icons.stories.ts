@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import { computed, ref } from 'vue'
-import { VContainer, VIcon, VTextField } from 'vuetify/components'
+import { VIcon, VTextField } from 'vuetify/components'
 import * as LucideIcons from 'lucide-vue-next'
 import { MDI_TO_LUCIDE } from '@/plugins/lucideIcons'
 import {
@@ -9,11 +9,11 @@ import {
   mp_fontSize_11,
 } from '@/design-tokens/generated/tokens'
 
-const meta = {
+const meta: Meta = {
   title: 'Foundations/Icons',
-  component: VContainer,
   tags: ['autodocs'],
   parameters: {
+    controls: { disable: true },
     docs: {
       description: {
         component: `
@@ -33,14 +33,14 @@ Use kebab-case names with any Vuetify icon prop:
 The name maps to the PascalCase Lucide export (\`chevron-down\` → \`ChevronDown\`).
 
 ### Rules
-- **No \`mdi-*\` strings in new code.** The bridge keeps a small alias map (second story) only so
+- **No \`mdi-*\` strings in new code.** The bridge keeps a small alias map (the **MDI aliases** story) only so
   Vuetify's internal icons (checkboxes, paginators, expand chevrons) render as Lucide SVGs.
 - Icon-only buttons need an \`aria-label\` — the SVG itself is decorative.
         `,
       },
     },
   },
-} satisfies Meta<typeof VContainer>
+}
 
 export default meta
 type Story = StoryObj<typeof meta>
@@ -132,6 +132,7 @@ export const Catalog: Story = {
 }
 
 export const MdiAliases: Story = {
+  name: 'MDI aliases',
   render: () => ({
     components: { VIcon },
     setup() {

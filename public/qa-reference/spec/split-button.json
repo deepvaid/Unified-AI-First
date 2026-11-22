@@ -1,0 +1,10 @@
+{
+  "key": "split-button",
+  "liquidsky": [
+    "AppSplitButton"
+  ],
+  "status": "no-reference",
+  "reference": "None",
+  "note": "No split button in Marobase. The button follows Foundations › Buttons and the menu follows MpRowActionsMenu; the joined shape needs a design decision.",
+  "stories": []
+}

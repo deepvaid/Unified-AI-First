@@ -51,7 +51,8 @@ function connectChannel() {
 
   <div v-else class="mp-frame-fill merch-shell d-flex">
     <MerchandisingSidebar :account-id="accountId" :channel="channel" />
-    <main class="merch-shell__content" :class="{ 'merch-shell__content--flush': flushChild }">
+    <!-- A div, not <main>: v-main is already the page's main landmark (WCAG W-18). -->
+    <div class="merch-shell__content" :class="{ 'merch-shell__content--flush': flushChild }">
       <MpBanner
         v-if="hasHealthIssue && !needsSetup && !syncBannerDismissed"
         tone="warning"
@@ -87,7 +88,7 @@ function connectChannel() {
       </div>
 
       <router-view v-else />
-    </main>
+    </div>
   </div>
 </template>
 

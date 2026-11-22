@@ -54,7 +54,7 @@ const tableHeaders = [
   { title: 'Last seen',        key: 'lastSeenAt',          sortable: false, width: 130 },
   { title: 'Pending txns',     key: 'pendingOfflineTxns',  sortable: true,  align: 'end' as const, width: 120 },
   { title: 'Terminal',         key: 'pairedTerminal',      sortable: false, width: 150 },
-  { title: '',                 key: 'actions',             sortable: false, width: 56 },
+  { title: 'Actions',                 key: 'actions', headerProps: { class: 'mp-th-sr' },             sortable: false, width: 56 },
 ]
 
 const rows = computed(() => {
@@ -187,6 +187,23 @@ const PRINTERS = ['Star mC-Print3', 'Epson TM-m30III', 'None']
         class="retail-clickable-rows"
         @click:row="(_e: Event, { item }: { item: Register }) => openDetail(item)"
       >
+        <!-- Labelled select boxes (WCAG W-04). aria-checked is dropped: Vuetify's "mixed" is invalid on a native checkbox. -->
+        <template #header.data-table-select="{ allSelected, selectAll, someSelected }">
+          <v-checkbox-btn
+            :model-value="allSelected"
+            :indeterminate="someSelected && !allSelected"
+            :aria-checked="undefined"
+            aria-label="Select all rows"
+            @update:model-value="selectAll(!allSelected)"
+          />
+        </template>
+        <template #item.data-table-select="{ internalItem, isSelected, toggleSelect }">
+          <v-checkbox-btn
+            :model-value="isSelected(internalItem)"
+            :aria-label="`Select ${internalItem.raw.name}`"
+            @update:model-value="toggleSelect(internalItem)"
+          />
+        </template>
         <template #item.name="{ item }">
           <div class="d-flex align-center ga-2">
             <div :class="['retail-status-dot', `retail-status-dot--${item.status}`]" />

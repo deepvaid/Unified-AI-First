@@ -50,7 +50,7 @@ const headers = [
   { title: 'Products', key: 'productCount', align: 'end' as const, sortable: true },
   { title: 'Status', key: 'status', sortable: true, hideBelow: 'sm' as const },
   { title: 'Updated at', key: 'updatedAt', sortable: true, hideBelow: 'lg' as const },
-  { title: '', key: 'actions', sortable: false, width: 56 },
+  { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, sortable: false, width: 56 },
 ]
 const { visibleHeaders } = useResponsiveTableHeaders(headers)
 
@@ -215,6 +215,7 @@ function doBulkDelete() {
           <v-checkbox-btn
             :model-value="allSelected"
             :indeterminate="someSelected && !allSelected"
+            :aria-checked="undefined"
             aria-label="Select all rows"
             @update:model-value="selectAll(!allSelected)"
           />

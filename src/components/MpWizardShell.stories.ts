@@ -1,16 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
+import { watch } from 'vue'
 import MpWizardShell from './MpWizardShell.vue'
+import { useWizardSteps } from '@/composables/useWizardSteps'
 
 const STEPS = ['Campaign details', 'Contacts', 'Content', 'Schedule', 'Review']
-
-const stepCard = `
-  <v-card variant="flat" border rounded="lg" class="pa-8">
-    <h2 class="text-h6 font-weight-bold mb-1">Campaign details</h2>
-    <p class="text-body-2 text-medium-emphasis mb-6">Name your campaign and write the subject line recipients will see.</p>
-    <v-divider class="mb-6" />
-    <div class="text-body-2 text-medium-emphasis">Step content</div>
-  </v-card>
-`
 
 const meta = {
   title: 'Patterns/Wizard Shell/MpWizardShell',
@@ -41,7 +34,9 @@ autosaving flows don't block. Step content composes \`MpWizardStepCard\`;
 galleries may render bare in the measure.
 
 In the app the shell fills the rounded content frame (\`.mp-frame-fill\`).
-Pass \`standalone\` to contain it in the parent instead — these stories all do.
+Pass \`standalone\` to contain it in the parent instead — these stories all do, and their
+parent has no height, so each shell is as tall as its content. In a parent with a height the
+header and footer bands stay put and the body scrolls between them.
 `,
       },
     },
@@ -65,6 +60,11 @@ Pass \`standalone\` to contain it in the parent instead — these stories all do
 export default meta
 type Story = StoryObj<typeof meta>
 
+/**
+ * A working wizard: step state comes from `useWizardSteps`, as it does in a page. Continue,
+ * the footer's Back, and the visited steps in the header all move it; steps past the
+ * high-water mark (`maxStep`) stay locked until Continue reaches them.
+ */
 export const Default: Story = {
   args: {
     title: 'Create campaign',
@@ -75,41 +75,50 @@ export const Default: Story = {
   },
   render: (args) => ({
     components: { MpWizardShell },
-    setup: () => ({ args }),
+    setup() {
+      const { step, maxStep, isLast, goTo, next, prev } = useWizardSteps(() => args.steps?.length ?? 1, { initial: args.current })
+      maxStep.value = args.maxStep ?? step.value
+      // Controls still drive the story after it has been clicked through.
+      watch(() => args.current, (current) => { if (current) goTo(current) })
+      watch(() => args.maxStep, (max) => { if (max) maxStep.value = max })
+      return { args, step, maxStep, isLast, goTo, next, prev }
+    },
     template: `
-      <div style="height:520px">
-        <MpWizardShell v-bind="args">
-          <template #actions>
-            <v-btn variant="text" class="text-none text-medium-emphasis">Save &amp; exit</v-btn>
-          </template>
-          ${stepCard}
-          <template #footer>
-            <v-btn color="primary" variant="flat" class="text-none" append-icon="arrow-right">Continue</v-btn>
-          </template>
-        </MpWizardShell>
-      </div>
+      <MpWizardShell v-bind="args" :current="step" :max-step="maxStep" @select="goTo" @back="prev">
+        <template #actions>
+          <v-btn variant="text" class="text-none text-medium-emphasis">Save &amp; exit</v-btn>
+        </template>
+        <v-card variant="flat" border rounded="lg" class="pa-8">
+          <h2 class="text-h6 font-weight-bold mb-1">{{ args.steps[step - 1] }}</h2>
+          <p class="text-body-2 text-medium-emphasis mb-6">Step {{ step }} of {{ args.steps.length }}. Continue, Back and the visited steps in the header all move the wizard.</p>
+          <v-divider class="mb-6" />
+          <div class="text-body-2 text-medium-emphasis">Step content</div>
+        </v-card>
+        <template #footer>
+          <v-btn v-if="isLast" color="primary" variant="flat" class="text-none" prepend-icon="rocket">Schedule campaign</v-btn>
+          <v-btn v-else color="primary" variant="flat" class="text-none" append-icon="arrow-right" @click="next">Continue</v-btn>
+        </template>
+      </MpWizardShell>
     `,
   }),
 }
 
-/** The three measure stops on one shell. */
-export const Measures: Story = {
+/** The three `measure` stops on one shell: sm 780, md 920, lg 1040 (`component.wizard.measure.*`). */
+export const Sizes: Story = {
   args: { title: '', standalone: true },
   render: () => ({
     components: { MpWizardShell },
     setup: () => ({ STEPS }),
     template: `
       <div class="d-flex flex-column ga-6">
-        <div v-for="m in ['sm', 'md', 'lg']" :key="m" style="height:300px">
-          <MpWizardShell :title="'Measure ' + m" :steps="STEPS.slice(0, 3)" :current="1" :measure="m" standalone>
-            <v-card variant="flat" border rounded="lg" class="pa-8 text-body-2 text-medium-emphasis">
-              component.wizard.measure.{{ m }}
-            </v-card>
-            <template #footer>
-              <v-btn color="primary" variant="flat" class="text-none">Continue</v-btn>
-            </template>
-          </MpWizardShell>
-        </div>
+        <MpWizardShell v-for="m in ['sm', 'md', 'lg']" :key="m" :title="'Measure ' + m" :steps="STEPS.slice(0, 3)" :current="1" :measure="m" standalone>
+          <v-card variant="flat" border rounded="lg" class="pa-8 text-body-2 text-medium-emphasis">
+            component.wizard.measure.{{ m }}
+          </v-card>
+          <template #footer>
+            <v-btn color="primary" variant="flat" class="text-none">Continue</v-btn>
+          </template>
+        </MpWizardShell>
       </div>
     `,
   }),
@@ -123,25 +132,19 @@ export const Variants: Story = {
     setup: () => ({ STEPS }),
     template: `
       <div class="d-flex flex-column ga-6">
-        <div style="height:280px">
-          <MpWizardShell title="Composed subtitle + eyebrow" eyebrow="Marketing · Campaigns" :steps="STEPS.slice(0, 3)" :current="2" :max-step="2" standalone>
-            <v-card variant="flat" border rounded="lg" class="pa-8 text-body-2 text-medium-emphasis">The subtitle reads "Step 2 of 3 — Contacts", composed by the shell.</v-card>
-            <template #footer><v-btn color="primary" variant="flat" class="text-none">Continue</v-btn></template>
-          </MpWizardShell>
-        </div>
-        <div style="height:280px">
-          <MpWizardShell title="Subtitle override" subtitle="SMS is not enabled on this account." :steps="STEPS.slice(0, 2)" :current="1" standalone>
-            <v-card variant="flat" border rounded="lg" class="pa-8 text-body-2 text-medium-emphasis">An entitlement banner replaces the composed step subtitle.</v-card>
-            <template #footer><v-btn color="primary" variant="flat" class="text-none" disabled>Continue</v-btn></template>
-          </MpWizardShell>
-        </div>
-        <div style="height:280px">
-          <MpWizardShell title="Single-step action flow" subtitle="No steps — the steps row, composed subtitle and counter all drop away." standalone>
-            <v-card variant="flat" border rounded="lg" class="pa-8 text-body-2 text-medium-emphasis">A chooser page committing one decision.</v-card>
-            <template #footerStart><v-btn variant="text" class="text-none">Cancel</v-btn></template>
-            <template #footer><v-btn color="primary" variant="flat" class="text-none" disabled>Continue</v-btn></template>
-          </MpWizardShell>
-        </div>
+        <MpWizardShell title="Composed subtitle + eyebrow" eyebrow="Marketing · Campaigns" :steps="STEPS.slice(0, 3)" :current="2" :max-step="2" standalone>
+          <v-card variant="flat" border rounded="lg" class="pa-8 text-body-2 text-medium-emphasis">The subtitle reads "Step 2 of 3 — Contacts", composed by the shell.</v-card>
+          <template #footer><v-btn color="primary" variant="flat" class="text-none">Continue</v-btn></template>
+        </MpWizardShell>
+        <MpWizardShell title="Subtitle override" subtitle="SMS is not enabled on this account." :steps="STEPS.slice(0, 2)" :current="1" standalone>
+          <v-card variant="flat" border rounded="lg" class="pa-8 text-body-2 text-medium-emphasis">An entitlement banner replaces the composed step subtitle.</v-card>
+          <template #footer><v-btn color="primary" variant="flat" class="text-none" disabled>Continue</v-btn></template>
+        </MpWizardShell>
+        <MpWizardShell title="Single-step action flow" subtitle="No steps — the steps row, composed subtitle and counter all drop away." standalone>
+          <v-card variant="flat" border rounded="lg" class="pa-8 text-body-2 text-medium-emphasis">A chooser page committing one decision.</v-card>
+          <template #footerStart><v-btn variant="text" class="text-none">Cancel</v-btn></template>
+          <template #footer><v-btn color="primary" variant="flat" class="text-none" disabled>Continue</v-btn></template>
+        </MpWizardShell>
       </div>
     `,
   }),
@@ -155,27 +158,21 @@ export const States: Story = {
     setup: () => ({ STEPS }),
     template: `
       <div class="d-flex flex-column ga-6">
-        <div style="height:280px">
-          <MpWizardShell title="Hint while blocked" :steps="STEPS.slice(0, 3)" :current="1" hint="Name your campaign to continue" standalone>
-            <v-card variant="flat" border rounded="lg" class="pa-8 text-body-2 text-medium-emphasis">The caption explains the disabled primary.</v-card>
-            <template #footer><v-btn color="primary" variant="flat" class="text-none" disabled append-icon="arrow-right">Continue</v-btn></template>
-          </MpWizardShell>
-        </div>
-        <div style="height:280px">
-          <MpWizardShell title="Everything visited" :steps="STEPS.slice(0, 4)" :current="2" :max-step="4" standalone>
-            <v-card variant="flat" border rounded="lg" class="pa-8 text-body-2 text-medium-emphasis">Edit-mode hydration (useWizardSteps().unlockAll()) — every step is jumpable.</v-card>
-            <template #footer><v-btn color="primary" variant="flat" class="text-none" append-icon="arrow-right">Continue</v-btn></template>
-          </MpWizardShell>
-        </div>
-        <div style="height:280px">
-          <MpWizardShell title="Final step" :steps="STEPS.slice(0, 3)" :current="3" :max-step="3" standalone>
-            <v-card variant="flat" border rounded="lg" class="pa-8 text-body-2 text-medium-emphasis">Finalize actions replace Continue.</v-card>
-            <template #footer>
-              <v-btn variant="outlined" class="text-none">Save draft</v-btn>
-              <v-btn color="primary" variant="flat" class="text-none" prepend-icon="rocket">Schedule campaign</v-btn>
-            </template>
-          </MpWizardShell>
-        </div>
+        <MpWizardShell title="Hint while blocked" :steps="STEPS.slice(0, 3)" :current="1" hint="Name your campaign to continue" standalone>
+          <v-card variant="flat" border rounded="lg" class="pa-8 text-body-2 text-medium-emphasis">The caption explains the disabled primary.</v-card>
+          <template #footer><v-btn color="primary" variant="flat" class="text-none" disabled append-icon="arrow-right">Continue</v-btn></template>
+        </MpWizardShell>
+        <MpWizardShell title="Everything visited" :steps="STEPS.slice(0, 4)" :current="2" :max-step="4" standalone>
+          <v-card variant="flat" border rounded="lg" class="pa-8 text-body-2 text-medium-emphasis">Edit-mode hydration (useWizardSteps().unlockAll()) — every step is jumpable.</v-card>
+          <template #footer><v-btn color="primary" variant="flat" class="text-none" append-icon="arrow-right">Continue</v-btn></template>
+        </MpWizardShell>
+        <MpWizardShell title="Final step" :steps="STEPS.slice(0, 3)" :current="3" :max-step="3" standalone>
+          <v-card variant="flat" border rounded="lg" class="pa-8 text-body-2 text-medium-emphasis">Finalize actions replace Continue.</v-card>
+          <template #footer>
+            <v-btn variant="outlined" class="text-none">Save draft</v-btn>
+            <v-btn color="primary" variant="flat" class="text-none" prepend-icon="rocket">Schedule campaign</v-btn>
+          </template>
+        </MpWizardShell>
       </div>
     `,
   }),

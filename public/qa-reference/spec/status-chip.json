@@ -1,0 +1,41 @@
+{
+  "key": "status-chip",
+  "liquidsky": [
+    "MpVStatusChip",
+    "MpVChip"
+  ],
+  "status": "matched",
+  "reference": "MpStatusChip",
+  "stories": [
+    {
+      "id": "atoms-mpstatuschip--variants",
+      "label": "Variants",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/atoms-mpstatuschip--variants",
+      "png": {
+        "light": "png/status-chip/atoms-mpstatuschip--variants--light.png",
+        "dark": "png/status-chip/atoms-mpstatuschip--variants--dark.png"
+      },
+      "parts": []
+    },
+    {
+      "id": "atoms-mpstatuschip--sizes",
+      "label": "Sizes",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/atoms-mpstatuschip--sizes",
+      "png": {
+        "light": "png/status-chip/atoms-mpstatuschip--sizes--light.png",
+        "dark": "png/status-chip/atoms-mpstatuschip--sizes--dark.png"
+      },
+      "parts": []
+    },
+    {
+      "id": "atoms-mpstatuschip--all-types",
+      "label": "All status types",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/atoms-mpstatuschip--all-types",
+      "png": {
+        "light": "png/status-chip/atoms-mpstatuschip--all-types--light.png",
+        "dark": "png/status-chip/atoms-mpstatuschip--all-types--dark.png"
+      },
+      "parts": []
+    }
+  ]
+}

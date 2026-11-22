@@ -108,6 +108,7 @@ export const TEMPLATE_SPECS: TemplateSpec[] = [
                 name: 'v-data-table',
                 note: 'v-else · :headers from useResponsiveTableHeaders · show-select · fixed-header',
                 children: [
+                  { name: '#header/#item.data-table-select → v-checkbox-btn', note: 'aria-label per row ("Select <name>"); header drops aria-checked (WCAG W-04)' },
                   { name: '#item.status → MpStatusChip', note: 'size="sm" inside a table, always' },
                   { name: '#item.actions → MpRowActionsMenu + MpMenuItem', note: 'wrapped in a div @click.stop' },
                   { name: '#no-data → MpEmptyState', note: 'two branches: filtered vs genuinely empty' },

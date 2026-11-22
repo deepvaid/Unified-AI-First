@@ -50,7 +50,7 @@ const headers = [
   { title: 'Page', key: 'page', sortable: false, width: 130 },
   { title: 'Type', key: 'type', sortable: false, width: 240 },
   { title: 'Last update', key: 'updatedAt', sortable: true, align: 'end' as const, width: 220 },
-  { title: '', key: 'actions', sortable: false, width: 64 },
+  { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, sortable: false, width: 64 },
 ]
 
 const pageOptions = [

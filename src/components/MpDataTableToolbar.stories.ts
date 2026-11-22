@@ -4,18 +4,21 @@ import MpFloatingBulkBar from './MpFloatingBulkBar.vue'
 import MpFilterTabs from './MpFilterTabs.vue'
 import MpStatusChip from './MpStatusChip.vue'
 import MpRowActionsMenu from './MpRowActionsMenu.vue'
+import MpMenuItem from './MpMenuItem.vue'
 import MpEmptyState from './MpEmptyState.vue'
 import { ORDERS, ORDER_HEADERS, ORDER_FILTERS, ORDER_TABS } from '@/stories/fixtures'
 import { ref, computed } from 'vue'
+import { measure, overlayDocs } from '@/stories/decorators'
+import { bulkActions, liquidskyDocs } from '@/stories/storyTemplate'
 
 const meta = {
   title: 'Molecules/MpDataTableToolbar',
   component: MpDataTableToolbar,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'liquidsky'],
   parameters: {
     docs: {
       description: {
-        component: `
+        component: liquidskyDocs('molecules-mpdatatabletoolbar') + `
 ### Overview
 The \`MpDataTableToolbar\` is the primary control surface above Data Tables. It handles the table
 title + record count, instant search, a filter drawer (\`#filter-content\` slot rendered inside an
@@ -177,7 +180,7 @@ export const Default: Story = {
       return { args, search }
     },
     template: `
-      <v-card variant="flat" border rounded="xl" class="overflow-hidden">
+      <v-card variant="flat" border rounded="lg" class="overflow-hidden">
         <MpDataTableToolbar v-bind="args" v-model:search="search" />
       </v-card>
     `,
@@ -188,7 +191,7 @@ export const Default: Story = {
   },
 }
 
-// ── Template: Variants · Sizes · States ──────────────────────────────────────
+// ── Template: Variants · States ──────────────────────────────────────────────
 
 /**
  * The toolbar's structures, from the least to the most equipped. Every one is the same
@@ -233,12 +236,12 @@ export const Variants: Story = {
 }
 
 /**
- * There is no `size` prop — the toolbar spans its card. Its one sizing decision is the row
+ * The toolbar has no `size` prop: it spans its card. Its one sizing decision is the row
  * height, and that is a token: `component.toolbar.minHeight` for the row,
  * `component.control.height` for every control inside it. Shown here beside a plain button
  * and a form field so the shared 40px baseline is visible.
  */
-export const Sizes: Story = {
+export const SharedControlHeight: Story = {
   render: () => ({
     components: { MpDataTableToolbar },
     template: `
@@ -250,7 +253,7 @@ export const Sizes: Story = {
           <div class="text-caption text-medium-emphasis mb-2">the same 40px baseline, outside the toolbar</div>
           <div class="d-flex align-center ga-3">
             <v-btn variant="outlined" class="text-none">A button</v-btn>
-            <v-text-field variant="outlined" density="comfortable" hide-details placeholder="A form field" style="max-width: 220px" />
+            <v-text-field placeholder="A form field" aria-label="A form field" style="max-width: var(--mp-component-toolbar-searchMinWidth)" />
             <div class="text-caption text-medium-emphasis">← both --mp-component-control-height</div>
           </div>
         </div>
@@ -292,7 +295,7 @@ export const States: Story = {
         </div>
         <div>
           <div class="text-caption text-medium-emphasis mb-2">narrow (&lt;960px) — controls wrap under the title</div>
-          <div style="max-width: 720px">
+          <div style="max-width: ${measure.section}">
             <v-card flat border rounded="lg">
               <MpDataTableToolbar title="Sales Orders" :total-count="82" :headers="headers" search-placeholder="Search orders…" />
             </v-card>
@@ -316,7 +319,7 @@ export const States: Story = {
  */
 export const InContextSalesOrdersTable: Story = {
   render: () => ({
-    components: { MpDataTableToolbar, MpFilterTabs, MpStatusChip, MpRowActionsMenu, MpEmptyState },
+    components: { MpDataTableToolbar, MpFilterTabs, MpStatusChip, MpRowActionsMenu, MpMenuItem, MpEmptyState },
     setup() {
       const search = ref('')
       const tab = ref('all')
@@ -372,6 +375,23 @@ export const InContextSalesOrdersTable: Story = {
             show-select
             hide-default-footer
           >
+            <!-- Labelled select boxes (WCAG W-04). aria-checked is dropped: Vuetify's "mixed" is invalid on a native checkbox. -->
+            <template #header.data-table-select="{ allSelected, selectAll, someSelected }">
+              <v-checkbox-btn
+                :model-value="allSelected"
+                :indeterminate="someSelected && !allSelected"
+                :aria-checked="undefined"
+                aria-label="Select all rows"
+                @update:model-value="selectAll(!allSelected)"
+              />
+            </template>
+            <template #item.data-table-select="{ internalItem, isSelected, toggleSelect }">
+              <v-checkbox-btn
+                :model-value="isSelected(internalItem)"
+                :aria-label="\`Select order \${internalItem.raw.order}\`"
+                @update:model-value="toggleSelect(internalItem)"
+              />
+            </template>
             <template #item.fulfillment="{ item }">
               <MpStatusChip :status="item.fulfillment" type="fulfillment" size="sm" />
             </template>
@@ -380,10 +400,10 @@ export const InContextSalesOrdersTable: Story = {
             </template>
             <template #item.actions="{ item }">
               <MpRowActionsMenu aria-label="Order actions" :item-label="item.order">
-                <v-list-item title="View order" prepend-icon="eye" />
-                <v-list-item title="Print packing slip" prepend-icon="printer" />
+                <MpMenuItem title="View order" icon="eye" />
+                <MpMenuItem title="Print packing slip" icon="printer" />
                 <v-divider class="my-1" />
-                <v-list-item title="Cancel order" prepend-icon="ban" class="text-error" />
+                <MpMenuItem title="Cancel order" icon="ban" danger />
               </MpRowActionsMenu>
             </template>
           </v-data-table>
@@ -413,7 +433,7 @@ export const SearchPopulated: Story = {
       return { args, search }
     },
     template: `
-      <v-card variant="flat" border rounded="xl" class="overflow-hidden">
+      <v-card variant="flat" border rounded="lg" class="overflow-hidden">
         <MpDataTableToolbar v-bind="args" v-model:search="search" />
         <div class="pa-4 text-body-2 text-medium-emphasis">Search model: "{{ search }}"</div>
       </v-card>
@@ -437,10 +457,10 @@ export const WithTotalCount: Story = {
     },
     template: `
       <div class="d-flex flex-column ga-4">
-        <v-card variant="flat" border rounded="xl" class="overflow-hidden">
+        <v-card variant="flat" border rounded="lg" class="overflow-hidden">
           <MpDataTableToolbar v-bind="args" v-model:search="search" />
         </v-card>
-        <v-card variant="flat" border rounded="xl" class="overflow-hidden">
+        <v-card variant="flat" border rounded="lg" class="overflow-hidden">
           <MpDataTableToolbar title="Segments" :total-count="0" search-placeholder="Search segments…" />
         </v-card>
       </div>
@@ -473,7 +493,7 @@ export const WithSingleFilter: Story = {
       return { args, search, statusFilter, activeFilters, removeFilter, clearFilters }
     },
     template: `
-      <v-card variant="flat" border rounded="xl" class="overflow-hidden">
+      <v-card variant="flat" border rounded="lg" class="overflow-hidden">
         <MpDataTableToolbar
           v-bind="args"
           v-model:search="search"
@@ -534,7 +554,7 @@ export const WithQuickFilter: Story = {
       return { args, search, statusFilter, activeFilters, removeFilter, clearFilters }
     },
     template: `
-      <v-card variant="flat" border rounded="xl" class="overflow-hidden">
+      <v-card variant="flat" border rounded="lg" class="overflow-hidden">
         <MpDataTableToolbar
           v-bind="args"
           v-model:search="search"
@@ -580,7 +600,7 @@ export const QuickFilterOnly: Story = {
       return { args, search, statusFilter, activeFilters, clearFilters }
     },
     template: `
-      <v-card variant="flat" border rounded="xl" class="overflow-hidden">
+      <v-card variant="flat" border rounded="lg" class="overflow-hidden">
         <MpDataTableToolbar
           v-bind="args"
           v-model:search="search"
@@ -624,7 +644,7 @@ export const QuickFilterSingleSelect: Story = {
       return { args, search, scope, scopeFilter }
     },
     template: `
-      <v-card variant="flat" border rounded="xl" class="overflow-hidden">
+      <v-card variant="flat" border rounded="lg" class="overflow-hidden">
         <MpDataTableToolbar
           v-bind="args"
           v-model:search="search"
@@ -687,7 +707,7 @@ export const WithMultipleFilters: Story = {
       return { args, search, filters, activeFilters, removeFilter, clearFilters }
     },
     template: `
-      <v-card variant="flat" border rounded="xl" class="overflow-hidden">
+      <v-card variant="flat" border rounded="lg" class="overflow-hidden">
         <MpDataTableToolbar
           v-bind="args"
           v-model:search="search"
@@ -761,7 +781,7 @@ export const WithActiveFilters: Story = {
       return { args, search, filters, activeFilters, removeFilter, clearFilters }
     },
     template: `
-      <v-card variant="flat" border rounded="xl" class="overflow-hidden">
+      <v-card variant="flat" border rounded="lg" class="overflow-hidden">
         <MpDataTableToolbar
           v-bind="args"
           v-model:search="search"
@@ -809,7 +829,7 @@ export const ManyActiveFilters: Story = {
       return { args, search, activeFilters, removeFilter, clearFilters }
     },
     template: `
-      <v-card variant="flat" border rounded="xl" class="overflow-hidden">
+      <v-card variant="flat" border rounded="lg" class="overflow-hidden">
         <MpDataTableToolbar
           v-bind="args"
           v-model:search="search"
@@ -838,6 +858,7 @@ export const ManyActiveFilters: Story = {
  * search/filters, the floating bar appears while rows are selected.
  */
 export const WithBulkActions: Story = {
+  parameters: overlayDocs('360px'),
   render: (args) => ({
     components: { MpDataTableToolbar, MpFloatingBulkBar },
     setup() {
@@ -847,8 +868,8 @@ export const WithBulkActions: Story = {
       return { args, search, selectedCount, totalCount }
     },
     template: `
-      <div style="min-height: 260px; position: relative;">
-        <v-card variant="flat" border rounded="xl" class="overflow-hidden">
+      <div>
+        <v-card variant="flat" border rounded="lg" class="overflow-hidden">
           <MpDataTableToolbar v-bind="args" v-model:search="search" :total-count="totalCount" />
           <div class="pa-4 text-body-2 text-medium-emphasis">
             {{ selectedCount }} of {{ totalCount }} rows selected in the table below the toolbar.
@@ -861,9 +882,7 @@ export const WithBulkActions: Story = {
           @clear="selectedCount = 0"
           @select-all="selectedCount = totalCount"
         >
-          <v-btn variant="outlined" size="small" class="text-none" prepend-icon="share" rounded="lg">Export</v-btn>
-          <v-btn variant="outlined" size="small" class="text-none" prepend-icon="tag" rounded="lg">Tag</v-btn>
-          <v-btn variant="outlined" size="small" class="text-none text-error" prepend-icon="trash-2" rounded="lg">Delete</v-btn>
+          ${bulkActions(['export', 'tag', 'delete'])}
         </MpFloatingBulkBar>
       </div>
     `,
@@ -889,7 +908,7 @@ export const WithColumnToggle: Story = {
         { title: 'Status', key: 'status' },
         { title: 'Score', key: 'score', align: 'end' as const },
         { title: 'Last Active', key: 'lastActive', align: 'end' as const },
-        { title: '', key: 'actions', align: 'end' as const, sortable: false, width: '48px' },
+        { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, align: 'end' as const, sortable: false, width: '48px' },
       ]
 
       const visibleHeaders = computed(() =>
@@ -899,7 +918,7 @@ export const WithColumnToggle: Story = {
       return { args, search, hiddenColumns, sampleHeaders, visibleHeaders }
     },
     template: `
-      <v-card variant="flat" border rounded="xl" class="overflow-hidden">
+      <v-card variant="flat" border rounded="lg" class="overflow-hidden">
         <MpDataTableToolbar
           v-bind="args"
           v-model:search="search"
@@ -930,7 +949,7 @@ export const WithActionsSlot: Story = {
       return { args, search }
     },
     template: `
-      <v-card variant="flat" border rounded="xl" class="overflow-hidden">
+      <v-card variant="flat" border rounded="lg" class="overflow-hidden">
         <MpDataTableToolbar v-bind="args" v-model:search="search">
           <template #actions>
             <v-btn variant="outlined" height="40" class="text-none" prepend-icon="folder" append-icon="chevron-down">All folders</v-btn>
@@ -964,7 +983,7 @@ export const FullFeatured: Story = {
         { title: 'Company', key: 'company' },
         { title: 'Status', key: 'status' },
         { title: 'Score', key: 'score' },
-        { title: '', key: 'actions' },
+        { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' } },
       ]
 
       const activeFilters = computed(() => {
@@ -992,7 +1011,7 @@ export const FullFeatured: Story = {
       return { args, search, hiddenColumns, sampleHeaders, filters, statusFilter, activeFilters, removeFilter, clearFilters }
     },
     template: `
-      <v-card variant="flat" border rounded="xl" class="overflow-hidden">
+      <v-card variant="flat" border rounded="lg" class="overflow-hidden">
         <MpDataTableToolbar
           v-bind="args"
           v-model:search="search"

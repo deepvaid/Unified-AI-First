@@ -129,6 +129,23 @@ function doDelete() {
         fixed-header
         class="flex-grow-1"
       >
+        <!-- Labelled select boxes (WCAG W-04). aria-checked is dropped: Vuetify's "mixed" is invalid on a native checkbox. -->
+        <template #header.data-table-select="{ allSelected, selectAll, someSelected }">
+          <v-checkbox-btn
+            :model-value="allSelected"
+            :indeterminate="someSelected && !allSelected"
+            :aria-checked="undefined"
+            aria-label="Select all rows"
+            @update:model-value="selectAll(!allSelected)"
+          />
+        </template>
+        <template #item.data-table-select="{ internalItem, isSelected, toggleSelect }">
+          <v-checkbox-btn
+            :model-value="isSelected(internalItem)"
+            :aria-label="`Select ${internalItem.raw.name}`"
+            @update:model-value="toggleSelect(internalItem)"
+          />
+        </template>
         <template v-slot:item.name="{ item }">
           <button type="button" class="group-name" @click="openEditor(item)">{{ item.name }}</button>
           <div v-if="item.folderId" class="text-caption text-medium-emphasis">

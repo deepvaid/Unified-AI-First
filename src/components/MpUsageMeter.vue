@@ -8,9 +8,9 @@ const props = withDefaults(defineProps<{
   limit: number
   icon?: string
   hint?: string
-  dense?: boolean
+  density?: 'default' | 'compact'
 }>(), {
-  dense: false,
+  density: 'default',
 })
 
 const isUnlimited = computed(() => props.limit === -1)
@@ -37,7 +37,7 @@ const rightText = computed(() => {
 </script>
 
 <template>
-  <div class="mp-usage-meter" :class="{ 'mp-usage-meter--dense': dense }">
+  <div class="mp-usage-meter" :class="{ 'mp-usage-meter--compact': density === 'compact' }">
     <div class="d-flex align-center justify-space-between mb-1 ga-2">
       <div class="d-flex align-center ga-2 min-width-0">
         <v-icon v-if="icon" size="16" class="text-medium-emphasis flex-shrink-0">{{ icon }}</v-icon>
@@ -47,9 +47,10 @@ const rightText = computed(() => {
     </div>
 
     <v-progress-linear
+      :aria-label="`${label}: ${rightText}`"
       :model-value="pct"
       :color="color"
-      :height="dense ? 4 : 6"
+      :height="density === 'compact' ? 4 : 6"
       rounded
       bg-color="rgba(var(--v-theme-on-surface), 0.08)"
     />
@@ -69,8 +70,8 @@ const rightText = computed(() => {
   font-variant-numeric: tabular-nums;
 }
 
-.mp-usage-meter--dense .mp-usage-meter__label,
-.mp-usage-meter--dense .mp-usage-meter__value {
+.mp-usage-meter--compact .mp-usage-meter__label,
+.mp-usage-meter--compact .mp-usage-meter__value {
   font-size: 0.75rem;
 }
 

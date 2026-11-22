@@ -52,9 +52,20 @@ export const SETTINGS_GROUPS: SettingsGroup[] = [
     ],
   },
   {
-    title: 'Support / AI',
+    // One section per kind of Service setting (3 Nov call: "a Service heading,
+    // then the items under it"). Inbox detail + create keep Inboxes lit.
+    title: 'Service',
     items: [
-      { slug: 'service', label: 'Service', routeName: 'SettingsService' },
+      { slug: 'service-inboxes', label: 'Inboxes', routeName: 'SettingsServiceInboxes', match: ['SettingsServiceInbox', 'SettingsServiceInboxCreate'] },
+      { slug: 'service-reply-templates', label: 'Reply Templates', routeName: 'SettingsServiceReplyTemplates' },
+      { slug: 'service-ticket-types', label: 'Ticket Types', routeName: 'SettingsServiceTicketTypes' },
+      { slug: 'service-tags', label: 'Tags', routeName: 'SettingsServiceTags' },
+      { slug: 'service-agents', label: 'Agents', routeName: 'SettingsServiceAgents' },
+    ],
+  },
+  {
+    title: 'AI',
+    items: [
       { slug: 'ai-settings', label: 'AI Settings', routeName: 'SettingsAiSettings' },
     ],
   },

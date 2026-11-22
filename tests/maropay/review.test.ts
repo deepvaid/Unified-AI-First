@@ -199,7 +199,7 @@ test('M17: past the deadline, checkout refuses and the partner view says why; pr
   assert.equal(view.disabledReason, 'requirements.past_due')
   const refused = createCheckoutSession(state, {
     channelId: ATLAS, methodId: 'card', flow: 'success', amount: money(1000, 'USD'),
-    customer: { name: 'A', email: 'a@example.com' }, lineItem: { product: 'Tee', sku: 'S', price: '10.00' },
+    customer: { name: 'A', email: 'a@example.com' }, lineItems: [{ product: 'Tee', sku: 'S', qty: 1, price: '10.00' }],
   }, env())
   assert.equal(!refused.ok && refused.error.code, 'requirement_pending')
   const task = state.tasks.find((t) => t.requirement === 'company.tax_id')!

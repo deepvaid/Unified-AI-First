@@ -175,7 +175,7 @@ const options = computed<ApexOptions>(() => {
 <template>
   <div class="donut-widget">
     <div v-if="data.variant === 'pie'" class="donut-widget__pie-block">
-      <div class="donut-widget__pie-chart" role="img" :aria-label="chartAriaLabel">
+      <div class="donut-widget__pie-chart" role="group" :aria-label="chartAriaLabel">
         <ApexChart
           v-if="chartReady"
           :height="chartHeight"
@@ -188,7 +188,7 @@ const options = computed<ApexOptions>(() => {
       <DtLegendList :rows="legendRows" :gap="10" class="donut-widget__pie-legend" />
     </div>
     <template v-else>
-      <div class="donut-widget__ring-block" role="img" :aria-label="chartAriaLabel">
+      <div class="donut-widget__ring-block" role="group" :aria-label="chartAriaLabel">
         <ApexChart
           v-if="chartReady"
           :height="chartHeight"

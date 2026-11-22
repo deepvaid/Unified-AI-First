@@ -27,13 +27,13 @@ export interface ThemeGenResult {
 // word "featured" before the featured-products rule can).
 const keywordRules: { test: RegExp; kind: string }[] = [
   { test: /\b(?:image banner|editorial)\b/, kind: 'image-banner' },
-  { test: /\b(?:featured collections?|collection grid|gallery|grid|collections?)\b/, kind: 'collection-grid' },
+  { test: /\b(?:featured collections?|collection grid|image gallery|gallery|grid|collections?)\b/, kind: 'collection-grid' },
   { test: /\b(?:promo|announcement|shipping|sale bar)\b/, kind: 'announcement-bar' },
   { test: /\b(?:featured products?|featured|bestsellers?|best sellers?|new arrivals|products?)\b/, kind: 'featured-products' },
   { test: /\b(?:testimonials?|reviews?|social proof)\b/, kind: 'testimonials' },
   { test: /\b(?:newsletter|emails?|signups?|sign up|subscribe)\b/, kind: 'newsletter' },
   { test: /\b(?:story|about us|rich text)\b/, kind: 'rich-text' },
-  { test: /\bslideshow\b/, kind: 'hero' },
+  { test: /\b(?:image slideshow|slideshow|carousel)\b/, kind: 'hero' },
   { test: /\b(?:banner|hero)\b/, kind: 'hero' },
 ]
 
@@ -190,11 +190,24 @@ export function generateSections(
   return { kinds, overrides, reply, matched: true }
 }
 
-/** Welcome-state prompt chips. Lucide icon names (kebab-case). */
+/** Welcome-state examples. Clicking one fills the composer (the merchant sends it). Lucide icon names (kebab-case). */
 export const examplePrompts: { label: string; icon: string; prompt: string }[] = [
-  { label: 'Draft a full homepage', icon: 'sparkles', prompt: 'Draft a full homepage' },
-  { label: 'Add an image banner', icon: 'images', prompt: 'Add an image banner' },
-  { label: 'Add a collection grid', icon: 'layout-grid', prompt: 'Add a collection grid' },
-  { label: 'Add testimonials', icon: 'quote', prompt: 'Add testimonials for social proof' },
-  { label: 'Add a newsletter signup', icon: 'mail', prompt: 'Add a newsletter signup' },
+  { label: 'Generate me an image banner', icon: 'image', prompt: 'Generate me an image banner' },
+  { label: 'Build an image gallery', icon: 'layout-grid', prompt: 'Build an image gallery' },
+  { label: 'Generate me an image slideshow', icon: 'gallery-horizontal', prompt: 'Generate me an image slideshow' },
 ]
+
+/**
+ * What the panel and the canvas show while a generation runs — the same three
+ * stages the live builder walks through while its model works. The generator
+ * itself is synchronous today; the builder steps through these on a timer so
+ * the prototype reads the way the product does.
+ */
+export const GENERATION_STAGES: readonly { icon: string; title: string; caption: string }[] = [
+  { icon: 'lightbulb', title: 'Understanding your request', caption: 'Reading your prompt and working out what you need…' },
+  { icon: 'palette', title: 'Planning the layout, colors, styles and content', caption: 'Picking the section, its copy and the styling that fits your store…' },
+  { icon: 'rocket', title: 'Finalizing your section', caption: 'Adding the finishing touches and polish…' },
+]
+
+/** How long each stage is shown, in milliseconds. */
+export const GENERATION_STAGE_MS = 1100

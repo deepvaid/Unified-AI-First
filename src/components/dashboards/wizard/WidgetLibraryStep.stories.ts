@@ -52,33 +52,3 @@ export const FilteredByCategory: Story = {
     chip?.click()
   },
 }
-
-// ── Template: Variants · Sizes · States ──────────────────────────────────────
-
-/** One structure — a filterable gallery of widget types. Its variants are the category filters. */
-export const Variants: Story = {
-  render: (args) => ({
-    components: { WidgetLibraryStep },
-    setup: () => ({ args }),
-    template: `<WidgetLibraryStep v-bind="args" />`,
-  }),
-}
-
-/** There is no `size` prop — the gallery fills the wizard drawer's body. Its tiles are
- *  `MpOptionCard`s, so their inset is `component.card.padding` like every other card. */
-export const Sizes: Story = {
-  render: (args) => ({
-    components: { WidgetLibraryStep },
-    setup: () => ({ args }),
-    template: `<WidgetLibraryStep v-bind="args" />`,
-  }),
-}
-
-/** Unfiltered, filtered to one category, and a tile selected. */
-export const States: Story = {
-  render: (args) => ({
-    components: { WidgetLibraryStep },
-    setup: () => ({ args }),
-    template: `<WidgetLibraryStep v-bind="args" />`,
-  }),
-}

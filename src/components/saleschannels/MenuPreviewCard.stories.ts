@@ -86,32 +86,3 @@ export const FooterMenu: Story = {
 export const EmptyMenu: Story = {
   args: { menu: emptyMenu(), storeName: 'Atlas Outfitters' },
 }
-
-// ── Template: Variants · Sizes · States ──────────────────────────────────────
-
-/** One structure — a card previewing a storefront menu. Its variants are the menu positions: header and footer. */
-export const Variants: Story = {
-  render: (args) => ({
-    components: { MenuPreviewCard },
-    setup: () => ({ args }),
-    template: `<MenuPreviewCard v-bind="args" />`,
-  }),
-}
-
-/** There is no `size` prop — the card spans its column. Its inset is `component.card.*`, so it sits on the same edge as every other card on the page. */
-export const Sizes: Story = {
-  render: (args) => ({
-    components: { MenuPreviewCard },
-    setup: () => ({ args }),
-    template: `<MenuPreviewCard v-bind="args" />`,
-  }),
-}
-
-/** Populated and empty — a menu with no items yet. */
-export const States: Story = {
-  render: (args) => ({
-    components: { MenuPreviewCard },
-    setup: () => ({ args }),
-    template: `<MenuPreviewCard v-bind="args" />`,
-  }),
-}

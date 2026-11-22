@@ -1,12 +1,12 @@
 /**
- * Transactions rules — which payments sit under which tab, what the CSV
- * export holds, and which payment method each checkout-preview flow runs on.
+ * Transactions rules — which payments sit under which tab and what the CSV
+ * export holds.
  *
  * Pure module — relative `.ts` imports only (see money.ts).
  */
 import { toDecimal } from './money.ts'
 import { PAYMENT_STATUS_LABELS, PROVIDER_LABELS, localDateKey } from './model.ts'
-import type { Dispute, Payment, PaymentMethodCatalogEntry, PaymentStatus, ShopperFlow } from './model.ts'
+import type { Dispute, Payment, PaymentStatus } from './model.ts'
 import { paymentBreakdown } from './readiness.ts'
 
 // ── Tabs ──────────────────────────────────────────────────────────────────
@@ -57,53 +57,5 @@ export function transactionCsvRow(payment: Payment, storeName: string, dispute: 
     Fee: ours ? toDecimal(breakdown.fee) : '',
     Net: ours ? toDecimal(breakdown.net) : '',
     Status: PAYMENT_STATUS_LABELS[payment.status],
-  }
-}
-
-// ── Checkout preview flows ────────────────────────────────────────────────
-
-export interface CheckoutFlow {
-  flow: ShopperFlow
-  label: string
-  description: string
-  icon: string
-}
-
-export const CHECKOUT_FLOWS: CheckoutFlow[] = [
-  { flow: 'success', label: 'Successful payment', description: 'The shopper pays by card or wallet and it goes straight through.', icon: 'circle-check' },
-  { flow: 'auth_required', label: 'Bank asks to confirm', description: '3-D Secure: the shopper confirms the payment with their bank.', icon: 'shield-check' },
-  { flow: 'declined', label: 'Card declined', description: 'The shopper’s bank says no, so nothing is taken.', icon: 'circle-x' },
-  { flow: 'redirect', label: 'Pay on another page', description: 'Buy now, pay later: the shopper approves on the provider’s page.', icon: 'external-link' },
-  { flow: 'delayed', label: 'Delayed confirmation', description: 'Bank debit: the bank confirms a few days later.', icon: 'hourglass' },
-]
-
-/** Methods a flow can run on. Cards authenticate and decline; wallets only succeed. */
-export function methodsForFlow(flow: ShopperFlow, methods: PaymentMethodCatalogEntry[]): PaymentMethodCatalogEntry[] {
-  switch (flow) {
-    case 'success':
-      return methods.filter((m) => m.category === 'cards' || m.category === 'wallets')
-    case 'auth_required':
-    case 'declined':
-      return methods.filter((m) => m.category === 'cards')
-    case 'redirect':
-      return methods.filter((m) => m.category === 'bnpl')
-    case 'delayed':
-      return methods.filter((m) => m.delayed)
-  }
-}
-
-/** Why a flow can't run on this store's checkout, or null when it can. */
-export function flowUnavailableReason(flow: ShopperFlow, methods: PaymentMethodCatalogEntry[]): string | null {
-  if (methodsForFlow(flow, methods).length) return null
-  switch (flow) {
-    case 'success':
-      return 'Turn on cards or a wallet.'
-    case 'auth_required':
-    case 'declined':
-      return 'Turn on cards.'
-    case 'redirect':
-      return 'Turn on Afterpay, Affirm or Klarna.'
-    case 'delayed':
-      return 'Turn on ACH Direct Debit.'
   }
 }

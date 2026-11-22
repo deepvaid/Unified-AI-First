@@ -114,7 +114,7 @@ const headers = [
   { title: 'Used by', key: 'usedByCampaigns', sortable: true, minWidth: '120px' },
   { title: 'Updated at', key: 'updatedAt', sortable: true, minWidth: '150px' },
   { title: 'Created at', key: 'createdAt', sortable: true, minWidth: '150px' },
-  { title: '', key: 'actions', sortable: false, width: 56 },
+  { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, sortable: false, width: 56 },
 ]
 
 function formatDate(iso: string) {
@@ -286,6 +286,7 @@ function doMove(folderId: string | null) {
           <v-checkbox-btn
             :model-value="allSelected"
             :indeterminate="someSelected && !allSelected"
+            :aria-checked="undefined"
             aria-label="Select all content on this page"
             @update:model-value="selectAll(!allSelected)"
           />

@@ -97,12 +97,20 @@
   letter-spacing: var(--mp-text-sectionTitle-letterSpacing);
 }
 
-.mp-meta-label,
-.mp-label-value dt {
+.mp-meta-label {
   font-size: var(--mp-text-metaLabel-fontSize);
   font-weight: var(--mp-text-metaLabel-fontWeight);
   letter-spacing: var(--mp-text-metaLabel-letterSpacing);
   text-transform: var(--mp-text-metaLabel-textTransform);
+}
+
+/* Key/value labels are sentence case, muted, 12px (recipe C2, decided 2026-10-05).
+   The uppercase eyebrow is .mp-meta-label — one per surface, never on a dt. */
+.mp-label-value dt {
+  font-size: var(--mp-text-caption-fontSize);
+  font-weight: var(--mp-text-caption-fontWeight);
+  line-height: var(--mp-lineHeight-compact);
+  color: var(--on-surface-muted);
 }
 
 .mp-meta-value,
@@ -126,17 +134,60 @@
   color: var(--text-muted);
 }
 
-/* dl-friendly label/value grid — pair with .mp-meta-label (dt) / .mp-meta-value (dd) */
+/* dl-friendly label/value grid. Wrap each dt/dd pair in a <div> for stacked pairs,
+   two per row; or add --inline for label | value rows in a narrow panel. */
 .mp-label-value {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--mp-space-20) var(--mp-space-32);
   margin: 0;
 }
-@media (max-width: 640px) {
-  .mp-label-value {
+@media (max-width: #{$mp-layout-breakpointCompact - 0.02px}) {
+  .mp-label-value:not(.mp-label-value--inline) {
     grid-template-columns: 1fr;
   }
+}
+
+/* Label | value rows — detail sidebars, balance lists. Stays horizontal on phones. */
+.mp-label-value--inline {
+  /* The label column fits its longest label (up to 45%), so values line up and keep their width. */
+  grid-template-columns: fit-content(45%) minmax(0, 1fr);
+  gap: var(--mp-space-12) var(--mp-space-24);
+  align-items: baseline;
+}
+.mp-label-value--inline > div {
+  display: contents;
+}
+.mp-label-value--inline dd {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* A link in body copy or a table cell: the accent colour, underline on hover and focus. */
+.mp-link {
+  color: var(--accent-default);
+  font-weight: var(--mp-fontWeight-medium);
+  text-decoration: none;
+  border-radius: var(--mp-radius-4);
+}
+.mp-link:hover,
+.mp-link:focus-visible {
+  text-decoration: underline;
+}
+.mp-link:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* A card's inset (component.card.*), so a card root never needs a pa-* utility or its own rule. */
+.mp-card-inset {
+  padding: var(--mp-component-card-padding);
+}
+.mp-card-inset--compact {
+  padding: var(--mp-component-card-paddingCompact);
+}
+.mp-card-inset--spacious {
+  padding: var(--mp-component-card-paddingSpacious);
 }
 
 .mp-strike {
@@ -270,8 +321,12 @@ a {
   box-shadow: var(--btn-flat-shadow);
 }
 
+/* Outlined buttons share the field-border token: --border-strong is gated at 3:1
+   (controlBoundary) on every surface a control sits on. --mp-border-subtle was
+   ~1.2:1 (WCAG 1.4.11 — W-09, closes A11Y-002). MpDataTableToolbar's search pill
+   reads the same token so the toolbar row stays one family. */
 .v-btn--variant-outlined {
-  border-color: var(--mp-border-subtle) !important;
+  border-color: var(--border-strong) !important;
 }
 
 /* Disabled buttons (P6-15). Vuetify styles these with hardcoded alphas rather
@@ -536,6 +591,21 @@ tr:focus-within .action-btns {
    earlier in source order lets that override win. */
 .v-application .v-table > .v-table__wrapper > table > thead > tr > th {
   padding-inline: var(--mp-component-table-cellPaddingInline);
+}
+
+/* Utility columns (row actions, thumbnails, expand) carry a real header name for
+   assistive tech but show no visible label — `headerProps: { class: 'mp-th-sr' }`
+   on the header (WCAG best practice, axe empty-table-header — W-18). */
+.v-data-table__th.mp-th-sr .v-data-table-header__content > span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* Phone-width table density. Vuetify's 16px inline padding costs 32px per column,
@@ -863,12 +933,25 @@ tr:focus-within .action-btns {
    constant: inside the frame the math is exact (app bar 56 + margins 4+12 +
    borders 2 = 74 = 52 + the frame's 22px --mp-frame-offset). Outside the frame
    (?frame=off / classic shell) the offset resolves to 0px and the same 4px
-   slack the existing shells accept applies. Do not use --mp-layout-appbarHeight
-   (60px — does not match the rendered 56px bar). */
+   slack the existing shells accept applies. 52px is --mp-layout-appbarHeight (56px,
+   the height AppBar renders at) minus that 4px slack. */
+/* --mp-frame-height is exposed so a sticky panel inside the shell (the store
+   Payments preview) can bound itself to the visible frame. */
 .mp-frame-fill {
+  --mp-frame-height: calc(100vh - 52px - var(--mp-frame-offset, 0px));
   margin: calc(-1 * var(--mp-layout-shellInsetBlock)) calc(-1 * var(--mp-layout-shellInsetInline));
-  height: calc(100vh - 52px - var(--mp-frame-offset, 0px));
+  height: var(--mp-frame-height);
   overflow: hidden;
+}
+
+/* On mobile browsers 100vh includes the area behind the URL bar, which pushed
+   docked footers (the ticket reply bar) below the fold. dvh is the visible
+   height. Behind @supports because an unsupported unit inside a custom
+   property would only fail at use time and void the height. */
+@supports (height: 100dvh) {
+  .mp-frame-fill {
+    --mp-frame-height: calc(100dvh - 52px - var(--mp-frame-offset, 0px));
+  }
 }
 
 @media (max-width: 1024px) {

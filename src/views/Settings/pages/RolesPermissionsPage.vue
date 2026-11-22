@@ -60,10 +60,10 @@ const filteredRoles = computed<RoleRow[]>(() =>
 const headers = [
   { title: 'Role', key: 'name', sortable: true },
   { title: 'Product', key: 'productLabel', hideBelow: 'md' as const },
-  { title: 'Type', key: 'system', sortable: false },
+  { title: 'Type', key: 'system', sortable: false, hideBelow: 'sm' as const },
   { title: 'Users', key: 'usage', align: 'end' as const },
   { title: 'Permissions', key: 'permissions', align: 'end' as const, sortable: false, hideBelow: 'lg' as const },
-  { title: '', key: 'actions', align: 'end' as const, sortable: false, width: '48px' },
+  { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, align: 'end' as const, sortable: false, width: '48px' },
 ]
 const hiddenColumns = ref<string[]>([])
 const { visibleHeaders } = useResponsiveTableHeaders(headers, hiddenColumns)
@@ -397,9 +397,8 @@ function confirmDelete() {
 .role-cell__description {
   font-size: 12px;
   color: var(--muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  /* Wraps: a one-line ellipsis kept the column at the sentence's full width, so the table
+     scrolled sideways while most of the description was hidden anyway. */
 }
 
 .role-cell__base {

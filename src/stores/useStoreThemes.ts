@@ -270,13 +270,14 @@ export const useStoreThemesStore = defineStore('storeThemes', () => {
     template: TemplateType,
     kinds: string[],
     overridesList: Record<string, string | number | boolean>[] = [],
+    index?: number,
   ): ThemeSection[] {
     const theme = getTheme(themeId)
     if (!theme) return []
     const sections = theme.templates[template]
     const created: ThemeSection[] = []
-    // Insert the batch, in order, above a trailing footer.
-    let at = contentInsertIndex(sections)
+    // Insert the batch, in order, at `index` — else above a trailing footer.
+    let at = index ?? contentInsertIndex(sections)
     kinds.forEach((kind, i) => {
       const def = getSectionDef(kind)
       if (!def) return

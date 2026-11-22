@@ -24,12 +24,12 @@ withDefaults(defineProps<{
   /** Tile column width at the md breakpoint. Omit to keep the sm width. */
   mdCols?: string | number
   /** Heading level for the headline — match the surrounding page outline. */
-  headingLevel?: 'h2' | 'h3' | 'h4'
+  headingLevel?: 2 | 3 | 4
 }>(), {
   description: '',
   smCols: 6,
   mdCols: undefined,
-  headingLevel: 'h3',
+  headingLevel: 3,
 })
 </script>
 
@@ -39,7 +39,7 @@ withDefaults(defineProps<{
       <div class="coming-soon-card__icon mx-auto mb-3">
         <v-icon size="28">{{ icon }}</v-icon>
       </div>
-      <component :is="headingLevel" class="text-h6 mb-1">{{ title }}</component>
+      <component :is="`h${headingLevel}`" class="text-h6 mb-1">{{ title }}</component>
       <p v-if="description" class="text-body-2 text-medium-emphasis mb-0 mx-auto" style="max-width: var(--mp-component-state-measureWide);">
         {{ description }}
       </p>

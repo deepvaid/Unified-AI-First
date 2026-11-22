@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from '@storybook/vue3'
 import DvExpandDialog from './DvExpandDialog.vue'
 import { useDashboardsStore } from '@/stores/useDashboards'
 import type { DashboardFilterState, DashboardWidgetDraft } from '@/stores/dashboards/types'
+import { isolateStorage, overlayDocs } from '@/stories/decorators'
 
 const ACCOUNT_ID = '2000290'
 const DASHBOARD_ID = '2000290-home'
@@ -30,6 +31,8 @@ const meta = {
   title: 'Product/Da Vinci/DvExpandDialog',
   component: DvExpandDialog,
   tags: ['autodocs'],
+  // The render seeds the dashboards store, which persists to localStorage: put it back on unmount.
+  decorators: [isolateStorage],
   args: {
     modelValue: true,
     draft: CHANNEL_DRAFT,
@@ -49,6 +52,8 @@ const meta = {
   },
   parameters: {
     docs: {
+      // Every story opens the dialog on mount, so each gets its own frame on the docs page.
+      ...overlayDocs('720px').docs,
       description: {
         component: `
 ## Overview
@@ -67,10 +72,10 @@ kept to a tile-sized column rather than stretched into a banner. "Add to dashboa
       return { args, open }
     },
     template: `
-      <section style="min-height: 720px;">
+      <div>
         <v-btn color="primary" class="text-none" @click="open = true">Preview at full size</v-btn>
         <DvExpandDialog v-bind="args" v-model="open" @add="open = false" />
-      </section>
+      </div>
     `,
   }),
 } satisfies Meta<typeof DvExpandDialog>
@@ -81,17 +86,12 @@ type Story = StoryObj<typeof meta>
 /** Revenue by channel as a column chart at full size. */
 export const Default: Story = {}
 
-// ── Template: Variants · Sizes · States ──────────────────────────────────────
-
-/** A KPI draft — kept tile-sized in the middle of the dialog. */
-export const Variants: Story = {
+/** A KPI draft — kept tile-sized in the middle of the dialog rather than stretched into a banner. */
+export const KpiDraft: Story = {
   args: { draft: KPI_DRAFT, typeLabel: 'KPI' },
 }
 
-/** There is no `size` prop — this is `MpDialog`'s `lg` (880px); the live card fills a frame of `component.preview.widgetHeight.lg`. */
-export const Sizes: Story = {}
-
-/** Already added — the primary action reads "Added" and is disabled. */
-export const States: Story = {
+/** Draft already committed — the primary action reads "Added" with a check and is disabled. */
+export const AlreadyAdded: Story = {
   args: { isAdded: true },
 }

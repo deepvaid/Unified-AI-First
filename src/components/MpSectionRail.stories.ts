@@ -4,17 +4,20 @@ import MpListRow from './MpListRow.vue'
 import MpPageHeader from './MpPageHeader.vue'
 import MpSectionHeader from './MpSectionHeader.vue'
 import type { MpSectionRailGroup, MpSectionRailSwitchOption } from './MpSectionRail.vue'
-import { railFrame } from '@/stories/decorators'
+import { measure, railFrame } from '@/stories/decorators'
+import { liquidskyDocs } from '@/stories/storyTemplate'
 
-// The Storybook memory router resolves every path to the catch-all route named
-// "StorybookRoute" — items with match: ['StorybookRoute'] render as active.
+// The active row is `route.name ∈ item.match`. The Storybook router starts on the route named
+// "StorybookRoute"; clicking a rail link moves it to the catch-all "StorybookFallback". An item
+// whose `match` is ACTIVE stays the active row in both cases.
+const ACTIVE = ['StorybookRoute', 'StorybookFallback']
 
 const storeEditorGroups: MpSectionRailGroup[] = [
   {
     items: [
       { slug: 'overview', label: 'Overview', icon: 'layout-dashboard', to: '/store/overview' },
       { slug: 'theme', label: 'Theme', icon: 'palette', to: '/store/theme' },
-      { slug: 'navigation', label: 'Navigation', icon: 'list-tree', to: '/store/navigation', match: ['StorybookRoute'] },
+      { slug: 'navigation', label: 'Navigation', icon: 'list-tree', to: '/store/navigation', match: ACTIVE },
       { slug: 'pages', label: 'Pages', icon: 'file-text', to: '/store/pages' },
       { slug: 'blogs', label: 'Blogs', icon: 'rss', to: '/store/blogs' },
       { slug: 'campaigns', label: 'Campaigns', icon: 'megaphone', to: '/store/campaigns' },
@@ -32,7 +35,7 @@ const settingsGroups: MpSectionRailGroup[] = [
   {
     title: 'Account',
     items: [
-      { slug: 'defaults', label: 'Account defaults', to: '/settings/defaults', match: ['StorybookRoute'] },
+      { slug: 'defaults', label: 'Account defaults', to: '/settings/defaults', match: ACTIVE },
       { slug: 'users', label: 'Users & permissions', to: '/settings/users', count: 6 },
       { slug: 'billing', label: 'Billing', to: '/settings/billing', external: true },
     ],
@@ -56,12 +59,12 @@ const settingsGroups: MpSectionRailGroup[] = [
 const meta: Meta<typeof MpSectionRail> = {
   title: 'Molecules/MpSectionRail',
   component: MpSectionRail,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'liquidsky'],
   parameters: {
     canvas: 'full',
     docs: {
       description: {
-        component: `
+        component: liquidskyDocs('molecules-mpsectionrail') + `
 ### Overview
 \`MpSectionRail\` is the in-content 260px section rail for shell layouts (store editor,
 Settings-style workspaces) — sits beside the global \`AppSidebar\`, never replaces it. Two
@@ -225,7 +228,7 @@ export const AllElements: Story = {
   }),
 }
 
-// ── Template: Variants · Sizes · States ──────────────────────────────────────
+// ── Template: Variants · RowBaseline · States ──────────────────────────────────────
 
 /**
  * The rail's two flavors, side by side. **Module** (a plain `title`, optional `searchable`,
@@ -241,7 +244,7 @@ export const Variants: Story = {
     components: { MpSectionRail },
     setup: () => ({ settings: [
         { title: 'Your Preferences', items: [
-          { slug: 'general', label: 'General', to: '/general', match: ['General'] },
+          { slug: 'general', label: 'General', to: '/general', match: ACTIVE },
           { slug: 'notifications', label: 'Notifications', to: '/notifications', match: ['Notifications'] },
         ]},
         { title: 'Account Management', items: [
@@ -256,7 +259,7 @@ export const Variants: Story = {
           { slug: 'integrations', label: 'Integrations', to: '/integrations', match: ['Integrations'] },
         ]},
       ], store: [
-        { items: [{ slug: 'overview', label: 'Overview', icon: 'layout-dashboard', to: '/overview', match: ['Overview'] }] },
+        { items: [{ slug: 'overview', label: 'Overview', icon: 'layout-dashboard', to: '/overview', match: ACTIVE }] },
         { title: 'Customize', items: [{ slug: 'theme', label: 'Theme', icon: 'palette', to: '/theme', match: ['Theme'] }] },
         { title: 'Store content', items: [
           { slug: 'pages', label: 'Pages', icon: 'file-text', to: '/pages', match: ['Pages'], count: 12 },
@@ -266,7 +269,7 @@ export const Variants: Story = {
         ]},
       ] }),
     template: `
-      <div class="d-flex ga-8 align-stretch" style="min-height: 520px">
+      <div class="d-flex ga-8 align-stretch">
         <div>
           <div class="text-caption text-medium-emphasis mb-2">module flavor — title + search, text rows</div>
           <MpSectionRail ariaLabel="Settings navigation" title="Settings" searchable search-placeholder="Search Settings" :groups="settings" />
@@ -296,12 +299,12 @@ export const Variants: Story = {
  * menu rows use. Shown here against a plain button and a list row so the shared baseline is
  * visible.
  */
-export const Sizes: Story = {
+export const RowBaseline: Story = {
   render: () => ({
     components: { MpSectionRail, MpListRow },
     setup: () => ({ settings: [
         { title: 'Your Preferences', items: [
-          { slug: 'general', label: 'General', to: '/general', match: ['General'] },
+          { slug: 'general', label: 'General', to: '/general', match: ACTIVE },
           { slug: 'notifications', label: 'Notifications', to: '/notifications', match: ['Notifications'] },
         ]},
         { title: 'Account Management', items: [
@@ -317,9 +320,9 @@ export const Sizes: Story = {
         ]},
       ] }),
     template: `
-      <div class="d-flex ga-8 align-start" style="min-height: 480px">
+      <div class="d-flex ga-8 align-start">
         <MpSectionRail ariaLabel="Settings navigation" title="Settings" :groups="settings" />
-        <div class="pt-4" style="min-width: 280px">
+        <div class="pt-4" style="width: ${measure.narrow}">
           <div class="text-caption text-medium-emphasis mb-2">the same 40px baseline, outside the rail</div>
           <div class="d-flex flex-column ga-3">
             <v-btn variant="outlined" class="text-none" block>A button</v-btn>
@@ -345,7 +348,7 @@ export const States: Story = {
       groups: [
         { title: 'Row states', items: [
           { slug: 'resting', label: 'Resting row', icon: 'circle', to: '/resting', match: ['Nope'] },
-          { slug: 'active', label: 'Active row', icon: 'circle-check', to: '/active', match: ['ActiveRoute'] },
+          { slug: 'active', label: 'Active row', icon: 'circle-check', to: '/active', match: ACTIVE },
           { slug: 'count', label: 'With a count', icon: 'inbox', to: '/count', match: ['Nope'], count: 24 },
           { slug: 'external', label: 'Leaves this shell', icon: 'credit-card', to: '/ext', match: ['Nope'], external: true },
           { slug: 'long', label: 'A section name long enough to need truncating', icon: 'file-text', to: '/long', match: ['Nope'] },
@@ -353,9 +356,9 @@ export const States: Story = {
       ],
     }),
     template: `
-      <div class="d-flex ga-8 align-start" style="min-height: 420px">
+      <div class="d-flex ga-8 align-start">
         <MpSectionRail ariaLabel="Row states" title="States" :groups="groups" />
-        <div class="pt-4 text-body-2 text-medium-emphasis" style="max-width: 320px">
+        <div class="pt-4 text-body-2 text-medium-emphasis" style="max-width: ${measure.narrow}">
           The active row is decided by <code>route.name ∈ item.match</code>, so it lights up on a
           section's child routes too. Its accent bar is held off the row's ends by
           <code>component.nav.activeBarInset</code> — the same mark, at the same inset, in every rail.
@@ -379,7 +382,7 @@ export const InContextSettingsWorkspace: Story = {
     components: { MpSectionRail, MpPageHeader, MpSectionHeader },
     setup: () => ({ groups: [
         { title: 'Your Preferences', items: [
-          { slug: 'general', label: 'General', to: '/general', match: ['General'] },
+          { slug: 'general', label: 'General', to: '/general', match: ACTIVE },
           { slug: 'notifications', label: 'Notifications', to: '/notifications', match: ['Notifications'] },
         ]},
         { title: 'Account Management', items: [
@@ -395,7 +398,7 @@ export const InContextSettingsWorkspace: Story = {
         ]},
       ] }),
     template: `
-      <div class="d-flex align-stretch" style="min-height: 560px; border: 1px solid var(--border-subtle); border-radius: var(--mp-component-card-radius); overflow: hidden">
+      <div class="d-flex align-stretch w-100 flex-shrink-0">
         <MpSectionRail ariaLabel="Settings navigation" title="Settings" searchable search-placeholder="Search Settings" :groups="groups" />
         <div class="flex-grow-1 pa-6" style="min-width: 0; background: var(--surface-canvas)">
           <MpPageHeader eyebrow="Settings · Your Preferences" title="General" subtitle="Personal information and global preferences. These apply only to you." />

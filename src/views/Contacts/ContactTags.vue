@@ -21,7 +21,7 @@ const search = ref('')
 const headers = [
   { title: 'Tag Name', key: 'name', sortable: true },
   { title: 'Contacts', key: 'count', align: 'end' as const },
-  { title: '', key: 'actions', sortable: false, width: 48 },
+  { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, sortable: false, width: 48 },
 ]
 
 // Only 3 columns, all load-bearing (name, count, actions) — nothing is tiered;

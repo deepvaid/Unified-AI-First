@@ -1,6 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpChatBubble from './MpChatBubble.vue'
+import MpRowActionsMenu from './MpRowActionsMenu.vue'
+import MpMenuItem from './MpMenuItem.vue'
 import { MESSAGES } from '@/stories/fixtures'
+import { constrain } from '@/stories/decorators'
+import { stack } from '@/stories/storyTemplate'
 
 const meta = {
   title: 'Molecules/MpChatBubble',
@@ -72,11 +76,13 @@ accent) sets those on a host class applied to the component tag. Never \`:deep\`
 
 ### API
 Props \`side\` · \`tone\` · \`author?\` · \`time?\` · \`loading?\`. Slots: \`#avatar\`, default
-(body; also the loading label), \`#footer\`.
+(body; also the loading label), \`#footer\`, \`#actions\` (a per-message ⋯ menu at the end of the
+meta row — the Tickets thread uses it on internal notes).
         `,
       },
     },
   },
+  decorators: [constrain('dialog')],
   args: {
     side: 'start',
     tone: 'neutral',
@@ -98,6 +104,7 @@ Props \`side\` · \`tone\` · \`author?\` · \`time?\` · \`loading?\`. Slots: \
     avatar: { control: false, description: 'Slot — the avatar column (consumer supplies a v-avatar).', table: { category: 'slots' } },
     default: { control: false, description: 'Slot — the message body (pre-wrap). Doubles as the loading label.', table: { category: 'slots' } },
     footer: { control: false, description: 'Slot — in-bubble meta under the body: delivery stamps, source tags.', table: { category: 'slots' } },
+    actions: { control: false, description: 'Slot — per-message actions (a ⋯ menu) at the end of the meta row, after the time.', table: { category: 'slots' } },
   },
 } satisfies Meta<typeof MpChatBubble>
 
@@ -109,39 +116,31 @@ export const Default: Story = {
     components: { MpChatBubble },
     setup: () => ({ args }),
     template: `
-      <div style="max-width: 560px;">
-        <MpChatBubble v-bind="args" author="Sofia Thompson" time="09:12">
-          Hi — my order arrived but the jacket is the wrong size. Can I exchange it?
-        </MpChatBubble>
-      </div>
+      <MpChatBubble v-bind="args" author="Sofia Thompson" time="09:12">
+        Hi — my order arrived but the jacket is the wrong size. Can I exchange it?
+      </MpChatBubble>
     `,
   }),
 }
 
 /** Side × tone are independent — six combinations, one geometry. */
 export const Variants: Story = {
-  render: () => ({
-    components: { MpChatBubble },
-    template: `
-      <div class="d-flex flex-column ga-4" style="max-width: 560px;">
-        <MpChatBubble side="start" tone="neutral">start · neutral — the default incoming message.</MpChatBubble>
-        <MpChatBubble side="start" tone="accent">start · accent — an agent reply in a left-aligned thread.</MpChatBubble>
-        <MpChatBubble side="start" tone="solid">start · solid — rare, but the axes stay independent.</MpChatBubble>
-        <MpChatBubble side="end" tone="neutral">end · neutral</MpChatBubble>
-        <MpChatBubble side="end" tone="accent">end · accent — a user turn in an assistant chat.</MpChatBubble>
-        <MpChatBubble side="end" tone="solid">end · solid — the classic sent-message look.</MpChatBubble>
-      </div>
-    `,
-  }),
-  args: {} as never,
+  render: stack({ MpChatBubble }, [
+    { label: 'start · neutral', args: { side: 'start', tone: 'neutral' }, slot: 'The default incoming message.' },
+    { label: 'start · accent', args: { side: 'start', tone: 'accent' }, slot: 'An agent reply in a left-aligned thread.' },
+    { label: 'start · solid', args: { side: 'start', tone: 'solid' }, slot: 'Rare, but the axes stay independent.' },
+    { label: 'end · neutral', args: { side: 'end', tone: 'neutral' }, slot: 'A neutral message on the sending side.' },
+    { label: 'end · accent', args: { side: 'end', tone: 'accent' }, slot: 'A user turn in an assistant chat.' },
+    { label: 'end · solid', args: { side: 'end', tone: 'solid' }, slot: 'The classic sent-message look.' },
+  ]),
 }
 
-/** Avatar, meta row, in-bubble footer, and the loading (typing) state. */
+/** Avatar, meta row, in-bubble footer, per-message actions, and the loading (typing) state. */
 export const States: Story = {
   render: () => ({
-    components: { MpChatBubble },
+    components: { MpChatBubble, MpRowActionsMenu, MpMenuItem },
     template: `
-      <div class="d-flex flex-column ga-4" style="max-width: 560px;">
+      <div class="d-flex flex-column ga-4">
         <MpChatBubble side="start" tone="accent" author="Maya (Support)" time="09:30">
           <template #avatar><v-avatar size="34" color="primary"><span class="text-caption">M</span></v-avatar></template>
           I've set up a free exchange — the replacement ships today.
@@ -149,6 +148,15 @@ export const States: Story = {
         </MpChatBubble>
         <MpChatBubble side="end" tone="solid" time="09:32">
           Amazing, thank you!
+        </MpChatBubble>
+        <MpChatBubble side="start" tone="neutral" author="Sam (Support)" time="09:34">
+          Customer prefers a phone call after 5pm.
+          <template #actions>
+            <MpRowActionsMenu ariaLabel="Message actions" itemLabel="Sam's message">
+              <MpMenuItem title="Edit" icon="pencil" />
+              <MpMenuItem title="Delete" icon="trash-2" danger />
+            </MpRowActionsMenu>
+          </template>
         </MpChatBubble>
         <MpChatBubble side="start" tone="neutral" loading>Reading the docs…</MpChatBubble>
       </div>
@@ -166,7 +174,7 @@ export const Conversation: Story = {
     components: { MpChatBubble },
     setup: () => ({ messages: MESSAGES }),
     template: `
-      <div class="d-flex flex-column ga-4" style="max-width: 640px;">
+      <div class="d-flex flex-column ga-4">
         <MpChatBubble
           v-for="msg in messages"
           :key="msg.id"

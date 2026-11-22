@@ -1,112 +1,104 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
-import type { Router } from 'vue-router'
-import { useRouter } from 'vue-router'
 import { ref } from 'vue'
 import AppBar from './AppBar.vue'
 import AppSidebar from './AppSidebar.vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpKpiCard from '@/components/MpKpiCard.vue'
-import { sidebarSkin } from '@/stories/decorators'
+import { appShell, overlayDocs } from '@/stories/decorators'
+import { liquidskyDocs } from '@/stories/storyTemplate'
 
 /**
- * The nav skin lives on `<html data-sidebar>` and paints both navs through the shared
- * `--mp-nav-surface` bind. Applied to every story from the `sidebarSkin` parameter so a skin
- * never leaks into the next story; the light/dark app theme comes from the `theme` global.
+ * The shell chrome lives on `<html>`: `data-sidebar` (the nav skin), `data-shell` and
+ * `data-frame` (the shell variant). `appShell` stamps the app's defaults (gray, studio, on) for
+ * every story and reads `parameters.sidebarSkin` for the other skins. All three are one value
+ * per document, so a story on a non-default skin renders in its own docs frame.
  */
 
 /**
- * Story-side workaround (batch C convention): the Storybook preview router only has a
- * catch-all route, but AppBar resolves named routes eagerly (`:to="settingsRoute"`) and from
- * its menus. Register a stub per route name so router-link resolution succeeds.
+ * The content area exactly as App.vue nests it: `v-main` > `.mp-content-frame` >
+ * `.mp-main-shell`. In the studio shell `v-main` is the gutter and the frame is the rounded
+ * surface the page sits on.
  */
-const APPBAR_ROUTE_NAMES = [
-  'Settings', 'Billing', 'SettingsGeneral', 'AppStore',
-  'Dashboard', 'DashboardsList', 'SalesOrders', 'EmailCampaigns',
-  'AllContacts', 'DaVinciDashboard', 'DaVinciExperience',
-  'Segments', 'Journeys', 'ContactLists',
-]
-
-function ensureAppBarRoutes(router: Router) {
-  for (const name of APPBAR_ROUTE_NAMES) {
-    if (!router.hasRoute(name)) {
-      router.addRoute({
-        path: `/accounts/:accountId/sb-appbar/${name.toLowerCase()}`,
-        name,
-        component: { template: '<div />' },
-      })
-    }
-  }
+function shellMain(body: string) {
+  return `
+    <v-main class="bg-background">
+      <div class="mp-content-frame">
+        <v-container fluid class="mp-main-shell">${body}</v-container>
+      </div>
+    </v-main>
+  `
 }
 
-function appBarStory() {
+/** The bar in its own layout, which is what keeps `v-app-bar` out of the root `v-app` layout. */
+function appBarStory(note = 'Main content area below the app bar.') {
   return () => ({
     components: { AppBar },
-    setup() {
-      ensureAppBarRoutes(useRouter())
-    },
     template: `
       <v-layout>
         <AppBar />
-        <v-main class="pa-6">
-          <p class="text-body-1">Main content area below the app bar.</p>
-        </v-main>
+        ${shellMain(`<p class="text-body-1">${note}</p>`)}
       </v-layout>
     `,
   })
 }
 
-/** Bar + sidebar together, so the seam between the two nav surfaces is visible. */
-function navSeamStory() {
+/** Sidebar, bar and page together at viewport height, as App.vue lays them out. */
+function shellStory(body: string, components: Record<string, unknown> = {}) {
   return () => ({
-    components: { AppBar, AppSidebar },
+    components: { AppBar, AppSidebar, ...components },
     setup() {
-      ensureAppBarRoutes(useRouter())
       const open = ref(true)
       const rail = ref(false)
       return { open, rail }
     },
     template: `
-      <v-layout style="min-height: 520px;">
+      <v-layout class="h-screen">
         <AppSidebar v-model="open" v-model:rail="rail" />
         <AppBar />
-        <v-main class="pa-6">
-          <p class="text-body-1">
-            The head nav and side nav share one surface — the seam between them should read as
-            a single continuous plane, broken only by a hairline.
-          </p>
-        </v-main>
+        ${shellMain(body)}
       </v-layout>
     `,
   })
 }
 
+const SEAM_NOTE = `
+  <p class="text-body-1">
+    The head nav and side nav paint the same <code>--mp-nav-surface</code>, so the seam between
+    them reads as one continuous plane.
+  </p>
+`
+
 const meta = {
   title: 'Patterns/App Shell/AppBar',
   component: AppBar,
-  tags: ['autodocs'],
-  decorators: [sidebarSkin],
+  tags: ['autodocs', 'liquidsky'],
+  decorators: [appShell],
   parameters: {
     canvas: 'full',
     sidebarSkin: 'gray',
     docs: {
       description: {
-        component: `
+        component: liquidskyDocs('patterns-app-shell-appbar') + `
 ### Overview
-\`AppBar\` is the main top navigation bar of the Maropost platform (56px). It provides the
-universal AI search menu, the quick-create menu (with single-key shortcuts while open), the
+\`AppBar\` is the main top navigation bar of the Maropost platform, \`layout.appbarHeight\`
+(56px) tall. It provides the universal AI search menu, the quick-create menu (with single-key
+shortcuts while open), the
 notification centre (\`MpNotificationsMenu\`), Galaxy and Settings shortcuts, the Da Vinci assistant menu, and the user
 profile menu (account switcher, theme toggle, sign-out). It takes **no props** — everything is
-wired to global state.
+wired to global state. Every control in the bar (search field, quick create, notifications,
+Settings, the Da Vinci pill, the avatar) resolves to \`component.control.height\` (40px).
 
 **Chrome:** the bar shares the \`--mp-nav-surface\` bind with \`AppSidebar\` (\`shell-variants.css\`)
 so head nav and side nav can never drift. The skin (\`<html data-sidebar>\`) only differentiates
 light mode — in dark mode both navs resolve to the same charcoal surface from the \`dark\` token
-ramp. The Seam stories below show the two together.
+ramp. In the studio shell (the app default) the bar has no bottom border and \`v-main\` paints
+the same surface, so the rounded content frame is the only edge. The Seam stories below show
+bar and sidebar together on each skin.
 
 **Store coupling:** \`useAccounts\` (active account + switcher list), \`useCopilot\` (opens the
 Da Vinci assistant), \`useUserProfile\` (avatar), and \`useAppTheme\` (light/dark mode). The
-Storybook preview registers Pinia with the stores' seeded defaults (account 2000290), and these
-stories add stub routes for the named routes the bar links to.
+Storybook preview registers Pinia with the stores' seeded defaults (account 2000290) and stubs
+the named routes the bar links to.
 
 **Use when:** composing the app shell — exactly once, inside \`v-layout\`, alongside
 \`AppSidebar\` and \`v-main\` (see \`App.vue\`).
@@ -131,7 +123,7 @@ surfaces (login, builders) omit the bar entirely.
 
 ### 🔴 Don'ts
 - **Don't** add page-level actions to the AppBar — those belong in \`MpPageHeader\`.
-- **Don't** override its height; it follows the design token \`appbar: 56px\`.
+- **Don't** override its height; it reads \`layout.appbarHeight\` (56px).
 
 ### 💡 Best Practices
 - The AppBar is fixed to the top; page content accounts for its height via \`v-main\`.
@@ -153,13 +145,22 @@ surfaces (login, builders) omit the bar entirely.
   Phase 4 a11y pass).
 
 ### API
-\`AppBar\` takes **no props, emits, or slots** — it is app chrome that reads everything it needs
-from the router and the accounts / theme / notifications stores (\`useNotifications\` backs the
-bell via \`MpNotificationsMenu\`), which is why the Controls panel is empty. Drive its states in
-stories and demos by seeding those stores, not by passing config.
+\`AppBar\` takes **no props, emits, or slots**, which is why the Controls panel is empty. It is
+app chrome that reads what it needs from the router and from \`useAccountsStore\`,
+\`useCopilotStore\`, \`useUserProfile\`, \`useAppTheme\`, \`useMobileNav\`, \`useToast\`,
+\`usePlgStore\` and \`useNotifications\` (behind the bell, via \`MpNotificationsMenu\`). Drive its
+states in stories and demos by seeding those stores, not by passing config. The one story-level
+knob is \`parameters.sidebarSkin\` (\`gray\` | \`white\` | \`dark\`), which the shared \`appShell\`
+decorator stamps onto \`<html data-sidebar>\` beside the app's default \`data-shell="studio"\`.
 
-### Controls
-The app bar takes **no props** — the Controls panel is empty by design. It composes \`useAccountsStore\`, \`useCopilotStore\`, \`useUserProfile\`, \`useAppTheme\`, \`useMobileNav\`, \`useToast\` and \`usePlgStore\` directly. The one story-level knob is \`parameters.sidebarSkin\` (\`gray\` | \`white\` | \`dark\`), which the shared \`sidebarSkin\` decorator stamps onto \`<html data-sidebar>\`.
+### Skins and states
+The bar has one structure; there are no variants to put side by side. Its skins are **Seam Gray**
+(the app default), **Seam White** and **Seam Dark Skin**, each in its own frame because the skin
+is one attribute per document. The narrow layout (a hamburger and a search button in place of the
+field) follows the viewport: **Mobile 375**. Its states live in its overlays, each with its own
+story: **Search (Open)**, **Search (Type Tabs)**, **Create Menu (Open)**, **Profile Menu (Open)**
+and **Language Menu (Open)**. Every row in those panels is \`component.listItem.*\`, so a menu row
+and a sidebar row are the same height.
 `,
       },
     },
@@ -176,6 +177,7 @@ export const Default: Story = {
 export const ProfileMenuOpen: Story = {
   name: 'Profile Menu (Open)',
   render: appBarStory(),
+  parameters: overlayDocs(),
   play: async ({ canvasElement }) => {
     // Auto-open the profile dropdown for Storybook preview
     await new Promise(resolve => setTimeout(resolve, 500))
@@ -184,10 +186,29 @@ export const ProfileMenuOpen: Story = {
   },
 }
 
+/**
+ * The user menu's Language panel: the quick switch for a user's own language. It is the same
+ * setting as Settings › General › Preferred Language, so the two always agree. Languages are
+ * listed under their own names. The prototype stores the choice; it does not translate its copy.
+ */
+export const LanguageMenuOpen: Story = {
+  name: 'Language Menu (Open)',
+  render: appBarStory(),
+  parameters: overlayDocs(),
+  play: async ({ canvasElement }) => {
+    await new Promise(resolve => setTimeout(resolve, 500))
+    canvasElement.querySelector<HTMLElement>('.user-pill')?.click()
+    await new Promise(resolve => setTimeout(resolve, 300))
+    // The menu is teleported out of the canvas.
+    document.querySelector<HTMLElement>('.um-language-trigger')?.click()
+  },
+}
+
 /** The quick-create menu opened — grouped create targets with single-key shortcuts (D/W/E/S/A/L). */
 export const CreateMenuOpen: Story = {
   name: 'Create Menu (Open)',
   render: appBarStory(),
+  parameters: overlayDocs(),
   play: async ({ canvasElement }) => {
     await new Promise(resolve => setTimeout(resolve, 500))
     const trigger = canvasElement.querySelector('[aria-label="Quick create"]') as HTMLElement
@@ -199,6 +220,7 @@ export const CreateMenuOpen: Story = {
 export const SearchOpen: Story = {
   name: 'Search (Open)',
   render: appBarStory(),
+  parameters: overlayDocs(),
   play: async ({ canvasElement }) => {
     await new Promise(resolve => setTimeout(resolve, 500))
     const trigger = canvasElement.querySelector('[aria-label="Universal AI search"]') as HTMLElement
@@ -213,6 +235,7 @@ export const SearchOpen: Story = {
 export const SearchOpenWithTypeTabs: Story = {
   name: 'Search (Type Tabs)',
   render: appBarStory(),
+  parameters: overlayDocs(),
   play: async ({ canvasElement }) => {
     await new Promise(resolve => setTimeout(resolve, 500))
     const trigger = canvasElement.querySelector('[aria-label="Universal AI search"]') as HTMLElement
@@ -232,124 +255,54 @@ export const Mobile375: Story = {
   },
 }
 
-/** Gray skin — bar and sidebar share one continuous nav surface (light mode). */
+/** Gray skin, the app default — bar and sidebar share one continuous nav surface (light mode). */
 export const SeamGray: Story = {
-  render: navSeamStory(),
-  parameters: { sidebarSkin: 'gray' },
+  render: shellStory(SEAM_NOTE),
+  parameters: { sidebarSkin: 'gray', ...overlayDocs() },
   globals: { theme: 'light' },
 }
 
-/** White skin — white nav chrome beside a gray canvas (light mode). */
+/** White skin — white nav chrome, and the content frame carries the gray (light mode). */
 export const SeamWhite: Story = {
-  render: navSeamStory(),
-  parameters: { sidebarSkin: 'white' },
+  render: shellStory(SEAM_NOTE),
+  parameters: { sidebarSkin: 'white', ...overlayDocs() },
   globals: { theme: 'light' },
 }
 
 /** Dark skin on a light app theme — charcoal nav cluster (light mode). */
 export const SeamDarkSkin: Story = {
-  render: navSeamStory(),
-  parameters: { sidebarSkin: 'dark' },
+  render: shellStory(SEAM_NOTE),
+  parameters: { sidebarSkin: 'dark', ...overlayDocs() },
   globals: { theme: 'light' },
 }
 
-// ── Template: Variants · Sizes · States ──────────────────────────────────────
-
-/**
- * The bar's structural variants are its skins ("seams"): the classic white chrome, the gray
- * shell and the dark shell. The control row is identical in all three — only the painted
- * surface behind it changes, which is why the controls had to stop being sized by hand.
- */
-export const Variants: Story = {
-  render: () => ({
-    components: { AppBar },
-    template: `
-      <div class="d-flex flex-column ga-6">
-        <div>
-          <div class="text-caption text-medium-emphasis mb-2">classic</div>
-          <AppBar />
-        </div>
-      </div>
-    `,
-  }),
-  args: {} as never,
-}
-
-/**
- * There is no `size` prop. The bar is `layout.appbarHeight` (60px) tall, and **every control
- * inside it** — the search field, the Quick-create button, the notification/settings buttons,
- * the assistant pill, the user avatar, the theme segment's track — resolves to
- * `component.control.height` (40px).
- *
- * Phase 4 (P4-7) is where that happened. They were 36px, which is on no scale stop, and the
- * app bar's search sat at 34 while the data-table toolbar's sat at 38 — the two search fields
- * in the product, two different heights. Both are the token now.
- */
-export const Sizes: Story = {
-  render: () => ({
-    components: { AppBar },
-    template: `
-      <div>
-        <AppBar />
-        <div class="pa-6 text-body-2 text-medium-emphasis">
-          Measure any control in the bar above: 40px, the same baseline as a button, a form
-          field, a list row, a nav item and a table header cell.
-        </div>
-      </div>
-    `,
-  }),
-  args: {} as never,
-}
-
-/**
- * The bar's interactive states live in its overlays: the command palette (⌘K), the Quick-create
- * menu, and the profile menu with its account cascade. Open each from the bar — every row in
- * every one of those panels is `component.listItem.*`, so a menu row and a sidebar row are the
- * same height.
- */
-export const States: Story = {
-  render: () => ({
-    components: { AppBar },
-    template: `
-      <div>
-        <AppBar />
-        <div class="pa-6 text-body-2 text-medium-emphasis">
-          Click the search field (or press ⌘K) for the palette, <strong>+</strong> for Quick-create,
-          and the avatar for the profile menu.
-        </div>
-      </div>
-    `,
-  }),
-  args: {} as never,
-}
+// ── Template: Variants · States ──────────────────────────────────────────────
 
 // ── Composed example ────────────────────────────────────────────────────────
 
 /**
- * **In context.** The bar over a real page, with the sidebar beside it — the only way to judge
- * whether the control row reads as one band. The 57px sidebar header and the 60px bar share a
- * divider line by design.
+ * **In context.** The bar over a real page, with the sidebar beside it and the page inside the
+ * content frame — the only way to judge whether the control row reads as one band. The sidebar
+ * header is `layout.appbarHeight` (56px) plus its 1px divider, so the brand row and the bar
+ * line up. The app opens with the sidebar collapsed to its rail; it is expanded here.
  */
 export const InContextAppShell: Story = {
-  render: () => ({
-    components: { AppBar, AppSidebar, MpPageHeader, MpKpiCard },
-    template: `
-      <div class="d-flex align-stretch" style="min-height: 620px; background: var(--surface-canvas)">
-        <AppSidebar :model-value="true" :rail="false" />
-        <div class="flex-grow-1 d-flex flex-column" style="min-width: 0">
-          <AppBar />
-          <div class="pa-6">
-            <MpPageHeader title="Dashboard" subtitle="Northwind Supply Co. · last 30 days" />
-            <div class="d-flex ga-4 mt-6 flex-wrap">
-              <MpKpiCard label="Revenue" value="$43,565.90" icon="dollar-sign" trend="+12.4%" trend-positive period="vs. prior 30 days" style="flex: 1 1 220px" />
-              <MpKpiCard label="Orders" value="82" icon="shopping-cart" trend="+6" trend-positive period="vs. prior 30 days" style="flex: 1 1 220px" />
-              <MpKpiCard label="Open rate" value="58.2%" icon="mail-open" trend="+2.1pt" trend-positive period="vs. prior 30 days" style="flex: 1 1 220px" />
-              <MpKpiCard label="Tickets" value="14" icon="life-buoy" trend="-3" period="vs. prior 30 days" style="flex: 1 1 220px" />
-            </div>
-          </div>
-        </div>
-      </div>
-    `,
-  }),
-  args: {} as never,
+  parameters: overlayDocs('720px'),
+  render: shellStory(`
+    <MpPageHeader title="Dashboard" subtitle="Northwind Supply Co. · last 30 days" />
+    <v-row dense class="mt-6">
+      <v-col cols="12" sm="6" lg="3">
+        <MpKpiCard label="Revenue" value="$43,565.90" icon="dollar-sign" trend="+12.4%" trend-positive period="vs. prior 30 days" />
+      </v-col>
+      <v-col cols="12" sm="6" lg="3">
+        <MpKpiCard label="Orders" value="82" icon="shopping-cart" trend="+6" trend-positive period="vs. prior 30 days" />
+      </v-col>
+      <v-col cols="12" sm="6" lg="3">
+        <MpKpiCard label="Open rate" value="58.2%" icon="mail-open" trend="+2.1pt" trend-positive period="vs. prior 30 days" />
+      </v-col>
+      <v-col cols="12" sm="6" lg="3">
+        <MpKpiCard label="Tickets" value="14" icon="life-buoy" trend="-3" :trend-positive="false" period="vs. prior 30 days" />
+      </v-col>
+    </v-row>
+  `, { MpPageHeader, MpKpiCard }),
 }

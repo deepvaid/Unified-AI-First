@@ -1,0 +1,30 @@
+{
+  "key": "segmented-control",
+  "liquidsky": [
+    "MpVBtnToggle"
+  ],
+  "status": "matched",
+  "reference": "MpSegmentedControl",
+  "stories": [
+    {
+      "id": "atoms-mpsegmentedcontrol--default",
+      "label": "Default",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/atoms-mpsegmentedcontrol--default",
+      "png": {
+        "light": "png/segmented-control/atoms-mpsegmentedcontrol--default--light.png",
+        "dark": "png/segmented-control/atoms-mpsegmentedcontrol--default--dark.png"
+      },
+      "parts": []
+    },
+    {
+      "id": "atoms-mpsegmentedcontrol--sizes",
+      "label": "Sizes",
+      "url": "https://ai-first-maropost.vercel.app/storybook/?path=/story/atoms-mpsegmentedcontrol--sizes",
+      "png": {
+        "light": "png/segmented-control/atoms-mpsegmentedcontrol--sizes--light.png",
+        "dark": "png/segmented-control/atoms-mpsegmentedcontrol--sizes--dark.png"
+      },
+      "parts": []
+    }
+  ]
+}

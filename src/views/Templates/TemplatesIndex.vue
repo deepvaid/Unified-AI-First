@@ -37,7 +37,7 @@ const totalFollowing = computed(() =>
 </script>
 
 <template>
-  <!-- No h-100 here: the index is a page that grows and lets <main> scroll, not
+  <!-- No h-100 here: the index is a page that grows and lets the layout's content column scroll, not
        a full-height table page that pins one card to the viewport. -->
   <div class="d-flex flex-column gap-5">
     <MpPageHeader

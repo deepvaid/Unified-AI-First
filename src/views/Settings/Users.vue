@@ -17,7 +17,7 @@ const headers = [
   { title: 'Email', key: 'email' },
   { title: 'Role Access', key: 'role' },
   { title: 'Status', key: 'status' },
-  { title: '', key: 'actions', sortable: false, align: 'end' as const },
+  { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, sortable: false, align: 'end' as const },
 ]
 
 interface TeamUser {

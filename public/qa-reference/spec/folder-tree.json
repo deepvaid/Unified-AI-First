@@ -1,0 +1,11 @@
+{
+  "key": "folder-tree",
+  "liquidsky": [
+    "ClassicFolderTree",
+    "SlVueTreeNext"
+  ],
+  "status": "no-reference",
+  "reference": "None",
+  "note": "Marobase files items through a folder menu (MpFolderSelect), not a tree. These stay Classic-only unless a tree is designed.",
+  "stories": []
+}

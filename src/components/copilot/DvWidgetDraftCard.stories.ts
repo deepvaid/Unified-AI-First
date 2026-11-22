@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import DvWidgetDraftCard from './DvWidgetDraftCard.vue'
 import { useDashboardsStore } from '@/stores/useDashboards'
-import { constrain, measure } from '@/stories/decorators'
-import { grid } from '@/stories/storyTemplate'
 import type { DashboardWidgetDraft } from '@/stores/dashboards/types'
+import { constrain, isolateStorage, measure } from '@/stories/decorators'
+import { grid } from '@/stories/storyTemplate'
 
 // Seeded demo accounts (Pinia is registered in .storybook/preview.ts). 2000290 has every cloud;
 // 2000292 has no Commerce, so a commerce draft there cannot be added.
@@ -36,6 +36,19 @@ const meta = {
   title: 'Product/Da Vinci/DvWidgetDraftCard',
   component: DvWidgetDraftCard,
   tags: ['autodocs'],
+  decorators: [
+    // The card lives in the copilot drawer, so it is shown at the drawer measure.
+    constrain('drawer'),
+    // Seed the dashboards store so the card can resolve its target dashboard.
+    () => ({
+      setup() {
+        useDashboardsStore().ensureAccountDashboards(ACCOUNT_ID)
+      },
+      template: '<story />',
+    }),
+    // Outermost: the store persists to localStorage, so put it back on unmount.
+    isolateStorage,
+  ],
   args: {
     accountId: ACCOUNT_ID,
     dashboardId: DASHBOARD_ID,
@@ -69,14 +82,9 @@ shows in an error alert and Add is disabled — it never fails silently.
       },
     },
   },
-  decorators: [constrain('drawer')],
   render: (args) => ({
     components: { DvWidgetDraftCard },
-    setup() {
-      // Seed the dashboards store so the card can resolve its target dashboard.
-      useDashboardsStore().ensureAccountDashboards(ACCOUNT_ID)
-      return { args }
-    },
+    setup: () => ({ args }),
     template: '<DvWidgetDraftCard v-bind="args" />',
   }),
 } satisfies Meta<typeof DvWidgetDraftCard>
@@ -106,10 +114,7 @@ export const Sizes: Story = {
   decorators: [constrain('dialog')],
   render: (args) => ({
     components: { DvWidgetDraftCard },
-    setup() {
-      useDashboardsStore().ensureAccountDashboards(ACCOUNT_ID)
-      return { args, narrow: measure.narrow, drawer: measure.drawer }
-    },
+    setup: () => ({ args, narrow: measure.narrow, drawer: measure.drawer }),
     template: `
       <div style="display: flex; gap: var(--mp-space-24); align-items: flex-start; flex-wrap: wrap;">
         <div :style="{ width: narrow }"><DvWidgetDraftCard v-bind="args" /></div>
@@ -125,8 +130,8 @@ export const States: Story = {
   render: (args) => ({
     components: { DvWidgetDraftCard },
     setup() {
+      // The meta decorator seeds 2000290; the blocked card needs the account without Commerce too.
       const store = useDashboardsStore()
-      store.ensureAccountDashboards(ACCOUNT_ID)
       store.ensureAccountDashboards(NO_COMMERCE_ACCOUNT_ID)
       // "Added" needs a widget that really exists on the dashboard.
       const existing = store.getDashboardById(ACCOUNT_ID, DASHBOARD_ID)?.widgets[0]

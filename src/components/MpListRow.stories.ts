@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpListRow from './MpListRow.vue'
+import MpStatusChip from './MpStatusChip.vue'
 
 const meta = {
   title: 'Atoms/MpListRow',
@@ -51,6 +52,9 @@ RouterLink computes internally, which is exactly the bug this removes.
 - **Do** use \`variant="divided"\` for a feed inside a card — the hairline is drawn
   *between* siblings, never above the first or below the last.
 - **Do** put the timestamp or count in \`meta\`; it right-aligns and renders tabular.
+- **Do** use \`subtitle\` for a second, muted line (a rate, a date, a reason). The title then
+  wraps instead of truncating. \`#title\` / \`#subtitle\` slots replace the text (money, a link)
+  and keep the styling — never hand-roll title/subtitle spans in the default slot.
 
 ### 🔴 Don'ts
 - **Don't** re-implement a row because you need one different colour — pass a class and
@@ -81,7 +85,8 @@ RouterLink computes internally, which is exactly the bug this removes.
       options: ['default', 'compact'],
       description: "'default' holds the 40px control-height floor; 'compact' drops it for checklists and dense menus.",
     },
-    title: { control: 'text', description: 'Row title. Truncates with an ellipsis rather than wrapping.' },
+    title: { control: 'text', description: 'Row title. Truncates with an ellipsis on a one-line row; wraps on a two-line row.' },
+    subtitle: { control: 'text', description: 'Muted second line under the title — makes a two-line row.' },
     eyebrow: { control: 'text', description: 'Muted line above the title.' },
     meta: { control: 'text', description: 'Trailing muted value — right-aligned, tabular figures.' },
     to: { control: false, description: 'Router target — renders the row as a RouterLink.' },
@@ -125,6 +130,15 @@ export const Variants: Story = {
             <MpListRow variant="boxed" title="Generate subject line variants" />
           </div>
         </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">two-line (subtitle) — plain · divided · boxed</div>
+          <MpListRow title="Payouts are on their way" subtitle="Daily, 2 business days after a payment" />
+          <MpListRow variant="divided" title="Klarna" subtitle="5.99% + 30¢ · needs a refund policy URL" />
+          <MpListRow variant="divided" title="Afterpay" subtitle="6% + 30¢" />
+          <div class="d-flex flex-column ga-2 mt-2">
+            <MpListRow variant="boxed" title="Payout account" subtitle="Mercury Bank •••• 4417" />
+          </div>
+        </div>
       </div>
     `,
   }),
@@ -135,7 +149,7 @@ export const Variants: Story = {
  * There is no `size` prop — a row spans its container. The axes that vary are density
  * (row height) and emphasis (title weight), shown together here.
  */
-export const Sizes: Story = {
+export const DensityAndEmphasis: Story = {
   render: () => ({
     components: { MpListRow },
     template: `
@@ -154,16 +168,25 @@ export const Sizes: Story = {
           <div class="text-caption text-medium-emphasis mb-2">emphasis="prominent" — heavier title</div>
           <MpListRow emphasis="prominent" title="Spring Refresh sent to Segment A" eyebrow="2m ago" meta="58.2% open" />
         </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">two-line at each density and emphasis</div>
+          <MpListRow variant="divided" title="Default density" subtitle="Subtitle under the title" />
+          <MpListRow variant="divided" density="compact" title="Compact density" subtitle="Subtitle under the title" />
+          <MpListRow variant="divided" emphasis="prominent" title="Prominent emphasis" subtitle="Subtitle under the title" />
+        </div>
       </div>
     `,
   }),
   args: {} as never,
 }
 
-/** Static vs interactive, and each tag the component can resolve to. Hover and focus a row to see the affordance. */
+/**
+ * Static vs interactive, each tag the component can resolve to (`div`, `button`, `a`, `RouterLink`),
+ * and the two trailing slots. Hover and focus a row to see the affordance.
+ */
 export const States: Story = {
   render: () => ({
-    components: { MpListRow },
+    components: { MpListRow, MpStatusChip },
     template: `
       <div class="d-flex flex-column ga-8">
         <div>
@@ -179,8 +202,40 @@ export const States: Story = {
           <MpListRow href="https://maropost.com" title="External link row" meta="↗" />
         </div>
         <div>
+          <div class="text-caption text-medium-emphasis mb-2">to — renders a RouterLink</div>
+          <MpListRow to="/accounts/2000290/orders" title="Route link row" meta="→" />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">#trailing — replaces the meta text with any content</div>
+          <MpListRow variant="divided" title="Klarna" subtitle="5.99% + 30¢">
+            <template #trailing><MpStatusChip status="Enabled" type="method" size="sm" /></template>
+          </MpListRow>
+          <MpListRow variant="divided" title="Afterpay" subtitle="6% + 30¢">
+            <template #trailing><MpStatusChip status="Setup required" type="method" size="sm" /></template>
+          </MpListRow>
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">#actions on an interactive row — the button sits beside the row's link, not inside it</div>
+          <MpListRow variant="boxed" clickable title="Spring Refresh sent to Segment A" subtitle="Click the row to open it, or use its own action">
+            <template #actions>
+              <v-btn size="small" variant="text" class="text-none">Duplicate</v-btn>
+            </template>
+          </MpListRow>
+        </div>
+        <div>
           <div class="text-caption text-medium-emphasis mb-2">boxed + interactive — border reacts too</div>
           <MpListRow variant="boxed" clickable title="Boxed and clickable" />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">two-line — long copy wraps; #title holds rich content</div>
+          <MpListRow
+            variant="divided"
+            title="Refund of $890.00 issued — the shopper's bank shows it in 5–10 business days"
+            subtitle="Oct 2, 2026 · Via Maropay · Order refunded because the item arrived damaged in transit"
+          />
+          <MpListRow variant="divided" subtitle="Oct 2, 2026 · Via Maropay">
+            <template #title><strong>$890.00</strong> refunded</template>
+          </MpListRow>
         </div>
         <div>
           <div class="text-caption text-medium-emphasis mb-2">long title — truncates rather than wrapping</div>

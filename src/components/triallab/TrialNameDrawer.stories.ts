@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 import TrialNameDrawer from './TrialNameDrawer.vue'
+import { overlayDocs } from '@/stories/decorators'
 
 const meta = {
   title: 'Product/Trial Lab/TrialNameDrawer',
@@ -8,6 +9,8 @@ const meta = {
   tags: ['autodocs'],
   parameters: {
     docs: {
+      // Every story opens the drawer on mount, so each gets its own frame on the docs page.
+      ...overlayDocs('560px').docs,
       description: {
         component: `
 ### Overview
@@ -33,7 +36,7 @@ recognisable name for the account switcher, never the legal company name.
       return { args, open, saved }
     },
     template: `
-      <div class="pa-4">
+      <div>
         <v-btn class="text-none" variant="outlined" @click="open = true">Open drawer</v-btn>
         <p class="mt-3 text-body-2">Saved value: <strong>{{ saved ?? '— (fallback label)' }}</strong></p>
         <TrialNameDrawer v-model="open" v-bind="args" @save="saved = $event" />
