@@ -2,7 +2,7 @@
 // Da Vinci AI experience — native port of the "Marojarvis" voice-first prototype
 // (formerly linked externally as https://davinci-ai-first.vercel.app).
 // fullPage route: the app shell + copilot drawer are unmounted, so this view
-// owns the mic exclusively and provides its own exits (Esc / Classic UI / close).
+// owns the mic exclusively and provides its own exits (Esc / close).
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
@@ -138,6 +138,21 @@ let autoStarted = false
 // a user gesture). Puts a Start button in the mic's place that speaks the greeting
 // on the click — so it works on a fresh load / shared link.
 const audioBlocked = ref(false)
+// How the first open asks for its one click. Three are built to compare, behind `?start=`; naming one in
+// the address also shows it when sound is already allowed. Once one is chosen, the others and this
+// switch are deleted.
+type StartVariant = 'muted' | 'welcome' | 'orb'
+const startForced = computed(() => ['muted', 'welcome', 'orb'].includes(String(route.query.start)))
+const startVariant = computed<StartVariant>(() => (startForced.value ? (route.query.start as StartVariant) : 'muted'))
+// The first-open state is on screen: sound is held back and nothing has begun. Not with voice switched
+// off — there is no sound to turn on, and the line under the mic already says so.
+const startShowing = computed(() => audioBlocked.value && !busy.value && !hasThread.value && !voice.muted.value)
+// Muted start keeps the page as it is; the other two cover the mic and message box until the click.
+const mutedStart = computed(() => startShowing.value && startVariant.value === 'muted')
+const startCovers = computed(() => startShowing.value && startVariant.value !== 'muted')
+// Muted start: the greeting writes itself out as a caption while the page waits for its click.
+const typedGreeting = ref('')
+let typeTimer: ReturnType<typeof setInterval> | null = null
 let greetProbe: ReturnType<typeof setTimeout> | null = null
 // When autoplay is blocked, the first interaction anywhere on the screen speaks
 // the greeting — so it plays on every fresh load without hunting for the mic.
@@ -200,6 +215,7 @@ const stageHint = computed(() => {
   }
   if (voice.state.value === 'thinking') return 'Thinking…'
   if (voice.state.value === 'speaking') return captionText.value || 'Speaking…'
+  if (mutedStart.value) return typedGreeting.value
   return voice.sttSupported ? 'Tap to talk' : 'Type below to begin'
 })
 
@@ -340,6 +356,7 @@ function sendText(raw: string) {
   voice.unlockSpeech() // prime TTS + mic within the gesture (Safari/iOS autoplay)
   const text = raw.trim()
   if (!text) return
+  audioBlocked.value = false // this click or key press is the one the browser was waiting for
   if (liveActive.value) {
     loopToken++ // supersede the in-flight listen so its continuation bails
     voice.abortListening()
@@ -575,7 +592,7 @@ async function autoGreet() {
   voice.unlockSpeech()
   // A link opened cold cannot play sound until the page is clicked. Say so at once with a Start button,
   // rather than sitting silent while the probe below times out.
-  if (!(await voice.tryUnlockAudio())) {
+  if (startForced.value || !(await voice.tryUnlockAudio())) {
     if (!disposed) offerStart()
     return
   }
@@ -614,13 +631,44 @@ async function autoGreet() {
 
 /** The browser is holding sound back until a click: show the Start button (see `audioBlocked`). */
 function offerStart() {
-  greetingStatus.value = 'held back by the browser — it plays after one click on the page'
+  greetingStatus.value = startForced.value
+    ? `waiting for the first click (“${startVariant.value}” asked for in the address)`
+    : 'held back by the browser — it plays after one click on the page'
   audioBlocked.value = true
-  // The first interaction *anywhere* speaks the greeting too, not only the button.
+  if (startVariant.value === 'muted') typeGreeting()
+  // The first interaction *anywhere* speaks the greeting too, not only the control on screen.
   armGestureGreeting()
   // And keep probing for a no-gesture autoplay grant (policy/flag/Safari
-  // setting/MEI) — the moment audio is permitted, greet with zero tap.
-  armGrantReprobe()
+  // setting/MEI) — the moment audio is permitted, greet with zero tap. Not when a variant was asked
+  // for by name: sound may already be allowed there, and the probe would greet at once.
+  if (!startForced.value) armGrantReprobe()
+}
+
+/** Muted start: write the greeting out a letter at a time (all at once under reduced motion). */
+function typeGreeting() {
+  const full = greetingText.value
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    typedGreeting.value = full
+    return
+  }
+  let shown = 0
+  typeTimer = setInterval(() => {
+    typedGreeting.value = full.slice(0, ++shown)
+    if (shown >= full.length) stopTyping()
+  }, 28)
+}
+
+function stopTyping() {
+  if (typeTimer) clearInterval(typeTimer)
+  typeTimer = null
+}
+
+/** "Type instead" on the Begin conversation screen: no greeting, straight to the message box. */
+function typeInstead() {
+  disarmGestureGreeting()
+  disarmGrantReprobe()
+  audioBlocked.value = false
+  nextTick(() => document.querySelector<HTMLInputElement>('.dvx__input')?.focus())
 }
 
 /** While blocked, watch for a later autoplay grant and auto-greet the moment audio is
@@ -682,7 +730,11 @@ function armGestureGreeting() {
   if (gestureGreetCleanup || disposed) return
   const handler = (e: Event) => {
     const target = e.target as HTMLElement | null
-    if (target?.closest('.dvx__composer, .dvx__start')) return // let typing / mic do their thing
+    // Keys used to move around or leave must not start it: someone on a keyboard has to be able to
+    // reach "Type instead" or the voice switch in silence.
+    if (e instanceof KeyboardEvent && ['Tab', 'Shift', 'Control', 'Alt', 'Meta', 'Escape'].includes(e.key)) return
+    // Typing, the mic, the first-open controls and the top bar have their own handlers.
+    if (target?.closest('.dvx__composer, .dvx__centermic, .dvx__start, .dvx__topbar')) return
     if (liveActive.value || messages.value.length > 0 || voice.muted.value) {
       disarmGestureGreeting()
       return
@@ -706,6 +758,7 @@ function disarmGestureGreeting() {
 async function startGreeting() {
   disarmGestureGreeting()
   disarmGrantReprobe() // one greeting only — a racing grant/statechange must not re-fire it
+  stopTyping()
   audioBlocked.value = false
   voice.unlockSpeech() // synchronously within the gesture, before any await
   await greetingReady() // cache-hit the pre-baked WAV instead of streaming
@@ -727,6 +780,8 @@ async function startGreeting() {
 function onCenterMic() {
   if (liveActive.value) {
     onLiveControl()
+  } else if (audioBlocked.value) {
+    void startGreeting()
   } else {
     startLive()
   }
@@ -877,10 +932,6 @@ function newChat() {
   pushToast({ title: 'New chat started' })
 }
 
-function openClassicUI() {
-  router.push({ name: 'DaVinciCopilot', params: { accountId: accountId.value } })
-}
-
 function exitExperience() {
   router.push({ name: 'DaVinciAI', params: { accountId: accountId.value } })
 }
@@ -1000,6 +1051,7 @@ onBeforeUnmount(() => {
   document.removeEventListener('keydown', onKeydown)
   if (greetProbe) clearTimeout(greetProbe)
   if (debugTimer) clearInterval(debugTimer)
+  stopTyping()
   disarmGestureGreeting()
   disarmGrantReprobe()
   liveActive.value = false
@@ -1037,7 +1089,7 @@ onBeforeUnmount(() => {
     </div>
 
     <!-- Orb backdrop -->
-    <div class="dvx__backdrop">
+    <div class="dvx__backdrop" :class="{ 'dvx__backdrop--asleep': startShowing && startVariant === 'orb' }">
       <DvOrbCanvas :state="voice.state.value" :audio-source="voice.getVoiceFrame" class="dvx__orb" />
     </div>
 
@@ -1068,26 +1120,17 @@ onBeforeUnmount(() => {
           <span class="dvx__btn-label">New chat</span>
         </v-btn>
         <v-btn
-          variant="outlined"
+          icon
           size="small"
-          rounded="pill"
-          :prepend-icon="voice.muted.value ? 'volume-x' : 'volume-2'"
+          variant="text"
           :aria-label="voice.muted.value ? 'Turn voice on' : 'Turn voice off'"
-          class="dvx__ghost-btn"
+          :aria-pressed="!voice.muted.value"
           @click="voice.setMuted(!voice.muted.value)"
         >
-          <span class="dvx__btn-label">{{ voice.muted.value ? 'Voice off' : 'Voice on' }}</span>
-        </v-btn>
-        <v-btn
-          variant="outlined"
-          size="small"
-          rounded="pill"
-          prepend-icon="panel-left"
-          aria-label="Open classic Da Vinci interface"
-          class="dvx__ghost-btn"
-          @click="openClassicUI"
-        >
-          <span class="dvx__btn-label">Classic UI</span>
+          <v-icon size="18">{{ voice.muted.value ? 'volume-x' : 'volume-2' }}</v-icon>
+          <v-tooltip activator="parent" location="bottom">
+            {{ voice.muted.value ? 'Voice is off' : 'Voice is on' }}
+          </v-tooltip>
         </v-btn>
         <v-btn icon size="small" variant="text" aria-label="Exit AI experience" @click="exitExperience">
           <v-icon size="18">x</v-icon>
@@ -1140,6 +1183,40 @@ onBeforeUnmount(() => {
           speech service.
         </p>
       </section>
+
+      <!-- First open, "Begin conversation": the browser's one click, asked for as joining a conversation. -->
+      <section
+        v-if="startShowing && startVariant === 'welcome'"
+        class="dvx__welcome dvx__start dv-glass-field"
+        aria-labelledby="dvx-start-title"
+      >
+        <div class="dvx__welcome-eyebrow">
+          <v-icon size="16">sparkles</v-icon>
+          Your AI guide to Maropost
+        </div>
+        <h1 id="dvx-start-title" class="dvx__welcome-title">Meet Da Vinci</h1>
+        <p class="dvx__welcome-copy">Ask about your store out loud and get answers, charts and drafts.</p>
+        <div class="d-flex flex-wrap align-center ga-3">
+          <v-btn variant="flat" size="large" prepend-icon="mic" class="dvx__welcome-primary" @click="startGreeting()">
+            Begin conversation
+          </v-btn>
+          <v-btn variant="text" size="large" @click="typeInstead()">Type instead</v-btn>
+        </div>
+        <p class="dvx__welcome-disclosure mt-3 mb-0">
+          You’re chatting with an AI assistant. If you use voice, audio is processed by your browser’s
+          speech service.
+        </p>
+      </section>
+
+      <!-- First open, "the orb is the button": nothing on the page but the orb, dimmed until the tap. -->
+      <button
+        v-else-if="startShowing && startVariant === 'orb'"
+        type="button"
+        class="dvx__start dvx__orbwake"
+        @click="startGreeting()"
+      >
+        Tap the orb to talk to Da Vinci
+      </button>
 
       <!-- Conversation thread -->
       <div v-if="!welcomeVisible && hasThread" class="dvx__thread-shell dv-glass-field">
@@ -1205,14 +1282,7 @@ onBeforeUnmount(() => {
       </div>
 
       <!-- Focal voice control — small mic centered in the orb -->
-      <div v-if="!welcomeVisible" class="dvx__stage">
-        <!-- A link opened cold: no browser lets a page speak before one click, so that click is asked for
-             plainly. The greeting plays from it. -->
-        <div v-if="audioBlocked && !busy" class="dvx__start">
-          <v-btn color="primary" size="large" prepend-icon="volume-2" @click="startGreeting()">Start Da Vinci</v-btn>
-          <p class="text-body-2 text-medium-emphasis mb-0">Your browser needs one click before Da Vinci can speak.</p>
-        </div>
-        <template v-else>
+      <div v-if="!welcomeVisible && !startCovers" class="dvx__stage">
         <button
           type="button"
           class="dvx__centermic"
@@ -1239,12 +1309,16 @@ onBeforeUnmount(() => {
           class="dvx__hint"
           :class="{
             'dvx__hint--live': liveActive && voice.state.value === 'listening',
-            'dvx__hint--caption': voice.state.value === 'speaking' && !!captionText,
+            'dvx__hint--caption': (voice.state.value === 'speaking' && !!captionText) || mutedStart,
           }"
         >
           {{ stageHint }}
         </p>
-        </template>
+        <!-- First open, "muted start": the page is already going; this only says why it is silent. -->
+        <button v-if="mutedStart" type="button" class="dvx__start dvx__live-btn" @click="startGreeting()">
+          <v-icon size="16">volume-x</v-icon>
+          Sound is off · tap anywhere
+        </button>
         <p v-if="voiceRecoveryMessage" class="dvx__mic-notice text-caption text-error mb-0" role="alert">
           {{ voiceRecoveryMessage }}
         </p>
@@ -1275,7 +1349,7 @@ onBeforeUnmount(() => {
       </div>
 
       <!-- Text composer (secondary) — type any time -->
-      <div v-if="!welcomeVisible" class="dvx__composer">
+      <div v-if="!welcomeVisible && !startCovers" class="dvx__composer">
         <form class="dvx__inputrow" @submit.prevent="onSend">
           <input
             v-model="inputText"
@@ -1358,11 +1432,32 @@ onBeforeUnmount(() => {
   inset: 0;
   z-index: 0;
   pointer-events: none;
+  transition: opacity var(--dur-slow) var(--ease);
 }
 
 .dvx__orb {
   width: 100%;
   height: 100%;
+}
+
+/* "The orb is the button": the orb waits dimmed, and comes up when it is tapped. */
+.dvx__backdrop--asleep {
+  opacity: 0.45;
+}
+
+/* The round target laid over the orb. Transparent: the orb behind it is the button's face. */
+.dvx__orbwake {
+  width: min(56vmin, 100%);
+  aspect-ratio: 1;
+  padding: var(--mp-space-24);
+  border: 0;
+  border-radius: var(--mp-radius-full);
+  background: transparent;
+  color: var(--dv-text-primary);
+  font: inherit;
+  font-size: var(--mp-fontSize-16);
+  font-weight: var(--mp-fontWeight-medium);
+  cursor: pointer;
 }
 
 /* ─── Top bar ─────────────────────────────────────────────────────────── */
@@ -1640,14 +1735,6 @@ onBeforeUnmount(() => {
   border: 1.5px solid var(--dv-accent);
   opacity: 0.5;
   animation: dvx-livepulse 1.6s ease-out infinite;
-}
-
-/* The Start step on a cold link, in the mic's place. */
-.dvx__start {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--mp-space-12);
 }
 
 .dvx__centermic--disabled {

@@ -13,12 +13,13 @@ The figures are what that account shows today; they move with the date.
      the system). Check it from the mic icon in the address bar. If that microphone is dead, Da Vinci moves
      to the system microphone after a few seconds and says so under the mic.
 2. Open the app, then open **Da Vinci › AI experience** from the app bar. Opening it from inside the
-   app is what lets the greeting play without a click. A pasted or shared link shows a **Start Da Vinci**
-   button instead of the mic: no browser lets a page speak before one click, and the greeting plays from it.
+   app is what lets the greeting play without a click. A pasted or shared link cannot speak until the
+   page is clicked once (a browser rule): the greeting is written under the mic with a "Sound is off ·
+   tap anywhere" chip, and the first click anywhere, on the mic or on a prompt, turns sound on.
 3. Allow the microphone when Chrome asks, once, before the prospect joins. A blocked mic shows a red
    line under the mic button; typing still works.
-4. Check the top bar says **Voice on**. That button shows the current state, so clicking it turns voice
-   OFF, and that is remembered between visits. When it is off, a line under the mic says so.
+4. Check the speaker icon at the top right is not crossed out. Clicking it turns voice OFF, and that is
+   remembered between visits. When it is off, a line under the mic says so.
 5. Click **New chat** so the thread is empty and no earlier campaign brief is open.
 6. Share the **tab with audio** (Chrome's "Share tab audio"), or the prospect hears nothing.
 7. Use a full-screen window. On a 13-inch laptop the thread is about 370px tall.
@@ -43,7 +44,8 @@ The four prompts under the message box ("Try saying") are safe to read out or cl
 
 ## If something goes wrong
 
-- **Nothing is heard.** Press **Start Da Vinci** if it is showing (the browser blocked sound until a click). Then check "Voice on".
+- **Nothing is heard.** Click anywhere on the page if the "Sound is off" chip is showing (the browser
+  blocked sound until a click). Then check the speaker icon at the top right is not crossed out.
 - **It does not hear you.** Read the line under the mic: it names a blocked or silent microphone, or says
   voice input keeps being cut off (another tab is listening — close it, then tap the mic). Type the
   question meanwhile; typing over a spoken reply interrupts it.
@@ -55,6 +57,15 @@ The four prompts under the message box ("Try saying") are safe to read out or cl
 - **It works for you but not for someone else.** Ask them to open the link with `?debug=1` on the end and
   send a screenshot. The box at the top left names their browser, the version they loaded, whether voice is
   switched off, what became of the greeting, and whether sound and the microphone are allowed.
+
+## First-open variants (being compared)
+
+How a cold link asks for its one click is still being chosen. Add one of these to the link to see each,
+whether or not the browser is holding sound back:
+
+- `?start=muted` — the default: greeting written out, "Sound is off · tap anywhere".
+- `?start=welcome` — a "Meet Da Vinci" card with **Begin conversation**.
+- `?start=orb` — only the orb, dimmed: "Tap the orb to talk to Da Vinci".
 
 ## Things to steer around
 
