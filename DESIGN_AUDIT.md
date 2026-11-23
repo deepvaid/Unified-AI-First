@@ -3056,6 +3056,11 @@ into it here. Merge decisions:
 - **"Voice off" was invisible.** The setting is remembered between visits and silences the greeting and
   every reply, and the top-right button's label ("Voice on") reads like something to press. A line under
   the mic now says voice is off and where to switch it on.
+- **A shared link was silent with no clear way forward.** No browser lets a page speak before one click.
+  The page waited 2.4 seconds, then showed "CLICK ANYWHERE TO BEGIN" in 11px capitals under the mic, and
+  not at all in a browser without voice input. It now checks at once whether sound can play, and when it
+  cannot, a primary **Start Da Vinci** button takes the mic's place with one line saying why; the
+  greeting plays from that click. The mic's `--invite` pulse state is removed (the button replaces it).
 - **Advisor:** temperature 0.7 → 0.3 (the same question gets the same answer); the written reply uses
   digits and symbols, the spoken one rounds for the ear.
 - Tab title: "Da vinci experience" → "Da Vinci experience" (`titleFromRouteName`).
