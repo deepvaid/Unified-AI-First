@@ -3061,6 +3061,17 @@ into it here. Merge decisions:
   not at all in a browser without voice input. It now checks at once whether sound can play, and when it
   cannot, a primary **Start Da Vinci** button takes the mic's place with one line saying why; the
   greeting plays from that click. The mic's `--invite` pulse state is removed (the button replaces it).
+- **Three first-open experiences to compare** (`?start=muted | welcome | orb` on the voice page; naming
+  one also shows it when sound is already allowed). "Start Da Vinci" read as a "click to start" step and
+  added a button to a page that already had many. *Muted start* (the default) keeps the page as it is,
+  writes the greeting out under the mic and adds one "Sound is off · tap anywhere" chip; the mic, a
+  prompt or a typed message also count as the click. *Begin conversation* reuses the onboarding welcome
+  card ("Meet Da Vinci", **Begin conversation**, **Type instead**). *The orb is the button* shows only the
+  dimmed orb and "Tap the orb to talk to Da Vinci". Tab, Escape and modifier keys no longer start the
+  greeting, and neither does the top bar. **Once one is chosen, delete the other two and the switch.**
+- **Voice page top bar.** *Breaking:* the **Classic UI** button is removed (Esc and × still exit). The
+  voice switch is an icon button (speaker / speaker crossed out) with a tooltip and `aria-pressed`,
+  where it was a labelled pill whose label ("Voice on") read like something to press.
 - **Advisor:** temperature 0.7 → 0.3 (the same question gets the same answer); the written reply uses
   digits and symbols, the spoken one rounds for the ear.
 - Tab title: "Da vinci experience" → "Da Vinci experience" (`titleFromRouteName`).
