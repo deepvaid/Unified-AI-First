@@ -17,6 +17,7 @@ import DvWidgetDraftCard from '@/components/copilot/DvWidgetDraftCard.vue'
 import { useDaVinciVoice, VoiceError } from '@/composables/useDaVinciVoice'
 import type { DvCardDescriptor, DvIntentResult, DvQuickReply } from '@/composables/useDaVinciIntents'
 import { geminiHistory, makeId } from '@/davinci/conversation'
+import { describeBrowser } from '@/davinci/browserName'
 import { isSignOff } from '@/davinci/phrases'
 import { useDaVinciResponder, type DvAssistantTurn, type DvFlowResponse } from '@/composables/useDaVinciResponder'
 import {
@@ -156,6 +157,33 @@ const greetingText = computed(() => `Hi ${profile.firstName} — welcome to Maro
 // Diagnostic overlay: append ?debug=1 to the URL to see voices / chosen voice
 // (local vs REMOTE) / last TTS lifecycle event / speaking state on the page itself.
 const showDebug = computed(() => route.query.debug === '1')
+// One screenshot of the box should answer "why is there no voice on this machine?": the browser and the
+// version it loaded, whether voice is on, what became of the greeting, whether sound and the microphone
+// are allowed. It used to report only the browser's backup voice, so a working session and a silent one
+// read the same.
+const greetingStatus = ref('not started')
+const debugStatic = {
+  browser: typeof navigator === 'undefined' ? '' : describeBrowser(navigator.userAgent),
+  // The entry script's hashed file name identifies the build a browser is holding on to.
+  version:
+    Array.from(document.querySelectorAll<HTMLScriptElement>('script[type="module"][src]'))
+      .map((script) => script.src)
+      .find((src) => src.includes('/assets/'))
+      ?.split('/')
+      .pop()
+      ?.replace(/\.js.*$/, '') ?? 'local development build',
+}
+const debugLive = ref({ window: '', sound: '', readyClips: 0, input: null as string | null, mic: 'checking…' })
+let debugTimer: ReturnType<typeof setInterval> | null = null
+async function refreshDebug() {
+  let mic = 'unknown (this browser does not say)'
+  try {
+    mic = (await navigator.permissions.query({ name: 'microphone' as PermissionName })).state
+  } catch {
+    /* Firefox and older Safari do not answer for the microphone */
+  }
+  debugLive.value = { window: `${window.innerWidth}×${window.innerHeight}`, ...voice.diagnostics(), mic }
+}
 // Short microcopy under the central mic — invites at rest, mirrors state when busy/live.
 const stageHint = computed(() => {
   if (liveActive.value) {
@@ -540,7 +568,11 @@ function listenAfterGreeting() {
 async function autoGreet() {
   if (autoStarted) return
   autoStarted = true
-  if (voice.muted.value) return // respect "Voice off"
+  if (voice.muted.value) {
+    greetingStatus.value = 'skipped — voice is switched off'
+    return // respect "Voice off"
+  }
+  greetingStatus.value = 'starting…'
   voice.unlockSpeech()
   await greetingReady() // let the pre-baked WAV land so the speak is a cache hit
   if (disposed) return
@@ -550,10 +582,13 @@ async function autoGreet() {
   voice.speak(greetingText.value, {
     onAudible: () => {
       becameAudible = true
+      greetingStatus.value = 'playing'
       captionText.value = greetingText.value // the words on screen too — a room may not hear them
     },
     onend: () => {
-      if (becameAudible) listenAfterGreeting() // only auto-listen if the greeting truly played
+      if (!becameAudible) return
+      greetingStatus.value = 'played'
+      listenAfterGreeting() // only auto-listen if the greeting truly played
     },
   })
   // If audio never actually began (onAudible / real utterance.onstart), the browser
@@ -566,6 +601,7 @@ async function autoGreet() {
     greetProbe = null
     if (disposed) return
     if (!becameAudible && !liveActive.value && messages.value.length === 0) {
+      greetingStatus.value = 'held back by the browser — it plays after one click on the page'
       voice.cancelSpeech()
       // The tap-to-start affordance is the focal mic — only offer it where the mic
       // is actually tappable (STT-capable browsers, i.e. Chrome/Edge).
@@ -670,7 +706,13 @@ async function startGreeting() {
   await voice.playChime('open') // comm channel connects
   if (disposed) return
   captionText.value = greetingText.value // the words on screen too — a room may not hear them
-  void voice.speak(greetingText.value, { onend: listenAfterGreeting })
+  greetingStatus.value = 'playing (after a click)'
+  void voice.speak(greetingText.value, {
+    onend: () => {
+      greetingStatus.value = 'played (after a click)'
+      listenAfterGreeting()
+    },
+  })
 }
 
 /** Focal mic tap. While live it interrupts/ends; at rest it either greets-then-listens
@@ -856,6 +898,10 @@ function onKeydown(e: KeyboardEvent) {
 
 onMounted(() => {
   document.addEventListener('keydown', onKeydown)
+  if (showDebug.value) {
+    void refreshDebug()
+    debugTimer = setInterval(() => void refreshDebug(), 1000)
+  }
   // Seed the greeting audio from the pre-baked static WAV so it plays INSTANTLY in
   // the natural Gemini voice on the first gesture (no ~5s synth wait). Falls back to
   // browser TTS if the asset is missing. The speak paths await this handle (capped).
@@ -948,6 +994,7 @@ onBeforeUnmount(() => {
   disposed = true // a reply in flight still lands in the shared thread, silently — see respond()
   document.removeEventListener('keydown', onKeydown)
   if (greetProbe) clearTimeout(greetProbe)
+  if (debugTimer) clearInterval(debugTimer)
   disarmGestureGreeting()
   disarmGrantReprobe()
   liveActive.value = false
@@ -961,11 +1008,27 @@ onBeforeUnmount(() => {
     <!-- Diagnostic overlay (append ?debug=1) — voice path visibility without DevTools -->
     <div v-if="showDebug" class="dvx__debug">
       <div><strong>Da Vinci voice debug</strong></div>
-      <div>state: {{ voice.state.value }}<span v-if="voice.muted.value"> · muted</span></div>
-      <div>voices: {{ voice.voiceDebug.value.voices }}</div>
-      <div>chosen: {{ voice.voiceDebug.value.chosen }}</div>
-      <div>last event: {{ voice.voiceDebug.value.lastEvent }}</div>
-      <div>audioBlocked: {{ audioBlocked }}</div>
+      <div>browser: {{ debugStatic.browser }} · window {{ debugLive.window }}</div>
+      <div>version: {{ debugStatic.version }}</div>
+      <div>voice: {{ voice.muted.value ? 'OFF — switch it on at the top right' : 'on' }}</div>
+      <div>greeting: {{ greetingStatus }}</div>
+      <div>sound: {{ debugLive.sound }}<span v-if="audioBlocked"> · waiting for a click</span></div>
+      <div>cloud voice: {{ voice.voiceDebug.value.cloud }} · {{ debugLive.readyClips }} clips ready</div>
+      <div>
+        backup voice: {{ voice.voiceDebug.value.chosen }} ({{ voice.voiceDebug.value.voices }} available) · last:
+        {{ voice.voiceDebug.value.lastEvent }}
+      </div>
+      <div>
+        microphone: permission {{ debugLive.mic }} · voice input
+        {{ voice.sttSupported ? 'supported' : 'NOT supported in this browser' }}
+      </div>
+      <div>
+        listening: {{ voice.voiceDebug.value.stt }}<span v-if="debugLive.input"> · open now: {{ debugLive.input }}</span>
+      </div>
+      <div>state: {{ voice.state.value }} · hands-free {{ liveActive ? 'on' : 'off' }} · {{ messages.length }} messages</div>
+      <div v-if="voiceRecoveryMessage || voice.micNotice.value">
+        notice: {{ voiceRecoveryMessage || voice.micNotice.value?.text }}
+      </div>
     </div>
 
     <!-- Orb backdrop -->
@@ -1184,6 +1247,11 @@ onBeforeUnmount(() => {
         >
           {{ voice.micNotice.value.text }}
         </p>
+        <!-- "Voice off" is remembered between visits and silences the greeting and every reply. Nothing on
+             the page said so, and the top-right button's label reads like something to press. -->
+        <p v-else-if="voice.muted.value" class="dvx__mic-notice text-caption text-medium-emphasis mb-0" role="status">
+          Voice is off, so Da Vinci won’t speak. Switch it on at the top right.
+        </p>
         <div v-if="liveActive" class="dvx__live-controls">
           <button v-if="voice.state.value === 'speaking'" type="button" class="dvx__live-btn" @click="voice.cancelSpeech()">
             <v-icon size="16">square</v-icon>
@@ -1247,18 +1315,20 @@ onBeforeUnmount(() => {
    debugging their state, so it shares the toast tier (the only documented
    layer above Vuetify's own modal z-index) rather than an undocumented
    literal — reference-only per tokens.json, this is a hand-rolled overlay. */
+/* Under the top bar (it used to cover the wordmark), wrapping within the viewport so every line
+   survives a screenshot on a small screen. */
 .dvx__debug {
   position: fixed;
-  top: 8px;
+  top: var(--mp-space-64);
   left: 8px;
   z-index: var(--mp-zIndex-toast);
+  max-width: min(560px, calc(100vw - var(--mp-space-16)));
   padding: 8px 10px;
   border-radius: 8px;
   background: rgba(0, 0, 0, 0.82);
   color: #d6fcd6;
   font: 12px/1.5 ui-monospace, 'SF Mono', SFMono-Regular, Menlo, monospace;
   pointer-events: none;
-  white-space: nowrap;
 }
 
 .dvx {

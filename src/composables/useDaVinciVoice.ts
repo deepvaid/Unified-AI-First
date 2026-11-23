@@ -159,6 +159,11 @@ function startListening(opts: StartListeningOptions): Promise<string> {
       recog.interimResults = true
       recog.continuous = false
       recog.maxAlternatives = 1
+      const heardOn = track ? inputName(track.label) : 'the browser’s microphone'
+      noteDebug({ stt: `starting on ${heardOn}` })
+      recog.onaudiostart = () => {
+        if (active === recog) noteDebug({ stt: `capturing audio on ${heardOn}` })
+      }
 
       recog.onresult = (e) => {
         if (active !== recog) return
@@ -173,12 +178,14 @@ function startListening(opts: StartListeningOptions): Promise<string> {
         interimRef.value = finalText || interim
         if (finalText) {
           micNoticeRef.value = null // heard: whatever was wrong with the microphone no longer is
+          noteDebug({ stt: `heard “${finalText.trim()}” (${heardOn})` })
           recog.stop()
           settle(() => resolve(finalText.trim()))
         }
       }
       recog.onerror = (e) => {
         if (active !== recog) return
+        noteDebug({ stt: `ended: ${e.error} (${heardOn})` })
         const code = mapRecognitionError(e.error)
         // Silence and aborts are normal outcomes, not failures
         if (code === 'no-speech' || e.error === 'aborted') {
@@ -273,8 +280,18 @@ export interface VoiceDebug {
   voices: number
   chosen: string
   lastEvent: string
+  /** What the cloud voice last did. `chosen` / `lastEvent` only track the browser's backup voice, so a
+   *  working session used to read as two dashes — and a failing one looked the same. */
+  cloud: string
+  /** What speech recognition last did, and on which microphone. */
+  stt: string
 }
-const debugRef = ref<VoiceDebug>({ voices: 0, chosen: '—', lastEvent: '—' })
+const debugRef = ref<VoiceDebug>({ voices: 0, chosen: '—', lastEvent: '—', cloud: '—', stt: '—' })
+const noteDebug = (patch: Partial<VoiceDebug>) => {
+  debugRef.value = { ...debugRef.value, ...patch }
+}
+/** Why the cloud voice last gave up, for the debug box. */
+let cloudWhy = ''
 
 /** Marojarvis voice-ranking port — prefers natural/neural voices. Pure, testable.
  *  localService is DOMINANT: a local voice always outranks any remote one. Chrome's
@@ -695,7 +712,11 @@ async function speakViaCloud(text: string, token: number, opts: SpeakOptions): P
 /** Stream a reply: schedule PCM chunks back-to-back on the AudioContext as they arrive from
  *  /api/tts (stream), so the voice starts at the first chunk (~1.8s) rather than the full clip. */
 async function playCloudStream(text: string, token: number, opts: SpeakOptions): Promise<CloudOutcome> {
-  if (!(await tryUnlockAudio()) || !playCtx) return 'unavailable' // autoplay-blocked → browser fallback
+  cloudWhy = ''
+  if (!(await tryUnlockAudio()) || !playCtx) {
+    cloudWhy = 'the browser is blocking sound until a click'
+    return 'unavailable' // autoplay-blocked → browser fallback
+  }
   const ctx = playCtx
 
   const controller = new AbortController()
@@ -717,6 +738,7 @@ async function playCloudStream(text: string, token: number, opts: SpeakOptions):
   } catch {
     clearTimeout(firstByteGuard)
     if (cloudAbort === controller) cloudAbort = null
+    cloudWhy = timedOut ? 'no answer from the voice service in 12s' : 'the voice service could not be reached'
     if (timedOut) return 'unavailable'
     return token !== speakToken || controller.signal.aborted ? 'cancelled' : 'unavailable'
   }
@@ -730,6 +752,7 @@ async function playCloudStream(text: string, token: number, opts: SpeakOptions):
   if (!resp.ok || !resp.body) {
     clearTimeout(firstByteGuard)
     if (cloudAbort === controller) cloudAbort = null
+    cloudWhy = `the voice service answered HTTP ${resp.status}`
     return 'unavailable' // 429/503 → browser fallback
   }
 
@@ -910,6 +933,7 @@ async function speak(text: string, opts: SpeakOptions = {}): Promise<void> {
   try {
     if (mutedRef.value) {
       // Visual-only (muted): no audio, but the orb still pulses
+      noteDebug({ cloud: 'silent — voice is switched off' })
       speakStartedAt = performance.now()
       speakEstimateMs = estimateSpeechMs(clean)
       await new Promise((r) => setTimeout(r, speakEstimateMs))
@@ -917,7 +941,26 @@ async function speak(text: string, opts: SpeakOptions = {}): Promise<void> {
     }
     // 1. Realistic Gemini cloud voice (cached → instant; first synth ~5s)
     if (cloudTtsEnabled) {
-      const outcome = await speakViaCloud(clean, token, opts)
+      const source = cloudAudioCache.has(clean) ? 'ready-made clip' : 'live from the voice service'
+      noteDebug({ cloud: `speaking (${source})…` })
+      cloudWhy = ''
+      // "Played" only means the clip was handed to the browser. Sound that a browser is holding back
+      // until a click never becomes audible, so the box says which it was.
+      let audible = false
+      const outcome = await speakViaCloud(clean, token, {
+        ...opts,
+        onAudible: () => {
+          audible = true
+          opts.onAudible?.()
+        },
+      })
+      noteDebug({
+        cloud:
+          outcome === 'cancelled' ? `interrupted (${source})`
+            : outcome === 'unavailable' ? `failed — ${cloudWhy || 'no audio came back'}; using the browser’s backup voice`
+              : audible ? `played (${source})`
+                : `no sound came out (${source}) — the browser is holding sound back until a click`,
+      })
       if (outcome === 'played' || outcome === 'cancelled') return
       // 'unavailable' → fall through to the browser voice for THIS utterance only
       // (keep cloud enabled so the next line still tries the natural voice).
@@ -1177,6 +1220,18 @@ function getVoiceFrame(): OrbAudioFrame {
   return frame
 }
 
+/**
+ * What the debug box cannot watch reactively (`?debug=1` on the voice page polls it): whether the browser
+ * lets sound play, how many replies are ready-made, and the microphone open right now.
+ */
+function diagnostics(): { sound: string; readyClips: number; input: string | null } {
+  return {
+    sound: !playCtx ? 'not started yet' : playCtx.state === 'running' ? 'allowed' : `held back by the browser (${playCtx.state})`,
+    readyClips: cloudAudioCache.size,
+    input: mediaStream ? inputName(mediaStream.getAudioTracks()[0]?.label) : null,
+  }
+}
+
 /** Full teardown for route leave: abort STT, cancel TTS, release the mic. */
 function disposeVoice() {
   abortListening()
@@ -1197,6 +1252,7 @@ export function useDaVinciVoice() {
     micNotice: computed(() => micNoticeRef.value),
     muted: computed(() => mutedRef.value),
     voiceDebug: computed(() => debugRef.value),
+    diagnostics,
     setMuted,
     startListening,
     stopListening,

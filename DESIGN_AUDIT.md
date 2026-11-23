@@ -3046,6 +3046,16 @@ into it here. Merge decisions:
     often. The loop now waits longer after each cut-short listen and stops after four with "Voice input
     keeps being cut off — it may be in use in another tab or window."
   - The disabled-mic tooltip said voice needs "Chrome or Edge"; Safari supports it too.
+- **Voice debug box** (`?debug=1` on the voice page). It reported only the browser's backup voice, so a
+  working session and a silent one both read as two dashes. It now names the browser and system
+  (`src/davinci/browserName.ts`), the build loaded, whether voice is off, what became of the greeting,
+  whether the browser lets sound play, what the cloud voice last did ("no sound came out" when sound is
+  held back until a click), microphone permission, and what recognition last did and on which microphone.
+  `VoiceDebug` gains `cloud` and `stt`; the voice composable gains `diagnostics()`. The box moved under
+  the top bar (it covered the wordmark) and wraps.
+- **"Voice off" was invisible.** The setting is remembered between visits and silences the greeting and
+  every reply, and the top-right button's label ("Voice on") reads like something to press. A line under
+  the mic now says voice is off and where to switch it on.
 - **Advisor:** temperature 0.7 → 0.3 (the same question gets the same answer); the written reply uses
   digits and symbols, the spoken one rounds for the ear.
 - Tab title: "Da vinci experience" → "Da Vinci experience" (`titleFromRouteName`).

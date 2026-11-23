@@ -16,7 +16,8 @@ The figures are what that account shows today; they move with the date.
    app is what lets the greeting play without a click. A pasted link needs one click anywhere first.
 3. Allow the microphone when Chrome asks, once, before the prospect joins. A blocked mic shows a red
    line under the mic button; typing still works.
-4. Check **Voice on** in the top bar. "Voice off" is remembered between visits and silences the greeting.
+4. Check the top bar says **Voice on**. That button shows the current state, so clicking it turns voice
+   OFF, and that is remembered between visits. When it is off, a line under the mic says so.
 5. Click **New chat** so the thread is empty and no earlier campaign brief is open.
 6. Share the **tab with audio** (Chrome's "Share tab audio"), or the prospect hears nothing.
 7. Use a full-screen window. On a 13-inch laptop the thread is about 370px tall.
@@ -50,6 +51,9 @@ The four prompts under the message box ("Try saying") are safe to read out or cl
   segments, campaigns, journeys and product descriptions work without it. Ask again in a moment.
 - **A campaign question keeps coming back.** Click **New chat**.
 - **Esc** leaves the voice workspace (in the message box it only clears the text).
+- **It works for you but not for someone else.** Ask them to open the link with `?debug=1` on the end and
+  send a screenshot. The box at the top left names their browser, the version they loaded, whether voice is
+  switched off, what became of the greeting, and whether sound and the microphone are allowed.
 
 ## Things to steer around
 
