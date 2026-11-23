@@ -10,10 +10,10 @@ It has no subscriptions. Nothing is charged and nothing leaves your browser.
 ## Before you start
 
 1. Open the store's page: **Sales channels › Torqline Auto Parts (demo)**.
-2. In its **Settings** tab, press **Restore original store**. This puts back the parts and their
-   fitment, campaigns, chatbot and search rules, reconnects Merchandise Cloud and forgets the
-   shopper's vehicle, so the demo starts the same way every time. Orders you placed before stay in
-   Commerce.
+2. In its **Settings** tab, press **Restore original store**, then **Restore store**. This puts
+   back the theme (its drafts and copies are removed), the parts and their fitment, campaigns,
+   chatbot and search rules, reconnects Merchandise Cloud and forgets the shopper's vehicle, so the
+   demo starts the same way every time. Orders you placed before stay in Commerce.
 3. Press **View store**. Keep the store in one tab and the admin in another.
 4. If the page was open while a new version went out, reload it once.
 
@@ -42,7 +42,7 @@ to a part, and the store follows at once.
 | 13 | Admin, Products | Open **Standard Battery**. In the **Vehicle fitment** card press **Add vehicle**, pick **Ford**, **F-150**, years **2015** to **2020**, press **Add vehicle**, then **Save** at the top of the page. Back in the store tab, open **Batteries**. | "The base F-150 without start-stop takes the standard battery too. Add it once, and the store says **Fits your 2019 Ford F-150**, in the tab that was already open. A vehicle that is already listed is refused." |
 | 14 | Admin, store › Campaigns | Show **Brake week**: its code, orders and revenue. Open its menu, **Announce by email**. | "A campaign is a message on the store, a code, and its results. One click writes the email to this store's customers." |
 | 15 | Admin, Merchandising | Open **Merchandising** for the store: **Synonyms**, **Redirects**, **Pinning**. | "The rules behind search: 'disc' finds the rotors, 'returns' opens the refund policy, and an oil change search leads with oil and filters." |
-| 16 | Admin, store | In the **Settings** tab press **Restore original store**. | "Everything back as it was for the next demo: the battery's fitment, the campaign, the rules. The shopper's vehicle is forgotten too." |
+| 16 | Admin, store › Themes | Open **Themes**. In **Theme library** press **Apply** on **Northfold**, read the list, press **Apply theme**. Press **Show store** in the message. Back on **Themes**, press **Restore original store**, then **Restore store**. | "A theme here is a whole store. Apply Northfold and this store sells clothing, with sizes and a size guide; orders stay. Restore puts everything back for the next demo: Torqline's look, the battery's fitment, the campaign, the rules. The shopper's vehicle is forgotten too." |
 
 ## More to show if they ask
 
@@ -69,8 +69,6 @@ These are not part of this demo. If asked, say so.
 
 - More than one vehicle at a time (a garage), or finding a vehicle by VIN or license plate.
 - Fit by engine, trim or drive: fitment is by year, make and model.
-- Theme edits are kept for the tab you make them in: a store tab opened before, or after a
-  reload, shows the store's theme as it was. Show theme edits in the editor.
 - Click & collect, subscriptions, reviews, battery core charges and "Notify me when it's back".
 - Search suggestions while typing, and spelling correction.
 - Email opens and clicks: a sent campaign reads "Sending".
@@ -78,6 +76,7 @@ These are not part of this demo. If asked, say so.
 ## If something looks wrong
 
 - **The numbers differ from this script:** someone used the demo before you. Restore the store.
+- **The store looks like Vitaheal or Northfold:** another theme is applied. Restore the store.
 - **No discount code field in the cart:** no campaign with a code is running. Restore the store.
 - **No search icon on the store:** Merchandise Cloud was disconnected. Restore the store, or
   connect it again in Merchandising.

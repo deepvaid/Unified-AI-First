@@ -162,31 +162,32 @@ test('the other stores are no demo store: no theme can be applied to them and no
   assert.deepEqual(keptKeys(), [])
 })
 
-test('Restore original store puts back what it always did, keeps this session\'s theme edits, and forgets what the browser kept', async () => {
+test('Restore original store puts back everything it started with, its theme included, and forgets what the browser kept', async () => {
   const app = startApp()
   const seeded = catalogueOf(app)
+  const seededLook = lookOf(app)
   await editVitaheal(app)
-  const editedLook = lookOf(app)
+  app.themes.duplicateTheme('theme-vitaheal')
+  await settle()
   assert.notDeepEqual(catalogueOf(app), seeded)
-  assert.ok(keptKeys().length >= 6, keptKeys().join())
+  assert.notDeepEqual(lookOf(app), seededLook)
+  assert.ok(keptKeys().includes('mp.vitaheal-demo.themes.v1'), keptKeys().join())
   assert.equal(app.demoStores.restore(VH), true)
   await settle()
   assert.deepEqual(catalogueOf(app), seeded)
-  // As before the registry: the theme, collections and menus are not kept in the browser and restore left them alone.
-  assert.deepEqual(lookOf(app), editedLook)
+  // Since the theme library (part 4): the theme goes back too, its copies and drafts removed, with the collections, pages and menus.
+  assert.deepEqual(lookOf(app), seededLook)
   assert.deepEqual(keptKeys().filter((key) => key.startsWith('mp.vitaheal-demo.')), [])
 })
 
 test('applying the theme a store started from is a restore, and records no applied theme', async () => {
   const app = startApp()
-  const seeded = catalogueOf(app)
+  const seeded = stateOf(app)
   await editVitaheal(app)
-  const editedLook = lookOf(app)
   assert.equal(app.demoStores.blueprintOf(VH)?.id, 'vitaheal')
   assert.equal(app.demoStores.apply(VH, 'vitaheal'), true)
   await settle()
-  assert.deepEqual(catalogueOf(app), seeded)
-  assert.deepEqual(lookOf(app), editedLook)
+  assert.deepEqual(stateOf(app), seeded)
   assert.deepEqual(keptKeys(), [])
 })
 
@@ -246,7 +247,8 @@ test('what a browser kept before the registry is read under the same keys, and n
   first.storeCampaigns.setEmailCampaign(first.storeCampaigns.campaignsForChannel(VH)[0]!.id, first.emails.createCampaign({ kind: 'email', name: 'Announcement', tag: STORE_CAMPAIGN_TAG, audienceSummary: 'Vitaheal customers' } as Parameters<typeof first.emails.createCampaign>[0]))
   await settle()
   const saved = Object.fromEntries(keptKeys().map((key) => [key, memory.get(key)!]))
-  assert.deepEqual(Object.keys(saved).filter((key) => key.startsWith('mp.vitaheal-demo.')), VITAHEAL_KEYS)
+  // The keys browsers already hold, and since the theme library (part 4) the theme's edits.
+  assert.deepEqual(Object.keys(saved).filter((key) => key.startsWith('mp.vitaheal-demo.')), [...VITAHEAL_KEYS, 'mp.vitaheal-demo.themes.v1'])
 
   const second = startApp(saved)
   await settle()
@@ -254,6 +256,7 @@ test('what a browser kept before the registry is read under the same keys, and n
   assert.equal(second.storeCampaigns.campaignsForChannel(VH)[0]?.name, 'Campaign (edited)')
   assert.equal(second.chatbot.getByChannel(VH)?.config.welcomeMessage, 'Hello (edited)')
   assert.equal(second.channels.channels.find((channel) => channel.id === VH)?.webStore?.merchandiseConnected, true)
+  assert.equal(second.themes.getTheme('theme-vitaheal')?.templates.home.find((section) => section.id === 'vitaheal-home-banner')?.hidden, true)
   assert.deepEqual(stateOf(second).plans, stateOf(first).plans)
   assert.deepEqual(stateOf(second).contracts, stateOf(first).contracts)
   assert.deepEqual(stateOf(second).searchRules, stateOf(first).searchRules)

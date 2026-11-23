@@ -2,7 +2,9 @@ import { parseDecimal, zero } from '@/maropay/money'
 import type { Money } from '@/maropay/money'
 import type { Product } from '@/stores/useCommerce'
 import { productHandle, toHandle } from '@/storefront/handles'
+import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import type { SalesChannel } from '@/stores/useSalesChannels'
+import { canApplyTheme } from '@/storefront/demoStores'
 import { catalogFor, hasPriceRange, isAvailable, lowestPrice, storesWithOwnCatalogue } from '@/storefront/catalog'
 import { formatStorePrice } from '@/storefront/price'
 import { roundForDisplay } from '@/subscriptions/plans'
@@ -13,7 +15,8 @@ import { roundForDisplay } from '@/subscriptions/plans'
 // down), listed in docs/rebuild/neelam-store/GAPS.md. The rule is catalogFor.
 
 export function storefrontProducts(products: Product[], channelId: string): Product[] {
-  return catalogFor(products, channelId)
+  // A store that can take a theme (a demo store, one made with Create sales channel) never borrows the shared catalogue.
+  return catalogFor(products, channelId, canApplyTheme(useSalesChannelsStore().channels.find((channel) => channel.id === channelId)))
 }
 
 // `/products/<name>-<id>`; the rule lives in src/storefront/handles.ts and is still exported from here.

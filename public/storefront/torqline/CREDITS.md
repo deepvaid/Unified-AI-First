@@ -96,3 +96,5 @@ photo turns up.
 - **`tire-gauge-1.jpg`** shows an analogue dial gauge on a red car body; the product is a digital
   gauge. No free photo of a digital tire gauge turned up.
 - **`hero.jpg`**: the pickup on the dirt road is too far away for any lettering on it to be read.
+
+`theme.jpg` is not a photo: it is a screenshot of this store's home page, taken by `npm run themes:thumbnails` (`scripts/theme-thumbnails.mjs`) for the store's card in the theme library.

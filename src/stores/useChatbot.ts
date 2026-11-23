@@ -394,13 +394,28 @@ export const useChatbotStore = defineStore('chatbot', () => {
     demoBotIds.set(bot.channelId!, bot.id)
     pastChats.set(bot.id, historyFor(bot.channelId!, localDateKey(Date.now()))?.conversations ?? [])
   }
+  /** A store back to blank (restored, or deleted) loses the chatbot its theme gave it, with its chats and what this browser kept of them. */
+  function removeDemoBot(channelId: string, bot: Chatbot): void {
+    keptChatbot.clear(channelId)
+    keptChats.clear(channelId)
+    liveChats.value = liveChats.value.filter((chat) => chat.chatbotId !== bot.id)
+    chatbots.value = chatbots.value.filter((entry) => entry.id !== bot.id)
+    demoBotIds.delete(channelId)
+    pastChats.delete(bot.id)
+    keptChatbot.adopt(channelId)
+    keptChats.adopt(channelId)
+  }
   const seededFor = (channelId: string): KeptChatbot => seededChatbot(demoChannelRecord(channelId)!)
   const keptChatbot = keepPerChannel<KeptChatbot>('chatbot', 1, isKeptChatbot, {
+    // A store back to blank has no chatbot: nothing to save, nothing to take.
     read: (channelId) => {
-      const bot = demoBot(channelId)!
-      return { status: bot.status, config: bot.config }
+      const bot = demoBot(channelId)
+      return (bot ? { status: bot.status, config: bot.config } : null) as KeptChatbot
     },
-    take: (channelId, saved) => { Object.assign(demoBot(channelId)!, saved ?? seededFor(channelId)) },
+    take: (channelId, saved) => {
+      const bot = demoBot(channelId)
+      if (bot) Object.assign(bot, saved ?? seededFor(channelId))
+    },
   })
 
   // Chats shoppers had with a demo store's chatbots on its store, newest first.
@@ -453,9 +468,13 @@ export const useChatbotStore = defineStore('chatbot', () => {
     if (!channel || !canApplyTheme(channel)) return
     // A store not kept yet comes in with what it saved: its chats, and whether its chatbot is on.
     attachStore(channel)
-    if (!demoBot(channelId)) {
-      // A store that started blank has no chatbot until it takes a theme.
-      if (!demoSnapshotOf(channel)) return
+    const existing = demoBot(channelId)
+    // A store that started blank has no chatbot until it takes a theme, and none again once it is blank.
+    if (!demoSnapshotOf(channel)) {
+      if (existing) removeDemoBot(channelId, existing)
+      return
+    }
+    if (!existing) {
       const added = demoChatbot(channel)
       chatbots.value.unshift(added)
       registerDemoBot(added)

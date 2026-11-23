@@ -28,7 +28,7 @@ export type DemoStoreId = 'vitaheal' | 'northfold' | 'torqline'
 export interface StoreBlueprintRef {
   /** The blueprint the store started from; null for a store that started blank. */
   original: DemoStoreId | null
-  /** The store's own number in the id blocks (src/storefront/demoStores/install.ts). Unique per store, 1-99. */
+  /** The store's own number in the id blocks (src/storefront/demoStores/install.ts). Unique per store: 2-9 a demo store's own channel, 10-99 a store made with Create sales channel. */
   slot: number
 }
 
@@ -179,7 +179,7 @@ export interface ThemeCard {
 
 export interface DemoStoreBlueprint {
   id: DemoStoreId
-  /** Its home channel's slot (the home channel carries it in webStore.blueprint), and its digit in installed ids. 1-9. */
+  /** Its home channel's slot (the home channel carries it in webStore.blueprint), and its digit in installed ids. 2-9. */
   slot: number
   /** Bumped when the seed changes, so a browser that saved data from the old one starts again. */
   seedVersion: number

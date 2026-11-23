@@ -7,7 +7,7 @@ import { useCommerceStore } from '@/stores/useCommerce'
 import { useMerchandisingStore } from '@/stores/useMerchandising'
 import { useProductExtrasStore } from '@/stores/useProductExtras'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
-import type { SalesChannel } from '@/stores/useSalesChannels'
+import type { CreateSalesChannelPayload, SalesChannel } from '@/stores/useSalesChannels'
 import { useSizeChartsStore } from '@/stores/useSizeCharts'
 import { useStoreCampaignsStore } from '@/stores/useStoreCampaigns'
 import { useStoreContentStore } from '@/stores/useStoreContent'
@@ -18,11 +18,14 @@ import { useStorefrontCartStore } from '@/stores/useStorefrontCart'
 import { useStorefrontVehicleStore } from '@/stores/useStorefrontVehicle'
 import { useSubscriptionsStore } from '@/stores/useSubscriptions'
 import { localDateKey } from '@/maropay/model'
-import { canApplyTheme, demoStoreFor } from '@/storefront/demoStores'
+import { canApplyTheme, demoStoreFor, homeBlueprintOf } from '@/storefront/demoStores'
 import type { DemoStoreBlueprint, DemoStoreId, StoreSnapshot } from '@/storefront/demoStores'
 import {
-  clearInstalled, currentBlueprintId, installedSlot, isSeedStale, readInstalled, snapshotFor, writeInstalled,
+  clearInstalled, currentBlueprintId, historyFor, installedSlot, isSeedStale, readInstalled, snapshotFor, writeInstalled,
 } from '@/storefront/demoStores/install'
+import { applySummary, restoreMessage, restoreParts, restoreSummary, themeFacts } from '@/storefront/demoStores/summary'
+import type { RestoreFacts } from '@/storefront/demoStores/summary'
+import { CREATED_STORES_KEY, readCreatedStores, storeKeys } from '@/storefront/createdStores'
 
 // Applying a theme from the library to a store, and putting a store back as it
 // started ("Restore original store"). A demo store is a blueprint
@@ -64,22 +67,17 @@ export const useDemoStores = defineStore('demoStores', () => {
     return canApplyTheme(channelOf(channelId))
   }
 
-  /**
-   * Every part of the store follows the blueprint it runs now. History stays.
-   * Without `look`, the theme, collections, pages and menus are left as they are:
-   * a restore of a store that kept its own theme never touched them (they are not
-   * kept in the browser, so a reload puts them back anyway).
-   */
-  function reseed(channelId: string, look = true): void {
+  /** Every part of the store follows the blueprint it runs now. History stays. */
+  function reseed(channelId: string): void {
     useSalesChannelsStore().reseedDemo(channelId)
     useCommerceStore().reseedDemo(channelId)
     // Kept in the browser like the products, so a restore always puts them back.
     useSizeChartsStore().reseedDemo(channelId)
-    if (look) useProductExtrasStore().reseedDemo(channelId)
-    if (look) useStoreThemesStore().reseedDemo(channelId)
+    useProductExtrasStore().reseedDemo(channelId)
+    useStoreThemesStore().reseedDemo(channelId)
     useStorefrontStore().reseedDemo(channelId)
-    if (look) useStoreContentStore().reseedDemo(channelId)
-    if (look) useStoreNavigationStore().reseedDemo(channelId)
+    useStoreContentStore().reseedDemo(channelId)
+    useStoreNavigationStore().reseedDemo(channelId)
     useStoreCampaignsStore().reseedDemo(channelId)
     useMerchandisingStore().reseedDemo(channelId)
     useChatbotStore().reseedDemo(channelId)
@@ -112,9 +110,10 @@ export const useDemoStores = defineStore('demoStores', () => {
     return true
   }
 
-  /** What only a restore puts back: the store's subscribers, chats, campaign emails and Merchandise Cloud connection as they were. */
+  /** What only a restore puts back: the store's subscribers, chats, campaign emails and Merchandise Cloud connection as they were, and its theme without drafts. */
   function restoreHistory(channelId: string): void {
     useSalesChannelsStore().restoreDemoHistory(channelId)
+    useStoreThemesStore().restoreDemoHistory(channelId)
     useChatbotStore().restoreDemoHistory(channelId)
     useSubscriptionsStore().restoreDemoHistory(channelId)
     useCampaignsStore().restoreDemoHistory(channelId)
@@ -135,31 +134,138 @@ export const useDemoStores = defineStore('demoStores', () => {
     const recorded = writeInstalled(channelId, { blueprintId, seedVersion: demoStoreFor(blueprintId).seedVersion, appliedAt: new Date().toISOString() }, browserStorage())
     if (!recorded) return false
     reseed(channelId)
-    useStorefrontCartStore().clear(channelId)
+    useStorefrontCartStore().storeChanged(channelId)
     useStorefrontVehicleStore().clearVehicle(channelId)
     return true
   }
 
   /**
-   * Puts the store back as it started: its products, plans, campaigns, search
-   * rules and chatbot as seeded, with its subscribers, chats, campaign emails and
-   * Merchandise Cloud connection as they were. A store running another theme also
-   * gets its own theme, collections, pages and menus back (the confirm dialog says
-   * so); one that kept its own theme keeps this session's edits to them, as restore
-   * always did. Orders stay; the cart is emptied and the vehicle forgotten. False when the store cannot take a theme.
+   * Puts the store back as it started: its theme (drafts and copies removed),
+   * collections, pages, menus, products, plans, campaigns, search rules and chatbot
+   * as seeded, with its subscribers, chats, campaign emails and Merchandise Cloud
+   * connection as they were. Orders stay; the cart is emptied and the vehicle
+   * forgotten. False when the store cannot take a theme.
    */
   function restore(channelId: string): boolean {
     const channel = channelOf(channelId)
     if (!channel || !canApplyTheme(channel)) return false
-    const storage = browserStorage()
-    const ranAnother = currentBlueprintId(channel, storage) !== channel.webStore!.blueprint!.original
-    clearInstalled(channelId, storage)
-    reseed(channelId, ranAnother)
+    clearInstalled(channelId, browserStorage())
+    reseed(channelId)
     restoreHistory(channelId)
     markSeeded(channel)
-    useStorefrontCartStore().clear(channelId)
+    useStorefrontCartStore().storeChanged(channelId)
     useStorefrontVehicleStore().clearVehicle(channelId)
     return true
+  }
+
+  /** A store made with Create sales channel (kept in this browser): the only kind that can be deleted. */
+  function isCreated(channelId: string): boolean {
+    void revision.value
+    return salesChannels.isCreatedStore(channelId)
+  }
+
+  /**
+   * Makes a sales channel. A web store with Store Builder switched on can take a
+   * theme, is kept in this browser, and starts as a copy of `payload.theme` (or blank):
+   * every part is seeded here, so it is ready when the page it opens on reads it.
+   */
+  function create(accountId: string, payload: CreateSalesChannelPayload): SalesChannel {
+    const channel = salesChannels.createChannel(accountId, payload)
+    attach(channel.id)
+    revision.value++
+    return salesChannels.channels.find((c) => c.id === channel.id) ?? channel
+  }
+
+  /**
+   * Deletes a store made here: every part of it is emptied, everything this browser
+   * kept for it is removed, and it leaves the list. Orders placed on it stay. False
+   * for any other store.
+   */
+  function remove(channelId: string): boolean {
+    const channel = channelOf(channelId)
+    if (!channel || !salesChannels.isCreatedStore(channelId)) return false
+    empty(channel)
+    const storage = browserStorage()
+    for (const key of storeKeys(storage, channelId)) storage?.removeItem(key)
+    salesChannels.deleteCreatedStore(channelId)
+    revision.value++
+    return true
+  }
+
+  /** Every part of a created store empties itself, as if it ran no theme: no theme, products, pages, plans or rules. */
+  function empty(channel: SalesChannel): void {
+    const webStore = channel.webStore!
+    channel.webStore = { ...webStore, blueprint: { ...webStore.blueprint!, original: null } }
+    clearInstalled(channel.id, browserStorage())
+    reseed(channel.id)
+    restoreHistory(channel.id)
+    useStorefrontCartStore().clear(channel.id)
+    useStorefrontVehicleStore().clearVehicle(channel.id)
+  }
+
+  /** The store as Apply and Restore count it: what it sells now. */
+  function storeFacts(channel: SalesChannel) {
+    const subscriptions = useSubscriptionsStore()
+    const running = blueprintOf(channel.id)
+    // Plans the theme applied now brought: the next Apply removes them rather than pausing them.
+    const applied = running && running.id !== channel.webStore?.blueprint?.original ? running : undefined
+    const brought = new Set(applied ? snapshotFor(channel, applied.id, today()).plans.map((plan) => plan.id) : [])
+    const plans = subscriptions.plans.filter((plan) => plan.channelId === channel.id)
+    return {
+      name: channel.name,
+      blank: !running,
+      sizeCharts: useSizeChartsStore().chartsForChannel(channel.id).length,
+      products: useCommerceStore().products.filter((product) => product.channelIds?.includes(channel.id)).length,
+      currency: channel.webStore?.currency ?? 'USD',
+      activePlans: plans.filter((plan) => !brought.has(plan.id) && plan.status !== 'Paused').length,
+      runs: applied?.card.name ?? null,
+      broughtPlans: plans.filter((plan) => brought.has(plan.id)).length,
+      searchConnected: !!channel.webStore?.merchandiseConnected,
+      subscribers: subscriptions.contracts.filter((contract) => contract.channelId === channel.id).length,
+    }
+  }
+
+  /** What applying `blueprintId` to the store does, one line each, for its confirm dialog. Empty when it cannot. */
+  function applyPreview(channelId: string, blueprintId: DemoStoreId): string[] {
+    const channel = channelOf(channelId)
+    if (!channel || !canApplyTheme(channel)) return []
+    const blueprint = demoStoreFor(blueprintId)
+    return applySummary(storeFacts(channel), themeFacts(blueprint.card.name, snapshotFor(channel, blueprintId, today())))
+  }
+
+  /** What a restore puts back, counted from the seed of the theme the store started with; null when it cannot be restored. */
+  function restoreFacts(channelId: string): RestoreFacts | null {
+    void revision.value
+    const channel = channelOf(channelId)
+    if (!channel || !canApplyTheme(channel)) return null
+    const original = channel.webStore!.blueprint!.original
+    const running = blueprintOf(channelId)?.id ?? null
+    const seed = original ? snapshotFor(channel, original, today()) : null
+    // What the store priced in before: its own theme's market, or (blank) what it was made with, which is none or the account's.
+    const before = seed ? seed.market.currency : salesChannels.madeWith(channelId)?.webStore?.currency ?? 'USD'
+    const now = channel.webStore?.currency ?? 'USD'
+    const appliedPlans = running && running !== original ? snapshotFor(channel, running, today()).plans.length : 0
+    const started = salesChannels.startedConnected(channelId)
+    const connected = !!channel.webStore?.merchandiseConnected
+    return {
+      original: original ? demoStoreFor(original).card.name : null,
+      applied: running && running !== original ? demoStoreFor(running).card.name : null,
+      plans: seed?.plans.length ?? 0,
+      subscribers: historyFor(channelId, today())?.subscriptions.length ?? 0,
+      campaigns: seed?.campaigns.length ?? 0,
+      sizeCharts: seed?.sizeCharts.length ?? 0,
+      announcesByEmail: homeBlueprintOf(channelId)?.admin.audienceListId !== undefined,
+      ...(before !== now ? { pricesBackTo: before } : {}),
+      ...(appliedPlans ? { appliedPlans } : {}),
+      ...(started !== connected ? { connectionBack: started ? 'connected' as const : 'disconnected' as const } : {}),
+    }
+  }
+
+  /** What restoring the store does (its confirm dialog), and what it keeps in this browser (the restore card and toast). Null when it cannot be restored. */
+  function restorePreview(channelId: string): { message: string; lines: string[]; parts: { card: string } } | null {
+    const facts = restoreFacts(channelId)
+    const channel = channelOf(channelId)
+    return facts && channel ? { message: restoreMessage(channel.name, facts), lines: restoreSummary(facts), parts: restoreParts(facts) } : null
   }
 
   /**
@@ -185,8 +291,12 @@ export const useDemoStores = defineStore('demoStores', () => {
       markSeeded(channel)
     }
   }
-  // After setup, so the stores it reseeds are not set up from inside this one.
-  queueMicrotask(reseedStale)
+  // After setup, so the stores it seeds are not set up from inside this one: the
+  // stores made here come in first, then any store whose seed is out of date is seeded again.
+  queueMicrotask(() => {
+    for (const channel of salesChannels.channels) if (salesChannels.isCreatedStore(channel.id)) attach(channel.id)
+    reseedStale()
+  })
 
   // Another tab applied a theme or restored a store. Each part also follows its own
   // slot, but a part with nothing saved fires no event when it is cleared. A removed
@@ -194,14 +304,23 @@ export const useDemoStores = defineStore('demoStores', () => {
   // save its own state (a chatbot it had switched off, say) over the restored one.
   if (typeof window !== 'undefined') {
     window.addEventListener('storage', (event) => {
+      // Another tab made or deleted a store: the list follows, and a new store comes in.
+      if (event.key === CREATED_STORES_KEY) {
+        const listed = new Set(readCreatedStores(browserStorage()).map((channel) => channel.id))
+        // A deleted store empties here too before it leaves the list, or its products would linger until a reload.
+        for (const channel of salesChannels.channels) if (salesChannels.isCreatedStore(channel.id) && !listed.has(channel.id)) empty(channel)
+        for (const id of salesChannels.syncCreatedStores().added) attach(id)
+        revision.value++
+        return
+      }
       const channel = salesChannels.channels.find((c) => canApplyTheme(c) && installedSlot(c.id, browserStorage()).key === event.key)
       if (!channel) return
       reseed(channel.id)
       if (event.newValue === null) restoreHistory(channel.id)
-      useStorefrontCartStore().clear(channel.id)
+      useStorefrontCartStore().storeChanged(channel.id)
       useStorefrontVehicleStore().clearVehicle(channel.id)
     })
   }
 
-  return { blueprintOf, snapshotOf, canApply, attach, apply, restore }
+  return { blueprintOf, snapshotOf, canApply, attach, apply, restore, isCreated, create, remove, applyPreview, restoreFacts, restorePreview }
 })

@@ -152,7 +152,7 @@ function productOfLine(line: OrderLineItem) {
 
 /** "Size M · Sand", or "Front · Part # TQ-BRK-4471 · Fits 2019 Ford F-150" on a store that sells parts. */
 function detailOfLine(line: OrderLineItem): string {
-  return lineDetailText(productOfLine(line), line, { partNumber: storefront.sellsParts.value })
+  return lineDetailText(productOfLine(line), line, { partNumber: storefront.sellsParts.value || !!line.vehicle })
 }
 
 function iconOfLine(line: OrderLineItem): string {

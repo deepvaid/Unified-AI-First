@@ -1,6 +1,7 @@
 import { onUnmounted } from 'vue'
 import type { Decorator, Meta, StoryObj } from '@storybook/vue3'
 import { isolateStorage } from '@/stories/decorators'
+import { useCommerceStore } from '@/stores/useCommerce'
 import { useStorefrontCartStore } from '@/stores/useStorefrontCart'
 import type { CartLine } from '@/stores/useStorefrontCart'
 import { vehicleLabel } from '@/storefront/fitment'
@@ -23,6 +24,32 @@ function withCart(channelId: string, lines: () => CartLine[]): Decorator {
       onUnmounted(() => {
         if (before) cart.carts[channelId] = before
         else delete cart.carts[channelId]
+      })
+      return {}
+    },
+    template: '<story />',
+  })
+}
+
+/**
+ * The cart as a store change leaves it: `lines` were in it, then a theme was applied
+ * (or the store restored), so it was emptied and remembers what went. Put back as it
+ * was, code included, when the story unmounts.
+ */
+function withStoreChanged(channelId: string, lines: () => CartLine[]): Decorator {
+  return (story) => ({
+    components: { story },
+    setup() {
+      const cart = useStorefrontCartStore()
+      const before = cart.carts[channelId]
+      const code = cart.codeFor(channelId)
+      cart.carts[channelId] = lines()
+      cart.storeChanged(channelId)
+      onUnmounted(() => {
+        cart.dismissNotice(channelId)
+        if (before) cart.carts[channelId] = before
+        else delete cart.carts[channelId]
+        cart.setCode(channelId, code)
       })
       return {}
     },
@@ -65,6 +92,13 @@ Under each line's name, what was bought, from \`lineDetailText\` (src/storefront
 
 The same words are on the checkout summary, the order page and the account's orders.
 
+### The store changed
+Applying a theme or restoring the store replaces every product, so the cart is emptied
+(\`storeChanged\` on the cart store). Above the empty cart a polite notice (\`role="status"\`) says
+why and names what went, three at most and then "and N more"; **Got it** dismisses it
+(\`dismissNotice\`) and moves focus to the heading. It draws with the theme's surface and ink,
+on the classic and the sections drawing alike.
+
 Out of system on purpose (P4-8): it draws with the store's theme variables, not Marobase tokens.
         `,
       },
@@ -101,6 +135,22 @@ export const Clothing: Story = {
       ]
     }),
     withStorefront(),
+    isolateStorage,
+  ],
+}
+
+/**
+ * Vitaheal after another theme was applied: the cart was emptied, and the notice names the
+ * four products that went. Its own store, so the other stories' carts on the docs page stay full.
+ */
+export const StoreChanged: Story = {
+  decorators: [
+    withStoreChanged('vitaheal-demo', () => ['Unwind', 'Clear Focus', 'Daily NAD+', 'Nasal Strips'].map((name) => {
+      const product = useCommerceStore().products.find((p) => p.name === name && p.channelIds?.includes('vitaheal-demo'))
+      if (!product) throw new Error(`No Vitaheal product "${name}"`)
+      return { productId: product.id, name: product.name, sku: product.sku, price: product.price, qty: 1 }
+    })),
+    withStorefront({ channelId: 'vitaheal-demo' }),
     isolateStorage,
   ],
 }

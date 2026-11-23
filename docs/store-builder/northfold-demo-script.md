@@ -9,9 +9,10 @@ subscriptions. Nothing is charged and nothing leaves your browser.
 ## Before you start
 
 1. Open the store's page: **Sales channels › Northfold (demo)**.
-2. In its **Settings** tab, press **Restore original store**. This puts back the products, size
-   charts, campaigns, chatbot and search rules, and reconnects Merchandise Cloud, so the demo
-   starts the same way every time. Orders you placed before stay in Commerce.
+2. In its **Settings** tab, press **Restore original store**, then **Restore store**. This puts
+   back the theme (its drafts and copies are removed), products, size charts, campaigns, chatbot
+   and search rules, and reconnects Merchandise Cloud, so the demo starts the same way every time.
+   Orders you placed before stay in Commerce.
 3. Press **View store**. Keep the store in one tab and the admin in another.
 4. If the page was open while a new version went out, reload it once.
 
@@ -41,6 +42,7 @@ follows at once.
 | 14 | Admin, store › Campaigns | Show **Fall layers**: its code, orders and revenue. Open its menu, **Announce by email**. | "A campaign is a message on the store, a code, and its results. One click writes the email to this store's customers." |
 | 15 | Admin, Merchandising | Open **Merchandising** for the store: **Synonyms**, **Redirects**, **Pinning**. | "The rules behind step 9. The merchant changes them here, and search follows at once." |
 | 16 | Admin, theme | On the store's page press **Edit theme**. In **Icon row**, select **Free shipping** and change its title. | "Every section is editable, and the page redraws as you type." |
+| 17 | Admin, store › Themes | Open **Themes**. In **Theme library** press **Apply** on **Vitaheal**, read the list, press **Apply theme**. Press **Show store** in the message. Back on **Themes**, press **Restore original store**, then **Restore store**. | "A theme here is a whole store. Apply Vitaheal and this store sells supplements, in kronor, with Vitaheal's two subscription plans; orders stay. Restore puts Northfold back as it started: its look, products, size charts and campaigns." |
 
 ## More to show if they ask
 
@@ -59,8 +61,6 @@ follows at once.
 
 These are not part of this demo. If asked, say so.
 
-- Theme edits are kept for the tab you make them in: a store tab opened before, or after a
-  reload, shows the store's theme as it was. Show theme edits in the editor.
 - The editor's **Styles** tab does not change the button, surface or divider colours yet.
 - Click & collect, subscriptions, reviews and "Notify me when it's back".
 - Hover image swap on product cards, and a sticky buy bar on phones.
@@ -70,6 +70,7 @@ These are not part of this demo. If asked, say so.
 ## If something looks wrong
 
 - **The numbers differ from this script:** someone used the demo before you. Restore the store.
+- **The store looks like Vitaheal or Torqline:** another theme is applied. Restore the store.
 - **No discount code field in the cart:** no campaign with a code is running. Restore the store.
 - **No search icon on the store:** Merchandise Cloud was disconnected. Restore the store, or
   connect it again in Merchandising.

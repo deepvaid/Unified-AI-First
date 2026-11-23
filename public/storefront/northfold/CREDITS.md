@@ -67,3 +67,5 @@ same name (product photos are 1200 × 1600, tiles 900 × 1200, story images 1200
 | `relaxed-wool-trouser-2.jpg` | Relaxed Wool Trouser: second view | @enginakyurt | https://unsplash.com/photos/a-close-up-of-a-black-and-grey-background-DUPI0aUFKYg |
 | `ribbed-merino-beanie-1.jpg` | Ribbed Merino Beanie: main | @irishappens | https://unsplash.com/photos/man-in-blue-crew-neck-shirt-wearing-gray-knit-cap-z3L9qMijd9k |
 | `ribbed-merino-beanie-2.jpg` | Ribbed Merino Beanie: second view | @haddeztv | https://unsplash.com/photos/a-young-man-with-a-beard-wearing-a-beanie-8TQ9NW1Ztqg |
+
+`theme.jpg` is not a photo: it is a screenshot of this store's home page, taken by `npm run themes:thumbnails` (`scripts/theme-thumbnails.mjs`) for the store's card in the theme library.

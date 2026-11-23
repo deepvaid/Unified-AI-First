@@ -754,7 +754,7 @@ export const useMerchandisingStore = defineStore('merchandising', () => {
       const amount = parseDecimal(decimal, store?.currency ?? 'USD')
       return amount ? formatStorePrice(roundForDisplay(amount), store?.locale) : undefined
     }
-    return catalogFor(commerce.products, channelId).map((product, index, all) => {
+    return catalogFor(commerce.products, channelId, canApplyTheme(salesChannelsStore.channels.find((c) => c.id === channelId))).map((product, index, all) => {
       const price = lowestPrice(product)
       const compareAt = Number.parseFloat(product.compareAtPrice) > Number.parseFloat(price) ? product.compareAtPrice : ''
       return {
@@ -826,7 +826,7 @@ export const useMerchandisingStore = defineStore('merchandising', () => {
     // Its sync is the one that ran when the store was connected.
     const at = salesChannelsStore.channels.find((c) => c.id === activeChannelId.value)?.merchandising?.lastSyncAt
     const when = at ? new Date(at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'Not synced yet'
-    return { channelId: activeChannelId.value, catalogCount: catalogFor(commerce.products, activeChannelId.value).length, lastFullSync: when, lastDeltaSync: when, feedStatus: 'healthy' }
+    return { channelId: activeChannelId.value, catalogCount: catalogFor(commerce.products, activeChannelId.value, canApplyTheme(salesChannelsStore.channels.find((c) => c.id === activeChannelId.value))).length, lastFullSync: when, lastDeltaSync: when, feedStatus: 'healthy' }
   })
 
   // ── What a connected store's storefront reads ─────────────────────────

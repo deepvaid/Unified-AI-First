@@ -13,7 +13,10 @@ import {
   type ThemeStyles,
 } from './themeBuilderData'
 import { SEEDED_DEMO_CHANNELS, demoChannelRecord, demoSnapshotOf, replaceStoreRows, useSalesChannelsStore } from './useSalesChannels'
-import { canApplyTheme } from '@/storefront/demoStores'
+import { canApplyTheme, homeBlueprintOf } from '@/storefront/demoStores'
+import { readInstalled } from '@/storefront/demoStores/install'
+import { browserStorage, keepPerChannel } from './demoKeep'
+import type { SalesChannel } from './useSalesChannels'
 import type { StoreSnapshot } from '@/storefront/demoStores'
 import type { InstallChannel } from '@/storefront/demoStores/install'
 
@@ -177,6 +180,27 @@ const AURORA_STYLES: ThemeStyles = {
   soldOutBadgeColor: '#121011',
 }
 
+/** A list of themes saved in the browser, roughly checked: a shape this build cannot read is not taken. */
+function isThemeList(value: unknown): value is StoreTheme[] {
+  return Array.isArray(value) && value.every((theme) => {
+    const t = theme as Partial<StoreTheme> | null
+    return !!t && typeof t.id === 'string' && typeof t.channelId === 'string' && typeof t.name === 'string'
+      && (t.status === 'Published' || t.status === 'Draft') && typeof t.updatedAt === 'string'
+      && !!t.styles && typeof t.styles === 'object' && !!t.templates && typeof t.templates === 'object'
+  })
+}
+
+/** A store's themes as the browser keeps them, with each one's last published state (what Discard goes back to). */
+interface KeptThemes {
+  themes: StoreTheme[]
+  published: StoreTheme[]
+}
+
+function isKeptThemes(value: unknown): value is KeptThemes {
+  const kept = value as Partial<KeptThemes> | null
+  return !!kept && isThemeList(kept.themes) && isThemeList(kept.published)
+}
+
 /** A demo store's theme, as its snapshot has it: published on the store. */
 function snapshotTheme(channelId: string, snapshot: StoreSnapshot): StoreTheme {
   const { id, name, publishedAt, styles, templates } = snapshot.theme
@@ -200,19 +224,63 @@ export const useStoreThemesStore = defineStore('storeThemes', () => {
   /** The stores whose theme is seeded (attachStore): each only once. */
   const attached = new Set<string>()
 
+  /** The theme the store runs now, as seeded, or none for a store that started blank. */
+  const seededTheme = (channel: InstallChannel & Partial<Pick<SalesChannel, 'createdAt'>>): StoreTheme | undefined => {
+    const snapshot = demoSnapshotOf(channel)
+    if (!snapshot) return undefined
+    const theme = snapshotTheme(channel.id, snapshot)
+    // Dated when this store got it: the day another theme was applied, or the day a store made from it was created.
+    const installed = readInstalled(channel.id, browserStorage())
+    const at = installed && installed.blueprintId !== channel.webStore?.blueprint?.original ? installed.appliedAt
+      : homeBlueprintOf(channel.id) ? undefined : channel.createdAt
+    if (at) {
+      theme.publishedAt = at
+      theme.updatedAt = at
+    }
+    return theme
+  }
+
+  /** The store's themes are now `next`; each one's baseline (what Discard goes back to) is its `published` copy, else itself. */
+  function setStoreThemes(channelId: string, next: StoreTheme[], published: StoreTheme[] = []): void {
+    for (const theme of themesForChannel(channelId)) baselines.delete(theme.id)
+    themes.value = replaceStoreRows(themes.value, (t) => t.channelId === channelId, next)
+    for (const theme of next) baselines.set(theme.id, cloneTheme(published.find((p) => p.id === theme.id) ?? theme))
+  }
+
+  // A store that can take a theme keeps its themes in this browser, with each one's last
+  // published state: edits, copies and drafts survive a reload, and Discard still goes back.
+  // Applying a theme keeps the drafts; a restore removes them.
+  const keptThemes = keepPerChannel('themes', 1, isKeptThemes, {
+    read: (channelId) => {
+      const list = themesForChannel(channelId)
+      return { themes: list, published: list.map((theme) => baselines.get(theme.id)).filter((theme): theme is StoreTheme => !!theme) }
+    },
+    take: (channelId, saved) => {
+      const channel = demoChannelRecord(channelId)
+      if (!channel) return
+      const seeded = seededTheme(channel)
+      if (saved) setStoreThemes(channelId, saved.themes.filter((theme) => theme.channelId === channelId), saved.published)
+      else setStoreThemes(channelId, seeded ? [seeded] : [])
+      if (seeded) seededThemeIds.set(channelId, seeded.id)
+      else seededThemeIds.delete(channelId)
+    },
+  })
+
   /**
    * Puts the theme of the blueprint a store runs now on it, published, after the
-   * other themes (none for a store that started blank). Themes are not kept in the browser.
+   * other themes (none for a store that started blank), then keeps the store's
+   * themes: what this browser saved for it is read, never cleared.
    */
   function attachStore(channel: InstallChannel): void {
     if (attached.has(channel.id)) return
     attached.add(channel.id)
-    const snapshot = demoSnapshotOf(channel)
-    if (!snapshot) return
-    const theme = snapshotTheme(channel.id, snapshot)
-    themes.value = replaceStoreRows(themes.value, (t) => t.channelId === channel.id && t.id === theme.id, [theme])
-    baselines.set(theme.id, cloneTheme(theme))
-    seededThemeIds.set(channel.id, theme.id)
+    const theme = seededTheme(channel)
+    if (theme) {
+      themes.value = replaceStoreRows(themes.value, (t) => t.channelId === channel.id && t.id === theme.id, [theme])
+      baselines.set(theme.id, cloneTheme(theme))
+      seededThemeIds.set(channel.id, theme.id)
+    }
+    keptThemes.attach(channel.id)
   }
   // The demo stores' themes, after the others.
   for (const channel of SEEDED_DEMO_CHANNELS) attachStore(channel)
@@ -476,14 +544,14 @@ export const useStoreThemesStore = defineStore('storeThemes', () => {
   /**
    * Puts the theme of the blueprint the store runs now on it, published, in place of
    * the theme it was seeded with (contract: reseedDemo). The merchant's other themes
-   * stay, as drafts. A store that started blank is left with only its own themes.
+   * stay, as drafts, and stay kept in the browser. A store that started blank is left
+   * with only its own themes.
    */
   function reseedDemo(channelId: string) {
     const channel = demoChannelRecord(channelId)
-    if (!canApplyTheme(channel)) return
-    attached.add(channelId)
-    const snapshot = demoSnapshotOf(channel)
-    const next = snapshot ? snapshotTheme(channelId, snapshot) : undefined
+    if (!channel || !canApplyTheme(channel)) return
+    attachStore(channel)
+    const next = seededTheme(channel)
     const previousId = seededThemeIds.get(channelId)
     const isSeeded = (theme: StoreTheme) => theme.channelId === channelId && (theme.id === previousId || theme.id === next?.id)
 
@@ -498,6 +566,58 @@ export const useStoreThemesStore = defineStore('storeThemes', () => {
     } else {
       seededThemeIds.delete(channelId)
     }
+    // Only the seeded theme: nothing of the merchant's to keep, so the store follows its seed again.
+    if (themesForChannel(channelId).every(isSeeded)) {
+      keptThemes.clear(channelId)
+      keptThemes.adopt(channelId)
+    }
+  }
+
+  /** Removes the store's drafts and copies, and its saved themes, so it has only the theme it is seeded with (contract: restoreDemoHistory, a restore only). */
+  function restoreDemoHistory(channelId: string) {
+    const channel = demoChannelRecord(channelId)
+    if (!channel || !canApplyTheme(channel)) return
+    attachStore(channel)
+    keptThemes.clear(channelId)
+    const seeded = seededTheme(channel)
+    setStoreThemes(channelId, seeded ? [seeded] : [])
+    if (seeded) seededThemeIds.set(channelId, seeded.id)
+    else seededThemeIds.delete(channelId)
+    keptThemes.adopt(channelId)
+  }
+
+  /** "Copy of Northfold", "Copy of Northfold 2". */
+  function copyName(theme: StoreTheme): string {
+    const names = new Set(themesForChannel(theme.channelId).map((t) => t.name))
+    const base = `Copy of ${theme.name.replace(/^Copy of /, '')}`
+    let name = base
+    for (let n = 2; names.has(name); n++) name = `${base} ${n}`
+    return name
+  }
+
+  /** A Draft copy of a theme's look and sections on the same store, right after it, for editing. The store's content is left alone. */
+  function duplicateTheme(themeId: string): StoreTheme | undefined {
+    const theme = getTheme(themeId)
+    if (!theme) return undefined
+    const ids = new Set(themes.value.map((t) => t.id))
+    let id = `${theme.id}-copy`
+    for (let n = 2; ids.has(id); n++) id = `${theme.id}-copy-${n}`
+    const copy: StoreTheme = { ...cloneTheme(theme), id, name: copyName(theme), status: 'Draft', updatedAt: nowIso() }
+    delete copy.publishedAt
+    delete copy.availableVersion
+    const at = themes.value.indexOf(theme)
+    themes.value = [...themes.value.slice(0, at + 1), copy, ...themes.value.slice(at + 1)]
+    baselines.set(copy.id, cloneTheme(copy))
+    return copy
+  }
+
+  /** Deletes a draft. The published theme cannot be deleted: false. */
+  function deleteTheme(themeId: string): boolean {
+    const theme = getTheme(themeId)
+    if (!theme || theme.status !== 'Draft') return false
+    themes.value = themes.value.filter((t) => t.id !== themeId)
+    baselines.delete(themeId)
+    return true
   }
 
   return {
@@ -518,7 +638,10 @@ export const useStoreThemesStore = defineStore('storeThemes', () => {
     updateBlock,
     publishTheme,
     discardDraft,
+    duplicateTheme,
+    deleteTheme,
     attachDemo,
     reseedDemo,
+    restoreDemoHistory,
   }
 })

@@ -3486,3 +3486,123 @@ business days, as the checkout says); "F-150" and part numbers breaking across l
   abandoned-cart body; the chatbot's shopping-assistant preview shows "red boots"; the SEO URL
   preview leaves out the product id the storefront path ends in.
 - The theme thumbnails (`theme.jpg`), the theme library, Apply and Start from a theme are part 4.
+
+## Theme library (store themes, part 4) — 2026-11-24
+
+Each demo store (Vitaheal, Northfold, Torqline) is also a theme in a store's **Themes** page library.
+Applying one makes the store a complete copy of that demo store; "Restore original store" puts it
+back. Create sales channel can start a Store Builder store from a theme. The rules are in
+`src/stores/useDemoStores.ts`; what the dialogs say is in `src/storefront/demoStores/summary.ts`.
+How it works and how to add a fourth store: `docs/store-builder/demo-stores.md`; the QA checklist:
+`docs/store-builder/demo-stores-qa.md`.
+
+Decided with the user before building: theme edits, copies and drafts are kept in the browser; Apply
+keeps the store's own subscription plans (seeded or made in it) listed and paused; a store made with
+Create sales channel can be deleted.
+
+- **Themes page** (`StoreThemes.vue`, `ThemeLibraryCard.vue`): the current theme shows the top of its
+  home page in a 480px window that fades out (`layout.themePreviewHeight`; the whole page ran past
+  2,000px and hid everything below it), and "Copied from Northfold on Nov 24, 2026 · Restore original
+  store" while another theme runs. The library has one card per demo store: thumbnail, name and
+  version, kind, description, showcase store, and Apply, or "Current theme", or Restore original store
+  for the store's own theme while another runs; Preview opens the showcase storefront in a new tab
+  (unavailable, with a note, while that store runs another theme). Stores that cannot take a theme
+  (Neelam-Store, Atlas, Fashion Boutique, Beta, Max Test, POS) get one info alert and Preview only.
+  Themes installed gains a status chip and a row menu: Edit theme, Duplicate, Delete draft.
+- **Apply**: a confirm listing what is replaced, what changes and what stays (`applySummary`: products,
+  look, collections, pages, menus, campaigns, search rules, size charts, the chatbot's kind of store,
+  the currency, plans switched off with subscribers kept, plans brought, orders kept, cart emptied,
+  how to undo). A toast with Show store follows.
+- **Restore** is one dialog (`StoreRestoreDialog.vue`) on the Settings tab and the Themes page
+  (`restoreSummary`), and now always resets the theme too: drafts and copies are removed, and it says
+  when prices go back to another currency.
+- **Create sales channel**: a Web Store with Store Builder gets a "Start from a theme" step (Blank,
+  preselected, then the three themes with their thumbnails), and Review says what the store starts
+  with (`startSummary`). The store is created through `useDemoStores().create`, seeded at once, kept
+  in `mp.store-builder.created-stores.v1`, added at the end of the list, and opens published when made
+  from a theme. Its Settings tab has Delete store (`useDemoStores().remove`): every part is emptied,
+  its keys removed, orders stay.
+- **Storefront cart**: when a theme is applied or the store restored, here or in another tab, the cart
+  is emptied and the cart page says what was taken out, with Got it (`storeChanged`, `noticeFor`,
+  `dismissNotice` on `useStorefrontCart`).
+- **Thumbnails**: `public/storefront/<store>/theme.jpg`, captured from the storefronts by
+  `npm run themes:thumbnails` (`scripts/theme-thumbnails.mjs`).
+
+### Modules, keys, tests
+
+- New: `src/storefront/createdStores.ts`, `src/storefront/demoStores/summary.ts`,
+  `src/components/saleschannels/StoreRestoreDialog.vue`, `ThemeLibraryCard.vue` (+ story),
+  `scripts/theme-thumbnails.mjs`, `docs/store-builder/demo-stores.md`, `demo-stores-qa.md`.
+- `useDemoStores()` adds `create`, `remove`, `isCreated`, `applyPreview`, `restoreFacts`,
+  `restorePreview`. `useStoreThemes` adds `duplicateTheme`, `deleteTheme`, `restoreDemoHistory`.
+  `useSalesChannels` adds `isCreatedStore`, `madeWith`, `deleteCreatedStore`, `syncCreatedStores`;
+  `CreateSalesChannelPayload.theme`. The `StorefrontCart` story adds `StoreChanged`.
+- Browser keys: `themes.v1` per store (`mp.vitaheal-demo.themes.v1`, `mp.demo-store.<id>.themes.v1`),
+  written only once a theme is changed; `mp.store-builder.created-stores.v1`. Nothing is written on
+  load. Created stores take slots 10-99 (2-9 stay for demo stores), so their product ids start at
+  1,100,000 + the theme's digit × 1000.
+- Tests: `tests/storefront/themeSwap.test.ts` (every theme on every store that can take one and back,
+  created and deleted stores, theme copies, paused plans, a second tab, the dialogs, the cart notice),
+  `themeSummary.test.ts`, `createdStores.test.ts`; the three thumbnail tests now run.
+
+### Renames and breaking changes
+
+- **Restore now resets the theme**, with its collections, pages and menus, and removes theme drafts
+  and copies (it used to keep the session's theme edits). Theme edits now survive a reload.
+- **Apply keeps plans a merchant made** in the store, paused, beside the seeded ones (they used to be
+  dropped); Restore removes them.
+- A store back to blank (restored, or deleted) loses the chatbot its theme gave it, and prices again in
+  what it was made with. `useChatbot`'s kept settings tolerate a store with no chatbot.
+- `useDemoStores` `reseed` lost its `look` argument (Restore always resets the look).
+- A created Store Builder store carries `webStore.demo` and `webStore.blueprint`; before, such stores
+  were made at the top of the list, in memory only.
+- The library cards have no Duplicate (the plan had one): duplicating copies an installed theme, so it
+  lives on the Themes installed rows.
+- **A blank store** (made without a theme) gets its own Overview: "No theme yet" with Choose a theme
+  (to the Themes page) in place of a sample preview, a "Choose a theme" setup item and quick action,
+  and no Preview; the theme builder sends it to the library too. Its storefront home reads "<store> is
+  opening soon", and it no longer borrows the account's shared catalogue: `catalogFor(…, ownOnly)`
+  for every store that can take a theme (storefront and Merchandise Cloud's index).
+- **A created store** shows its own figures (its orders and revenue; no visit figures yet), its own
+  activity ("Store created", "Theme published"), and its own business details ("Not added yet"),
+  never Atlas Outfitters' samples. It is set up and published exactly while it runs a theme.
+- **Storefront**: the store-change note shows on every page (`StorefrontStoreChanged`), not only the
+  cart, and goes once the shopper adds something; the tab title follows a theme applied elsewhere;
+  an amount in another currency than the store's (an order from another theme) keeps its own format;
+  order and account lines keep a part's number when the line names a vehicle.
+- **Subscription plans** says when a store's own plans are paused because another theme runs on it.
+- A copied theme is dated when the store got it (applied, or the store made), so the Themes page and
+  the Overview agree.
+
+### Reviews
+
+Three independent reviews (merchant, shopper, code) ran on the integrated work. Fixed after them: the
+store's own plans lost on reload after a second Apply (the plans slot was cleared and nothing saved
+again); a deleted store's id and slot reused, so a store made again with its name came up empty and
+inherited its Maropay data (ids and slots are now retired); Discard doing nothing after a reload (the
+published state is now kept with the themes); a blank store that took a theme still "needs setup";
+two preselected plans after Apply; the Apply dialog calling plans an earlier theme brought "switched
+off" when Apply removes them, "Its" pointing at two stores, "replace" on a blank store, and no word on
+size charts going, the merchant's edits not being kept, or search needing Merchandise Cloud; the
+Restore dialog saying nothing of the currency, brought plans or the connection going back; a blank
+store's Overview showing Atlas's preview, "Theme published" and an Edit theme that dead-ended; Atlas
+Outfitters' legal details on every created store; made-up revenue on a store made seconds ago; focus
+lost after Apply, Restore, Duplicate and Delete draft; the shopper told why the cart emptied only on
+the cart page; a blank store selling the shared catalogue; a USD order formatted in Swedish after a
+restore; the wizard's "4 / 4" wrapping on a phone; empty-state copy that promised actions the page
+did not have.
+
+### Not done here
+
+- The verb stays **Apply** (the plan's word); the dialog's first line says the store becomes a copy.
+- The Products list shows a copied store's products beside the originals with the same SKUs; the
+  Sales channel filter tells them apart. A store column there would be a Products-page change.
+- A store made from a theme shows the theme's brand (wordmark, footer, tab title) to shoppers, as a
+  complete copy does; giving it its own name is a product decision.
+- Preview of a theme still opens its showcase store, so it is unavailable while that store runs
+  another theme (decided in the plan); a read-only preview from the seed would lift that.
+- Chats kept through an Apply show under the new store's assistant; a stale screen-reader message can
+  stay on an emptied checkout; the store-change note is kept for the page view only.
+- Duplicated themes show "—" as their creator; a row menu opened with Enter keeps focus on its
+  trigger (MpRowActionsMenu, app-wide).
+- Collections, pages, menus and the header and footer are still not kept in the browser.

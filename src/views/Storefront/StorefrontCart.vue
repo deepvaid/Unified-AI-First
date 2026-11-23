@@ -10,6 +10,7 @@ import StorefrontAnchor from './StorefrontAnchor.vue'
 import StorefrontDiscountCode from './StorefrontDiscountCode.vue'
 import StorefrontExpressButtons from './StorefrontExpressButtons.vue'
 import StorefrontLineText from './StorefrontLineText.vue'
+import StorefrontStoreChanged from './StorefrontStoreChanged.vue'
 import { useStorefrontDiscount } from './storefrontDiscount'
 import { STOREFRONT } from './storefrontContext'
 import { CATEGORY_ICONS, productHandle } from './storefrontCatalog'
@@ -23,6 +24,8 @@ import { CATEGORY_ICONS, productHandle } from './storefrontCatalog'
 // Fits 2019 Ford F-150").
 // The empty state's wording is the real page's; a theme on the sections drawing
 // says it in sentence case and leads to the whole catalogue.
+// When the store changed under the shopper (a theme applied, the store restored),
+// the cart was emptied, and a notice above it says so and names what went.
 
 const router = useRouter()
 const storefront = inject(STOREFRONT)!
@@ -83,6 +86,11 @@ function nameOf(line: CartLine): string {
 const root = ref<HTMLElement | null>(null)
 const title = ref<HTMLElement | null>(null)
 
+/** The note about a store change goes, so the keyboard moves to the page's heading. */
+function dismissChanged(): void {
+  title.value?.focus()
+}
+
 /**
  * Takes a line out. Its row goes, so the keyboard moves to the next line's name (the
  * new last one when it was the last), or to the page's heading once the cart is empty,
@@ -109,6 +117,8 @@ function checkout(express?: string): void {
 <template>
   <div ref="root" class="sf-cart">
     <h1 ref="title" class="sf-page-title sf-cart__title" tabindex="-1">Cart</h1>
+
+    <StorefrontStoreChanged @dismissed="dismissChanged" />
 
     <div v-if="!lines.length" class="sf-cart__empty">
       <template v-if="storefront.sectionsDrawing.value">
@@ -227,7 +237,6 @@ function checkout(express?: string): void {
   font-weight: var(--sf-heading-weight, 700);
   text-transform: var(--sf-heading-case, none);
 }
-
 
 .sf-cart__empty {
   display: flex;

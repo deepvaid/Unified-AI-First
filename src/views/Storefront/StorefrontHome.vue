@@ -82,7 +82,13 @@ function looped(section: ThemeSection): ThemeBlock[] {
 </script>
 
 <template>
-  <div v-if="sectionsDrawing" class="sf-home sf-home--sections">
+  <!-- A store made blank, before a theme is applied: one quiet line, not an empty page. -->
+  <div v-if="!storefront.theme.value" class="sf-home sf-home--soon">
+    <h1 class="sf-home__soon-title">{{ storefront.chrome.value.wordmark }} is opening soon</h1>
+    <p class="sf-home__soon-text">This store is being set up. Check back soon.</p>
+  </div>
+
+  <div v-else-if="sectionsDrawing" class="sf-home sf-home--sections">
     <h1 v-if="!titleSectionId" class="sf-home__title">{{ storefront.chrome.value.wordmark }}</h1>
     <template v-for="section in sections" :key="section.id">
       <component
@@ -455,6 +461,26 @@ function looped(section: ThemeSection): ThemeBlock[] {
 }
 
 /* The page's name for screen readers, when no banner gives it a headline. */
+.sf-home--soon {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 120px 24px;
+  text-align: center;
+}
+
+.sf-home__soon-title {
+  margin: 0 0 12px;
+  font-family: var(--sf-heading-font, inherit);
+  font-size: 32px;
+  line-height: 40px;
+  color: var(--sf-text, #121011);
+}
+
+.sf-home__soon-text {
+  margin: 0;
+  color: var(--sf-muted, #5f5f5f);
+}
+
 .sf-home__title {
   position: absolute;
   width: 1px;

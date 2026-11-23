@@ -699,7 +699,17 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
 
 <template>
   <div v-if="!channel || !theme" class="tb-missing d-flex align-center justify-center">
+    <!-- A Store Builder store with no theme yet (made blank) is sent to the theme library to choose one. -->
     <MpEmptyState
+      v-if="channel?.webStore?.storeBuilderEnabled"
+      icon="palette"
+      title="No theme yet"
+      description="This store has no theme to edit. Apply one from the theme library first."
+      action-label="Choose a theme"
+      @action="router.push({ name: 'StoreThemes', params: { accountId, channelId } })"
+    />
+    <MpEmptyState
+      v-else
       icon="paintbrush"
       :title="channel ? 'No theme for this channel' : 'Sales channel not found'"
       :description="channel

@@ -2,7 +2,8 @@
 
 For a sales person showing the Vitaheal (demo) store to a prospect. It follows the film
 (`npm run demo:video` makes `output/demo-video/vitaheal-demo.mp4`), so you can play the film or
-do the same steps live. About 8 minutes live, three and a half minutes as a film.
+do the same steps live. About 8 minutes live, three and a half minutes as a film. Step 12, the
+theme library, is live only: the film does not show it.
 
 Vitaheal is a made-up Swedish supplements brand. Nothing is charged and nothing leaves your
 browser.
@@ -10,9 +11,10 @@ browser.
 ## Before you start
 
 1. Open the store's page: **Sales channels › Vitaheal (demo)**.
-2. In its **Settings** tab, press **Restore original store**. This puts back the products, plans,
-   subscribers, campaigns, chatbot and merchandising, and disconnects Merchandise Cloud, so the
-   demo starts the same way every time. Orders you placed before stay in Commerce.
+2. In its **Settings** tab, press **Restore original store**, then **Restore store**. This puts
+   back the theme (its drafts and copies are removed), products, plans, subscribers, campaigns,
+   chatbot and merchandising, and disconnects Merchandise Cloud, so the demo starts the same way
+   every time. Orders you placed before stay in Commerce.
 3. Press **View store**. Keep the store in one tab and the admin in another.
 4. If the page was open while a new version went out, reload it once.
 
@@ -36,6 +38,7 @@ store; the merchant sees it all, runs a campaign, and switches on search and rec
 | 9 | Admin, Merchandising | Open **Merchandising** for the store. Press **Connect Merchandising**. | "Eight products sync, and search and recommendations are on." |
 | 10 | Store | Search **sleep**, then **tired**. Open Unwind and scroll to **Goes well with Unwind**. | "Unwind is pinned first for sleep. 'Tired' has no product, but a synonym leads to energy and focus. The row is chosen by the store's recommendation engine." |
 | 11 | Admin, then store | **Merchandising › Synonyms › Add new**: `knackered` leads to `energy`. Search **knackered** on the store. | "Change a rule, and the store follows at once." |
+| 12 | Admin, store › Themes | Open **Themes**. In **Theme library** press **Apply** on **Northfold**, read the list, press **Apply theme**. Press **Show store** in the message. Back on **Themes**, press **Restore original store**, then **Restore store**. | "A theme here is a whole store: its look, products, pages and campaigns. One click makes Vitaheal a copy of Northfold, in dollars. Its plans are paused, its subscribers keep their subscriptions, and orders stay. Restore puts Vitaheal back, theme included. It is in the Settings tab too." |
 
 ## More to show if they ask
 
@@ -69,3 +72,4 @@ this demo.
 - **No search box on the store:** Merchandise Cloud is not connected yet (step 9).
 - **No discount code field in the cart:** no campaign with a code is running. Restore the store.
 - **Numbers differ from the film:** someone used the demo before you. Restore the store.
+- **The store looks like Northfold or Torqline:** another theme is applied. Restore the store.

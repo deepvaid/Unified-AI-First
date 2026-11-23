@@ -73,6 +73,8 @@ export const useStorefrontCartStore = defineStore('storefrontCart', () => {
    * stays one line however it was added.
    */
   function add(channelId: string, product: Product, qty = 1, choice?: CartChoice): void {
+    // Shopping again: the note about the emptied cart has done its job.
+    dismissNotice(channelId)
     const variant = product.detail?.options.length ? choice?.variant : undefined
     carts.value[channelId] = addLine(linesFor(channelId), {
       productId: product.id,
@@ -109,6 +111,28 @@ export const useStorefrontCartStore = defineStore('storefrontCart', () => {
     delete codes.value[channelId]
   }
 
+  // ── The store changed under the shopper ──────────────────────────
+  // Applying a theme or restoring the store (here or in the admin's tab) replaces
+  // every product, so the cart is emptied. What was in it is remembered for this
+  // page view, so the storefront can say why the cart is empty.
+  const changedNotices = ref<Record<string, string[]>>({})
+
+  /** Empties the cart because the store's products were replaced; a cart that held something is remembered (noticeFor). */
+  function storeChanged(channelId: string): void {
+    const names = [...new Set(linesFor(channelId).map((line) => line.name))]
+    if (names.length) changedNotices.value[channelId] = names
+    clear(channelId)
+  }
+
+  /** The names of the products a store change took out of the cart, or null when it took nothing. */
+  function noticeFor(channelId: string): string[] | null {
+    return changedNotices.value[channelId] ?? null
+  }
+
+  function dismissNotice(channelId: string): void {
+    delete changedNotices.value[channelId]
+  }
+
   // ── Discount code ────────────────────────────────────────────────
   // Only the code is kept. Whether it still counts, and what it takes off, is
   // worked out fresh from the store's campaigns (src/storefront/campaigns.ts).
@@ -138,5 +162,5 @@ export const useStorefrontCartStore = defineStore('storefrontCart', () => {
     return sum(linesFor(channelId).map((l) => lineTotal(l, currency)), currency)
   }
 
-  return { carts, linesFor, add, setQty, remove, prune, clear, count, subtotal, codeFor, setCode }
+  return { carts, linesFor, add, setQty, remove, prune, clear, storeChanged, noticeFor, dismissNotice, count, subtotal, codeFor, setCode }
 })

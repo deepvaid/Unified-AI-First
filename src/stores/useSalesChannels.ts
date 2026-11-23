@@ -4,7 +4,9 @@ import { browserStorage, keepPerChannel } from '@/stores/demoKeep'
 import { DEMO_STORES, canApplyTheme, homeBlueprintOf } from '@/storefront/demoStores'
 import { currentBlueprintId, snapshotFor } from '@/storefront/demoStores/install'
 import type { InstallChannel } from '@/storefront/demoStores/install'
-import type { StoreBlueprintRef, StoreSnapshot } from '@/storefront/demoStores/types'
+import type { DemoStoreId, StoreBlueprintRef, StoreSnapshot } from '@/storefront/demoStores/types'
+import { nextStoreSlot, readCreatedRecord, writeCreatedStores } from '@/storefront/createdStores'
+import type { RetiredStore } from '@/storefront/createdStores'
 import { localDateKey } from '@/maropay/model'
 
 export type SalesChannelType = 'web_store' | 'offline_store'
@@ -66,6 +68,12 @@ export interface CreateSalesChannelPayload {
   storeBuilderEnabled?: boolean
   merchandiseConnected?: boolean
   locationIds?: string[]
+  /**
+   * A web store with Store Builder switched on: the demo store it starts as a copy
+   * of (its theme, products, pages and campaigns), or null to start blank. Such a
+   * store can take a theme from the library later, and is kept in this browser.
+   */
+  theme?: DemoStoreId | null
 }
 
 export const CHANNEL_TYPE_LABELS: Record<SalesChannelType, string> = {
@@ -377,8 +385,77 @@ function isKeptConnection(value: unknown): value is KeptConnection {
   return at === null || typeof at === 'string'
 }
 
+/** The created stores this browser holds that fit beside the seeded ones: no id or slot taken twice. */
+function loadCreated(): SalesChannel[] {
+  const ids = new Set(seedChannels.map((channel) => channel.id))
+  const slots = new Set(seedChannels.map((channel) => channel.webStore?.blueprint?.slot).filter((slot) => slot !== undefined))
+  return readCreatedRecord(browserStorage()).stores.filter((channel) => {
+    const slot = channel.webStore!.blueprint!.slot
+    if (ids.has(channel.id) || slots.has(slot)) return false
+    ids.add(channel.id)
+    slots.add(slot)
+    return true
+  })
+}
+
 export const useSalesChannelsStore = defineStore('salesChannels', () => {
-  const channels = ref<SalesChannel[]>(seedChannels.map((channel) => ({ ...channel })))
+  // The stores made here, as they were made: what a restore puts back (their connection), and what is kept in the browser.
+  const created = new Map<string, SalesChannel>(loadCreated().map((channel) => [channel.id, channel]))
+  /** Stores deleted here: their ids and slots are never used again in this browser. */
+  let retired: RetiredStore[] = readCreatedRecord(browserStorage()).retired
+  const channels = ref<SalesChannel[]>([...seedChannels.map((channel) => ({ ...channel })), ...[...created.values()].map((channel) => structuredClone(channel))])
+
+  /** False when the browser refused it: the store then lasts until the page is reloaded. */
+  function saveCreated(): boolean {
+    return writeCreatedStores(browserStorage(), { stores: [...created.values()], retired })
+  }
+
+  /** Whether the store started connected to Merchandise Cloud: how a restore leaves it. */
+  function startedConnected(channelId: string): boolean {
+    return seededConnection(channelId) !== null
+  }
+
+  /** A created store as it was made (its market and connection then), or undefined for any other store. */
+  function madeWith(channelId: string): SalesChannel | undefined {
+    return created.get(channelId)
+  }
+
+  /** A store made here with Store Builder switched on: kept in this browser, and the only kind that can be deleted. */
+  function isCreatedStore(channelId: string): boolean {
+    return created.has(channelId)
+  }
+
+  /** Takes a created store out of the list and this browser. Its data is cleared by useDemoStores().remove(), which calls this last. */
+  function deleteCreatedStore(channelId: string): boolean {
+    const record = created.get(channelId)
+    if (!record || !created.delete(channelId)) return false
+    retired = [...retired, { id: channelId, slot: record.webStore!.blueprint!.slot }]
+    saveCreated()
+    channels.value = channels.value.filter((channel) => channel.id !== channelId)
+    return true
+  }
+
+  /**
+   * Another tab made or deleted a store: the list follows. Returns the ids of the
+   * stores it added, which the caller brings in (useDemoStores().attach), and of those it took out.
+   */
+  function syncCreatedStores(): { added: string[]; removed: string[] } {
+    const record = readCreatedRecord(browserStorage())
+    retired = record.retired
+    const saved = new Map(record.stores.map((channel) => [channel.id, channel]))
+    const removed = [...created.keys()].filter((id) => !saved.has(id))
+    for (const id of removed) created.delete(id)
+    if (removed.length) channels.value = channels.value.filter((channel) => !removed.includes(channel.id))
+    const taken = new Set(channels.value.map((channel) => channel.webStore?.blueprint?.slot).filter((slot) => slot !== undefined))
+    const added: string[] = []
+    for (const [id, channel] of saved) {
+      if (created.has(id) || channels.value.some((c) => c.id === id) || taken.has(channel.webStore!.blueprint!.slot)) continue
+      created.set(id, channel)
+      channels.value.push(structuredClone(channel))
+      added.push(id)
+    }
+    return { added, removed }
+  }
 
   const allChannels = computed(() => channels.value)
 
@@ -409,7 +486,8 @@ export const useSalesChannelsStore = defineStore('salesChannels', () => {
 
   function createChannel(accountId: string, payload: CreateSalesChannelPayload) {
     const timestamp = nowIso()
-    const id = makeId(payload.name, new Set(channels.value.map((channel) => channel.id)))
+    // Never the id of a store deleted here: what the app keeps by store id would follow it.
+    const id = makeId(payload.name, new Set([...channels.value.map((channel) => channel.id), ...retired.map((store) => store.id)]))
     const base = {
       id,
       accountId,
@@ -421,12 +499,17 @@ export const useSalesChannelsStore = defineStore('salesChannels', () => {
       lastActivityAt: timestamp,
     }
 
+    // A Store Builder store takes the next slot, so a theme can be applied to it; none left, and it is made as before.
+    const slot = payload.type === 'web_store' && payload.storeBuilderEnabled ? nextStoreSlot(channels.value, retired) : null
+    const theme = slot === null ? null : payload.theme ?? null
+
     const channel: SalesChannel = payload.type === 'web_store'
       ? {
           ...base,
           provider: 'maropost_store_builder',
-          status: payload.storeBuilderEnabled ? 'needs_setup' : 'draft',
-          health: 'incomplete',
+          // A store made from a theme opens with that theme published.
+          status: theme ? 'connected' : payload.storeBuilderEnabled ? 'needs_setup' : 'draft',
+          health: theme ? 'healthy' : 'incomplete',
           connectedClouds: [
             'commerce',
             ...(payload.storeBuilderEnabled ? ['store_builder' as const] : []),
@@ -435,8 +518,9 @@ export const useSalesChannelsStore = defineStore('salesChannels', () => {
           webStore: {
             domain: payload.domain?.trim() || `${id}.maropost.store`,
             storeBuilderEnabled: !!payload.storeBuilderEnabled,
-            published: false,
+            published: !!theme,
             merchandiseConnected: !!payload.merchandiseConnected,
+            ...(slot === null ? {} : { demo: true, blueprint: { original: theme, slot } }),
           },
         }
       : {
@@ -454,7 +538,14 @@ export const useSalesChannelsStore = defineStore('salesChannels', () => {
           },
         }
 
-    channels.value.unshift(channel)
+    if (slot === null) {
+      channels.value.unshift(channel)
+      return channel
+    }
+    // Last, so the stores before it keep their places (Atlas stays Maropay's first store).
+    created.set(channel.id, structuredClone(channel))
+    saveCreated()
+    channels.value.push(channel)
     return channel
   }
 
@@ -503,9 +594,13 @@ export const useSalesChannelsStore = defineStore('salesChannels', () => {
   // ── Demo stores ──────────────────────────────────────────────────────
   const channelById = (channelId: string): SalesChannel | undefined => channels.value.find((channel) => channel.id === channelId)
 
-  /** When a demo store's own channel was seeded connected (Northfold), else null: how a store starts, and what a restore puts back. */
+  /**
+   * When the store started connected to Merchandise Cloud, else null: a demo store's
+   * own channel as seeded (Northfold), a created store as it was made. How a store
+   * starts, and what a restore puts back.
+   */
   const seededConnection = (channelId: string): string | null => {
-    const seeded = homeBlueprintOf(channelId)?.homeChannel
+    const seeded = homeBlueprintOf(channelId)?.homeChannel ?? created.get(channelId)
     return seeded?.webStore?.merchandiseConnected ? seeded.merchandising?.lastSyncAt ?? seeded.createdAt : null
   }
 
@@ -542,6 +637,7 @@ export const useSalesChannelsStore = defineStore('salesChannels', () => {
     attached.add(channel.id)
     const snapshot = demoSnapshotOf(channel)
     if (snapshot) setMarket(channel, snapshot.market)
+    followTheme(channel, !!snapshot)
     setMerchandising(channel, seededConnection(channel.id))
     keptConnection.attach(channel.id)
   }
@@ -575,6 +671,34 @@ export const useSalesChannelsStore = defineStore('salesChannels', () => {
     attachStore(channel)
     const snapshot = demoSnapshotOf(channel)
     if (snapshot) setMarket(channel, snapshot.market)
+    else unsetMarket(channel)
+    followTheme(channel, !!snapshot)
+  }
+
+  /**
+   * A created store is set up exactly when it runs a theme: then its theme is published
+   * and the store live; back to blank, it needs setup again, as it was made.
+   */
+  function followTheme(channel: SalesChannel, runsTheme: boolean): void {
+    const made = created.get(channel.id)
+    if (!made?.webStore || !channel.webStore) return
+    const status = runsTheme ? 'connected' : made.status
+    const health = runsTheme ? 'healthy' : made.health
+    const published = runsTheme || made.webStore.published
+    if (channel.status === status && channel.health === health && channel.webStore.published === published) return
+    channel.status = status
+    channel.health = health
+    channel.webStore = { ...channel.webStore, published }
+  }
+
+  /** A store back to blank prices in what it was made with again (nothing set: the account's currency). */
+  function unsetMarket(channel: SalesChannel): void {
+    const made = created.get(channel.id)?.webStore
+    if (!channel.webStore || !made || (channel.webStore.currency === made.currency && channel.webStore.locale === made.locale)) return
+    const webStore: NonNullable<SalesChannel['webStore']> = { ...channel.webStore, currency: made.currency, locale: made.locale }
+    if (!made.currency) delete webStore.currency
+    if (!made.locale) delete webStore.locale
+    channel.webStore = webStore
   }
 
   /** Puts the store's Merchandise Cloud connection back as seeded (contract: restoreDemoHistory, a restore only). */
@@ -602,6 +726,11 @@ export const useSalesChannelsStore = defineStore('salesChannels', () => {
     channelsNeedingAttention,
     getDefaultOfflineStore,
     createChannel,
+    isCreatedStore,
+    madeWith,
+    startedConnected,
+    deleteCreatedStore,
+    syncCreatedStores,
     linkLocationToChannel,
   }
 })

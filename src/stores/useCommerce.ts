@@ -939,7 +939,7 @@ export const useCommerceStore = defineStore('commerce', () => {
       const channel = demoChannel(channelId)
       if (!channel) return
       setChannelProducts(channelId, seededProducts(channel))
-      useStorefrontCartStore().clear(channelId)
+      useStorefrontCartStore().storeChanged(channelId)
     },
   })
   /** The stores whose products are seeded and kept (attachStore): each only once. */

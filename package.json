@@ -19,6 +19,7 @@
     "test:service": "node --experimental-strip-types --test 'tests/service/*.test.ts'",
     "test:plg": "node --experimental-strip-types --test 'tests/plg/*.test.ts'",
     "demo:video": "npm run build && node scripts/demo-video/record.mjs",
+    "themes:thumbnails": "node scripts/theme-thumbnails.mjs",
     "test:storefront": "node --experimental-strip-types --test 'tests/storefront/*.test.ts'",
     "test:subscriptions": "node --experimental-strip-types --test 'tests/subscriptions/*.test.ts'",
     "contrast:check": "node scripts/check-contrast.mjs",

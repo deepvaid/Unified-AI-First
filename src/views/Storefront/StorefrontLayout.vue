@@ -27,6 +27,7 @@ import { storefrontThemeVars } from '@/stores/themeBuilderData'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import StorefrontChat from './StorefrontChat.vue'
 import StorefrontFooter from './StorefrontFooter.vue'
+import StorefrontStoreChanged from './StorefrontStoreChanged.vue'
 import StorefrontHeader from './StorefrontHeader.vue'
 import StorefrontVehicleDrawer from './StorefrontVehicleDrawer.vue'
 import { STOREFRONT } from './storefrontContext'
@@ -69,9 +70,11 @@ const theme = computed(() => (found.value ? themes.themeForChannel(found.value.i
 const chrome = computed(() => storefronts.chromeFor(channel.value))
 const currency = computed(() => found.value?.webStore?.currency ?? maropay.account?.currency ?? 'USD')
 // Kronor are shown whole ("586 kr" for 585,90): only the display is rounded, the order keeps the exact amount.
-const formatMoney = (amount: Money) => formatStorePrice(roundForDisplay(amount), found.value?.webStore?.locale)
+// An amount in another currency (an order placed while another theme ran) keeps its own format: "$64.99", not "64,99 US$".
+const localeFor = (amount: Money) => (amount.currency === currency.value ? found.value?.webStore?.locale : undefined)
+const formatMoney = (amount: Money) => formatStorePrice(roundForDisplay(amount), localeFor(amount))
 // What is charged is never rounded: the checkout, the pay button and the receipt read "585,90 kr".
-const formatExact = (amount: Money) => formatStorePrice(amount, found.value?.webStore?.locale)
+const formatExact = (amount: Money) => formatStorePrice(amount, localeFor(amount))
 const ownMoneyFormat = computed(() => Boolean(found.value?.webStore?.locale))
 const checkout = computed(() => checkoutProfile(found.value?.webStore?.currency))
 const demo = computed(() => found.value?.webStore?.demo === true)
@@ -110,8 +113,17 @@ provide(STOREFRONT, {
   sectionsDrawing, sizeCharts, sizeChartFor, announce, sellsParts, vehicle, setVehicle, fitOf, chooseVehicle,
 })
 
+/** After the store-change note goes, the keyboard moves to the page's heading. */
+function focusPageHeading(): void {
+  const heading = document.querySelector<HTMLElement>('.sf-body h1')
+  if (!heading) return
+  if (!heading.hasAttribute('tabindex')) heading.setAttribute('tabindex', '-1')
+  heading.focus()
+}
+
 // A store shown to prospects names itself in the browser tab, where the router's fallback reads "Storefront home · Maropost".
-watch(() => [route.fullPath, demo.value], () => {
+// The wordmark too: a theme applied in another tab renames the store without a navigation.
+watch(() => [route.fullPath, demo.value, chrome.value.wordmark], () => {
   if (demo.value) document.title = chrome.value.wordmark
 }, { immediate: true, flush: 'post' })
 
@@ -134,6 +146,8 @@ const themeVars = computed(() => storefrontThemeVars(theme.value?.styles))
     <StorefrontHeader />
 
     <div class="sf-body">
+      <!-- Why the cart was emptied, on whatever page the shopper is on when the store changes (the cart page places its own). -->
+      <StorefrontStoreChanged v-if="route.name !== 'StorefrontCart'" class="sf-body__changed" @dismissed="focusPageHeading" />
       <RouterView />
     </div>
 
@@ -186,6 +200,18 @@ const themeVars = computed(() => storefrontThemeVars(theme.value?.styles))
 /* Body */
 .sf-body {
   flex: 1;
+}
+
+/* On the page's own measure, above whatever page is open (its bottom margin is the note's own). */
+.sf-body__changed {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px var(--sf-gutter, 24px) 0;
+}
+
+.sf-body__changed:empty,
+.sf-body__changed:not(:has(.sf-changed)) {
+  padding: 0;
 }
 
 /* The sections drawing's skip link: the theme's text on its page colour, framed in the

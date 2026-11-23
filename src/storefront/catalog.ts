@@ -17,9 +17,10 @@ export interface CatalogProduct {
  * sells the shared catalogue: every product that is assigned to no store. So a
  * product seeded for one store never shows up in another.
  */
-export function catalogFor<T extends CatalogProduct>(products: T[], channelId: string): T[] {
+export function catalogFor<T extends CatalogProduct>(products: T[], channelId: string, ownOnly = false): T[] {
   const assigned = products.filter((p) => p.channelIds?.includes(channelId))
-  const pool = assigned.length ? assigned : products.filter((p) => !p.channelIds?.length)
+  // A store that can take a theme sells only its own products: a blank one sells nothing yet.
+  const pool = assigned.length || ownOnly ? assigned : products.filter((p) => !p.channelIds?.length)
   return pool.filter((p) => p.publishStatus === 'Published')
 }
 

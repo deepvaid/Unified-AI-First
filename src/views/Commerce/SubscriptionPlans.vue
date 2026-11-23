@@ -22,6 +22,7 @@ import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
+import MpAlert from '@/components/MpAlert.vue'
 
 /**
  * Commerce › Subscriptions › Plans: the plans a store's shoppers can subscribe
@@ -47,6 +48,16 @@ const stores = computed(() => productStores.stores.value)
 const planStores = computed(() => stores.value.filter((s) => demoStores.blueprintOf(s.id)?.capabilities.subscriptions))
 const storeName = (channelId: string) => stores.value.find((s) => s.id === channelId)?.name ?? '—'
 const productsOf = (channelId: string) => commerce.products.filter((p) => p.channelIds?.includes(channelId))
+
+/** Stores whose own plans are paused because another theme was applied to them: each says so, and how to switch them back on. */
+const pausedByTheme = computed(() => stores.value.flatMap((store) => {
+  const running = demoStores.blueprintOf(store.id)
+  const original = store.webStore?.blueprint?.original
+  if (!running || running.id === original) return []
+  const brought = new Set(demoStores.snapshotOf(store.id)?.plans.map((plan) => plan.id) ?? [])
+  const paused = subscriptions.plans.filter((plan) => plan.channelId === store.id && !brought.has(plan.id) && plan.status === 'Paused').length
+  return paused ? [{ id: store.id, name: store.name, theme: running.card.name, paused }] : []
+}))
 
 function formatFor(channelId: string): (amount: Money) => string {
   const store = stores.value.find((s) => s.id === channelId)?.webStore
@@ -194,6 +205,14 @@ function doDelete() {
         <v-btn v-if="planStores.length" color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="openCreate">New plan</v-btn>
       </template>
     </MpPageHeader>
+
+    <MpAlert v-for="store in pausedByTheme" :key="store.id" tone="info" :title="`${store.name} is a copy of ${store.theme}`">
+      Its own {{ store.paused === 1 ? 'plan was' : 'plans were' }} paused when {{ store.theme }} was applied, and {{ store.paused === 1 ? 'stays' : 'stay' }}
+      paused while it runs. Restoring the original store brings its own plans back.
+      <template #actions>
+        <v-btn variant="text" size="small" class="text-none" :to="{ name: 'StoreThemes', params: { accountId, channelId: store.id } }">Open its themes</v-btn>
+      </template>
+    </MpAlert>
 
     <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
