@@ -24,11 +24,13 @@ import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import { useStoreThemesStore } from '@/stores/useStoreThemes'
 import { useStorefrontStore } from '@/stores/useStorefront'
 import { useCommerceStore } from '@/stores/useCommerce'
-import { previewProducts } from '@/views/Storefront/storefrontCatalog'
+import { collectionsOf, previewProducts } from '@/views/Storefront/storefrontCatalog'
 import {
-  blockCatalog,
+  blocksFor,
+  fieldsFor,
   getBlockDef,
   getSectionDef,
+  sectionsFor,
   themeFonts,
   TEMPLATE_TYPES,
   TEMPLATE_TYPE_LABELS,
@@ -36,6 +38,7 @@ import {
   type ThemeBlock,
   type ThemeSection,
   type ThemeSectionDef,
+  type ThemeSectionField,
   type ThemeStyles,
 } from '@/stores/themeBuilderData'
 import {
@@ -68,6 +71,15 @@ const theme = computed(() => {
 const previewHeader = computed(() => storefronts.previewHeaderFor(channel.value))
 /** The store's own products in the canvas's product rows; a store on the shared catalogue keeps the drawn stand-ins. */
 const previewItems = computed(() => (channel.value ? previewProducts(useCommerceStore().products, channel.value) : undefined))
+
+/**
+ * How the storefront draws this theme. A theme on the sections drawing (Northfold,
+ * Torqline) is offered the kinds, blocks and settings only that drawing draws (an
+ * icon row, collapsible rows, a header's colour scheme); a classic theme is offered
+ * exactly what it always was (src/storefront/themeSections.ts).
+ */
+const drawing = computed(() => theme.value?.styles.drawing)
+const addableSections = computed(() => sectionsFor(drawing.value))
 
 const backRoute = computed(() =>
   channel.value
@@ -189,7 +201,7 @@ function confirmRemove() {
 // A section shows a block sub-tree when its kind accepts blocks, or it already
 // has some. Expand state lives here (default collapsed).
 function sectionAcceptsBlocks(section: ThemeSection): boolean {
-  return Boolean(getSectionDef(section.kind)?.acceptsBlocks) || Boolean(section.blocks?.length)
+  return blocksFor(section.kind, drawing.value).length > 0 || Boolean(section.blocks?.length)
 }
 
 const expandedSectionIds = ref<Set<string>>(new Set())
@@ -204,10 +216,10 @@ function blockIcon(kind: string) {
   return getBlockDef(kind)?.icon ?? 'square'
 }
 
-/** Tree label for a block: its def title, or a snippet of its primary setting. */
+/** Tree label for a block: its def title, or a snippet of its primary setting (a feature's or a row's title first). */
 function blockLabel(block: ThemeBlock): string {
   const def = getBlockDef(block.kind)
-  const snippet = String(block.settings.text ?? block.settings.body ?? block.settings.label ?? '').trim()
+  const snippet = String(block.settings.title || block.settings.text || block.settings.body || block.settings.label || '').trim()
   if (snippet) return snippet.length > 28 ? `${snippet.slice(0, 28)}…` : snippet
   return def?.title ?? block.kind
 }
@@ -342,9 +354,22 @@ function blockSettingNum(key: string, fallback: number): number {
 // One schema field-loop drives both section and block settings — these dispatch
 // to the section or block helpers based on the current selection type.
 const isBlockSelected = computed(() => selected.value?.type === 'block')
-const panelFields = computed(() =>
+const panelFields = computed(() => fieldsFor(
   isBlockSelected.value ? (selectedBlockDef.value?.fields ?? []) : (selectedSectionDef.value?.fields ?? []),
-)
+  drawing.value,
+  activeTemplate.value,
+))
+
+/** A select's choices, under the names the builder gives them ("truck" reads "Delivery truck"). */
+function selectItems(field: ThemeSectionField) {
+  return (field.options ?? []).map((value) => ({ title: field.optionLabels?.[value] ?? value, value }))
+}
+
+/** A collection setting's choices: every product, or one of the store's collections (by its handle). */
+const collectionItems = computed(() => [
+  { title: 'All products', value: 'all' },
+  ...collectionsOf(useCommerceStore().products, channelId.value).map((c) => ({ title: c.name, value: c.handle })),
+])
 const panelSettings = computed(() => (isBlockSelected.value ? selectedBlock.value?.settings : selectedSection.value?.settings) ?? {})
 
 function panelSet(key: string, value: string | number | boolean) {
@@ -929,8 +954,8 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
                 </div>
               </div>
 
-              <!-- Add block: menu over the block catalog -->
-              <v-menu location="bottom start">
+              <!-- Add block: menu over the blocks this section takes on this theme -->
+              <v-menu v-if="blocksFor(section.kind, drawing).length" location="bottom start">
                 <template #activator="{ props: menuProps }">
                   <button v-bind="menuProps" class="tb-block-add" :aria-label="`Add a block to ${section.label}`">
                     <v-icon size="16" class="tb-block-row__icon">plus</v-icon>
@@ -939,7 +964,7 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
                 </template>
                 <v-list density="compact">
                   <v-list-item
-                    v-for="def in blockCatalog"
+                    v-for="def in blocksFor(section.kind, drawing)"
                     :key="def.kind"
                     @click="addBlockToSection(section.id, def.kind)"
                   >
@@ -1068,6 +1093,7 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
               :brand="previewHeader.brand"
               :menu="previewHeader.menu"
               :products="previewItems"
+              :template="activeTemplate"
               :device="device"
               interactive
               :selected-id="selectedSectionId"
@@ -1130,7 +1156,14 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
                 v-else-if="f.type === 'select'"
                 :model-value="panelText(f.key)"
                 :label="f.label"
-                :items="f.options"
+                :items="selectItems(f)"
+                @update:model-value="(v: string) => panelSet(f.key, v)"
+              ></v-select>
+              <v-select
+                v-else-if="f.type === 'collection'"
+                :model-value="panelText(f.key) || 'all'"
+                :label="f.label"
+                :items="collectionItems"
                 @update:model-value="(v: string) => panelSet(f.key, v)"
               ></v-select>
               <v-switch
@@ -1189,6 +1222,7 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
 
     <AddSectionDialog
       v-model="addDialog"
+      :sections="addableSections"
       :is-kind-disabled="isKindDisabled"
       @add="addSection"
       @add-variant="addSectionVariant"

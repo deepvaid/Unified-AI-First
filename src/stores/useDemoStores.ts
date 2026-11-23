@@ -8,6 +8,7 @@ import { useMerchandisingStore } from '@/stores/useMerchandising'
 import { useProductExtrasStore } from '@/stores/useProductExtras'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import type { SalesChannel } from '@/stores/useSalesChannels'
+import { useSizeChartsStore } from '@/stores/useSizeCharts'
 import { useStoreCampaignsStore } from '@/stores/useStoreCampaigns'
 import { useStoreContentStore } from '@/stores/useStoreContent'
 import { useStoreNavigationStore } from '@/stores/useStoreNavigation'
@@ -71,6 +72,8 @@ export const useDemoStores = defineStore('demoStores', () => {
   function reseed(channelId: string, look = true): void {
     useSalesChannelsStore().reseedDemo(channelId)
     useCommerceStore().reseedDemo(channelId)
+    // Kept in the browser like the products, so a restore always puts them back.
+    useSizeChartsStore().reseedDemo(channelId)
     if (look) useProductExtrasStore().reseedDemo(channelId)
     if (look) useStoreThemesStore().reseedDemo(channelId)
     useStorefrontStore().reseedDemo(channelId)
@@ -95,6 +98,7 @@ export const useDemoStores = defineStore('demoStores', () => {
     if (!canApplyTheme(channelOf(channelId))) return false
     useSalesChannelsStore().attachDemo(channelId)
     useCommerceStore().attachDemo(channelId)
+    useSizeChartsStore().attachDemo(channelId)
     useProductExtrasStore().attachDemo(channelId)
     useStoreThemesStore().attachDemo(channelId)
     useStorefrontStore().attachDemo(channelId)

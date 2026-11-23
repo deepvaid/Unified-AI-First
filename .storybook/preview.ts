@@ -283,7 +283,7 @@ const preview: Preview = {
           'Atoms',
           'Molecules',
           'Patterns', ['Data Table', 'Form Fields', 'Layering', 'Module Landing Page', 'App Shell', 'Builder Shell', 'Wizard Shell', 'Settings'],
-          'Product', ['Chatbot', 'Da Vinci', 'Dashboards', 'Maropay', 'Marketing', 'Merchandising', 'Onboarding', 'PLG', 'POS', ['Overview', 'Foundations', ['Colors', 'Type & Targets'], 'Components', 'Patterns'], 'RBAC', 'Sales Channels', 'Service', 'Trial Lab'],
+          'Product', ['Chatbot', 'Da Vinci', 'Dashboards', 'Maropay', 'Marketing', 'Merchandising', 'Onboarding', 'PLG', 'POS', ['Overview', 'Foundations', ['Colors', 'Type & Targets'], 'Components', 'Patterns'], 'Products', 'RBAC', 'Sales Channels', 'Service', 'Storefront', 'Trial Lab'],
           '*',
         ],
       },

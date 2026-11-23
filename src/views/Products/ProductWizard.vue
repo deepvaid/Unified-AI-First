@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   useCommerceStore,
@@ -16,11 +16,16 @@ import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpFormSection from '@/components/MpFormSection.vue'
 import MpAlert from '@/components/MpAlert.vue'
+import MpFormField from '@/components/MpFormField.vue'
+import MpSegmentedControl from '@/components/MpSegmentedControl.vue'
 import DvCatalogCta from '@/components/copilot/DvCatalogCta.vue'
 import ProductMediaField from '@/components/products/ProductMediaField.vue'
+import SwatchHexField from '@/components/products/SwatchHexField.vue'
 import { isPlaceholderImage } from '@/components/products/productMedia'
+import { guessSwatch } from '@/components/products/swatchGuess'
 import { lowestPrice, totalStock, withPrimaryCollection } from '@/storefront/catalog'
-import { buildVariants, numberVariants } from '@/storefront/variants'
+import { buildVariants, numberVariants, optionKind, type OptionDisplay } from '@/storefront/variants'
+import { useStoreThemesStore } from '@/stores/useStoreThemes'
 import { useProductStores } from '@/composables/useProductStores'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
 import { useWizardSteps } from '@/composables/useWizardSteps'
@@ -151,10 +156,69 @@ const defaultVariant = ref<ProductVariant>(makeVariant('Default variant'))
 function addOption() {
   options.value.push({ name: '', values: [] })
 }
+
 function removeOption(index: number) {
   options.value.splice(index, 1)
   regenerateVariants()
 }
+
+// How the product page offers an option's values: buttons with the value's name,
+// or round colour swatches. An option shows as swatches once it has a colour per
+// value, and a new option named Color or Colour starts out that way.
+const DISPLAY_ITEMS = [{ value: 'buttons', label: 'Buttons' }, { value: 'swatches', label: 'Swatches' }]
+
+function displayOf(option: ProductOption): OptionDisplay {
+  return option.display ?? (Object.keys(option.swatches ?? {}).length ? 'swatches' : 'buttons')
+}
+
+/** Every value of a swatch option gets a colour, guessed from its name until the merchant picks one. */
+function fillSwatches(option: ProductOption) {
+  if (displayOf(option) !== 'swatches') return
+  const missing = option.values.filter(value => !option.swatches?.[value])
+  if (missing.length) option.swatches = { ...option.swatches, ...Object.fromEntries(missing.map(value => [value, guessSwatch(value)])) }
+}
+
+function setDisplay(option: ProductOption, display: string | null) {
+  if (display !== 'buttons' && display !== 'swatches') return
+  option.display = display
+  fillSwatches(option)
+}
+
+function setOptionName(option: ProductOption, name: string | null) {
+  option.name = name ?? ''
+  // Only a new option, not one the merchant already chose a look for.
+  if (!option.display && !Object.keys(option.swatches ?? {}).length && optionKind({ name: option.name }) === 'color') setDisplay(option, 'swatches')
+}
+
+function setOptionValues(option: ProductOption, values: unknown) {
+  option.values = Array.isArray(values) ? values.map(String) : []
+  fillSwatches(option)
+}
+
+function setSwatch(option: ProductOption, value: string, hex: string) {
+  option.swatches = { ...option.swatches, [value]: hex }
+}
+
+/** Swatch fields whose text is not a colour ("<option index>|<value>"): saving refuses while any is. */
+const badSwatches = ref<string[]>([])
+function setSwatchInvalid(index: number, value: string, invalid: boolean) {
+  const key = `${index}|${value}`
+  const rest = badSwatches.value.filter((k) => k !== key)
+  badSwatches.value = invalid ? [...rest, key] : rest
+}
+/** "Fix the colour for Black" after a save was refused over a swatch that is not a colour. */
+const swatchProblem = computed(() => {
+  if (!submitted.value || !badSwatches.value.length) return null
+  const values = badSwatches.value.map((key) => key.slice(key.indexOf('|') + 1))
+  return `Fix the colour for ${values.join(' and ')}: use a hex colour, like #C8B89A.`
+})
+
+// The swatch preview sits on the page colour of the store the product is in.
+const themes = useStoreThemesStore()
+const swatchBackground = computed(() => {
+  const storeId = productStores.channelIds(salesChannels.value)[0]
+  return storeId ? themes.themeForChannel(storeId)?.styles.background : undefined
+})
 
 /** One variant per combination of option values; a combination that was already there keeps its variant. */
 function regenerateVariants() {
@@ -186,9 +250,18 @@ let loadedDetail: Partial<ProductDetail> = {}
 /** The variant ids the edited product had when the form opened: a variant added now never takes the id of one removed now. */
 let loadedVariantIds: number[] = []
 
-/** An option as saved: what this form edits, and how the storefront offers it (display, swatches), which it does not. */
+/** An option as saved: its name, values, and how the storefront offers them (display, swatches). */
 function copyOption(o: ProductOption): ProductOption {
   return { ...o, values: [...o.values], ...(o.swatches ? { swatches: { ...o.swatches } } : {}) }
+}
+
+/** The option as saved, without the colours of values it no longer has. */
+function savedOption(o: ProductOption): ProductOption {
+  const option = { ...copyOption(o), name: o.name.trim() }
+  if (option.swatches && Object.keys(option.swatches).some(value => !option.values.includes(value))) {
+    option.swatches = Object.fromEntries(Object.entries(option.swatches).filter(([value]) => option.values.includes(value)))
+  }
+  return option
 }
 
 function buildSeo(): ProductDetail['seo'] {
@@ -208,7 +281,7 @@ function buildDetail(): ProductDetail {
     url: url.value.trim(),
     description: description.value.trim(),
     hasVariants: hasVariants.value,
-    options: hasVariants.value ? options.value.filter(o => o.name.trim()).map(o => ({ ...copyOption(o), name: o.name.trim() })) : [],
+    options: hasVariants.value ? options.value.filter(o => o.name.trim()).map(savedOption) : [],
     variantsList: activeVariants.value.map(v => ({ ...v, stock: { ...v.stock } })),
     taxCategory: taxCategory.value,
     material: material.value,
@@ -232,6 +305,12 @@ function buildDetail(): ProductDetail {
 /** The lowest variant price: what lists and storefront cards show for the product. */
 function representativePrice(): string {
   return Number(lowestPrice({ publishStatus: 'Draft', price: '0', detail: { variantsList: activeVariants.value } })).toFixed(2)
+}
+
+/** A store product's crossed-out "was" price: that of the variant at the lowest price, as the stores seed it; none when it has none. */
+function storeCompareAtPrice(): string {
+  const price = representativePrice()
+  return activeVariants.value.find(v => Number(v.price).toFixed(2) === price)?.compareAtPrice ?? ''
 }
 
 /** What a shopper would trip over if this were published now. Shown on the last step. */
@@ -286,7 +365,14 @@ function save(publishStatus: PublishStatus) {
     step.value = 1
     return
   }
+  // A swatch typed as something that is not a colour is never saved over in silence.
+  if (badSwatches.value.length) {
+    step.value = 3
+    void nextTick(() => document.querySelector<HTMLInputElement>('.shf[data-invalid] input')?.focus())
+    return
+  }
   const detail = buildDetail()
+  const channelIds = productStores.channelIds(salesChannels.value)
   const input: ProductDraftInput = {
     name: title.value.trim(),
     sku: sku.value.trim(),
@@ -299,9 +385,11 @@ function save(publishStatus: PublishStatus) {
     publishStatus,
     detail,
     collections: [...collections.value],
-    channelIds: productStores.channelIds(salesChannels.value),
+    channelIds,
     // A store product never goes out without a picture: it gets a drawn pack until one is added.
     imageUrls: images.value.length ? [...images.value] : productStores.placeholdersFor(salesChannels.value, title.value.trim()),
+    // A store shows this price crossed out, so it is never made up for a store product.
+    ...(channelIds.length ? { compareAtPrice: storeCompareAtPrice() } : {}),
   }
   allowNextLeave()
   if (isEdit.value && editingId.value !== null) {
@@ -667,25 +755,53 @@ onMounted(() => {
                 <v-btn variant="text" color="primary" size="small" class="text-none ml-auto" prepend-icon="plus" @click="addOption">Add option</v-btn>
               </template>
               <MpFormGrid>
-                <div v-for="(opt, i) in options" :key="i" class="mp-form-grid__trailing">
-                  <MpFormGrid :cols="2">
-                    <v-text-field v-model="opt.name" label="Option name" placeholder="Size" />
-                    <v-combobox
-                      v-model="opt.values"
-                      label="Values"
-                      hint="Type a value and press Enter"
-                      persistent-hint
-                      multiple
-                      chips
-                      closable-chips
+                <MpAlert v-if="swatchProblem" tone="error">{{ swatchProblem }}</MpAlert>
+                <MpFormGrid v-for="(opt, i) in options" :key="i" class="pw-option">
+                  <div class="mp-form-grid__trailing">
+                    <MpFormGrid :cols="2">
+                      <v-text-field :model-value="opt.name" label="Option name" placeholder="Size" @update:model-value="setOptionName(opt, $event)" />
+                      <v-combobox
+                        :model-value="opt.values"
+                        label="Values"
+                        hint="Type a value and press Enter"
+                        persistent-hint
+                        multiple
+                        chips
+                        closable-chips
+                        @update:model-value="setOptionValues(opt, $event)"
+                      />
+                    </MpFormGrid>
+                    <v-tooltip text="Remove option" location="top">
+                      <template #activator="{ props: tip }">
+                        <v-btn v-bind="tip" icon="trash-2" variant="text" size="small" class="text-medium-emphasis" aria-label="Remove option" :disabled="options.length === 1" @click="removeOption(i)" />
+                      </template>
+                    </v-tooltip>
+                  </div>
+                  <MpFormField
+                    label="Show as"
+                    :hint="displayOf(opt) === 'swatches' ? 'Shoppers pick from round colour swatches on the product page.' : 'Shoppers pick from buttons with each value\'s name.'"
+                  >
+                    <MpSegmentedControl
+                      :model-value="displayOf(opt)"
+                      :items="DISPLAY_ITEMS"
+                      size="sm"
+                      :ariaLabel="`Show ${opt.name.trim() || 'this option'} as`"
+                      class="align-self-start"
+                      @update:model-value="setDisplay(opt, $event)"
+                    />
+                  </MpFormField>
+                  <MpFormGrid v-if="displayOf(opt) === 'swatches' && opt.values.length" :cols="2">
+                    <SwatchHexField
+                      v-for="value in opt.values"
+                      :key="value"
+                      :label="value"
+                      :model-value="opt.swatches?.[value] ?? ''"
+                      :background="swatchBackground"
+                      @update:model-value="setSwatch(opt, value, $event)"
+                      @update:invalid="setSwatchInvalid(i, value, $event)"
                     />
                   </MpFormGrid>
-                  <v-tooltip text="Remove option" location="top">
-                    <template #activator="{ props: tip }">
-                      <v-btn v-bind="tip" icon="trash-2" variant="text" size="small" class="text-medium-emphasis" aria-label="Remove option" :disabled="options.length === 1" @click="removeOption(i)" />
-                    </template>
-                  </v-tooltip>
-                </div>
+                </MpFormGrid>
               </MpFormGrid>
             </MpWizardStepCard>
 
@@ -787,7 +903,8 @@ onMounted(() => {
   z-index: 1;
 }
 
-.pw-variant {
+.pw-variant,
+.pw-option {
   border: 1px solid var(--border-subtle);
   border-radius: var(--mp-radius-12);
   padding: var(--mp-space-16);

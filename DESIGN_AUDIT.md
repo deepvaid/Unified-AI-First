@@ -3136,3 +3136,226 @@ emails), read by `tests/storefront/demoStoresVitaheal.test.ts` and `demoStoresAp
   (`detail.nextVariantN`). n past 99 also runs into the next product's block, as before.
 - No test covers the seed-fix order (record after reseed); it needs a `seedVersion` bump and a
   full browser.
+
+## Northfold demo store (store themes, part 2) — 2026-11-20
+
+A second demo store, built to the Vitaheal standard without subscriptions: Northfold (demo),
+channel `northfold-demo`, store #13, blueprint slot 3, a made-up clothing brand for women and men
+in US dollars (no locale, "$64.99"). 20 products (3001-3020) with 195 size × colour variants, six
+collections, five size charts, three campaigns (LAYERS20 runs), search rules and a recommendation
+engine, a chatbot on the apparel profile, and 54 photos in `public/storefront/northfold/` with
+`CREDITS.md`. Merchandise Cloud starts connected; there is no Click & collect and no seeded order.
+Its walkthrough is `docs/store-builder/northfold-demo-script.md`.
+
+Vitaheal (demo), Neelam-Store, Atlas, Fashion Boutique, Beta, Max Test and POS look and work as
+before: 23 of their storefront and admin pages were compared in Chrome with 7d9f70f3 at 1280px and
+375px, and the HTML is identical except the account sign-in's class names (the page looks the
+same: 0 pixels differ at 1280px) and the shared product editor (below). The Vitaheal demo script's steps 1-11 pass,
+and `tests/storefront/demoStoresApp.test.ts` still checks Vitaheal's rows against the fixtures.
+
+- **Seed** `src/storefront/northfoldDemo.ts` (data built from an `InstallContext`, so ids, domain
+  and links follow the store it is installed in) and `src/storefront/demoStores/northfold.ts`
+  (`NORTHFOLD_BLUEPRINT`, appended to `DEMO_STORES`). Admin facts: audience list 903 ("Northfold
+  customers", `NORTHFOLD_CUSTOMERS_LIST_ID`), announcement email 9002
+  (`NORTHFOLD_CAMPAIGN_CONTENT_ID`), timezone America/New_York; chatbot 102 with 138 chats listed.
+- **The sections drawing.** `ThemeStyles.drawing?: 'sections'` switches a theme to the richer
+  drawing; only Northfold sets it (Torqline will). Absent means the classic drawing, unchanged.
+  The storefront context exposes it as `sectionsDrawing`, and every new storefront behaviour is
+  keyed on it: the header and footer settings (menu style, sticky, light or dark, columns), the
+  home page as a section registry, the product and collection templates, filters and sort, quick
+  add, the variant picker and size guide, listing cards, and the plainer cart and checkout copy.
+  `storefrontThemeVars` adds `--sf-button-bg|ink|border|radius`, `--sf-surface`, `--sf-muted`,
+  `--sf-divider`, `--sf-heading-weight`, `--sf-heading-case` and quoted font stacks for this
+  drawing only (`tests/storefront/themeVars.test.ts` pins every classic theme's variables).
+- **Theme catalogue.** New section `icon-row` (owns `feature` blocks: icon, title, text, link) and
+  block `collapsible-row` on `product-detail` (title, source, text, open). Both, and the new fields
+  (header and footer `colorScheme`, hero `ctaLink`, featured-products `collection`, collection-grid
+  `tileRatio` on the home template and `filters`, `sort`, `quickAdd` on the collection template,
+  product-detail `imageRatio` and `sizeGuide`), carry `drawing: 'sections'`, so a classic theme's
+  builder offers exactly what it did. Helpers `sectionsFor`, `blocksFor`, `fieldsFor`.
+- **Shopper (out of system, P4-8).** Product page with colour swatches, size buttons (sold-out
+  struck through, "Only 2 left in M", "Select a size" instead of a disabled button), a gallery that
+  follows the colour, the size guide drawer (in/cm, how to measure), rows for description, fit,
+  fabric and care, delivery and returns, and "Goes well with". Collection and search pages with
+  filters (Category, Size, Color, Price) held in the URL, removable chips, sort, editorial cards
+  and quick add; a bottom sheet on phones. Cart and order lines read "Size M · Sand" with that
+  colour's photo. Account page with order history and an order page.
+- **Admin.** Products › Size charts (list, `MpFormDrawer` editor with an editable grid, duplicate,
+  delete refused while products use a chart); the product editor's variant grid grouped by colour
+  and a Size guide card; "Show as Buttons / Swatches" with a hex field per colour in the product
+  wizard; the order page's variant line ("M · Sand"). A Northfold product saved without photos gets
+  a drawn garment, not the supplement can.
+- **Chat.** The apparel assistant answers size and fit (from the piece's fit note and its size
+  chart, in inches or cm), fabric and care, a fibre to avoid, orders, returns, sale and
+  suggestions, and never gives health answers. A body measurement the best-named piece's chart
+  cannot read moves the answer to the named piece whose chart can ("merino sweater for a 38 inch
+  chest" answers for the Merino Quarter-Zip). Vitaheal's assistant gives the same replies as before
+  (`tests/chatbot/wellnessUnchanged.test.ts`, fingerprints taken from 7d9f70f3).
+
+### Components added
+
+- Storefront (`src/views/Storefront/`): `StorefrontHeader`, `StorefrontFooter`, `StorefrontDrawer`
+  (native `<dialog>`, focus kept inside, Esc and backdrop close, focus returns to the opener),
+  `StorefrontVariantPicker` (real radios, `validate()`), `StorefrontSizeGuide`,
+  `StorefrontListingCard`, `StorefrontQuickAdd`, `StorefrontFilters`, `StorefrontProductListing`,
+  `StorefrontOrder` (page), `StorefrontSignIn` (moved out of the account page, same ids and
+  wording), `StorefrontOrderStatus`; `product/` `StorefrontProductPage`, `…Main`, `…Gallery`,
+  `…Price`, `…Rows`, `…Recommendations`; `sections/` `AnnouncementBar`, `ImageBanner` (also
+  `hero`), `CollectionGrid`, `ImageWithText`, `FeaturedProducts`, `RichText`, `IconRow`,
+  `Newsletter`, `NewsletterForm`, with the registry `sections/index.ts`. `storefrontAnnouncer.ts`
+  is the polite live region (inside an open modal dialog while one is open).
+- Admin (`src/components/products/`): `SwatchHexField`, `VariantGrid`, `ProductSizeGuideCard`,
+  `SizeChartDrawer`, `SizeChartTable`, and `swatchGuess.ts`; page `src/views/Products/SizeCharts.vue`.
+- Stories: `Product/Storefront/…` (18 files, Northfold's real seed and theme) and
+  `Product/Products/…` (`SwatchHexField`, `VariantGrid`, `ProductSizeGuideCard`, `SizeChartTable`,
+  `SizeChartDrawer`); four Northfold stories on `StorefrontPreview`. `.storybook/preview.ts` sorts
+  `Products` and `Storefront` into the Product group.
+
+### Modules, routes, keys, tests
+
+- Pure modules (`src/storefront/`, relative `.ts` imports): `facets.ts` (filters, sort, the URL
+  form `?size=m&color=black&price=50-100&category=&brand=&sort=`), `listing.ts` (card price,
+  colours, grid settings), `productPage.ts` (gallery, price, the choice in the URL, rows,
+  related products), `shopperOrders.ts` (the shopper's orders and their sums), `sizeChartForm.ts`
+  (size chart validation and grid edits); `src/chatbot/clothingAnswers.ts`. Store
+  `src/stores/useSizeCharts.ts` (Pinia id `sizeCharts`, `attachDemo` / `reseedDemo`).
+- Routes: `/commerce/:accountId/products/size_charts` (`SizeCharts`; `?store=<channelId>` picks a
+  store; sidebar Products › Size Charts) and the storefront child `account/orders/:number`
+  (`StorefrontOrder`).
+- Browser keys: Northfold keeps its data under `mp.demo-store.northfold-demo.`: `products.v1`,
+  `campaigns.v1`, `merchandising.v1`, `merchandise.v1`, `chatbot.v1`, `conversations.v1` and the
+  new `size-charts.v1`. Nothing new is written for Vitaheal; its keys are unchanged.
+- Tests: `tests/storefront/` `northfoldDemo`, `facets`, `listing`, `productPage`, `shopperOrders`,
+  `sizeChartForm`, `sizeChartsApp`, `themeVars`, and three Northfold cases in `demoStoresApp`;
+  `tests/chatbot/` `apparelAssistant` and `wellnessUnchanged` (with `wellnessCorpus.ts` and
+  `fixtures/wellness-replies.json`).
+
+### Renames and breaking changes
+
+- `DemoStoreId` is `'vitaheal' | 'northfold'`. `StoreSnapshot.checkout` is a `SnapshotCheckout`
+  (`CheckoutProfile` plus `pickup?: boolean`; `false` hides Click & collect). `DemoStoreBlueprint`
+  gains `packShot?: { shape }`; `SnapshotCollection` gains `description?`, which
+  `useProductExtras` passes on (Vitaheal's stay `''`).
+- `ThemeStyles` gains `drawing?`, `buttonColor?`, `surfaceColor?`, `mutedColor?`,
+  `dividerColor?`, `headingCase?`; `themeFonts` gains Instrument Serif; new `THEME_FONT_META`,
+  `FEATURE_ICONS`, `COLLAPSIBLE_SOURCES`. `ThemeSectionField.type` gains `'collection'`, plus
+  `optionLabels?`, `drawing?`, `templates?`; `ThemeSectionDef` gains `blocks?`, `drawing?`;
+  `ThemeBlockDef` gains `drawing?`.
+- `PackShape` gains `'garment'`; `PackGeometry` gains `textFill?`, `shadow?` (the other shapes'
+  drawings are byte-identical). `placeholderImages(name, styles, shape = 'can')`.
+- `ProductDetail` gains `imagesByColor?`, `fitNote?`, `care?`. `ProductDraftInput` gains
+  `compareAtPrice?`: a store product's save keeps its real compare-at price instead of an invented
+  1.2 × price (a Vitaheal wizard save now keeps `''`); shared-catalogue products as before.
+- `useCommerce` and `useStoreCampaigns`: a reseeded store's products and campaigns go back to
+  where they were in the list, not to the end. `useSalesChannels.seededConnection(channelId)`:
+  a demo store that starts connected to Merchandise Cloud (Northfold) is reconnected by Restore.
+- `StorefrontContext` gains `sectionsDrawing`, `sizeCharts`, `sizeChartFor(product)`,
+  `announce(text)`. `StorefrontLayout`'s header and footer moved into `StorefrontHeader` /
+  `StorefrontFooter` (classic markup unchanged). `.sf-button` reads `--sf-button-*` with today's
+  values as fallbacks. `PreviewProduct` gains `collections?`; `StorefrontPreview` gains
+  `template?`; `AddSectionDialog` gains `sections?`; `StorefrontReceipt` gains `orderHref?`.
+- `AssistantProfile` gains `placeholder`, `subscriptions?`, `clothing?`, `caution.link?`;
+  `AssistantProduct`, `AssistantContext` and `AssistantState` gain optional clothing fields; new
+  `assistantProduct()`. `ASSISTANT_PROFILES` has `apparel`; `'auto-parts'` still answers as wellness.
+- **Visible on Vitaheal (planned):** its account page reads "Your account" with Subscriptions,
+  then Orders (a subscription's name is an h3 now); the confirmation gains "Track your order" and
+  the order page. Order history and "Track your order" are on the demo stores only
+  (`storefront.demo`): every other store's account page keeps its subscriptions-only layout and
+  heading ("Your subscriptions"). On the sections drawing, cart amounts no longer break across lines.
+- **Buy now** on the sections drawing needs a variant in stock: `/checkout?buy=<id>` with no
+  `variant`, or a sold-out one, shows "Choose a color and size first" with a link back to the
+  product, never an order for an unknown size and never the cart instead.
+- **Chat (after review):** a measurement given without a unit is read in the unit that lands
+  within the chart's range ("neck 39" is 39 cm), and the size's row is then shown in that unit;
+  "I'm a size 8" reads the US sizes in the chart's fit note; "a 32 in your chinos" is a size, not
+  inches. A skin or health condition named with a fibre ("a wool allergy and eczema"), or a health
+  word (pregnant, medication, toxic, chemicals), gets the caution instead of product picks.
+- **Visible on every product (shared admin):** the product editor's variants table is the
+  `VariantGrid` (total stock with a stock chip; when more than one location holds stock, the split
+  reads under the number, "Oxford Warehouse 140 · Testing 12"); on a phone the folded SKU wraps so
+  every column stays inside the card. The Purchase options card is hidden on stores that sell no
+  subscriptions.
+- **Admin fixes after review:** the product wizard refuses to save while a swatch's text is not a
+  colour (it goes to the Variants step, focuses the field and says "Fix the colour for Black");
+  `SwatchHexField` gains `update:invalid`. The Products rail flyout lights only the page you are on
+  (it used `startsWith`, so Products lit up with Collections and Size Charts; now `routeMatches`, as
+  the expanded sidebar). The Size charts list folds Unit into the name cell on a phone. A
+  sections-drawing `StorefrontPreview` in a box narrower than 480px draws the phone layout (container
+  query), and its product page shows the product's second photo (`PreviewProduct.images`) rather
+  than an empty tile. "centimeters" on the Size guide card. The order page finds a line's product by `productId` before SKU, so variant lines
+  get their photo.
+- The restore card and dialog name size charts on a store that has them ("Size charts go back to
+  the original five"); Vitaheal's copy is unchanged.
+
+### Storefront fixes after review
+
+An independent shopper review (1280 and 375, keyboard, accessibility tree) found no blocker; its
+findings are fixed. Vitaheal's pages keep every computed style (checked before and after).
+
+- **Gating.** `StorefrontLayout` adds the root class `sf-surface--sections` on the sections drawing
+  only; `storefront-surface.css` sets `--sf-corner` (the theme radius, 0 on Northfold) and
+  `--sf-measure-narrow` (800px) there. Shared CSS reads `var(--sf-corner, <today's value>)`, and
+  page classes `sf-co--sections`, `sf-acct--sections`, `sf-content--sections`,
+  `sf-receipt--sections`, `sf-order-status--sections` carry the rest. `--sf-measure` (1200px) and
+  `--sf-gutter` (24px) were already set for every store; the listing, search and breadcrumbs now
+  use them, so every page's left edge matches the header logo (64 at 1280, 24 at 375).
+- **Chat launcher (phones).** On the sections drawing it is a 48px icon on phones and fades out
+  (no pointer, out of the tab order) while an element marked `data-sf-clear` (the variant picker,
+  Add to cart / Buy now, the cart's Checkout and the checkout's Pay block) sits in its corner; it
+  stays while the chat is open or the launcher has focus. Vitaheal's launcher is unchanged.
+- **Product page.** Each close-up photo is listed only under the colour it shows; `galleryFor`
+  returns `colors[]` and the gallery's alt names a colour only for a photo of it. The buy box is
+  sticky from 901px (by its bottom edge when it is taller than the window); the stacked gallery has
+  no thumbnail rail. "Goes well with" keeps to the same audience or unisex (`forSameAudience`).
+  The seed's product order puts women's pieces first in Women (`PRODUCT_SEEDS` reordered, ids
+  unchanged).
+- **Size guide by audience.** New pure module `src/storefront/audience.ts` (`audienceOf`,
+  `sharesAudience`, `columnsForAudience`, `chartForAudience`; tested): a men's piece on the shared
+  Outerwear chart shows Chest and Sleeve, a women's piece Bust and Sleeve. The chat reads the same
+  columns (`Audience` is re-exported from `clothingAnswers`). `StorefrontSizeGuide` gains `audience`.
+- **Chat.** When a measurement moves the answer to another piece it says why ("The Merino Crewneck
+  Sweater is sized by bust, waist and hip. For a 38 in chest, the men's Merino Quarter-Zip in M
+  fits: …"; `MeasuredPiece`).
+- **Accessibility.** After Apply on a discount code focus moves to Remove and "Code LAYERS20
+  applied. You save $19.60." is announced; after Remove, focus returns to the field; removing a
+  cart line focuses the next line (or the h1) and announces it. This focus and announcement
+  behaviour applies to every store (nothing visible changes). `StorefrontDiscountCode` gains an
+  optional `saving` prop. Screen-reader strings no longer carry a stray space ("L, sold out").
+  Quick add announces "Select a size". Search keeps focus in its box after a new query, and the
+  header's search icon lands in it. The sections drawing has its own skip link in the theme's
+  colours (App.vue's is hidden only while it is on the page).
+- **Square theme.** Cart, checkout (payment tiles, card form, summary), receipt (a plain bordered
+  panel: no shadow, scallop or notches), order status marks (theme surface and text with a
+  coloured icon or dot) and account follow the theme's corners and colours. Checkout and order sit
+  in the store's measure; account and policy pages in the narrow one. Headings use the theme
+  heading font; breadcrumbs use "/". Collection and search titles are 40px (30px at 900px and
+  below), the product title's size.
+- **Policy pages.** The title uses the theme's heading weight and case; a first `<h2>` that repeats
+  the title is not drawn. "ZIP code" for a US address on the sections drawing (classic stores keep
+  "Postcode").
+- Left as is: the round quantity badge on checkout thumbnails, the coloured card marks, and the
+  wallet/bank sheet (it stands in for another company's screen). The Organic Cotton Tee's White
+  and Black photos show a man (fifth in Women now); the launcher can sit over the lowest
+  collapsible row's chevron while visible.
+
+### Not done here
+
+- Theme edits are kept in memory only (Part 4 decides on a `themes` slot): a store tab opened
+  before the edit, or reloaded, shows the theme as seeded. The demo script shows theme edits in the
+  editor.
+- The builder's Styles tab does not edit `buttonColor`, `surfaceColor`, `mutedColor`,
+  `dividerColor` or `headingCase`; the seed sets them.
+- Only a collection template's first `collection-grid` is drawn; collection intros are not kept in
+  the browser.
+- Shared components, not changed here: on a phone a toast (`MpToastStack`) can sit over an open
+  dialog's footer until it goes, and `MpFormDrawer` with unsaved changes ignores an outside click
+  instead of asking "Discard changes?" as its docs say.
+- Part 4 decision: `useSalesChannels.seededConnection` reads the channel's own seed, so a store
+  created from the Northfold theme starts disconnected from Merchandise Cloud, and the theme's
+  search, synonyms, pins and "Goes well with" are installed but unreachable until it connects.
+- `chartInUnit` converts every column, so a size chart must not hold a non-measurement column
+  (the seed keeps US sizes in the fit note).
+- `MpFormDrawer` closes (or asks "Discard changes?") on an Esc meant for an open `v-select` inside
+  it; the size chart grid guards its own menus only.
+- On a phone the chat launcher sits over the lowest row of a product page until it is scrolled.
+- The theme thumbnails (`theme.jpg`) and the theme library, apply and Start from a theme are part 4.

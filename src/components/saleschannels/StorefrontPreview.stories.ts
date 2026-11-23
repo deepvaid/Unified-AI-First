@@ -9,6 +9,8 @@ import type { Meta, StoryObj } from '@storybook/vue3'
 import StorefrontPreview from './StorefrontPreview.vue'
 import { createBlock, createSection, type ThemeSection, type ThemeStyles } from '@/stores/themeBuilderData'
 import { constrain } from '@/stories/decorators'
+import { demoStoreFor } from '@/storefront/demoStores'
+import { snapshotFor } from '@/storefront/demoStores/install'
 
 function homeSections(): ThemeSection[] {
   return [
@@ -80,6 +82,13 @@ const meta = {
 \`--sf-radius\`, fonts, \`--sf-badge-*\`) consumed by the section mocks. \`interactive\` adds hover outlines and click/keyboard
 selection (\`select\` + \`hover\` emits); \`selectedId\` shows a labeled ring. \`device\` constrains the inner
 viewport (desktop full, tablet ~768px, mobile ~390px).
+
+**The sections drawing.** A theme with \`styles.drawing: 'sections'\` (Northfold, Torqline) is drawn as its
+storefront draws it: headings in the font table's weight, the theme's button, banner buttons on the photo,
+portrait collection tiles with the name under the photo, the **icon row** and its features, the product
+page's **collapsible rows** beside a stacked gallery, the header's icons and colour scheme, and (with
+\`template="collection"\`) the collection page's filters, sort and product grid. Every other theme's preview
+is unchanged.
 
 ### 🟢 Do's
 - **Do** drive \`sections\`/\`styles\` from the \`useStoreThemes\` store so canvas and settings stay in sync.
@@ -190,4 +199,30 @@ const storeProducts = [
 /** With `products` and `image` settings the preview shows the store itself: its photographs, and each product's photo, name and price. A product without a photo keeps the grey stand-in. Without them (every other story) the sections are drawn. */
 export const WithStorePhotos: Story = {
   args: { sections: sectionsWithPhotos(), products: storeProducts, brand: 'Vitaheal', menu: ['All products', 'Sleep', 'Sport'] },
+}
+
+// Northfold, as its home channel is seeded: a theme on the sections drawing, with its own
+// photographs and products. The admin's store page, Themes page and builder draw it like this.
+const northfold = snapshotFor(demoStoreFor('northfold').homeChannel, 'northfold', '2026-11-20')
+const northfoldProducts = northfold.products.map((p) => ({ name: p.name, price: `$${p.price}`, image: p.imageUrls?.[0], collections: p.collections }))
+const northfoldArgs = { styles: northfold.theme.styles, products: northfoldProducts, brand: northfold.chrome.wordmark, menu: northfold.chrome.nav.map((item) => item.label) }
+
+/** Northfold's home page on the sections drawing: hero photo with its buttons, portrait tiles, the outerwear row, the icon row. */
+export const SectionsDrawingHome: Story = {
+  args: { ...northfoldArgs, sections: northfold.theme.templates.home },
+}
+
+/** Northfold's product template: a stacked portrait gallery beside the buy box, and its four collapsible rows. */
+export const SectionsDrawingProduct: Story = {
+  args: { ...northfoldArgs, sections: northfold.theme.templates.product, template: 'product' },
+}
+
+/** Northfold's collection template: the product grid with its filter rail, sort and quick-add "+". */
+export const SectionsDrawingCollection: Story = {
+  args: { ...northfoldArgs, sections: northfold.theme.templates.collection, template: 'collection' },
+}
+
+/** The same home page in the phone frame: the menu folds away, the icon row stacks. */
+export const SectionsDrawingMobile: Story = {
+  args: { ...northfoldArgs, sections: northfold.theme.templates.home, device: 'mobile' },
 }

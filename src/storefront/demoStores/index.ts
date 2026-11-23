@@ -4,14 +4,15 @@
 
 import type { SalesChannel } from '../../stores/useSalesChannels.ts'
 import type { DemoStoreBlueprint, DemoStoreId } from './types.ts'
+import { NORTHFOLD_BLUEPRINT } from './northfold.ts'
 import { VITAHEAL_BLUEPRINT } from './vitaheal.ts'
 
 export type {
-  AdminFacts, AssistantProfileId, DemoStoreBlueprint, DemoStoreId, InstallContext, SizeChart, SnapshotCollection,
+  AdminFacts, AssistantProfileId, DemoStoreBlueprint, DemoStoreId, InstallContext, SizeChart, SnapshotCheckout, SnapshotCollection,
   StoreBlueprintRef, StoreCapabilities, StoreHistory, StoreSnapshot, ThemeCard,
 } from './types.ts'
 
-export const DEMO_STORES: readonly DemoStoreBlueprint[] = [VITAHEAL_BLUEPRINT]
+export const DEMO_STORES: readonly DemoStoreBlueprint[] = [VITAHEAL_BLUEPRINT, NORTHFOLD_BLUEPRINT]
 
 /** A blueprint id this build knows (one read from the browser may name a store that no longer exists). */
 export function isDemoStoreId(id: unknown): id is DemoStoreId {

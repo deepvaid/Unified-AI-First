@@ -8,7 +8,10 @@ import { STOREFRONT, isExternalHref } from './storefrontContext'
 
 // A storefront page (/page/:handle) or policy (/policies/:handle): breadcrumb, the
 // title band (the entry's title, capitalised as the theme draws it), then the body
-// as the merchant wrote it. Unknown or inactive handles get the 404 page.
+// as the merchant wrote it. Unknown or inactive handles get the 404 page. A theme on
+// the sections drawing sets the title's weight and case itself, separates the
+// breadcrumb with "/", and leaves out a first heading of the body that only repeats
+// the title.
 
 const route = useRoute()
 const router = useRouter()
@@ -17,6 +20,21 @@ const content = useStoreContentStore()
 
 const kind = computed(() => (route.meta.contentKind === 'policy' ? 'policy' : 'page') as ContentKind)
 const entry = computed(() => content.entryByHandle(storefront.channel.value.id, kind.value, String(route.params.handle ?? '')))
+const sections = computed(() => storefront.sectionsDrawing.value)
+
+/** The text of a bit of HTML, as compared with the title: tags out, spaces folded, any case. */
+function plain(html: string): string {
+  const text = new DOMParser().parseFromString(html, 'text/html').body.textContent ?? ''
+  return text.replace(/\s+/g, ' ').trim().toLowerCase()
+}
+
+/** The body as shown: on the sections drawing, without a leading <h2> that says the title again. */
+const body = computed(() => {
+  const html = entry.value?.body ?? ''
+  if (!sections.value || !entry.value) return html
+  const lead = /^\s*<h2\b[^>]*>([\s\S]*?)<\/h2>\s*/i.exec(html)
+  return lead && plain(lead[1]!) === plain(entry.value.title) ? html.slice(lead[0].length) : html
+})
 
 /** A store-relative link in the body ("/policies/refund-policy") opens that storefront page, not the admin's path. */
 function followBodyLink(event: MouseEvent): void {
@@ -28,15 +46,15 @@ function followBodyLink(event: MouseEvent): void {
 </script>
 
 <template>
-  <article v-if="entry" class="sf-content">
+  <article v-if="entry" class="sf-content" :class="{ 'sf-content--sections': sections }">
     <nav class="sf-crumbs" aria-label="Breadcrumb">
       <StorefrontAnchor href="/">Home</StorefrontAnchor>
-      <span aria-hidden="true">›</span>
+      <span aria-hidden="true">{{ sections ? '/' : '›' }}</span>
       <span aria-current="page">{{ entry.title }}</span>
     </nav>
     <h1 class="sf-content__title">{{ entry.title }}</h1>
     <!-- Merchant-authored rich text from the store's own content. -->
-    <div class="sf-content__body" @click="followBodyLink" v-html="entry.body" />
+    <div class="sf-content__body" @click="followBodyLink" v-html="body" />
   </article>
   <StorefrontNotFound v-else />
 </template>
@@ -58,11 +76,35 @@ function followBodyLink(event: MouseEvent): void {
 .sf-content__title {
   margin: 32px 0;
   text-align: center;
-  text-transform: capitalize;
+  /* The heading case and weight are set by a theme on the sections drawing only
+     (storefrontThemeVars); every other theme keeps the capitalised bold title. */
+  text-transform: var(--sf-heading-case, capitalize);
   font-family: var(--sf-heading-font, system-ui), -apple-system, 'Segoe UI', Roboto, sans-serif;
   font-size: 39px;
   line-height: 1.2;
-  font-weight: 700;
+  font-weight: var(--sf-heading-weight, 700);
+}
+
+/* The sections drawing: the store's narrow reading measure and gutter (shared with the
+   account page), and breadcrumbs as its product page draws them. */
+.sf-content.sf-content--sections {
+  max-width: var(--sf-measure-narrow, 900px);
+  padding-inline: var(--sf-gutter, 24px);
+}
+
+.sf-content--sections .sf-crumbs {
+  gap: 10px;
+  color: var(--sf-muted, #5f5f5f);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.sf-content--sections .sf-crumbs a {
+  color: var(--sf-muted, #5f5f5f);
+}
+
+.sf-content--sections .sf-crumbs [aria-current='page'] {
+  color: var(--sf-text, #121011);
 }
 
 .sf-content__body :deep(a) {

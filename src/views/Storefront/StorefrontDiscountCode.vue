@@ -1,20 +1,49 @@
 <script setup lang="ts">
+import { inject, nextTick, ref } from 'vue'
+import { announce } from './storefrontAnnouncer'
+import { STOREFRONT } from './storefrontContext'
+
 // The discount code field of the cart and the checkout: type a code and apply it,
 // or see the applied one with a way to take it off. What a code is worth is the
-// page's business (storefrontDiscount.ts); this only asks and reports.
+// page's business (storefrontDiscount.ts); this only asks and reports. Applying
+// swaps the form for the applied row, so the keyboard moves to its Remove button
+// and the saving is said; removing the code puts the keyboard back in the field.
 
-defineProps<{
+const props = defineProps<{
   /** The code in force, or empty. */
   applied: string
   /** Why the last code typed can't be used. */
   problem: string | null
   /** Unique on the page: the cart and the checkout never share one, but ids must not clash. */
   idPrefix: string
+  /** What the applied code takes off, written the store's way ("$19.60"), for the announcement. */
+  saving?: string
 }>()
 
 const typed = defineModel<string>('typed', { required: true })
 
-defineEmits<{ apply: []; remove: [] }>()
+const emit = defineEmits<{ apply: []; remove: [] }>()
+
+const say = inject(STOREFRONT, null)?.announce ?? announce
+const field = ref<HTMLInputElement | null>(null)
+const removeButton = ref<HTMLButtonElement | null>(null)
+
+async function apply(): Promise<void> {
+  emit('apply')
+  await nextTick()
+  // A code that can't be used leaves the form, its message and the keyboard where they are.
+  if (!props.applied) return
+  removeButton.value?.focus()
+  say(`Code ${props.applied} applied.${props.saving ? ` You save ${props.saving}.` : ''}`)
+}
+
+async function remove(): Promise<void> {
+  const code = props.applied
+  emit('remove')
+  await nextTick()
+  field.value?.focus()
+  say(`Code ${code} removed.`)
+}
 </script>
 
 <template>
@@ -22,13 +51,14 @@ defineEmits<{ apply: []; remove: [] }>()
     <p v-if="applied" class="sf-code__applied">
       <v-icon size="16" aria-hidden="true">tag</v-icon>
       <span>Code <strong>{{ applied }}</strong> applied</span>
-      <button type="button" class="sf-code__remove" @click="$emit('remove')">Remove<span class="sf-code__sr"> code {{ applied }}</span></button>
+      <button ref="removeButton" type="button" class="sf-code__remove" @click="remove">Remove<span class="sf-code__sr"> code {{ applied }}</span></button>
     </p>
-    <form v-else class="sf-code__form" novalidate @submit.prevent="$emit('apply')">
+    <form v-else class="sf-code__form" novalidate @submit.prevent="apply">
       <label :for="`${idPrefix}-code`" class="sf-code__label">Discount code</label>
       <div class="sf-code__row">
         <input
           :id="`${idPrefix}-code`"
+          ref="field"
           v-model="typed"
           class="sf-input sf-code__input"
           autocomplete="off"

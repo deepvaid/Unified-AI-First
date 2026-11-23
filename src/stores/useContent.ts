@@ -21,6 +21,8 @@ export type TemplateEditorType = 'Drag & Drop' | 'WYSIWYG' | 'Drag & Drop (Legac
 
 /** The email content a Vitaheal store campaign is announced with. */
 export const VITAHEAL_CAMPAIGN_CONTENT_ID = 9001
+/** The email content a Northfold store campaign is announced with. */
+export const NORTHFOLD_CAMPAIGN_CONTENT_ID = 9002
 
 export interface ContentItem {
   id: number
@@ -159,6 +161,17 @@ function seedContent(): ContentItem[] {
     editorType: 'Drag & Drop',
     createdAt: new Date(Date.now() - 2 * 86_400_000).toISOString(),
     updatedAt: new Date().toISOString(),
+    folderId: null,
+    archived: false,
+    usedByCampaigns: 0,
+  })
+  // The Northfold (demo) store's, just after it.
+  out.push({
+    id: NORTHFOLD_CAMPAIGN_CONTENT_ID,
+    name: 'Northfold: campaign announcement',
+    editorType: 'Drag & Drop',
+    createdAt: new Date(Date.now() - 86_400_000).toISOString(),
+    updatedAt: new Date(Date.now() - 60_000).toISOString(),
     folderId: null,
     archived: false,
     usedByCampaigns: 0,

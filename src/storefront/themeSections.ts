@@ -8,10 +8,17 @@
 export interface ThemeSectionField {
   key: string
   label: string
-  type: 'text' | 'textarea' | 'select' | 'color' | 'toggle' | 'slider'
+  /** 'collection': one of the store's collections (its handle), or 'all'. */
+  type: 'text' | 'textarea' | 'select' | 'color' | 'toggle' | 'slider' | 'collection'
   options?: string[]
+  /** What the builder shows for a select's options, when that differs from the stored value ("truck" → "Truck"). */
+  optionLabels?: Record<string, string>
   min?: number
   max?: number
+  /** Read by the sections drawing only: the builder offers it on a theme drawn that way (ThemeStyles.drawing). */
+  drawing?: 'sections'
+  /** The templates the field means something on (a collection grid's filters, on the collection page). Every template when absent. */
+  templates?: TemplateType[]
 }
 
 export interface ThemeSectionVariant {
@@ -30,7 +37,15 @@ export interface ThemeSectionDef {
   fields: ThemeSectionField[]
   variants?: ThemeSectionVariant[]
   acceptsBlocks?: boolean
+  /**
+   * The blocks a section of this kind holds, when it has blocks of its own (an icon
+   * row's features, a product page's collapsible rows): it takes those and no others.
+   * Without it, a block-accepting section takes the general blocks.
+   */
+  blocks?: string[]
   unique?: boolean
+  /** A kind only the sections drawing draws: the builder offers it on a theme drawn that way. */
+  drawing?: 'sections'
 }
 
 /** A block nested inside a block-accepting section. */
@@ -45,6 +60,8 @@ export interface ThemeBlockDef {
   title: string
   icon: string
   fields: ThemeSectionField[]
+  /** A block only the sections drawing draws. */
+  drawing?: 'sections'
 }
 
 export interface ThemeSection {
@@ -75,6 +92,24 @@ export interface ThemeStyles {
   /** The merchant's own badges ("New", "Bestseller"). */
   customBadgeColor: string
   soldOutBadgeColor: string
+  /**
+   * How the storefront draws the theme. 'sections': the richer drawing (header and
+   * footer settings, product and collection templates, filters, quick add, the variant
+   * picker), set by the Northfold and Torqline themes only. Absent: the classic
+   * drawing every other theme has always had.
+   */
+  drawing?: 'sections'
+  // The colours and type below are read by the sections drawing only, and only it
+  // emits them as variables (storefrontThemeVars), so a classic theme never changes.
+  /** Button fill (solid, pill) or outline colour; the brand colour when absent. */
+  buttonColor?: string
+  /** Quiet panels: image backgrounds, the newsletter band, sheets. */
+  surfaceColor?: string
+  /** Secondary text: captions, "Usual price", counts. */
+  mutedColor?: string
+  /** Hairlines between sections, rows and fields. */
+  dividerColor?: string
+  headingCase?: 'As typed' | 'Uppercase'
 }
 
 export interface StoreTheme {
@@ -102,7 +137,31 @@ export const TEMPLATE_TYPE_LABELS: Record<TemplateType, string> = {
 }
 
 /** Fonts offered by the theme styles panel. */
-export const themeFonts = ['Inter', 'Figtree', 'Inconsolata', 'Georgia', 'Space Grotesk', 'DM Sans', 'system-ui']
+export const themeFonts = ['Inter', 'Figtree', 'Inconsolata', 'Georgia', 'Space Grotesk', 'DM Sans', 'Instrument Serif', 'system-ui']
+
+/**
+ * How the sections drawing sets a font: its fallbacks, and the weight headings take
+ * (a display face with one weight is never made bold by the browser). A font missing
+ * here falls back to a sans stack and weight 700.
+ */
+export const THEME_FONT_META: Readonly<Record<string, { fallback: string; headingWeight: number }>> = {
+  Inter: { fallback: 'system-ui, sans-serif', headingWeight: 700 },
+  Figtree: { fallback: 'system-ui, sans-serif', headingWeight: 700 },
+  Inconsolata: { fallback: 'ui-monospace, monospace', headingWeight: 600 },
+  Georgia: { fallback: "'Times New Roman', serif", headingWeight: 700 },
+  'Space Grotesk': { fallback: 'system-ui, sans-serif', headingWeight: 600 },
+  'DM Sans': { fallback: 'system-ui, sans-serif', headingWeight: 600 },
+  'Instrument Serif': { fallback: 'Georgia, serif', headingWeight: 400 },
+  Barlow: { fallback: 'system-ui, sans-serif', headingWeight: 600 },
+  'Barlow Condensed': { fallback: "'Arial Narrow', sans-serif", headingWeight: 700 },
+  'system-ui': { fallback: 'sans-serif', headingWeight: 700 },
+}
+
+/** A font as a CSS font-family list: the face, quoted, then its fallbacks. */
+function fontStack(font: string): string {
+  const fallback = THEME_FONT_META[font]?.fallback ?? 'system-ui, sans-serif'
+  return font === 'system-ui' ? `system-ui, ${fallback}` : `"${font}", ${fallback}`
+}
 
 /** Relative luminance of a #rgb / #rrggbb colour, or null for anything else. */
 function hexLuminance(color: string): number | null {
@@ -128,9 +187,58 @@ export function onBrandColor(brand: string): string | null {
   return (l + 0.05) / 0.05 >= 1.05 / (l + 0.05) ? '#121011' : '#ffffff'
 }
 
+/** `a` mixed into `b`: amount 0 is b, 1 is a. Both #rrggbb or #rgb; null for anything else. */
+function mixHex(a: string, b: string, amount: number): string | null {
+  const rgb = (color: string) => {
+    const m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(color.trim())
+    if (!m) return null
+    const hex = m[1]!.length === 3 ? [...m[1]!].map((c) => c + c).join('') : m[1]!
+    return [0, 2, 4].map((i) => Number.parseInt(hex.slice(i, i + 2), 16))
+  }
+  const [x, y] = [rgb(a), rgb(b)]
+  if (!x || !y) return null
+  return `#${x.map((v, i) => Math.round(v * amount + y[i]! * (1 - amount)).toString(16).padStart(2, '0')).join('')}`
+}
+
+/**
+ * The variables only the sections drawing reads: the button, the quiet surfaces,
+ * and headings as the font table sets them. A colour the theme does not set comes
+ * from its text and background.
+ */
+function sectionsDrawingVars(styles: Partial<ThemeStyles>): Record<string, string> {
+  const vars: Record<string, string> = {}
+  const button = styles.buttonColor || styles.brandColor
+  if (button) {
+    const outline = styles.buttonStyle === 'outline'
+    vars['--sf-button-bg'] = outline ? 'transparent' : button
+    const ink = outline ? button : onBrandColor(button)
+    if (ink) vars['--sf-button-ink'] = ink
+    vars['--sf-button-border'] = button
+  }
+  if (styles.buttonStyle === 'pill') vars['--sf-button-radius'] = '999px'
+  else if (styles.cornerRadius !== undefined) vars['--sf-button-radius'] = `${styles.cornerRadius}px`
+  const derived = (amount: number) => (styles.textColor && styles.background ? mixHex(styles.textColor, styles.background, amount) : null)
+  const surface = styles.surfaceColor || derived(0.04)
+  const muted = styles.mutedColor || derived(0.66)
+  const divider = styles.dividerColor || derived(0.11)
+  if (surface) vars['--sf-surface'] = surface
+  if (muted) vars['--sf-muted'] = muted
+  if (divider) vars['--sf-divider'] = divider
+  if (styles.headingFont) {
+    vars['--sf-heading-font'] = fontStack(styles.headingFont)
+    vars['--sf-heading-weight'] = String(THEME_FONT_META[styles.headingFont]?.headingWeight ?? 700)
+  }
+  if (styles.bodyFont) vars['--sf-body-font'] = fontStack(styles.bodyFont)
+  vars['--sf-heading-case'] = styles.headingCase === 'Uppercase' ? 'uppercase' : 'none'
+  return vars
+}
+
 /**
  * A theme's styles as the storefront's CSS custom properties (--sf-*). Missing
- * values are left out, so the storefront's own fallbacks apply.
+ * values are left out, so the storefront's own fallbacks apply. A theme on the
+ * sections drawing also gets its button, surface, muted and divider colours, heading
+ * weight and case, and its fonts with their fallbacks; a classic theme's variables
+ * are exactly what they have always been (tests/storefront/themeVars.test.ts).
  */
 export function storefrontThemeVars(styles?: Partial<ThemeStyles> | null): Record<string, string> {
   if (!styles) return {}
@@ -153,7 +261,7 @@ export function storefrontThemeVars(styles?: Partial<ThemeStyles> | null): Recor
     const ink = onBrandColor(fill)
     if (ink) vars[`--sf-on-badge-${name}`] = ink
   }
-  return vars
+  return styles.drawing === 'sections' ? { ...vars, ...sectionsDrawingVars(styles) } : vars
 }
 
 // ── Section catalog ──────────────────────────────────────────────────────────
@@ -180,6 +288,7 @@ export const sectionCatalog: ThemeSectionDef[] = [
     fields: [
       { key: 'menuStyle', label: 'Menu style', type: 'select', options: ['Inline', 'Centered', 'Minimal'] },
       { key: 'sticky', label: 'Sticky on scroll', type: 'toggle' },
+      { key: 'colorScheme', label: 'Color scheme', type: 'select', options: ['Light', 'Dark'], drawing: 'sections' },
     ],
   },
   {
@@ -198,6 +307,7 @@ export const sectionCatalog: ThemeSectionDef[] = [
       { key: 'headline', label: 'Headline', type: 'text' },
       { key: 'subheadline', label: 'Subheadline', type: 'text' },
       { key: 'ctaLabel', label: 'Button label', type: 'text' },
+      { key: 'ctaLink', label: 'Button link', type: 'text', drawing: 'sections' },
       { key: 'alignment', label: 'Alignment', type: 'select', options: ['Left', 'Center'] },
       { key: 'overlay', label: 'Overlay strength', type: 'slider', min: 0, max: 60 },
     ],
@@ -215,6 +325,7 @@ export const sectionCatalog: ThemeSectionDef[] = [
     ],
     fields: [
       { key: 'title', label: 'Title', type: 'text' },
+      { key: 'collection', label: 'Collection', type: 'collection', drawing: 'sections' },
       { key: 'productCount', label: 'Products', type: 'slider', min: 2, max: 8 },
       { key: 'layout', label: 'Layout', type: 'select', options: ['Grid', 'Carousel'] },
     ],
@@ -234,6 +345,10 @@ export const sectionCatalog: ThemeSectionDef[] = [
     fields: [
       { key: 'title', label: 'Title', type: 'text' },
       { key: 'columns', label: 'Columns', type: 'slider', min: 2, max: 4 },
+      { key: 'tileRatio', label: 'Tile shape', type: 'select', options: ['Portrait', 'Square', 'Landscape'], drawing: 'sections', templates: ['home'] },
+      { key: 'filters', label: 'Filters', type: 'toggle', drawing: 'sections', templates: ['collection'] },
+      { key: 'sort', label: 'Sort', type: 'toggle', drawing: 'sections', templates: ['collection'] },
+      { key: 'quickAdd', label: 'Quick add on product cards', type: 'toggle', drawing: 'sections', templates: ['collection'] },
     ],
   },
   {
@@ -315,8 +430,13 @@ export const sectionCatalog: ThemeSectionDef[] = [
     description: 'Gallery, price, and buy box for the product template.',
     category: 'Commerce',
     unique: true,
+    // Collapsible rows under the buy box, on the sections drawing (the block is drawn there only).
+    acceptsBlocks: true,
+    blocks: ['collapsible-row'],
     fields: [
       { key: 'galleryLayout', label: 'Gallery layout', type: 'select', options: ['Thumbnails', 'Stacked'] },
+      { key: 'imageRatio', label: 'Image shape', type: 'select', options: ['Portrait', 'Square', 'Landscape'], drawing: 'sections' },
+      { key: 'sizeGuide', label: 'Size guide link', type: 'toggle', drawing: 'sections' },
       { key: 'showReviews', label: 'Show reviews', type: 'toggle' },
     ],
   },
@@ -342,7 +462,20 @@ export const sectionCatalog: ThemeSectionDef[] = [
     fields: [
       { key: 'showSocial', label: 'Show social icons', type: 'toggle' },
       { key: 'columns', label: 'Link columns', type: 'slider', min: 2, max: 4 },
+      { key: 'colorScheme', label: 'Color scheme', type: 'select', options: ['Light', 'Dark'], drawing: 'sections' },
     ],
+  },
+  {
+    // A row of short promises, each an icon over a title and a line (a trust strip).
+    kind: 'icon-row',
+    title: 'Icon row',
+    icon: 'badge-check',
+    description: 'Short promises with icons, such as free shipping, returns and sizing help.',
+    category: 'Content',
+    acceptsBlocks: true,
+    blocks: ['feature'],
+    drawing: 'sections',
+    fields: [{ key: 'title', label: 'Heading', type: 'text' }],
   },
 ]
 
@@ -371,6 +504,16 @@ export const sectionDefaults: Record<string, Record<string, string | number | bo
   'product-detail': { galleryLayout: 'Thumbnails', showReviews: true },
   'cart-summary': { showNotes: false, upsells: true },
   footer: { showSocial: true, columns: 3 },
+  'icon-row': { title: '' },
+}
+
+/** Blocks a new section of the kind starts with, so it shows something as soon as it is added. */
+const sectionStarterBlocks: Record<string, () => ThemeBlock[]> = {
+  'icon-row': () => [
+    createBlock('feature', { icon: 'truck', title: 'Free shipping', text: 'Say what you deliver, where, and how fast.' }),
+    createBlock('feature', { icon: 'rotate-ccw', title: 'Easy returns', text: 'Say how long shoppers have to send something back.' }),
+    createBlock('feature', { icon: 'headphones', title: 'Here to help', text: 'Say how shoppers can reach you.' }),
+  ],
 }
 
 export function getSectionDef(kind: string): ThemeSectionDef | undefined {
@@ -390,6 +533,7 @@ export function createSection(
 ): ThemeSection {
   const def = getSectionDef(kind)
   sectionIdCounter += 1
+  const starter = sectionStarterBlocks[kind]
   return {
     id: id ?? `${kind}-${Date.now().toString(36)}-${sectionIdCounter}`,
     kind,
@@ -397,10 +541,36 @@ export function createSection(
     // Spread clones — settings values are always flat primitives, so no
     // references are shared between sections or with the defaults map.
     settings: { ...(sectionDefaults[kind] ?? {}), ...overrides },
+    ...(starter ? { blocks: starter() } : {}),
   }
 }
 
 // ── Block catalog ────────────────────────────────────────────────────────────
+
+/** The icons an icon row's feature can show (Lucide names), with what the builder calls them. */
+export const FEATURE_ICONS: Readonly<Record<string, string>> = {
+  truck: 'Delivery truck',
+  'rotate-ccw': 'Return arrow',
+  ruler: 'Ruler',
+  'badge-check': 'Check badge',
+  'shield-check': 'Shield',
+  leaf: 'Leaf',
+  package: 'Parcel',
+  'credit-card': 'Card',
+  headphones: 'Headset',
+  gift: 'Gift',
+  clock: 'Clock',
+  'map-pin': 'Map pin',
+}
+
+/** Where a collapsible row's body comes from. */
+export const COLLAPSIBLE_SOURCES: Readonly<Record<string, string>> = {
+  description: 'Product description',
+  fit: 'Fit note and size guide',
+  'fabric-care': 'Material and care',
+  'delivery-returns': 'Delivery and returns (the text below)',
+  custom: 'The text below',
+}
 // Blocks nest inside block-accepting sections (hero, image-banner, rich-text,
 // featured-products, collection-grid). Fields reuse ThemeSectionField so the
 // same schema-driven settings renderer applies to blocks.
@@ -458,6 +628,32 @@ export const blockCatalog: ThemeBlockDef[] = [
     icon: 'move-vertical',
     fields: [{ key: 'size', label: 'Size', type: 'slider', min: 8, max: 80 }],
   },
+  {
+    // One promise in an icon row.
+    kind: 'feature',
+    title: 'Feature',
+    icon: 'badge-check',
+    drawing: 'sections',
+    fields: [
+      { key: 'icon', label: 'Icon', type: 'select', options: Object.keys(FEATURE_ICONS), optionLabels: FEATURE_ICONS },
+      { key: 'title', label: 'Title', type: 'text' },
+      { key: 'text', label: 'Text', type: 'textarea' },
+      { key: 'link', label: 'Link', type: 'text' },
+    ],
+  },
+  {
+    // A row under the product page's buy box that opens and closes. `source` says what it holds.
+    kind: 'collapsible-row',
+    title: 'Collapsible row',
+    icon: 'list-collapse',
+    drawing: 'sections',
+    fields: [
+      { key: 'title', label: 'Title', type: 'text' },
+      { key: 'source', label: 'Content', type: 'select', options: Object.keys(COLLAPSIBLE_SOURCES), optionLabels: COLLAPSIBLE_SOURCES },
+      { key: 'text', label: 'Text', type: 'textarea' },
+      { key: 'open', label: 'Open when the page loads', type: 'toggle' },
+    ],
+  },
 ]
 
 /** Default settings applied when a block of the given kind is created. */
@@ -469,10 +665,44 @@ const blockDefaults: Record<string, Record<string, string | number | boolean>> =
   collection: { label: 'Collection', link: '/collections/all' },
   divider: {},
   spacer: { size: 32 },
+  feature: { icon: 'badge-check', title: 'A promise', text: 'One line that backs it up.', link: '' },
+  'collapsible-row': { title: 'Details', source: 'custom', text: '', open: false },
 }
 
 export function getBlockDef(kind: string): ThemeBlockDef | undefined {
   return blockCatalog.find((def) => def.kind === kind)
+}
+
+// ── What the builder offers a theme ─────────────────────────────────────────
+// A classic theme is offered exactly what it always was; a theme on the sections
+// drawing also gets the kinds, blocks and fields only that drawing draws.
+
+type Drawing = ThemeStyles['drawing']
+
+const forDrawing = (drawing: Drawing) => (def: { drawing?: 'sections' }) => !def.drawing || def.drawing === drawing
+
+/** The section kinds the Add section picker offers a theme. */
+export function sectionsFor(drawing: Drawing): ThemeSectionDef[] {
+  return sectionCatalog.filter(forDrawing(drawing))
+}
+
+/** Blocks some section kind holds as its own (a feature, a collapsible row): never offered elsewhere. */
+const OWN_BLOCKS = new Set(sectionCatalog.flatMap((def) => def.blocks ?? []))
+
+/**
+ * The blocks a section of the kind can take on a theme: its own blocks when it has
+ * them, else the general blocks when it accepts blocks, else none.
+ */
+export function blocksFor(kind: string, drawing: Drawing): ThemeBlockDef[] {
+  const def = getSectionDef(kind)
+  if (!def?.acceptsBlocks) return []
+  const usable = blockCatalog.filter(forDrawing(drawing))
+  return def.blocks ? usable.filter((block) => def.blocks!.includes(block.kind)) : usable.filter((block) => !OWN_BLOCKS.has(block.kind))
+}
+
+/** The settings the builder shows for a section or block, on a theme and template. */
+export function fieldsFor(fields: readonly ThemeSectionField[], drawing: Drawing, template: TemplateType): ThemeSectionField[] {
+  return fields.filter((field) => forDrawing(drawing)(field) && (!field.templates || field.templates.includes(template)))
 }
 
 let blockIdCounter = 0

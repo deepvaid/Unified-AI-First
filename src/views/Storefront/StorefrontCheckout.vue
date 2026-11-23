@@ -8,7 +8,11 @@ import { MAROPAY_STORE_ROUTE } from '@/maropay/readiness'
 import { cardErrors, cardLabel, flowForMethod, payButtonText } from '@/maropay/storefront'
 import type { CardInput, ShopperMethod } from '@/maropay/storefront'
 import { lineProduct } from '@/storefront/cart'
+import type { SnapshotCheckout } from '@/storefront/demoStores'
+import { lineImage, lineProductQuery, lineVariantText, orderParam, withQuery } from '@/storefront/shopperOrders'
+import { variantAvailable } from '@/storefront/variants'
 import { useCommerceStore } from '@/stores/useCommerce'
+import { useDemoStores } from '@/stores/useDemoStores'
 import { useMaropayStore } from '@/stores/useMaropay'
 import { MAX_QTY, lineTotal, useStorefrontCartStore } from '@/stores/useStorefrontCart'
 import { useStorefrontShopperStore } from '@/stores/useStorefrontShopper'
@@ -46,7 +50,14 @@ const accountId = computed(() => String(route.params.accountId ?? '2000290'))
 const currency = computed(() => storefront.currency.value)
 /** Every amount here is what is charged, to the last cent, written the store's way ("585,90 kr"). */
 const formatMoney = storefront.formatExact
-const profile = storefront.checkout.value
+/**
+ * Where the store delivers and who the form is filled in with. A demo store's own
+ * checkout (src/storefront/demoStores) also says whether it offers Click & collect
+ * and keeps the address typed here on the order.
+ */
+const profile: SnapshotCheckout = useDemoStores().snapshotOf(channelId.value)?.checkout ?? storefront.checkout.value
+/** Click & collect is offered unless the store says it has no counter to collect from. */
+const pickupOffered = profile.pickup !== false
 const storeName = computed(() => storefront.chrome.value.wordmark)
 
 function query(key: string): string | null {
@@ -59,15 +70,36 @@ function delay(ms: number): Promise<void> {
 }
 
 // ── What's being bought ─────────────────────────────────────────────
-// Express "buy now" on a product page buys that item alone; otherwise the cart.
+// Express "buy now" on a product page buys that item alone, in the variant chosen
+// there (`?buy=<productId>&variant=<variantId>`); otherwise the cart.
 
 const buyNow = computed(() => {
   const product = commerce.products.find((p) => p.id === Number(query('buy')) && p.publishStatus === 'Published')
-  return product ? { product, qty: Math.min(MAX_QTY, Math.max(1, Math.floor(Number(query('qty')) || 1))) } : null
+  if (!product) return null
+  // A variant counts only where the product has a choice to make, as in the cart.
+  const variant = product.detail?.options.length ? product.detail.variantsList.find((v) => String(v.id) === query('variant')) : undefined
+  return { product, variant, qty: Math.min(MAX_QTY, Math.max(1, Math.floor(Number(query('qty')) || 1))) }
 })
 
-const lineItems = computed<CheckoutLineItem[]>(() => (buyNow.value
-  ? [{ product: buyNow.value.product.name, sku: buyNow.value.product.sku, qty: buyNow.value.qty, price: buyNow.value.product.price, productId: buyNow.value.product.id }]
+/**
+ * On the sections drawing the product page always names a variant in stock: a buy-now
+ * link that names none, or one sold out, has nothing to buy (never an order for an
+ * unknown size, and never the cart instead).
+ */
+const unbuyable = computed(() => {
+  const now = buyNow.value
+  return !!now && storefront.sectionsDrawing.value && !!now.product.detail?.options.length && (!now.variant || !variantAvailable(now.variant))
+})
+
+const lineItems = computed<CheckoutLineItem[]>(() => (unbuyable.value ? [] : buyNow.value
+  ? [{
+      product: buyNow.value.product.name,
+      sku: buyNow.value.variant?.sku || buyNow.value.product.sku,
+      qty: buyNow.value.qty,
+      price: buyNow.value.variant?.price || buyNow.value.product.price,
+      productId: buyNow.value.product.id,
+      ...(buyNow.value.variant ? { variantId: buyNow.value.variant.id, variantTitle: buyNow.value.variant.title } : {}),
+    }]
   : cart.linesFor(channelId.value).map((l) => ({
       product: l.name,
       sku: l.sku,
@@ -129,12 +161,24 @@ function iconFor(line: CheckoutLineItem): string {
   return (category && CATEGORY_ICONS[category]) || 'package'
 }
 
-/** The product's first picture, for a line whose product has one. */
+/** The line's picture: the chosen colour's own photo, else the product's first. */
 function imageFor(line: CheckoutLineItem): string | undefined {
-  return lineProduct(commerce.products, line)?.imageUrls?.[0]
+  return lineImage(lineProduct(commerce.products, line), line)
 }
 
-const editHref = computed(() => (buyNow.value ? `/products/${productHandle(buyNow.value.product)}` : '/cart-page'))
+/** "Size M · Sand" under the line's name; empty for a product without a choice. */
+function variantText(line: CheckoutLineItem): string {
+  return lineVariantText(lineProduct(commerce.products, line), line)
+}
+
+/** Back to what is being bought: the product page on the variant chosen, or the cart. */
+const editHref = computed(() => {
+  const now = buyNow.value
+  if (!now) return '/cart-page'
+  if (unbuyable.value) return `/products/${productHandle(now.product)}`
+  const line = lineItems.value[0]!
+  return withQuery(`/products/${productHandle(now.product)}`, lineProductQuery(now.product, line))
+})
 
 // ── Form ─────────────────────────────────────────────────────────────
 // A sample shopper is filled in so a test payment is one press away. Who that is and
@@ -176,6 +220,9 @@ const errors = computed<Record<string, string>>(() => {
 function errorFor(key: string): string | null {
   return attempted.value ? errors.value[key] ?? null : null
 }
+
+/** A US address has a ZIP code. Said so on the sections drawing; every other theme keeps "Postcode". */
+const postcodeLabel = computed(() => (storefront.sectionsDrawing.value && address.country === 'United States' ? 'ZIP code' : 'Postcode'))
 
 const shipTo = computed(() => (delivery.value === 'pickup' ? 'Collect in store' : `${address.address1}, ${address.city}`))
 /** The address goes with the order for a store that keeps it; "Collect in store" stands in for the street on a pickup. */
@@ -330,6 +377,12 @@ onMounted(() => {
 
 // ── After the order ──────────────────────────────────────────────────
 
+/** The order's page in the account, where the shopper is signed in by now; only on a demo store with an account page (the others' accounts list no orders). */
+const orderHref = computed(() => {
+  const number = session.value?.order?.orderNumber
+  return number && storefront.demo.value && storefront.chrome.value.accountHref ? `/account/orders/${orderParam(number)}` : null
+})
+
 /** A manual method's instructions, from the offer the shopper paid through. */
 const instructions = computed(() => (session.value ? offer.value.methods.find((m) => m.id === session.value!.methodId)?.instructions ?? null : null))
 const adminLinks = computed(() => {
@@ -345,7 +398,7 @@ const storePaymentsHref = computed(() => router.resolve({ name: MAROPAY_STORE_RO
 </script>
 
 <template>
-  <div class="sf-co">
+  <div class="sf-co" :class="{ 'sf-co--sections': storefront.sectionsDrawing.value }">
     <!-- ── Order placed ─────────────────────────────────────────── -->
     <section v-if="done && session" class="sf-co__done" aria-labelledby="sf-co-done">
       <StorefrontReceipt
@@ -356,6 +409,7 @@ const storePaymentsHref = computed(() => router.resolve({ name: MAROPAY_STORE_RO
         :store-name="storefront.chrome.value.wordmark"
         :home-href="storefront.link('/')"
         :auto-return="!storefront.demo.value"
+        :order-href="orderHref"
       />
       <p v-if="nextCharge" class="sf-co__subscribed">
         <v-icon size="18">repeat</v-icon>
@@ -377,8 +431,18 @@ const storePaymentsHref = computed(() => router.resolve({ name: MAROPAY_STORE_RO
 
     <!-- ── Nothing to buy ───────────────────────────────────────── -->
     <section v-else-if="!lineItems.length" class="sf-co__empty">
-      <h1 class="sf-page-title">Your Shopping Cart is Empty!</h1>
-      <StorefrontAnchor href="/" class="sf-button">Start Shopping!</StorefrontAnchor>
+      <template v-if="unbuyable">
+        <h1 class="sf-page-title">Choose a {{ buyNow!.product.detail!.options.map((o) => o.name.toLowerCase()).join(' and ') }} first</h1>
+        <StorefrontAnchor :href="editHref" class="sf-button">Back to {{ buyNow!.product.name }}</StorefrontAnchor>
+      </template>
+      <template v-else-if="storefront.sectionsDrawing.value">
+        <h1 class="sf-page-title">Your cart is empty</h1>
+        <StorefrontAnchor href="/collections/all" class="sf-button">Start shopping</StorefrontAnchor>
+      </template>
+      <template v-else>
+        <h1 class="sf-page-title">Your Shopping Cart is Empty!</h1>
+        <StorefrontAnchor href="/" class="sf-button">Start Shopping!</StorefrontAnchor>
+      </template>
     </section>
 
     <!-- ── Checkout ─────────────────────────────────────────────── -->
@@ -407,7 +471,7 @@ const storePaymentsHref = computed(() => router.resolve({ name: MAROPAY_STORE_RO
 
           <section class="sf-co__step" aria-labelledby="sf-co-delivery">
             <h2 id="sf-co-delivery" class="sf-co__step-title"><span class="sf-co__num" aria-hidden="true">2</span> Delivery</h2>
-            <div class="sf-co__choices" role="radiogroup" aria-label="Delivery">
+            <div v-if="pickupOffered" class="sf-co__choices" role="radiogroup" aria-label="Delivery">
               <label class="sf-co__choice" :class="{ 'is-selected': delivery === 'ship' }">
                 <input v-model="delivery" type="radio" name="sf-co-delivery" value="ship">
                 <v-icon size="20">truck</v-icon>
@@ -419,6 +483,11 @@ const storePaymentsHref = computed(() => router.resolve({ name: MAROPAY_STORE_RO
                 <span><strong>Click &amp; collect</strong><span class="sf-muted">Collect from the store · Free</span></span>
               </label>
             </div>
+            <!-- A store without a counter ships every order: one way, nothing to choose. -->
+            <p v-else class="sf-co__choice sf-co__choice--only">
+              <v-icon size="20" aria-hidden="true">truck</v-icon>
+              <span><strong>Home delivery</strong><span class="sf-muted">3–5 business days · Free</span></span>
+            </p>
             <div class="sf-co__grid">
               <div class="sf-field">
                 <label for="sf-co-first">First name</label>
@@ -453,7 +522,7 @@ const storePaymentsHref = computed(() => router.resolve({ name: MAROPAY_STORE_RO
                     <input v-model="address.region" class="sf-input" autocomplete="address-level1">
                   </label>
                   <div class="sf-field">
-                    <label for="sf-co-post">Postcode</label>
+                    <label for="sf-co-post">{{ postcodeLabel }}</label>
                     <input id="sf-co-post" v-model="address.postcode" class="sf-input" autocomplete="postal-code" :aria-invalid="!!errorFor('postcode')" :aria-describedby="errorFor('postcode') ? 'sf-co-post-err' : undefined">
                     <span v-if="errorFor('postcode')" id="sf-co-post-err" class="sf-field__error">{{ errorFor('postcode') }}</span>
                   </div>
@@ -508,9 +577,11 @@ const storePaymentsHref = computed(() => router.resolve({ name: MAROPAY_STORE_RO
             <span>{{ message }}</span>
           </div>
 
+          <!-- data-sf-clear: the chat launcher on a phone steps aside while it would cover the pay button (StorefrontChat). -->
           <StorefrontPayButton
             v-if="options.length"
             ref="payButton"
+            data-sf-clear
             :label="busy ? 'Processing…' : payButtonText(method, offer.payButton, total, formatMoney)"
             :busy="busy"
             :secured="method?.providerId === 'maropay'"
@@ -532,6 +603,7 @@ const storePaymentsHref = computed(() => router.resolve({ name: MAROPAY_STORE_RO
               </span>
               <span class="sf-co__line-name">
                 {{ line.product }}<span class="sr-only">, quantity {{ line.qty }}</span>
+                <span v-if="variantText(line)" class="sf-co__line-plan">{{ variantText(line) }}</span>
                 <span v-if="line.plan" class="sf-co__line-plan">{{ line.plan.name }} · {{ deliverySummary(line.plan) }}</span>
               </span>
               <span>{{ formatMoney(lineTotal(line, currency)) }}</span>
@@ -555,6 +627,7 @@ const storePaymentsHref = computed(() => router.resolve({ name: MAROPAY_STORE_RO
             class="sf-co__code"
             :applied="code.discount.value ? code.applied.value : ''"
             :problem="code.notice.value"
+            :saving="code.discount.value ? formatMoney(code.discount.value.amount) : ''"
             @apply="code.apply"
             @remove="code.remove"
           />
@@ -682,7 +755,7 @@ legend.sf-co__step-title {
   gap: 10px;
   padding: 14px;
   border: 1px solid var(--sf-input-border, #c9c9c9);
-  border-radius: 8px;
+  border-radius: var(--sf-corner, 8px);
   cursor: pointer;
 }
 
@@ -691,6 +764,12 @@ legend.sf-co__step-title {
   flex-direction: column;
   gap: 2px;
   font-size: 14px;
+}
+
+/* The one way a store without a counter delivers: said, not chosen. */
+.sf-co__choice--only {
+  margin: 0;
+  cursor: default;
 }
 
 .sf-co__choice.is-selected {
@@ -741,7 +820,7 @@ legend.sf-co__step-title {
   align-items: flex-start;
   gap: 10px;
   padding: 14px 16px;
-  border-radius: 8px;
+  border-radius: var(--sf-corner, 8px);
   background: #fdecea;
   color: #8a1c13;
   font-size: 14px;
@@ -764,9 +843,17 @@ legend.sf-co__step-title {
   flex-direction: column;
   gap: 16px;
   padding: 24px;
-  border-radius: 8px;
-  background: #f7f7f5;
+  border-radius: var(--sf-corner, 8px);
+  background: var(--sf-surface, #f7f7f5);
 }
+
+/* A theme on the sections drawing sets its headings' weight and case (a serif at its
+   own weight); every other theme keeps the bold title it always had. */
+.sf-page-title {
+  font-weight: var(--sf-heading-weight, 700);
+  text-transform: var(--sf-heading-case, none);
+}
+
 
 .sf-co__summary-head {
   display: flex;
@@ -817,7 +904,7 @@ legend.sf-co__step-title {
   width: 56px;
   aspect-ratio: 1;
   border: 1px solid #e3e3e0;
-  border-radius: 6px;
+  border-radius: var(--sf-corner, 6px);
   background: #ffffff;
   color: #8a8780;
 }
@@ -851,10 +938,13 @@ legend.sf-co__step-title {
 .sf-co__sums div {
   display: flex;
   justify-content: space-between;
+  gap: 16px;
 }
 
+/* An amount stays whole: "−$19.60", never "−" over "$19.60". */
 .sf-co__sums dd {
   margin: 0;
+  white-space: nowrap;
 }
 
 .sf-co__grand {
@@ -921,7 +1011,7 @@ legend.sf-co__step-title {
 .sf-co__none {
   padding: 16px 20px;
   border: 1px dashed #b6b6b6;
-  border-radius: 8px;
+  border-radius: var(--sf-corner, 8px);
   font-size: 14px;
 }
 
@@ -960,12 +1050,87 @@ legend.sf-co__step-title {
   margin: 16px 0 0;
   padding: 12px 16px;
   border: 1px dashed #b6b6b6;
-  border-radius: 8px;
+  border-radius: var(--sf-corner, 8px);
   font-size: 13px;
 }
 
 .sf-co__demo a {
   text-decoration: underline;
+}
+
+/* ── The sections drawing ─────────────────────────────────────────
+   The store's own measure, so the form lines up with the logo and every other page;
+   headings in the theme's heading type; the payment options, the card form and the
+   card's tile drawn in the theme's colours and corners instead of the app's. */
+.sf-co--sections {
+  max-width: var(--sf-measure, 1200px);
+  padding-inline: var(--sf-gutter, 24px);
+}
+
+.sf-co--sections .sf-co__step-title,
+.sf-co--sections .sf-co__summary-title,
+.sf-co--sections .sf-co__express-title {
+  font-family: var(--sf-heading-font, system-ui), Georgia, serif;
+  font-weight: var(--sf-heading-weight, 700);
+  text-transform: var(--sf-heading-case, none);
+  letter-spacing: 0;
+}
+
+.sf-co--sections .sf-co__step-title {
+  font-size: 26px;
+  line-height: 1.2;
+}
+
+.sf-co--sections .sf-co__summary-title {
+  font-size: 24px;
+  line-height: 1.2;
+}
+
+.sf-co--sections .sf-co__express-title {
+  font-size: 20px;
+}
+
+.sf-co--sections .sf-co__num {
+  border-radius: var(--sf-corner, 50%);
+  font-family: var(--sf-body-font, system-ui), system-ui, sans-serif;
+}
+
+.sf-co--sections .sf-co__thumb {
+  border-color: var(--sf-divider, #e3e3e0);
+  background: var(--sf-surface, #ffffff);
+  color: var(--sf-muted, #8a8780);
+}
+
+.sf-co--sections .sf-co__sums,
+.sf-co--sections .sf-co__grand {
+  border-top-color: var(--sf-divider, #e3e3e0);
+}
+
+.sf-co--sections :deep(.sf-co__option) {
+  border-radius: var(--sf-corner, 8px);
+}
+
+.sf-co--sections :deep(.sf-co__card) {
+  border-radius: var(--sf-corner, 8px);
+  background: var(--sf-surface, #f7f7f5);
+}
+
+.sf-co--sections :deep(.sf-co__testcards button) {
+  border-radius: var(--sf-corner, 4px);
+  background: var(--sf-bg, #ffffff);
+}
+
+/* Each option's lead tile takes the theme's corners; a card option's (and Maropay's) also
+   wears the theme's colours, not the app's slate and blue. Brand tiles keep their colours. */
+.sf-co--sections :deep(.sf-co__option-head > .maropay-mark) {
+  border-radius: var(--sf-corner, 6px);
+}
+
+.sf-co--sections :deep(.sf-co__option-head > .maropay-mark--card),
+.sf-co--sections :deep(.sf-co__option-head > .maropay-mark--maropay) {
+  background: var(--sf-surface, #f7f7f5);
+  color: var(--sf-text, #121011);
+  box-shadow: inset 0 0 0 1px var(--sf-divider, #e3e3e0);
 }
 
 @media (max-width: 900px) {

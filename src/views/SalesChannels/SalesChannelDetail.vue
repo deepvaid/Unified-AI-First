@@ -191,6 +191,7 @@ const restoreFacts = computed(() => {
     plans: seed.plans.length,
     subscribers: historyFor(current.id, today)?.subscriptions.length ?? 0,
     campaigns: seed.campaigns.length,
+    sizeCharts: seed.sizeCharts.length,
     /** Set while another theme is applied: the name of the one the store goes back to. */
     theme: demoStores.blueprintOf(current.id)?.id === original ? null : demoStoreFor(original).card.name,
   }
@@ -202,7 +203,9 @@ const countWord = (n: number): string => COUNT_WORDS[n] ?? String(n)
 /** What the store keeps in this browser, as the restore card and its toast name it. */
 const restoreParts = computed(() => (restoreFacts.value?.plans
   ? { card: 'Products, subscription plans and subscribers', toast: 'products, plans and subscribers' }
-  : { card: 'Products and campaigns', toast: 'products and campaigns' }))
+  : restoreFacts.value?.sizeCharts
+    ? { card: 'Products, size charts and campaigns', toast: 'products, size charts and campaigns' }
+    : { card: 'Products and campaigns', toast: 'products and campaigns' }))
 
 const restoreConsequences = computed(() => {
   const facts = restoreFacts.value
@@ -214,6 +217,7 @@ const restoreConsequences = computed(() => {
     ...(facts?.plans
       ? [`Subscription plans go back to the original ${countWord(facts.plans)}${facts.subscribers ? `, and subscribers to the original ${countWord(facts.subscribers)}` : ''}.`]
       : []),
+    ...(facts?.sizeCharts ? [`Size charts go back to the original ${countWord(facts.sizeCharts)}.`] : []),
     facts?.campaigns
       ? `Campaigns go back to the original ${countWord(facts.campaigns)}${emails ? ', and their announcement emails are removed' : ''}.`
       : 'Campaigns you added are removed.',

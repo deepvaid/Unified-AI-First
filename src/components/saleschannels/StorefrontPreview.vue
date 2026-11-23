@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { GENERATION_STAGES } from '@/composables/useThemeGenerator'
-import { getBlockDef, storefrontThemeVars, type ThemeBlock, type ThemeSection, type ThemeStyles } from '@/stores/themeBuilderData'
+import { getBlockDef, storefrontThemeVars, type TemplateType, type ThemeBlock, type ThemeSection, type ThemeStyles } from '@/stores/themeBuilderData'
+import { toHandle } from '@/storefront/handles'
 
 const props = withDefaults(defineProps<{
   /** Ordered sections of the active template. Omit for the static default storefront mock. */
@@ -25,7 +26,12 @@ const props = withDefaults(defineProps<{
   /** The store's header menu labels. */
   menu?: string[]
   /** The store's own products, for a featured-products section: photo, name and price. Omit for drawn stand-ins. */
-  products?: Array<{ name: string; price: string; image?: string }>
+  products?: Array<{ name: string; price: string; image?: string; images?: string[]; collections?: string[] }>
+  /**
+   * The template the sections belong to. On the sections drawing a collection
+   * template's collection grid is the product grid (filters, sort, cards), not tiles.
+   */
+  template?: TemplateType
   /** A Da Vinci generation in flight — a placeholder band shows where the section will land. */
   generating?: { prompt: string; stage: number } | null
 }>(), {
@@ -40,6 +46,7 @@ const props = withDefaults(defineProps<{
   brand: 'ATLAS',
   menu: () => ['New', 'Women', 'Men', 'Sale'],
   products: undefined,
+  template: 'home',
   generating: null,
 })
 
@@ -65,11 +72,41 @@ const pendingBlockSet = computed(() => new Set(props.pendingBlockIds))
 
 const styleVars = computed(() => storefrontThemeVars(props.styles))
 
+/**
+ * The theme asks for the sections drawing (Northfold, Torqline): the preview draws
+ * what the storefront draws for it (photos with their buttons, portrait tiles, the
+ * icon row, collapsible rows, the header's icons and scheme). Every other theme's
+ * preview is drawn as it always was.
+ */
+const sectionsDrawing = computed(() => props.styles?.drawing === 'sections')
+
 const rootClasses = computed(() => [
   `sf-preview--${props.device}`,
   `sf-preview--btn-${props.styles?.buttonStyle ?? 'solid'}`,
-  { 'sf-preview--interactive': props.interactive },
+  { 'sf-preview--interactive': props.interactive, 'sf-preview--sections': sectionsDrawing.value },
 ])
+
+/** A featured row's products: on the sections drawing, those of the collection it names. */
+function featuredProducts(section: ThemeSection) {
+  const all = props.products ?? []
+  const handle = text(section, 'collection', 'all')
+  const listed = sectionsDrawing.value && handle !== 'all' ? all.filter((p) => p.collections?.some((name) => toHandle(name) === handle)) : all
+  return listed.slice(0, num(section, 'productCount', 4))
+}
+
+/** A photo's shape on the sections drawing (a collection grid's `tileRatio`, a product page's `imageRatio`): portrait unless it says otherwise. */
+function ratioOf(shape: string): string {
+  return ({ Square: '1 / 1', Landscape: '4 / 3' } as Record<string, string>)[shape] ?? '3 / 4'
+}
+
+/** Where a block is drawn on the sections drawing: over the banner's photo, beside the product, or under the section. */
+function blocksPlacement(section: ThemeSection): string {
+  if (!sectionsDrawing.value) return ''
+  if (section.kind === 'image-banner') return 'sf-blocks--on-banner'
+  if (section.kind === 'product-detail') return 'sf-blocks--rows'
+  if (section.kind === 'icon-row') return 'sf-blocks--icons'
+  return ''
+}
 
 function text(section: ThemeSection, key: string, fallback = ''): string {
   const value = section.settings[key]
@@ -135,7 +172,7 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
         </div>
         <div
           class="sf-section"
-          :class="{ 'sf-section--selected': section.id === selectedId, 'sf-section--new': pendingSet.has(section.id) }"
+          :class="{ 'sf-section--selected': section.id === selectedId, 'sf-section--new': pendingSet.has(section.id), 'sf-section--pdp': sectionsDrawing && section.kind === 'product-detail' }"
           :data-label="section.label"
           @click="onSelect(section)"
           @mouseenter="onHover(section.id)"
@@ -157,12 +194,21 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
             <em v-if="text(section, 'link')">{{ text(section, 'link') }}</em>
           </div>
 
-          <div v-else-if="section.kind === 'header'" class="sf-header" :class="`sf-header--${String(section.settings.menuStyle || 'Inline').toLowerCase()}`">
+          <div
+            v-else-if="section.kind === 'header'"
+            class="sf-header"
+            :class="[`sf-header--${String(section.settings.menuStyle || 'Inline').toLowerCase()}`, { 'sf-header--dark': sectionsDrawing && section.settings.colorScheme === 'Dark' }]"
+          >
             <strong>{{ brand }}</strong>
             <nav class="sf-header__menu">
               <span v-for="item in menu" :key="item">{{ item }}</span>
             </nav>
-            <span class="sf-header__cart" />
+            <span v-if="sectionsDrawing" class="sf-header__icons" aria-hidden="true">
+              <v-icon size="13">search</v-icon>
+              <v-icon size="13">user-round</v-icon>
+              <v-icon size="13">shopping-bag</v-icon>
+            </span>
+            <span v-else class="sf-header__cart" />
           </div>
 
           <div
@@ -181,7 +227,7 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
             <strong class="sf-heading">{{ text(section, 'title', 'Featured products') }}</strong>
             <!-- The store's own products when it has them; drawn stand-ins otherwise. -->
             <div v-if="products" class="sf-products__grid">
-              <div v-for="product in products.slice(0, num(section, 'productCount', 4))" :key="product.name" class="sf-product">
+              <div v-for="product in featuredProducts(section)" :key="product.name" class="sf-product">
                 <span class="sf-product__img">
                   <img v-if="product.image" :src="product.image" alt="" loading="lazy">
                 </span>
@@ -194,6 +240,41 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
                 <span class="sf-product__img" />
                 <span class="sf-product__line" />
                 <span class="sf-product__price" />
+              </div>
+            </div>
+          </div>
+
+          <!-- The sections drawing's collection page: its product grid, with the filters and sort it asks for. -->
+          <div v-else-if="section.kind === 'collection-grid' && sectionsDrawing && template === 'collection'" class="sf-listing">
+            <strong class="sf-heading sf-listing__title">{{ text(section, 'title', 'Shop all') }}</strong>
+            <div class="sf-listing__body" :class="{ 'sf-listing__body--rail': flag(section, 'filters') }">
+              <div v-if="flag(section, 'filters')" class="sf-listing__rail">
+                <span v-for="facet in ['Category', 'Size', 'Color', 'Price']" :key="facet" class="sf-listing__facet">{{ facet }}</span>
+              </div>
+              <div class="sf-listing__main">
+                <div class="sf-listing__bar">
+                  <span>{{ products ? `${products.length} products` : 'Products' }}</span>
+                  <span v-if="flag(section, 'sort')" class="sf-listing__sort">Sort: Featured</span>
+                </div>
+                <div class="sf-products__grid" :style="{ gridTemplateColumns: `repeat(${num(section, 'columns', 4)}, minmax(0, 1fr))` }">
+                  <template v-if="products">
+                    <div v-for="product in products.slice(0, num(section, 'columns', 4) * 2)" :key="product.name" class="sf-product">
+                      <span class="sf-product__img">
+                        <img v-if="product.image" :src="product.image" alt="" loading="lazy">
+                        <span v-if="flag(section, 'quickAdd')" class="sf-product__add" aria-hidden="true">+</span>
+                      </span>
+                      <span class="sf-product__name">{{ product.name }}</span>
+                      <span class="sf-product__amount">{{ product.price }}</span>
+                    </div>
+                  </template>
+                  <template v-else>
+                    <div v-for="n in num(section, 'columns', 4) * 2" :key="n" class="sf-product">
+                      <span class="sf-product__img" />
+                      <span class="sf-product__line" />
+                      <span class="sf-product__price" />
+                    </div>
+                  </template>
+                </div>
               </div>
             </div>
           </div>
@@ -254,6 +335,25 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
             </div>
           </div>
 
+          <!-- The sections drawing's product page: a stacked gallery beside the buy box, its collapsible rows under it. -->
+          <div v-else-if="section.kind === 'product-detail' && sectionsDrawing" class="sf-pdp">
+            <div class="sf-pdp__gallery sf-pdp__gallery--stacked" :class="{ 'sf-pdp__gallery--single': section.settings.galleryLayout !== 'Stacked' }" :style="{ '--sf-tile-ratio': ratioOf(text(section, 'imageRatio')) }">
+              <span class="sf-pdp__img"><img v-if="products?.[0]?.image" :src="products[0].image" alt="" loading="lazy"></span>
+              <!-- The second photo when the product has one; the drawn stand-in shows an empty tile. -->
+              <span v-if="products?.[0]?.images?.[1]" class="sf-pdp__img"><img :src="products![0]!.images![1]" alt="" loading="lazy"></span>
+              <span v-else-if="!products?.length" class="sf-pdp__img" />
+            </div>
+            <div class="sf-pdp__info">
+              <strong class="sf-heading">{{ products?.[0]?.name ?? 'Ridgeline Parka' }}</strong>
+              <em>{{ products?.[0]?.price ?? '$248.00' }}</em>
+              <span class="sf-pdp__swatches" aria-hidden="true"><span v-for="n in 3" :key="n" /></span>
+              <span class="sf-pdp__sizes" aria-hidden="true"><span v-for="size in ['XS', 'S', 'M', 'L', 'XL']" :key="size">{{ size }}</span></span>
+              <span v-if="flag(section, 'sizeGuide')" class="sf-pdp__guide">Size guide</span>
+              <span v-if="flag(section, 'showReviews')" class="sf-pdp__reviews">★★★★★ · 128 reviews</span>
+              <span class="sf-btn sf-pdp__add">Add to cart</span>
+            </div>
+          </div>
+
           <div v-else-if="section.kind === 'product-detail'" class="sf-pdp" :class="{ 'sf-pdp--stacked': section.settings.galleryLayout === 'Stacked' }">
             <div class="sf-pdp__gallery">
               <span class="sf-pdp__img" />
@@ -288,7 +388,12 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
             <span class="sf-btn">Checkout</span>
           </div>
 
-          <div v-else-if="section.kind === 'footer'" class="sf-footer">
+          <div v-else-if="section.kind === 'icon-row'" class="sf-iconrow">
+            <strong v-if="text(section, 'title')" class="sf-heading">{{ text(section, 'title') }}</strong>
+            <span v-else-if="!section.blocks?.length" class="sf-iconrow__empty">Add a feature block to say what shoppers can count on.</span>
+          </div>
+
+          <div v-else-if="section.kind === 'footer'" class="sf-footer" :class="{ 'sf-footer--dark': sectionsDrawing && section.settings.colorScheme === 'Dark' }">
             <div class="sf-footer__cols" :style="{ '--sf-cols': num(section, 'columns', 3) }">
               <div v-for="n in num(section, 'columns', 3)" :key="n" class="sf-footer__col">
                 <span class="sf-line sf-line--name" />
@@ -307,8 +412,8 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
           <div
             v-if="section.blocks?.length"
             class="sf-blocks"
-            :class="{ 'sf-blocks--grid': section.kind === 'collection-grid' }"
-            :style="section.kind === 'collection-grid' ? { '--sf-cols': num(section, 'columns', 3) } : undefined"
+            :class="[{ 'sf-blocks--grid': section.kind === 'collection-grid' }, blocksPlacement(section)]"
+            :style="section.kind === 'collection-grid' ? { '--sf-cols': num(section, 'columns', 3), ...(sectionsDrawing ? { '--sf-tile-ratio': ratioOf(text(section, 'tileRatio')) } : {}) } : undefined"
           >
             <component
               :is="interactive ? 'button' : 'div'"
@@ -343,6 +448,19 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
               <span v-else-if="block.kind === 'collection'" class="sf-block__collection" :class="{ 'sf-photo': blockText(block, 'image') }">
                 <img v-if="blockText(block, 'image')" :src="blockText(block, 'image')" alt="" class="sf-photo__image" loading="lazy">
                 <span>{{ blockText(block, 'label', 'Collection') }}</span>
+              </span>
+              <span v-else-if="block.kind === 'feature'" class="sf-block__feature">
+                <v-icon size="16" aria-hidden="true">{{ blockText(block, 'icon', 'badge-check') }}</v-icon>
+                <strong>{{ blockText(block, 'title', 'Feature') }}</strong>
+                <span v-if="blockText(block, 'text')">{{ blockText(block, 'text') }}</span>
+              </span>
+              <span v-else-if="block.kind === 'collapsible-row'" class="sf-block__row">
+                <span class="sf-block__row-head">
+                  <span>{{ blockText(block, 'title', 'Details') }}</span>
+                  <v-icon size="13" aria-hidden="true">{{ block.settings.open === true ? 'minus' : 'plus' }}</v-icon>
+                </span>
+                <span v-if="block.settings.open === true" class="sf-line sf-line--full" />
+                <span v-if="block.settings.open === true" class="sf-line sf-line--mid" />
               </span>
               <span v-else-if="block.kind === 'divider'" class="sf-block__divider" />
               <span
@@ -1365,5 +1483,522 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
 
 .sf-preview--mobile .sf-header__menu {
   display: none;
+}
+/* ── Sections drawing (Northfold, Torqline) ─────────────────────────
+ * What the storefront draws for a theme on the sections drawing, scaled to the
+ * frame: headings in the theme's weight (a one-weight serif is never bolded), the
+ * theme's button, photos with their buttons on them, portrait tiles with the name
+ * under the photo, the icon row, the product page with its collapsible rows, the
+ * collection page's grid, and the header's icons and scheme. Every rule is under
+ * .sf-preview--sections, so a classic theme's preview is unchanged. */
+.sf-preview--sections .sf-heading,
+.sf-preview--sections .sf-hero strong,
+.sf-preview--sections .sf-banner strong,
+.sf-preview--sections .sf-header strong,
+.sf-preview--sections .sf-block__heading {
+  font-weight: var(--sf-heading-weight, 700);
+  letter-spacing: -0.01em;
+  text-transform: var(--sf-heading-case, none);
+}
+
+.sf-preview--sections .sf-heading {
+  font-size: 18px;
+  line-height: 1.1;
+}
+
+.sf-preview--sections .sf-btn {
+  border-radius: var(--sf-button-radius, var(--sf-radius));
+  background: var(--sf-button-bg, var(--sf-brand));
+  box-shadow: inset 0 0 0 1px var(--sf-button-border, transparent);
+  color: var(--sf-button-ink, var(--sf-on-brand));
+  font-weight: 600;
+}
+
+.sf-preview--sections .sf-header {
+  gap: 18px;
+  min-height: 48px;
+  border-bottom-color: var(--sf-divider, var(--sf-soft-line));
+}
+
+.sf-preview--sections .sf-header strong {
+  font-size: 19px;
+  letter-spacing: -0.01em;
+}
+
+.sf-preview--sections .sf-header__menu {
+  font-weight: 500;
+}
+
+.sf-header__icons {
+  display: inline-flex;
+  flex: none;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.sf-header--dark {
+  border-bottom-color: transparent;
+  background: var(--sf-brand);
+  color: var(--sf-on-brand);
+}
+
+.sf-header--dark .sf-header__menu {
+  color: color-mix(in oklch, var(--sf-on-brand) 80%, transparent);
+}
+
+/* A photo banner: the words at its bottom left, its buttons on the photo. */
+.sf-preview--sections .sf-banner {
+  min-height: 150px;
+}
+
+.sf-preview--sections .sf-banner--large {
+  min-height: 230px;
+}
+
+.sf-preview--sections .sf-banner.sf-photo {
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 20px 20px 54px;
+  text-align: left;
+}
+
+.sf-preview--sections .sf-banner strong {
+  max-width: 12ch;
+  font-size: 30px;
+  line-height: 1;
+}
+
+.sf-preview--sections .sf-photo__image {
+  filter: brightness(0.66);
+}
+
+.sf-blocks--on-banner {
+  position: absolute;
+  right: 0;
+  bottom: 14px;
+  left: 0;
+  flex-direction: row;
+  gap: 6px;
+  padding: 0 16px;
+}
+
+.sf-blocks--on-banner .sf-block {
+  width: auto;
+}
+
+.sf-blocks--on-banner .sf-btn {
+  background: #ffffff;
+  box-shadow: inset 0 0 0 1px #ffffff;
+  color: #141414;
+}
+
+.sf-blocks--on-banner .sf-block + .sf-block .sf-btn {
+  background: transparent;
+  color: #ffffff;
+}
+
+/* Collection tiles: the photo in the tile's shape, the name under it. */
+.sf-preview--sections .sf-blocks--grid {
+  gap: 10px;
+  padding: 0 16px 20px;
+}
+
+.sf-preview--sections .sf-block__collection,
+.sf-preview--sections .sf-block__collection.sf-photo {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 6px;
+  min-height: 0;
+  padding: 0;
+  overflow: visible;
+  isolation: auto;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  font-family: var(--sf-heading-font);
+  font-size: 13px;
+  font-weight: var(--sf-heading-weight, 700);
+}
+
+.sf-preview--sections .sf-block__collection::before {
+  content: '';
+  display: block;
+  aspect-ratio: var(--sf-tile-ratio, 3 / 4);
+  border-radius: var(--sf-radius);
+  background: var(--sf-surface, var(--sf-soft-fill));
+}
+
+.sf-preview--sections .sf-block__collection.sf-photo::before {
+  display: none;
+}
+
+.sf-preview--sections .sf-block__collection .sf-photo__image {
+  position: static;
+  z-index: auto;
+  display: block;
+  height: auto;
+  aspect-ratio: var(--sf-tile-ratio, 3 / 4);
+  border-radius: var(--sf-radius);
+  filter: none;
+}
+
+/* Product cards: portrait photos on the theme's quiet surface. */
+.sf-preview--sections .sf-product__img {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  background: var(--sf-surface, var(--sf-soft-fill));
+}
+
+.sf-preview--sections .sf-product__name {
+  font-weight: 500;
+}
+
+.sf-product__add {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--sf-bg);
+  color: var(--sf-text);
+  font-size: 12px;
+  line-height: 1;
+}
+
+.sf-preview--sections .sf-story {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 20px;
+  padding: 20px 16px;
+}
+
+/* The tiles are the section's blocks, right under its title. */
+.sf-preview--sections .sf-collections {
+  padding-bottom: 4px;
+}
+
+/* Square in the frame: the storefront's portrait photo would tower over the scaled-down words. */
+.sf-preview--sections .sf-story__media {
+  aspect-ratio: 1 / 1;
+}
+
+.sf-preview--sections .sf-newsletter {
+  padding-block: 28px;
+  background: var(--sf-surface, var(--sf-soft-fill));
+}
+
+/* The icon row: features side by side between two hairlines. */
+.sf-iconrow {
+  padding: 14px 16px 0;
+}
+
+.sf-iconrow__empty {
+  color: color-mix(in oklch, var(--sf-text) 60%, transparent);
+  font-size: 11px;
+}
+
+.sf-blocks--icons {
+  flex-direction: row;
+  gap: 0;
+  margin: 6px 16px 18px;
+  padding: 0;
+  border-block: 1px solid var(--sf-divider, var(--sf-soft-line));
+}
+
+.sf-blocks--icons .sf-block {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 14px 8px;
+  border-radius: 0;
+}
+
+.sf-blocks--icons .sf-block + .sf-block {
+  border-left: 1px solid var(--sf-divider, var(--sf-soft-line));
+}
+
+.sf-block__feature {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+  font-size: 10.5px;
+  line-height: 1.4;
+}
+
+.sf-block__feature strong {
+  font-size: 11.5px;
+}
+
+.sf-block__feature span {
+  color: var(--sf-muted, color-mix(in oklch, var(--sf-text) 65%, transparent));
+}
+
+/* The product page: gallery on the left, buy box and its rows on the right. */
+.sf-section--pdp {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  align-items: start;
+  column-gap: 16px;
+  padding: 20px 16px;
+}
+
+.sf-section--pdp > .sf-pdp {
+  display: contents;
+}
+
+.sf-section--pdp .sf-pdp__gallery {
+  grid-row: 1 / span 2;
+  grid-column: 1;
+}
+
+.sf-section--pdp .sf-pdp__info {
+  grid-row: 1;
+  grid-column: 2;
+}
+
+.sf-section--pdp > .sf-blocks {
+  grid-row: 2;
+  grid-column: 2;
+  padding: 12px 0 0;
+}
+
+.sf-pdp__gallery--stacked {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.sf-pdp__gallery--single {
+  grid-template-columns: 1fr;
+}
+
+.sf-pdp__gallery--single .sf-pdp__img + .sf-pdp__img {
+  display: none;
+}
+
+.sf-section--pdp .sf-pdp__img {
+  overflow: hidden;
+  aspect-ratio: var(--sf-tile-ratio, 3 / 4);
+  background: var(--sf-surface, var(--sf-soft-fill));
+}
+
+.sf-section--pdp .sf-pdp__img img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sf-pdp__swatches,
+.sf-pdp__sizes {
+  display: flex;
+  gap: 5px;
+}
+
+.sf-pdp__swatches span {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: color-mix(in oklch, var(--sf-text) 30%, var(--sf-bg));
+}
+
+.sf-pdp__swatches span:first-child {
+  box-shadow: 0 0 0 1.5px var(--sf-bg), 0 0 0 2.5px var(--sf-text);
+  background: #d2bf9f;
+}
+
+.sf-pdp__sizes span {
+  display: grid;
+  place-items: center;
+  min-width: 22px;
+  height: 20px;
+  border: 1px solid var(--sf-divider, var(--sf-soft-line));
+  font-size: 9.5px;
+}
+
+.sf-pdp__guide {
+  font-size: 10.5px;
+  text-decoration: underline;
+}
+
+.sf-pdp__add {
+  align-self: stretch;
+}
+
+.sf-blocks--rows {
+  gap: 0;
+}
+
+.sf-blocks--rows .sf-block {
+  padding: 8px 2px;
+  border-top: 1px solid var(--sf-divider, var(--sf-soft-line));
+  border-radius: 0;
+}
+
+.sf-block__row {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.sf-block__row-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* The collection page: its title, the filters it offers, sort and the product grid. */
+.sf-listing {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px 16px;
+}
+
+.sf-listing__title {
+  text-align: center;
+}
+
+.sf-listing__body {
+  display: grid;
+  gap: 14px;
+}
+
+.sf-listing__body--rail {
+  grid-template-columns: 96px minmax(0, 1fr);
+}
+
+.sf-listing__rail {
+  display: flex;
+  flex-direction: column;
+}
+
+.sf-listing__facet {
+  padding: 7px 0;
+  border-top: 1px solid var(--sf-divider, var(--sf-soft-line));
+  font-size: 10.5px;
+  font-weight: 600;
+}
+
+.sf-listing__bar {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--sf-divider, var(--sf-soft-line));
+  color: var(--sf-muted, color-mix(in oklch, var(--sf-text) 65%, transparent));
+  font-size: 10.5px;
+}
+
+.sf-footer--dark {
+  border-top-color: transparent;
+  background: var(--sf-brand);
+  color: var(--sf-on-brand);
+}
+
+.sf-footer--dark .sf-line,
+.sf-footer--dark .sf-footer__social span {
+  background: color-mix(in oklch, var(--sf-on-brand) 28%, transparent);
+}
+
+.sf-preview--mobile .sf-section--pdp {
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 12px;
+}
+
+.sf-preview--mobile .sf-section--pdp .sf-pdp__gallery,
+.sf-preview--mobile .sf-section--pdp .sf-pdp__info,
+.sf-preview--mobile .sf-section--pdp > .sf-blocks {
+  grid-row: auto;
+  grid-column: 1;
+}
+
+.sf-preview--mobile .sf-listing__body--rail {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.sf-preview--mobile .sf-listing__rail,
+.sf-preview--mobile .sf-header__menu {
+  display: none;
+}
+
+.sf-preview--mobile .sf-listing .sf-products__grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+/* The phone frame stacks what the storefront stacks on a phone. */
+.sf-preview--mobile.sf-preview--sections .sf-story {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.sf-preview--mobile.sf-preview--sections .sf-story--flip .sf-story__media {
+  order: 0;
+}
+
+.sf-preview--mobile.sf-preview--sections .sf-blocks--grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.sf-preview--mobile .sf-blocks--icons {
+  flex-direction: column;
+}
+
+.sf-preview--mobile .sf-blocks--icons .sf-block + .sf-block {
+  border-top: 1px solid var(--sf-divider, var(--sf-soft-line));
+  border-left: 0;
+}
+
+/* A sections-drawing preview in a narrow box (the store page on a phone) draws the
+   phone layout, whatever device frame is chosen, instead of squeezing the desktop one. */
+.sf-preview--sections {
+  container-type: inline-size;
+}
+
+@container (max-width: 480px) {
+  .sf-preview--sections .sf-header__menu,
+  .sf-preview--sections .sf-listing__rail {
+    display: none;
+  }
+
+  .sf-preview--sections .sf-products__grid,
+  .sf-preview--sections .sf-blocks--grid,
+  .sf-preview--sections .sf-footer__cols {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .sf-preview--sections .sf-story,
+  .sf-preview--sections .sf-section--pdp,
+  .sf-preview--sections .sf-listing__body--rail {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sf-preview--sections .sf-story--flip .sf-story__media {
+    order: 0;
+  }
+
+  .sf-preview--sections .sf-section--pdp .sf-pdp__gallery,
+  .sf-preview--sections .sf-section--pdp .sf-pdp__info,
+  .sf-preview--sections .sf-section--pdp > .sf-blocks {
+    grid-row: auto;
+    grid-column: 1;
+  }
+
+  .sf-preview--sections .sf-blocks--icons {
+    flex-direction: column;
+  }
+
+  .sf-preview--sections .sf-blocks--icons .sf-block + .sf-block {
+    border-top: 1px solid var(--sf-divider, var(--sf-soft-line));
+    border-left: 0;
+  }
 }
 </style>

@@ -90,8 +90,11 @@ const seededCampaigns = (channel: InstallChannel | undefined): StoreCampaign[] =
 
 export const useStoreCampaignsStore = defineStore('storeCampaigns', () => {
   const campaigns = ref<StoreCampaign[]>(seedCampaigns())
+  /** A store's campaigns in place of the ones it had, so other stores' keep their order; a store's first ones lead the list. */
   const setStoreCampaigns = (channelId: string, list: StoreCampaign[]): void => {
-    campaigns.value = [...list, ...campaigns.value.filter((c) => c.channelId !== channelId)]
+    const at = Math.max(0, campaigns.value.findIndex((c) => c.channelId === channelId))
+    const others = campaigns.value.filter((c) => c.channelId !== channelId)
+    campaigns.value = [...others.slice(0, at), ...list, ...others.slice(at)]
   }
   const kept = keepPerChannel('campaigns', 1, isCampaignList, {
     read: (channelId) => campaigns.value.filter((c) => c.channelId === channelId),

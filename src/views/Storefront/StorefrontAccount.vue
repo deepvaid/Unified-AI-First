@@ -2,28 +2,35 @@
 import { computed, inject, nextTick, ref, watch } from 'vue'
 import { parseDecimal } from '@/maropay/money'
 import type { Money } from '@/maropay/money'
-import { isEmail } from '@/maropay/onboarding'
 import { useCommerceStore } from '@/stores/useCommerce'
+import type { Order, OrderLineItem } from '@/stores/useCommerce'
 import { useStorefrontShopperStore } from '@/stores/useStorefrontShopper'
 import { useSubscriptionsStore } from '@/stores/useSubscriptions'
+import { lineProduct } from '@/storefront/cart'
 import { lowestPrice } from '@/storefront/catalog'
+import { shopperOrderStatus } from '@/storefront/orderStatus'
+import { lineImage, lineVariantText, orderParam, orderSums, ordersOfShopper, placedOn } from '@/storefront/shopperOrders'
 import { CANCEL_REASONS, allowedActions, chargeAmount, dayLabel } from '@/subscriptions/contracts'
 import type { ContractAction, SubscriptionContract } from '@/subscriptions/contracts'
 import { deliverySummary, nextChargeDate, pricePerDelivery } from '@/subscriptions/plans'
 import type { SubscriptionPlan } from '@/subscriptions/plans'
 import StorefrontAnchor from './StorefrontAnchor.vue'
+import StorefrontOrderStatus from './StorefrontOrderStatus.vue'
+import StorefrontSignIn from './StorefrontSignIn.vue'
 import { STOREFRONT } from './storefrontContext'
-import { collectionsOf, productHandle } from './storefrontCatalog'
+import { CATEGORY_ICONS, collectionsOf, productHandle } from './storefrontCatalog'
 
 // The shopper's own page (/account): sign in, then their subscriptions on this
-// store, each with what a shopper may do to it: skip the next delivery, pause or
-// resume, move to another plan, cancel with a reason, or pay again after a failed
-// payment. The same subscriptions, and the same rules, are behind the admin's
-// Commerce › Subscriptions › Subscribers, so a change here shows there at once.
+// store, when it sells them, and their orders here. A subscription offers what a
+// shopper may do to it: skip the next delivery, pause or resume, move to another
+// plan, cancel with a reason, or pay again after a failed payment. The same
+// subscriptions, and the same rules, are behind the admin's Commerce ›
+// Subscriptions › Subscribers, so a change here shows there at once. Each order
+// opens its own page (account/orders/:number, StorefrontOrder.vue).
 //
-// Sign-in is mocked: an email, then a code, and any six digits are accepted. A
-// checkout signs its shopper in, so the confirmation's link comes straight here.
-// Orders and addresses are not here yet (build prompt, S8).
+// Sign-in is mocked (StorefrontSignIn): an email, then a code, and any six digits
+// are accepted. A checkout signs its shopper in, so the confirmation's links come
+// straight here.
 
 const storefront = inject(STOREFRONT)!
 const commerce = useCommerceStore()
@@ -34,42 +41,8 @@ const channelId = computed(() => storefront.channel.value.id)
 const email = computed(() => shopper.emailFor(channelId.value))
 const formatMoney = storefront.formatExact
 
-// ── Sign in ──────────────────────────────────────────────────────────
-
-const step = ref<'email' | 'code'>('email')
-const typedEmail = ref('')
-const code = ref('')
-const tried = ref(false)
-const emailError = computed(() => (tried.value && !isEmail(typedEmail.value) ? 'Enter an email address like name@example.com.' : null))
-const codeError = computed(() => (tried.value && !/^\d{6}$/.test(code.value.trim()) ? 'Enter the 6-digit code.' : null))
-const codeField = ref<HTMLInputElement | null>(null)
-const emailField = ref<HTMLInputElement | null>(null)
-
-async function sendCode(): Promise<void> {
-  tried.value = true
-  if (emailError.value) return void emailField.value?.focus()
-  tried.value = false
-  step.value = 'code'
-  await nextTick()
-  codeField.value?.focus()
-}
-
-function signIn(): void {
-  tried.value = true
-  if (codeError.value) return void codeField.value?.focus()
-  shopper.signIn(channelId.value, typedEmail.value)
-  resetSignIn()
-}
-
-function resetSignIn(): void {
-  step.value = 'email'
-  code.value = ''
-  tried.value = false
-}
-
 function signOut(): void {
   shopper.signOut(channelId.value)
-  typedEmail.value = ''
   message.value = ''
   open.value = null
 }
@@ -77,6 +50,11 @@ function signOut(): void {
 // ── Subscriptions ────────────────────────────────────────────────────
 
 const mine = computed(() => (email.value ? subscriptions.contractsOf(channelId.value, email.value) : []))
+/** Order history is on the demo stores; every other store keeps the subscriptions-only page it had. */
+const withOrders = computed(() => storefront.demo.value)
+/** A store that sells subscriptions, or a shopper who still holds one here (the store's plans were switched off since). */
+const showSubscriptions = computed(() => !withOrders.value
+  || subscriptions.plans.some((p) => p.channelId === channelId.value && p.status === 'Active') || mine.value.length > 0)
 
 /** Where "find a subscription" leads: the store's Subscription collection when it has one. */
 const shopHref = computed(() =>
@@ -160,6 +138,35 @@ function retry(contract: SubscriptionContract): void {
     : result.message)
 }
 
+// ── Orders ───────────────────────────────────────────────────────────
+// Every order the signed-in shopper placed on this store, newest first.
+
+const orders = computed(() => ordersOfShopper(commerce.orders, channelId.value, email.value))
+/** Lines a card shows before it says how many more there are. */
+const SHOWN_LINES = 3
+
+function productOfLine(line: OrderLineItem) {
+  return lineProduct(commerce.products, line)
+}
+
+function iconOfLine(line: OrderLineItem): string {
+  const category = productOfLine(line)?.category
+  return (category && CATEGORY_ICONS[category]) || 'package'
+}
+
+function orderHref(order: Order): string {
+  return `/account/orders/${orderParam(order.orderNumber)}`
+}
+
+function placed(order: Order): string {
+  return placedOn(order.date, storefront.ownMoneyFormat.value)
+}
+
+function itemsText(order: Order): string {
+  const count = orderSums(order).count
+  return `${count} ${count === 1 ? 'item' : 'items'}`
+}
+
 // A subscription that leaves the list (another tab cancelled it) takes its open question with it.
 watch(mine, (list) => {
   if (open.value && !list.some((c) => c.id === open.value!.id)) open.value = null
@@ -167,59 +174,14 @@ watch(mine, (list) => {
 </script>
 
 <template>
-  <div class="sf-acct">
+  <div class="sf-acct" :class="{ 'sf-acct--sections': storefront.sectionsDrawing.value }">
     <!-- ── Sign in ──────────────────────────────────────────────── -->
-    <section v-if="!email" class="sf-acct__signin" aria-labelledby="sf-acct-title">
-      <h1 id="sf-acct-title" class="sf-page-title">Your account</h1>
+    <StorefrontSignIn v-if="!email" />
 
-      <form v-if="step === 'email'" class="sf-acct__form" novalidate @submit.prevent="sendCode">
-        <p class="sf-muted">Enter the email you ordered with. We’ll send you a 6-digit code to sign in, so there is no password to remember.</p>
-        <div class="sf-field">
-          <label for="sf-acct-email">Email</label>
-          <input
-            id="sf-acct-email"
-            ref="emailField"
-            v-model="typedEmail"
-            class="sf-input"
-            type="email"
-            autocomplete="email"
-            :aria-invalid="!!emailError"
-            :aria-describedby="emailError ? 'sf-acct-email-err' : undefined"
-          >
-          <span v-if="emailError" id="sf-acct-email-err" class="sf-field__error">{{ emailError }}</span>
-        </div>
-        <button type="submit" class="sf-button sf-button--block">Email me a code</button>
-      </form>
-
-      <form v-else class="sf-acct__form" novalidate @submit.prevent="signIn">
-        <p class="sf-muted">
-          We sent a 6-digit code to <strong>{{ typedEmail.trim() }}</strong>.
-          {{ storefront.demo.value ? 'This is a demo store, so any 6 digits work.' : 'In this prototype any 6 digits work.' }}
-        </p>
-        <div class="sf-field">
-          <label for="sf-acct-code">Code</label>
-          <input
-            id="sf-acct-code"
-            ref="codeField"
-            v-model="code"
-            class="sf-input"
-            inputmode="numeric"
-            autocomplete="one-time-code"
-            maxlength="6"
-            :aria-invalid="!!codeError"
-            :aria-describedby="codeError ? 'sf-acct-code-err' : undefined"
-          >
-          <span v-if="codeError" id="sf-acct-code-err" class="sf-field__error">{{ codeError }}</span>
-        </div>
-        <button type="submit" class="sf-button sf-button--block">Sign in</button>
-        <button type="button" class="sf-acct__link" @click="resetSignIn">Use another email</button>
-      </form>
-    </section>
-
-    <!-- ── Subscriptions ────────────────────────────────────────── -->
+    <!-- ── Signed in ────────────────────────────────────────────── -->
     <section v-else aria-labelledby="sf-acct-title">
       <div class="sf-acct__head">
-        <h1 id="sf-acct-title" class="sf-page-title">Your subscriptions</h1>
+        <h1 id="sf-acct-title" class="sf-page-title">{{ withOrders ? 'Your account' : 'Your subscriptions' }}</h1>
         <p class="sf-acct__who sf-muted">
           Signed in as {{ email }} ·
           <button type="button" class="sf-acct__link" @click="signOut">Sign out</button>
@@ -231,107 +193,159 @@ watch(mine, (list) => {
         <span>{{ message }}</span>
       </p>
 
-      <div v-if="!mine.length" class="sf-acct__empty">
-        <p class="sf-acct__empty-title">You have no subscriptions with this email.</p>
-        <p class="sf-muted">Subscribe to a product and it shows up here, with its next delivery and everything you can change.</p>
-        <StorefrontAnchor :href="shopHref" class="sf-button">See what you can subscribe to</StorefrontAnchor>
-      </div>
+      <section v-if="showSubscriptions" class="sf-acct__section" :aria-labelledby="withOrders ? 'sf-acct-subs' : 'sf-acct-title'">
+        <h2 v-if="withOrders" id="sf-acct-subs" class="sf-acct__section-title">Subscriptions</h2>
+        <div v-if="!mine.length" class="sf-acct__empty">
+          <p class="sf-acct__empty-title">You have no subscriptions with this email.</p>
+          <p class="sf-muted">Subscribe to a product and it shows up here, with its next delivery and everything you can change.</p>
+          <StorefrontAnchor :href="shopHref" class="sf-button">See what you can subscribe to</StorefrontAnchor>
+        </div>
 
-      <ul v-else class="sf-acct__list">
-        <li v-for="contract in mine" :key="contract.id" class="sf-sub" :class="{ 'sf-sub--ended': contract.status === 'Cancelled' }">
-          <div class="sf-sub__top">
-            <span class="sf-sub__thumb" aria-hidden="true">
-              <img v-if="productOf(contract)?.imageUrls?.[0]" :src="productOf(contract)!.imageUrls![0]" alt="">
-              <v-icon v-else size="28">package</v-icon>
-            </span>
-            <div class="sf-sub__what">
-              <h2 class="sf-sub__name">
-                <StorefrontAnchor v-if="productOf(contract)" :href="`/products/${productHandle(productOf(contract)!)}`">{{ contract.product }}</StorefrontAnchor>
-                <template v-else>{{ contract.product }}</template>
-              </h2>
-              <p class="sf-muted">{{ contract.plan.name }} · {{ deliverySummary(contract.plan) }}<template v-if="contract.qty > 1"> · {{ contract.qty }} of them</template></p>
+        <ul v-else class="sf-acct__list">
+          <li v-for="contract in mine" :key="contract.id" class="sf-sub" :class="{ 'sf-sub--ended': contract.status === 'Cancelled' }">
+            <div class="sf-sub__top">
+              <span class="sf-sub__thumb" aria-hidden="true">
+                <img v-if="productOf(contract)?.imageUrls?.[0]" :src="productOf(contract)!.imageUrls![0]" alt="">
+                <v-icon v-else size="28">package</v-icon>
+              </span>
+              <div class="sf-sub__what">
+                <h3 class="sf-sub__name">
+                  <StorefrontAnchor v-if="productOf(contract)" :href="`/products/${productHandle(productOf(contract)!)}`">{{ contract.product }}</StorefrontAnchor>
+                  <template v-else>{{ contract.product }}</template>
+                </h3>
+                <p class="sf-muted">{{ contract.plan.name }} · {{ deliverySummary(contract.plan) }}<template v-if="contract.qty > 1"> · {{ contract.qty }} of them</template></p>
+              </div>
+              <span class="sf-sub__status" :class="`sf-sub__status--${contract.status.toLowerCase().replace(' ', '-')}`">{{ contract.status }}</span>
             </div>
-            <span class="sf-sub__status" :class="`sf-sub__status--${contract.status.toLowerCase().replace(' ', '-')}`">{{ contract.status }}</span>
-          </div>
 
-          <p v-if="contract.status === 'Payment failed'" class="sf-sub__alert" role="alert">
-            <v-icon size="18" aria-hidden="true">circle-alert</v-icon>
-            <span>We couldn’t take your last payment with {{ contract.paymentMethod }}, so your delivery is on hold.</span>
-          </p>
-
-          <dl class="sf-sub__facts">
-            <div v-if="contract.status === 'Active'"><dt>Next delivery</dt><dd>{{ dayLabel(contract.nextChargeOn!) }}</dd></div>
-            <div v-else-if="contract.status === 'Paused'"><dt>Next delivery</dt><dd>Paused</dd></div>
-            <div v-else-if="contract.status === 'Payment failed'"><dt>Payment due</dt><dd>{{ dayLabel(contract.nextChargeOn!) }}</dd></div>
-            <div v-else><dt>Ended</dt><dd>{{ dayLabel(contract.history[0]!.date) }}</dd></div>
-            <div><dt>Per delivery</dt><dd>{{ formatMoney(chargeAmount(contract)) }}</dd></div>
-            <div><dt>Paid with</dt><dd>{{ contract.paymentMethod }}</dd></div>
-            <div><dt>Subscription</dt><dd>{{ contract.number }}</dd></div>
-          </dl>
-
-          <div v-if="actionsFor(contract).length" class="sf-sub__actions">
-            <button v-if="actionsFor(contract).includes('retry')" type="button" class="sf-button" @click="retry(contract)">Try the payment again</button>
-            <button v-if="actionsFor(contract).includes('resume')" type="button" class="sf-button" @click="resume(contract)">Resume subscription</button>
-            <button v-if="actionsFor(contract).includes('skip')" type="button" class="sf-button sf-button--secondary" :aria-expanded="isOpen(contract, 'skip')" @click="ask(contract, 'skip')">Skip next delivery</button>
-            <button v-if="actionsFor(contract).includes('pause')" type="button" class="sf-button sf-button--secondary" :aria-expanded="isOpen(contract, 'pause')" @click="ask(contract, 'pause')">Pause</button>
-            <button v-if="actionsFor(contract).includes('changePlan')" type="button" class="sf-button sf-button--secondary" :aria-expanded="isOpen(contract, 'changePlan')" @click="ask(contract, 'changePlan')">Change plan</button>
-            <button v-if="actionsFor(contract).includes('cancel')" type="button" class="sf-acct__link sf-sub__cancel" :aria-expanded="isOpen(contract, 'cancel')" @click="ask(contract, 'cancel')">Cancel subscription</button>
-          </div>
-
-          <!-- The question each action asks before it happens. -->
-          <div v-if="isOpen(contract, 'skip')" class="sf-sub__ask">
-            <p>
-              Skip the delivery of <strong>{{ dayLabel(contract.nextChargeOn!) }}</strong>?
-              Your next one will be {{ dayLabel(nextChargeDate(contract.nextChargeOn!, contract.plan)) }}, and nothing is charged before then.
+            <p v-if="contract.status === 'Payment failed'" class="sf-sub__alert" role="alert">
+              <v-icon size="18" aria-hidden="true">circle-alert</v-icon>
+              <span>We couldn’t take your last payment with {{ contract.paymentMethod }}, so your delivery is on hold.</span>
             </p>
-            <div class="sf-sub__ask-actions">
-              <button type="button" class="sf-button" @click="skip(contract)">Skip this delivery</button>
-              <button type="button" class="sf-button sf-button--secondary" @click="open = null">Keep it</button>
-            </div>
-          </div>
 
-          <div v-else-if="isOpen(contract, 'pause')" class="sf-sub__ask">
-            <p>Pause this subscription? Nothing is charged or sent until you resume it, and you can resume whenever you like.</p>
-            <div class="sf-sub__ask-actions">
-              <button type="button" class="sf-button" @click="pause(contract)">Pause subscription</button>
-              <button type="button" class="sf-button sf-button--secondary" @click="open = null">Keep it running</button>
-            </div>
-          </div>
+            <dl class="sf-sub__facts">
+              <div v-if="contract.status === 'Active'"><dt>Next delivery</dt><dd>{{ dayLabel(contract.nextChargeOn!) }}</dd></div>
+              <div v-else-if="contract.status === 'Paused'"><dt>Next delivery</dt><dd>Paused</dd></div>
+              <div v-else-if="contract.status === 'Payment failed'"><dt>Payment due</dt><dd>{{ dayLabel(contract.nextChargeOn!) }}</dd></div>
+              <div v-else><dt>Ended</dt><dd>{{ dayLabel(contract.history[0]!.date) }}</dd></div>
+              <div><dt>Per delivery</dt><dd>{{ formatMoney(chargeAmount(contract)) }}</dd></div>
+              <div><dt>Paid with</dt><dd>{{ contract.paymentMethod }}</dd></div>
+              <div><dt>Subscription</dt><dd>{{ contract.number }}</dd></div>
+            </dl>
 
-          <form v-else-if="isOpen(contract, 'changePlan')" class="sf-sub__ask" @submit.prevent="changePlan(contract)">
-            <fieldset class="sf-sub__choices">
-              <legend>Change to</legend>
-              <label v-for="plan in subscriptions.plansToChangeTo(contract)" :key="plan.id" class="sf-sub__choice">
-                <input v-model="planId" type="radio" :name="`sf-plan-${contract.id}`" :value="plan.id">
-                <span>
-                  <strong>{{ plan.name }}</strong>
-                  <span class="sf-muted">{{ deliverySummary(plan) }}<template v-if="priceOn(contract, plan)"> · {{ formatMoney(priceOn(contract, plan)!) }} per delivery</template></span>
+            <div v-if="actionsFor(contract).length" class="sf-sub__actions">
+              <button v-if="actionsFor(contract).includes('retry')" type="button" class="sf-button" @click="retry(contract)">Try the payment again</button>
+              <button v-if="actionsFor(contract).includes('resume')" type="button" class="sf-button" @click="resume(contract)">Resume subscription</button>
+              <button v-if="actionsFor(contract).includes('skip')" type="button" class="sf-button sf-button--secondary" :aria-expanded="isOpen(contract, 'skip')" @click="ask(contract, 'skip')">Skip next delivery</button>
+              <button v-if="actionsFor(contract).includes('pause')" type="button" class="sf-button sf-button--secondary" :aria-expanded="isOpen(contract, 'pause')" @click="ask(contract, 'pause')">Pause</button>
+              <button v-if="actionsFor(contract).includes('changePlan')" type="button" class="sf-button sf-button--secondary" :aria-expanded="isOpen(contract, 'changePlan')" @click="ask(contract, 'changePlan')">Change plan</button>
+              <button v-if="actionsFor(contract).includes('cancel')" type="button" class="sf-acct__link sf-sub__cancel" :aria-expanded="isOpen(contract, 'cancel')" @click="ask(contract, 'cancel')">Cancel subscription</button>
+            </div>
+
+            <!-- The question each action asks before it happens. -->
+            <div v-if="isOpen(contract, 'skip')" class="sf-sub__ask">
+              <p>
+                Skip the delivery of <strong>{{ dayLabel(contract.nextChargeOn!) }}</strong>?
+                Your next one will be {{ dayLabel(nextChargeDate(contract.nextChargeOn!, contract.plan)) }}, and nothing is charged before then.
+              </p>
+              <div class="sf-sub__ask-actions">
+                <button type="button" class="sf-button" @click="skip(contract)">Skip this delivery</button>
+                <button type="button" class="sf-button sf-button--secondary" @click="open = null">Keep it</button>
+              </div>
+            </div>
+
+            <div v-else-if="isOpen(contract, 'pause')" class="sf-sub__ask">
+              <p>Pause this subscription? Nothing is charged or sent until you resume it, and you can resume whenever you like.</p>
+              <div class="sf-sub__ask-actions">
+                <button type="button" class="sf-button" @click="pause(contract)">Pause subscription</button>
+                <button type="button" class="sf-button sf-button--secondary" @click="open = null">Keep it running</button>
+              </div>
+            </div>
+
+            <form v-else-if="isOpen(contract, 'changePlan')" class="sf-sub__ask" @submit.prevent="changePlan(contract)">
+              <fieldset class="sf-sub__choices">
+                <legend>Change to</legend>
+                <label v-for="plan in subscriptions.plansToChangeTo(contract)" :key="plan.id" class="sf-sub__choice">
+                  <input v-model="planId" type="radio" :name="`sf-plan-${contract.id}`" :value="plan.id">
+                  <span>
+                    <strong>{{ plan.name }}</strong>
+                    <span class="sf-muted">{{ deliverySummary(plan) }}<template v-if="priceOn(contract, plan)"> · {{ formatMoney(priceOn(contract, plan)!) }} per delivery</template></span>
+                  </span>
+                </label>
+              </fieldset>
+              <p class="sf-muted">The new plan starts with your next delivery, on {{ dayLabel(contract.nextChargeOn!) }}.</p>
+              <div class="sf-sub__ask-actions">
+                <button type="submit" class="sf-button">Change plan</button>
+                <button type="button" class="sf-button sf-button--secondary" @click="open = null">Keep my plan</button>
+              </div>
+            </form>
+
+            <form v-else-if="isOpen(contract, 'cancel')" class="sf-sub__ask" @submit.prevent="cancel(contract)">
+              <fieldset class="sf-sub__choices">
+                <legend>Why are you cancelling?</legend>
+                <label v-for="option in CANCEL_REASONS" :key="option" class="sf-sub__choice">
+                  <input v-model="reason" type="radio" :name="`sf-reason-${contract.id}`" :value="option">
+                  <span>{{ option }}</span>
+                </label>
+              </fieldset>
+              <p class="sf-muted">Cancelling stops every future charge. To take a break instead, pause it.</p>
+              <div class="sf-sub__ask-actions">
+                <button type="submit" class="sf-button">Cancel subscription</button>
+                <button type="button" class="sf-button sf-button--secondary" @click="open = null">Keep my subscription</button>
+              </div>
+            </form>
+          </li>
+        </ul>
+      </section>
+
+      <!-- ── Orders ───────────────────────────────────────────── -->
+      <section v-if="withOrders" class="sf-acct__section" aria-labelledby="sf-acct-orders">
+        <h2 id="sf-acct-orders" class="sf-acct__section-title">Orders</h2>
+
+        <div v-if="!orders.length" class="sf-acct__empty">
+          <p class="sf-acct__empty-title">No orders yet</p>
+          <p class="sf-muted">When you order with {{ email }}, your orders show up here, with where each one is.</p>
+          <StorefrontAnchor href="/collections/all" class="sf-button">Start shopping</StorefrontAnchor>
+        </div>
+
+        <ul v-else class="sf-acct__list">
+          <li v-for="order in orders" :key="order.id" class="sf-order">
+            <div class="sf-order__head">
+              <div class="sf-order__what">
+                <h3 class="sf-order__number">Order {{ order.orderNumber }}</h3>
+                <p class="sf-muted">Placed {{ placed(order) }} · {{ itemsText(order) }}</p>
+              </div>
+              <StorefrontOrderStatus :status="shopperOrderStatus(order)" />
+            </div>
+
+            <ul class="sf-order__lines">
+              <li v-for="(line, i) in order.lineItems.slice(0, SHOWN_LINES)" :key="i" class="sf-order__line">
+                <span class="sf-order__thumb" aria-hidden="true">
+                  <img v-if="lineImage(productOfLine(line), line)" :src="lineImage(productOfLine(line), line)" alt="">
+                  <v-icon v-else size="22">{{ iconOfLine(line) }}</v-icon>
                 </span>
-              </label>
-            </fieldset>
-            <p class="sf-muted">The new plan starts with your next delivery, on {{ dayLabel(contract.nextChargeOn!) }}.</p>
-            <div class="sf-sub__ask-actions">
-              <button type="submit" class="sf-button">Change plan</button>
-              <button type="button" class="sf-button sf-button--secondary" @click="open = null">Keep my plan</button>
-            </div>
-          </form>
+                <span class="sf-order__line-text">
+                  <span class="sf-order__line-name">{{ line.product }}</span>
+                  <span class="sf-muted">
+                    <template v-if="lineVariantText(productOfLine(line), line)">{{ lineVariantText(productOfLine(line), line) }} · </template>
+                    <template v-if="line.plan">{{ line.plan.name }} · </template>Qty {{ line.qty }}
+                  </span>
+                </span>
+              </li>
+            </ul>
+            <p v-if="order.lineItems.length > SHOWN_LINES" class="sf-order__more sf-muted">
+              and {{ order.lineItems.length - SHOWN_LINES }} more {{ order.lineItems.length - SHOWN_LINES === 1 ? 'item' : 'items' }}
+            </p>
 
-          <form v-else-if="isOpen(contract, 'cancel')" class="sf-sub__ask" @submit.prevent="cancel(contract)">
-            <fieldset class="sf-sub__choices">
-              <legend>Why are you cancelling?</legend>
-              <label v-for="option in CANCEL_REASONS" :key="option" class="sf-sub__choice">
-                <input v-model="reason" type="radio" :name="`sf-reason-${contract.id}`" :value="option">
-                <span>{{ option }}</span>
-              </label>
-            </fieldset>
-            <p class="sf-muted">Cancelling stops every future charge. To take a break instead, pause it.</p>
-            <div class="sf-sub__ask-actions">
-              <button type="submit" class="sf-button">Cancel subscription</button>
-              <button type="button" class="sf-button sf-button--secondary" @click="open = null">Keep my subscription</button>
+            <div class="sf-order__foot">
+              <p class="sf-order__total">Total <strong>{{ formatMoney(orderSums(order).total) }}</strong></p>
+              <StorefrontAnchor :href="orderHref(order)" class="sf-button sf-button--secondary sf-order__view">
+                View order<span class="sf-acct__sr"> {{ order.orderNumber }}</span>
+              </StorefrontAnchor>
             </div>
-          </form>
-        </li>
-      </ul>
+          </li>
+        </ul>
+      </section>
     </section>
   </div>
 </template>
@@ -346,20 +360,11 @@ watch(mine, (list) => {
   padding: 40px 24px 0;
 }
 
-.sf-acct__signin {
-  max-width: 420px;
-  margin: 0 auto;
-}
-
-.sf-acct__form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  margin-top: 24px;
-}
-
-.sf-acct__form p {
-  margin: 0;
+/* A theme on the sections drawing sets its headings' weight and case (a serif at its
+   own weight); every other theme keeps the bold title it always had. */
+.sf-page-title {
+  font-weight: var(--sf-heading-weight, 700);
+  text-transform: var(--sf-heading-case, none);
 }
 
 .sf-acct__link {
@@ -391,13 +396,36 @@ watch(mine, (list) => {
   font-size: 14px;
 }
 
+.sf-acct__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Subscriptions, then orders: each under its own heading. */
+.sf-acct__section + .sf-acct__section {
+  margin-top: 48px;
+}
+
+.sf-acct__section-title {
+  margin: 0 0 16px;
+  font-family: var(--sf-heading-font, system-ui), -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: 22px;
+  font-weight: var(--sf-heading-weight, 700);
+  line-height: 1.25;
+  text-transform: var(--sf-heading-case, none);
+}
+
 .sf-acct__message {
   display: flex;
   align-items: flex-start;
   gap: 10px;
   margin: 0 0 24px;
   padding: 14px 16px;
-  border-radius: 8px;
+  border-radius: var(--sf-corner, 8px);
   background: #e3f2e6;
   color: #1b4d20;
   font-size: 15px;
@@ -414,8 +442,8 @@ watch(mine, (list) => {
   align-items: flex-start;
   gap: 12px;
   padding: 32px;
-  border-radius: 8px;
-  background: #f7f7f5;
+  border-radius: var(--sf-corner, 8px);
+  background: var(--sf-surface, #f7f7f5);
   color: #121011;
 }
 
@@ -468,8 +496,8 @@ watch(mine, (list) => {
   width: 72px;
   height: 72px;
   overflow: hidden;
-  border-radius: 8px;
-  background: #f7f7f5;
+  border-radius: var(--sf-corner, 8px);
+  background: var(--sf-surface, #f7f7f5);
   color: #5f5f5f;
 }
 
@@ -540,7 +568,7 @@ watch(mine, (list) => {
   gap: 10px;
   margin: 0;
   padding: 12px 14px;
-  border-radius: 8px;
+  border-radius: var(--sf-corner, 8px);
   background: #fde4e4;
   color: #8f1414;
   font-size: 14px;
@@ -589,8 +617,8 @@ watch(mine, (list) => {
   flex-direction: column;
   gap: 16px;
   padding: 20px;
-  border-radius: 8px;
-  background: #f7f7f5;
+  border-radius: var(--sf-corner, 8px);
+  background: var(--sf-surface, #f7f7f5);
   color: #121011;
 }
 
@@ -645,6 +673,172 @@ watch(mine, (list) => {
   gap: 2px;
 }
 
+/* ── An order ─────────────────────────────────────────────────── */
+.sf-order {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+  border: 1px solid var(--sf-input-border, #c9c9c9);
+  border-radius: var(--sf-radius, 8px);
+}
+
+.sf-order__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px 16px;
+}
+
+.sf-order__what {
+  min-width: 0;
+}
+
+.sf-order__what p {
+  margin: 4px 0 0;
+  font-size: 14px;
+}
+
+.sf-order__number {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.sf-order__lines {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sf-order__line {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 14px;
+}
+
+.sf-order__thumb {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  overflow: hidden;
+  border-radius: min(var(--sf-radius, 6px), 6px);
+  background: var(--sf-surface, #f7f7f5);
+  color: #5f5f5f;
+}
+
+.sf-order__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sf-order__line-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.sf-order__line-name {
+  font-weight: 600;
+}
+
+.sf-order__more {
+  margin: -4px 0 0;
+  font-size: 14px;
+}
+
+.sf-order__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--sf-divider, #f0f0f0);
+}
+
+.sf-order__total {
+  margin: 0;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+.sf-order__total strong {
+  margin-left: 6px;
+  font-weight: 700;
+}
+
+.sf-order__view {
+  height: 44px;
+  padding: 0 18px;
+  font-size: 14px;
+}
+
+/* ── The sections drawing ─────────────────────────────────────────
+   The store's narrow reading measure (shared with its policy pages) and gutter; card
+   headings in the theme's heading type; the message and the subscription states in
+   the theme's surface and text, their meaning in the icon's or dot's colour. */
+.sf-acct.sf-acct--sections {
+  max-width: var(--sf-measure-narrow, 860px);
+  padding-inline: var(--sf-gutter, 24px);
+}
+
+.sf-acct--sections .sf-order__number,
+.sf-acct--sections .sf-sub__name {
+  font-family: var(--sf-heading-font, system-ui), Georgia, serif;
+  font-size: 24px;
+  font-weight: var(--sf-heading-weight, 600);
+  line-height: 1.2;
+  text-transform: var(--sf-heading-case, none);
+}
+
+.sf-acct--sections .sf-acct__message {
+  border: 1px solid var(--sf-divider, #e3e3e0);
+  background: var(--sf-surface, #e3f2e6);
+  color: var(--sf-text, #1b4d20);
+}
+
+.sf-acct--sections .sf-acct__message .v-icon {
+  color: #2e6b34;
+}
+
+.sf-acct--sections .sf-acct__message:focus-visible {
+  outline-color: var(--sf-text, #1b4d20);
+}
+
+.sf-acct--sections .sf-sub__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--sf-divider, #e3e3e0);
+  border-radius: var(--sf-corner, 999px);
+  background: var(--sf-surface, #f7f7f5);
+  color: var(--sf-text, #121011);
+  font-weight: 500;
+}
+
+.sf-acct--sections .sf-sub__status::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--sf-muted, #5f5f5f);
+}
+
+.sf-acct--sections .sf-sub__status--active::before { background: #2e6b34; }
+.sf-acct--sections .sf-sub__status--paused::before { background: #8a5a00; }
+.sf-acct--sections .sf-sub__status--payment-failed::before { background: #b3261e; }
+
 @media (max-width: 640px) {
   .sf-acct {
     padding: 24px 16px 0;
@@ -669,6 +863,18 @@ watch(mine, (list) => {
 
   .sf-sub__cancel {
     margin-left: 0;
+  }
+
+  .sf-order {
+    padding: 16px;
+  }
+
+  .sf-order__head {
+    flex-direction: column;
+  }
+
+  .sf-order__view {
+    width: 100%;
   }
 }
 </style>

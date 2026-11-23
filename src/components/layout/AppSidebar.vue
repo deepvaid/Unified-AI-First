@@ -122,6 +122,7 @@ function buildNavGroups(accountId: string): NavGroup[] {
         { title: 'Product Recommendations', route: `/commerce/${accountId}/product_recommendations`, requires: 'commerce' },
         { title: 'Products', route: `/commerce/${accountId}/products` },
         { title: 'Collections', route: `/commerce/${accountId}/products/collections` },
+        { title: 'Size Charts', route: `/commerce/${accountId}/products/size_charts` },
         { title: 'Inventory', route: `/commerce/${accountId}/inventory` },
         { title: 'Price Lists', route: `/commerce/${accountId}/products/price-lists` },
         { title: 'Reservations', route: `/commerce/${accountId}/products/reservations` },
@@ -870,7 +871,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
               :key="item.title"
               type="button"
               class="rail-flyout-item"
-              :class="{ 'rail-flyout-item--active': ('route' in item) && route.path.startsWith(item.route) }"
+              :class="{ 'rail-flyout-item--active': ('route' in item) && routeMatches(item.route) }"
               @click="('route' in item) && activateNavItem(item as NavItem)"
             ><span>{{ ('route' in item) ? item.title : '' }}</span>
               <Crown v-if="isLocked(group)" :size="12" :stroke-width="1.75" />
@@ -949,7 +950,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
                 :key="child.title"
                 type="button"
                 class="rail-flyout-item"
-                :class="{ 'rail-flyout-item--active': route.path.startsWith(child.route) }"
+                :class="{ 'rail-flyout-item--active': routeMatches(child.route) }"
                 @click="goTo(child.route)"
               ><span>{{ child.title }}</span>
                 <Crown v-if="isLocked(group)" :size="12" :stroke-width="1.75" />

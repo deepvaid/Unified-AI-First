@@ -503,14 +503,20 @@ export const useSalesChannelsStore = defineStore('salesChannels', () => {
   // ── Demo stores ──────────────────────────────────────────────────────
   const channelById = (channelId: string): SalesChannel | undefined => channels.value.find((channel) => channel.id === channelId)
 
+  /** When a demo store's own channel was seeded connected (Northfold), else null: how a store starts, and what a restore puts back. */
+  const seededConnection = (channelId: string): string | null => {
+    const seeded = homeBlueprintOf(channelId)?.homeChannel
+    return seeded?.webStore?.merchandiseConnected ? seeded.merchandising?.lastSyncAt ?? seeded.createdAt : null
+  }
+
   // A demo store's connection is kept in the browser with the rest of its data, so
   // the storefront tab has a search box as soon as the admin tab connects. It is
-  // history: applying a theme keeps it, only a restore disconnects the store.
+  // history: applying a theme keeps it, only a restore puts it back as seeded.
   const keptConnection = keepPerChannel('merchandise', 1, isKeptConnection, {
     read: (channelId) => ({ connectedAt: channelById(channelId)?.merchandising?.lastSyncAt ?? null }),
     take: (channelId, saved) => {
       const channel = channelById(channelId)
-      if (channel) setMerchandising(channel, saved?.connectedAt ?? null)
+      if (channel) setMerchandising(channel, saved ? saved.connectedAt : seededConnection(channelId))
     },
   })
 
@@ -528,15 +534,15 @@ export const useSalesChannelsStore = defineStore('salesChannels', () => {
 
   /**
    * Seeds a store's market as the theme it runs now has it, and its Merchandise Cloud
-   * connection as it had it before the demo (not connected), then keeps the
-   * connection: what this browser saved is read, never cleared.
+   * connection as it had it before the demo (connected only on a demo store's channel
+   * seeded so), then keeps the connection: what this browser saved is read, never cleared.
    */
   function attachStore(channel: SalesChannel): void {
     if (attached.has(channel.id)) return
     attached.add(channel.id)
     const snapshot = demoSnapshotOf(channel)
     if (snapshot) setMarket(channel, snapshot.market)
-    setMerchandising(channel, null)
+    setMerchandising(channel, seededConnection(channel.id))
     keptConnection.attach(channel.id)
   }
   for (const seeded of SEEDED_DEMO_CHANNELS) attachStore(channelById(seeded.id)!)
@@ -571,13 +577,13 @@ export const useSalesChannelsStore = defineStore('salesChannels', () => {
     if (snapshot) setMarket(channel, snapshot.market)
   }
 
-  /** Disconnects the store from Merchandise Cloud again (contract: restoreDemoHistory, a restore only). */
+  /** Puts the store's Merchandise Cloud connection back as seeded (contract: restoreDemoHistory, a restore only). */
   function restoreDemoHistory(channelId: string): void {
     const channel = demoChannel(channelId)
     if (!channel) return
     attachStore(channel)
     keptConnection.clear(channelId)
-    setMerchandising(channel, null)
+    setMerchandising(channel, seededConnection(channelId))
     keptConnection.adopt(channelId)
   }
 

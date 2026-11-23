@@ -545,7 +545,7 @@ export const useProductExtrasStore = defineStore('productExtras', () => {
 
   /** A demo store's collections, as the theme it runs has them. */
   function demoCollections(channelId: string, snapshot: StoreSnapshot | null): Collection[] {
-    return (snapshot?.collections ?? []).map((c) => ({ ...seedCollection(c.id, c.title, 'Manual', c.updatedAt, c.productCount), salesChannels: [channelId] }))
+    return (snapshot?.collections ?? []).map((c) => ({ ...seedCollection(c.id, c.title, 'Manual', c.updatedAt, c.productCount), description: c.description ?? '', salesChannels: [channelId] }))
   }
 
   /** The stores whose collections are seeded (attachStore): each only once. */

@@ -14,10 +14,11 @@ import type { SubscriptionPlan } from '../../subscriptions/plans.ts'
 import type { SubscriptionContract } from '../../subscriptions/contracts.ts'
 import type { StoreCampaign } from '../campaigns.ts'
 import type { CheckoutProfile } from '../checkoutProfile.ts'
+import type { PackShape } from '../packShot.ts'
 import type { TemplateType, ThemeSection, ThemeStyles } from '../themeSections.ts'
 
 /** The demo stores, each also a theme in the library. A new one is added here and to DEMO_STORES. */
-export type DemoStoreId = 'vitaheal'
+export type DemoStoreId = 'vitaheal' | 'northfold'
 
 /**
  * Set on a web store that can take a theme from the library: the three demo
@@ -78,6 +79,8 @@ export interface SnapshotCollection {
   productCount: number
   /** ISO date-time the seed was written. */
   updatedAt: string
+  /** What the collection page says under its title (Products › Collections › Description). Absent: nothing. */
+  description?: string
 }
 
 /** A size chart (Products › Size charts). A product links one by `detail.sizeChartId`. */
@@ -94,6 +97,12 @@ export interface SizeChart {
   rows: { size: string; values: string[] }[]
   fitNote: string
   howToMeasure: string
+}
+
+/** How a store's checkout works: where it delivers and who it is filled in with, and what it offers. */
+export interface SnapshotCheckout extends CheckoutProfile {
+  /** Whether the checkout offers Click & collect. Absent: it does (every store has until now). */
+  pickup?: boolean
 }
 
 /** Everything Apply clones into a store. Plain data: snapshotFor() hands each caller its own copy. */
@@ -133,7 +142,7 @@ export interface StoreSnapshot {
   /** Empty for a store without subscriptions. */
   plans: SubscriptionPlan[]
   sizeCharts: SizeChart[]
-  checkout: CheckoutProfile
+  checkout: SnapshotCheckout
 }
 
 /** What happened in a store before the demo: seeded on its home channel only, never cloned. */
@@ -181,6 +190,8 @@ export interface DemoStoreBlueprint {
   photoDir: string
   capabilities: StoreCapabilities
   card: ThemeCard
+  /** The drawing a product saved without photos gets in this store. Absent: a can (Vitaheal's supplements). */
+  packShot?: { shape: PackShape }
   /** Vitaheal only: the ids it was seeded with before the id blocks existed, kept on its home channel. */
   legacyHomeIds?: { variantFactor: number; collectionBase: number }
   build(ctx: InstallContext): StoreSnapshot

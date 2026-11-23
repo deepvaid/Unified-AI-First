@@ -1,0 +1,716 @@
+<script setup lang="ts">
+import { computed, inject, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useStorefrontCartStore } from '@/stores/useStorefrontCart'
+import StorefrontAnchor from './StorefrontAnchor.vue'
+import StorefrontDrawer from './StorefrontDrawer.vue'
+import { STOREFRONT } from './storefrontContext'
+import { chromeSettings, flag, templateForRoute, text } from './sections/sectionSettings'
+
+// The storefront's announcement bar and header. Two drawings:
+// - classic (every theme but the sections drawing's): the markup StorefrontLayout has
+//   always drawn, moved here unchanged, so Vitaheal, Atlas and Neelam look as before;
+// - sections (Northfold, Torqline): the theme's header section decides the menu style
+//   (Inline: wordmark and menu in one row; Centered: wordmark over the menu; Minimal:
+//   wordmark and a menu button), whether it sticks to the top on a desktop, and a light
+//   or dark scheme. Search shows only once the store can search; on a phone, and in the
+//   Minimal style, the menu opens in a drawer.
+// The checkout's header (route meta minimalChrome) is the logo and "Secure checkout".
+
+const storefront = inject(STOREFRONT)!
+const route = useRoute()
+const router = useRouter()
+const cart = useStorefrontCartStore()
+
+const chrome = computed(() => storefront.chrome.value)
+const searchable = computed(() => storefront.searchable.value)
+const sectionsDrawing = computed(() => storefront.sectionsDrawing.value)
+const minimal = computed(() => route.meta.minimalChrome === true)
+const cartCount = computed(() => cart.count(storefront.channel.value.id))
+const cartLabel = computed(() => (cartCount.value ? `Cart, ${cartCount.value} ${cartCount.value === 1 ? 'item' : 'items'}` : 'Cart'))
+
+/** The theme's announcement, for a store that shows it above the header on every page. */
+const announcement = computed(() => {
+  if (!chrome.value.announcementAboveHeader) return ''
+  if (storefront.campaignMessage.value) return storefront.campaignMessage.value
+  const bar = storefront.theme.value?.templates.home.find((s) => s.kind === 'announcement-bar' && !s.hidden)
+  return typeof bar?.settings.text === 'string' ? bar.settings.text : ''
+})
+
+// ── Classic ─────────────────────────────────────────────────────────────
+const menuOpen = ref(false)
+watch(() => route.fullPath, () => { menuOpen.value = false })
+
+const query = ref('')
+function search(): void {
+  const q = query.value.trim()
+  if (!q) return
+  void router.push(storefront.link(`/search?q=${encodeURIComponent(q)}`))
+  // The results page has its own box with the query in it: the header's starts empty again.
+  if (searchable.value) query.value = ''
+}
+
+// ── Sections drawing ────────────────────────────────────────────────────
+const settings = computed(() => chromeSettings(storefront.theme.value, templateForRoute(route.name), 'header'))
+const menuStyle = computed(() => {
+  const style = text(settings.value, 'menuStyle', 'Inline')
+  return ['Inline', 'Centered', 'Minimal'].includes(style) ? style.toLowerCase() : 'inline'
+})
+const sticky = computed(() => flag(settings.value, 'sticky'))
+const dark = computed(() => text(settings.value, 'colorScheme') === 'Dark')
+const hasAccount = computed(() => chrome.value.headerTools.includes('account'))
+
+/**
+ * The drawer's links: the store's phone menu, the shop's own links (those the
+ * header's menu has) first and large, then the rest (pages, account, cart).
+ */
+const drawerLinks = computed(() => {
+  const all = chrome.value.mobileNav.length ? chrome.value.mobileNav : chrome.value.nav
+  const main = new Set(chrome.value.nav.map((item) => item.href))
+  return { main: all.filter((item) => main.has(item.href)), more: all.filter((item) => !main.has(item.href)) }
+})
+
+// Search leads to the search page, which puts the shopper in its box on arrival (StorefrontSearch).
+// Two ways there need a hand: the icon on that page itself goes nowhere, and the menu drawer gives
+// focus back to its button as it closes, after the page has put it in the box.
+function focusSearchBox(): void {
+  document.querySelector<HTMLInputElement>('[data-sf-search-box]')?.focus()
+}
+function onSearchIcon(): void {
+  if (route.name === 'StorefrontSearch' && !route.query.q) focusSearchBox()
+}
+let searchChosen = false
+function onMenuSearch(): void {
+  searchChosen = true
+  menuOpen.value = false
+}
+function onMenuClosed(): void {
+  if (searchChosen) focusSearchBox()
+  searchChosen = false
+}
+</script>
+
+<template>
+  <!-- ── Sections drawing ──────────────────────────────────────────── -->
+  <template v-if="sectionsDrawing && !minimal">
+    <p v-if="announcement" class="sfh-announce">{{ announcement }}</p>
+    <header class="sfh" :class="[`sfh--${menuStyle}`, { 'sfh--dark': dark, 'sfh--sticky': sticky }]">
+      <div class="sfh__row">
+        <StorefrontAnchor href="/" class="sfh__logo">
+          <v-icon v-if="chrome.wordmarkIcon" size="26" aria-hidden="true">{{ chrome.wordmarkIcon }}</v-icon>
+          <span>{{ chrome.wordmark }}</span>
+        </StorefrontAnchor>
+
+        <nav v-if="menuStyle === 'inline' && chrome.nav.length" class="sfh__nav" aria-label="Main">
+          <StorefrontAnchor v-for="item in chrome.nav" :key="item.label" :href="item.href" class="sfh__link">{{ item.label }}</StorefrontAnchor>
+        </nav>
+
+        <div class="sfh__tools">
+          <StorefrontAnchor v-if="searchable" href="/search" class="sfh__icon" aria-label="Search" @click="onSearchIcon">
+            <v-icon size="22" aria-hidden="true">search</v-icon>
+          </StorefrontAnchor>
+          <StorefrontAnchor v-if="hasAccount" :href="chrome.accountHref ?? '/user/login'" class="sfh__icon sfh__icon--account" aria-label="Account">
+            <v-icon size="22" aria-hidden="true">user-round</v-icon>
+          </StorefrontAnchor>
+          <StorefrontAnchor href="/cart-page" class="sfh__icon sfh__cart" :aria-label="cartLabel">
+            <v-icon size="22" aria-hidden="true">shopping-bag</v-icon>
+            <span v-if="cartCount" class="sfh__count" aria-hidden="true">{{ cartCount > 99 ? '99+' : cartCount }}</span>
+          </StorefrontAnchor>
+          <button
+            type="button"
+            class="sfh__icon sfh__menu"
+            aria-label="Menu"
+            aria-haspopup="dialog"
+            :aria-expanded="menuOpen"
+            @click="menuOpen = true"
+          >
+            <v-icon size="24" aria-hidden="true">menu</v-icon>
+          </button>
+        </div>
+      </div>
+
+      <nav v-if="menuStyle === 'centered' && chrome.nav.length" class="sfh__nav sfh__nav--below" aria-label="Main">
+        <StorefrontAnchor v-for="item in chrome.nav" :key="item.label" :href="item.href" class="sfh__link">{{ item.label }}</StorefrontAnchor>
+      </nav>
+    </header>
+
+    <StorefrontDrawer v-model="menuOpen" title="Menu" :phone-sheet="false" close-label="Close menu" @close="onMenuClosed">
+      <nav aria-label="Menu" class="sfh-drawer">
+        <StorefrontAnchor v-if="searchable" href="/search" class="sfh-drawer__search" @click="onMenuSearch">
+          <v-icon size="20" aria-hidden="true">search</v-icon>
+          Search
+        </StorefrontAnchor>
+        <ul v-if="drawerLinks.main.length" class="sfh-drawer__main">
+          <li v-for="item in drawerLinks.main" :key="item.label">
+            <StorefrontAnchor :href="item.href" class="sfh-drawer__link">{{ item.label }}</StorefrontAnchor>
+          </li>
+        </ul>
+        <ul v-if="drawerLinks.more.length" class="sfh-drawer__more">
+          <li v-for="item in drawerLinks.more" :key="item.label">
+            <StorefrontAnchor :href="item.href" class="sfh-drawer__link sfh-drawer__link--small">{{ item.label }}</StorefrontAnchor>
+          </li>
+        </ul>
+      </nav>
+    </StorefrontDrawer>
+  </template>
+
+  <!-- ── Classic (moved unchanged from StorefrontLayout) ───────────────── -->
+  <template v-else>
+    <p v-if="announcement && !minimal" class="sf-announce">{{ announcement }}</p>
+    <header v-if="minimal" class="sf-top sf-top--minimal" :class="{ 'sf-top--sections': sectionsDrawing }">
+      <StorefrontAnchor href="/" class="sf-logo" :aria-label="sectionsDrawing ? undefined : 'Logo'">
+        <v-icon v-if="chrome.wordmarkIcon" size="28">{{ chrome.wordmarkIcon }}</v-icon>
+        <span>{{ chrome.wordmark }}</span>
+      </StorefrontAnchor>
+      <span class="sf-top__secure"><v-icon size="16">lock</v-icon> Secure checkout</span>
+    </header>
+
+    <header v-else class="sf-top">
+      <div class="sf-top__row">
+        <button type="button" class="sf-icon-btn sf-top__menu" aria-label="menu" :aria-expanded="menuOpen" @click="menuOpen = !menuOpen">
+          <v-icon size="22">{{ menuOpen ? 'x' : 'menu' }}</v-icon>
+        </button>
+
+        <ul v-if="chrome.social.length" class="sf-social" aria-label="Social links">
+          <li v-for="item in chrome.social" :key="item.label">
+            <StorefrontAnchor :href="item.href" class="sf-icon-btn" :aria-label="item.label">
+              <v-icon size="18">{{ item.icon }}</v-icon>
+            </StorefrontAnchor>
+          </li>
+        </ul>
+
+        <StorefrontAnchor href="/" class="sf-logo" aria-label="Logo">
+          <v-icon v-if="chrome.wordmarkIcon" size="28">{{ chrome.wordmarkIcon }}</v-icon>
+          <span>{{ chrome.wordmark }}</span>
+        </StorefrontAnchor>
+
+        <div class="sf-tools">
+          <form v-if="chrome.headerTools.includes('search') || searchable" class="sf-search" :class="{ 'sf-search--ring': searchable }" role="search" @submit.prevent="search">
+            <input v-model="query" type="search" :placeholder="chrome.searchPlaceholder" :aria-label="chrome.searchPlaceholder">
+            <button type="submit" class="sf-search__go" aria-label="Search">
+              <v-icon size="16">search</v-icon>
+            </button>
+          </form>
+          <StorefrontAnchor v-if="chrome.headerTools.includes('account')" :href="chrome.accountHref ?? '/user/login'" class="sf-icon-btn" aria-label="Account">
+            <v-icon size="20">user-round</v-icon>
+          </StorefrontAnchor>
+          <StorefrontAnchor v-if="chrome.headerTools.includes('wishlist')" href="/wishlist-page" class="sf-icon-btn" aria-label="Wishlist">
+            <v-icon size="20">heart</v-icon>
+          </StorefrontAnchor>
+          <StorefrontAnchor href="/cart-page" class="sf-icon-btn sf-cart-link" :aria-label="cartCount ? `Cart, ${cartCount} ${cartCount === 1 ? 'item' : 'items'}` : 'Cart'">
+            <v-icon size="20">shopping-cart</v-icon>
+            <span v-if="cartCount" class="sf-cart-link__count" aria-hidden="true">{{ cartCount > 99 ? '99+' : cartCount }}</span>
+          </StorefrontAnchor>
+        </div>
+      </div>
+
+      <nav v-if="chrome.nav.length" class="sf-nav" aria-label="Main">
+        <StorefrontAnchor v-for="item in chrome.nav" :key="item.label" :href="item.href">{{ item.label }}</StorefrontAnchor>
+      </nav>
+
+      <nav v-if="menuOpen && chrome.mobileNav.length" class="sf-mobile-nav" aria-label="Menu">
+        <!-- The header's search box does not fit a phone: the menu leads to the search page instead. -->
+        <StorefrontAnchor v-if="searchable" href="/search">Search</StorefrontAnchor>
+        <StorefrontAnchor v-for="item in chrome.mobileNav" :key="item.label" :href="item.href">{{ item.label }}</StorefrontAnchor>
+      </nav>
+    </header>
+  </template>
+</template>
+
+<style scoped>
+/* ─────────────────────────────────────────────────────────────────────────────
+ * P4-8 — DELIBERATELY OUT OF SYSTEM, like the rest of the storefront (see
+ * StorefrontLayout.vue): colours, fonts and radius come from the store's theme
+ * (--sf-*), and every painted surface sets its own text colour. The classic rules
+ * are Aurora's, measured on Neelam-Store, and moved here from StorefrontLayout
+ * unchanged; the sections drawing's (.sfh*) follow the theme's header settings.
+ * ───────────────────────────────────────────────────────────────────────────── */
+
+/* ── Classic ─────────────────────────────────────────────────────────── */
+.sf-top a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.sf-top a:hover {
+  text-decoration: underline;
+}
+
+.sf-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.sf-announce {
+  margin: 0;
+  padding: 8px 24px;
+  background: var(--sf-brand, #373842);
+  color: var(--sf-on-brand, #ffffff);
+  text-align: center;
+  font-size: 13px;
+  line-height: 18px;
+  letter-spacing: 0.02em;
+}
+
+.sf-top {
+  border-bottom: 1px solid var(--sf-divider);
+}
+
+.sf-top--minimal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: var(--sf-measure);
+  margin: 0 auto;
+  padding: 20px var(--sf-gutter);
+  border-bottom: 0;
+}
+
+.sf-top__secure {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.sf-cart-link {
+  position: relative;
+}
+
+.sf-cart-link__count {
+  position: absolute;
+  top: 0;
+  right: -2px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--sf-brand, #373842);
+  color: var(--sf-bg, #ffffff);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+
+.sf-top__row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 16px;
+  max-width: var(--sf-measure);
+  margin: 0 auto;
+  padding: 20px var(--sf-gutter) 12px;
+}
+
+.sf-top__menu {
+  display: none;
+}
+
+.sf-social {
+  display: flex;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The logo sits in the middle column and the tools at the end, also for a store
+   with no social links to fill the first column. */
+.sf-logo {
+  grid-column: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 800;
+  font-size: 20px;
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+
+.sf-logo:hover {
+  text-decoration: none !important;
+}
+
+/* The checkout's logo on a theme with the sections drawing: its wordmark in the heading face. */
+.sf-top--sections .sf-logo {
+  font-family: var(--sf-heading-font, system-ui);
+  font-weight: var(--sf-heading-weight, 800);
+  font-size: 28px;
+  letter-spacing: 0;
+}
+
+.sf-tools {
+  grid-column: 3;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.sf-search {
+  display: flex;
+  align-items: center;
+  height: 39px;
+  padding: 0 6px 0 16px;
+  border: 1px solid var(--sf-search-border);
+  border-radius: 999px;
+  margin-right: 8px;
+}
+
+/* The input has no outline of its own, so the box shows where the keyboard is. */
+.sf-search--ring:focus-within {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.sf-search input {
+  width: 180px;
+  border: 0;
+  outline: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 14px;
+}
+
+/* 24px target around the 16px icon (WCAG 2.5.8 — W-12). */
+.sf-search__go {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  min-height: 24px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.sf-nav {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  padding: 0 var(--sf-gutter) 16px;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.sf-mobile-nav {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .sf-top__row {
+    grid-template-columns: auto 1fr auto;
+  }
+
+  .sf-top__menu {
+    display: inline-flex;
+  }
+
+  .sf-social,
+  .sf-search,
+  .sf-nav {
+    display: none;
+  }
+
+  .sf-logo {
+    justify-self: center;
+  }
+
+  .sf-mobile-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px var(--sf-gutter) 16px;
+    font-weight: 500;
+  }
+}
+
+/* ── Sections drawing ────────────────────────────────────────────────── */
+.sfh-announce {
+  margin: 0;
+  padding: 10px var(--sf-gutter);
+  background: var(--sf-brand, #111111);
+  color: var(--sf-on-brand, #ffffff);
+  text-align: center;
+  font-size: 13px;
+  line-height: 18px;
+  letter-spacing: 0.02em;
+}
+
+.sfh {
+  position: relative;
+  z-index: 20;
+  border-bottom: 1px solid var(--sf-divider, #e5e5e5);
+  background: var(--sf-bg, #ffffff);
+  color: var(--sf-text, #121011);
+}
+
+/* A dark header paints the brand colour and its ink; the focus ring follows the ink so it shows on the dark fill. */
+.sfh--dark {
+  --sf-accent: var(--sf-on-brand, #ffffff);
+  border-bottom-color: transparent;
+  background: var(--sf-brand, #121011);
+  color: var(--sf-on-brand, #ffffff);
+}
+
+@media (min-width: 901px) {
+  .sfh--sticky {
+    position: sticky;
+    top: 0;
+  }
+}
+
+.sfh a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.sfh__row {
+  display: flex;
+  align-items: center;
+  gap: 40px;
+  box-sizing: border-box;
+  max-width: var(--sf-measure, 1200px);
+  min-height: 76px;
+  margin: 0 auto;
+  padding: 0 var(--sf-gutter, 24px);
+}
+
+.sfh--centered .sfh__row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+}
+
+.sfh--centered .sfh__logo {
+  grid-column: 2;
+}
+
+.sfh--centered .sfh__tools {
+  grid-column: 3;
+  justify-self: end;
+}
+
+.sfh__logo {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--sf-heading-font, system-ui), Georgia, serif;
+  font-size: 30px;
+  font-weight: var(--sf-heading-weight, 700);
+  line-height: 1;
+  letter-spacing: -0.01em;
+  text-transform: var(--sf-heading-case, none);
+  white-space: nowrap;
+}
+
+.sfh__nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 28px;
+  min-width: 0;
+  font-size: 15px;
+  line-height: 20px;
+}
+
+.sfh__nav--below {
+  justify-content: center;
+  max-width: var(--sf-measure, 1200px);
+  margin: 0 auto;
+  padding: 0 var(--sf-gutter, 24px) 18px;
+}
+
+/* An underline that grows under the link, and stays under the page you are on. */
+.sfh__link {
+  position: relative;
+  padding: 6px 0;
+}
+
+.sfh__link::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 2px;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 180ms ease-out;
+}
+
+.sfh__link:hover::after,
+.sfh__link[aria-current='page']::after {
+  transform: scaleX(1);
+}
+
+.sfh__tools {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+}
+
+.sfh__icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--sf-radius, 0);
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.sfh__icon:hover {
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
+
+.sfh__link:focus-visible,
+.sfh__logo:focus-visible,
+.sfh__icon:focus-visible {
+  outline: 2px solid var(--sf-accent, #2563eb);
+  outline-offset: 2px;
+}
+
+.sfh__count {
+  position: absolute;
+  top: 6px;
+  right: 4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  box-sizing: border-box;
+  border-radius: 999px;
+  background: var(--sf-text, #121011);
+  color: var(--sf-bg, #ffffff);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+
+.sfh--dark .sfh__count {
+  background: var(--sf-on-brand, #ffffff);
+  color: var(--sf-brand, #121011);
+}
+
+/* The menu button: on a phone, and on a desktop for the Minimal style. */
+.sfh__menu {
+  display: none;
+}
+
+.sfh--minimal .sfh__menu {
+  display: inline-flex;
+}
+
+.sfh-drawer {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.sfh-drawer ul {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Search: a field-like row leading to the search page. */
+.sfh-drawer__search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid var(--sf-divider, #e5e5e5);
+  border-radius: var(--sf-radius, 0);
+  color: var(--sf-muted, #5f5f5f);
+  font-size: 15px;
+  text-decoration: none;
+}
+
+.sfh-drawer__link {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  color: inherit;
+  font-family: var(--sf-heading-font, system-ui), Georgia, serif;
+  font-size: 28px;
+  font-weight: var(--sf-heading-weight, 700);
+  line-height: 1.15;
+  text-decoration: none;
+  text-transform: var(--sf-heading-case, none);
+}
+
+.sfh-drawer__more {
+  padding-top: 16px !important;
+  border-top: 1px solid var(--sf-divider, #e5e5e5);
+}
+
+.sfh-drawer__link--small {
+  min-height: 44px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 400;
+  text-transform: none;
+}
+
+.sfh-drawer__link:hover,
+.sfh-drawer__search:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.sfh-drawer__link:focus-visible,
+.sfh-drawer__search:focus-visible {
+  outline: 2px solid var(--sf-accent, #2563eb);
+  outline-offset: 2px;
+}
+
+@media (max-width: 900px) {
+  .sfh__row {
+    gap: 12px;
+    min-height: 60px;
+  }
+
+  .sfh--centered .sfh__row {
+    display: flex;
+  }
+
+  .sfh__logo {
+    font-size: 26px;
+  }
+
+  .sfh__nav,
+  .sfh__icon--account {
+    display: none;
+  }
+
+  .sfh__menu {
+    display: inline-flex;
+  }
+}
+</style>

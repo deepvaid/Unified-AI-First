@@ -150,6 +150,16 @@ export interface ProductDetail {
   sizeChartId?: string
   /** The vehicles this part fits (auto-parts stores). */
   fitment?: ProductFitment
+  /**
+   * Photos per value of the product's Color option ("Sand" → its photos, in gallery
+   * order), for a product photographed in every colour. `imageUrls` keeps them all, in
+   * the default order; a colour without photos of its own shows `imageUrls`.
+   */
+  imagesByColor?: Record<string, string[]>
+  /** How it fits, for the product page, its size guide and the chat: "Relaxed fit. Model is 6'1" and wears M." */
+  fitNote?: string
+  /** How to wash and look after it; the product page shows it under "Fabric and care", after `material`. */
+  care?: string
 }
 
 export interface Product {
@@ -222,6 +232,8 @@ export interface ProductDraftInput {
   channelIds?: string[]
   /** Product pictures, the first one leading. Absent: unchanged. */
   imageUrls?: string[]
+  /** The crossed-out "was" price a store shows ('' for none). Absent: a list price 20% above `price`, as the shared catalogue has. */
+  compareAtPrice?: string
 }
 
 export interface InventoryItem {
@@ -825,18 +837,24 @@ function leavingStore(product: Product, channelId: string, storeName: string | u
 /**
  * The product list with one demo store's products in place of the ones it had:
  * the ones a sales person added lead it, as they did when they were created, and
- * its seeded ones (`seeded`) follow everything else, so nothing above them shifts.
+ * its seeded ones (`seeded`) go back where they were (the first time, after
+ * everything else), so nothing else shifts, another demo store's products included.
  * A product the store had that is also in another store stays, in the others only;
  * `storeName` is asked for only then.
  */
 function withChannelProducts(all: Product[], channelId: string, list: Product[], seeded: ReadonlySet<number>, storeName: () => string | undefined): Product[] {
   const incoming = new Set(list.map((p) => p.id))
-  const rest = all.flatMap((p): Product[] => {
-    if (incoming.has(p.id)) return []
-    if (!p.channelIds?.includes(channelId)) return [p]
-    return p.channelIds.length > 1 ? [leavingStore(p, channelId, storeName())] : []
-  })
-  return [...list.filter((p) => !seeded.has(p.id)), ...rest, ...list.filter((p) => seeded.has(p.id))]
+  const rest: Product[] = []
+  /** Where in `rest` the store's seeded products were. */
+  let at = -1
+  for (const p of all) {
+    if (at < 0 && seeded.has(p.id)) at = rest.length
+    if (incoming.has(p.id)) continue
+    if (!p.channelIds?.includes(channelId)) rest.push(p)
+    else if (p.channelIds.length > 1) rest.push(leavingStore(p, channelId, storeName()))
+  }
+  const place = at < 0 ? rest.length : at
+  return [...list.filter((p) => !seeded.has(p.id)), ...rest.slice(0, place), ...list.filter((p) => seeded.has(p.id)), ...rest.slice(place)]
 }
 
 /** The day a demo store's seed is built for: today, in local time. */
@@ -1006,7 +1024,7 @@ export const useCommerceStore = defineStore('commerce', () => {
     product.category = input.category
     product.vendor = input.vendor || '—'
     product.price = input.price || '0.00'
-    product.compareAtPrice = (parseFloat(input.price || '0') * 1.2).toFixed(2)
+    product.compareAtPrice = input.compareAtPrice ?? (parseFloat(input.price || '0') * 1.2).toFixed(2)
     product.inventory = input.inventory
     product.status = stockStatus(input.inventory)
     product.variants = input.variants

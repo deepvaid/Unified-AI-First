@@ -3,6 +3,7 @@ import type { ComputedRef, InjectionKey } from 'vue'
 import { formatMoney } from '@/maropay/money'
 import type { Money } from '@/maropay/money'
 import type { CheckoutProfile } from '@/storefront/checkoutProfile'
+import type { SizeChart, SizedProduct } from '@/storefront/sizeCharts'
 import type { StorefrontOffer } from '@/maropay/storefront'
 import type { StoreTheme } from '@/stores/themeBuilderData'
 import type { SalesChannel } from '@/stores/useSalesChannels'
@@ -34,6 +35,18 @@ export interface StorefrontContext {
   campaignMessage: ComputedRef<string>
   /** How the store takes payment for an amount: the merchant's methods, express buttons and instalments. */
   offerFor: (amount: Money) => StorefrontOffer
+  /**
+   * The theme asks for the richer drawing (`styles.drawing === 'sections'`: Northfold and
+   * Torqline): header and footer settings, page templates, filters, quick add, the
+   * variant picker. False for every other theme, which keeps the classic drawing.
+   */
+  sectionsDrawing: ComputedRef<boolean>
+  /** The store's size charts (Products › Size charts). */
+  sizeCharts: ComputedRef<SizeChart[]>
+  /** The chart a product's size guide shows, while it links one that exists. */
+  sizeChartFor: (product: SizedProduct) => SizeChart | undefined
+  /** Says something to screen readers politely: a result count, "Added to your cart" (./storefrontAnnouncer.ts). */
+  announce: (text: string) => void
 }
 
 export const STOREFRONT: InjectionKey<StorefrontContext> = Symbol('storefront')

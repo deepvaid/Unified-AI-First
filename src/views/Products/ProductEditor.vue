@@ -17,13 +17,18 @@ import MpStatusChip from '@/components/MpStatusChip.vue'
 import { useDisplay } from 'vuetify'
 import DvCatalogCta from '@/components/copilot/DvCatalogCta.vue'
 import ProductMediaField from '@/components/products/ProductMediaField.vue'
+import ProductSizeGuideCard from '@/components/products/ProductSizeGuideCard.vue'
+import VariantGrid from '@/components/products/VariantGrid.vue'
 import { isPlaceholderImage } from '@/components/products/productMedia'
 import { useProductStores } from '@/composables/useProductStores'
 import { parseDecimal } from '@/maropay/money'
 import { withPrimaryCollection } from '@/storefront/catalog'
 import { formatStorePrice } from '@/storefront/price'
+import { optionKind } from '@/storefront/variants'
+import { useSizeChartsStore } from '@/stores/useSizeCharts'
 import { useCopilotStore } from '@/stores/useCopilot'
 import { useSubscriptionsStore } from '@/stores/useSubscriptions'
+import { useDemoStores } from '@/stores/useDemoStores'
 import { deliverySummary, pricePerDelivery, roundForDisplay } from '@/subscriptions/plans'
 import { useCatalogCopilotStore, type CatalogApplyPayload } from '@/stores/useCatalogCopilot'
 import type { CatalogField } from '@/composables/catalogCopilotConfig'
@@ -88,6 +93,13 @@ const purchasePlans = computed(() => {
   })
 })
 const plansRoute = computed(() => ({ name: 'SubscriptionPlans', params: { accountId: accountId.value } }))
+/** The card shows the product's plans, or offers them where its store sells subscriptions; a store that sells none (Northfold) shows no card. */
+const demoStores = useDemoStores()
+const showPurchaseOptions = computed(() => {
+  if (purchasePlans.value.length) return true
+  const storeId = productStores.stores.value.find((s) => product.value?.channelIds?.includes(s.id))?.id
+  return !!storefrontLink.value && demoStores.blueprintOf(storeId ?? '')?.capabilities.subscriptions !== false
+})
 
 /** A variant's price in its store's currency ("419 kr"); dollars for the shared catalogue. */
 function money(price: string): string {
@@ -147,9 +159,15 @@ function load() {
 load()
 watch(productId, load)
 
-/** Variant rows shown in the grid — real ones when the wizard built them, else a default row. */
+/**
+ * The variants shown in the grid: the ones the wizard built. A product saved
+ * before it had any shows one default row with its own SKU, price and stock; one
+ * that has options but no variants yet shows none (the grid's empty state).
+ */
 const variantRows = computed<ProductVariant[]>(() => {
-  if (form.value.detail.variantsList.length) return form.value.detail.variantsList
+  const detail = form.value.detail
+  if (detail.variantsList.length) return detail.variantsList
+  if (detail.hasVariants) return []
   return [{
     id: 0,
     title: 'Default variant',
@@ -158,16 +176,29 @@ const variantRows = computed<ProductVariant[]>(() => {
     allowBackorder: false,
     costPrice: '',
     price: form.value.price,
-    stock: Object.fromEntries(INVENTORY_LOCATIONS.map((l) => [l, 0])),
+    stock: { ...Object.fromEntries(INVENTORY_LOCATIONS.map((l) => [l, 0])), [INVENTORY_LOCATIONS[0]!]: product.value?.inventory ?? 0 },
   }]
 })
 
-const variantHeaders = computed(() => [
-  { title: 'Variant', key: 'title', minWidth: '200px' },
-  { title: 'SKU', key: 'sku' },
-  { title: 'Price', key: 'price', align: 'end' as const },
-  ...INVENTORY_LOCATIONS.map((l) => ({ title: `In stock (${l})`, key: `stock.${l}`, align: 'end' as const })),
-])
+// ── Size guide ────────────────────────────────────────────────────────
+// Offered when the product's store has size charts and the product has sizes
+// (or already links a chart). The choice is saved with the page's Save.
+const sizeCharts = useSizeChartsStore()
+const storeCharts = computed(() =>
+  productStores.channelIds(form.value.detail.salesChannels).flatMap((id) => sizeCharts.chartsForChannel(id)))
+const productSizes = computed(() => form.value.detail.options.find((o) => optionKind(o) === 'size')?.values ?? [])
+const showSizeGuide = computed(() => storeCharts.value.length > 0 && (productSizes.value.length > 0 || !!form.value.detail.sizeChartId))
+/** The Size charts page, opened on the product's store. */
+const sizeChartsRoute = computed(() => {
+  if (!router.hasRoute('SizeCharts')) return null
+  const store = storeCharts.value[0]?.channelId
+  return { name: 'SizeCharts', params: { accountId: accountId.value }, ...(store ? { query: { store } } : {}) }
+})
+
+function setSizeChart(chartId: string | undefined) {
+  if (chartId) form.value.detail.sizeChartId = chartId
+  else delete form.value.detail.sizeChartId
+}
 
 const dirty = computed(() => JSON.stringify(form.value) !== snapshot.value)
 const valid = computed(() => form.value.name.trim().length > 0)
@@ -200,6 +231,8 @@ async function save() {
     components: p.components,
     collections: [...form.value.collections],
     channelIds: productStores.channelIds(form.value.detail.salesChannels),
+    // A store shows this price crossed out, so it stays as it was (variant prices are edited in the wizard).
+    ...(productStores.channelIds(form.value.detail.salesChannels).length ? { compareAtPrice: p.compareAtPrice } : {}),
     // A store product never goes out without a picture: it gets a drawn pack until one is added.
     imageUrls: form.value.images.length
       ? [...form.value.images]
@@ -388,37 +421,29 @@ function openVariantsWizard() {
             <MpFormField v-for="(option, index) in form.detail.options" :key="index" :label="option.name || `Option ${index + 1}`">
               <template #default="{ labelId }">
                 <div class="d-flex flex-wrap ga-1" :aria-labelledby="labelId">
-                  <v-chip v-for="value in option.values" :key="value" size="small" variant="tonal" label>{{ value }}</v-chip>
+                  <v-chip v-for="value in option.values" :key="value" size="small" variant="tonal" label>
+                    <template v-if="option.display !== 'buttons' && option.swatches?.[value]" #prepend>
+                      <span class="ped-dot" :style="{ '--ped-dot': option.swatches[value] }" aria-hidden="true" />
+                    </template>
+                    {{ value }}
+                  </v-chip>
                 </div>
               </template>
             </MpFormField>
           </template>
-          <p v-else class="text-body-2 text-medium-emphasis mb-0">
+          <p v-else-if="variantRows.length" class="text-body-2 text-medium-emphasis mb-0">
             This product has a single default variant.
           </p>
 
-          <v-data-table
-            :headers="variantHeaders"
-            :items="variantRows"
-            density="comfortable"
-            hide-default-footer
-            :items-per-page="-1"
-            class="ped-variants"
-          >
-            <template #item.title="{ item }">
-              <span class="text-body-2 font-weight-medium">{{ item.title }}</span>
-            </template>
-            <template #item.sku="{ item }">
-              <span class="ped-mono text-body-2">{{ item.sku || '—' }}</span>
-            </template>
-            <template #item.price="{ item }">
-              <span class="text-body-2">{{ money(item.price) }}</span>
-            </template>
-            <template v-for="location in INVENTORY_LOCATIONS" :key="location" #[`item.stock.${location}`]="{ item }">
-              <span class="text-body-2">{{ item.stock[location] ?? 0 }}</span>
-            </template>
-          </v-data-table>
-          <v-btn variant="outlined" prepend-icon="pencil" class="text-none align-self-start" @click="openVariantsWizard">
+          <VariantGrid
+            :options="form.detail.options"
+            :variants="variantRows"
+            :format-price="money"
+            :caption="`Variants of ${form.name || 'this product'}`"
+            empty-action-label="Add options and variants"
+            @empty-action="openVariantsWizard"
+          />
+          <v-btn v-if="variantRows.length" variant="outlined" prepend-icon="pencil" class="text-none align-self-start" @click="openVariantsWizard">
             Edit options and variants
           </v-btn>
         </v-card>
@@ -462,7 +487,16 @@ function openVariantsWizard() {
           <v-select v-model="form.publishStatus" :items="['Draft', 'Published']" label="Status" />
         </v-card>
 
-        <v-card v-if="storefrontLink || purchasePlans.length" variant="flat" border rounded="lg" class="ped-card">
+        <ProductSizeGuideCard
+          v-if="showSizeGuide"
+          :model-value="form.detail.sizeChartId"
+          :charts="storeCharts"
+          :sizes="productSizes"
+          :manage-to="sizeChartsRoute"
+          @update:model-value="setSizeChart"
+        />
+
+        <v-card v-if="showPurchaseOptions" variant="flat" border rounded="lg" class="ped-card">
           <MpFormSection
             :heading-level="2"
             title="Purchase options"
@@ -566,14 +600,13 @@ function openVariantsWizard() {
   gap: var(--mp-component-card-gap);
 }
 
-.ped-variants {
-  border: 1px solid rgb(var(--v-border-color), var(--v-border-opacity));
-  border-radius: var(--mp-radius-10);
-}
-
-.ped-mono {
-  font-family: var(--mp-fontFamily-mono);
-  white-space: nowrap;
+.ped-dot {
+  width: var(--mp-space-10);
+  height: var(--mp-space-10);
+  margin-inline-end: var(--mp-space-6);
+  border-radius: var(--mp-radius-full);
+  background: var(--ped-dot);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
 }
 
 .ped-seo {

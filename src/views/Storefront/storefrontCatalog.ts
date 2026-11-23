@@ -60,6 +60,10 @@ export interface PreviewProduct {
   /** As the store's product card reads: "From 399 kr". */
   price: string
   image?: string
+  /** Its photos in order, for the sections drawing's product page (two tiles). */
+  images?: string[]
+  /** The collections it is in, for a preview row that names one (the sections drawing). */
+  collections?: string[]
 }
 
 /**
@@ -73,7 +77,7 @@ export function previewProducts(products: Product[], channel: Pick<SalesChannel,
   const currency = channel.webStore?.currency ?? 'USD'
   return storefrontProducts(products, channel.id).filter(inStock).map((product) => {
     const price = formatStorePrice(roundForDisplay(parseDecimal(lowestPrice(product), currency) ?? priceOf(product, currency)), channel.webStore?.locale)
-    return { name: product.name, price: hasPriceRange(product) ? `From ${price}` : price, image: product.imageUrls?.[0] }
+    return { name: product.name, price: hasPriceRange(product) ? `From ${price}` : price, image: product.imageUrls?.[0], images: product.imageUrls?.slice(0, 2), collections: product.collections }
   })
 }
 

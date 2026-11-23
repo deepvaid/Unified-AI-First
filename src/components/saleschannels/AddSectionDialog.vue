@@ -4,18 +4,22 @@ import MpFormSection from '@/components/MpFormSection.vue'
 import MpListRow from '@/components/MpListRow.vue'
 import { computed, ref, watch } from 'vue'
 import {
-  sectionCatalog,
+  sectionsFor,
   sectionCategories,
   type ThemeSectionDef,
   type ThemeSectionVariant,
 } from '@/stores/themeBuilderData'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   /** Dialog open state (v-model). */
   modelValue: boolean
   /** True when a unique kind is already present on the active template. */
   isKindDisabled: (def: ThemeSectionDef) => boolean
-}>()
+  /** The kinds the theme can add (sectionsFor its drawing); the classic catalogue when absent. */
+  sections?: ThemeSectionDef[]
+}>(), {
+  sections: () => sectionsFor(undefined),
+})
 
 const emit = defineEmits<{
   'update:modelValue': [value: boolean]
@@ -37,8 +41,8 @@ const search = ref('')
 
 const filtered = computed<ThemeSectionDef[]>(() => {
   const q = search.value.trim().toLowerCase()
-  if (!q) return sectionCatalog
-  return sectionCatalog.filter(
+  if (!q) return props.sections
+  return props.sections.filter(
     (def) => def.title.toLowerCase().includes(q) || def.description.toLowerCase().includes(q),
   )
 })
@@ -50,7 +54,7 @@ const groups = computed(() =>
   sectionCategories
     .map((category) => ({
       category,
-      defs: sectionCatalog.filter((def) => def.category === category),
+      defs: props.sections.filter((def) => def.category === category),
     }))
     .filter((group) => group.defs.length > 0),
 )

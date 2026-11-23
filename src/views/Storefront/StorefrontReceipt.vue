@@ -12,8 +12,11 @@ import { STOREFRONT } from './storefrontContext'
 // amount, who it thanks, then order · paid with · date · reference — and a
 // countdown back to the store. A manual method (bank deposit, cheque, cash on
 // delivery) places the order instead and shows the merchant's instructions; a
-// delayed bank debit says the bank is still confirming. Out of system (P4-8),
-// like the rest of the storefront; "Maropost" never appears here.
+// delayed bank debit says the bank is still confirming. On a store with an account
+// page, "Track your order" opens the order there (the checkout has signed the
+// shopper in). Out of system (P4-8), like the rest of the storefront; "Maropost"
+// never appears here. On the sections drawing the slip is a plain panel with the
+// theme's border, corners and colours: no shadow, torn edge or green disc.
 
 const props = defineProps<{
   session: CheckoutSession
@@ -24,6 +27,8 @@ const props = defineProps<{
   homeHref: string
   /** Count down and go back to the store. Off where someone is presenting the store: the page must not leave while they talk. */
   autoReturn?: boolean
+  /** The order's page in the shopper's account ("/account/orders/41001"), on a store with an account page. */
+  orderHref?: string | null
 }>()
 
 const router = useRouter()
@@ -35,6 +40,8 @@ const firstName = computed(() => props.session.customer.name.split(' ')[0] ?? ''
 const parts = computed(() => moneyParts(props.session.amount))
 /** A store that writes amounts its own way shows the amount whole ("585,90 kr"), and its dates day first. */
 const storefront = inject(STOREFRONT, null)
+/** The richer theme drawing draws the slip as a plain bordered panel in the theme's colours. */
+const sections = computed(() => storefront?.sectionsDrawing.value ?? false)
 const ownAmount = computed(() => (storefront?.ownMoneyFormat.value ? storefront.formatExact(props.session.amount) : null))
 const paidWith = computed(() => (props.payment ? paidWithText(props.payment) : props.session.methodLabel))
 const reference = computed(() => shopperReference(props.payment?.id ?? props.session.id))
@@ -105,7 +112,7 @@ defineExpose({ focus: () => heading.value?.focus() })
 </script>
 
 <template>
-  <div class="sf-receipt" @mouseenter="paused = true" @mouseleave="paused = false" @focusin="paused = true" @focusout="paused = false">
+  <div class="sf-receipt" :class="{ 'sf-receipt--sections': sections }" @mouseenter="paused = true" @mouseleave="paused = false" @focusin="paused = true" @focusout="paused = false">
     <p class="sf-receipt__store"><span class="sf-receipt__mark" aria-hidden="true">{{ initials }}</span>{{ storeName }}</p>
 
     <article class="sf-receipt__slip" :class="{ 'sf-receipt__slip--pending': !paid }">
@@ -138,6 +145,10 @@ defineExpose({ focus: () => heading.value?.focus() })
       </div>
     </article>
 
+    <StorefrontAnchor v-if="orderHref && countdownOn" :href="orderHref" class="sf-button sf-button--secondary sf-receipt__track">
+      Track your order
+    </StorefrontAnchor>
+
     <div v-if="countdownOn" class="sf-receipt__back">
       <div class="sf-receipt__back-row">
         <span>Taking you back to the store</span>
@@ -151,7 +162,10 @@ defineExpose({ focus: () => heading.value?.focus() })
       </p>
     </div>
     <!-- "/" is the store's own home: StorefrontAnchor resolves it. `homeHref` is already resolved, for the countdown's router push. -->
-    <StorefrontAnchor v-else href="/" class="sf-button sf-receipt__continue">Continue shopping</StorefrontAnchor>
+    <div v-else class="sf-receipt__actions" :class="{ 'sf-receipt__actions--pair': orderHref }">
+      <StorefrontAnchor v-if="orderHref" :href="orderHref" class="sf-button sf-button--secondary">Track your order</StorefrontAnchor>
+      <StorefrontAnchor href="/" class="sf-button sf-receipt__continue">Continue shopping</StorefrontAnchor>
+    </div>
   </div>
 </template>
 
@@ -182,7 +196,7 @@ defineExpose({ focus: () => heading.value?.focus() })
   justify-content: center;
   width: 32px;
   height: 32px;
-  border-radius: 8px;
+  border-radius: var(--sf-corner, 8px);
   background: var(--sf-text, #121011);
   color: var(--sf-bg, #ffffff);
   font-size: 12px;
@@ -326,8 +340,8 @@ defineExpose({ focus: () => heading.value?.focus() })
 .sf-receipt__instructions {
   margin-top: 24px;
   padding: 16px;
-  border-radius: 12px;
-  background: #f7f7f5;
+  border-radius: var(--sf-corner, 12px);
+  background: var(--sf-surface, #f7f7f5);
   text-align: left;
   font-size: 14px;
   line-height: 1.5;
@@ -412,6 +426,68 @@ defineExpose({ focus: () => heading.value?.focus() })
   margin-top: 8px;
 }
 
+.sf-receipt__actions {
+  display: flex;
+  justify-content: center;
+}
+
+/* Track and continue side by side, as wide as the slip. */
+.sf-receipt__actions--pair {
+  gap: 12px;
+  width: 100%;
+  max-width: 440px;
+  margin-top: 8px;
+}
+
+.sf-receipt__actions--pair .sf-button {
+  flex: 1 1 0;
+  margin-top: 0;
+  padding: 0 16px;
+}
+
+.sf-receipt__track {
+  width: 100%;
+  max-width: 440px;
+  margin-top: 8px;
+}
+
+/* ── The sections drawing: a plain bordered panel in the theme's colours ── */
+.sf-receipt--sections .sf-receipt__slip {
+  border: 1px solid var(--sf-divider, #e3e3e0);
+  border-radius: var(--sf-corner, 0px);
+  box-shadow: none;
+}
+
+.sf-receipt--sections .sf-receipt__slip::after {
+  content: none;
+}
+
+.sf-receipt--sections .sf-receipt__tear {
+  margin-inline: 0;
+  border-top: 1px solid var(--sf-divider, #e3e3e0);
+}
+
+.sf-receipt--sections .sf-receipt__tear::before,
+.sf-receipt--sections .sf-receipt__tear::after {
+  content: none;
+}
+
+/* The tick in the theme's text colour on its quiet surface, square as the theme draws it. */
+.sf-receipt--sections .sf-receipt__disc {
+  width: 56px;
+  height: 56px;
+  border: 1px solid var(--sf-divider, #e3e3e0);
+  border-radius: var(--sf-corner, 50%);
+  background: var(--sf-surface, #f7f7f5);
+  color: var(--sf-text, #121011);
+  box-shadow: none;
+}
+
+.sf-receipt--sections .sf-receipt__bar {
+  border-radius: var(--sf-corner, 2px);
+  background: var(--sf-divider, #e3e3e0);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .sf-receipt__bar-fill {
     transition: none;
@@ -419,6 +495,14 @@ defineExpose({ focus: () => heading.value?.focus() })
 }
 
 @media (max-width: 480px) {
+  .sf-receipt__actions--pair {
+    flex-direction: column-reverse;
+  }
+
+  .sf-receipt__actions--pair .sf-button {
+    flex: none;
+  }
+
   .sf-receipt__slip {
     padding: 32px 20px 24px;
   }

@@ -7,6 +7,7 @@ import { DEMO_STORES, canApplyTheme } from '@/storefront/demoStores'
 import type { AssistantProfileId } from '@/storefront/demoStores'
 import { historyFor } from '@/storefront/demoStores/install'
 import type { InstallChannel } from '@/storefront/demoStores/install'
+import { NORTHFOLD_CHANNEL_ID } from '@/storefront/northfoldDemo'
 import { VITAHEAL_CHANNEL_ID } from '@/storefront/vitahealDemo'
 
 /** A prompt is just its text — the assistant works out the intent itself. */
@@ -314,6 +315,7 @@ export const VITAHEAL_CHATBOT_ID = 101
 /** How a demo store's chatbot is listed: the seeded stores' own have a past, any other starts now. */
 const SEEDED_LISTING: Record<string, Pick<Chatbot, 'conversations' | 'createdOn' | 'lastModified'>> = {
   [VITAHEAL_CHANNEL_ID]: { conversations: 214, createdOn: 'Nov 16, 2026', lastModified: 'Nov 18, 2026' },
+  [NORTHFOLD_CHANNEL_ID]: { conversations: 138, createdOn: 'Nov 19, 2026', lastModified: 'Nov 19, 2026' },
 }
 
 /** What of a demo chatbot is kept: whether it is on, and how it is set up. */
