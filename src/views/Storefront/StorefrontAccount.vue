@@ -9,12 +9,13 @@ import { useSubscriptionsStore } from '@/stores/useSubscriptions'
 import { lineProduct } from '@/storefront/cart'
 import { lowestPrice } from '@/storefront/catalog'
 import { shopperOrderStatus } from '@/storefront/orderStatus'
-import { lineImage, lineVariantText, orderParam, orderSums, ordersOfShopper, placedOn } from '@/storefront/shopperOrders'
+import { lineDetailText, lineImage, orderParam, orderSums, ordersOfShopper, placedOn } from '@/storefront/shopperOrders'
 import { CANCEL_REASONS, allowedActions, chargeAmount, dayLabel } from '@/subscriptions/contracts'
 import type { ContractAction, SubscriptionContract } from '@/subscriptions/contracts'
 import { deliverySummary, nextChargeDate, pricePerDelivery } from '@/subscriptions/plans'
 import type { SubscriptionPlan } from '@/subscriptions/plans'
 import StorefrontAnchor from './StorefrontAnchor.vue'
+import StorefrontLineText from './StorefrontLineText.vue'
 import StorefrontOrderStatus from './StorefrontOrderStatus.vue'
 import StorefrontSignIn from './StorefrontSignIn.vue'
 import { STOREFRONT } from './storefrontContext'
@@ -147,6 +148,11 @@ const SHOWN_LINES = 3
 
 function productOfLine(line: OrderLineItem) {
   return lineProduct(commerce.products, line)
+}
+
+/** "Size M · Sand", or "Front · Part # TQ-BRK-4471 · Fits 2019 Ford F-150" on a store that sells parts. */
+function detailOfLine(line: OrderLineItem): string {
+  return lineDetailText(productOfLine(line), line, { partNumber: storefront.sellsParts.value })
 }
 
 function iconOfLine(line: OrderLineItem): string {
@@ -327,7 +333,7 @@ watch(mine, (list) => {
                 <span class="sf-order__line-text">
                   <span class="sf-order__line-name">{{ line.product }}</span>
                   <span class="sf-muted">
-                    <template v-if="lineVariantText(productOfLine(line), line)">{{ lineVariantText(productOfLine(line), line) }} · </template>
+                    <template v-if="detailOfLine(line)"><StorefrontLineText :text="detailOfLine(line)" :unbroken="storefront.sellsParts.value" /> · </template>
                     <template v-if="line.plan">{{ line.plan.name }} · </template>Qty {{ line.qty }}
                   </span>
                 </span>
@@ -378,7 +384,7 @@ watch(mine, (list) => {
 }
 
 .sf-acct__link:focus-visible {
-  outline: 2px solid var(--sf-accent, #2563eb);
+  outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
   outline-offset: 2px;
 }
 

@@ -3,6 +3,7 @@ import type { ComputedRef, InjectionKey } from 'vue'
 import { formatMoney } from '@/maropay/money'
 import type { Money } from '@/maropay/money'
 import type { CheckoutProfile } from '@/storefront/checkoutProfile'
+import type { FitState, FitmentProduct, Vehicle } from '@/storefront/fitment'
 import type { SizeChart, SizedProduct } from '@/storefront/sizeCharts'
 import type { StorefrontOffer } from '@/maropay/storefront'
 import type { StoreTheme } from '@/stores/themeBuilderData'
@@ -47,6 +48,16 @@ export interface StorefrontContext {
   sizeChartFor: (product: SizedProduct) => SizeChart | undefined
   /** Says something to screen readers politely: a result count, "Added to your cart" (./storefrontAnnouncer.ts). */
   announce: (text: string) => void
+  /** The store sells parts with vehicle fitment (Torqline): its pages offer the vehicle selector and fit badges. */
+  sellsParts: ComputedRef<boolean>
+  /** The shopper's vehicle on this store (one, no garage; kept for the browser tab), or null. */
+  vehicle: ComputedRef<Vehicle | null>
+  /** Chooses the shopper's vehicle; null forgets it. */
+  setVehicle: (vehicle: Vehicle | null) => void
+  /** How a part stands against the shopper's vehicle (src/storefront/fitment.ts). */
+  fitOf: (product: FitmentProduct) => FitState
+  /** Opens the vehicle selector (the drawer StorefrontLayout mounts), from the header chip, a list's "Change" or the chat. */
+  chooseVehicle: () => void
 }
 
 export const STOREFRONT: InjectionKey<StorefrontContext> = Symbol('storefront')

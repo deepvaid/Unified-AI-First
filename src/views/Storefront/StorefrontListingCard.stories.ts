@@ -1,11 +1,16 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import StorefrontListingCard from './StorefrontListingCard.vue'
-import { listingProduct, northfoldCollection, northfoldStore, soldOutCopy } from './listingStoryFixtures'
+import {
+  F150, listingProduct, northfoldCollection, northfoldStore, soldOutCopy, torqlineCollection, torqlineFrame, torqlinePart, torqlineStore,
+} from './listingStoryFixtures'
 import { storefrontFrame } from './storefrontStoryFixtures'
 
 const overshirt = listingProduct('Linen Overshirt')
 /** One card, about as wide as it is in a four-column grid. */
 const card = storefrontFrame('300px')
+/** One of Torqline's dense cards, as wide as in its four-column grid. */
+const partCard = torqlineFrame('260px')
+const truckPads = torqlinePart('Ceramic Brake Pads, Truck & SUV')
 
 const meta = {
   title: 'Product/Storefront/StorefrontListingCard',
@@ -17,7 +22,8 @@ const meta = {
         component: `
 ### Overview
 A product in a list on a store with the richer theme drawing (Northfold, Torqline): the collection
-and search pages. Shown here with Northfold's own products and theme. The classic drawing keeps
+and search pages. Shown here with Northfold's own products and theme, and Torqline's for the dense
+parts card. The classic drawing keeps
 \`StorefrontProductCard\` (Vitaheal, Atlas and Neelam are unchanged).
 
 ### Anatomy
@@ -32,9 +38,23 @@ and search pages. Shown here with Northfold's own products and theme. The classi
   (44px on a phone). It emits \`quick-add\`; the list opens StorefrontQuickAdd. It reads "Added" for
   a moment after a product went straight into the cart. A product sold out in every variant has none.
 
+### Dense: a part (Torqline)
+\`cardStyle: 'Dense'\`, from the collection template's grid (\`cardStyle\` on its \`collection-grid\`):
+- **Photo** square, with the saving (**−12%**) when the part is on sale.
+- **Name**, the card's one link, its hit area the whole card.
+- **Part # TQ-BRK-4471**: the first variant's SKU, in tabular figures.
+- **Fit**: how the part stands against the shopper's vehicle, in \`fitLabel\`'s words with an icon,
+  so it never rests on colour: "Fits your 2019 Ford F-150" (green), "Doesn’t fit your 2019 Ford F-150"
+  (amber), "Universal fit" (neutral). Nothing while no vehicle is chosen: the list's bar asks for one.
+- **Stock**: "In stock", "Only 3 left" or "Sold out".
+- **Price**, and **Add to cart** in the store's button colours, named "Add to cart, Ceramic Brake
+  Pads, Truck & SUV". A part without options goes straight into the cart (with the vehicle on its
+  line when it fits); one with options opens quick add. A sold-out part has none.
+
 ### Props
 - \`colorKeys\`: the list's colour filter. The card leads with the first of those colours the product
   comes in (its own photo when it has one) and opens the product page in it (\`?color=black\`).
+- \`cardStyle\`: \`'Editorial'\` (default) or \`'Dense'\`.
 - \`quickAdd\`, \`added\`, \`showNew\`, \`headingLevel\`.
 
 Out of system on purpose (P4-8): it draws with the store's theme variables, not Marobase tokens.
@@ -91,6 +111,62 @@ export const InAGrid: Story = {
     template: `
       <ul role="list" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; margin: 0; padding: 0; list-style: none;">
         <li v-for="product in products" :key="product.id"><StorefrontListingCard :product="product" /></li>
+      </ul>
+    `,
+  }),
+}
+
+/** A part for the shopper's 2019 Ford F-150: it fits. Two positions, so Add to cart opens quick add. */
+export const PartFits: Story = {
+  decorators: [partCard, torqlineStore(F150)],
+  args: { product: truckPads, cardStyle: 'Dense' },
+}
+
+/** The car and crossover pads, for the same F-150: they don't fit, and say so in words and an icon. */
+export const PartDoesNotFit: Story = {
+  decorators: [partCard, torqlineStore(F150)],
+  args: { product: torqlinePart('Ceramic Brake Pads, Car & Crossover'), cardStyle: 'Dense' },
+}
+
+/** Motor oil fits any vehicle, chosen or not. */
+export const PartUniversal: Story = {
+  decorators: [partCard, torqlineStore(null)],
+  args: { product: torqlinePart('Full Synthetic Motor Oil'), cardStyle: 'Dense' },
+}
+
+/** No vehicle chosen: no fit badge (the list's bar asks for a vehicle). */
+export const PartNoVehicle: Story = {
+  decorators: [partCard, torqlineStore(null)],
+  args: { product: truckPads, cardStyle: 'Dense' },
+}
+
+/** On sale and down to its last three: the saving on the photo, "Only 3 left" in the stock line. */
+export const PartOnSaleLowStock: Story = {
+  decorators: [partCard, torqlineStore(F150)],
+  args: { product: torqlinePart('AGM Battery'), cardStyle: 'Dense' },
+}
+
+/** Sold out: the stock line says so, the photo is quieter, and there is no Add to cart. */
+export const PartSoldOut: Story = {
+  decorators: [partCard, torqlineStore(F150)],
+  args: { product: soldOutCopy(torqlinePart('Engine Air Filter, Truck & SUV')), cardStyle: 'Dense' },
+}
+
+/** The engine air filter (no options) went straight into the cart: its button reads "Added" for a moment. */
+export const PartJustAdded: Story = {
+  decorators: [partCard, torqlineStore(F150)],
+  args: { product: torqlinePart('Engine Air Filter, Truck & SUV'), cardStyle: 'Dense', added: true },
+}
+
+/** Torqline's four brake parts for a 2019 Ford F-150, at desktop width: two fit, two don't. */
+export const PartsInAGrid: Story = {
+  decorators: [torqlineFrame('1100px'), torqlineStore(F150)],
+  render: () => ({
+    components: { StorefrontListingCard },
+    setup: () => ({ products: torqlineCollection('Brakes') }),
+    template: `
+      <ul role="list" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 44px 20px; margin: 0; padding: 0; list-style: none;">
+        <li v-for="product in products" :key="product.id"><StorefrontListingCard :product="product" card-style="Dense" /></li>
       </ul>
     `,
   }),

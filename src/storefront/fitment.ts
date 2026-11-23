@@ -5,6 +5,7 @@
 
 import { VEHICLES } from './vehicles.ts'
 import type { VehicleModel } from './vehicles.ts'
+import { optionValuesOf } from './variants.ts'
 
 /** The shopper's vehicle. One at a time; there is no garage. */
 export interface Vehicle {
@@ -72,6 +73,99 @@ export function fitState(product: FitmentProduct, vehicle: Vehicle | null | unde
   if (fitment?.universal) return 'universal'
   if (!vehicle || !fitment?.rows.length) return 'unknown'
   return fittingRows(product, vehicle).length ? 'fits' : 'no-fit'
+}
+
+/**
+ * What a fit badge or banner says, the same words on the card, the product page,
+ * quick add and the cart: "Fits your 2019 Ford F-150", "Doesn’t fit your 2019 Ford
+ * F-150", "Universal fit", or "Check fit" (no vehicle chosen, or the part lists none).
+ */
+export function fitLabel(state: FitState, vehicle: Vehicle | null | undefined): string {
+  if (state === 'universal') return 'Universal fit'
+  if (state === 'unknown' || !vehicle) return 'Check fit'
+  return `${state === 'fits' ? 'Fits' : 'Doesn’t fit'} your ${vehicleLabel(vehicle)}`
+}
+
+/**
+ * What the rows that fit the vehicle say about the fit, for the line under "Fits
+ * your …": their position and note ("Front", "Driver 22 in, passenger 22 in"),
+ * each once. Empty when the rows say nothing more, or nothing fits.
+ */
+export function fitDetail(product: FitmentProduct, vehicle: Vehicle | null | undefined): string {
+  if (!vehicle) return ''
+  const said = fittingRows(product, vehicle).map((row) => [row.position, row.note].filter(Boolean).join(' · ')).filter(Boolean)
+  return [...new Set(said)].join('; ')
+}
+
+/** A part the shopper's vehicle can take: it fits, or it fits anything. What "parts that fit" lists. */
+export function fitsVehicle(product: FitmentProduct, vehicle: Vehicle | null | undefined): boolean {
+  const state = fitState(product, vehicle)
+  return state === 'fits' || state === 'universal'
+}
+
+/** The fields the variant rules read from a product. A commerce `Product` satisfies it. */
+export interface VariantFitmentProduct extends FitmentProduct {
+  detail?: { fitment?: Fitment; options?: readonly { name: string; values: readonly string[] }[] }
+}
+
+/** The fields the variant rules read from a variant. A commerce `ProductVariant` satisfies it. */
+export interface FitVariant {
+  title: string
+  optionValues?: string[]
+}
+
+const lower = (text: string): string => text.trim().toLowerCase()
+
+/** The note names this value as a whole ("22 in" in "Driver 22 in, passenger 20 in", never in "122 in"). */
+function names(note: string, value: string): boolean {
+  const escaped = value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return new RegExp(`(?<![a-z0-9])${escaped}(?![a-z0-9])`).test(note)
+}
+
+/**
+ * How one choice of a part stands against the shopper's vehicle, for what goes on
+ * a cart line and what the product page says once a choice is made. The part has to
+ * fit, and one of the rows that fit has to take this choice: a row's position
+ * ("Front") must be the choice's, when the part is sold by position, and a note that
+ * names some of the part's choices ("Driver 22 in, passenger 22 in") takes only
+ * those. A part that fits with no choice made, or with none to make, is the part's
+ * own state.
+ */
+export function variantFitState(product: VariantFitmentProduct, variant: FitVariant | null | undefined, vehicle: Vehicle | null | undefined): FitState {
+  const state = fitState(product, vehicle)
+  const options = product.detail?.options ?? []
+  if (state !== 'fits' || !variant || !options.length) return state
+  const chosen = optionValuesOf(variant, options).map(lower)
+  const offered = options.flatMap((option) => option.values.map(lower))
+  const takes = fittingRows(product, vehicle!).some((row) => {
+    const position = row.position ? lower(row.position) : ''
+    if (position && offered.includes(position) && !chosen.includes(position)) return false
+    const note = lower(row.note ?? '')
+    const named = offered.filter((value) => names(note, value))
+    return !named.length || chosen.some((value) => named.includes(value))
+  })
+  return takes ? 'fits' : 'no-fit'
+}
+
+/** The vehicle a cart line carries ("2019 Ford F-150"): the shopper's, when this choice of the part fits it. */
+export function lineVehicle(product: VariantFitmentProduct, variant: FitVariant | null | undefined, vehicle: Vehicle | null | undefined): string | undefined {
+  return vehicle && variantFitState(product, variant, vehicle) === 'fits' ? vehicleLabel(vehicle) : undefined
+}
+
+/** The store sells parts: one of its products carries fitment, so its pages offer a vehicle selector. */
+export function sellsParts(products: readonly FitmentProduct[]): boolean {
+  return products.some((product) => product.detail?.fitment !== undefined)
+}
+
+/**
+ * A vehicle the table offers, read back from storage: anything else (an old
+ * shape, a model dropped from the table, a year out of its run) reads as no vehicle.
+ */
+export function isVehicle(value: unknown, table: readonly VehicleModel[] = VEHICLES): value is Vehicle {
+  if (!value || typeof value !== 'object') return false
+  const { year, make, model } = value as Record<string, unknown>
+  return typeof year === 'number' && typeof make === 'string' && typeof model === 'string'
+    && table.some((row) => row.make === make && row.model === model && year >= row.yearFrom && year <= row.yearTo)
 }
 
 // ── Choosing a vehicle: Year, then Make, then Model ──────────────────────────

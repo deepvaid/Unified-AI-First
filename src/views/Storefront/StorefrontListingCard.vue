@@ -2,7 +2,10 @@
 import { computed, inject, ref, watch } from 'vue'
 import { parseDecimal } from '@/maropay/money'
 import type { Product } from '@/stores/useCommerce'
-import { cardPhoto, cardPrice, chosenColor, colorsOf, isNewArrival, soldOut } from '@/storefront/listing'
+import { fitLabel } from '@/storefront/fitment'
+import type { FitState } from '@/storefront/fitment'
+import { addsDirectly, cardPhoto, cardPrice, choiceSummary, chosenColor, colorsOf, isNewArrival, partNumber, soldOut, stockLine, unbrokenHyphens } from '@/storefront/listing'
+import type { CardStyle } from '@/storefront/listing'
 import StorefrontAnchor from './StorefrontAnchor.vue'
 import { STOREFRONT } from './storefrontContext'
 import { CATEGORY_ICONS, priceOf, productHandle } from './storefrontCatalog'
@@ -16,6 +19,13 @@ import { CATEGORY_ICONS, priceOf, productHandle } from './storefrontCatalog'
 // sits above it as a button of its own (a button inside a link is not valid).
 // When the list is filtered by colour, the card leads with that colour's photo
 // and opens the product page in it.
+//
+// The `Dense` style is a parts card (Torqline): a square photo, the name, the part
+// number, how it fits the shopper's vehicle (fitLabel's words with an icon, never
+// colour alone; nothing while no vehicle is chosen), the stock line, the price and
+// an Add to cart button. That button emits `quick-add` too: the list's quick add
+// puts a part without options straight in the cart, and opens for the rest, and
+// for a part the shopper's vehicle doesn't take, so it says so before adding.
 
 const props = withDefaults(defineProps<{
   product: Product
@@ -28,12 +38,15 @@ const props = withDefaults(defineProps<{
   /** The "New" mark (off on a New… collection's own page, where every card would carry it). */
   showNew?: boolean
   headingLevel?: 2 | 3 | 4
+  /** Editorial (Northfold) or Dense (a part, Torqline): the collection template's `cardStyle`. */
+  cardStyle?: CardStyle
 }>(), {
   colorKeys: () => [],
   quickAdd: true,
   added: false,
   showNew: true,
   headingLevel: 3,
+  cardStyle: 'Editorial',
 })
 
 const emit = defineEmits<{
@@ -71,10 +84,66 @@ const colorNames = computed(() => {
 // A photo that does not load gives way to the placeholder.
 const broken = ref(false)
 watch(photo, () => { broken.value = false })
+
+// ── Dense (a part) ────────────────────────────────────────────────────────
+const dense = computed(() => props.cardStyle === 'Dense')
+const number = computed(() => (dense.value ? partNumber(props.product) : ''))
+// A part whose choices each have a number (Front and Rear pads) says what it comes in instead.
+const choices = computed(() => (dense.value && !number.value ? choiceSummary(props.product) : ''))
+const stock = computed(() => stockLine(props.product))
+const FIT_ICONS: Partial<Record<FitState, string>> = { fits: 'circle-check', 'no-fit': 'triangle-alert', universal: 'badge-check' }
+/** The fit badge; none while it can't be told (no vehicle chosen, or the part lists no fitment). */
+const fit = computed(() => {
+  const state = storefront.fitOf(props.product)
+  const icon = FIT_ICONS[state]
+  const label = fitLabel(state, storefront.vehicle.value)
+  return icon ? { state, icon, label, shown: unbrokenHyphens(label) } : null
+})
+const addLabel = computed(() => `${props.added ? 'Added to cart' : 'Add to cart'}, ${props.product.name}`)
 </script>
 
 <template>
-  <article class="sf-lcard" :class="{ 'is-sold-out': out }">
+  <article v-if="dense" class="sf-dcard" :class="{ 'is-sold-out': out }">
+    <component :is="`h${headingLevel}`" class="sf-dcard__name">
+      <StorefrontAnchor :href="href" class="sf-dcard__link">{{ product.name }}</StorefrontAnchor>
+    </component>
+    <p v-if="number" class="sf-dcard__number">Part # {{ number }}</p>
+    <p v-else-if="choices" class="sf-dcard__number">{{ choices }}</p>
+    <p v-if="fit" class="sf-dcard__fit" :class="`sf-dcard__fit--${fit.state}`">
+      <v-icon size="16" class="sf-dcard__fit-icon" aria-hidden="true">{{ fit.icon }}</v-icon>
+      <span class="sf-sr">{{ fit.label }}</span>
+      <span aria-hidden="true">{{ fit.shown }}</span>
+    </p>
+    <p class="sf-dcard__stock" :class="`sf-dcard__stock--${stock.level}`">{{ stock.text }}</p>
+    <p class="sf-dcard__price">
+      <template v-if="price.compareAt">
+        <span class="sf-dcard__sale"><span class="sf-sr">Sale price </span>{{ money(price.price) }}</span>
+        <s class="sf-dcard__was"><span class="sf-sr">Usual price </span>{{ money(price.compareAt) }}</s>
+      </template>
+      <span v-else><template v-if="price.from">From </template>{{ money(price.price) }}</span>
+    </p>
+
+    <div class="sf-dcard__media">
+      <img v-if="photo && !broken" :src="photo" alt="" class="sf-dcard__image" loading="lazy" @error="broken = true">
+      <v-icon v-else size="44" class="sf-dcard__placeholder" aria-hidden="true">{{ CATEGORY_ICONS[product.category] ?? 'package' }}</v-icon>
+      <span v-if="badge?.kind === 'sale'" class="sf-dcard__badge" aria-hidden="true">{{ badge.text }}</span>
+    </div>
+
+    <button
+      v-if="quickAdd && !out"
+      type="button"
+      class="sf-dcard__add"
+      :class="{ 'is-added': added }"
+      :aria-label="addLabel"
+      :aria-haspopup="addsDirectly(product, storefront.fitOf(product)) ? undefined : 'dialog'"
+      @click="emit('quick-add', product, undefined)"
+    >
+      <v-icon size="18" aria-hidden="true">{{ added ? 'check' : 'shopping-cart' }}</v-icon>
+      {{ added ? 'Added' : 'Add to cart' }}
+    </button>
+  </article>
+
+  <article v-else class="sf-lcard" :class="{ 'is-sold-out': out }">
     <component :is="`h${headingLevel}`" class="sf-lcard__name">
       <StorefrontAnchor :href="href" class="sf-lcard__link">{{ product.name }}</StorefrontAnchor>
     </component>
@@ -197,7 +266,7 @@ watch(photo, () => { broken.value = false })
 }
 
 .sf-lcard__link:focus-visible::after {
-  outline: 2px solid var(--sf-accent, #2563eb);
+  outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
   outline-offset: 4px;
 }
 
@@ -318,7 +387,7 @@ watch(photo, () => { broken.value = false })
 }
 
 .sf-lcard__quick:focus-visible {
-  outline: 2px solid var(--sf-accent, #2563eb);
+  outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
   outline-offset: 2px;
 }
 
@@ -343,6 +412,236 @@ watch(photo, () => { broken.value = false })
 
   .sf-lcard:hover .sf-lcard__image {
     transform: none;
+  }
+}
+
+/* ── Dense: a part ─────────────────────────────────────────────────────────
+ * A square photo on the theme's surface, then name, part number, fit, stock,
+ * price and the store's button, the button at the foot of the card so a row of
+ * cards lines up. The fit badge uses the fixed pairs of StorefrontFitBanner, so a
+ * fit reads the same on every store and every page; each ink passes 4.5:1 on its
+ * fill. Part numbers and prices use tabular figures. */
+.sf-dcard {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  height: 100%;
+  min-width: 0;
+}
+
+.sf-dcard__media {
+  position: relative;
+  order: -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  margin-bottom: 8px;
+  overflow: hidden;
+  border-radius: var(--sf-radius, 0);
+  background: var(--sf-surface, color-mix(in srgb, var(--sf-text, #121011) 5%, var(--sf-bg, #ffffff)));
+  color: var(--sf-muted, #66625c);
+}
+
+.sf-dcard__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.is-sold-out .sf-dcard__image {
+  opacity: 0.6;
+}
+
+.sf-dcard__badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 3px 8px;
+  border-radius: var(--sf-radius, 0);
+  background: var(--sf-badge-sale, #b3261e);
+  color: var(--sf-on-badge-sale, #ffffff);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 16px;
+  font-variant-numeric: tabular-nums;
+}
+
+.sf-dcard__number,
+.sf-dcard__fit,
+.sf-dcard__stock,
+.sf-dcard__price {
+  margin: 0;
+}
+
+.sf-dcard__name {
+  margin: 0;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 21px;
+}
+
+.sf-dcard__link {
+  color: var(--sf-text, #121011);
+  text-decoration: none;
+}
+
+/* The name's hit area covers the card, so the photo opens the part too. */
+.sf-dcard__link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.sf-dcard:hover .sf-dcard__link {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.sf-dcard__link:focus-visible {
+  outline: none;
+}
+
+.sf-dcard__link:focus-visible::after {
+  outline: 2px solid var(--sf-text, #121011);
+  outline-offset: 4px;
+}
+
+.sf-dcard__number {
+  color: var(--sf-muted, #66625c);
+  font-size: 13px;
+  line-height: 18px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.sf-dcard__fit {
+  --sf-dcard-fit-ink: #3d434a;
+  --sf-dcard-fit-fill: #eceef1;
+  display: inline-flex;
+  align-items: flex-start;
+  align-self: flex-start;
+  gap: 6px;
+  max-width: 100%;
+  padding: 3px 8px;
+  border-radius: var(--sf-radius, 0);
+  background: var(--sf-dcard-fit-fill);
+  color: var(--sf-dcard-fit-ink);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 18px;
+}
+
+.sf-dcard__fit--fits {
+  --sf-dcard-fit-ink: #146c2e;
+  --sf-dcard-fit-fill: #e6f4ea;
+}
+
+.sf-dcard__fit--no-fit {
+  --sf-dcard-fit-ink: #8a4b00;
+  --sf-dcard-fit-fill: #fdf0d5;
+}
+
+.sf-dcard__fit-icon {
+  flex: none;
+  margin-top: 1px;
+  color: inherit;
+}
+
+.sf-dcard__stock {
+  font-size: 13px;
+  line-height: 18px;
+  font-variant-numeric: tabular-nums;
+}
+
+.sf-dcard__stock--in {
+  color: var(--sf-text, #121011);
+}
+
+.sf-dcard__stock--low {
+  color: var(--sf-text, #121011);
+  font-weight: 600;
+}
+
+.sf-dcard__stock--out {
+  color: var(--sf-muted, #66625c);
+}
+
+.sf-dcard__price {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+  margin-bottom: 8px;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 24px;
+  font-variant-numeric: tabular-nums;
+}
+
+.sf-dcard__sale {
+  color: var(--sf-badge-sale, #b3261e);
+}
+
+.sf-dcard__was {
+  color: var(--sf-muted, #66625c);
+  font-size: 14px;
+  font-weight: 400;
+}
+
+/* The store's button, above the card's link, at the card's foot. */
+.sf-dcard__add {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  margin-top: auto;
+  padding: 0 16px;
+  border: 1px solid var(--sf-button-border, var(--sf-brand, #121011));
+  border-radius: var(--sf-button-radius, var(--sf-radius, 0));
+  background: var(--sf-button-bg, var(--sf-brand, #121011));
+  color: var(--sf-button-ink, var(--sf-on-brand, #ffffff));
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sf-dcard__add:hover,
+.sf-dcard__add.is-added {
+  filter: brightness(0.94);
+}
+
+.sf-dcard__add:focus-visible {
+  outline: 2px solid var(--sf-text, #121011);
+  outline-offset: 2px;
+}
+
+@media (max-width: 600px) {
+  .sf-dcard__name {
+    font-size: 15px;
+    line-height: 20px;
+  }
+
+  .sf-dcard__fit {
+    font-size: 12px;
+    line-height: 16px;
+  }
+
+  .sf-dcard__price {
+    font-size: 16px;
+  }
+
+  .sf-dcard__add {
+    padding: 0 10px;
+    font-size: 14px;
   }
 }
 

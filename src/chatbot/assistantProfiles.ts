@@ -7,8 +7,7 @@
  *
  * A chatbot names its profile in `ChatbotConfig.assistantProfile`, so a store's
  * assistant travels with it when its theme is applied elsewhere. Unset: wellness.
- * Wellness is Vitaheal's, apparel Northfold's. Auto parts (Part 3) answers as
- * wellness until it is written.
+ * Wellness is Vitaheal's, apparel Northfold's, auto parts Torqline's.
  *
  * Pure, with relative `.ts` imports only, so `npm run test:chatbot` runs it in Node.
  */
@@ -66,6 +65,8 @@ export interface AssistantProfile {
   subscriptions?: false
   /** Clothing: size and fit, fabric and care, and suggestions for him or her, under a price. */
   clothing?: ClothingKnowledge
+  /** Auto parts: whether a part fits a vehicle, part numbers, the shopper's vehicle, and the work it leaves to a mechanic. */
+  parts?: PartsKnowledge
 }
 
 /** A fibre a shopper may want to avoid ("I’m allergic to wool"). */
@@ -96,6 +97,29 @@ export interface ClothingKnowledge {
   heightWeight: string
   /** After a fibre-free suggestion, or a fabric answer. */
   fabricNote: string
+}
+
+/**
+ * What an auto parts store's assistant knows beyond the needs, which name the kinds
+ * of part it sells ("brake pads"). Whether a part fits comes from each product's own
+ * fitment rows (src/storefront/fitment.ts), never from the assistant.
+ */
+export interface PartsKnowledge {
+  /**
+   * Work and safety questions that get a careful answer, never a product or a
+   * how-to: doing brake work yourself, a symptom or "is it safe to drive",
+   * steering, suspension and airbags, and handling fluids and batteries. Checked
+   * in order, after the health caution. `page` names the store's own knowledge
+   * entry that answers it ("Brake work"), whose words are used when it has one.
+   * A question about buying a part is not refused: it gets the fit, and `mechanic`.
+   */
+  cautions: Array<{ says: RegExp; text: string; link?: AssistantLink; page?: RegExp }>
+  /** Asked which part fits without a vehicle the chat knows. */
+  askVehicle: string
+  /** After a fit answer on a universal part sold in grades or sizes ("0W-20"): where the right one is written. */
+  choiceNote: string
+  /** The kinds of part (need labels) a qualified mechanic should fit, and the line said after an answer that offers one. */
+  mechanic: { kinds: string[]; text: string }
 }
 
 const WELLNESS: AssistantProfile = {
@@ -188,8 +212,88 @@ const APPAREL: AssistantProfile = {
   },
 }
 
-/** The profiles there are. A store whose profile is not here yet answers as wellness. */
-export const ASSISTANT_PROFILES: Partial<Record<AssistantProfileId, AssistantProfile>> = { wellness: WELLNESS, apparel: APPAREL }
+/**
+ * An auto parts store: it checks a part against a vehicle from the part's own
+ * fitment rows, finds a part by its number, lists the parts that fit the shopper's
+ * vehicle, and sets that vehicle for the store when the shopper asks or agrees. It
+ * never guesses a fit for a vehicle the store does not list, and it leaves brake,
+ * steering, suspension and airbag work, and handling fluids and batteries, to a
+ * qualified mechanic. It gives no health answers.
+ *
+ * A need is a kind of part: its `says` is matched against the shopper's message and
+ * against each part's name (the first need a name matches is that part's kind, so
+ * the specific kinds come before the general ones), its `means` against each part's
+ * name and category.
+ */
+const AUTO_PARTS: AssistantProfile = {
+  id: 'auto-parts',
+  help: 'I can check whether a part fits your vehicle, find a part by its part number, show the parts that fit your vehicle, look up your order, and answer questions about shipping and returns.',
+  needs: [
+    { label: 'brake pads', says: /\b(brake ?pads?|pads)\b/, means: ['brake', 'pad'] },
+    { label: 'brake rotors', says: /\b(brake )?(rotors?|discs?)\b/, means: ['brake', 'rotor'] },
+    { label: 'brake fluid', says: /\bbrake fluids?\b/, means: ['brake', 'fluid'] },
+    { label: 'brake parts', says: /\bbrak(e|es|ing)\b(?!\s*(pads?|fluids?|rotors?|discs?))/, means: ['brake'] },
+    { label: 'oil filters', says: /\boil filters?\b/, means: ['oil', 'filter'] },
+    { label: 'engine air filters', says: /\bengine (air )?filters?\b/, means: ['engine', 'air', 'filter'] },
+    { label: 'cabin air filters', says: /\bcabin (air )?filters?\b/, means: ['cabin', 'air', 'filter'] },
+    { label: 'air filters', says: /\bair filters?\b/, means: ['air', 'filter'] },
+    { label: 'motor oil', says: /\b(motor oil|engine oil|oil change|synthetic oil|oil)\b(?!\s*filters?)/, means: ['oil'] },
+    { label: 'batteries', says: /\b(batter(y|ies)|agm)\b/, means: ['battery'] },
+    { label: 'headlight bulbs', says: /\b(head ?lights?|head ?lamps?|bulbs?|low beams?|high beams?)\b/, means: ['headlight', 'bulb'] },
+    { label: 'rear wiper blades', says: /\brear wipers?( blades?)?\b/, means: ['rear', 'wiper'] },
+    { label: 'wiper blades', says: /\b(wipers?|wiper blades?)\b/, means: ['wiper'] },
+    { label: 'spark plugs', says: /\b(spark ?plugs?|plugs)\b/, means: ['spark', 'plug'] },
+    { label: 'floor mats', says: /\b(floor ?mats?|mats|floor liners?)\b/, means: ['floor', 'mat'] },
+    { label: 'tire pressure gauges', says: /\b(tire|tyre)s? (pressure )?gauges?\b|\bpressure gauges?\b|\btire pressure\b/, means: ['tire', 'gauge'] },
+    { label: 'jump starters', says: /\b(jump ?starters?|jump ?start\w*|booster packs?)\b/, means: ['jump', 'starter'] },
+  ],
+  askNeed: 'Tell me the part you need, like brake pads, a battery or wiper blades, and your vehicle’s year, make and model, and I’ll find what fits.',
+  suggestionLead: { one: 'this is the one that matches', many: 'these are the ones that match' },
+  caution: {
+    says: /\b(swallow\w*|drank|ingest\w*|poison\w*|in (my|his|her|their|your) eyes?|eyes? (burn|sting)\w*|on (my|his|her|their) (skin|hands?|face)|toxic|skin (burn|rash)\w*|chemical burns?|breath\w* (in )?(the )?fumes|inhal\w*|dizzy|nause\w*|pregnan\w*|medical|doctor|medications?|allerg\w*|injur\w*|hurt (myself|himself|herself)|(got|is|was|am|been) hurt)\b/,
+    text: 'I can’t give medical advice. If someone has swallowed a fluid, got one in their eyes or is hurt, call 911 or Poison Control at 1-800-222-1222 right away. Every fluid we sell has first-aid directions on its label.',
+  },
+  noPromotion: {
+    text: 'There’s no discount code running right now. Our Deals collection has a few parts at a lower price.',
+    link: { label: 'See the deals', href: '/collections/deals' },
+  },
+  noSubscription: {
+    text: 'We don’t sell subscriptions. Every order you place is listed in your account.',
+    link: { label: 'Your account', href: '/account' },
+  },
+  placeholder: 'Ask about a part, a fit or an order',
+  subscriptions: false,
+  parts: {
+    cautions: [
+      {
+        // Doing brake work: how to, or by yourself. The store's own "Brake work" page answers.
+        says: /\bhow (?:(?:do|can|should|would) (?:i|you|we)|to) (?!know|find|tell|choose|pick|check|see|get|order|buy|return|look|pay|track)\w+[^.?!]*\bbrak\w*|\bbrak\w*[^.?!]*\bhow (?:(?:do|can|should|would) (?:i|you|we)|to) (?!know|find|tell|choose|pick|check|see|get|order|buy|return|look|pay|track)\w+|\b(myself|diy|on my own|at home|my own)\b[^.?!]*\b(brak\w*|pads?|rotors?)\b|\b(brak\w*|pads?|rotors?)\b[^.?!]*\b(myself|diy|on my own|at home)\b|\bbleed\w*\b[^.?!]*\bbrak\w*|\bbrak\w*[^.?!]*\bbleed\w*/,
+        page: /\bbrake work\b/i,
+        text: 'Brakes are safety parts, so unless you’ve done the job before, have a qualified mechanic fit pads and rotors, and bleed the brakes after changing the fluid. I can’t walk you through brake work in a chat. I can tell you which parts fit your vehicle.',
+      },
+      {
+        // A symptom, "is it safe to drive", or steering, suspension and airbags: a mechanic, never a diagnosis.
+        // A part that "won't make noise" is a part, not a symptom.
+        says: /\b(safe to drive|ok(ay)? to drive|keep driving|still drive|drive on it|drive with)\b|\bair ?bags?\b|\bsrs\b|\b(steering|suspension|ball joints?|tie rods?|control arms?|struts?|shocks?|wheel bearings?)\b|(?<!\b(?:won['’]?t|don['’]?t|doesn['’]?t|didn['’]?t|no|not|never|less|without|stop|reduce|quiet|quieter)\s+(?:make\s+|any\s+|much\s+|a\s+|the\s+)?)\b(grind\w*|squeal\w*|squeak\w*|noises?|noisy|spongy|soft pedal|pedal (is |feels |goes |went )?(soft|spongy|low|to the floor)|pulls? to (the )?(left|right|one side)|vibrat\w*|shudder\w*|shak(e|es|ing)|smok(e|es|ing|y)|burning smell|warning light|light (is |came |comes |went )?on|fail(s|ed|ing)?|not working|stopped working)\b/,
+        text: 'That’s a safety question, so please have a qualified mechanic look at your vehicle before you drive it. I can’t diagnose a problem or walk you through brake, steering, suspension or airbag work in a chat. I can tell you which parts fit your vehicle and what each one is.',
+      },
+      {
+        // Handling fluids and batteries: the label and a mechanic, never a how-to.
+        says: /\b(mix\w*|dispos\w*|recycl\w*|spill\w*|leak\w*|swollen|bulg\w*|crack\w*|corro\w*|acid|rotten eggs?|sulfur|explod\w*)\b[^.?!]*\b(fluids?|oil|coolant|antifreeze|batter(y|ies))\b|\b(fluids?|oil|coolant|antifreeze|batter(y|ies))\b[^.?!]*\b(mix\w*|dispos\w*|recycl\w*|spill\w*|leak\w*|swollen|bulg\w*|crack\w*|corro\w*|acid|rotten eggs?|smell\w*|explod\w*)\b|\bhow (do|to|can|should) i (jump|charge|connect|disconnect|hook up)\b|\b(safe|safely)\b[^.?!]*\b(jump\w*|charg\w*|batter(y|ies)|fluids?|oil|coolant|antifreeze)\b|\b(jump\w*|charg\w*|batter(y|ies)|fluids?|coolant|antifreeze)\b[^.?!]*\b(safe|safely)\b/,
+        text: 'Fluids and batteries need care, so I won’t walk you through that in a chat. Follow the directions on the label, wear gloves and eye protection, and have a qualified mechanic deal with a leak or a damaged or swollen battery. Your local recycling center can tell you where to take used oil and old batteries.',
+      },
+    ],
+    askVehicle: 'Which vehicle is it for? Tell me the year, make and model, like 2019 Ford F-150, or choose it here.',
+    choiceNote: 'Your owner’s manual says which one your vehicle takes.',
+    mechanic: {
+      kinds: ['brake pads', 'brake rotors'],
+      text: 'Brakes are safety parts: unless you’ve done the job before, have a qualified mechanic fit them.',
+    },
+  },
+}
+
+/** The profiles there are. A store whose profile is not here answers as wellness. */
+export const ASSISTANT_PROFILES: Partial<Record<AssistantProfileId, AssistantProfile>> = { wellness: WELLNESS, apparel: APPAREL, 'auto-parts': AUTO_PARTS }
 
 export const DEFAULT_ASSISTANT_PROFILE: AssistantProfileId = 'wellness'
 

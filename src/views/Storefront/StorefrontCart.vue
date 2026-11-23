@@ -2,13 +2,14 @@
 import { computed, inject, nextTick, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCommerceStore } from '@/stores/useCommerce'
-import { lineImage, lineProductQuery, lineVariantText, withQuery } from '@/storefront/shopperOrders'
+import { lineDetailText, lineImage, lineProductQuery, lineVariantText, withQuery } from '@/storefront/shopperOrders'
 import { MAX_QTY, lineKey, lineTotal, useStorefrontCartStore } from '@/stores/useStorefrontCart'
 import { deliverySummary, recurringCharges } from '@/subscriptions/plans'
 import type { CartLine } from '@/stores/useStorefrontCart'
 import StorefrontAnchor from './StorefrontAnchor.vue'
 import StorefrontDiscountCode from './StorefrontDiscountCode.vue'
 import StorefrontExpressButtons from './StorefrontExpressButtons.vue'
+import StorefrontLineText from './StorefrontLineText.vue'
 import { useStorefrontDiscount } from './storefrontDiscount'
 import { STOREFRONT } from './storefrontContext'
 import { CATEGORY_ICONS, productHandle } from './storefrontCatalog'
@@ -17,7 +18,9 @@ import { CATEGORY_ICONS, productHandle } from './storefrontCatalog'
 // the store offers — Checkout, plus express buttons when the merchant shows them
 // (the accepted marks are in the footer). A line bought in a size or colour says
 // which ("Size M · Black") and shows that colour's photo; changing its quantity
-// keeps it (src/storefront/shopperOrders.ts).
+// keeps it (src/storefront/shopperOrders.ts). On a store that sells parts a line
+// also names the part number and the vehicle it fit ("Front · Part # TQ-BRK-4471 ·
+// Fits 2019 Ford F-150").
 // The empty state's wording is the real page's; a theme on the sections drawing
 // says it in sentence case and leads to the whole catalogue.
 
@@ -55,6 +58,11 @@ function imageFor(line: CartLine): string | undefined {
 /** "Size M · Black"; empty for a product without a choice. */
 function variantOf(line: CartLine): string {
   return lineVariantText(productOf(line), line)
+}
+
+/** Everything under the line's name: its variant, and on a store that sells parts its number and vehicle. */
+function detailOf(line: CartLine): string {
+  return lineDetailText(productOf(line), line, { partNumber: storefront.sellsParts.value })
 }
 
 /** The product's page, opened on the line's size and colour. */
@@ -123,7 +131,7 @@ function checkout(express?: string): void {
             </span>
             <div class="sf-cart__item">
               <StorefrontAnchor :href="hrefOf(line)" class="sf-cart__name">{{ line.name }}</StorefrontAnchor>
-              <span v-if="variantOf(line)" class="sf-cart__variant">{{ variantOf(line) }}</span>
+              <StorefrontLineText v-if="detailOf(line)" :text="detailOf(line)" :unbroken="storefront.sellsParts.value" class="sf-cart__variant" :class="{ 'sf-cart__variant--part': storefront.sellsParts.value }" />
               <span v-if="line.plan" class="sf-cart__plan">{{ line.plan.name }} · {{ deliverySummary(line.plan) }}</span>
               <span class="sf-muted">{{ formatMoney(lineTotal({ price: line.price, qty: 1 }, currency)) }} {{ line.plan ? 'per delivery' : 'each' }}</span>
             </div>
@@ -293,6 +301,10 @@ function checkout(express?: string): void {
 .sf-cart__variant {
   font-size: 13px;
   font-weight: 500;
+}
+
+.sf-cart__variant--part {
+  font-variant-numeric: tabular-nums;
 }
 
 .sf-cart__total {

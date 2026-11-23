@@ -9,19 +9,24 @@ import { storefrontOffer } from '@/maropay/storefront'
 import { activeCampaign } from '@/storefront/campaigns'
 import { checkoutProfile } from '@/storefront/checkoutProfile'
 import { formatStorePrice } from '@/storefront/price'
+import { fitState, sellsParts as sellsPartsIn } from '@/storefront/fitment'
+import type { FitmentProduct, Vehicle } from '@/storefront/fitment'
 import { chartFor } from '@/storefront/sizeCharts'
 import type { SizedProduct } from '@/storefront/sizeCharts'
 import { storefrontThemeVars } from '@/storefront/themeSections'
 import type { StoreTheme, ThemeSection } from '@/storefront/themeSections'
+import { useCommerceStore } from '@/stores/useCommerce'
 import { useMaropayStore } from '@/stores/useMaropay'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import { useSizeChartsStore } from '@/stores/useSizeCharts'
 import { useStoreCampaignsStore } from '@/stores/useStoreCampaigns'
 import { useStoreThemesStore } from '@/stores/useStoreThemes'
 import { useStorefrontStore } from '@/stores/useStorefront'
+import { useStorefrontVehicleStore } from '@/stores/useStorefrontVehicle'
 import { roundForDisplay } from '@/subscriptions/plans'
 import { announce } from '../storefrontAnnouncer'
 import { STOREFRONT } from '../storefrontContext'
+import { storefrontProducts } from '../storefrontCatalog'
 
 // The storefront's pages read their store from StorefrontLayout's `STOREFRONT` context.
 // A story has no layout, so this decorator provides the same context for a seeded store
@@ -64,6 +69,10 @@ export function withStorefront(options: StorefrontStoryOptions = {}): Decorator 
           })
           const formatExact = (amount: Money) => formatStorePrice(amount, found.value.webStore?.locale)
           const sizeCharts = computed(() => sizeChartsStore.chartsForChannel(channelId))
+          // An auto-parts store's vehicle, as the layout keeps it.
+          const sellsParts = computed(() => theme.value?.styles.drawing === 'sections' && sellsPartsIn(storefrontProducts(useCommerceStore().products, channelId)))
+          const vehicles = useStorefrontVehicleStore()
+          const vehicle = computed(() => (sellsParts.value ? vehicles.vehicleFor(channelId) : null))
           provide(STOREFRONT, {
             channel: found,
             theme,
@@ -82,6 +91,11 @@ export function withStorefront(options: StorefrontStoryOptions = {}): Decorator 
             sizeCharts,
             sizeChartFor: (product: SizedProduct) => chartFor(product, sizeCharts.value),
             announce,
+            sellsParts,
+            vehicle,
+            setVehicle: (next: Vehicle | null) => vehicles.setVehicle(channelId, next),
+            fitOf: (product: FitmentProduct) => fitState(product, vehicle.value),
+            chooseVehicle: () => {},
           })
           const style = computed(() => ({
             ...storefrontThemeVars(theme.value?.styles),

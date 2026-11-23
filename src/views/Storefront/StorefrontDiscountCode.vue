@@ -126,7 +126,7 @@ async function remove(): Promise<void> {
 }
 
 .sf-code__remove:focus-visible {
-  outline: 2px solid var(--sf-accent, #2563eb);
+  outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
   outline-offset: 2px;
 }
 

@@ -23,6 +23,8 @@ export type TemplateEditorType = 'Drag & Drop' | 'WYSIWYG' | 'Drag & Drop (Legac
 export const VITAHEAL_CAMPAIGN_CONTENT_ID = 9001
 /** The email content a Northfold store campaign is announced with. */
 export const NORTHFOLD_CAMPAIGN_CONTENT_ID = 9002
+/** The email content a Torqline store campaign is announced with. */
+export const TORQLINE_CAMPAIGN_CONTENT_ID = 9003
 
 export interface ContentItem {
   id: number
@@ -172,6 +174,17 @@ function seedContent(): ContentItem[] {
     editorType: 'Drag & Drop',
     createdAt: new Date(Date.now() - 86_400_000).toISOString(),
     updatedAt: new Date(Date.now() - 60_000).toISOString(),
+    folderId: null,
+    archived: false,
+    usedByCampaigns: 0,
+  })
+  // The Torqline Auto Parts (demo) store's, just after that.
+  out.push({
+    id: TORQLINE_CAMPAIGN_CONTENT_ID,
+    name: 'Torqline: campaign announcement',
+    editorType: 'Drag & Drop',
+    createdAt: new Date(Date.now() - 43_200_000).toISOString(),
+    updatedAt: new Date(Date.now() - 120_000).toISOString(),
     folderId: null,
     archived: false,
     usedByCampaigns: 0,

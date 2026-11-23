@@ -169,7 +169,7 @@ async function submit(): Promise<void> {
 }
 
 .sfn__input:focus-visible {
-  outline: 2px solid var(--sf-accent, #2563eb);
+  outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
   outline-offset: 2px;
 }
 
@@ -199,7 +199,7 @@ async function submit(): Promise<void> {
 }
 
 .sfn__consent input:focus-visible {
-  outline: 2px solid var(--sf-accent, #2563eb);
+  outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
   outline-offset: 2px;
 }
 

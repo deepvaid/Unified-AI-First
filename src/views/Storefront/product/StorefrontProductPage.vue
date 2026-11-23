@@ -4,7 +4,7 @@ import type { Product } from '@/stores/useCommerce'
 import { useCommerceStore } from '@/stores/useCommerce'
 import { useMerchandisingStore } from '@/stores/useMerchandising'
 import { toHandle } from '@/storefront/handles'
-import { forSameAudience, relatedByCollection } from '@/storefront/productPage'
+import { forSameAudience, forSameVehicles, relatedByCollection } from '@/storefront/productPage'
 import { RECOMMENDATION_ROW, recommendFor, recommendationHeading } from '@/storefront/search'
 import type { ThemeSection } from '@/storefront/themeSections'
 import StorefrontAnchor from '../StorefrontAnchor.vue'
@@ -40,9 +40,14 @@ const sections = computed<ThemeSection[]>(() => {
 // product-page engine chooses and names it ("Goes well with Linen Overshirt");
 // otherwise it is the product's own collection, under the section's title. Either
 // way it keeps to the piece's wearer: a men's piece is shown with men's pieces and
-// those for everyone, never a women's one.
+// those for everyone, never a women's one. On an auto-parts store it keeps to parts
+// that fit: the shopper's vehicle once one is chosen, else a vehicle this part fits
+// (universal parts always), so truck brake pads never lead to the car pads.
 const engine = computed(() => (storefront.searchable.value ? useMerchandisingStore().productEngineFor(channelId.value) : undefined))
-const listed = computed(() => forSameAudience(storefrontProducts(commerce.products, channelId.value), props.product))
+const listed = computed(() => {
+  const sameAudience = forSameAudience(storefrontProducts(commerce.products, channelId.value), props.product)
+  return storefront.sellsParts.value ? forSameVehicles(sameAudience, props.product, storefront.vehicle.value) : sameAudience
+})
 
 function rowFor(section: ThemeSection): { heading: string; products: Product[] } {
   const wanted = Number(section.settings.productCount)
@@ -127,7 +132,7 @@ function rowFor(section: ThemeSection): { heading: string; products: Product[] }
 }
 
 .sf-pp__crumbs a:focus-visible {
-  outline: 2px solid var(--sf-accent, #2563eb);
+  outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
   outline-offset: 2px;
 }
 

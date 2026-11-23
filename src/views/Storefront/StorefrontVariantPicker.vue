@@ -2,6 +2,7 @@
 import { computed, nextTick, ref, useId, watch } from 'vue'
 import { initialSelection, optionKey, optionKind, optionValuesOf, stockNote, valueState, variantAvailable, variantFor } from '@/storefront/variants'
 import type { OptionKind, SellableVariant, ValueState, VariantOption, VariantProduct } from '@/storefront/variants'
+import { soldOutText } from '@/storefront/listing'
 import { announce } from './storefrontAnnouncer'
 
 // The product's options as a shopper chooses them, on the product page and in
@@ -91,11 +92,14 @@ const noteValue = computed(() => {
   return values[size >= 0 ? size : values.length - 1] ?? ''
 })
 
-/** "Sorry, M just sold out. Choose another size." when the chosen variant cannot be bought. */
+/** The variants that could be bought when the picker opened: one of them sold out since "just sold out". */
+const availableAtStart = new Set((props.product.detail?.variantsList ?? []).filter(variantAvailable).map((v) => v.id))
+
+/** "Sorry, M is sold out. Choose another size." when the chosen variant cannot be bought ("just sold out" when it sold out during the visit). */
 const soldOutNote = computed(() => {
   if (!variant.value || variantAvailable(variant.value) || !options.value.length) return ''
   const size = options.value.find((option) => optionKind(option) === 'size') ?? options.value[options.value.length - 1]!
-  return `Sorry, ${noteValue.value} just sold out. Choose another ${size.name.toLowerCase()}.`
+  return soldOutText(noteValue.value, size.name, availableAtStart.has(variant.value.id))
 })
 
 /** "Only 2 left in M". */
@@ -390,7 +394,7 @@ defineExpose({ validate, focus, variant })
 }
 
 .sf-vp__input:focus-visible + .sf-vp__face {
-  outline: 2px solid var(--sf-accent, #2563eb);
+  outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
   outline-offset: 2px;
 }
 
@@ -439,7 +443,7 @@ defineExpose({ validate, focus, variant })
 }
 
 .sf-vp__input:focus-visible + .sf-vp__swatch {
-  outline: 2px solid var(--sf-accent, #2563eb);
+  outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
   outline-offset: 6px;
 }
 

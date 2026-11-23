@@ -8,7 +8,7 @@ import { NORTHFOLD_BLUEPRINT } from '../../src/storefront/demoStores/northfold.t
 import { VITAHEAL_BLUEPRINT } from '../../src/storefront/demoStores/vitaheal.ts'
 import { snapshotFor } from '../../src/storefront/demoStores/install.ts'
 import {
-  lineColor, lineImage, lineProductQuery, lineVariantText, orderOfShopper, orderParam, orderSums, ordersOfShopper, placedOn, withQuery,
+  lineColor, lineDetailText, lineImage, lineProductQuery, lineVariantText, orderOfShopper, orderParam, orderSums, ordersOfShopper, placedOn, withQuery,
 } from '../../src/storefront/shopperOrders.ts'
 import type { ShopperOrderRecord } from '../../src/storefront/shopperOrders.ts'
 import { initialSelection, variantFor } from '../../src/storefront/variants.ts'
@@ -37,6 +37,24 @@ test('a line reads its variant as the shopper chose it, sizes first', () => {
   // A line from before lines carried a variant, as Vitaheal's are: nothing under the name.
   const vh = vitaheal.products[0]!
   assert.equal(lineVariantText(vh, { productId: vh.id, sku: vh.sku }), '')
+})
+
+test('a part\'s line names its position, its number and the vehicle it was bought for; clothes read as before', () => {
+  const pads = {
+    id: 4001,
+    sku: 'TQ-BRK-4471',
+    detail: { options: [{ name: 'Position', values: ['Front', 'Rear'] }], variantsList: [{ id: 400101, title: 'Front' }, { id: 400102, title: 'Rear' }] },
+  }
+  const front = { productId: 4001, sku: 'TQ-BRK-4471', variantId: 400101, variantTitle: 'Front' }
+  assert.equal(lineDetailText(pads, { ...front, vehicle: '2019 Ford F-150' }, { partNumber: true }), 'Front · Part # TQ-BRK-4471 · Fits 2019 Ford F-150')
+  // Added without a vehicle, or for one it did not fit: no vehicle.
+  assert.equal(lineDetailText(pads, front, { partNumber: true }), 'Front · Part # TQ-BRK-4471')
+  // A part without options: its number alone.
+  assert.equal(lineDetailText(undefined, { productId: 4020, sku: 'TQ-ACC-4820' }, { partNumber: true }), 'Part # TQ-ACC-4820')
+  // Any other store: no part number, the line reads as it always has.
+  const sand = { productId: 3015, sku: sandM.sku, variantId: sandM.id, variantTitle: sandM.title }
+  assert.equal(lineDetailText(overshirt, sand), 'Size M · Sand')
+  assert.equal(lineDetailText(product('Canvas Market Tote'), { productId: 3014, sku: 'NF-TOT-NAT-OS' }), '')
 })
 
 test('a line whose variant or product is gone still reads what was bought', () => {

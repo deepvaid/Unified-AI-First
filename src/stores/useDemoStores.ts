@@ -15,6 +15,7 @@ import { useStoreNavigationStore } from '@/stores/useStoreNavigation'
 import { useStoreThemesStore } from '@/stores/useStoreThemes'
 import { useStorefrontStore } from '@/stores/useStorefront'
 import { useStorefrontCartStore } from '@/stores/useStorefrontCart'
+import { useStorefrontVehicleStore } from '@/stores/useStorefrontVehicle'
 import { useSubscriptionsStore } from '@/stores/useSubscriptions'
 import { localDateKey } from '@/maropay/model'
 import { canApplyTheme, demoStoreFor } from '@/storefront/demoStores'
@@ -121,7 +122,8 @@ export const useDemoStores = defineStore('demoStores', () => {
 
   /**
    * Makes the store a copy of the theme's showcase store. Orders, subscribers,
-   * chats and the Merchandise Cloud connection stay; the cart is emptied.
+   * chats and the Merchandise Cloud connection stay; the cart is emptied and the
+   * shopper's vehicle forgotten.
    * Applying the theme the store started from is a restore. False when the store
    * cannot take a theme, or the browser refused to remember it.
    */
@@ -134,6 +136,7 @@ export const useDemoStores = defineStore('demoStores', () => {
     if (!recorded) return false
     reseed(channelId)
     useStorefrontCartStore().clear(channelId)
+    useStorefrontVehicleStore().clearVehicle(channelId)
     return true
   }
 
@@ -143,7 +146,7 @@ export const useDemoStores = defineStore('demoStores', () => {
    * Merchandise Cloud connection as they were. A store running another theme also
    * gets its own theme, collections, pages and menus back (the confirm dialog says
    * so); one that kept its own theme keeps this session's edits to them, as restore
-   * always did. Orders stay; the cart is emptied. False when the store cannot take a theme.
+   * always did. Orders stay; the cart is emptied and the vehicle forgotten. False when the store cannot take a theme.
    */
   function restore(channelId: string): boolean {
     const channel = channelOf(channelId)
@@ -155,6 +158,7 @@ export const useDemoStores = defineStore('demoStores', () => {
     restoreHistory(channelId)
     markSeeded(channel)
     useStorefrontCartStore().clear(channelId)
+    useStorefrontVehicleStore().clearVehicle(channelId)
     return true
   }
 
@@ -195,6 +199,7 @@ export const useDemoStores = defineStore('demoStores', () => {
       reseed(channel.id)
       if (event.newValue === null) restoreHistory(channel.id)
       useStorefrontCartStore().clear(channel.id)
+      useStorefrontVehicleStore().clearVehicle(channel.id)
     })
   }
 

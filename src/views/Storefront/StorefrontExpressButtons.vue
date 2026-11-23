@@ -63,7 +63,7 @@ const FACE: Record<string, string> = { apple_pay: 'Apple Pay', google_pay: 'G Pa
 }
 
 .sf-express__btn:focus-visible {
-  outline: 2px solid var(--sf-accent, #2563eb);
+  outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
   outline-offset: 2px;
 }
 </style>

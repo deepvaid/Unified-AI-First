@@ -275,7 +275,7 @@ const measures = computed(() => ownChart.value.howToMeasure
 }
 
 .sf-sg__unit-input:focus-visible + .sf-sg__unit-face {
-  outline: 2px solid var(--sf-accent, #2563eb);
+  outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
   outline-offset: 2px;
 }
 
@@ -287,7 +287,7 @@ const measures = computed(() => ownChart.value.howToMeasure
 }
 
 .sf-sg__scroll:focus-visible {
-  outline: 2px solid var(--sf-accent, #2563eb);
+  outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
   outline-offset: -2px;
 }
 

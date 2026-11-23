@@ -46,7 +46,7 @@ follows at once.
 
 - **Only a few left:** Merino Crewneck Sweater in Navy, size M, says "Only 2 left in M".
 - **A sale price:** Washed Silk Blouse shows $88.00 and $118.00, 25% off.
-- **A sold-out size chosen:** pick **L** on the Linen Overshirt in Sand: "Sorry, L just sold out.
+- **A sold-out size chosen:** pick **L** on the Linen Overshirt in Sand: "Sorry, L is sold out.
   Choose another size."
 - **Buy now:** on a product page, straight to checkout with that size and colour.
 - **A fibre to avoid:** ask the chat "I'm allergic to wool". It shows pieces without wool and

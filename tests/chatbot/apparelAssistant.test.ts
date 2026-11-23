@@ -43,11 +43,11 @@ const said = (message: string, context = ctx()): string => chat([message], conte
 
 // ── The profile ──────────────────────────────────────────────────────────────
 
-test('Northfold’s chatbot is on the apparel profile, and auto parts still answers as wellness', () => {
+test('Northfold’s chatbot is on the apparel profile, and auto parts has a profile of its own', () => {
   assert.equal(snap.chatbot.assistantProfile, 'apparel')
   assert.equal(ASSISTANT_PROFILES.apparel?.id, 'apparel')
   assert.equal(assistantProfile('apparel').subscriptions, false)
-  assert.equal(assistantProfile('auto-parts').id, 'wellness')
+  assert.equal(assistantProfile('auto-parts').id, 'auto-parts')
   assert.match(said('Hi'), /^Hi! I can look up your order, help you find your size/)
 })
 

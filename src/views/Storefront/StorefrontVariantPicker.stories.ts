@@ -49,7 +49,8 @@ products and theme.
   ("Color: Sand"), and every dot is named for screen readers.
 - **Sizes as buttons**, XS to XL or waist sizes. A size **sold out** in the chosen colour is struck
   through but can still be chosen; its name says "sold out", and choosing it says
-  "Sorry, L just sold out. Choose another size." A combination the product does not have is disabled.
+  "Sorry, L is sold out. Choose another size." ("just sold out" when it sold out while the page was
+  open). A combination the product does not have is disabled.
 - **Low stock**: "Only 2 left in M" under the sizes, said politely to screen readers as it appears.
 - \`validate()\` (exposed) shows "Select a size" under an unchosen option and moves focus there, so
   Add to cart is never disabled. The \`errors\` prop shows a message of the page's own.

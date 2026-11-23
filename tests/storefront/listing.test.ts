@@ -5,11 +5,14 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { NORTHFOLD_BLUEPRINT } from '../../src/storefront/demoStores/northfold.ts'
 import { snapshotFor } from '../../src/storefront/demoStores/install.ts'
-import { DEFAULT_GRID, cardPhoto, cardPrice, chosenColor, colorsOf, gridSettings, isNewArrival, listingNoun, needsChoice, soldOut } from '../../src/storefront/listing.ts'
+import { DEFAULT_GRID, addsDirectly, soldOutText, cardPhoto, cardPrice, choiceSummary, chosenColor, colorsOf, gridSettings, isNewArrival, listingNoun, needsChoice, partNumber, soldOut, stockLine, unbrokenHyphens } from '../../src/storefront/listing.ts'
+import { partNumberOf } from '../../src/storefront/productPage.ts'
+import { TORQLINE_BLUEPRINT } from '../../src/storefront/demoStores/torqline.ts'
 import type { CardProduct } from '../../src/storefront/listing.ts'
 import { vitahealProducts } from '../../src/storefront/vitahealDemo.ts'
 
 const northfold = snapshotFor(NORTHFOLD_BLUEPRINT.homeChannel, 'northfold', '2026-11-20')
+const torqline = snapshotFor(TORQLINE_BLUEPRINT.homeChannel, 'torqline', '2026-11-20')
 const products = northfold.products as CardProduct[]
 const byName = (name: string): CardProduct => {
   const product = northfold.products.find((p) => p.name === name)
@@ -83,8 +86,73 @@ test('a list of clothes holds styles; supplements stay products', () => {
 })
 
 test('the grid follows the collection template, falling back to every feature on and four columns', () => {
-  assert.deepEqual(gridSettings(northfold.theme.templates.collection), { filters: true, sort: true, quickAdd: true, columns: 4 })
+  assert.deepEqual(gridSettings(northfold.theme.templates.collection), { filters: true, sort: true, quickAdd: true, columns: 4, cardStyle: 'Editorial' })
   assert.deepEqual(gridSettings(undefined), DEFAULT_GRID)
-  assert.deepEqual(gridSettings([{ kind: 'collection-grid', settings: { filters: false, quickAdd: 'false', columns: 9 } }]), { filters: false, sort: true, quickAdd: false, columns: 5 })
+  assert.deepEqual(gridSettings([{ kind: 'collection-grid', settings: { filters: false, quickAdd: 'false', columns: 9 } }]), { filters: false, sort: true, quickAdd: false, columns: 5, cardStyle: 'Editorial' })
   assert.deepEqual(gridSettings([{ kind: 'rich-text', settings: {} }]), DEFAULT_GRID)
+})
+
+test('a parts grid asks for dense cards; any other word keeps the editorial card', () => {
+  assert.equal(gridSettings([{ kind: 'collection-grid', settings: { cardStyle: 'Dense' } }]).cardStyle, 'Dense')
+  assert.equal(gridSettings([{ kind: 'collection-grid', settings: { cardStyle: 'Compact' } }]).cardStyle, 'Editorial')
+})
+
+const tracked = (units: number, sku?: string) => ({ id: units + 1, title: 'Default', price: '10.00', manageInventory: true, allowBackorder: false, stock: { Main: units }, ...(sku ? { sku } : {}) })
+const part = (variants: ReturnType<typeof tracked>[], extra: Partial<CardProduct> = {}): CardProduct => ({
+  id: 1, price: '10.00', inventory: 0, ...extra, detail: { options: [], variantsList: variants },
+})
+
+test('a dense card names a part with one number by it, and a part with choices by what it comes in', () => {
+  assert.equal(partNumber(part([tracked(5)], { sku: 'TQ-ACC-9001' })), 'TQ-ACC-9001')
+  assert.equal(partNumber(part([tracked(5, 'TQ-ACC-9002')])), 'TQ-ACC-9002', 'its one variant\'s')
+  assert.equal(partNumber(part([])), '')
+  const pads = part([tracked(5, 'TQ-BRK-4471'), tracked(5, 'TQ-BRK-4472')], { sku: 'TQ-BRK-4471' })
+  pads.detail!.options = [{ name: 'Position', values: ['Front', 'Rear'], display: 'buttons' }]
+  assert.equal(partNumber(pads), '', 'Front and Rear each have their own')
+  assert.equal(choiceSummary(pads), 'Front or rear')
+  const wiper = part([16, 18, 20, 22, 24, 26].map((n) => tracked(5, `TQ-WPR-60${n}`)))
+  wiper.detail!.options = [{ name: 'Length', values: ['16 in', '18 in', '20 in', '22 in', '24 in', '26 in'], display: 'buttons' }]
+  assert.equal(choiceSummary(wiper), '6 lengths')
+  assert.equal(choiceSummary(part([tracked(5)], { sku: 'TQ-ACC-9001' })), '', 'nothing to choose')
+  // The card and the product page agree on every Torqline part.
+  for (const p of torqline.products) assert.equal(partNumber(p), partNumberOf(p), p.name)
+})
+
+test('a dense card says how many are left: in stock, only a few, or sold out', () => {
+  assert.deepEqual(stockLine(part([tracked(12)])), { level: 'in', text: 'In stock' })
+  assert.deepEqual(stockLine(part([tracked(2)])), { level: 'low', text: 'Only 2 left' })
+  assert.deepEqual(stockLine(part([tracked(0)])), { level: 'out', text: 'Sold out' })
+  // Across the variants still in stock: a sold-out position does not make the other one scarce.
+  assert.deepEqual(stockLine(part([tracked(0), tracked(9)])), { level: 'in', text: 'In stock' })
+  assert.deepEqual(stockLine(part([tracked(1), tracked(1)])), { level: 'low', text: 'Only 2 left' })
+  // Sold untracked or on backorder, it never runs short.
+  assert.deepEqual(stockLine(part([{ ...tracked(1), allowBackorder: true }])).level, 'in')
+  assert.deepEqual(stockLine(part([{ ...tracked(0), manageInventory: false }])).level, 'in')
+  // A product without variants counts its own units.
+  assert.deepEqual(stockLine({ id: 2, price: '1.00', inventory: 3 }), { level: 'low', text: 'Only 3 left' })
+})
+
+test('a fit badge never breaks a model at its hyphen, and keeps every other dash', () => {
+  assert.equal(unbrokenHyphens('Doesn’t fit your 2019 Ford F-150'), 'Doesn’t fit your 2019 Ford F‑150')
+  assert.equal(unbrokenHyphens('Fits your 2020 Honda CR-V'), 'Fits your 2020 Honda CR‑V')
+  assert.equal(unbrokenHyphens('2015 - 2020'), '2015 - 2020')
+  assert.equal(unbrokenHyphens('Universal fit'), 'Universal fit')
+})
+
+test('a card adds a part straight to the cart only when there is nothing to choose and nothing that says it won\'t fit', () => {
+  const plain = part([tracked(5)])
+  const choice: CardProduct = { id: 3, price: '10.00', inventory: 0, detail: { options: [{ name: 'Position', values: ['Front', 'Rear'] }], variantsList: [tracked(5), tracked(5)] } }
+  assert.equal(addsDirectly(plain), true)
+  assert.equal(addsDirectly(plain, 'fits'), true)
+  assert.equal(addsDirectly(plain, 'universal'), true)
+  assert.equal(addsDirectly(plain, 'unknown'), true)
+  // Doesn't fit the vehicle: quick add opens and says so first.
+  assert.equal(addsDirectly(plain, 'no-fit'), false)
+  assert.equal(addsDirectly(choice, 'fits'), false)
+})
+
+test('a choice sold out all along is "sold out"; only one that sold out during the visit "just sold out"', () => {
+  assert.equal(soldOutText('Rear', 'Position'), 'Sorry, Rear is sold out. Choose another position.')
+  assert.equal(soldOutText('M', 'Size', true), 'Sorry, M just sold out. Choose another size.')
+  assert.equal(soldOutText('', 'Size'), 'Sorry, this is sold out. Choose another size.')
 })

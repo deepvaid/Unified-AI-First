@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   useCommerceStore,
@@ -14,15 +14,19 @@ import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpAlert from '@/components/MpAlert.vue'
 import MpListRow from '@/components/MpListRow.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
+import MpEmptyState from '@/components/MpEmptyState.vue'
 import { useDisplay } from 'vuetify'
 import DvCatalogCta from '@/components/copilot/DvCatalogCta.vue'
 import ProductMediaField from '@/components/products/ProductMediaField.vue'
 import ProductSizeGuideCard from '@/components/products/ProductSizeGuideCard.vue'
+import VehicleFitmentCard from '@/components/products/VehicleFitmentCard.vue'
 import VariantGrid from '@/components/products/VariantGrid.vue'
 import { isPlaceholderImage } from '@/components/products/productMedia'
 import { useProductStores } from '@/composables/useProductStores'
 import { parseDecimal } from '@/maropay/money'
 import { withPrimaryCollection } from '@/storefront/catalog'
+import { sellsParts, type Fitment } from '@/storefront/fitment'
+import { cleanSpecs, positionsFor, specErrors } from '@/storefront/fitmentForm'
 import { formatStorePrice } from '@/storefront/price'
 import { optionKind } from '@/storefront/variants'
 import { useSizeChartsStore } from '@/stores/useSizeCharts'
@@ -30,6 +34,7 @@ import { useCopilotStore } from '@/stores/useCopilot'
 import { useSubscriptionsStore } from '@/stores/useSubscriptions'
 import { useDemoStores } from '@/stores/useDemoStores'
 import { deliverySummary, pricePerDelivery, roundForDisplay } from '@/subscriptions/plans'
+import { mp_layout_breakpointCompact } from '@/design-tokens/generated/tokens'
 import { useCatalogCopilotStore, type CatalogApplyPayload } from '@/stores/useCatalogCopilot'
 import type { CatalogField } from '@/composables/catalogCopilotConfig'
 import type { ProductSnapshot } from '@/composables/useCatalogGenerator'
@@ -44,7 +49,7 @@ const extras = useProductExtrasStore()
 const catalog = useCatalogCopilotStore()
 // The Da Vinci CTA collapses to its mark on phones (so Cancel and Save stay on one
 // row) and while the drawer it opens is already open.
-const { xs } = useDisplay()
+const { xs, width: windowWidth } = useDisplay()
 const copilot = useCopilotStore()
 const ctaIconOnly = computed(() => xs.value || copilot.isOpen)
 const route = useRoute()
@@ -200,6 +205,58 @@ function setSizeChart(chartId: string | undefined) {
   else delete form.value.detail.sizeChartId
 }
 
+// ── A part: vehicle fitment and specifications ────────────────────────
+// Offered on a part (it carries fitment) and on any product of a store that sells
+// parts. Both are saved with the page's Save; the storefront reads them from there.
+const isPart = computed(() => {
+  if (form.value.detail.fitment) return true
+  const storeIds = productStores.channelIds(form.value.detail.salesChannels)
+  return storeIds.length > 0 && sellsParts(store.products.filter((p) => p.channelIds?.some((id) => storeIds.includes(id))))
+})
+/** Front and rear, when the part is sold by position. */
+const fitmentPositions = computed(() => positionsFor(form.value.detail.options))
+
+function setFitment(fitment: Fitment) {
+  form.value.detail.fitment = fitment
+}
+
+const specs = computed(() => form.value.detail.specs ?? [])
+/** Save was pressed with a half-filled row: from then on the rows show what they miss. */
+const specsTried = ref(false)
+const specIssues = computed(() => (specsTried.value ? specErrors(specs.value) : []))
+const specFieldId = (index: number, field: 'label' | 'value') => `ped-spec-${index}-${field}`
+/** Side by side, the first row's labels head the columns; stacked (MpFormGrid's compact breakpoint), every row carries its own. */
+const specsStacked = computed(() => windowWidth.value <= parseFloat(mp_layout_breakpointCompact))
+const specLabel = (index: number, text: string) => (index === 0 || specsStacked.value ? text : undefined)
+
+function addSpec() {
+  form.value.detail.specs = [...specs.value, { label: '', value: '' }]
+  nextTick(() => document.getElementById(specFieldId(specs.value.length - 1, 'label'))?.focus())
+}
+
+function removeSpec(index: number) {
+  const next = specs.value.filter((_, i) => i !== index)
+  if (next.length) form.value.detail.specs = next
+  else delete form.value.detail.specs
+}
+
+/** The warranty line; cleared, the product has none (no empty string saved beside it). */
+const warranty = computed({
+  get: () => form.value.detail.warranty ?? '',
+  set: (value: string) => {
+    if (value) form.value.detail.warranty = value
+    else delete form.value.detail.warranty
+  },
+})
+
+/** The first half-filled specification row's empty field, or null when every row is whole or empty. */
+function firstSpecProblem(): string | null {
+  const issues = specErrors(specs.value)
+  const index = issues.findIndex((issue) => issue.label || issue.value)
+  if (index < 0) return null
+  return specFieldId(index, issues[index]!.label ? 'label' : 'value')
+}
+
 const dirty = computed(() => JSON.stringify(form.value) !== snapshot.value)
 const valid = computed(() => form.value.name.trim().length > 0)
 
@@ -214,6 +271,13 @@ function requestCancel() {
 async function save() {
   const p = product.value
   if (!p || !valid.value) return
+  const specProblem = firstSpecProblem()
+  if (specProblem) {
+    specsTried.value = true
+    await nextTick()
+    document.getElementById(specProblem)?.focus()
+    return
+  }
   const wasPublished = p.publishStatus === 'Published'
   saving.value = true
   await new Promise((resolve) => setTimeout(resolve, 450))
@@ -227,7 +291,7 @@ async function save() {
     variants: Math.max(1, form.value.detail.variantsList.length),
     type: p.type,
     publishStatus: form.value.publishStatus,
-    detail: { ...form.value.detail, collection: form.value.collections[0] ?? '', seo: { ...form.value.seo } },
+    detail: partFacts({ ...form.value.detail, collection: form.value.collections[0] ?? '', seo: { ...form.value.seo } }),
     components: p.components,
     collections: [...form.value.collections],
     channelIds: productStores.channelIds(form.value.detail.salesChannels),
@@ -242,6 +306,18 @@ async function save() {
   snapshot.value = JSON.stringify(form.value)
   trackSave(p.id, wasPublished)
   router.push({ ...listRoute.value, query: { flash: 'product-updated', product: String(p.id) } })
+}
+
+/** The specifications and warranty as they are saved: trimmed, and dropped when empty. */
+function partFacts(detail: ProductDetail): ProductDetail {
+  const next = { ...detail }
+  const cleaned = cleanSpecs(next.specs ?? [])
+  if (cleaned.length) next.specs = cleaned
+  else delete next.specs
+  const line = next.warranty?.trim()
+  if (line) next.warranty = line
+  else delete next.warranty
+  return next
 }
 
 // ── Da Vinci Catalog Co-Pilot ─────────────────────────────────────────
@@ -446,6 +522,72 @@ function openVariantsWizard() {
           <v-btn v-if="variantRows.length" variant="outlined" prepend-icon="pencil" class="text-none align-self-start" @click="openVariantsWizard">
             Edit options and variants
           </v-btn>
+        </v-card>
+
+        <VehicleFitmentCard
+          v-if="isPart"
+          :model-value="form.detail.fitment"
+          :product-name="form.name"
+          :positions="fitmentPositions"
+          @update:model-value="setFitment"
+        />
+
+        <v-card v-if="isPart" variant="flat" border rounded="lg" class="ped-card">
+          <MpFormSection
+            :heading-level="2"
+            title="Specifications"
+            description="Facts that hold for every vehicle. Shoppers see them in a table on the product page."
+          />
+          <!-- A small two-column list: the first row's labels head the columns (every row has them
+               once the columns stack), and every field is named by its own aria-label, as
+               table-cell editors are (aria-labelledby is cleared: Vuetify points it at a label
+               a later row may not have). -->
+          <MpFormGrid v-if="specs.length">
+            <div v-for="(spec, index) in specs" :key="index" class="mp-form-grid__trailing">
+              <MpFormGrid :cols="2">
+                <v-text-field
+                  :id="specFieldId(index, 'label')"
+                  v-model="spec.label"
+                  :label="specLabel(index, 'Name')"
+                  :aria-label="`Name, specification ${index + 1}`"
+                  :aria-labelledby="undefined"
+                  :placeholder="index ? undefined : 'Friction material'"
+                  :error-messages="specIssues[index]?.label || undefined"
+                />
+                <v-text-field
+                  :id="specFieldId(index, 'value')"
+                  v-model="spec.value"
+                  :label="specLabel(index, 'Value')"
+                  :aria-label="`Value, ${spec.label.trim() || `specification ${index + 1}`}`"
+                  :aria-labelledby="undefined"
+                  :placeholder="index ? undefined : 'Ceramic'"
+                  :error-messages="specIssues[index]?.value || undefined"
+                />
+              </MpFormGrid>
+              <v-btn
+                icon="trash-2"
+                variant="text"
+                size="small"
+                density="comfortable"
+                :aria-label="`Remove ${spec.label.trim() || `specification ${index + 1}`}`"
+                @click="removeSpec(index)"
+              />
+            </div>
+          </MpFormGrid>
+          <MpEmptyState
+            v-else
+            icon="list"
+            :heading-level="3"
+            title="No specifications yet"
+            description="Add the facts shoppers compare, like the friction material or what is in the box."
+            action-label="Add specification"
+            action-icon="plus"
+            @action="addSpec"
+          />
+          <v-btn v-if="specs.length" variant="outlined" prepend-icon="plus" class="text-none align-self-start" @click="addSpec">
+            Add specification
+          </v-btn>
+          <v-text-field v-model="warranty" label="Warranty" placeholder="Limited lifetime warranty" />
         </v-card>
 
         <v-card variant="flat" border rounded="lg" class="ped-card">

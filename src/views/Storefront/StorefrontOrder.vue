@@ -9,9 +9,10 @@ import { lineTotal } from '@/stores/useStorefrontCart'
 import { useStorefrontShopperStore } from '@/stores/useStorefrontShopper'
 import { lineProduct } from '@/storefront/cart'
 import { shopperOrderStatus } from '@/storefront/orderStatus'
-import { lineImage, lineProductQuery, lineVariantText, orderOfShopper, orderParam, orderSums, placedOn, withQuery } from '@/storefront/shopperOrders'
+import { lineDetailText, lineImage, lineProductQuery, orderOfShopper, orderParam, orderSums, placedOn, withQuery } from '@/storefront/shopperOrders'
 import { deliverySummary } from '@/subscriptions/plans'
 import StorefrontAnchor from './StorefrontAnchor.vue'
+import StorefrontLineText from './StorefrontLineText.vue'
 import StorefrontOrderStatus from './StorefrontOrderStatus.vue'
 import StorefrontSignIn from './StorefrontSignIn.vue'
 import { STOREFRONT } from './storefrontContext'
@@ -49,6 +50,11 @@ function productHref(line: OrderLineItem): string | null {
   const product = productOfLine(line)
   if (!product || product.publishStatus !== 'Published') return null
   return withQuery(`/products/${productHandle(product)}`, lineProductQuery(product, line))
+}
+
+/** "Size M · Sand", or "Front · Part # TQ-BRK-4471 · Fits 2019 Ford F-150" on a store that sells parts. */
+function detailOfLine(line: OrderLineItem): string {
+  return lineDetailText(productOfLine(line), line, { partNumber: storefront.sellsParts.value })
 }
 
 function iconOfLine(line: OrderLineItem): string {
@@ -161,7 +167,7 @@ async function signedIn(): Promise<void> {
               <span class="sf-ord__line-text">
                 <StorefrontAnchor v-if="productHref(line)" :href="productHref(line)!" class="sf-ord__line-name">{{ line.product }}</StorefrontAnchor>
                 <span v-else class="sf-ord__line-name">{{ line.product }}</span>
-                <span v-if="lineVariantText(productOfLine(line), line)" class="sf-ord__line-variant">{{ lineVariantText(productOfLine(line), line) }}</span>
+                <StorefrontLineText v-if="detailOfLine(line)" :text="detailOfLine(line)" :unbroken="storefront.sellsParts.value" class="sf-ord__line-variant" :class="{ 'sf-ord__line-part': storefront.sellsParts.value }" />
                 <span v-if="line.plan" class="sf-muted">{{ line.plan.name }} · {{ deliverySummary(line.plan) }}</span>
                 <span class="sf-muted">Qty {{ line.qty }}<template v-if="line.qty > 1"> · {{ formatMoney(unitPrice(line)) }} each</template></span>
               </span>
@@ -416,6 +422,11 @@ a.sf-ord__line-name:focus-visible {
 
 .sf-ord__line-variant {
   font-weight: 500;
+}
+
+/* A part's number reads in even figures. */
+.sf-ord__line-part {
+  font-variant-numeric: tabular-nums;
 }
 
 .sf-ord__line-total {

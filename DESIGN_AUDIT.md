@@ -3359,3 +3359,130 @@ findings are fixed. Vitaheal's pages keep every computed style (checked before a
   it; the size chart grid guards its own menus only.
 - On a phone the chat launcher sits over the lowest row of a product page until it is scrolled.
 - The theme thumbnails (`theme.jpg`) and the theme library, apply and Start from a theme are part 4.
+
+## Torqline demo store (store themes, part 3) — 2026-11-23
+
+A third demo store, built to the same standard without subscriptions: Torqline Auto Parts (demo),
+channel `torqline-demo`, store #14, blueprint slot 4, a made-up parts store for ten popular US
+vehicles in US dollars. 21 parts (4001-4021) with part numbers as SKUs (`TQ-<CAT>-nnnn`), nine
+collections, four made-up part brands (Torqline, Haltmark, Voltaro, Lumvane), fitment rows split
+by model generation, specifications and warranties, three campaigns (Brake week, BRAKES15, runs),
+search rules and a recommendation engine, a chatbot on the auto-parts profile (id 103, 176 chats),
+and 52 photos in `public/storefront/torqline/` (Unsplash and Pexels free licences, `CREDITS.md`).
+Its walkthrough is `docs/store-builder/torqline-demo-script.md`.
+
+Vitaheal, Northfold, Neelam-Store, Atlas and the other stores look and work as before, except
+the deliberate changes listed under "Renames and breaking changes". Every new behaviour is keyed
+on `sellsParts` (the sections drawing and a product with `detail.fitment`) or on a section
+setting, never on a channel id.
+
+- **The shopper's vehicle.** One per store, no garage, kept for the tab in sessionStorage
+  (`src/stores/useStorefrontVehicle.ts`, key `mp.storefront.vehicle.v1`; a vehicle the table no
+  longer offers reads as none). The storefront context adds `sellsParts`, `vehicle`, `setVehicle`,
+  `fitOf` and `chooseVehicle` (opens the vehicle drawer the layout mounts). Apply, Restore and
+  another tab's apply or restore forget it (`useDemoStores`).
+- **One set of fit rules** in `src/storefront/fitment.ts`, used by the cards, the product page,
+  quick add, the cart and checkout lines, the search preview and the chat: `fitState`,
+  `fitLabel` (the same words everywhere), `fitDetail` (what the fitting rows say: "Driver 22 in,
+  passenger 22 in"), `fitsVehicle` (fits or universal), `variantFitState` (one choice: a row's
+  position must be the choice's; a note naming some choices takes only those), `lineVehicle`
+  (a line names the vehicle only when that choice fits), `sellsParts`, `isVehicle`.
+- **Storefront** (sections drawing, parts stores only): the header vehicle button and
+  `StorefrontVehicleDrawer` / `StorefrontVehicleSelector` (Year, Make, Model native selects with
+  visible labels); the `vehicle-finder` home section with part-number search; featured products'
+  `vehicle` setting ("Popular parts for your 2019 Ford F-150"; with no vehicle, one part per
+  category, `acrossCollections`); `StorefrontFitBanner` (four states, icon and words, fixed colour
+  pairs at 4.5:1 on white and on the theme surface); the product page's part number, which follows
+  the choice, and the row sources `specs`, `fitment` (compatibility table, the shopper's rows
+  marked "Your vehicle") and `warranty`; recommendations limited to parts that fit
+  (`forSameVehicles`); the `Dense` card style (part number or what the part comes in,
+  `choiceSummary`: "Front or rear", "6 lengths"; fit badge; stock line; Add to cart, which opens
+  quick add for a part that needs a choice or doesn't fit, `addsDirectly`); the fits bar and
+  "Only show parts that fit" switch; the empty state "No parts fit your 2015 Honda Civic in
+  Brakes"; part-number search straight to the product with the choice made
+  (`partNumberSearch`, a merchant redirect wins, hidden products are skipped); cart, checkout,
+  order and account lines "Front · Part # TQ-BRK-4471 · Fits 2019 Ford F-150"
+  (`StorefrontLineText`, which never breaks "F-150" or a part number).
+- **Admin:** the Vehicle fitment card (`VehicleFitmentCard`, `VehicleFitmentDrawer`; universal
+  switch, table with search, labelled remove, bulk remove, Add vehicle with duplicate and overlap
+  refusal; a row with no position covers Front and Rear) and a Specifications card (name and
+  value rows, warranty) on the product page of a parts store, both saved with the page's Save
+  (`src/storefront/fitmentForm.ts`); the order line reads "Fits 2019 Ford F-150"; Merchandising ›
+  Search preview says where a part number takes shoppers; the theme builder offers each store
+  only what it sells (`storeFacts`, `requires` / `optionRequires` on sections, fields and options,
+  `hideWhen` for fields a choice makes irrelevant).
+- **Chat:** the auto-parts profile (`src/chatbot/partsAnswers.ts`): whether a part fits a vehicle
+  (per choice), what fits the shopper's vehicle, part numbers, setting the vehicle only when the
+  shopper asks or says yes to a strict yes/no offer, never someone else's vehicle; brake and
+  safety symptoms get a qualified-mechanic answer, brake shopping gets the parts and a one-line
+  mechanic note, do-it-yourself questions get the store's own "Brake work" answer; returns and
+  exchanges go to the store's pages.
+- **Focus rings:** the sections drawing emits `--sf-focus`: the accent where it reaches 3:1 on the
+  page, else the text colour (Torqline's safety yellow is 1.6:1 on white, so its rings are
+  charcoal). Every storefront ring reads `var(--sf-focus, var(--sf-accent, …))`; the dark header
+  and footer set their own. Classic themes never get the variable, so their rings are unchanged.
+
+### Modules, keys, tests
+
+- New: `src/storefront/torqlineDemo.ts`, `src/storefront/demoStores/torqline.ts`,
+  `src/storefront/fitmentForm.ts`, `src/stores/useStorefrontVehicle.ts`, `src/chatbot/partsAnswers.ts`;
+  `src/views/Storefront/` `StorefrontFitBanner`, `StorefrontVehicleSelector`,
+  `StorefrontVehicleDrawer`, `StorefrontLineText`, `sections/VehicleFinder`;
+  `src/components/products/` `VehicleFitmentCard`, `VehicleFitmentDrawer`.
+- Admin ids: CDP list 904 "Torqline customers", announcement email 9003, timezone America/New_York.
+  Browser keys: `mp.demo-store.torqline-demo.*` (the same slots as Northfold) and the vehicle's
+  session key above. Nothing new is written for Vitaheal or Northfold.
+- Tests: `tests/storefront/` `torqlineDemo`, `fitmentForm`, and Torqline cases in `fitment`,
+  `facets`, `listing`, `search`, `productPage`, `shopperOrders`, `themeVars`;
+  `tests/chatbot/autoPartsAssistant`. The shared suite `demoStores.test.ts` checks Torqline with
+  the other blueprints.
+
+### Renames and breaking changes
+
+- `DemoStoreId` adds `'torqline'`. `ProductDetail` gains `specs?: { label; value }[]` and
+  `warranty?`. `RowSource` adds `'specs' | 'fitment' | 'warranty'`. `themeFonts` adds Barlow and
+  Barlow Condensed. `sectionsFor` and `fieldsFor` take the store's facts; told nothing they offer
+  no store-specific setting. The `collection-grid` section gains `cardStyle` (Editorial, Dense).
+- **The fits filter works the other way round:** once a vehicle is chosen it is on by default and
+  `fits=0` in the URL turns it off (it was `fits=1` to turn it on). It is a switch, not a chip, and
+  Clear all leaves it alone. `ListingOptions.fitsLabel` is gone; `removeFilter` takes a filter group
+  only; `ListingOptions` is generic.
+- `listing.partNumber` now follows `productPage.partNumberOf`: empty for a part whose choices each
+  have a number (the card shows `choiceSummary` instead), never the first variant's number.
+- Sold-out wording, Northfold too: a choice sold out on arrival reads "Sorry, L is sold out. Choose
+  another size." ("just sold out" only when it sold out during the visit, `soldOutText`).
+- The admin order line says "Fits 2019 Ford F-150" (was "For …"). A demo store without plans names
+  its own first search synonym in its Activity tab (Northfold's was a made-up "Fall outerwear").
+- The list's primary buttons use the theme's button colours (`--sf-button-*`); Northfold's are the
+  same black as before.
+
+### Reviews
+
+Three independent reviews (shopper, merchant, code) ran on the integrated work. Fixed after them:
+a cart line that said a 16 in wiper fits an F-150 that takes 22 in (now `lineVehicle` everywhere,
+and the banner follows the choice); the chat setting the vehicle when nobody asked, reading "ok …"
+or "please …" as yes, losing the question, dropping the vehicle on its own Add to cart, and
+answering exchanges with product cards; the safety caution blocking ordinary brake shopping; a
+part that doesn't fit going into the cart with no warning; the bulk Remove bar painted over by the
+next card; a Front row allowed over an either-end row; parts settings offered in Northfold's theme
+builder (and the size guide in Torqline's); the search preview not knowing part numbers; the header
+icons out of place below 1280px; two identical brake rows on the home page; focus lost after Find
+parts; an empty-state announcement that differed from the heading; delivery copy (now 3 to 5
+business days, as the checkout says); "F-150" and part numbers breaking across lines.
+
+### Not done here
+
+- `oil-filter-truck-1.jpg` is still missing (no unbranded free photo found), so 4006 shows one
+  photo. Close matches kept: brake pads shown fitted, a cone air filter, a dial tire gauge, brake
+  fluid bottles.
+- The fit states use fixed colour pairs, not `--sf-*`, on purpose: a fit has to read the same on any
+  theme. Revisit only with a theme-level semantic palette.
+- `MpFloatingBulkBar` overflows at 375px (shared component; also on `/templates/list`).
+- The builder canvas still draws the fit banner's stand-in for a store that does not sell parts if
+  its template already has the banner on (the builder no longer lets it be switched on there).
+- Cards show no badge until a vehicle is chosen (the fits bar asks for one); part numbers can wrap
+  at the hyphen in chat bubbles (kept so they paste into search intact).
+- Seen on every demo store, not changed here: the announcement email's preview shows the stock
+  abandoned-cart body; the chatbot's shopping-assistant preview shows "red boots"; the SEO URL
+  preview leaves out the product id the storefront path ends in.
+- The theme thumbnails (`theme.jpg`), the theme library, Apply and Start from a theme are part 4.

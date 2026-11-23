@@ -5,6 +5,34 @@
 // Node tests can use it. src/stores/themeBuilderData.ts re-exports all of it and adds
 // the token-based defaultThemeStyles.
 
+import { sellsParts } from './fitment.ts'
+import type { FitmentProduct } from './fitment.ts'
+
+/**
+ * What a store sells, for the settings only some stores can use: parts with vehicle
+ * fitment (a vehicle finder, the fit banner), sized products (a size guide). The
+ * builder offers a kind, field or option that `requires` one only to a store that has it.
+ */
+export interface StoreFacts {
+  /** It sells parts with vehicle fitment (`sellsParts`). */
+  parts: boolean
+  /** It sells sized products: it has size charts, or a product links one. */
+  sizes: boolean
+}
+
+export type StoreNeed = keyof StoreFacts
+
+/** A store that sells neither: what the builder assumes when it is told nothing. */
+const NO_FACTS: StoreFacts = { parts: false, sizes: false }
+
+/** What a store sells, from its own products and size charts. */
+export function storeFacts(
+  products: readonly (FitmentProduct & { detail?: { sizeChartId?: string } })[],
+  sizeCharts: readonly unknown[],
+): StoreFacts {
+  return { parts: sellsParts(products), sizes: sizeCharts.length > 0 || products.some((product) => !!product.detail?.sizeChartId) }
+}
+
 export interface ThemeSectionField {
   key: string
   label: string
@@ -19,6 +47,12 @@ export interface ThemeSectionField {
   drawing?: 'sections'
   /** The templates the field means something on (a collection grid's filters, on the collection page). Every template when absent. */
   templates?: TemplateType[]
+  /** Offered only to a store that sells this (a vehicle setting to a parts store, a size guide to a store with sizes). */
+  requires?: StoreNeed
+  /** Options of a select offered only to a store that sells this ("Vehicle compatibility table" to a parts store). */
+  optionRequires?: Readonly<Record<string, StoreNeed>>
+  /** Not shown while another setting has one of these values (a row's text, while its content comes from the part). */
+  hideWhen?: { key: string; values: readonly string[] }
 }
 
 export interface ThemeSectionVariant {
@@ -46,6 +80,8 @@ export interface ThemeSectionDef {
   unique?: boolean
   /** A kind only the sections drawing draws: the builder offers it on a theme drawn that way. */
   drawing?: 'sections'
+  /** Offered only to a store that sells this (the vehicle finder, to a parts store). */
+  requires?: StoreNeed
 }
 
 /** A block nested inside a block-accepting section. */
@@ -137,7 +173,7 @@ export const TEMPLATE_TYPE_LABELS: Record<TemplateType, string> = {
 }
 
 /** Fonts offered by the theme styles panel. */
-export const themeFonts = ['Inter', 'Figtree', 'Inconsolata', 'Georgia', 'Space Grotesk', 'DM Sans', 'Instrument Serif', 'system-ui']
+export const themeFonts = ['Inter', 'Figtree', 'Inconsolata', 'Georgia', 'Space Grotesk', 'DM Sans', 'Instrument Serif', 'Barlow', 'Barlow Condensed', 'system-ui']
 
 /**
  * How the sections drawing sets a font: its fallbacks, and the weight headings take
@@ -230,7 +266,23 @@ function sectionsDrawingVars(styles: Partial<ThemeStyles>): Record<string, strin
   }
   if (styles.bodyFont) vars['--sf-body-font'] = fontStack(styles.bodyFont)
   vars['--sf-heading-case'] = styles.headingCase === 'Uppercase' ? 'uppercase' : 'none'
+  const focus = focusColor(styles)
+  if (focus) vars['--sf-focus'] = focus
   return vars
+}
+
+/**
+ * The keyboard focus ring on the page: the accent when it stands out from the
+ * background (3:1, WCAG 1.4.11), else the text colour. Torqline's safety yellow is
+ * 1.6:1 on white, so its rings are charcoal. A dark header or footer sets its own.
+ */
+function focusColor(styles: Partial<ThemeStyles>): string | null {
+  const { accentColor: accent, background, textColor } = styles
+  if (!accent || !background) return accent || textColor || null
+  const [a, b] = [hexLuminance(accent), hexLuminance(background)]
+  if (a === null || b === null) return accent
+  const ratio = (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)
+  return ratio >= 3 || !textColor ? accent : textColor
 }
 
 /**
@@ -328,6 +380,8 @@ export const sectionCatalog: ThemeSectionDef[] = [
       { key: 'collection', label: 'Collection', type: 'collection', drawing: 'sections' },
       { key: 'productCount', label: 'Products', type: 'slider', min: 2, max: 8 },
       { key: 'layout', label: 'Layout', type: 'select', options: ['Grid', 'Carousel'] },
+      // An auto-parts store: with the shopper's vehicle chosen, the parts that fit it ("Popular parts for your 2019 Ford F-150").
+      { key: 'vehicle', label: 'Parts for the shopper’s vehicle', type: 'toggle', drawing: 'sections', templates: ['home'], requires: 'parts' },
     ],
   },
   {
@@ -349,6 +403,8 @@ export const sectionCatalog: ThemeSectionDef[] = [
       { key: 'filters', label: 'Filters', type: 'toggle', drawing: 'sections', templates: ['collection'] },
       { key: 'sort', label: 'Sort', type: 'toggle', drawing: 'sections', templates: ['collection'] },
       { key: 'quickAdd', label: 'Quick add on product cards', type: 'toggle', drawing: 'sections', templates: ['collection'] },
+      // Editorial (a tall photo, name and price) or Dense (a part: square photo, part number, fit, stock and Add to cart).
+      { key: 'cardStyle', label: 'Product card', type: 'select', options: ['Editorial', 'Dense'], drawing: 'sections', templates: ['collection'] },
     ],
   },
   {
@@ -436,7 +492,9 @@ export const sectionCatalog: ThemeSectionDef[] = [
     fields: [
       { key: 'galleryLayout', label: 'Gallery layout', type: 'select', options: ['Thumbnails', 'Stacked'] },
       { key: 'imageRatio', label: 'Image shape', type: 'select', options: ['Portrait', 'Square', 'Landscape'], drawing: 'sections' },
-      { key: 'sizeGuide', label: 'Size guide link', type: 'toggle', drawing: 'sections' },
+      { key: 'sizeGuide', label: 'Size guide link', type: 'toggle', drawing: 'sections', requires: 'sizes' },
+      // An auto-parts store: whether the part fits the shopper's vehicle, under the title.
+      { key: 'fitment', label: 'Vehicle fit banner', type: 'toggle', drawing: 'sections', requires: 'parts' },
       { key: 'showReviews', label: 'Show reviews', type: 'toggle' },
     ],
   },
@@ -477,6 +535,22 @@ export const sectionCatalog: ThemeSectionDef[] = [
     drawing: 'sections',
     fields: [{ key: 'title', label: 'Heading', type: 'text' }],
   },
+  {
+    // An auto-parts store's hero: a photograph with Year, Make and Model selects, and a part-number search.
+    // Its photograph is the `image` setting (a path under /public), set by the theme, like image-with-text's.
+    kind: 'vehicle-finder',
+    title: 'Vehicle finder',
+    icon: 'car-front',
+    description: 'A photo with Year, Make and Model selects, so shoppers see the parts that fit their vehicle.',
+    category: 'Commerce',
+    drawing: 'sections',
+    requires: 'parts',
+    fields: [
+      { key: 'headline', label: 'Headline', type: 'text' },
+      { key: 'subheadline', label: 'Subheadline', type: 'text' },
+      { key: 'partNumberSearch', label: 'Search by part number', type: 'toggle' },
+    ],
+  },
 ]
 
 /** Default settings applied when a section of the given kind is created. */
@@ -505,6 +579,12 @@ export const sectionDefaults: Record<string, Record<string, string | number | bo
   'cart-summary': { showNotes: false, upsells: true },
   footer: { showSocial: true, columns: 3 },
   'icon-row': { title: '' },
+  'vehicle-finder': {
+    headline: 'Find parts that fit',
+    subheadline: 'Choose your vehicle and we’ll show the parts made for it.',
+    image: '',
+    partNumberSearch: true,
+  },
 }
 
 /** Blocks a new section of the kind starts with, so it shows something as soon as it is added. */
@@ -568,9 +648,15 @@ export const COLLAPSIBLE_SOURCES: Readonly<Record<string, string>> = {
   description: 'Product description',
   fit: 'Fit note and size guide',
   'fabric-care': 'Material and care',
+  specs: 'Part specifications',
+  fitment: 'Vehicle compatibility table',
+  warranty: 'Part warranty',
   'delivery-returns': 'Delivery and returns (the text below)',
   custom: 'The text below',
 }
+
+/** The row contents only some stores have: a part's (a parts store), the fit note and size guide (a store with sizes). */
+const COLLAPSIBLE_SOURCE_NEEDS: Readonly<Record<string, StoreNeed>> = { fit: 'sizes', specs: 'parts', fitment: 'parts', warranty: 'parts' }
 // Blocks nest inside block-accepting sections (hero, image-banner, rich-text,
 // featured-products, collection-grid). Fields reuse ThemeSectionField so the
 // same schema-driven settings renderer applies to blocks.
@@ -649,8 +735,9 @@ export const blockCatalog: ThemeBlockDef[] = [
     drawing: 'sections',
     fields: [
       { key: 'title', label: 'Title', type: 'text' },
-      { key: 'source', label: 'Content', type: 'select', options: Object.keys(COLLAPSIBLE_SOURCES), optionLabels: COLLAPSIBLE_SOURCES },
-      { key: 'text', label: 'Text', type: 'textarea' },
+      { key: 'source', label: 'Content', type: 'select', options: Object.keys(COLLAPSIBLE_SOURCES), optionLabels: COLLAPSIBLE_SOURCES, optionRequires: COLLAPSIBLE_SOURCE_NEEDS },
+      // A part's rows come from the part, so they take no text.
+      { key: 'text', label: 'Text', type: 'textarea', hideWhen: { key: 'source', values: ['specs', 'fitment', 'warranty'] } },
       { key: 'open', label: 'Open when the page loads', type: 'toggle' },
     ],
   },
@@ -675,15 +762,18 @@ export function getBlockDef(kind: string): ThemeBlockDef | undefined {
 
 // ── What the builder offers a theme ─────────────────────────────────────────
 // A classic theme is offered exactly what it always was; a theme on the sections
-// drawing also gets the kinds, blocks and fields only that drawing draws.
+// drawing also gets the kinds, blocks and fields only that drawing draws, and of
+// those, what the store sells decides the rest: a parts store gets the vehicle
+// finder and the fit banner, a store with sizes the size guide (`StoreFacts`).
 
 type Drawing = ThemeStyles['drawing']
 
 const forDrawing = (drawing: Drawing) => (def: { drawing?: 'sections' }) => !def.drawing || def.drawing === drawing
+const forStore = (facts: StoreFacts) => (def: { requires?: StoreNeed }) => !def.requires || facts[def.requires]
 
-/** The section kinds the Add section picker offers a theme. */
-export function sectionsFor(drawing: Drawing): ThemeSectionDef[] {
-  return sectionCatalog.filter(forDrawing(drawing))
+/** The section kinds the Add section picker offers a theme, on a store that sells what `facts` says. */
+export function sectionsFor(drawing: Drawing, facts: StoreFacts = NO_FACTS): ThemeSectionDef[] {
+  return sectionCatalog.filter((def) => forDrawing(drawing)(def) && forStore(facts)(def))
 }
 
 /** Blocks some section kind holds as its own (a feature, a collapsible row): never offered elsewhere. */
@@ -700,9 +790,26 @@ export function blocksFor(kind: string, drawing: Drawing): ThemeBlockDef[] {
   return def.blocks ? usable.filter((block) => def.blocks!.includes(block.kind)) : usable.filter((block) => !OWN_BLOCKS.has(block.kind))
 }
 
-/** The settings the builder shows for a section or block, on a theme and template. */
-export function fieldsFor(fields: readonly ThemeSectionField[], drawing: Drawing, template: TemplateType): ThemeSectionField[] {
-  return fields.filter((field) => forDrawing(drawing)(field) && (!field.templates || field.templates.includes(template)))
+/**
+ * The settings the builder shows for a section or block, on a theme and template, on
+ * a store that sells what `facts` says: a select keeps only the options the store can use.
+ */
+export function fieldsFor(
+  fields: readonly ThemeSectionField[],
+  drawing: Drawing,
+  template: TemplateType,
+  facts: StoreFacts = NO_FACTS,
+): ThemeSectionField[] {
+  return fields
+    .filter((field) => forDrawing(drawing)(field) && forStore(facts)(field) && (!field.templates || field.templates.includes(template)))
+    .map((field) => (field.options && field.optionRequires
+      ? { ...field, options: field.options.filter((option) => forStore(facts)({ requires: field.optionRequires![option] })) }
+      : field))
+}
+
+/** Whether a setting shows, given the others: a row's text hides while the row's content comes from the part. */
+export function fieldShown(field: ThemeSectionField, settings: Readonly<Record<string, string | number | boolean>>): boolean {
+  return !field.hideWhen || !field.hideWhen.values.includes(String(settings[field.hideWhen.key] ?? ''))
 }
 
 let blockIdCounter = 0

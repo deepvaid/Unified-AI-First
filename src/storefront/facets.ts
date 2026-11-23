@@ -2,13 +2,18 @@
 // pages), held in the URL query so a filtered list can be shared, reloaded and
 // gone back to:
 //
-//   ?category=knitwear&size=m,l&color=black&price=50-100&brand=graymoor&fits=1&sort=price-asc
+//   ?category=knitwear&size=m,l&color=black&price=50-100&brand=graymoor&fits=0&sort=price-asc
 //
 // Several values of one filter are comma-separated and either one may match;
 // different filters must all match. A product matches Size and Color when one
 // variant that is in stock has a chosen size and a chosen colour, so "M in
 // Black" never lists a shirt whose black M is sold out. A product sold out in
 // every variant stays listed (it is still there to look at) but goes last.
+//
+// On an auto-parts store (Torqline) a list with the shopper's vehicle shows only
+// the parts that fit it (or fit anything), unless the URL says `fits=0`: the
+// "Only show parts that fit" switch, which is a mode of the list rather than a
+// filter, so it has no chip and Clear all leaves it as it is.
 //
 // Pure rules: no Vue, no Pinia, no `@/` imports, so `npm run test:storefront`
 // runs them in Node.
@@ -61,13 +66,16 @@ export interface ListingFilters {
   color: string[]
   price: string[]
   brand: string[]
-  /** Only what fits the shopper's vehicle (auto-parts stores). Does nothing until the list is given a `fits` rule. */
+  /**
+   * Only what fits the shopper's vehicle (auto-parts stores). On unless the URL
+   * says `fits=0`; does nothing until the list is given a `fits` rule (a vehicle).
+   */
   fits: boolean
   sort: ListingSort
 }
 
 export function emptyFilters(sort: ListingSort = 'featured'): ListingFilters {
-  return { category: [], size: [], color: [], price: [], brand: [], fits: false, sort }
+  return { category: [], size: [], color: [], price: [], brand: [], fits: true, sort }
 }
 
 /** Every query key these rules own; a page's other keys (the search's `q`) are left alone. */
@@ -141,17 +149,17 @@ export function parseListingQuery(query: Readonly<Record<string, unknown>>): Lis
     const range = parsePriceRange(value)
     return range ? [priceKey(range)] : []
   }))
-  filters.fits = rawValues(query.fits).some((value) => value === '1' || value === 'true')
+  filters.fits = !rawValues(query.fits).some((value) => value === '0' || value === 'false')
   const sort = rawValues(query.sort)[0]
   if (isSort(sort)) filters.sort = sort
   return filters
 }
 
-/** The filters as query keys, in a fixed order; empty filters and the featured sort are left out. */
+/** The filters as query keys, in a fixed order; empty filters, the fits switch on and the featured sort are left out. */
 export function toListingQuery(filters: ListingFilters): Record<string, string> {
   const query: Record<string, string> = {}
   for (const key of FACET_KEYS) if (filters[key].length) query[key] = filters[key].join(',')
-  if (filters.fits) query.fits = '1'
+  if (!filters.fits) query.fits = '0'
   if (filters.sort !== 'featured') query.sort = filters.sort
   return query
 }
@@ -165,8 +173,9 @@ export function withListingQuery(current: Readonly<Record<string, QueryValue | u
 
 // ── Editing the filters ──────────────────────────────────────────────────────
 
+/** A value is chosen in one of the filter groups. The fits switch is a mode of the list, not one of them. */
 export function hasActiveFilters(filters: ListingFilters): boolean {
-  return filters.fits || FACET_KEYS.some((key) => filters[key].length > 0)
+  return FACET_KEYS.some((key) => filters[key].length > 0)
 }
 
 /** Adds the value to the filter, or takes it out when it is in. */
@@ -175,14 +184,13 @@ export function toggleFilter(filters: ListingFilters, key: FacetKey, value: stri
   return { ...filters, [key]: list.includes(value) ? list.filter((v) => v !== value) : [...list, value] }
 }
 
-export function removeFilter(filters: ListingFilters, key: FacetKey | 'fits', value?: string): ListingFilters {
-  if (key === 'fits') return { ...filters, fits: false }
+export function removeFilter(filters: ListingFilters, key: FacetKey, value?: string): ListingFilters {
   return { ...filters, [key]: value === undefined ? [] : filters[key].filter((v) => v !== value) }
 }
 
-/** Every filter off; the sort stays. */
+/** Every filter off; the sort and the fits switch stay as they are. */
 export function clearFilters(filters: ListingFilters): ListingFilters {
-  return emptyFilters(filters.sort)
+  return { ...emptyFilters(filters.sort), fits: filters.fits }
 }
 
 // ── Reading the products ─────────────────────────────────────────────────────
@@ -195,14 +203,12 @@ export interface MoneyLabel {
   locale?: string
 }
 
-export interface ListingOptions extends MoneyLabel {
+export interface ListingOptions<P extends ListingProduct = ListingProduct> extends MoneyLabel {
   /**
    * The products the shopper's vehicle fits (src/storefront/fitment.ts). With it,
-   * `filters.fits` lists only those; without it the toggle does nothing.
+   * `filters.fits` lists only those; without it the switch does nothing.
    */
-  fits?: (product: ListingProduct) => boolean
-  /** The fits filter's chip: "Fits 2019 Ford F-150". */
-  fitsLabel?: string
+  fits?: (product: P) => boolean
 }
 
 interface VariantFacts {
@@ -276,7 +282,7 @@ function inRange(price: number, key: string): boolean {
 }
 
 /** Whether a product passes every filter. */
-function matches<P extends ListingProduct>(facts: Facts<P>, filters: ListingFilters, options: ListingOptions): boolean {
+function matches<P extends ListingProduct>(facts: Facts<P>, filters: ListingFilters, options: ListingOptions<P>): boolean {
   if (filters.category.length && !(facts.category && filters.category.includes(facts.category.key))) return false
   if (filters.brand.length && !(facts.brand && filters.brand.includes(facts.brand.key))) return false
   if (filters.price.length && !filters.price.some((key) => inRange(facts.listPrice, key))) return false
@@ -291,7 +297,7 @@ function matches<P extends ListingProduct>(facts: Facts<P>, filters: ListingFilt
 // ── Listing ──────────────────────────────────────────────────────────────────
 
 /** The products that pass the filters, in the given order. */
-export function applyFilters<P extends ListingProduct>(products: readonly P[], filters: ListingFilters, options: ListingOptions = {}): P[] {
+export function applyFilters<P extends ListingProduct>(products: readonly P[], filters: ListingFilters, options: ListingOptions<P> = {}): P[] {
   return products.map(factsOf).filter((facts) => matches(facts, filters, options)).map((facts) => facts.product)
 }
 
@@ -318,7 +324,7 @@ export function sortProducts<P extends ListingProduct>(products: readonly P[], s
 }
 
 /** The list as the page shows it: filtered, then sorted. */
-export function listProducts<P extends ListingProduct>(products: readonly P[], filters: ListingFilters, options: ListingOptions = {}): P[] {
+export function listProducts<P extends ListingProduct>(products: readonly P[], filters: ListingFilters, options: ListingOptions<P> = {}): P[] {
   return sortProducts(applyFilters(products, filters, options), filters.sort)
 }
 
@@ -429,7 +435,7 @@ export function priceRangeLabel(key: string, money: MoneyLabel = {}): string {
   return `${moneyLabel(range.lo, money)} to ${moneyLabel(range.hi, money)}`
 }
 
-export interface FacetOptions extends ListingOptions {
+export interface FacetOptions<P extends ListingProduct = ListingProduct> extends ListingOptions<P> {
   /** Groups the page leaves out (a category's own collection needs no Category). */
   omit?: readonly FacetKey[]
 }
@@ -467,7 +473,7 @@ function valuesOf<P extends ListingProduct>(all: Facts<P>[], money: MoneyLabel):
  * the list, so its count ignores the group's own choices). A group with one
  * value says nothing and is left out, unless that value is chosen.
  */
-export function facetGroups<P extends ListingProduct>(products: readonly P[], filters: ListingFilters, options: FacetOptions = {}): FacetGroup[] {
+export function facetGroups<P extends ListingProduct>(products: readonly P[], filters: ListingFilters, options: FacetOptions<P> = {}): FacetGroup[] {
   const all = products.map(factsOf)
   const values = valuesOf(all, options)
   const groups: FacetGroup[] = []
@@ -491,9 +497,9 @@ export function facetGroups<P extends ListingProduct>(products: readonly P[], fi
 // ── Chips and the result count ───────────────────────────────────────────────
 
 export interface ActiveFilter {
-  key: FacetKey | 'fits'
+  key: FacetKey
   value: string
-  /** "Size M", "Black", "Under $50", "Fits 2019 Ford F-150". */
+  /** "Size M", "Black", "Under $50". */
   label: string
   /** The chip's accessible name: "Remove filter Size M". */
   removeLabel: string
@@ -502,7 +508,7 @@ export interface ActiveFilter {
 }
 
 /** One chip per chosen value, in the panel's order, each knowing the filters without it. */
-export function activeFilters<P extends ListingProduct>(products: readonly P[], filters: ListingFilters, options: ListingOptions = {}): ActiveFilter[] {
+export function activeFilters<P extends ListingProduct>(products: readonly P[], filters: ListingFilters, options: MoneyLabel = {}): ActiveFilter[] {
   const values = valuesOf(products.map(factsOf), options)
   const chips: ActiveFilter[] = []
   for (const key of FACET_KEYS) {
@@ -512,10 +518,6 @@ export function activeFilters<P extends ListingProduct>(products: readonly P[], 
       const label = key === 'size' && !/\bsize\b/i.test(name) ? `Size ${name}` : name
       chips.push({ key, value, label, removeLabel: `Remove filter ${label}`, next: removeFilter(filters, key, value) })
     }
-  }
-  if (filters.fits && options.fits) {
-    const label = options.fitsLabel || 'Fits your vehicle'
-    chips.push({ key: 'fits', value: '1', label, removeLabel: `Remove filter ${label}`, next: removeFilter(filters, 'fits') })
   }
   return chips
 }
@@ -536,4 +538,37 @@ export function resultCountText(shown: number, total: number, noun: ListingNoun 
   if (shown === 0) return `No ${noun.other} match these filters`
   if (shown === total) return `${total} ${word(total)}`
   return `${shown} of ${total} ${word(total)}`
+}
+
+// ── Nothing fits the shopper's vehicle ───────────────────────────────────────
+
+/** Where a list is when nothing in it fits: a category of parts ("Brakes"), another collection ("Deals"), or a search. */
+export interface NoFitScope {
+  /** The collection or category: "Brakes". None on All products or a search. */
+  name?: string
+  /** `name` is a kind of part (every product in it is one), so the button can say "brake parts". */
+  category?: boolean
+  page?: 'collection' | 'search'
+}
+
+/** A kind of part as the button names it: "brake parts", "lighting parts", "batteries", "oil & fluids". */
+function partsOf(category: string): string {
+  const words = category.trim().toLowerCase()
+  if (/\s/.test(words) || words.endsWith('ies')) return words
+  return `${words.endsWith('s') && !words.endsWith('ss') ? words.slice(0, -1) : words} parts`
+}
+
+/**
+ * What a list says when the shopper's vehicle leaves nothing in it, and its button
+ * that turns the fits switch off: "No parts fit your 2015 Honda Civic in Brakes" with
+ * "Show all brake parts"; "No parts fit your 2015 Honda Civic" with "Show all parts"
+ * on All products, "Show all results" on a search, "Show all deals" in a collection
+ * that is not a kind of part.
+ */
+export function noFitText(vehicle: string, scope: NoFitScope = {}): { title: string; showAll: string } {
+  const name = scope.name?.trim()
+  const title = `No parts fit your ${vehicle}${name ? ` in ${name}` : ''}`
+  if (scope.page === 'search') return { title, showAll: 'Show all results' }
+  if (!name) return { title, showAll: 'Show all parts' }
+  return { title, showAll: `Show all ${scope.category ? partsOf(name) : name.toLowerCase()}` }
 }

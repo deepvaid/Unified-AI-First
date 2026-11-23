@@ -276,7 +276,7 @@ function onError(url: string): void {
 
 .sf-gal__thumb:focus-visible,
 .sf-gal__track:focus-visible {
-  outline: 2px solid var(--sf-accent, #2563eb);
+  outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
   outline-offset: 2px;
 }
 

@@ -9,7 +9,8 @@ import { cardErrors, cardLabel, flowForMethod, payButtonText } from '@/maropay/s
 import type { CardInput, ShopperMethod } from '@/maropay/storefront'
 import { lineProduct } from '@/storefront/cart'
 import type { SnapshotCheckout } from '@/storefront/demoStores'
-import { lineImage, lineProductQuery, lineVariantText, orderParam, withQuery } from '@/storefront/shopperOrders'
+import { lineVehicle } from '@/storefront/fitment'
+import { lineDetailText, lineImage, lineProductQuery, orderParam, withQuery } from '@/storefront/shopperOrders'
 import { variantAvailable } from '@/storefront/variants'
 import { useCommerceStore } from '@/stores/useCommerce'
 import { useDemoStores } from '@/stores/useDemoStores'
@@ -23,6 +24,7 @@ import StorefrontCheckoutSheet from './StorefrontCheckoutSheet.vue'
 import StorefrontDiscountCode from './StorefrontDiscountCode.vue'
 import { useStorefrontDiscount } from './storefrontDiscount'
 import StorefrontExpressButtons from './StorefrontExpressButtons.vue'
+import StorefrontLineText from './StorefrontLineText.vue'
 import StorefrontPayButton from './StorefrontPayButton.vue'
 import StorefrontPaymentOptions from './StorefrontPaymentOptions.vue'
 import StorefrontReceipt from './StorefrontReceipt.vue'
@@ -91,6 +93,9 @@ const unbuyable = computed(() => {
   return !!now && storefront.sectionsDrawing.value && !!now.product.detail?.options.length && (!now.variant || !variantAvailable(now.variant))
 })
 
+/** The vehicle a buy-now part names, as a cart line does: the shopper's, when the choice bought fits it. */
+const buyNowVehicle = computed(() => (buyNow.value ? lineVehicle(buyNow.value.product, buyNow.value.variant, storefront.vehicle.value) : undefined))
+
 const lineItems = computed<CheckoutLineItem[]>(() => (unbuyable.value ? [] : buyNow.value
   ? [{
       product: buyNow.value.product.name,
@@ -99,6 +104,7 @@ const lineItems = computed<CheckoutLineItem[]>(() => (unbuyable.value ? [] : buy
       price: buyNow.value.variant?.price || buyNow.value.product.price,
       productId: buyNow.value.product.id,
       ...(buyNow.value.variant ? { variantId: buyNow.value.variant.id, variantTitle: buyNow.value.variant.title } : {}),
+      ...(buyNowVehicle.value ? { vehicle: buyNowVehicle.value } : {}),
     }]
   : cart.linesFor(channelId.value).map((l) => ({
       product: l.name,
@@ -166,9 +172,9 @@ function imageFor(line: CheckoutLineItem): string | undefined {
   return lineImage(lineProduct(commerce.products, line), line)
 }
 
-/** "Size M · Sand" under the line's name; empty for a product without a choice. */
+/** "Size M · Sand", or "Front · Part # TQ-BRK-4471 · Fits 2019 Ford F-150" on a store that sells parts, under the line's name. */
 function variantText(line: CheckoutLineItem): string {
-  return lineVariantText(lineProduct(commerce.products, line), line)
+  return lineDetailText(lineProduct(commerce.products, line), line, { partNumber: storefront.sellsParts.value })
 }
 
 /** Back to what is being bought: the product page on the variant chosen, or the cart. */
@@ -603,7 +609,7 @@ const storePaymentsHref = computed(() => router.resolve({ name: MAROPAY_STORE_RO
               </span>
               <span class="sf-co__line-name">
                 {{ line.product }}<span class="sr-only">, quantity {{ line.qty }}</span>
-                <span v-if="variantText(line)" class="sf-co__line-plan">{{ variantText(line) }}</span>
+                <StorefrontLineText v-if="variantText(line)" :text="variantText(line)" :unbroken="storefront.sellsParts.value" class="sf-co__line-plan" :class="{ 'sf-co__line-part': storefront.sellsParts.value }" />
                 <span v-if="line.plan" class="sf-co__line-plan">{{ line.plan.name }} · {{ deliverySummary(line.plan) }}</span>
               </span>
               <span>{{ formatMoney(lineTotal(line, currency)) }}</span>
@@ -811,7 +817,7 @@ legend.sf-co__step-title {
 
 .sf-co__choice input:focus-visible,
 .sf-co__check input:focus-visible {
-  outline: 2px solid var(--sf-accent, #2563eb);
+  outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
   outline-offset: 2px;
 }
 
@@ -964,6 +970,11 @@ legend.sf-co__step-title {
   display: block;
   font-size: 12px;
   color: var(--sf-muted, #5f5f5f);
+}
+
+/* A part's number reads in even figures. */
+.sf-co__line-part {
+  font-variant-numeric: tabular-nums;
 }
 
 .sf-co__recurring {

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { NO_SEARCH_RULES, recommendFor, recommendationHeading, redirectPath, searchStore, synonymsFor } from '../../src/storefront/search.ts'
+import { NO_SEARCH_RULES, findPartNumber, partNumberSearch, partNumberTarget, recommendFor, recommendationHeading, redirectPath, searchStore, synonymsFor } from '../../src/storefront/search.ts'
 import type { SearchRules } from '../../src/storefront/search.ts'
 import { VITAHEAL_CHANNEL, VITAHEAL_CHANNEL_ID, VITAHEAL_CONTENT, VITAHEAL_MERCHANDISING, vitahealProducts } from '../../src/storefront/vitahealDemo.ts'
 
@@ -130,4 +130,55 @@ test('other engines follow their own order, and no row is longer than four', () 
   const newest = recommendFor(unwind, products, { type: 'newest_products', maxProducts: 10 })
   assert.deepEqual(newest.map((p) => p.id), [...products].filter((p) => p !== unwind).sort((a, b) => b.id - a.id).slice(0, 4).map((p) => p.id))
   assert.deepEqual(recommendFor(unwind, products, { type: 'popular_products', maxProducts: 2 }), products.filter((p) => p !== unwind).slice(0, 2))
+})
+
+test('a part number typed whole goes to its product, on the variant it numbers', () => {
+  const variant = (id: number, title: string, sku: string) => ({ id, title, optionValues: [title], sku })
+  const pads = {
+    id: 4001,
+    sku: 'TQ-BRK-4471',
+    detail: { options: [{ name: 'Position', values: ['Front', 'Rear'] }], variantsList: [variant(1, 'Front', 'TQ-BRK-4471'), variant(2, 'Rear', 'TQ-BRK-4472')] },
+  }
+  const gauge = { id: 4020, sku: 'TQ-ACC-4820', detail: { options: [], variantsList: [{ id: 3, title: 'Default', sku: 'TQ-ACC-4820' }] } }
+  const parts = [pads, gauge]
+  assert.deepEqual(findPartNumber('TQ-BRK-4472', parts), { product: pads, variantId: 2, query: { position: 'rear' } })
+  // Any case, with or without its dashes and spaces.
+  for (const typed of ['tq-brk-4472', 'TQBRK4472', ' tq brk 4472 ', 'Tq-Brk 4472']) assert.equal(findPartNumber(typed, parts)?.variantId, 2, typed)
+  // A product without options opens as it is.
+  assert.deepEqual(findPartNumber('tq-acc-4820', parts), { product: gauge, variantId: 3, query: {} })
+  // Only the whole number: part of one, or words around it, are searched as words.
+  for (const typed of ['TQ-BRK', '4472', 'TQ-BRK-4472 pads', '', '  ', 'brake pads']) assert.equal(findPartNumber(typed, parts), undefined, typed)
+  // A product's own number counts when no variant carries it.
+  assert.equal(findPartNumber('tq-old-1', [{ id: 9, sku: 'TQ-OLD-1', detail: { options: [], variantsList: [] } }])?.product.id, 9)
+})
+
+test('a blacklisted part is not found by its number either', () => {
+  const pads = { id: 4001, sku: 'TQ-BRK-4471', detail: { options: [], variantsList: [{ id: 1, title: 'Default', sku: 'TQ-BRK-4471' }] } }
+  const gauge = { id: 4020, sku: 'TQ-ACC-4820', detail: { options: [], variantsList: [{ id: 3, title: 'Default', sku: 'TQ-ACC-4820' }] } }
+  assert.equal(findPartNumber('TQ-BRK-4471', [pads, gauge], ['4001']), undefined)
+  assert.equal(findPartNumber('TQ-ACC-4820', [pads, gauge], ['4001'])?.product.id, 4020)
+  assert.equal(findPartNumber('TQ-BRK-4471', [pads, gauge], [])?.product.id, 4001)
+})
+
+test('a part-number search opens its part, unless a merchant redirect takes the same words or the part is blacklisted', () => {
+  const variant = (id: number, title: string, sku: string) => ({ id, title, optionValues: [title], sku })
+  const pads = {
+    id: 4001,
+    name: 'Ceramic Brake Pads, Truck & SUV',
+    sku: 'TQ-BRK-4471',
+    detail: { options: [{ name: 'Position', values: ['Front', 'Rear'] }], variantsList: [variant(1, 'Front', 'TQ-BRK-4471'), variant(2, 'Rear', 'TQ-BRK-4472')] },
+  }
+  const gauge = { id: 4020, name: 'Digital Tire Pressure Gauge', sku: 'TQ-ACC-9310', detail: { options: [], variantsList: [{ id: 3, title: 'Default', sku: 'TQ-ACC-9310' }] } }
+  const parts = [pads, gauge]
+  const none = { redirects: [], hiddenProductIds: [] }
+  const rear = partNumberSearch('tqbrk4472', parts, none)!
+  assert.deepEqual([rear.product.id, rear.variantId, rear.query], [4001, 2, { position: 'rear' }])
+  assert.equal(partNumberTarget(rear), 'Ceramic Brake Pads, Truck & SUV (Rear)')
+  assert.equal(partNumberTarget(partNumberSearch('TQ-ACC-9310', parts, none)!), 'Digital Tire Pressure Gauge')
+  // The merchant's redirect for the same words wins, as on the storefront.
+  assert.equal(partNumberSearch('TQ-BRK-4471', parts, { redirects: [{ queries: ['tq-brk-4471'], leadsTo: '/page/brakes' }], hiddenProductIds: [] }), undefined)
+  // A blacklisted part is never opened this way.
+  assert.equal(partNumberSearch('TQ-BRK-4471', parts, { redirects: [], hiddenProductIds: ['4001'] }), undefined)
+  assert.equal(partNumberSearch('brake pads', parts, none), undefined)
+  assert.equal(partNumberSearch('  ', parts, none), undefined)
 })

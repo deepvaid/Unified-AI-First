@@ -258,6 +258,8 @@ const publishedThemeName = computed(() => {
 })
 /** The plans the store's theme sells on, as the activity lists them. */
 const seededPlanNames = computed(() => demoStores.snapshotOf(channelId.value)?.plans.map((p) => p.name) ?? [])
+/** A demo store without plans names its own first search rule in its activity: "rotor, disc, brake disc". */
+const seededSearchRule = computed(() => demoStores.snapshotOf(channelId.value)?.merchandising.synonyms[0]?.queries.slice(0, 3).join(', ') ?? '')
 const previewSections = computed(() => channelTheme.value?.templates.home)
 const previewStyles = computed(() => channelTheme.value?.styles)
 // A crawled store's own wordmark and menu in the preview header (Neelam-Store); others keep the sample header.
@@ -506,9 +508,11 @@ const activityItems = computed<ActivityItem[]>(() => {
     return [
       { id: 'theme', icon: 'rocket', title: 'Theme published', meta: publishedThemeName.value, time: formatRelative(current.lastActivityAt), color: 'primary' },
       { id: 'inventory', icon: 'package', title: 'Catalog synced', meta: `${ownProductCount.value} products from Commerce Cloud`, time: '2 h ago', color: 'commerce' },
-      seededPlanNames.value.length
-        ? { id: 'plans', icon: 'repeat', title: 'Subscription plans updated', meta: seededPlanNames.value.join(', '), time: 'Yesterday', color: 'analytics' }
-        : { id: 'search', icon: 'sliders-horizontal', title: 'Search rules updated', meta: 'Fall outerwear', time: 'Yesterday', color: 'analytics' },
+      ...(seededPlanNames.value.length
+        ? [{ id: 'plans', icon: 'repeat', title: 'Subscription plans updated', meta: seededPlanNames.value.join(', '), time: 'Yesterday', color: 'analytics' } satisfies ActivityItem]
+        : seededSearchRule.value
+          ? [{ id: 'search', icon: 'sliders-horizontal', title: 'Search rules updated', meta: seededSearchRule.value, time: 'Yesterday', color: 'analytics' } satisfies ActivityItem]
+          : []),
     ]
   }
 

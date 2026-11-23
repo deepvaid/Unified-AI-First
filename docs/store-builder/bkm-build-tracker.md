@@ -557,7 +557,7 @@ It draws only on themes with `drawing: 'sections'`, so Vitaheal's product page i
 
 - **Already there when S5 starts:** `StorefrontVariantPicker` (one fieldset per option, real
   radios, colour swatches with the chosen name in the legend, size buttons, sold-out values struck
-  through but selectable with "Sorry, L just sold out", "Only 2 left in M", `validate()` for
+  through but selectable with "Sorry, L is sold out", "Only 2 left in M", `validate()` for
   "Select a size"); the choice in the URL (`?color=sand&size=m`); a gallery that follows the colour
   (`detail.imagesByColor`); "Size M · Sand" on cart, checkout and order lines; product cards with
   colour dots, the sale price and quick add; Buy now.

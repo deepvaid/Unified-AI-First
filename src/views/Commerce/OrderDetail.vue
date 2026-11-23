@@ -336,7 +336,7 @@ function timelineIcon(entry: { kind: string; text: string }): string {
                       <div v-if="variantLine(li)" class="text-body-2">{{ variantLine(li) }}</div>
                       <div v-if="li.vehicle" class="text-caption d-flex align-center ga-1">
                         <v-icon size="12">car</v-icon>
-                        For {{ li.vehicle }}
+                        Fits {{ li.vehicle }}
                       </div>
                       <div class="text-caption text-medium-emphasis">{{ li.sku }}</div>
                       <div v-if="li.plan" class="text-caption d-flex align-center ga-1">

@@ -2,8 +2,9 @@
 import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { assistantProfile } from '@/chatbot/assistantProfiles'
+import { chatLineVehicle } from '@/chatbot/partsAnswers'
 import { NEW_CONVERSATION, assistantProduct, assistantReply } from '@/chatbot/storeAssistant'
-import type { AssistantContext, AssistantReply, AssistantState } from '@/chatbot/storeAssistant'
+import type { AssistantAction, AssistantContext, AssistantReply, AssistantState } from '@/chatbot/storeAssistant'
 import { money, parseDecimal } from '@/maropay/money'
 import { useChatbotStore } from '@/stores/useChatbot'
 import type { Chatbot } from '@/stores/useChatbot'
@@ -12,6 +13,8 @@ import type { Product } from '@/stores/useCommerce'
 import { useStorefrontCartStore } from '@/stores/useStorefrontCart'
 import { useStorefrontShopperStore } from '@/stores/useStorefrontShopper'
 import { useSubscriptionsStore } from '@/stores/useSubscriptions'
+import { vehicleLabel } from '@/storefront/fitment'
+import type { Vehicle } from '@/storefront/fitment'
 import { optionKind } from '@/storefront/variants'
 import { allowedActions, chargeAmount, dayLabel } from '@/subscriptions/contracts'
 import { onBrand } from '@/utils/brandContrast'
@@ -27,9 +30,14 @@ import { inStock, previewProducts, productFromHandle, productHandle, storefrontP
 //
 // It can also act: add a suggested product to the cart, and skip a subscription's
 // next delivery. Each chat is saved to the chatbot's Conversations in the admin.
-// What it knows about the kind of store (wellness, apparel) is the chatbot's
-// assistant profile; a clothing store's assistant also reads the store's size
-// charts and the product page the shopper is on.
+// What it knows about the kind of store (wellness, apparel, auto parts) is the
+// chatbot's assistant profile; a clothing store's assistant also reads the store's
+// size charts and the product page the shopper is on. An auto-parts store's reads
+// the shopper's vehicle, and can set it: when the shopper asks, says yes to its
+// offer, or presses its button, never on its own, and it says so in the chat
+// ("Showing parts for your 2019 Ford F-150."). Its "Choose your vehicle" button
+// opens the store's vehicle selector, and the vehicle chosen there answers the
+// question that was waiting for it.
 //
 // On the richer theme drawing (Northfold, Torqline) the launcher is a 48px circle on
 // a phone, and it steps aside (fades out, out of the Tab order) while a control the
@@ -92,7 +100,8 @@ function context(): AssistantContext {
       price: storefront.formatExact(chargeAmount(c)),
       canSkip: allowedActions(c).includes('skip'),
     })),
-    products: storefrontProducts(commerce.products, channelId.value).filter(inStock).map((p) => assistantProduct(p, `/products/${productHandle(p)}`)),
+    // A parts store hands in its sold-out parts too, so their part numbers are found (and said to be sold out).
+    products: storefrontProducts(commerce.products, channelId.value).filter((p) => storefront.sellsParts.value || inStock(p)).map((p) => assistantProduct(p, `/products/${productHandle(p)}`)),
     entries: cfg.value.knowledgeSources
       .filter((s) => s.enabled && s.status === 'Active')
       .flatMap((s) => (s.entries ?? []).map((e) => ({ title: e.title, text: e.text, url: e.url, source: s.name }))),
@@ -104,7 +113,15 @@ function context(): AssistantContext {
     sizeCharts: storefront.sizeCharts.value,
     ...(currentProductId.value ? { currentProductId: currentProductId.value } : {}),
     ...(storefront.channel.value.webStore?.locale ? {} : { formatDay: usDay }),
+    // An auto-parts store keeps the shopper's vehicle (null until one is chosen) and writes its prices.
+    ...(storefront.sellsParts.value ? { vehicle: storefront.vehicle.value, formatPrice: partPrice } : {}),
   }
+}
+
+/** A part's price as the store writes it: 64.99 → "$64.99". */
+function partPrice(amount: number): string {
+  const currency = storefront.currency.value
+  return storefront.formatExact(parseDecimal(amount.toFixed(2), currency) ?? money(0, currency))
 }
 
 // ── The conversation ─────────────────────────────────────────────────
@@ -148,11 +165,15 @@ async function settle(): Promise<void> {
 
 const TOPICS: Partial<Record<AssistantReply['kind'], string>> = { order: 'Order status', subscriptions: 'Subscription', products: 'Product advice', answer: 'Store question' }
 
-/** A product reply's cards carry the names; the saved transcript spells them out. */
+/** A product reply's cards carry the names (and a part's fit and price); the saved transcript spells them out. */
 function transcriptText(message: Message): string {
   const reply = message.reply
   if (reply?.kind !== 'products') return message.text
-  return `${message.text} ${reply.productIds.map((id) => productById(id)?.name).filter(Boolean).join(', ')}.`
+  const named = reply.productIds.map((id) => {
+    const name = productById(id)?.name
+    return name && reply.notes?.[id] ? `${name} (${reply.notes[id]})` : name
+  })
+  return `${message.text} ${named.filter(Boolean).join(', ')}.`
 }
 
 /** Saves the chat so far under the chatbot's Conversations in the admin. */
@@ -183,9 +204,12 @@ async function send(text: string = draft.value): Promise<void> {
   await settle()
   // A short pause, so the answer reads as written rather than looked up.
   await new Promise((resolve) => window.setTimeout(resolve, 650))
+  resumeOnVehicle = false
   const turn = assistantReply(message, context(), state.value)
   state.value = turn.state
   if (turn.signedIn) shopper.signIn(channelId.value, turn.signedIn)
+  // The shopper asked for this vehicle, or said yes to it; the reply says "Showing parts for your …".
+  if (turn.vehicle) setVehicle(turn.vehicle)
   for (const reply of turn.replies) say('bot', reply.text, reply)
   typing.value = false
   offerPrompts.value = turn.offerPrompts
@@ -194,6 +218,52 @@ async function send(text: string = draft.value): Promise<void> {
   await settle()
   field.value?.focus()
 }
+
+// ── The shopper's vehicle (an auto-parts store) ──────────────────────
+
+/** The vehicle the chat is setting itself, so the watch below does not answer for it again. */
+let settingVehicle = false
+function setVehicle(vehicle: Vehicle): void {
+  settingVehicle = true
+  storefront.setVehicle(vehicle)
+  settingVehicle = false
+}
+
+/** A "Choose your vehicle" was pressed: the vehicle chosen in the selector answers the question waiting for it. */
+let resumeOnVehicle = false
+/** Buttons already pressed, by message: each acts once. */
+const used = ref<number[]>([])
+
+async function act(message: Message, action: AssistantAction): Promise<void> {
+  if (action.kind === 'choose-vehicle') {
+    resumeOnVehicle = true
+    storefront.chooseVehicle()
+    return
+  }
+  used.value.push(message.id)
+  setVehicle(action.vehicle)
+  state.value = { ...state.value, offer: undefined, named: undefined }
+  say('bot', `Showing parts for your ${vehicleLabel(action.vehicle)}.`)
+  record()
+  await settle()
+}
+
+// A vehicle chosen on the store (the header, a list, the selector the chat opened) replaces the
+// one the chat was talking about. Chosen from the chat's own button, it answers the waiting question.
+watch(() => storefront.vehicle.value, async (vehicle) => {
+  if (settingVehicle) return
+  state.value = { ...state.value, offer: undefined, named: undefined }
+  const asked = state.value.asked
+  const resume = resumeOnVehicle
+  resumeOnVehicle = false
+  if (!resume || !vehicle || !asked) return
+  const turn = assistantReply(asked, context(), { ...state.value, asked: undefined })
+  state.value = turn.state
+  say('bot', `Showing parts for your ${vehicleLabel(vehicle)}.`)
+  for (const reply of turn.replies) say('bot', reply.text, reply)
+  record()
+  await settle()
+}, { flush: 'sync' })
 
 // ── Cards ────────────────────────────────────────────────────────────
 
@@ -221,7 +291,9 @@ function choiceNeeded(product: Product): string | null {
 
 const added = ref<number[]>([])
 async function addToCart(product: Product): Promise<void> {
-  cart.add(channelId.value, product)
+  // On a parts store the line carries the shopper's vehicle when the part fits it, as every other Add to cart does.
+  const vehicle = storefront.sellsParts.value ? chatLineVehicle(product, storefront.vehicle.value) : undefined
+  cart.add(channelId.value, product, 1, vehicle ? { vehicle } : undefined)
   added.value.push(product.id)
   say('bot', `Added ${product.name} to your cart.`, { kind: 'text', text: '', link: { label: 'View cart', href: '/cart-page' } })
   record()
@@ -396,6 +468,16 @@ watch(() => route.fullPath, track, { flush: 'post' })
             <StorefrontAnchor v-if="message.reply.link" :href="message.reply.link.href" class="sf-chat__link" @click="followed">
               {{ message.reply.link.label }} <v-icon size="14" aria-hidden="true">arrow-right</v-icon>
             </StorefrontAnchor>
+            <button
+              v-if="message.reply.kind === 'text' && message.reply.action"
+              type="button"
+              class="sf-chat__btn"
+              :disabled="used.includes(message.id)"
+              @click="act(message, message.reply.action)"
+            >
+              <v-icon size="16" aria-hidden="true">{{ message.reply.action.kind === 'choose-vehicle' ? 'car-front' : 'check' }}</v-icon>
+              {{ message.reply.action.label }}
+            </button>
           </template>
 
           <ul v-else-if="message.reply?.kind === 'products'" class="sf-chat__cards">
@@ -407,8 +489,12 @@ watch(() => route.fullPath, track, { flush: 'post' })
                 </span>
                 <div class="sf-chat__product-text">
                   <strong>{{ productById(id)!.name }}</strong>
-                  <span v-if="productById(id)!.detail?.subtitle" class="sf-chat__muted">{{ productById(id)!.detail!.subtitle }}</span>
-                  <span>{{ priceText(productById(id)!) }}</span>
+                  <!-- A part's line says how it fits and what it costs: "Front or rear · $64.99". -->
+                  <span v-if="message.reply.notes?.[id]" class="sf-chat__note">{{ message.reply.notes[id] }}</span>
+                  <template v-else>
+                    <span v-if="productById(id)!.detail?.subtitle" class="sf-chat__muted">{{ productById(id)!.detail!.subtitle }}</span>
+                    <span>{{ priceText(productById(id)!) }}</span>
+                  </template>
                 </div>
                 <div class="sf-chat__product-actions">
                   <StorefrontAnchor :href="`/products/${productHandle(productById(id)!)}`" class="sf-chat__btn sf-chat__btn--quiet" @click="followed">
@@ -417,8 +503,8 @@ watch(() => route.fullPath, track, { flush: 'post' })
                   <StorefrontAnchor v-if="choiceNeeded(productById(id)!)" :href="`/products/${productHandle(productById(id)!)}`" class="sf-chat__btn" @click="followed">
                     {{ choiceNeeded(productById(id)!) }}<span class="sf-chat__sr"> for {{ productById(id)!.name }}</span>
                   </StorefrontAnchor>
-                  <button v-else type="button" class="sf-chat__btn" :disabled="added.includes(id)" @click="addToCart(productById(id)!)">
-                    {{ added.includes(id) ? 'Added' : 'Add to cart' }}<span class="sf-chat__sr"> {{ productById(id)!.name }}</span>
+                  <button v-else type="button" class="sf-chat__btn" :disabled="added.includes(id) || !inStock(productById(id)!)" @click="addToCart(productById(id)!)">
+                    {{ !inStock(productById(id)!) ? 'Sold out' : added.includes(id) ? 'Added' : 'Add to cart' }}<span class="sf-chat__sr"> {{ productById(id)!.name }}</span>
                   </button>
                 </div>
               </li>
@@ -730,6 +816,10 @@ watch(() => route.fullPath, track, { flush: 'post' })
   font-size: 14px;
 }
 
+.sf-chat__note {
+  font-variant-numeric: tabular-nums;
+}
+
 .sf-chat__product-actions,
 .sf-chat__card-actions {
   display: flex;
@@ -749,6 +839,7 @@ watch(() => route.fullPath, track, { flush: 'post' })
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
   min-height: 36px;
   padding: 0 14px;
   border: 1px solid var(--chat-brand);

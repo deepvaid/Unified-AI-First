@@ -48,11 +48,12 @@ const settings = computed(() => gridSettings(storefront.theme.value?.templates.c
       :intro="intro"
       :settings="settings"
       :show-new="!/^new\b/i.test(title)"
+      :scope="isAll ? '' : title"
     >
       <template #empty>
         <div class="sf-collection-v2__empty">
           <p class="sf-collection-v2__empty-title">Nothing here yet</p>
-          <p class="sf-collection-v2__empty-text">New styles are on their way. In the meantime, have a look at everything else.</p>
+          <p class="sf-collection-v2__empty-text">New {{ storefront.sellsParts.value ? 'parts' : 'styles' }} are on their way. In the meantime, have a look at everything else.</p>
           <StorefrontAnchor href="/collections/all" class="sf-collection-v2__empty-link">Shop all products</StorefrontAnchor>
         </div>
       </template>
@@ -154,7 +155,7 @@ const settings = computed(() => gridSettings(storefront.theme.value?.templates.c
 
 .sf-collection-v2__empty-link:focus-visible,
 .sf-collection-v2__crumbs a:focus-visible {
-  outline: 2px solid var(--sf-accent, #2563eb);
+  outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
   outline-offset: 2px;
 }
 

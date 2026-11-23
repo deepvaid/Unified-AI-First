@@ -9,9 +9,9 @@ import { STOREFRONT } from '../storefrontContext'
 // The row under a product (the product template's `featured-products` section):
 // "Goes well with Linen Overshirt" when the store's recommendation engine chooses
 // it, "You may also like" when the store has none. The page chooses the products.
-// The cards are the collection page's (StorefrontListingCard), with its quick add
-// when the store's collection grid offers it, so a product reads and adds the same
-// wherever it is listed.
+// The cards are the collection page's (StorefrontListingCard), in its card style and
+// with its quick add when the store's collection grid offers it, so a product reads
+// and adds the same wherever it is listed.
 
 defineProps<{
   heading: string
@@ -19,7 +19,8 @@ defineProps<{
 }>()
 
 const storefront = inject(STOREFRONT)!
-const quickAddOn = computed(() => gridSettings(storefront.theme.value?.templates.collection).quickAdd)
+const grid = computed(() => gridSettings(storefront.theme.value?.templates.collection))
+const quickAddOn = computed(() => grid.value.quickAdd)
 
 const quickAdd = ref<InstanceType<typeof StorefrontQuickAdd> | null>(null)
 /** Cards whose product was just added straight from the card: their "+" reads "Added" for a moment. */
@@ -48,6 +49,7 @@ onBeforeUnmount(() => {
           :product="item"
           :quick-add="quickAddOn"
           :added="justAdded.includes(item.id)"
+          :card-style="grid.cardStyle"
           @quick-add="(p, color) => quickAdd?.start(p, color)"
         />
       </li>

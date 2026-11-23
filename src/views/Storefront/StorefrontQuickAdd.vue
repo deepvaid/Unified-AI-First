@@ -3,10 +3,12 @@ import { computed, inject, nextTick, ref } from 'vue'
 import { parseDecimal } from '@/maropay/money'
 import type { Product, ProductVariant } from '@/stores/useCommerce'
 import { useStorefrontCartStore } from '@/stores/useStorefrontCart'
-import { cardPhoto, cardPrice, needsChoice } from '@/storefront/listing'
+import { fitDetail, lineVehicle, variantFitState } from '@/storefront/fitment'
+import { addsDirectly, cardPhoto, cardPrice, soldOutText } from '@/storefront/listing'
 import { describeVariant, initialSelection, optionKey, optionKind, optionValuesOf, variantAvailable, variantFor } from '@/storefront/variants'
 import StorefrontAnchor from './StorefrontAnchor.vue'
 import StorefrontDrawer from './StorefrontDrawer.vue'
+import StorefrontFitBanner from './StorefrontFitBanner.vue'
 import StorefrontVariantPicker from './StorefrontVariantPicker.vue'
 import { STOREFRONT } from './storefrontContext'
 import { priceOf, productHandle } from './storefrontCatalog'
@@ -18,6 +20,13 @@ import { priceOf, productHandle } from './storefrontCatalog'
 // disabled. Once added, the drawer says so, with "View cart" and "Keep
 // shopping". A product with one variant is added straight from the card. Either
 // way the cart in the header counts it and screen readers hear "Added to your cart".
+//
+// On a store that sells parts the drawer says how the part fits the shopper's
+// vehicle (StorefrontFitBanner, compact), for the choice made once there is one (a
+// 16 in wiper may not fit where the 22 in does), and a choice that fits goes into
+// the cart with the vehicle on its line ("Fits 2019 Ford F-150"). A part the
+// vehicle doesn't take is never added straight from its card: the drawer opens and
+// says so first.
 //
 // The list calls `start(product, color)`; one of these serves a whole list.
 
@@ -68,6 +77,22 @@ const photo = computed(() => {
 /** "Size M · Sand". */
 const line = computed(() => (variant.value && product.value ? describeVariant(variant.value, options.value) : ''))
 
+/** How the part fits the shopper's vehicle, on a store that sells parts: the choice made, else the part. */
+const fit = computed(() => {
+  const p = product.value
+  if (!storefront.sellsParts.value || !p?.detail?.fitment) return null
+  return variant.value ? variantFitState(p, variant.value, storefront.vehicle.value) : storefront.fitOf(p)
+})
+
+/** The vehicle a line names: the shopper's, when this choice of the part fits it (never a universal part). */
+function vehicleFor(p: Product, v: ProductVariant | undefined): { vehicle?: string } {
+  const vehicle = lineVehicle(p, v, storefront.vehicle.value)
+  return vehicle ? { vehicle } : {}
+}
+
+/** The variants that could be bought when the drawer opened: one of them sold out since "just sold out". */
+const availableAtOpen = ref(new Set<number>())
+
 /** "Cart subtotal (2 items) $226.00", once added. */
 const cartItems = computed(() => cart.count(channelId.value))
 const subtotal = computed(() => storefront.formatMoney(cart.subtotal(channelId.value, storefront.currency.value)))
@@ -87,13 +112,14 @@ const detailsHref = computed(() => {
  * first colour in stock ('opened').
  */
 function start(p: Product, color?: string): 'added' | 'opened' {
-  if (!needsChoice(p)) {
+  if (addsDirectly(p, storefront.sellsParts.value ? storefront.fitOf(p) : 'unknown')) {
     addDirect(p)
     return 'added'
   }
   const colorKey = p.detail?.options.find((option) => optionKind(option) === 'color')
   product.value = p
   variant.value = undefined
+  availableAtOpen.value = new Set((p.detail?.variantsList ?? []).filter(variantAvailable).map((v) => v.id))
   stage.value = 'choose'
   selection.value = initialSelection(p, color && colorKey ? { [optionKey(colorKey.name)]: optionKey(color) } : {})
   open.value = true
@@ -103,13 +129,13 @@ function start(p: Product, color?: string): 'added' | 'opened' {
 function addDirect(p: Product): void {
   const v = variantFor(p, initialSelection(p))
   if (v && !variantAvailable(v)) return
-  cart.add(channelId.value, p, 1, v ? { variant: v } : undefined)
+  cart.add(channelId.value, p, 1, { ...(v ? { variant: v } : {}), ...vehicleFor(p, v) })
   const what = v && p.detail?.options.length ? describeVariant(v, p.detail.options) : ''
   storefront.announce(`Added to your cart · ${p.name}${what ? ` · ${what}` : ''}`)
   emit('added', p, v)
 }
 
-/** Add to cart in the drawer: asks for what is missing, refuses a size that just sold out, else adds. */
+/** Add to cart in the drawer: asks for what is missing, refuses a size that is sold out, else adds. */
 async function add(): Promise<void> {
   const p = product.value
   if (!p || !picker.value) return
@@ -124,11 +150,11 @@ async function add(): Promise<void> {
   if (!variantAvailable(v)) {
     const at = options.value.findIndex((option) => option.name === sizeOption.value?.name)
     const value = optionValuesOf(v, options.value)[at] ?? ''
-    storefront.announce(`Sorry, ${value} just sold out. Choose another ${sizeOption.value?.name.toLowerCase() ?? 'option'}.`)
+    storefront.announce(soldOutText(value, sizeOption.value?.name ?? '', availableAtOpen.value.has(v.id)))
     void picker.value.focus(sizeOption.value?.name)
     return
   }
-  cart.add(channelId.value, p, 1, { variant: v })
+  cart.add(channelId.value, p, 1, { variant: v, ...vehicleFor(p, v) })
   stage.value = 'added'
   storefront.announce(`Added to your cart · ${p.name}${line.value ? ` · ${line.value}` : ''}`)
   emit('added', p, v)
@@ -164,6 +190,8 @@ defineExpose({ start })
           <StorefrontAnchor v-if="stage === 'choose'" :href="detailsHref" class="sf-qa__details">View full details</StorefrontAnchor>
         </div>
       </div>
+
+      <StorefrontFitBanner v-if="fit && stage === 'choose'" class="sf-qa__fit" :state="fit" :vehicle="storefront.vehicle.value" :detail="fit === 'fits' && product ? fitDetail(product, storefront.vehicle.value) : ''" compact />
 
       <p v-if="stage === 'added'" class="sf-qa__subtotal">
         <span>Cart subtotal ({{ cartItems }} {{ cartItems === 1 ? 'item' : 'items' }})</span>
@@ -279,8 +307,12 @@ defineExpose({ start })
 }
 
 .sf-qa__details:focus-visible {
-  outline: 2px solid var(--sf-accent, #2563eb);
+  outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
   outline-offset: 2px;
+}
+
+.sf-qa__fit {
+  margin-bottom: 24px;
 }
 
 .sf-qa__subtotal {
@@ -338,7 +370,7 @@ defineExpose({ start })
 }
 
 .sf-qa__button:focus-visible {
-  outline: 2px solid var(--sf-accent, #2563eb);
+  outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
   outline-offset: 2px;
 }
 

@@ -3,10 +3,11 @@ import { computed, inject, nextTick, onBeforeUnmount, ref, useId, watch } from '
 import { useRoute, useRouter } from 'vue-router'
 import type { Product } from '@/stores/useCommerce'
 import {
-  activeFilters, clearFilters, emptyFilters, facetGroups, listProducts, listingSorts, parseListingQuery,
+  activeFilters, clearFilters, emptyFilters, facetGroups, listProducts, listingSorts, noFitText, parseListingQuery,
   resultCountText, toListingQuery, toggleFilter, withListingQuery,
 } from '@/storefront/facets'
 import type { ActiveFilter, FacetKey, ListingFilters, ListingSort } from '@/storefront/facets'
+import { vehicleLabel } from '@/storefront/fitment'
 import { DEFAULT_GRID, listingNoun } from '@/storefront/listing'
 import type { GridSettings } from '@/storefront/listing'
 import StorefrontDrawer from './StorefrontDrawer.vue'
@@ -26,6 +27,12 @@ import { STOREFRONT } from './storefrontContext'
 // so a filtered list can be shared and reloaded, and Back undoes the last change.
 // Each change is said to screen readers ("8 of 20 styles"). The page's own keys
 // (the search's `q`) are left alone.
+//
+// On a store that sells parts (Torqline) a bar above the list names the shopper's
+// vehicle ("Showing parts for 2019 Ford F-150 · Change") with the switch "Only show
+// parts that fit", on until the URL says `fits=0`; without a vehicle it asks for
+// one. When the vehicle leaves nothing, the list says so ("No parts fit your 2015
+// Honda Civic in Brakes") and offers every part there, or another vehicle.
 
 const props = withDefaults(defineProps<{
   /** Everything the page lists, in its own order (the collection's, or the search's best match first). */
@@ -39,11 +46,14 @@ const props = withDefaults(defineProps<{
   settings?: GridSettings
   /** The "New" mark on cards (off on a New… collection's own page). */
   showNew?: boolean
+  /** Where the list is, for "No parts fit your … in Brakes": the collection's name; none on All products or a search. */
+  scope?: string
 }>(), {
   intro: '',
   page: 'collection',
   settings: () => ({ ...DEFAULT_GRID }),
   showNew: true,
+  scope: '',
 })
 
 const route = useRoute()
@@ -55,23 +65,58 @@ const money = computed(() => ({ currency: storefront.currency.value, locale: sto
 const noun = computed(() => listingNoun(props.products))
 const sorts = computed(() => listingSorts(props.page))
 
-/** The filters and sort the URL asks for; the ones the template turns off are not read. */
+/** The filters and sort the URL asks for; the ones the template turns off are not read (the fits switch always is). */
 const filters = computed<ListingFilters>(() => {
   const asked = parseListingQuery(route.query)
-  const kept = props.settings.filters ? asked : emptyFilters(asked.sort)
+  const kept = props.settings.filters ? asked : { ...emptyFilters(asked.sort), fits: asked.fits }
   return props.settings.sort ? kept : { ...kept, sort: 'featured' }
 })
 
-const shown = computed(() => listProducts(props.products, filters.value, money.value))
+// ── The shopper's vehicle (a store that sells parts) ──────────────────────
+const parts = computed(() => storefront.sellsParts.value)
+const vehicle = computed(() => (parts.value ? storefront.vehicle.value : null))
+const vehicleName = computed(() => (vehicle.value ? vehicleLabel(vehicle.value) : ''))
+/** What fits the vehicle, or fits anything. None without a vehicle, so the switch does nothing. */
+const fits = computed(() => (vehicle.value
+  ? (product: Product) => ['fits', 'universal'].includes(storefront.fitOf(product))
+  : undefined))
+const listOptions = computed(() => ({ ...money.value, fits: fits.value }))
+const fitsOn = computed(() => !!fits.value && filters.value.fits)
+
+function setFits(on: boolean): void {
+  void go({ ...filters.value, fits: on })
+}
+
+const shown = computed(() => listProducts(props.products, filters.value, listOptions.value))
 // A group none of whose values would list anything with the other filters (sizes, once only
 // accessories are chosen) says nothing, unless something in it is chosen.
-const groups = computed(() => (props.settings.filters ? facetGroups(props.products, filters.value, money.value) : [])
+const groups = computed(() => (props.settings.filters ? facetGroups(props.products, filters.value, listOptions.value) : [])
   .filter((group) => group.selected > 0 || group.values.some((value) => value.count > 0)))
 const chips = computed(() => activeFilters(props.products, filters.value, money.value))
 const countText = computed(() => resultCountText(shown.value.length, props.products.length, noun.value))
 /** The toolbar's count: "8 of 20 styles", and "0 of 4 styles" above the empty state, which says the rest. */
 const toolbarCount = computed(() => (shown.value.length ? countText.value : `0 of ${props.products.length} ${noun.value.other}`))
 const hasRail = computed(() => groups.value.length > 0)
+
+/**
+ * The vehicle leaves nothing that the other filters would list: "No parts fit your
+ * 2015 Honda Civic in Brakes" (the collection, else the one category chosen), with a
+ * button that turns the switch off.
+ */
+const noFit = computed(() => {
+  if (!fitsOn.value || shown.value.length || !listProducts(props.products, { ...filters.value, fits: false }, money.value).length) return null
+  const chosen = chips.value.filter((chip) => chip.key === 'category')
+  const name = props.scope || (chosen.length === 1 ? chosen[0]!.label : '')
+  // A collection is a kind of part when every part in it is one ("Brakes", not "Deals").
+  const category = props.scope ? props.products.every((p) => p.detail?.tag === props.scope) : !!name
+  return noFitText(vehicleName.value, { name, category, page: props.page })
+})
+
+async function showAllParts(): Promise<void> {
+  await go({ ...filters.value, fits: false })
+  await nextTick()
+  count.value?.focus()
+}
 
 function go(next: ListingFilters) {
   return router.push({ query: withListingQuery(route.query, next) })
@@ -105,9 +150,10 @@ async function clearAll(): Promise<void> {
 }
 
 // ── Said to screen readers ────────────────────────────────────────────────
-// After a change of filter, the new count; after a change of sort, the sort.
+// After a change of filter, the new count (or, when the vehicle leaves nothing, the empty
+// state's own heading: "No parts fit your 2015 Honda Civic in Brakes"); after a change of sort, the sort.
 watch(() => JSON.stringify({ ...toListingQuery(filters.value), sort: undefined }), () => {
-  void nextTick(() => storefront.announce(countText.value))
+  void nextTick(() => storefront.announce(noFit.value?.title ?? countText.value))
 })
 watch(() => filters.value.sort, (sort) => {
   const label = sorts.value.find((s) => s.value === sort)?.label ?? ''
@@ -154,6 +200,35 @@ function startQuickAdd(product: Product, color: string | undefined): void {
       <p v-if="intro" class="sf-listing__intro">{{ intro }}</p>
       <slot name="lead" />
     </header>
+
+    <div v-if="parts && products.length" class="sf-listing__fit">
+      <template v-if="vehicle">
+        <p class="sf-listing__fit-text">
+          <v-icon size="18" class="sf-listing__fit-icon" aria-hidden="true">car-front</v-icon>
+          <span>
+            {{ fitsOn ? 'Showing parts for' : 'Your vehicle:' }} <strong class="sf-listing__fit-name">{{ vehicleName }}</strong>{{ ' ' }}<span class="sf-listing__fit-then"><span aria-hidden="true">· </span><button type="button" class="sf-listing__fit-change" aria-label="Change vehicle" aria-haspopup="dialog" @click="storefront.chooseVehicle()">Change</button></span>
+          </span>
+        </p>
+        <label class="sf-listing__switch">
+          <input
+            type="checkbox"
+            role="switch"
+            class="sf-listing__switch-input"
+            :checked="filters.fits"
+            @change="setFits(($event.target as HTMLInputElement).checked)"
+          >
+          <span class="sf-listing__switch-track" aria-hidden="true" />
+          <span>Only show parts that fit</span>
+        </label>
+      </template>
+      <template v-else>
+        <p class="sf-listing__fit-text">
+          <v-icon size="18" class="sf-listing__fit-icon" aria-hidden="true">car-front</v-icon>
+          <span>Select your vehicle to see parts that fit</span>
+        </p>
+        <button type="button" class="sf-listing__fit-select" aria-haspopup="dialog" @click="storefront.chooseVehicle()">Select vehicle</button>
+      </template>
+    </div>
 
     <slot v-if="!products.length" name="empty" />
 
@@ -207,10 +282,19 @@ function startQuickAdd(product: Product, color: string | undefined): void {
               :quick-add="settings.quickAdd"
               :added="justAdded.includes(product.id)"
               :show-new="showNew"
+              :card-style="settings.cardStyle"
               @quick-add="startQuickAdd"
             />
           </li>
         </ul>
+
+        <div v-else-if="noFit" class="sf-listing__none">
+          <p class="sf-listing__none-title">{{ noFit.title }}</p>
+          <div class="sf-listing__none-actions">
+            <button type="button" class="sf-listing__button" @click="showAllParts">{{ noFit.showAll }}</button>
+            <button type="button" class="sf-listing__button sf-listing__button--secondary" aria-haspopup="dialog" @click="storefront.chooseVehicle()">Change vehicle</button>
+          </div>
+        </div>
 
         <div v-else class="sf-listing__none">
           <p class="sf-listing__none-title">No {{ noun.other }} match these filters.</p>
@@ -323,7 +407,7 @@ function startQuickAdd(product: Product, color: string | undefined): void {
 }
 
 .sf-listing__count:focus-visible {
-  outline: 2px solid var(--sf-accent, #2563eb);
+  outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
   outline-offset: 4px;
 }
 
@@ -358,7 +442,7 @@ function startQuickAdd(product: Product, color: string | undefined): void {
 }
 
 .sf-listing__select:focus-visible {
-  outline: 2px solid var(--sf-accent, #2563eb);
+  outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
   outline-offset: 2px;
 }
 
@@ -384,7 +468,7 @@ function startQuickAdd(product: Product, color: string | undefined): void {
 }
 
 .sf-listing__sheet-button:focus-visible {
-  outline: 2px solid var(--sf-accent, #2563eb);
+  outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
   outline-offset: 2px;
 }
 
@@ -440,7 +524,7 @@ function startQuickAdd(product: Product, color: string | undefined): void {
 
 .sf-listing__chip:focus-visible,
 .sf-listing__clear:focus-visible {
-  outline: 2px solid var(--sf-accent, #2563eb);
+  outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
   outline-offset: 2px;
 }
 
@@ -473,6 +557,140 @@ function startQuickAdd(product: Product, color: string | undefined): void {
   font-size: 15px;
 }
 
+/* The vehicle bar of a store that sells parts: the vehicle and the fits switch, above the list
+   on every width (on a phone the filters stay in the sheet). Focus rings are the text colour:
+   this theme's accent is a yellow that would not show on white. */
+.sf-listing__fit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+  margin-bottom: 24px;
+  padding: 14px 18px;
+  border-radius: var(--sf-radius, 0);
+  background: var(--sf-surface, color-mix(in srgb, var(--sf-text, #121011) 5%, var(--sf-bg, #ffffff)));
+  color: var(--sf-text, #121011);
+  font-size: 15px;
+  line-height: 22px;
+}
+
+.sf-listing__fit-text {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  min-width: 0;
+}
+
+/* The vehicle never breaks at its hyphen ("F-" | "150"), and "· Change" wraps as one, never leaving the dot behind. */
+.sf-listing__fit-name,
+.sf-listing__fit-then {
+  white-space: nowrap;
+}
+
+.sf-listing__fit-text strong {
+  font-weight: 700;
+}
+
+.sf-listing__fit-icon {
+  flex: none;
+  margin-top: 2px;
+  color: inherit;
+}
+
+.sf-listing__fit-change {
+  padding: 1px 2px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.sf-listing__fit-select {
+  min-height: 44px;
+  padding: 0 20px;
+  border: 1px solid var(--sf-button-border, var(--sf-brand, #121011));
+  border-radius: var(--sf-button-radius, var(--sf-radius, 0));
+  background: var(--sf-button-bg, var(--sf-brand, #121011));
+  color: var(--sf-button-ink, var(--sf-on-brand, #ffffff));
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* "Only show parts that fit": a real checkbox with the switch role; the track shows it. */
+.sf-listing__switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sf-listing__switch-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: inherit;
+}
+
+.sf-listing__switch-track {
+  position: relative;
+  flex: none;
+  width: 40px;
+  height: 24px;
+  border: 1px solid var(--sf-text, #121011);
+  border-radius: 999px;
+  background: var(--sf-bg, #ffffff);
+  transition: background-color 160ms ease;
+}
+
+.sf-listing__switch-track::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--sf-text, #121011);
+  transition: transform 160ms ease;
+}
+
+.sf-listing__switch-input:checked + .sf-listing__switch-track {
+  background: var(--sf-text, #121011);
+}
+
+.sf-listing__switch-input:checked + .sf-listing__switch-track::after {
+  background: var(--sf-bg, #ffffff);
+  transform: translateX(16px);
+}
+
+.sf-listing__fit-change:focus-visible,
+.sf-listing__fit-select:focus-visible,
+.sf-listing__switch-input:focus-visible + .sf-listing__switch-track {
+  outline: 2px solid var(--sf-text, #121011);
+  outline-offset: 2px;
+}
+
+.sf-listing__none-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 24px;
+}
+
 /* The store's buttons: its colours and corners. */
 .sf-listing__button {
   display: inline-flex;
@@ -481,10 +699,10 @@ function startQuickAdd(product: Product, color: string | undefined): void {
   justify-content: center;
   min-height: 50px;
   padding: 0 24px;
-  border: 1px solid var(--sf-brand, #121011);
-  border-radius: var(--sf-radius, 0);
-  background: var(--sf-brand, #121011);
-  color: var(--sf-on-brand, #ffffff);
+  border: 1px solid var(--sf-button-border, var(--sf-brand, #121011));
+  border-radius: var(--sf-button-radius, var(--sf-radius, 0));
+  background: var(--sf-button-bg, var(--sf-brand, #121011));
+  color: var(--sf-button-ink, var(--sf-on-brand, #ffffff));
   font: inherit;
   font-size: 15px;
   font-weight: 600;
@@ -495,8 +713,12 @@ function startQuickAdd(product: Product, color: string | undefined): void {
   flex: 0 0 auto;
 }
 
+.sf-listing__none-actions .sf-listing__button:focus-visible {
+  outline-color: var(--sf-text, #121011);
+}
+
 .sf-listing__button:hover {
-  background: color-mix(in srgb, var(--sf-brand, #121011) 86%, var(--sf-bg, #ffffff));
+  background: color-mix(in srgb, var(--sf-button-bg, var(--sf-brand, #121011)) 86%, var(--sf-bg, #ffffff));
 }
 
 .sf-listing__button--secondary {
@@ -511,7 +733,7 @@ function startQuickAdd(product: Product, color: string | undefined): void {
 }
 
 .sf-listing__button:focus-visible {
-  outline: 2px solid var(--sf-accent, #2563eb);
+  outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
   outline-offset: 2px;
 }
 
@@ -575,8 +797,24 @@ function startQuickAdd(product: Product, color: string | undefined): void {
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .sf-listing__switch-track,
+  .sf-listing__switch-track::after {
+    transition: none;
+  }
+}
+
 /* A phone: two cards to a row, the sort in the sheet too, touch-sized chips. */
 @media (max-width: 600px) {
+  .sf-listing__fit {
+    margin-bottom: 16px;
+    padding: 12px 14px;
+  }
+
+  .sf-listing__fit-select {
+    width: 100%;
+  }
+
   .sf-listing__head {
     padding: 20px 0 28px;
   }

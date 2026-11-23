@@ -172,7 +172,7 @@ const countLabel = (count: number) => `${count} ${count === 1 ? props.noun.one :
 
 .sf-filters__toggle:focus-visible,
 .sf-filters__more:focus-visible {
-  outline: 2px solid var(--sf-accent, #2563eb);
+  outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
   outline-offset: 2px;
 }
 
@@ -228,7 +228,7 @@ const countLabel = (count: number) => `${count} ${count === 1 ? props.noun.one :
 }
 
 .sf-filters__check:focus-visible {
-  outline: 2px solid var(--sf-accent, #2563eb);
+  outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
   outline-offset: 2px;
 }
 
@@ -318,7 +318,7 @@ const countLabel = (count: number) => `${count} ${count === 1 ? props.noun.one :
 }
 
 .sf-filters__size-input:focus-visible + .sf-filters__size-face {
-  outline: 2px solid var(--sf-accent, #2563eb);
+  outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
   outline-offset: 2px;
 }
 

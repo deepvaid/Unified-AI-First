@@ -3,16 +3,18 @@ import { computed, inject, nextTick, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useCommerceStore } from '@/stores/useCommerce'
 import { useMerchandisingStore } from '@/stores/useMerchandising'
-import { SEARCH_SORTS, redirectPath, searchStore } from '@/storefront/search'
+import { SEARCH_SORTS, partNumberSearch, redirectPath, searchStore } from '@/storefront/search'
 import type { SearchSort } from '@/storefront/search'
-import { resultCountText } from '@/storefront/facets'
+import { noFitText, parseListingQuery, resultCountText } from '@/storefront/facets'
+import { fitsVehicle, vehicleLabel } from '@/storefront/fitment'
 import { gridSettings, listingNoun } from '@/storefront/listing'
+import { withQuery } from '@/storefront/shopperOrders'
 import StorefrontAnchor from './StorefrontAnchor.vue'
 import StorefrontNotFound from './StorefrontNotFound.vue'
 import StorefrontProductCard from './StorefrontProductCard.vue'
 import StorefrontProductListing from './StorefrontProductListing.vue'
 import { STOREFRONT } from './storefrontContext'
-import { collectionsOf, storefrontProducts } from './storefrontCatalog'
+import { collectionsOf, productHandle, storefrontProducts } from './storefrontCatalog'
 
 // The store's search page (/search?q=). A store has one once it is connected to
 // Merchandise Cloud; until then this address is the store's 404 page, as before.
@@ -21,6 +23,9 @@ import { collectionsOf, storefrontProducts } from './storefrontCatalog'
 // On the richer theme drawing (Northfold, Torqline) the results are a product list
 // like a collection's, with filters, sort and quick add (StorefrontProductListing);
 // its sort starts on the best match. Every other theme keeps the classic page below.
+// On a store that sells parts, a part number typed whole ("TQ-BRK-4472", "tqbrk4472")
+// opens its product on that variant; a merchant's redirect for the same words comes first,
+// and a blacklisted part is not found this way either. Its box and hints say so.
 
 const route = useRoute()
 const router = useRouter()
@@ -37,13 +42,31 @@ const sort = ref<SearchSort>('relevance')
 const result = computed(() => searchStore(query.value, storefrontProducts(commerce.products, channelId.value), merchandising.searchRulesFor(channelId.value), sort.value))
 const collections = computed(() => collectionsOf(commerce.products, channelId.value))
 
+// A part number, on a store that sells parts: the product it numbers, among those search can find.
+const part = computed(() => {
+  if (!storefront.searchable.value || !storefront.sellsParts.value) return undefined
+  return partNumberSearch(query.value, storefrontProducts(commerce.products, channelId.value), merchandising.searchRulesFor(channelId.value))
+})
+
+/** A store that sells parts asks for a part number too, with one of its own as the example. */
+const parts = computed(() => storefront.sellsParts.value)
+const placeholder = computed(() => {
+  if (!parts.value) return 'What are you looking for?'
+  const example = storefrontProducts(commerce.products, channelId.value).map((p) => p.detail?.variantsList[0]?.sku || p.sku).find(Boolean)
+  return example ? `Search parts or a part number, like ${example}` : 'Search parts or a part number'
+})
+
 // A redirect takes the shopper to its page: inside the store when it is one of the store's own.
-const redirecting = computed(() => storefront.searchable.value && !!result.value.redirectTo)
+const redirecting = computed(() => storefront.searchable.value && (!!result.value.redirectTo || !!part.value))
 watch(() => (storefront.searchable.value ? result.value.redirectTo : undefined), (to) => {
   if (!to) return
   const path = redirectPath(to, storefront.channel.value.webStore?.domain)
   if (path) void router.replace(storefront.link(path))
   else window.location.assign(to)
+}, { immediate: true })
+watch(part, (match) => {
+  if (!match) return
+  void router.replace(storefront.link(withQuery(`/products/${productHandle(match.product)}`, match.query)))
 }, { immediate: true })
 
 const typed = ref(query.value)
@@ -72,11 +95,15 @@ watch(box, (el) => {
 const sections = computed(() => storefront.sectionsDrawing.value)
 const matches = computed(() => (sections.value ? searchStore(query.value, storefrontProducts(commerce.products, channelId.value), merchandising.searchRulesFor(channelId.value)).products : []))
 const settings = computed(() => gridSettings(storefront.theme.value?.templates.collection))
-// A new search from the box on this page: the shopper stays in the box, so they hear what it found.
+// A new search from the box on this page: the shopper stays in the box, so they hear what it found,
+// as the list shows it: with a vehicle, the parts that fit ("2 of 3 parts", or "No parts fit your …").
 watch(query, (q) => {
   if (!sections.value || !q || redirecting.value) return
   const found = matches.value.length
-  storefront.announce(found ? `Results for “${q}”: ${resultCountText(found, found, listingNoun(matches.value))}` : `Nothing matches “${q}”`)
+  if (!found) return storefront.announce(`Nothing matches “${q}”`)
+  const vehicle = storefront.vehicle.value
+  const shown = vehicle && parseListingQuery(route.query).fits ? matches.value.filter((p) => fitsVehicle(p, vehicle)).length : found
+  storefront.announce(vehicle && !shown ? noFitText(vehicleLabel(vehicle), { page: 'search' }).title : `Results for “${q}”: ${resultCountText(shown, found, listingNoun(matches.value))}`)
 })
 </script>
 
@@ -100,7 +127,7 @@ watch(query, (q) => {
           <label class="sf-search-v2__field">
             <span class="sf-search-v2__sr">Search the store</span>
             <v-icon size="18" class="sf-search-v2__icon" aria-hidden="true">search</v-icon>
-            <input ref="box" v-model="typed" type="search" class="sf-search-v2__input" placeholder="What are you looking for?" enterkeyhint="search" data-sf-search-box>
+            <input ref="box" v-model="typed" type="search" class="sf-search-v2__input" :placeholder="placeholder" enterkeyhint="search" data-sf-search-box>
           </label>
           <button ref="go" type="submit" class="sf-search-v2__go">Search</button>
         </form>
@@ -110,9 +137,9 @@ watch(query, (q) => {
         <div class="sf-search-v2__empty">
           <template v-if="query">
             <h2 class="sf-search-v2__none">Nothing matches “{{ query }}”</h2>
-            <p class="sf-search-v2__hint">Check the spelling or try a broader word. Or start from a collection:</p>
+            <p class="sf-search-v2__hint">{{ parts ? 'Check the spelling, try a broader word, or type the whole part number.' : 'Check the spelling or try a broader word.' }} Or start from a collection:</p>
           </template>
-          <p v-else class="sf-search-v2__hint">Search by name, or by what you are looking for. Or start from a collection:</p>
+          <p v-else class="sf-search-v2__hint">{{ parts ? 'Search by part name, or type a part number to go straight to it.' : 'Search by name, or by what you are looking for.' }} Or start from a collection:</p>
           <ul class="sf-search-v2__collections" aria-label="Collections">
             <li v-for="collection in collections" :key="collection.handle">
               <StorefrontAnchor :href="`/collections/${collection.handle}`" class="sf-search-v2__chip">{{ collection.name }}</StorefrontAnchor>
@@ -331,7 +358,7 @@ watch(query, (q) => {
 .sf-search-v2__go:focus-visible,
 .sf-search-v2__chip:focus-visible,
 .sf-search-v2__crumbs a:focus-visible {
-  outline: 2px solid var(--sf-accent, #2563eb);
+  outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
   outline-offset: 2px;
 }
 

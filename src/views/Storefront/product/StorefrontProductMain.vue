@@ -6,11 +6,14 @@ import type { Product, ProductVariant } from '@/stores/useCommerce'
 import { useStorefrontCartStore } from '@/stores/useStorefrontCart'
 import { audienceOf } from '@/storefront/audience'
 import { isAvailable } from '@/storefront/catalog'
-import { galleryFor, priceFor, productRows, selectionFromQuery, withSelectionQuery } from '@/storefront/productPage'
+import { fitDetail, lineVehicle, variantFitState } from '@/storefront/fitment'
+import { soldOutText } from '@/storefront/listing'
+import { galleryFor, partNumberOf, priceFor, productRows, selectionFromQuery, withSelectionQuery } from '@/storefront/productPage'
 import type { ThemeSection } from '@/storefront/themeSections'
 import { describeVariant, initialSelection, optionKind, variantAvailable } from '@/storefront/variants'
 import StorefrontAnchor from '../StorefrontAnchor.vue'
 import StorefrontDrawer from '../StorefrontDrawer.vue'
+import StorefrontFitBanner from '../StorefrontFitBanner.vue'
 import StorefrontPayMark from '../StorefrontPayMark.vue'
 import StorefrontSizeGuide from '../StorefrontSizeGuide.vue'
 import StorefrontVariantPicker from '../StorefrontVariantPicker.vue'
@@ -37,8 +40,16 @@ import StorefrontProductRows from './StorefrontProductRows.vue'
 // is in view, then stays). The choices and the buttons are marked `data-sf-clear`, so
 // the chat launcher steps aside when it would cover them (StorefrontChat.vue).
 //
+// On an auto-parts store (Torqline) the buy box also shows the part number, which
+// follows the chosen variant, and, with the section's `fitment`, the fit banner under
+// the title: whether the part fits the shopper's vehicle (StorefrontFitBanner). Once a
+// choice is made the banner speaks for that choice: a 16 in wiper on a truck that
+// takes 22 in "Doesn’t fit", with "Your vehicle takes: Driver 22 in, passenger 22 in".
+// A choice added to the cart while it fits carries the vehicle on its line ("Fits 2019
+// Ford F-150"); one that doesn't carries none. Buy now's line gets it at the checkout.
+//
 // Section settings: galleryLayout ('Stacked' | 'Thumbnails'), imageRatio ('Portrait' |
-// 'Square' | 'Landscape'), sizeGuide (true unless false).
+// 'Square' | 'Landscape'), sizeGuide (true unless false), fitment (false unless true).
 
 const props = defineProps<{
   product: Product
@@ -91,12 +102,35 @@ const fitNote = computed(() => props.product.detail?.fitNote?.trim() ?? '')
 
 /** The product's size chart, when the template shows a size guide and the product links one. */
 const chart = computed(() => (settings.value.sizeGuide === false ? undefined : storefront.sizeChartFor(props.product)))
-const rows = computed(() => productRows(props.section.blocks, props.product, { sizeGuide: !!chart.value }))
+const rows = computed(() => productRows(props.section.blocks, props.product, { sizeGuide: !!chart.value, vehicle: storefront.vehicle.value }))
+
+// ── A part: its number and its fit ───────────────────────────────────────────
+const sellsParts = computed(() => storefront.sellsParts.value)
+const showFit = computed(() => sellsParts.value && settings.value.fitment === true)
+/** How the part, or the choice once one is made, stands against the shopper's vehicle. */
+const fit = computed(() => variantFitState(props.product, chosenVariant.value, storefront.vehicle.value))
+/** What the rows that fit say: under "Fits", or, when the part fits but this choice doesn't, what the vehicle takes. */
+const fitRows = computed(() => {
+  const detail = fitDetail(props.product, storefront.vehicle.value)
+  if (fit.value === 'fits') return detail
+  return fit.value === 'no-fit' && detail ? `Your vehicle takes: ${detail}` : ''
+})
+const partNumber = computed(() => (sellsParts.value ? partNumberOf(props.product, chosenVariant.value) : ''))
+/** While a choice that changes the part number is still open: "Choose a position to see its part number." */
+const partNumberHint = computed(() => {
+  if (!sellsParts.value || partNumber.value) return ''
+  const open = options.value.find((option) => selection.value[option.name] === undefined)
+  return open ? `Choose a ${open.name.toLowerCase()} to see its part number.` : ''
+})
 
 const soldOut = computed(() => {
   if (!options.value.length) return !isAvailable(props.product)
   return variant.value ? !variantAvailable(variant.value) : !(props.product.detail?.variantsList ?? []).some(variantAvailable)
 })
+
+/** What could be bought when the page opened: only a choice that sold out since then "just sold out" (as the picker says it). */
+const availableAtStart = new Set((props.product.detail?.variantsList ?? []).filter(variantAvailable).map((v) => v.id))
+const productAvailableAtStart = isAvailable(props.product)
 
 // ── Size guide ───────────────────────────────────────────────────────────────
 const guideOpen = ref(route.query.sizeGuide === '1' && !!chart.value)
@@ -134,7 +168,10 @@ function ready(): boolean {
   if (soldOut.value) {
     const option = noteOption.value
     const value = option ? selection.value[option.name] : undefined
-    storefront.announce(option && value ? `Sorry, ${value} just sold out. Choose another ${option.name.toLowerCase()}.` : 'Sorry, this just sold out.')
+    const soldDuringVisit = options.value.length ? !!variant.value && availableAtStart.has(variant.value.id) : productAvailableAtStart
+    storefront.announce(option && value
+      ? soldOutText(value, option.name, soldDuringVisit)
+      : soldDuringVisit ? 'Sorry, this just sold out.' : 'Sorry, this is sold out.')
     if (option) void picker.value?.focus(option.name)
     return false
   }
@@ -147,7 +184,9 @@ const chosenVariant = computed(() => (options.value.length ? variant.value : und
 function addToCart(): void {
   if (!ready()) return
   const chosen = chosenVariant.value
-  cart.add(channelId.value, props.product, 1, chosen ? { variant: chosen } : undefined)
+  // The vehicle goes on the line only while this choice of the part fits it.
+  const vehicle = sellsParts.value ? lineVehicle(props.product, chosen, storefront.vehicle.value) : undefined
+  cart.add(channelId.value, props.product, 1, { variant: chosen, vehicle })
   const line = chosen ? describeVariant(chosen, options.value) : ''
   added.value = { line }
   justAdded.value = true
@@ -199,7 +238,7 @@ watch(stickyHeader, placeInfo)
 </script>
 
 <template>
-  <div class="sf-pm">
+  <div class="sf-pm" :class="{ 'sf-pm--part': sellsParts }">
     <div class="sf-pm__gallery">
       <StorefrontProductGallery
         :images="gallery.images"
@@ -216,7 +255,11 @@ watch(stickyHeader, placeInfo)
       <div class="sf-pm__head">
         <h1 class="sf-pm__title">{{ product.name }}</h1>
         <p v-if="subtitle" class="sf-pm__subtitle">{{ subtitle }}</p>
+        <p v-if="partNumber" class="sf-pm__part">Part # <span class="sf-pm__part-number">{{ partNumber }}</span></p>
+        <p v-else-if="partNumberHint" class="sf-pm__part sf-pm__part--hint">{{ partNumberHint }}</p>
       </div>
+
+      <StorefrontFitBanner v-if="showFit" :state="fit" :vehicle="storefront.vehicle.value" :detail="fitRows" />
 
       <div class="sf-pm__price">
         <StorefrontProductPrice
@@ -342,6 +385,20 @@ watch(stickyHeader, placeInfo)
   line-height: 22px;
 }
 
+.sf-pm__part {
+  margin: 0;
+  color: var(--sf-muted, #66625c);
+  font-size: 14px;
+  line-height: 20px;
+  font-variant-numeric: tabular-nums;
+}
+
+.sf-pm__part-number {
+  color: var(--sf-text, #121011);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
 .sf-pm__price {
   display: flex;
   flex-direction: column;
@@ -387,7 +444,7 @@ watch(stickyHeader, placeInfo)
 }
 
 .sf-pm__guide:focus-visible {
-  outline: 2px solid var(--sf-accent, #2563eb);
+  outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
   outline-offset: 2px;
 }
 
@@ -448,7 +505,7 @@ watch(stickyHeader, placeInfo)
 }
 
 .sf-pm__view-cart:focus-visible {
-  outline: 2px solid var(--sf-accent, #2563eb);
+  outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
   outline-offset: 2px;
 }
 

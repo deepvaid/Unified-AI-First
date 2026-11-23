@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
   activeFilters, applyFilters, clearFilters, compareSizes, emptyFilters, facetGroups, hasActiveFilters, listProducts,
-  listingSorts, parseListingQuery, parsePriceRange, priceRangeLabel, priceRanges, removeFilter, resultCountText,
+  listingSorts, noFitText, parseListingQuery, parsePriceRange, priceRangeLabel, priceRanges, removeFilter, resultCountText,
   sortProducts, toListingQuery, toggleFilter, withListingQuery,
 } from '../../src/storefront/facets.ts'
 import type { ListingFilters, ListingProduct } from '../../src/storefront/facets.ts'
@@ -67,7 +67,7 @@ const group = (key: string, list = STORE, f = filters()) => facetGroups(list, f)
 
 test('the URL holds the filters: comma-separated values, written the query way, unknown parts dropped', () => {
   assert.deepEqual(parseListingQuery({ size: 'M,l', color: ['Black', 'heather-gray'], price: '50-100', category: 'Knitwear', sort: 'price-asc' }), {
-    category: ['knitwear'], size: ['m', 'l'], color: ['black', 'heather-gray'], price: ['50-100'], brand: [], fits: false, sort: 'price-asc',
+    category: ['knitwear'], size: ['m', 'l'], color: ['black', 'heather-gray'], price: ['50-100'], brand: [], fits: true, sort: 'price-asc',
   })
   assert.deepEqual(parseListingQuery({}), emptyFilters())
   // A hand-edited URL never breaks the page.
@@ -75,14 +75,19 @@ test('the URL holds the filters: comma-separated values, written the query way, 
   assert.deepEqual(odd.size, ['m'])
   assert.deepEqual(odd.price, ['0-50', '200-'])
   assert.equal(odd.sort, 'featured')
-  assert.equal(odd.fits, false)
+  // The fits switch is on unless the URL turns it off.
+  assert.equal(odd.fits, true)
   assert.equal(parseListingQuery({ fits: '1' }).fits, true)
+  assert.equal(parseListingQuery({ fits: '0' }).fits, false)
+  assert.equal(parseListingQuery({ fits: 'false' }).fits, false)
 })
 
 test('the filters go back into the URL in a fixed order, leaving the page\'s own keys alone', () => {
   const f = filters({ size: ['m', 'l'], color: ['black'], price: ['50-100'], category: ['knitwear'], sort: 'price-asc' })
   assert.deepEqual(toListingQuery(f), { category: 'knitwear', size: 'm,l', color: 'black', price: '50-100', sort: 'price-asc' })
-  assert.deepEqual(Object.keys(toListingQuery({ ...f, fits: true })), ['category', 'size', 'color', 'price', 'fits', 'sort'])
+  assert.deepEqual(Object.keys(toListingQuery({ ...f, fits: false })), ['category', 'size', 'color', 'price', 'fits', 'sort'])
+  assert.equal(toListingQuery({ ...f, fits: false }).fits, '0')
+  assert.equal(toListingQuery(f).fits, undefined)
   assert.deepEqual(toListingQuery(emptyFilters()), {})
   assert.deepEqual(withListingQuery({ q: 'linen', size: 'xs', sort: 'name' }, filters({ color: ['sand'] })), { q: 'linen', color: 'sand' })
   // Read back, it is the same filters.
@@ -204,15 +209,30 @@ test('a product without variants is in stock while it has units', () => {
   assert.deepEqual(ids(sortProducts([plain, kept], 'featured')), [2, 1])
 })
 
-test('the fits toggle waits for a vehicle rule: without one it does nothing', () => {
-  const on = filters({ fits: true })
+test('the fits switch waits for a vehicle rule: without one it does nothing, and it is never a chip', () => {
+  const on = filters()
+  assert.equal(on.fits, true)
   assert.equal(applyFilters(STORE, on).length, 20)
+  const fits = (p: ListingProduct) => p.id === 3014 || p.id === 3013
+  assert.deepEqual(ids(applyFilters(STORE, on, { fits })), [3013, 3014])
+  assert.equal(applyFilters(STORE, { ...on, fits: false }, { fits }).length, 20)
   assert.deepEqual(activeFilters(STORE, on), [])
-  const fits = (p: ListingProduct) => p.id === 3014
-  assert.deepEqual(ids(applyFilters(STORE, on, { fits })), [3014])
-  const [chip] = activeFilters(STORE, on, { fits, fitsLabel: 'Fits 2019 Ford F-150' })
-  assert.equal(chip!.label, 'Fits 2019 Ford F-150')
-  assert.equal(chip!.next.fits, false)
+  assert.equal(hasActiveFilters(on), false)
+  // The filter groups count only what fits, so a value with no fitting product is unavailable.
+  const category = facetGroups(STORE, on, { fits }).find((g) => g.key === 'category')!
+  assert.equal(category.values.find((v) => v.value === 'accessories')!.count, 2)
+  assert.equal(category.values.find((v) => v.value === 'tees')!.count, 0)
+})
+
+test('when nothing fits, the list says where and offers everything there', () => {
+  const civic = '2015 Honda Civic'
+  assert.deepEqual(noFitText(civic, { name: 'Brakes', category: true }), { title: 'No parts fit your 2015 Honda Civic in Brakes', showAll: 'Show all brake parts' })
+  assert.equal(noFitText(civic, { name: 'Lighting', category: true }).showAll, 'Show all lighting parts')
+  assert.equal(noFitText(civic, { name: 'Batteries', category: true }).showAll, 'Show all batteries')
+  assert.equal(noFitText(civic, { name: 'Oil & fluids', category: true }).showAll, 'Show all oil & fluids')
+  assert.equal(noFitText(civic, { name: 'Deals' }).showAll, 'Show all deals')
+  assert.deepEqual(noFitText(civic), { title: 'No parts fit your 2015 Honda Civic', showAll: 'Show all parts' })
+  assert.deepEqual(noFitText(civic, { page: 'search' }), { title: 'No parts fit your 2015 Honda Civic', showAll: 'Show all results' })
 })
 
 test('chips name each chosen value and know the filters without it', () => {
@@ -236,6 +256,8 @@ test('editing the filters', () => {
   const cleared = clearFilters({ ...f, fits: true, color: ['black'] })
   assert.deepEqual(cleared, emptyFilters('price-asc'))
   assert.equal(hasActiveFilters(cleared), false)
+  // Clear all leaves the fits switch as the shopper set it.
+  assert.equal(clearFilters({ ...f, fits: false }).fits, false)
 })
 
 test('the sorts on offer, and the result count', () => {

@@ -267,6 +267,7 @@ const newsletterOnPage = computed(() => route.name === 'StorefrontHome'
 
 .sff--dark {
   --sf-accent: var(--sf-on-brand, #ffffff);
+  --sf-focus: var(--sf-on-brand, #ffffff);
   border-top-color: transparent;
   background: var(--sf-brand, #121011);
   color: var(--sf-on-brand, #ffffff);
@@ -353,7 +354,7 @@ const newsletterOnPage = computed(() => route.name === 'StorefrontHome'
 .sff__wordmark:focus-visible,
 .sff__link:focus-visible,
 .sff__social-link:focus-visible {
-  outline: 2px solid var(--sf-accent, #2563eb);
+  outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
   outline-offset: 2px;
 }
 

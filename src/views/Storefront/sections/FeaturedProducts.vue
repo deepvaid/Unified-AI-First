@@ -2,38 +2,66 @@
 import { computed, inject, onBeforeUnmount, ref } from 'vue'
 import type { Product } from '@/stores/useCommerce'
 import { useCommerceStore } from '@/stores/useCommerce'
+import { fitsVehicle, vehicleLabel } from '@/storefront/fitment'
 import { toHandle } from '@/storefront/handles'
 import { gridSettings } from '@/storefront/listing'
+import { acrossCollections } from '@/storefront/productPage'
 import type { ThemeSection } from '@/storefront/themeSections'
 import StorefrontAnchor from '../StorefrontAnchor.vue'
 import StorefrontListingCard from '../StorefrontListingCard.vue'
 import StorefrontQuickAdd from '../StorefrontQuickAdd.vue'
 import { STOREFRONT } from '../storefrontContext'
 import { inStock, storefrontProducts } from '../storefrontCatalog'
-import { num, text } from './sectionSettings'
+import { flag, num, text } from './sectionSettings'
 
 // A row of the store's products: the `featured-products` section. It shows the
 // products of the collection it names (every product when it names none, or
 // "all"), those a shopper can buy, as many as it asks for, in a grid or a row that
 // scrolls sideways. "View all" opens that collection. The cards are the collection
-// page's (StorefrontListingCard), with its quick add when the store's collection
-// grid offers it, so a product reads and adds the same wherever it is listed.
+// page's (StorefrontListingCard), in its card style and with its quick add when the
+// store's collection grid offers it, so a product reads and adds the same wherever
+// it is listed.
+//
+// On an auto-parts store, `vehicle: true` keeps the row to the shopper's vehicle
+// once one is chosen: the parts that fit it first, then the universal ones, under
+// "Popular parts for your 2019 Ford F-150". Before one is chosen it shows the range:
+// a part from each category in turn, so it doesn't repeat a category row under it.
+// On any other store the setting changes nothing.
 
 const props = defineProps<{ section: ThemeSection }>()
 
 const storefront = inject(STOREFRONT)!
 const commerce = useCommerceStore()
 
-const title = computed(() => text(props.section.settings, 'title', 'Featured products'))
 const handle = computed(() => text(props.section.settings, 'collection', 'all'))
 const count = computed(() => Math.min(8, Math.max(1, num(props.section.settings, 'productCount', 4))))
 const carousel = computed(() => text(props.section.settings, 'layout') === 'Carousel')
-const quickAddOn = computed(() => gridSettings(storefront.theme.value?.templates.collection).quickAdd)
+const grid = computed(() => gridSettings(storefront.theme.value?.templates.collection))
+const quickAddOn = computed(() => grid.value.quickAdd)
 
-const products = computed<Product[]>(() => storefrontProducts(commerce.products, storefront.channel.value.id)
+const listed = computed<Product[]>(() => storefrontProducts(commerce.products, storefront.channel.value.id)
   .filter((product) => handle.value === 'all' || product.collections.some((name) => toHandle(name) === handle.value))
-  .filter(inStock)
-  .slice(0, count.value))
+  .filter(inStock))
+
+/** The row follows the shopper's vehicle: the `vehicle` setting, on an auto-parts store. */
+const partsRow = computed(() => flag(props.section.settings, 'vehicle') && storefront.sellsParts.value)
+const vehicle = computed(() => (partsRow.value ? storefront.vehicle.value : null))
+/** The parts the vehicle takes: those that fit it, then the universal ones, each in the store's order. */
+const fitting = computed<Product[]>(() => {
+  if (!vehicle.value) return []
+  const takes = listed.value.filter((product) => fitsVehicle(product, vehicle.value))
+  return [...takes.filter((product) => storefront.fitOf(product) === 'fits'), ...takes.filter((product) => storefront.fitOf(product) !== 'fits')]
+})
+const forVehicle = computed(() => fitting.value.length > 0)
+
+const title = computed(() => {
+  const base = text(props.section.settings, 'title', 'Featured products')
+  return forVehicle.value ? `${base} for your ${vehicleLabel(vehicle.value!)}` : base
+})
+const products = computed<Product[]>(() => {
+  if (forVehicle.value) return fitting.value.slice(0, count.value)
+  return partsRow.value ? acrossCollections(listed.value, count.value) : listed.value.slice(0, count.value)
+})
 
 // ── Quick add (as the collection page has it) ───────────────────────────
 const quickAdd = ref<InstanceType<typeof StorefrontQuickAdd> | null>(null)
@@ -70,6 +98,7 @@ onBeforeUnmount(() => {
           :quick-add="quickAddOn"
           :added="justAdded.includes(product.id)"
           :show-new="handle !== 'new-in'"
+          :card-style="grid.cardStyle"
           @quick-add="(p, color) => quickAdd?.start(p, color)"
         />
       </li>

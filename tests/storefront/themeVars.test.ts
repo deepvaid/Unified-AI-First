@@ -29,8 +29,8 @@ const { useStoreThemesStore } = await import('@/stores/useStoreThemes')
 const { DEMO_STORES } = await import('@/storefront/demoStores')
 const { snapshotFor } = await import('@/storefront/demoStores/install')
 const {
-  storefrontThemeVars, sectionsFor, blocksFor, fieldsFor, getSectionDef, sectionCatalog, createSection,
-  themeFonts, THEME_FONT_META, FEATURE_ICONS,
+  storefrontThemeVars, sectionsFor, blocksFor, fieldsFor, fieldShown, getSectionDef, getBlockDef, sectionCatalog, createSection,
+  storeFacts, themeFonts, THEME_FONT_META, FEATURE_ICONS,
 } = await import('@/storefront/themeSections')
 
 setActivePinia(createPinia())
@@ -90,7 +90,21 @@ test('Northfold, on the sections drawing, also gets its button, surfaces and hea
     // A display face with one weight: headings are never made bold.
     '--sf-heading-font': '"Instrument Serif", Georgia, serif', '--sf-heading-weight': '400',
     '--sf-body-font': '"DM Sans", system-ui, sans-serif', '--sf-heading-case': 'none',
+    // Its near-black accent stands out on the page, so focus rings keep it.
+    '--sf-focus': '#111111',
   })
+})
+
+test('focus rings use the accent where it stands out from the page, and the text colour where it does not', () => {
+  const torqline = storefrontThemeVars(themeOf('theme-torqline').styles)
+  assert.equal(torqline['--sf-accent'], '#ffc61a')
+  assert.equal(torqline['--sf-focus'], '#17191c', 'safety yellow is 1.6:1 on white: charcoal rings instead')
+  const blue = storefrontThemeVars({ ...themeOf('theme-northfold').styles, accentColor: '#2563eb' })
+  assert.equal(blue['--sf-focus'], '#2563eb')
+  // A classic theme never gets the variable: its rings are what they were.
+  for (const theme of themes.themes.filter((t) => t.styles.drawing !== 'sections')) {
+    assert.equal(storefrontThemeVars(theme.styles)['--sf-focus'], undefined, theme.id)
+  }
 })
 
 test('the button follows the button style, and the quiet colours follow the text and background when the theme leaves them out', () => {
@@ -128,8 +142,11 @@ test('every font a demo theme uses is offered, loaded and has a heading weight',
 
 test('the builder offers a classic theme what it always did, and the sections drawing its own kinds, blocks and fields', () => {
   const kinds = (defs: { kind: string }[]) => defs.map((d) => d.kind)
-  assert.deepEqual(kinds(sectionsFor(undefined)), kinds(sectionCatalog).filter((k) => k !== 'icon-row'))
+  const both = { parts: true, sizes: true }
+  assert.deepEqual(kinds(sectionsFor(undefined)), kinds(sectionCatalog).filter((k) => k !== 'icon-row' && k !== 'vehicle-finder'))
+  assert.deepEqual(kinds(sectionsFor(undefined, both)), kinds(sectionsFor(undefined)), 'a classic theme is offered no store-specific kind')
   assert.ok(kinds(sectionsFor('sections')).includes('icon-row'))
+  assert.ok(kinds(sectionsFor('sections', both)).includes('vehicle-finder'))
 
   const general = ['heading', 'paragraph', 'button', 'image', 'collection', 'divider', 'spacer']
   for (const kind of ['hero', 'featured-products', 'collection-grid', 'image-banner', 'rich-text']) {
@@ -142,15 +159,60 @@ test('the builder offers a classic theme what it always did, and the sections dr
   assert.deepEqual(kinds(blocksFor('header', 'sections')), [])
 
   const keys = (kind: string, drawing: 'sections' | undefined, template: 'home' | 'collection' | 'product' = 'home') =>
-    fieldsFor(getSectionDef(kind)!.fields, drawing, template).map((f) => f.key)
+    fieldsFor(getSectionDef(kind)!.fields, drawing, template, both).map((f) => f.key)
   assert.deepEqual(keys('header', undefined), ['menuStyle', 'sticky'])
   assert.deepEqual(keys('header', 'sections'), ['menuStyle', 'sticky', 'colorScheme'])
   assert.deepEqual(keys('footer', undefined), ['showSocial', 'columns'])
   assert.deepEqual(keys('collection-grid', undefined), ['title', 'columns'])
   assert.deepEqual(keys('collection-grid', 'sections'), ['title', 'columns', 'tileRatio'])
-  assert.deepEqual(keys('collection-grid', 'sections', 'collection'), ['title', 'columns', 'filters', 'sort', 'quickAdd'])
+  assert.deepEqual(keys('collection-grid', 'sections', 'collection'), ['title', 'columns', 'filters', 'sort', 'quickAdd', 'cardStyle'])
   assert.deepEqual(keys('product-detail', undefined, 'product'), ['galleryLayout', 'showReviews'])
+  assert.deepEqual(keys('product-detail', 'sections', 'product'), ['galleryLayout', 'imageRatio', 'sizeGuide', 'fitment', 'showReviews'])
   assert.deepEqual(keys('featured-products', undefined), ['title', 'productCount', 'layout'])
+  // The vehicle setting is the home page's row only: the product page's row is the recommendations.
+  assert.deepEqual(keys('featured-products', 'sections'), ['title', 'collection', 'productCount', 'layout', 'vehicle'])
+  assert.deepEqual(keys('featured-products', 'sections', 'product'), ['title', 'collection', 'productCount', 'layout'])
+  assert.deepEqual(keys('vehicle-finder', 'sections'), ['headline', 'subheadline', 'partNumberSearch'])
+})
+
+test('the builder offers what the store sells: a clothing store no vehicle settings, a parts store no size guide', () => {
+  const store = (id: 'northfold' | 'torqline') => {
+    const snapshot = snapshotFor(DEMO_STORES.find((b) => b.id === id)!.homeChannel, id, '2026-11-20')
+    return storeFacts(snapshot.products, snapshot.sizeCharts)
+  }
+  const northfold = store('northfold')
+  const torqline = store('torqline')
+  assert.deepEqual(northfold, { parts: false, sizes: true })
+  assert.deepEqual(torqline, { parts: true, sizes: false })
+
+  const kinds = (facts: typeof northfold) => sectionsFor('sections', facts).map((d) => d.kind)
+  // Northfold is offered exactly the kinds it had before Torqline.
+  assert.deepEqual(kinds(northfold), [
+    'announcement-bar', 'header', 'hero', 'featured-products', 'collection-grid', 'image-banner', 'image-with-text', 'rich-text',
+    'testimonials', 'newsletter', 'product-detail', 'cart-summary', 'footer', 'icon-row',
+  ])
+  assert.deepEqual(kinds(torqline), [...kinds(northfold), 'vehicle-finder'])
+
+  const keys = (kind: string, facts: typeof northfold, template: 'home' | 'product' = 'home') =>
+    fieldsFor(getSectionDef(kind)!.fields, 'sections', template, facts).map((f) => f.key)
+  assert.deepEqual(keys('product-detail', northfold, 'product'), ['galleryLayout', 'imageRatio', 'sizeGuide', 'showReviews'])
+  assert.deepEqual(keys('product-detail', torqline, 'product'), ['galleryLayout', 'imageRatio', 'fitment', 'showReviews'])
+  assert.deepEqual(keys('featured-products', northfold), ['title', 'collection', 'productCount', 'layout'])
+  assert.deepEqual(keys('featured-products', torqline), ['title', 'collection', 'productCount', 'layout', 'vehicle'])
+
+  // A collapsible row's contents: a part's rows to a parts store, the fit note and size guide to a store with sizes.
+  const sources = (facts: typeof northfold) => fieldsFor(getBlockDef('collapsible-row')!.fields, 'sections', 'product', facts).find((f) => f.key === 'source')!.options
+  assert.deepEqual(sources(northfold), ['description', 'fit', 'fabric-care', 'delivery-returns', 'custom'])
+  assert.deepEqual(sources(torqline), ['description', 'fabric-care', 'specs', 'fitment', 'warranty', 'delivery-returns', 'custom'])
+  // Told nothing, the builder offers neither.
+  assert.deepEqual(fieldsFor(getSectionDef('product-detail')!.fields, 'sections', 'product').map((f) => f.key), ['galleryLayout', 'imageRatio', 'showReviews'])
+})
+
+test('a part’s rows take no text, so the builder hides it for them', () => {
+  const text = getBlockDef('collapsible-row')!.fields.find((f) => f.key === 'text')!
+  for (const source of ['specs', 'fitment', 'warranty']) assert.equal(fieldShown(text, { source }), false, source)
+  for (const source of ['description', 'fit', 'fabric-care', 'delivery-returns', 'custom']) assert.equal(fieldShown(text, { source }), true, source)
+  assert.equal(fieldShown(getBlockDef('collapsible-row')!.fields[0]!, { source: 'specs' }), true, 'a field without a condition always shows')
 })
 
 test('a new icon row starts with three features, and every feature icon has a name', () => {

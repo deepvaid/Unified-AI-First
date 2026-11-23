@@ -7,6 +7,7 @@ import ImageBanner from './ImageBanner.vue'
 import ImageWithText from './ImageWithText.vue'
 import Newsletter from './Newsletter.vue'
 import RichText from './RichText.vue'
+import VehicleFinder from './VehicleFinder.vue'
 
 // The home page's sections on the sections drawing (Northfold, Torqline): one
 // component per section kind, each taking the section as its `section` prop.
@@ -26,10 +27,12 @@ export const SECTION_COMPONENTS: Readonly<Record<string, Component>> = {
   'rich-text': RichText,
   'icon-row': IconRow,
   newsletter: Newsletter,
+  // An auto-parts store's hero: a photo with the Year → Make → Model selects.
+  'vehicle-finder': VehicleFinder,
 }
 
 /** Kinds that open a page with a photograph and its headline: the first one names the page (its h1). */
-export const BANNER_KINDS: readonly string[] = ['image-banner', 'hero']
+export const BANNER_KINDS: readonly string[] = ['image-banner', 'hero', 'vehicle-finder']
 
 export function sectionComponent(kind: string): Component | undefined {
   return SECTION_COMPONENTS[kind]

@@ -1,15 +1,18 @@
 // How a product reads in a store's product lists on the richer theme drawing
 // (the collection and search pages of Northfold and Torqline): its price and
-// sale, its colours, the photo for a chosen colour, whether quick add needs a
-// choice, what the list calls what it holds, and the grid settings the
-// collection template gives it. Filters and sort are in ./facets.ts.
+// sale, its colours, the photo for a chosen colour, a part's number and stock
+// line, whether quick add needs a choice, what the list calls what it holds, and
+// the grid settings the collection template gives it. Filters and sort are in
+// ./facets.ts.
 //
 // Pure rules: no Vue, no Pinia, no `@/` imports, so `npm run test:storefront`
 // runs them in Node.
 
-import { optionKey, optionKind, variantAvailable } from './variants.ts'
+import { LOW_STOCK, optionKey, optionKind, variantAvailable, variantUnits } from './variants.ts'
 import type { SellableVariant, VariantOption } from './variants.ts'
 import type { ListingNoun } from './facets.ts'
+import type { FitState } from './fitment.ts'
+import { partNumberOf } from './productPage.ts'
 
 // ── What these rules read ────────────────────────────────────────────────────
 
@@ -18,12 +21,15 @@ export interface CardVariant extends SellableVariant {
   price: string
   /** The crossed-out "was" price. */
   compareAtPrice?: string
+  /** A part's number ("TQ-BRK-4471"). */
+  sku?: string
 }
 
 /** The fields these rules read from a product. A commerce `Product` satisfies it. */
 export interface CardProduct {
   id: number
   price: string
+  sku?: string
   /** The "was" price of a product without variants; '' when it has none. */
   compareAtPrice?: string
   /** Units on hand, for a product without variants. */
@@ -152,6 +158,62 @@ export function soldOut(product: CardProduct): boolean {
   return variants.length ? !variants.some(variantAvailable) : product.inventory <= 0
 }
 
+// ── Parts ────────────────────────────────────────────────────────────────────
+
+/**
+ * A part's number as its card shows it, the same one its page shows before a choice
+ * (src/storefront/productPage.ts, `partNumberOf`): the product's own, else its one
+ * variant's; '' for a part whose choices each have a number of their own (Front and
+ * Rear pads), whose card says what it comes in instead (`choiceSummary`).
+ */
+export function partNumber(product: CardProduct): string {
+  return partNumberOf({ sku: product.sku ?? '', detail: product.detail && { options: product.detail.options, variantsList: product.detail.variantsList.map((v) => ({ sku: v.sku ?? '' })) } })
+}
+
+/**
+ * What a part with choices comes in, on its card where one part number would
+ * mislead: "Front or rear", "Front row or front and rear", "6 lengths", "3 grades".
+ * '' for a part with one number, or more than one option to choose.
+ */
+export function choiceSummary(product: CardProduct): string {
+  const options = product.detail?.options ?? []
+  if (options.length !== 1 || (product.detail?.variantsList.length ?? 0) < 2) return ''
+  const { name, values } = options[0]!
+  if (values.length < 2) return ''
+  if (values.length === 2) return `${values[0]} or ${values[1]!.charAt(0).toLowerCase()}${values[1]!.slice(1)}`
+  return `${values.length} ${name.toLowerCase()}s`
+}
+
+/**
+ * Text drawn so a line never breaks inside a hyphenated name ("F-" | "150", "CR-" | "V"):
+ * a hyphen between letters or digits becomes a non-breaking one. For what is seen only;
+ * screen readers get the text as it is.
+ */
+export function unbrokenHyphens(text: string): string {
+  return text.replace(/(?<=[\p{L}\p{N}])-(?=[\p{L}\p{N}])/gu, '\u2011')
+}
+
+export interface StockLine {
+  level: 'in' | 'low' | 'out'
+  /** "In stock", "Only 2 left", "Sold out". */
+  text: string
+}
+
+/**
+ * How many a shopper can still buy, as a dense card says it: "Sold out" when every
+ * variant is; "Only 2 left" when the units left across the variants in stock are
+ * down to `LOW_STOCK` or fewer (none sold untracked or on backorder); else "In stock".
+ */
+export function stockLine(product: CardProduct): StockLine {
+  const variants = product.detail?.variantsList ?? []
+  if (soldOut(product)) return { level: 'out', text: 'Sold out' }
+  const available = variants.filter(variantAvailable)
+  const unlimited = available.some((variant) => !variant.manageInventory || variant.allowBackorder)
+  const units = variants.length ? available.reduce((n, variant) => n + variantUnits(variant), 0) : product.inventory
+  if (!unlimited && units <= LOW_STOCK) return { level: 'low', text: `Only ${units} left` }
+  return { level: 'in', text: 'In stock' }
+}
+
 // ── Quick add ────────────────────────────────────────────────────────────────
 
 /**
@@ -162,6 +224,26 @@ export function soldOut(product: CardProduct): boolean {
 export function needsChoice(product: CardProduct): boolean {
   return (product.detail?.options ?? []).some((option) => option.values.length > 1)
     || (!(product.detail?.options ?? []).length && (product.detail?.variantsList ?? []).length > 1)
+}
+
+/**
+ * The card's button puts the product straight in the cart: it has nothing to choose,
+ * and it is not a part the shopper's vehicle doesn't take (that one opens quick add,
+ * which says so before anything is added). `fit` is the product's own state against
+ * the vehicle; 'unknown' for anything that is not a part.
+ */
+export function addsDirectly(product: CardProduct, fit: FitState = 'unknown'): boolean {
+  return !needsChoice(product) && fit !== 'no-fit'
+}
+
+/**
+ * What a shopper is told when the choice they made can't be bought: "Sorry, Rear is sold
+ * out. Choose another position." It "just sold out" only when it could still be bought
+ * when they arrived, so a choice sold out all along never reads as news.
+ */
+export function soldOutText(value: string, optionName: string, soldDuringVisit = false): string {
+  const what = value ? `${value} ${soldDuringVisit ? 'just sold out' : 'is sold out'}` : soldDuringVisit ? 'this just sold out' : 'this is sold out'
+  return `Sorry, ${what}. Choose another ${optionName.toLowerCase() || 'option'}.`
 }
 
 // ── The list ─────────────────────────────────────────────────────────────────
@@ -177,6 +259,13 @@ export function listingNoun(products: readonly CardProduct[]): ListingNoun {
   return { one: 'product', other: 'products' }
 }
 
+/**
+ * How a list draws its cards: Editorial, a tall photo with the name, price and
+ * colours (Northfold); Dense, a square photo with the part number, fit, stock and
+ * Add to cart (Torqline).
+ */
+export type CardStyle = 'Editorial' | 'Dense'
+
 /** What the collection template's product grid asks of the list. */
 export interface GridSettings {
   /** The filter panel (a rail on a desktop, a sheet on a phone). */
@@ -187,9 +276,10 @@ export interface GridSettings {
   quickAdd: boolean
   /** Cards to a row on a wide screen, 2-5 (two on a phone whatever this is). */
   columns: number
+  cardStyle: CardStyle
 }
 
-export const DEFAULT_GRID: Readonly<GridSettings> = { filters: true, sort: true, quickAdd: true, columns: 4 }
+export const DEFAULT_GRID: Readonly<GridSettings> = { filters: true, sort: true, quickAdd: true, columns: 4, cardStyle: 'Editorial' }
 
 /** The fields read from a template section. A theme's `ThemeSection` satisfies it. */
 export interface GridSection {
@@ -217,5 +307,6 @@ export function gridSettings(template: readonly GridSection[] | undefined): Grid
     sort: flag(section.settings.sort, DEFAULT_GRID.sort),
     quickAdd: flag(section.settings.quickAdd, DEFAULT_GRID.quickAdd),
     columns: Number.isFinite(columns) && columns > 0 ? Math.min(5, Math.max(2, columns)) : DEFAULT_GRID.columns,
+    cardStyle: section.settings.cardStyle === 'Dense' ? 'Dense' : DEFAULT_GRID.cardStyle,
   }
 }

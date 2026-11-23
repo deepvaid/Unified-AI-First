@@ -24,13 +24,17 @@ import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import { useStoreThemesStore } from '@/stores/useStoreThemes'
 import { useStorefrontStore } from '@/stores/useStorefront'
 import { useCommerceStore } from '@/stores/useCommerce'
-import { collectionsOf, previewProducts } from '@/views/Storefront/storefrontCatalog'
+import { useSizeChartsStore } from '@/stores/useSizeCharts'
+import { collectionsOf, inStock, previewProducts, storefrontProducts } from '@/views/Storefront/storefrontCatalog'
+import { choiceSummary, partNumber } from '@/storefront/listing'
 import {
   blocksFor,
+  fieldShown,
   fieldsFor,
   getBlockDef,
   getSectionDef,
   sectionsFor,
+  storeFacts,
   themeFonts,
   TEMPLATE_TYPES,
   TEMPLATE_TYPE_LABELS,
@@ -69,8 +73,22 @@ const theme = computed(() => {
   return requested?.channelId === channelId.value ? requested : themesStore.themeForChannel(channelId.value)
 })
 const previewHeader = computed(() => storefronts.previewHeaderFor(channel.value))
-/** The store's own products in the canvas's product rows; a store on the shared catalogue keeps the drawn stand-ins. */
-const previewItems = computed(() => (channel.value ? previewProducts(useCommerceStore().products, channel.value) : undefined))
+/**
+ * The store's own products in the canvas's product rows; a store on the shared catalogue
+ * keeps the drawn stand-ins. A part also brings what its card and page show: its part
+ * number, or what it comes in ("Front or rear"), and its choices.
+ */
+const previewItems = computed(() => {
+  if (!channel.value) return undefined
+  const products = useCommerceStore().products
+  const items = previewProducts(products, channel.value)
+  if (!items) return undefined
+  const byName = new Map(storefrontProducts(products, channel.value.id).filter(inStock).map((product) => [product.name, product]))
+  return items.map((item) => {
+    const product = byName.get(item.name)
+    return product ? { ...item, partNumber: partNumber(product), choice: choiceSummary(product), options: product.detail?.options.map((o) => ({ name: o.name, values: o.values })) ?? [] } : item
+  })
+})
 
 /**
  * How the storefront draws this theme. A theme on the sections drawing (Northfold,
@@ -79,7 +97,10 @@ const previewItems = computed(() => (channel.value ? previewProducts(useCommerce
  * exactly what it always was (src/storefront/themeSections.ts).
  */
 const drawing = computed(() => theme.value?.styles.drawing)
-const addableSections = computed(() => sectionsFor(drawing.value))
+/** What the store sells: a parts store is offered the vehicle finder and fit banner, a store with sizes the size guide. */
+const sizeChartsStore = useSizeChartsStore()
+const facts = computed(() => storeFacts(storefrontProducts(useCommerceStore().products, channelId.value), sizeChartsStore.chartsForChannel(channelId.value)))
+const addableSections = computed(() => sectionsFor(drawing.value, facts.value))
 
 const backRoute = computed(() =>
   channel.value
@@ -358,7 +379,8 @@ const panelFields = computed(() => fieldsFor(
   isBlockSelected.value ? (selectedBlockDef.value?.fields ?? []) : (selectedSectionDef.value?.fields ?? []),
   drawing.value,
   activeTemplate.value,
-))
+  facts.value,
+).filter((field) => fieldShown(field, panelSettings.value)))
 
 /** A select's choices, under the names the builder gives them ("truck" reads "Delivery truck"). */
 function selectItems(field: ThemeSectionField) {

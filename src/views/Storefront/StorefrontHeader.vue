@@ -2,6 +2,7 @@
 import { computed, inject, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useStorefrontCartStore } from '@/stores/useStorefrontCart'
+import { vehicleLabel } from '@/storefront/fitment'
 import StorefrontAnchor from './StorefrontAnchor.vue'
 import StorefrontDrawer from './StorefrontDrawer.vue'
 import { STOREFRONT } from './storefrontContext'
@@ -60,6 +61,14 @@ const sticky = computed(() => flag(settings.value, 'sticky'))
 const dark = computed(() => text(settings.value, 'colorScheme') === 'Dark')
 const hasAccount = computed(() => chrome.value.headerTools.includes('account'))
 
+// An auto-parts store's vehicle chip: "Select vehicle", or the vehicle chosen. It opens
+// the vehicle drawer (StorefrontLayout's). Beside the tools on a wide screen; narrower,
+// where the menu needs the bar, in its own row under it (the full width on a phone).
+// Two buttons, one shown at a time, so the DOM order stays the order the eye reads.
+const sellsParts = computed(() => storefront.sellsParts.value)
+const vehicleText = computed(() => (storefront.vehicle.value ? vehicleLabel(storefront.vehicle.value) : 'Select vehicle'))
+const vehicleName = computed(() => (storefront.vehicle.value ? `${vehicleText.value}, change vehicle` : undefined))
+
 /**
  * The drawer's links: the store's phone menu, the shop's own links (those the
  * header's menu has) first and large, then the rest (pages, account, cart).
@@ -105,6 +114,19 @@ function onMenuClosed(): void {
           <StorefrontAnchor v-for="item in chrome.nav" :key="item.label" :href="item.href" class="sfh__link">{{ item.label }}</StorefrontAnchor>
         </nav>
 
+        <button
+          v-if="sellsParts"
+          type="button"
+          class="sfh__vehicle sfh__vehicle--inline"
+          aria-haspopup="dialog"
+          :aria-label="vehicleName"
+          @click="storefront.chooseVehicle()"
+        >
+          <v-icon size="18" aria-hidden="true">car-front</v-icon>
+          <span class="sfh__vehicle-text">{{ vehicleText }}</span>
+          <v-icon size="16" aria-hidden="true">chevron-down</v-icon>
+        </button>
+
         <div class="sfh__tools">
           <StorefrontAnchor v-if="searchable" href="/search" class="sfh__icon" aria-label="Search" @click="onSearchIcon">
             <v-icon size="22" aria-hidden="true">search</v-icon>
@@ -132,6 +154,14 @@ function onMenuClosed(): void {
       <nav v-if="menuStyle === 'centered' && chrome.nav.length" class="sfh__nav sfh__nav--below" aria-label="Main">
         <StorefrontAnchor v-for="item in chrome.nav" :key="item.label" :href="item.href" class="sfh__link">{{ item.label }}</StorefrontAnchor>
       </nav>
+
+      <div v-if="sellsParts" class="sfh__vehicle-row">
+        <button type="button" class="sfh__vehicle" aria-haspopup="dialog" :aria-label="vehicleName" @click="storefront.chooseVehicle()">
+          <v-icon size="18" aria-hidden="true">car-front</v-icon>
+          <span class="sfh__vehicle-text">{{ vehicleText }}</span>
+          <v-icon size="16" aria-hidden="true">chevron-down</v-icon>
+        </button>
+      </div>
     </header>
 
     <StorefrontDrawer v-model="menuOpen" title="Menu" :phone-sheet="false" close-label="Close menu" @close="onMenuClosed">
@@ -463,6 +493,7 @@ function onMenuClosed(): void {
 /* A dark header paints the brand colour and its ink; the focus ring follows the ink so it shows on the dark fill. */
 .sfh--dark {
   --sf-accent: var(--sf-on-brand, #ffffff);
+  --sf-focus: var(--sf-on-brand, #ffffff);
   border-bottom-color: transparent;
   background: var(--sf-brand, #121011);
   color: var(--sf-on-brand, #ffffff);
@@ -503,6 +534,14 @@ function onMenuClosed(): void {
 .sfh--centered .sfh__tools {
   grid-column: 3;
   justify-self: end;
+}
+
+/* Centred: the vehicle chip takes the empty start column. */
+.sfh--centered .sfh__vehicle--inline {
+  grid-column: 1;
+  grid-row: 1;
+  justify-self: start;
+  margin-left: 0;
 }
 
 .sfh__logo {
@@ -586,10 +625,81 @@ function onMenuClosed(): void {
   background: color-mix(in srgb, currentColor 8%, transparent);
 }
 
+/* The vehicle chip: the header's ink on a faint wash of it, so it reads on a light or a dark header. */
+.sfh__vehicle {
+  display: inline-flex;
+  flex-shrink: 1;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  max-width: 280px;
+  min-height: 40px;
+  margin-left: auto;
+  padding: 0 12px;
+  border: 1px solid color-mix(in srgb, currentColor 40%, transparent);
+  border-radius: var(--sf-radius, 0);
+  background: color-mix(in srgb, currentColor 8%, transparent);
+  color: inherit;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.sfh__vehicle:hover {
+  background: color-mix(in srgb, currentColor 16%, transparent);
+}
+
+/* The header's own ink, never the theme's accent (a yellow ring vanishes on a light header). */
+.sfh__vehicle:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.sfh__vehicle-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Wide: the chip takes the push to the end, the tools follow it. Only while it shows,
+   or the tools would lose their place at the end of the bar. */
+@media (min-width: 1241px) {
+  .sfh__vehicle--inline + .sfh__tools {
+    margin-left: 0;
+  }
+}
+
+/* The row under the bar, where the chip goes once the menu needs the bar's width. */
+.sfh__vehicle-row {
+  display: none;
+}
+
+@media (max-width: 1240px) {
+  .sfh__vehicle--inline {
+    display: none;
+  }
+
+  .sfh__vehicle-row {
+    display: block;
+    box-sizing: border-box;
+    max-width: var(--sf-measure, 1200px);
+    margin: 0 auto;
+    padding: 0 var(--sf-gutter, 24px) 12px;
+  }
+
+  .sfh__vehicle-row .sfh__vehicle {
+    margin: 0;
+  }
+}
+
 .sfh__link:focus-visible,
 .sfh__logo:focus-visible,
 .sfh__icon:focus-visible {
-  outline: 2px solid var(--sf-accent, #2563eb);
+  outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
   outline-offset: 2px;
 }
 
@@ -686,7 +796,7 @@ function onMenuClosed(): void {
 
 .sfh-drawer__link:focus-visible,
 .sfh-drawer__search:focus-visible {
-  outline: 2px solid var(--sf-accent, #2563eb);
+  outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
   outline-offset: 2px;
 }
 
@@ -711,6 +821,17 @@ function onMenuClosed(): void {
 
   .sfh__menu {
     display: inline-flex;
+  }
+
+  .sfh__vehicle-row .sfh__vehicle {
+    width: 100%;
+    max-width: none;
+    min-height: 44px;
+  }
+
+  .sfh__vehicle-row .sfh__vehicle-text {
+    flex: 1 1 auto;
+    text-align: left;
   }
 }
 </style>

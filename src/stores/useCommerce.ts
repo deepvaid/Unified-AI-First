@@ -160,6 +160,14 @@ export interface ProductDetail {
   fitNote?: string
   /** How to wash and look after it; the product page shows it under "Fabric and care", after `material`. */
   care?: string
+  /**
+   * The part's own facts, for the product page's Specifications table, in order:
+   * { label: 'Friction material', value: 'Ceramic' }. Never a vehicle-specific value:
+   * what fits which vehicle is `fitment`.
+   */
+  specs?: { label: string; value: string }[]
+  /** What the maker covers, for the product page's Warranty row: "Limited lifetime warranty". */
+  warranty?: string
 }
 
 export interface Product {

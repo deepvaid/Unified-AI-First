@@ -146,7 +146,7 @@ defineExpose({ focus: () => (step.value === 'email' ? emailField.value : codeFie
 }
 
 .sf-signin__link:focus-visible {
-  outline: 2px solid var(--sf-accent, #2563eb);
+  outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
   outline-offset: 2px;
 }
 </style>

@@ -2,7 +2,12 @@
 // store is connected to Merchandise Cloud. The merchant's rules decide: a redirect
 // sends a query to a page, synonyms widen the query, pinned products lead the
 // results, and a blacklisted product is never found. The admin's Search preview runs the same
-// function, so it shows what a shopper gets. Pure, so Node can test it.
+// function, so it shows what a shopper gets. On an auto-parts store a part number
+// typed whole goes straight to its product (`findPartNumber`). Pure, so Node can test it.
+
+import { selectionQuery } from './productPage.ts'
+import { describeVariant, optionValuesOf } from './variants.ts'
+import type { SellableVariant, VariantOption } from './variants.ts'
 
 /** The fields search reads. A commerce `Product` satisfies it. */
 export interface SearchableProduct {
@@ -149,6 +154,73 @@ export function redirectPath(leadsTo: string, domain: string | undefined): strin
   if (target.startsWith('/')) return target
   const onStore = domain ? new RegExp(`^(https?:)?//${domain.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?=/|$)`, 'i').exec(target) : null
   return onStore ? target.slice(onStore[0].length) || '/' : null
+}
+
+// ── Part numbers ─────────────────────────────────────────────────────────────
+
+/** The fields a part-number search reads. A commerce `Product` satisfies it. */
+export interface PartNumberProduct {
+  id: number
+  sku?: string
+  detail?: {
+    options: VariantOption[]
+    variantsList: (Pick<SellableVariant, 'id' | 'title' | 'optionValues'> & { sku?: string })[]
+  }
+}
+
+export interface PartNumberMatch<T> {
+  product: T
+  /** The variant the number is of; none when it is the product's own. */
+  variantId?: number
+  /** The product page's query that opens it on that variant (`{ position: 'rear' }`), as its choice in the URL reads. */
+  query: Record<string, string>
+}
+
+/** A part number as it is compared: lower case, without spaces or dashes, so "tq brk 4471" is TQ-BRK-4471. */
+const partKey = (text: string): string => text.toLowerCase().replace(/[\s-]+/g, '')
+
+/**
+ * The product a query names by its part number: the whole query is a variant's
+ * SKU (or the product's own), in any case, with or without its dashes and spaces.
+ * Undefined for anything else, which is searched as words. A product kept out of
+ * search (`hiddenProductIds`, the merchant's blacklist) is never found this way either.
+ */
+export function findPartNumber<T extends PartNumberProduct>(query: string, products: readonly T[], hiddenProductIds: readonly string[] = []): PartNumberMatch<T> | undefined {
+  const key = partKey(query)
+  if (!key) return undefined
+  for (const product of products) {
+    if (hiddenProductIds.includes(String(product.id))) continue
+    const options = product.detail?.options ?? []
+    const variant = product.detail?.variantsList.find((v) => v.sku && partKey(v.sku) === key)
+    if (variant) {
+      const values = optionValuesOf(variant, options)
+      const selection = Object.fromEntries(options.map((option, i) => [option.name, values[i]]))
+      return { product, variantId: variant.id, query: selectionQuery(options, selection) }
+    }
+    if (product.sku && partKey(product.sku) === key) return { product, query: {} }
+  }
+  return undefined
+}
+
+/**
+ * The part a search on a store that sells parts opens instead of a list, as the
+ * storefront and the admin's Search preview both read it: the product a part number
+ * names, unless a merchant's redirect takes the same words (the redirect wins) or the
+ * part is blacklisted. Undefined when the search lists results.
+ */
+export function partNumberSearch<T extends PartNumberProduct>(query: string, products: readonly T[], rules: Pick<SearchRules, 'redirects' | 'hiddenProductIds'>): PartNumberMatch<T> | undefined {
+  const q = clean(query)
+  if (!q || rules.redirects.some((r) => r.queries.some((term) => clean(term) === q))) return undefined
+  return findPartNumber(q, products, rules.hiddenProductIds)
+}
+
+/** What a part number opens, as the merchant reads it: "Ceramic Brake Pads, Truck & SUV (Rear)", or the name alone for a part without options. */
+export function partNumberTarget(match: PartNumberMatch<PartNumberProduct & { name: string }>): string {
+  const { product, variantId } = match
+  const options = product.detail?.options ?? []
+  const variant = product.detail?.variantsList.find((v) => v.id === variantId)
+  const choice = variant && options.length ? describeVariant(variant, options) : ''
+  return choice ? `${product.name} (${choice})` : product.name
 }
 
 // ── Recommendations ──────────────────────────────────────────────────────────

@@ -1,5 +1,6 @@
 // What a shopper sees of the things they bought: how a cart, checkout or order line
-// reads ("Size M · Sand") and which photo it shows (the colour they chose), and the
+// reads ("Size M · Sand", or "Front · Part # TQ-BRK-4471 · Fits 2019 Ford F-150" on
+// an auto-parts store) and which photo it shows (the colour they chose), and the
 // orders their account lists (theirs, on this store, newest first) with what each
 // one cost. Pure rules: no Vue, no Pinia, no `@/` imports, so
 // `npm run test:storefront` runs them in Node.
@@ -31,6 +32,8 @@ export interface BoughtLine {
   variantId?: number
   /** The variant's title as it was when bought ("Sand / M"). */
   variantTitle?: string
+  /** The shopper's vehicle, when the part fit it as it was added: "2019 Ford F-150". */
+  vehicle?: string
 }
 
 type LineVariant = Pick<SellableVariant, 'title' | 'optionValues'>
@@ -56,6 +59,16 @@ export function lineVariantText(product: LineProduct | undefined, line: BoughtLi
   const options = product?.detail?.options ?? []
   if (options.length) return describeVariant(variant, options)
   return variant.title.split(' / ').map((part) => part.trim()).filter(Boolean).join(' · ')
+}
+
+/**
+ * Everything a line says under its name, joined: "Front · Part # TQ-BRK-4471 · Fits
+ * 2019 Ford F-150" on a store that sells parts (`partNumber`: its SKU is the part's
+ * number), "Size M · Sand" on any other. The vehicle only when the line carries it.
+ */
+export function lineDetailText(product: LineProduct | undefined, line: BoughtLine, options: { partNumber?: boolean } = {}): string {
+  const number = options.partNumber && line.sku.trim() ? `Part # ${line.sku.trim()}` : ''
+  return [lineVariantText(product, line), number, line.vehicle ? `Fits ${line.vehicle}` : ''].filter(Boolean).join(' · ')
 }
 
 /** The colour the line was bought in, for a product with a Color option. */

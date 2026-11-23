@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, provide, watch } from 'vue'
+import { computed, provide, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useChatbotStore } from '@/stores/useChatbot'
 import { useCommerceStore } from '@/stores/useCommerce'
@@ -17,6 +17,10 @@ import { merchandisingStatus } from '@/utils/merchandisingChannels'
 import { checkoutProfile } from '@/storefront/checkoutProfile'
 import { formatStorePrice } from '@/storefront/price'
 import { chartFor } from '@/storefront/sizeCharts'
+import { fitState, sellsParts as sellsPartsIn } from '@/storefront/fitment'
+import type { FitmentProduct, Vehicle } from '@/storefront/fitment'
+import { useStorefrontVehicleStore } from '@/stores/useStorefrontVehicle'
+import { storefrontProducts } from './storefrontCatalog'
 import type { SizedProduct } from '@/storefront/sizeCharts'
 import { roundForDisplay } from '@/subscriptions/plans'
 import { storefrontThemeVars } from '@/stores/themeBuilderData'
@@ -24,6 +28,7 @@ import MpEmptyState from '@/components/MpEmptyState.vue'
 import StorefrontChat from './StorefrontChat.vue'
 import StorefrontFooter from './StorefrontFooter.vue'
 import StorefrontHeader from './StorefrontHeader.vue'
+import StorefrontVehicleDrawer from './StorefrontVehicleDrawer.vue'
 import { STOREFRONT } from './storefrontContext'
 import { announce } from './storefrontAnnouncer'
 
@@ -90,9 +95,19 @@ const sizeChartsStore = useSizeChartsStore()
 const sizeCharts = computed(() => sizeChartsStore.chartsForChannel(channelId.value))
 const sizeChartFor = (product: SizedProduct) => chartFor(product, sizeCharts.value)
 
+// An auto-parts store (Torqline): the shopper's vehicle, kept per store for the tab, and how each part fits it.
+const commerce = useCommerceStore()
+const sellsParts = computed(() => sectionsDrawing.value && sellsPartsIn(storefrontProducts(commerce.products, channelId.value)))
+const vehicles = useStorefrontVehicleStore()
+const vehicle = computed(() => (sellsParts.value ? vehicles.vehicleFor(channelId.value) : null))
+const setVehicle = (next: Vehicle | null) => vehicles.setVehicle(channelId.value, next)
+const fitOf = (product: FitmentProduct) => fitState(product, vehicle.value)
+// The vehicle selector's drawer is open; any page, the header chip and the chat open it.
+const vehicleDrawer = ref(false)
+const chooseVehicle = () => { if (sellsParts.value) vehicleDrawer.value = true }
 provide(STOREFRONT, {
   channel, theme, chrome, link, currency, formatMoney, formatExact, ownMoneyFormat, checkout, demo, searchable, campaignMessage, offerFor,
-  sectionsDrawing, sizeCharts, sizeChartFor, announce,
+  sectionsDrawing, sizeCharts, sizeChartFor, announce, sellsParts, vehicle, setVehicle, fitOf, chooseVehicle,
 })
 
 // A store shown to prospects names itself in the browser tab, where the router's fallback reads "Storefront home · Maropost".
@@ -123,6 +138,9 @@ const themeVars = computed(() => storefrontThemeVars(theme.value?.styles))
     </div>
 
     <StorefrontFooter />
+
+    <!-- An auto-parts store's vehicle selector: one drawer, opened from any page by `chooseVehicle`. -->
+    <StorefrontVehicleDrawer v-if="sellsParts" v-model="vehicleDrawer" />
 
     <!-- Hidden, not removed, on the checkout: the conversation is still there when the shopper comes back. -->
     <StorefrontChat v-if="chatbot" v-show="!minimal" :chatbot="chatbot" />
