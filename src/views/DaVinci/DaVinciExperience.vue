@@ -135,8 +135,8 @@ const liveActive = ref(false)
 let loopToken = 0
 let autoStarted = false
 // True when the cold-load greeting couldn't play (browser blocked autoplay until
-// a user gesture). Flips the focal mic into an explicit "Tap to start" that speaks
-// the greeting aloud on the first tap — so it works on a fresh load / shared link.
+// a user gesture). Puts a Start button in the mic's place that speaks the greeting
+// on the click — so it works on a fresh load / shared link.
 const audioBlocked = ref(false)
 let greetProbe: ReturnType<typeof setTimeout> | null = null
 // When autoplay is blocked, the first interaction anywhere on the screen speaks
@@ -200,7 +200,6 @@ const stageHint = computed(() => {
   }
   if (voice.state.value === 'thinking') return 'Thinking…'
   if (voice.state.value === 'speaking') return captionText.value || 'Speaking…'
-  if (audioBlocked.value) return 'Click anywhere to begin'
   return voice.sttSupported ? 'Tap to talk' : 'Type below to begin'
 })
 
@@ -562,8 +561,8 @@ function listenAfterGreeting() {
  * Best-effort — browsers block audio without a user gesture, so a cold refresh /
  * shared link stays silent; opening Da Vinci from inside the app carries the
  * gesture and auto-starts. We probe whether audio actually began: if it didn't,
- * we cancel the silent (blocked) utterance and flip to an explicit "Tap to start"
- * (see audioBlocked) so the first tap greets the user out loud.
+ * we cancel the silent (blocked) utterance and show the Start button
+ * (see audioBlocked) so the first click greets the user out loud.
  */
 async function autoGreet() {
   if (autoStarted) return
@@ -574,6 +573,12 @@ async function autoGreet() {
   }
   greetingStatus.value = 'starting…'
   voice.unlockSpeech()
+  // A link opened cold cannot play sound until the page is clicked. Say so at once with a Start button,
+  // rather than sitting silent while the probe below times out.
+  if (!(await voice.tryUnlockAudio())) {
+    if (!disposed) offerStart()
+    return
+  }
   await greetingReady() // let the pre-baked WAV land so the speak is a cache hit
   if (disposed) return
   await voice.playChime('open') // comm channel connects (no-op while autoplay is blocked)
@@ -601,19 +606,21 @@ async function autoGreet() {
     greetProbe = null
     if (disposed) return
     if (!becameAudible && !liveActive.value && messages.value.length === 0) {
-      greetingStatus.value = 'held back by the browser — it plays after one click on the page'
       voice.cancelSpeech()
-      // The tap-to-start affordance is the focal mic — only offer it where the mic
-      // is actually tappable (STT-capable browsers, i.e. Chrome/Edge).
-      if (voice.sttSupported) audioBlocked.value = true
-      // Also let the first interaction *anywhere* speak the greeting, so it plays
-      // on every fresh load without the user having to find the mic.
-      armGestureGreeting()
-      // And keep probing for a no-gesture autoplay grant (policy/flag/Safari
-      // setting/MEI) — the moment audio is permitted, greet with zero tap.
-      armGrantReprobe()
+      offerStart()
     }
   }, 2400) // headroom for the voices gate (≤700ms) + one watchdog retry (450ms) before giving up
+}
+
+/** The browser is holding sound back until a click: show the Start button (see `audioBlocked`). */
+function offerStart() {
+  greetingStatus.value = 'held back by the browser — it plays after one click on the page'
+  audioBlocked.value = true
+  // The first interaction *anywhere* speaks the greeting too, not only the button.
+  armGestureGreeting()
+  // And keep probing for a no-gesture autoplay grant (policy/flag/Safari
+  // setting/MEI) — the moment audio is permitted, greet with zero tap.
+  armGrantReprobe()
 }
 
 /** While blocked, watch for a later autoplay grant and auto-greet the moment audio is
@@ -675,7 +682,7 @@ function armGestureGreeting() {
   if (gestureGreetCleanup || disposed) return
   const handler = (e: Event) => {
     const target = e.target as HTMLElement | null
-    if (target?.closest('.dvx__composer, .dvx__centermic')) return // let typing / mic do their thing
+    if (target?.closest('.dvx__composer, .dvx__start')) return // let typing / mic do their thing
     if (liveActive.value || messages.value.length > 0 || voice.muted.value) {
       disarmGestureGreeting()
       return
@@ -720,8 +727,6 @@ async function startGreeting() {
 function onCenterMic() {
   if (liveActive.value) {
     onLiveControl()
-  } else if (audioBlocked.value) {
-    void startGreeting()
   } else {
     startLive()
   }
@@ -1201,12 +1206,18 @@ onBeforeUnmount(() => {
 
       <!-- Focal voice control — small mic centered in the orb -->
       <div v-if="!welcomeVisible" class="dvx__stage">
+        <!-- A link opened cold: no browser lets a page speak before one click, so that click is asked for
+             plainly. The greeting plays from it. -->
+        <div v-if="audioBlocked && !busy" class="dvx__start">
+          <v-btn color="primary" size="large" prepend-icon="volume-2" @click="startGreeting()">Start Da Vinci</v-btn>
+          <p class="text-body-2 text-medium-emphasis mb-0">Your browser needs one click before Da Vinci can speak.</p>
+        </div>
+        <template v-else>
         <button
           type="button"
           class="dvx__centermic"
           :class="{
             'dvx__centermic--active': liveActive || busy,
-            'dvx__centermic--invite': audioBlocked && !busy,
             'dvx__centermic--disabled': !voice.sttSupported,
           }"
           :disabled="!voice.sttSupported"
@@ -1215,9 +1226,7 @@ onBeforeUnmount(() => {
               ? voice.state.value === 'speaking'
                 ? 'Interrupt'
                 : 'End conversation'
-              : audioBlocked
-                ? 'Begin — greet me and start listening'
-                : 'Start voice conversation'
+              : 'Start voice conversation'
           "
           @click="onCenterMic()"
         >
@@ -1235,6 +1244,7 @@ onBeforeUnmount(() => {
         >
           {{ stageHint }}
         </p>
+        </template>
         <p v-if="voiceRecoveryMessage" class="dvx__mic-notice text-caption text-error mb-0" role="alert">
           {{ voiceRecoveryMessage }}
         </p>
@@ -1632,16 +1642,12 @@ onBeforeUnmount(() => {
   animation: dvx-livepulse 1.6s ease-out infinite;
 }
 
-/* Invite (cold load, audio blocked): outlined mic with a gentle pulse ring to
-   signal the first tap is needed before the greeting can play. */
-.dvx__centermic--invite::after {
-  content: '';
-  position: absolute;
-  inset: -4px;
-  border-radius: 50%;
-  border: 1.5px solid var(--dv-accent);
-  opacity: 0.5;
-  animation: dvx-livepulse 1.8s ease-out infinite;
+/* The Start step on a cold link, in the mic's place. */
+.dvx__start {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--mp-space-12);
 }
 
 .dvx__centermic--disabled {
@@ -1950,8 +1956,7 @@ onBeforeUnmount(() => {
 
 @media (prefers-reduced-motion: reduce) {
   .dvx__turn,
-  .dvx__centermic--active::after,
-  .dvx__centermic--invite::after {
+  .dvx__centermic--active::after {
     animation: none;
   }
 }

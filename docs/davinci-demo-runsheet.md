@@ -13,7 +13,8 @@ The figures are what that account shows today; they move with the date.
      the system). Check it from the mic icon in the address bar. If that microphone is dead, Da Vinci moves
      to the system microphone after a few seconds and says so under the mic.
 2. Open the app, then open **Da Vinci › AI experience** from the app bar. Opening it from inside the
-   app is what lets the greeting play without a click. A pasted link needs one click anywhere first.
+   app is what lets the greeting play without a click. A pasted or shared link shows a **Start Da Vinci**
+   button instead of the mic: no browser lets a page speak before one click, and the greeting plays from it.
 3. Allow the microphone when Chrome asks, once, before the prospect joins. A blocked mic shows a red
    line under the mic button; typing still works.
 4. Check the top bar says **Voice on**. That button shows the current state, so clicking it turns voice
@@ -42,7 +43,7 @@ The four prompts under the message box ("Try saying") are safe to read out or cl
 
 ## If something goes wrong
 
-- **Nothing is heard.** Click anywhere on the page: the browser blocked audio until a click. Then check "Voice on".
+- **Nothing is heard.** Press **Start Da Vinci** if it is showing (the browser blocked sound until a click). Then check "Voice on".
 - **It does not hear you.** Read the line under the mic: it names a blocked or silent microphone, or says
   voice input keeps being cut off (another tab is listening — close it, then tap the mic). Type the
   question meanwhile; typing over a spoken reply interrupts it.
