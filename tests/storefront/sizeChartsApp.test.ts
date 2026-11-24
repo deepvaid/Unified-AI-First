@@ -68,7 +68,7 @@ function addCreatedStore(app: App, original: 'vitaheal' | 'northfold' = 'vitahea
   const vitaheal = plain(app.channels.channels.find((channel) => channel.id === VH)!)
   app.channels.channels.push({
     ...vitaheal, id: CREATED, name: 'Test Boutique',
-    webStore: { ...vitaheal.webStore!, domain: 'test-boutique.uat.maropost.store', blueprint: { original, slot: 5 } },
+    webStore: { ...vitaheal.webStore!, domain: 'test-boutique.uat.maropost.store', blueprint: { original, slot: 11 } },
   })
   assert.equal(app.demoStores.attach(CREATED), true)
 }

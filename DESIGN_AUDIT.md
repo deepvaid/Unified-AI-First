@@ -3606,3 +3606,69 @@ did not have.
 - Duplicated themes show "—" as their creator; a row menu opened with Enter keeps focus on its
   trigger (MpRowActionsMenu, app-wide).
 - Collections, pages, menus and the header and footer are still not kept in the browser.
+
+## Lumos demo store (store themes, part 5) — 2026-11-24
+
+A fourth demo store and library theme, **Lumos Home (demo)** (channel `lumos-demo`, store #15, slot 5): furniture,
+lighting and decor in US dollars, no subscriptions. It is rebuilt from the live UAT theme Lumos v1.1.9 (UAT account 1400,
+store #34, crawled read-only in Chrome) with the look of the Lumos Figma style guide (file nhXItT4Eiahp5qnE8nGNmY).
+Decided with the user: a whole demo store like Northfold and Torqline; furniture and home; Figma decides the look (colours,
+Inter, uppercase 64/32 headings with 48/24 on phones, 4px buttons, the product card, forms) and UAT the structure
+(sections, their order, settings and behaviour); UAT's contrast failures are not copied; a simple wishlist; made-up brands
+in place of the real brand logos UAT shows. Its walkthrough is `docs/store-builder/lumos-demo-script.md`.
+
+- **Catalogue:** 20 pieces (5001-5020) from six made-up makers (Oakmere, Linden Row, Morrow & Pine, Halden Works, Cove & Co,
+  Brightwell Studio), with fabric, finish and colour swatches or sizes, specifications (Width, Depth, Height, Seat height,
+  Weight, Materials, Care, Assembly) and warranties; nine collections; the "Winter home event" campaign (COZY20, 20% off the
+  living room); search rules; "Complete the room" recommendations; 50 free Unsplash photos and six SVG logos drawn for the
+  demo (`public/storefront/lumos/CREDITS.md`).
+- **Sections drawing additions** (all optional, read only by the sections drawing, so the stores before it are unchanged;
+  `themeVars.test.ts` pins their variables): theme styles `headingWeight`, `cardColor`, `cardRadius`, `cardShadow`,
+  `buttonBorderColor`, `buttonHoverColor`, `buttonCase`, `tintColor`, `measure`, `gutter`, `heroTitleSize`,
+  `sectionTitleSize`, `controlBorderColor`; the image banner's badge, accent words, "Words on the left" and up to three
+  stats; the collection grid's looping carousel with dots, labels over photos, tint and per-tile accent words; a new
+  `logo-strip` section; eyebrows on featured products (with Previous/Next) and the icon row (with centred card tiles);
+  specification and warranty rows for any store whose products carry them; the header's search field, the footer's tagline,
+  newsletter column and legal links; the `Boxed` product card; the `facets` setting on a collection grid.
+- **Wishlist:** hearts on Boxed cards and the product page, a header heart with its count, and `/wishlist`, on a
+  sections-drawing store whose header lists the wishlist tool. Kept per store in `mp.storefront.wishlist.v1`; Apply, Restore
+  and Delete empty it with the cart, and their dialogs say so.
+- **Chat:** the `home` profile (`src/chatbot/homeAnswers.ts`) answers sizes, whether a piece fits a space (and through a
+  doorway), materials, care, assembly, warranty and delivery from the product's own specifications and the store's pages.
+- **Admin:** the product editor's Specifications card shows for any product with specifications, with the chat's labels as
+  suggestion chips; a product without photos in a furniture store draws a sofa (`packShot` shape `furniture`). The theme
+  builder edits and previews every new section and setting.
+- Ids: chatbot 104, CDP list 905 "Lumos Home customers", announcement email 9004, timezone America/Los_Angeles. The test
+  stores that sat on slot 5 moved to 10 and 11.
+
+### Reviews
+
+Three independent reviews (shopper, merchant, code) ran on the integrated work, each serious finding re-checked by a
+skeptic; all 16 were confirmed and fixed. The largest:
+- form field borders at 1.23:1 (now `controlBorderColor` #949494, 3:1, on every field including the newsletter);
+- the chat answering "do you assemble?" with delivery, calling a sold-out colour available, failing a doorway check for
+  pieces that arrive in parts, and treating "my 72 inch table" as a piece to buy;
+- the chatbot preview answering two of Lumos's quick prompts wrongly (size and sale questions now get the live-store line
+  unless a knowledge entry really answers them; this also fixes Northfold's and Torqline's previews, which answered "What's
+  on sale?" with other entries);
+- the builder canvas not drawing Lumos as the storefront does (Boxed cards, the header search field and heart, the
+  product page, the phone hero), also on the store's Overview and Themes pages;
+- Northfold's and Torqline's inspectors showing blank or invalid values for the new fields (now each field's default);
+- Theme styles unable to show or edit Lumos's look (hex fields, case-insensitive presets, Card corners, Card shadow,
+  Button labels, Tint color);
+- a fourth hero stat accepted but not drawn (capped at 3 with the reason);
+- accent words on the room tiles below 4.5:1 on phones; quick add showing another colour's photo without saying so;
+- copy that contradicted the photos (rewritten to match what each photo shows), and the rug's first photo leading with a
+  sofa;
+- collection filters that mixed rug, bed and table sizes (Lumos now shows Category, Color, Brand and Price through the new
+  `facets` setting).
+
+### Not done here
+
+- Three colourways have no photo of their own (the Arlo sofa's Slate and Moss, the console's Black): they show the first
+  colour and say "Shown in Oat". The Ridge chairs (a set of 2) are photographed as one chair.
+- The logo block's picture is seeded only: images are not editable in the theme builder yet (as for every section).
+- The builder's add-block menu still draws a raw list item; focus does not move into a block just added.
+- The product editor's Attributes card (the packed box) and the Specifications card both have Width and Height fields.
+- `facets` is a seed-only setting (no builder control yet).
+- Aurora (an outdoor gear store built on the UAT Aurora theme) is part 6.

@@ -22,18 +22,20 @@ import { useSizeChartsStore } from '@/stores/useSizeCharts'
 import { useStoreCampaignsStore } from '@/stores/useStoreCampaigns'
 import { useStoreThemesStore } from '@/stores/useStoreThemes'
 import { useStorefrontStore } from '@/stores/useStorefront'
+import type { StorefrontChrome } from '@/stores/useStorefront'
 import { useStorefrontVehicleStore } from '@/stores/useStorefrontVehicle'
 import { roundForDisplay } from '@/subscriptions/plans'
 import { announce } from '../storefrontAnnouncer'
-import { STOREFRONT } from '../storefrontContext'
+import { STOREFRONT, storefrontControlVars } from '../storefrontContext'
 import { storefrontProducts } from '../storefrontCatalog'
 
 // The storefront's pages read their store from StorefrontLayout's `STOREFRONT` context.
 // A story has no layout, so this decorator provides the same context for a seeded store
 // (Northfold by default), from the app's own stores, and paints the store's theme
 // around the story as the layout does. `header` and `footer` change those sections'
-// settings in a copy of the theme, so a story can show a style without touching the
-// store. Story-only: the app never imports it.
+// settings in a copy of the theme, and `chrome` the store's chrome (Lumos's search
+// field, tagline, newsletter column and legal links), so a story can show a style
+// without touching the store. Story-only: the app never imports it.
 
 type Settings = Record<string, string | number | boolean>
 
@@ -43,6 +45,8 @@ export interface StorefrontStoryOptions {
   footer?: Settings
   /** Leaves out the store's Merchandise Cloud search (the header's search icon goes). */
   unsearchable?: boolean
+  /** Changes the store's chrome for the story: `headerSearch`, `tagline`, `newsletterColumn`, `bottomLinks`, `headerTools`… */
+  chrome?: Partial<StorefrontChrome>
 }
 
 function withSettings(theme: StoreTheme, kind: string, settings: Settings | undefined): StoreTheme {
@@ -73,10 +77,11 @@ export function withStorefront(options: StorefrontStoryOptions = {}): Decorator 
           const sellsParts = computed(() => theme.value?.styles.drawing === 'sections' && sellsPartsIn(storefrontProducts(useCommerceStore().products, channelId)))
           const vehicles = useStorefrontVehicleStore()
           const vehicle = computed(() => (sellsParts.value ? vehicles.vehicleFor(channelId) : null))
+          const chrome = computed(() => ({ ...useStorefrontStore().chromeFor(found.value), ...options.chrome }))
           provide(STOREFRONT, {
             channel: found,
             theme,
-            chrome: computed(() => useStorefrontStore().chromeFor(found.value)),
+            chrome,
             link: (href: string) => (/^[a-z][a-z0-9+.-]*:/i.test(href) ? href : `/accounts/2000290/sales_channels/${channelId}/storefront${href === '/' ? '' : href.startsWith('/') ? href : `/${href}`}`),
             currency: computed(() => found.value.webStore?.currency ?? 'USD'),
             formatMoney: (amount: Money) => formatStorePrice(roundForDisplay(amount), found.value.webStore?.locale),
@@ -96,11 +101,15 @@ export function withStorefront(options: StorefrontStoryOptions = {}): Decorator 
             setVehicle: (next: Vehicle | null) => vehicles.setVehicle(channelId, next),
             fitOf: (product: FitmentProduct) => fitState(product, vehicle.value),
             chooseVehicle: () => {},
+            // As the layout decides it: the sections drawing, with the wishlist among the header's tools.
+            wishlist: computed(() => theme.value?.styles.drawing === 'sections' && chrome.value.headerTools.includes('wishlist')),
           })
           const style = computed(() => ({
-            ...storefrontThemeVars(theme.value?.styles),
+            // The page's defaults first, so a theme that sets its own width and gutter (Lumos) keeps them.
             '--sf-gutter': '24px',
             '--sf-measure': '1200px',
+            ...storefrontThemeVars(theme.value?.styles),
+            ...storefrontControlVars(theme.value?.styles),
             background: 'var(--sf-bg)',
             color: 'var(--sf-text)',
             fontFamily: 'var(--sf-body-font), system-ui, sans-serif',

@@ -193,6 +193,33 @@ export function clearFilters(filters: ListingFilters): ListingFilters {
   return { ...emptyFilters(filters.sort), fits: filters.fits }
 }
 
+/**
+ * The filters a list reads when it shows only some groups (the collection template's
+ * `facets`): the others are off, so a filter the shopper can't see or take off never
+ * narrows the list. All groups shown (`facets` absent): the filters as they are.
+ */
+export function onlyFacets(filters: ListingFilters, facets?: readonly FacetKey[]): ListingFilters {
+  if (!facets) return filters
+  const next = { ...filters }
+  for (const key of FACET_KEYS) if (!facets.includes(key)) next[key] = []
+  return next
+}
+
+/**
+ * The groups a setting names, in its order: "category, color, brand, price" (keys
+ * as FACET_KEYS writes them, any case, comma-separated; unknown words and repeats
+ * are dropped). Undefined when it names none, so the list shows every group.
+ */
+export function parseFacets(value: unknown): FacetKey[] | undefined {
+  if (typeof value !== 'string') return undefined
+  const keys: FacetKey[] = []
+  for (const word of value.split(',')) {
+    const key = FACET_KEYS.find((k) => k === word.trim().toLowerCase())
+    if (key && !keys.includes(key)) keys.push(key)
+  }
+  return keys.length ? keys : undefined
+}
+
 // ── Reading the products ─────────────────────────────────────────────────────
 
 /** How the list reads money in labels: "$50", "$12.50". */
@@ -438,6 +465,8 @@ export function priceRangeLabel(key: string, money: MoneyLabel = {}): string {
 export interface FacetOptions<P extends ListingProduct = ListingProduct> extends ListingOptions<P> {
   /** Groups the page leaves out (a category's own collection needs no Category). */
   omit?: readonly FacetKey[]
+  /** The groups to show, in this order (the collection template's `facets`); absent: all, in FACET_KEYS order. */
+  facets?: readonly FacetKey[]
 }
 
 /** A key read back as words, for a value the products no longer have ("light-grey" → "Light grey"). */
@@ -467,17 +496,18 @@ function valuesOf<P extends ListingProduct>(all: Facts<P>[], money: MoneyLabel):
 }
 
 /**
- * The filter panel for a list: Category, Size, Color, Price and Brand, each
- * with every value the products have and how many products each would list
- * with the other filters as they are (choosing it within its own group adds to
- * the list, so its count ignores the group's own choices). A group with one
- * value says nothing and is left out, unless that value is chosen.
+ * The filter panel for a list: Category, Size, Color, Price and Brand (or the
+ * groups `options.facets` names, in its order), each with every value the
+ * products have and how many products each would list with the other filters as
+ * they are (choosing it within its own group adds to the list, so its count
+ * ignores the group's own choices). A group with one value says nothing and is
+ * left out, unless that value is chosen.
  */
 export function facetGroups<P extends ListingProduct>(products: readonly P[], filters: ListingFilters, options: FacetOptions<P> = {}): FacetGroup[] {
   const all = products.map(factsOf)
   const values = valuesOf(all, options)
   const groups: FacetGroup[] = []
-  for (const key of FACET_KEYS) {
+  for (const key of options.facets ?? FACET_KEYS) {
     if (options.omit?.includes(key)) continue
     const known = values[key]
     // A value chosen in the URL that no product has: listed, so it can be taken off.
@@ -507,11 +537,11 @@ export interface ActiveFilter {
   next: ListingFilters
 }
 
-/** One chip per chosen value, in the panel's order, each knowing the filters without it. */
-export function activeFilters<P extends ListingProduct>(products: readonly P[], filters: ListingFilters, options: MoneyLabel = {}): ActiveFilter[] {
+/** One chip per chosen value, in the panel's order (`options.facets`, else FACET_KEYS), each knowing the filters without it. */
+export function activeFilters<P extends ListingProduct>(products: readonly P[], filters: ListingFilters, options: MoneyLabel & { facets?: readonly FacetKey[] } = {}): ActiveFilter[] {
   const values = valuesOf(products.map(factsOf), options)
   const chips: ActiveFilter[] = []
-  for (const key of FACET_KEYS) {
+  for (const key of options.facets ?? FACET_KEYS) {
     for (const value of filters[key]) {
       const known = values[key].get(value)?.label
       const name = key === 'price' ? (known ?? priceRangeLabel(value, options)) : (known ?? labelFromKey(value))

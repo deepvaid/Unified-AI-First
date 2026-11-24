@@ -9,6 +9,7 @@ import { historyFor } from '@/storefront/demoStores/install'
 import type { InstallChannel } from '@/storefront/demoStores/install'
 import { NORTHFOLD_CHANNEL_ID } from '@/storefront/northfoldDemo'
 import { TORQLINE_CHANNEL_ID } from '@/storefront/torqlineDemo'
+import { LUMOS_CHANNEL_ID } from '@/storefront/lumosDemo'
 import { VITAHEAL_CHANNEL_ID } from '@/storefront/vitahealDemo'
 
 /** A prompt is just its text — the assistant works out the intent itself. */
@@ -318,6 +319,7 @@ const SEEDED_LISTING: Record<string, Pick<Chatbot, 'conversations' | 'createdOn'
   [VITAHEAL_CHANNEL_ID]: { conversations: 214, createdOn: 'Nov 16, 2026', lastModified: 'Nov 18, 2026' },
   [NORTHFOLD_CHANNEL_ID]: { conversations: 138, createdOn: 'Nov 19, 2026', lastModified: 'Nov 19, 2026' },
   [TORQLINE_CHANNEL_ID]: { conversations: 176, createdOn: 'Nov 23, 2026', lastModified: 'Nov 23, 2026' },
+  [LUMOS_CHANNEL_ID]: { conversations: 152, createdOn: 'Nov 24, 2026', lastModified: 'Nov 24, 2026' },
 }
 
 /** What of a demo chatbot is kept: whether it is on, and how it is set up. */

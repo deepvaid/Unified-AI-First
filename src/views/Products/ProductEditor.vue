@@ -205,14 +205,19 @@ function setSizeChart(chartId: string | undefined) {
   else delete form.value.detail.sizeChartId
 }
 
-// ── A part: vehicle fitment and specifications ────────────────────────
-// Offered on a part (it carries fitment) and on any product of a store that sells
-// parts. Both are saved with the page's Save; the storefront reads them from there.
-const isPart = computed(() => {
-  if (form.value.detail.fitment) return true
+// ── Vehicle fitment and specifications ────────────────────────────────
+// Fitment is offered on a part (it carries fitment) and on any product of a store that
+// sells parts. Specifications and a warranty are offered there too, and on any product
+// that has them or whose store's products carry them (a furniture store's measurements).
+// Both are saved with the page's Save; the storefront reads them from there.
+const storeProducts = computed(() => {
   const storeIds = productStores.channelIds(form.value.detail.salesChannels)
-  return storeIds.length > 0 && sellsParts(store.products.filter((p) => p.channelIds?.some((id) => storeIds.includes(id))))
+  return storeIds.length ? store.products.filter((p) => p.channelIds?.some((id) => storeIds.includes(id))) : []
 })
+const isPart = computed(() => !!form.value.detail.fitment || sellsParts(storeProducts.value))
+const carriesSpecs = (detail?: ProductDetail) => !!detail?.specs?.length || !!detail?.warranty
+const showSpecs = computed(() =>
+  isPart.value || carriesSpecs(product.value?.detail) || storeProducts.value.some((p) => carriesSpecs(p.detail)))
 /** Front and rear, when the part is sold by position. */
 const fitmentPositions = computed(() => positionsFor(form.value.detail.options))
 
@@ -221,6 +226,57 @@ function setFitment(fitment: Fitment) {
 }
 
 const specs = computed(() => form.value.detail.specs ?? [])
+
+/**
+ * The names a furniture or home product's rows usually take, each with an example
+ * value. The store's chat answers from rows with these names, so the card offers them.
+ */
+const HOME_SPECS: Readonly<Record<string, string>> = {
+  'Width': '84 in',
+  'Depth': '38 in',
+  'Height': '34 in',
+  'Seat height': '18 in',
+  'Weight': '95 lb',
+  'Materials': 'Solid oak, wool blend',
+  'Care': 'Spot clean with a damp cloth',
+  'Assembly': 'Arrives assembled',
+}
+const homeSpecName = (label: string) => Object.keys(HOME_SPECS).find((name) => name.toLowerCase() === label.trim().toLowerCase())
+
+/** The card's words: a part's facts hold for every vehicle; anything else's are its measurements, materials and care. */
+const specCopy = computed(() => (isPart.value
+  ? {
+      description: 'Facts that hold for every vehicle. Shoppers see them in a table on the product page.',
+      icon: 'list',
+      empty: 'Add the facts shoppers compare, like the friction material or what is in the box.',
+      name: 'Friction material',
+      warranty: 'Limited lifetime warranty',
+    }
+  : {
+      description: 'Measurements, materials and care shoppers compare, shown in a table on the product page.',
+      icon: 'ruler',
+      empty: 'Start with one shoppers often ask about, or add your own.',
+      name: 'Width',
+      warranty: '5-year frame warranty',
+    }))
+
+/**
+ * A row's example value. On a part, the first row has one. Otherwise a row with a usual
+ * name has that name's, and the first row, still unnamed, has the one for its name example.
+ */
+function specValueExample(index: number, label: string): string | undefined {
+  if (isPart.value) return index ? undefined : 'Ceramic'
+  const name = homeSpecName(label) ?? (!label.trim() && !index ? specCopy.value.name : undefined)
+  return name ? HOME_SPECS[name] : undefined
+}
+
+/** The usual names not used yet, offered as one-click rows; a part gets none. */
+const specSuggestions = computed(() => {
+  if (isPart.value) return []
+  const used = new Set(specs.value.map((spec) => homeSpecName(spec.label)))
+  return Object.keys(HOME_SPECS).filter((name) => !used.has(name))
+})
+
 /** Save was pressed with a half-filled row: from then on the rows show what they miss. */
 const specsTried = ref(false)
 const specIssues = computed(() => (specsTried.value ? specErrors(specs.value) : []))
@@ -229,9 +285,11 @@ const specFieldId = (index: number, field: 'label' | 'value') => `ped-spec-${ind
 const specsStacked = computed(() => windowWidth.value <= parseFloat(mp_layout_breakpointCompact))
 const specLabel = (index: number, text: string) => (index === 0 || specsStacked.value ? text : undefined)
 
-function addSpec() {
-  form.value.detail.specs = [...specs.value, { label: '', value: '' }]
-  nextTick(() => document.getElementById(specFieldId(specs.value.length - 1, 'label'))?.focus())
+/** Adds a row, named when it is a suggested one: its value is next, else its name. */
+function addSpec(label = '') {
+  form.value.detail.specs = [...specs.value, { label, value: '' }]
+  const index = specs.value.length - 1
+  nextTick(() => document.getElementById(specFieldId(index, label ? 'value' : 'label'))?.focus())
 }
 
 function removeSpec(index: number) {
@@ -532,11 +590,11 @@ function openVariantsWizard() {
           @update:model-value="setFitment"
         />
 
-        <v-card v-if="isPart" variant="flat" border rounded="lg" class="ped-card">
+        <v-card v-if="showSpecs" variant="flat" border rounded="lg" class="ped-card">
           <MpFormSection
             :heading-level="2"
             title="Specifications"
-            description="Facts that hold for every vehicle. Shoppers see them in a table on the product page."
+            :description="specCopy.description"
           />
           <!-- A small two-column list: the first row's labels head the columns (every row has them
                once the columns stack), and every field is named by its own aria-label, as
@@ -551,7 +609,7 @@ function openVariantsWizard() {
                   :label="specLabel(index, 'Name')"
                   :aria-label="`Name, specification ${index + 1}`"
                   :aria-labelledby="undefined"
-                  :placeholder="index ? undefined : 'Friction material'"
+                  :placeholder="index ? undefined : specCopy.name"
                   :error-messages="specIssues[index]?.label || undefined"
                 />
                 <v-text-field
@@ -560,7 +618,7 @@ function openVariantsWizard() {
                   :label="specLabel(index, 'Value')"
                   :aria-label="`Value, ${spec.label.trim() || `specification ${index + 1}`}`"
                   :aria-labelledby="undefined"
-                  :placeholder="index ? undefined : 'Ceramic'"
+                  :placeholder="specValueExample(index, spec.label)"
                   :error-messages="specIssues[index]?.value || undefined"
                 />
               </MpFormGrid>
@@ -576,18 +634,54 @@ function openVariantsWizard() {
           </MpFormGrid>
           <MpEmptyState
             v-else
-            icon="list"
+            :variant="specSuggestions.length ? 'launcher' : 'stack'"
+            :icon="specCopy.icon"
             :heading-level="3"
             title="No specifications yet"
-            description="Add the facts shoppers compare, like the friction material or what is in the box."
+            :description="specCopy.empty"
             action-label="Add specification"
             action-icon="plus"
-            @action="addSpec"
-          />
-          <v-btn v-if="specs.length" variant="outlined" prepend-icon="plus" class="text-none align-self-start" @click="addSpec">
-            Add specification
-          </v-btn>
-          <v-text-field v-model="warranty" label="Warranty" placeholder="Limited lifetime warranty" />
+            @action="addSpec()"
+          >
+            <div role="group" aria-label="Suggested specifications" class="d-flex flex-wrap justify-center ga-2">
+              <v-chip
+                v-for="name in specSuggestions"
+                :key="name"
+                tag="button"
+                type="button"
+                size="small"
+                variant="outlined"
+                prepend-icon="plus"
+                class="text-none"
+                :aria-label="`Add ${name}`"
+                @click="addSpec(name)"
+              >
+                {{ name }}
+              </v-chip>
+            </div>
+          </MpEmptyState>
+          <div v-if="specs.length" class="d-flex flex-wrap align-center ga-3">
+            <v-btn variant="outlined" prepend-icon="plus" class="text-none" @click="addSpec()">
+              Add specification
+            </v-btn>
+            <div v-if="specSuggestions.length" role="group" aria-label="Suggested specifications" class="d-flex flex-wrap ga-2">
+              <v-chip
+                v-for="name in specSuggestions"
+                :key="name"
+                tag="button"
+                type="button"
+                size="small"
+                variant="outlined"
+                prepend-icon="plus"
+                class="text-none"
+                :aria-label="`Add ${name}`"
+                @click="addSpec(name)"
+              >
+                {{ name }}
+              </v-chip>
+            </div>
+          </div>
+          <v-text-field v-model="warranty" label="Warranty" :placeholder="specCopy.warranty" />
         </v-card>
 
         <v-card variant="flat" border rounded="lg" class="ped-card">

@@ -31,6 +31,7 @@ test('naming the wellness profile changes no answer', () => {
 })
 
 test('every profile there is has a need, a careful answer, and links within the store', () => {
+  assert.deepEqual(Object.keys(ASSISTANT_PROFILES), ['wellness', 'apparel', 'auto-parts', 'home'])
   for (const [id, profile] of Object.entries(ASSISTANT_PROFILES)) {
     assert.equal(profile!.id, id)
     assert.ok(profile!.needs.length, id)

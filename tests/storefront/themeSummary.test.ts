@@ -5,11 +5,12 @@ import assert from 'node:assert/strict'
 import { applySummary, countWord, currencyName, restoreMessage, restoreParts, restoreSummary, startSummary, themeFacts } from '../../src/storefront/demoStores/summary.ts'
 import type { StoreFacts, ThemeFacts } from '../../src/storefront/demoStores/summary.ts'
 import { DEMO_STORES, demoStoreFor } from '../../src/storefront/demoStores/index.ts'
+import type { DemoStoreId } from '../../src/storefront/demoStores/index.ts'
 import { snapshotFor } from '../../src/storefront/demoStores/install.ts'
 
 const TODAY = '2026-11-24'
 const vitaheal: StoreFacts = { name: 'Vitaheal (demo)', blank: false, products: 8, currency: 'SEK', activePlans: 3, runs: null, broughtPlans: 0, subscribers: 8, sizeCharts: 0 }
-const factsOf = (id: 'vitaheal' | 'northfold' | 'torqline'): ThemeFacts => {
+const factsOf = (id: DemoStoreId): ThemeFacts => {
   const blueprint = demoStoreFor(id)
   return themeFacts(blueprint.card.name, snapshotFor(blueprint.homeChannel, id, TODAY))
 }
@@ -27,6 +28,14 @@ test('a store without Merchandise Cloud is told search waits for it; part number
   assert.ok(!applySummary(vitaheal, factsOf('torqline')).some((line) => line.startsWith('Search')))
   const facts = { original: 'Vitaheal', applied: null, plans: 0, subscribers: 0, campaigns: 0, sizeCharts: 0, announcesByEmail: false }
   assert.ok(restoreSummary({ ...facts, connectionBack: 'disconnected' }).includes('Merchandise Cloud is disconnected again, as it was when the store started.'))
+})
+
+test('a store with a wishlist is told Apply and Restore empty it with the cart', () => {
+  assert.ok(applySummary({ ...vitaheal, wishlist: true }, factsOf('northfold')).includes('Orders already placed stay. The cart and saved wishlist are emptied.'))
+  assert.ok(applySummary(vitaheal, factsOf('northfold')).includes('Orders already placed stay. The cart is emptied.'))
+  const facts = { original: 'Lumos', applied: 'Northfold', plans: 0, subscribers: 0, campaigns: 1, sizeCharts: 0, announcesByEmail: true }
+  assert.ok(restoreSummary({ ...facts, wishlist: true }).includes('The cart and saved wishlist are emptied.'))
+  assert.ok(restoreSummary(facts).includes('The cart is emptied.'))
 })
 
 test('the theme facts count what each theme brings', () => {

@@ -2,7 +2,12 @@
  * The storefront's controls, shared by its pages (each loads this file scoped).
  * P4-8 — DELIBERATELY OUT OF SYSTEM: a merchant's storefront as their theme draws
  * it. Colours, fonts and radius come from the theme (--sf-*, set on .storefront);
- * the 50px control height is Aurora's, measured on Neelam-Store.
+ * the 50px control height is Aurora's, measured on Neelam-Store. A theme that styles
+ * its own controls (a `controlBorderColor`, Lumos: storefrontControlVars in
+ * ./storefrontContext.ts) sets --sf-control-height, --sf-control-text, --sf-input-border
+ * (the control border colour) and --sf-field-focus
+ * (and --sf-check, --sf-check-size for checkboxes); each is read with today's value
+ * as its fallback, so every other theme keeps the controls it had.
  * ───────────────────────────────────────────────────────────────────────────── */
 .sf-icon-btn {
   display: inline-flex;
@@ -21,7 +26,7 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  height: 50px;
+  height: var(--sf-control-height, 50px);
   padding: 0 24px;
   /* The --sf-button-* variables are set by a theme on the sections drawing only
      (storefrontThemeVars); every other theme keeps the brand fill it always had. */
@@ -30,10 +35,18 @@
   background: var(--sf-button-bg, var(--sf-brand, #121011));
   color: var(--sf-button-ink, var(--sf-bg, #ffffff)) !important;
   font: inherit;
-  font-size: 15px;
+  font-size: var(--sf-control-text, 15px);
   font-weight: 600;
   text-decoration: none !important;
+  text-transform: var(--sf-button-case, none);
   cursor: pointer;
+}
+
+/* The theme's hover fill (--sf-button-hover, the sections drawing's when the theme sets one); else none.
+   :where keeps it as light as `.x:hover`, so a page's own hover for its button still wins. */
+.sf-button:where(:not(.sf-button--secondary, :disabled, [aria-disabled='true'])):hover {
+  border-color: var(--sf-button-hover, var(--sf-button-border, transparent));
+  background: var(--sf-button-hover, var(--sf-button-bg, var(--sf-brand, #121011)));
 }
 
 .sf-button:disabled {
@@ -60,7 +73,7 @@
 
 .sf-input {
   width: 100%;
-  height: 50px;
+  height: var(--sf-control-height, 50px);
   padding: 0 14px;
   border: 1px solid var(--sf-input-border, #c9c9c9);
   /* --sf-corner is the sections drawing's (storefront-surface.css); every other theme keeps 4px. */
@@ -68,7 +81,12 @@
   background: var(--sf-bg, #ffffff);
   color: inherit;
   font: inherit;
-  font-size: 15px;
+  font-size: var(--sf-control-text, 15px);
+}
+
+/* A theme that draws its own controls turns the field's hairline its accent on focus, beside the ring. */
+.sf-input:focus {
+  border-color: var(--sf-field-focus, var(--sf-input-border, #c9c9c9));
 }
 
 .sf-input[aria-invalid='true'] {
@@ -95,7 +113,7 @@
 .sf-qty {
   display: inline-flex;
   align-items: stretch;
-  height: 50px;
+  height: var(--sf-control-height, 50px);
   border: 1px solid var(--sf-input-border, #c9c9c9);
   border-radius: var(--sf-corner, 4px);
 }

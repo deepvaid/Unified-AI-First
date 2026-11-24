@@ -8,6 +8,8 @@ import { snapshotFor } from '../../src/storefront/demoStores/install.ts'
 import { DEFAULT_GRID, addsDirectly, soldOutText, cardPhoto, cardPrice, choiceSummary, chosenColor, colorsOf, gridSettings, isNewArrival, listingNoun, needsChoice, partNumber, soldOut, stockLine, unbrokenHyphens } from '../../src/storefront/listing.ts'
 import { partNumberOf } from '../../src/storefront/productPage.ts'
 import { TORQLINE_BLUEPRINT } from '../../src/storefront/demoStores/torqline.ts'
+import { LUMOS_BLUEPRINT } from '../../src/storefront/demoStores/lumos.ts'
+import { emptyFilters, facetGroups } from '../../src/storefront/facets.ts'
 import type { CardProduct } from '../../src/storefront/listing.ts'
 import { vitahealProducts } from '../../src/storefront/vitahealDemo.ts'
 
@@ -90,6 +92,21 @@ test('the grid follows the collection template, falling back to every feature on
   assert.deepEqual(gridSettings(undefined), DEFAULT_GRID)
   assert.deepEqual(gridSettings([{ kind: 'collection-grid', settings: { filters: false, quickAdd: 'false', columns: 9 } }]), { filters: false, sort: true, quickAdd: false, columns: 5, cardStyle: 'Editorial' })
   assert.deepEqual(gridSettings([{ kind: 'rich-text', settings: {} }]), DEFAULT_GRID)
+})
+
+test('the grid names the filter groups it shows, in its order; without the setting, every group as before', () => {
+  const grid = (facets: string) => gridSettings([{ kind: 'collection-grid', settings: { facets } }])
+  assert.deepEqual(grid('category,color,brand,price').facets, ['category', 'color', 'brand', 'price'])
+  assert.deepEqual(grid('Price, brand, colour').facets, ['price', 'brand'])
+  assert.equal('facets' in grid(''), false)
+  assert.equal('facets' in gridSettings(northfold.theme.templates.collection), false)
+  assert.equal('facets' in gridSettings(torqline.theme.templates.collection), false)
+  // A furniture room (Lumos's Living Room): Category, Color, Brand and Price; the rug's sizes make no Size group.
+  const lumos = snapshotFor(LUMOS_BLUEPRINT.homeChannel, 'lumos', '2026-11-20')
+  const living = lumos.products.filter((p) => p.collections?.includes('Living Room'))
+  assert.ok(living.length > 2)
+  assert.deepEqual(facetGroups(living, emptyFilters(), { facets: grid('category,color,brand,price').facets }).map((g) => g.label), ['Category', 'Color', 'Brand', 'Price'])
+  assert.ok(facetGroups(living, emptyFilters()).some((g) => g.key === 'size'))
 })
 
 test('a parts grid asks for dense cards; any other word keeps the editorial card', () => {

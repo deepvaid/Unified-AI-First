@@ -1,9 +1,10 @@
 // Placeholder product photography: an SVG pack shot drawn from the product's name
 // and the store's palette, returned as a data URI an <img> can show. Deterministic,
 // offline, and never a real brand's image. A store picks its shape (its blueprint's
-// `packShot`): a supplements store draws a can, a clothing store a garment on a hanger.
+// `packShot`): a supplements store draws a can, a clothing store a garment on a hanger,
+// a furniture store a sofa.
 
-export type PackShape = 'can' | 'bag' | 'box' | 'strips' | 'garment'
+export type PackShape = 'can' | 'bag' | 'box' | 'strips' | 'garment' | 'furniture'
 export type PackView = 'front' | 'angle'
 
 export interface PackShotInput {
@@ -56,6 +57,12 @@ const PACKS: Record<PackShape, PackGeometry> = {
   garment: {
     x: 140, width: 120, stripeY: 286, textTop: 344, textFill: 'ink', shadow: false,
     body: (ink) => `<path d="M200 108 L200 72 Q200 58 213 58 Q226 58 226 70" fill="none" stroke="${ink}" stroke-width="5" stroke-linecap="round"/><path d="M172 94 L126 110 L84 154 L112 190 L140 172 L140 292 Q140 300 148 300 L252 300 Q260 300 260 292 L260 172 L288 190 L316 154 L274 110 L228 94 Q200 124 172 94 Z" fill="${ink}"/>`,
+  },
+  // A plain sofa seen from the front, the stripe along its seat: the name stands under
+  // it, like a showroom card. It draws its own floor shadow, as wide as the sofa.
+  furniture: {
+    x: 116, width: 168, stripeY: 246, textTop: 320, textFill: 'ink', shadow: false,
+    body: (ink) => `<ellipse cx="200" cy="282" rx="146" ry="7" fill="${ink}" opacity="0.08"/><rect x="104" y="96" width="192" height="104" rx="22" fill="${ink}" opacity="0.82"/><rect x="104" y="188" width="192" height="72" rx="12" fill="${ink}"/><path d="M200 196 L200 238" stroke="#ffffff" stroke-opacity="0.3" stroke-width="3" stroke-linecap="round"/><rect x="62" y="148" width="54" height="112" rx="20" fill="${ink}"/><rect x="284" y="148" width="54" height="112" rx="20" fill="${ink}"/><rect x="76" y="254" width="10" height="24" rx="3" fill="${ink}"/><rect x="314" y="254" width="10" height="24" rx="3" fill="${ink}"/>`,
   },
 }
 

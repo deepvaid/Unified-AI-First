@@ -28,6 +28,14 @@ Search shows only while the store can search (Merchandise Cloud connected). On a
 opens in a \`StorefrontDrawer\`: the shop's own links large, then the store's pages, account and cart.
 The checkout gets the logo and "Secure checkout" only.
 
+The store's chrome adds two things (Lumos):
+- \`headerSearch: 'field'\`: search as a visible field (the theme's field: its control height, a
+  hairline that turns its accent on focus, the store's placeholder, the magnifier as its button) in
+  the bar on a wide screen, and in a row of its own under the bar, the full width, where the menu
+  needs the bar (1240px and narrower).
+- A **wishlist** (\`'wishlist'\` among \`headerTools\`): a heart beside the cart, leading to \`/wishlist\`,
+  with how many saved products the store still sells ("Wishlist, 2 items").
+
 ### A11y
 - The wordmark is the home link; every icon button has a name ("Cart, 2 items" when it has some)
   and a 44px target; the menu button says it opens a dialog and whether it is open.
@@ -60,6 +68,11 @@ export const Minimal: Story = {
 /** The brand colour, with its own ink and focus ring. */
 export const Dark: Story = {
   decorators: [withStorefront({ header: { colorScheme: 'Dark' } })],
+}
+
+/** Search as a field and a wishlist heart, as Lumos's chrome asks for them, here on Northfold's theme. */
+export const SearchFieldAndWishlist: Story = {
+  decorators: [withStorefront({ chrome: { headerSearch: 'field', headerTools: ['account', 'wishlist'], searchPlaceholder: 'Search the store' } })],
 }
 
 /** A store that cannot search yet: no search icon, so it never leads to a page that cannot search. */

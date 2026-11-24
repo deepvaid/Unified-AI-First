@@ -224,15 +224,46 @@ watch(open, (value) => {
                       <span class="s-pill"></span>
                     </span>
                   </template>
+                  <template v-else-if="selectedDef.kind === 'image-banner' && variant.id === 'words-left'">
+                    <!-- Words left of centre on a light wash, the buttons and a stats strip under them. -->
+                    <span class="s-fill s-banner s-banner--left">
+                      <span class="s-chip"></span>
+                      <span class="s-line s-line--md"></span>
+                      <span class="s-row"><span class="s-pill"></span><span class="s-pill s-pill--ghost"></span></span>
+                      <span class="s-stats"></span>
+                    </span>
+                  </template>
                   <template v-else-if="selectedDef.kind === 'image-banner'">
                     <span class="s-fill s-banner" :class="`s-banner--${variant.id}`">
                       <span class="s-line s-line--md"></span>
                       <span class="s-pill"></span>
                     </span>
                   </template>
+                  <template v-else-if="selectedDef.kind === 'collection-grid' && variant.id === 'carousel'">
+                    <!-- A row of tiles running off the edge, the name on each photo, dots under it. -->
+                    <span class="s-carousel">
+                      <span class="s-carousel__track">
+                        <span v-for="n in 4" :key="n" class="s-tile s-tile--over"><span class="s-line s-line--sm"></span></span>
+                      </span>
+                      <span class="s-dots"><span v-for="n in 4" :key="n" :class="{ 'is-on': n === 1 }"></span></span>
+                    </span>
+                  </template>
                   <template v-else-if="selectedDef.kind === 'collection-grid'">
                     <span class="s-grid" :style="{ '--cols': String(variant.preset.columns ?? 3) }">
                       <span v-for="n in Number(variant.preset.columns ?? 3)" :key="n" class="s-tile"></span>
+                    </span>
+                  </template>
+                  <template v-else-if="selectedDef.kind === 'logo-strip'">
+                    <!-- A title over six logo cards, on the page or on a tinted band. -->
+                    <span class="s-logos" :class="`s-logos--${variant.id}`">
+                      <span class="s-line s-line--sm"></span>
+                      <span class="s-logos__row"><span v-for="n in 6" :key="n" class="s-logo"></span></span>
+                    </span>
+                  </template>
+                  <template v-else-if="selectedDef.kind === 'icon-row'">
+                    <!-- Plain: icons between two hairlines. Cards: each on a card with a tinted circle. -->
+                    <span class="s-icons" :class="`s-icons--${variant.id}`">
+                      <span v-for="n in 4" :key="n" class="s-icons__item"><span class="s-dot"></span><span class="s-line s-line--lg"></span></span>
                     </span>
                   </template>
                   <template v-else-if="selectedDef.kind === 'featured-products'">
@@ -462,6 +493,43 @@ watch(open, (value) => {
   height: 100%;
 }
 .s-tile { border-radius: 4px; background: rgba(var(--v-theme-surface), 0.7); }
+
+/* Image banner: words on the left */
+.s-banner--left {
+  justify-content: center;
+  gap: 4px;
+  background:
+    linear-gradient(to right, rgba(var(--v-theme-surface), 0.4) 55%, rgba(var(--v-theme-surface), 0.08) 85%),
+    rgba(var(--v-theme-primary), 0.35);
+}
+.s-chip { display: block; width: 22px; height: 6px; border: 1px solid rgb(var(--v-theme-primary)); border-radius: 999px; }
+.s-row { display: flex; gap: 4px; }
+.s-pill--ghost { background: transparent; box-shadow: inset 0 0 0 1px rgba(var(--v-theme-surface), 0.85); }
+.s-stats { display: block; width: 60%; height: 10px; margin-top: 2px; border-radius: 2px; background: rgba(var(--v-theme-surface), 0.9); }
+
+/* Collection grid: carousel */
+.s-carousel { display: flex; flex-direction: column; gap: 6px; width: 100%; height: 100%; }
+.s-carousel__track { display: flex; flex: 1; gap: 5px; overflow: hidden; }
+.s-carousel__track .s-tile { flex: 0 0 31%; }
+.s-tile--over { display: flex; align-items: flex-end; padding: 4px; background: linear-gradient(0deg, rgba(var(--v-theme-on-surface), 0.6), rgba(var(--v-theme-surface), 0.7) 70%); }
+.s-dots { display: flex; justify-content: center; gap: 3px; }
+.s-dots span { width: 4px; height: 4px; border-radius: 999px; background: rgba(var(--v-theme-surface), 0.45); }
+.s-dots span.is-on { width: 10px; background: rgb(var(--v-theme-primary)); }
+
+/* Logo strip */
+.s-logos { display: flex; flex-direction: column; justify-content: center; gap: 6px; width: 100%; height: 100%; padding: 6px; border-radius: 4px; }
+.s-logos--tint { background: rgba(var(--v-theme-primary), 0.3); }
+.s-logos__row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; }
+.s-logo { display: block; height: 16px; border-radius: 2px; background: rgba(var(--v-theme-surface), 0.85); }
+
+/* Icon row */
+.s-icons { display: flex; align-items: center; gap: 4px; width: 100%; height: 100%; }
+.s-icons--plain { border-block: 1px solid rgba(var(--v-theme-surface), 0.5); }
+.s-icons__item { display: flex; flex: 1; flex-direction: column; align-items: center; gap: 4px; padding: 8px 2px; }
+.s-icons--cards .s-icons__item { border-radius: 3px; background: rgba(var(--v-theme-surface), 0.85); }
+.s-dot { display: block; width: 10px; height: 10px; border-radius: 50%; background: rgba(var(--v-theme-surface), 0.85); }
+.s-icons--cards .s-dot { background: rgb(var(--v-theme-primary)); }
+.s-icons--cards .s-line { background: rgba(var(--v-theme-on-surface), 0.35); }
 
 /* Featured products */
 .s-featured { display: flex; gap: 5px; width: 100%; height: 100%; }

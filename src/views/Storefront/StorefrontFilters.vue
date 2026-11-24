@@ -220,10 +220,11 @@ const countLabel = (count: number) => `${count} ${count === 1 ? props.noun.one :
 
 .sf-filters__check {
   flex-shrink: 0;
-  width: 18px;
-  height: 18px;
+  /* A theme that styles its controls (Lumos: 20px, in the accent) sets these; others keep 18px in the text colour. */
+  width: var(--sf-check-size, 18px);
+  height: var(--sf-check-size, 18px);
   margin: 0;
-  accent-color: var(--sf-text, #121011);
+  accent-color: var(--sf-check, var(--sf-text, #121011));
   cursor: inherit;
 }
 

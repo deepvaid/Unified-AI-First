@@ -25,6 +25,8 @@ export const VITAHEAL_CAMPAIGN_CONTENT_ID = 9001
 export const NORTHFOLD_CAMPAIGN_CONTENT_ID = 9002
 /** The email content a Torqline store campaign is announced with. */
 export const TORQLINE_CAMPAIGN_CONTENT_ID = 9003
+/** The Lumos Home (demo) store's campaign announcement (src/storefront/demoStores/lumos.ts). */
+export const LUMOS_CAMPAIGN_CONTENT_ID = 9004
 
 export interface ContentItem {
   id: number
@@ -185,6 +187,17 @@ function seedContent(): ContentItem[] {
     editorType: 'Drag & Drop',
     createdAt: new Date(Date.now() - 43_200_000).toISOString(),
     updatedAt: new Date(Date.now() - 120_000).toISOString(),
+    folderId: null,
+    archived: false,
+    usedByCampaigns: 0,
+  })
+  // The Lumos Home (demo) store's, just after that.
+  out.push({
+    id: LUMOS_CAMPAIGN_CONTENT_ID,
+    name: 'Lumos Home: campaign announcement',
+    editorType: 'Drag & Drop',
+    createdAt: new Date(Date.now() - 43_200_000).toISOString(),
+    updatedAt: new Date(Date.now() - 180_000).toISOString(),
     folderId: null,
     archived: false,
     usedByCampaigns: 0,

@@ -7,7 +7,7 @@
  *
  * A chatbot names its profile in `ChatbotConfig.assistantProfile`, so a store's
  * assistant travels with it when its theme is applied elsewhere. Unset: wellness.
- * Wellness is Vitaheal's, apparel Northfold's, auto parts Torqline's.
+ * Wellness is Vitaheal's, apparel Northfold's, auto parts Torqline's, home Lumos's.
  *
  * Pure, with relative `.ts` imports only, so `npm run test:chatbot` runs it in Node.
  */
@@ -27,6 +27,8 @@ export interface AssistantNeed {
    * named as the wellness store names it ("For better sleep, …").
    */
   kind?: 'piece' | 'occasion'
+  /** Furniture and home: a need for pieces that take little room ("a small space"), so a suggestion leads with the smallest. */
+  smallest?: true
 }
 
 export interface AssistantLink {
@@ -67,6 +69,8 @@ export interface AssistantProfile {
   clothing?: ClothingKnowledge
   /** Auto parts: whether a part fits a vehicle, part numbers, the shopper's vehicle, and the work it leaves to a mechanic. */
   parts?: PartsKnowledge
+  /** Furniture and home: a piece's size and whether it fits a space, materials and care, assembly, warranty, and delivery from the store's pages. */
+  home?: HomeKnowledge
 }
 
 /** A fibre a shopper may want to avoid ("I’m allergic to wool"). */
@@ -120,6 +124,31 @@ export interface PartsKnowledge {
   choiceNote: string
   /** The kinds of part (need labels) a qualified mechanic should fit, and the line said after an answer that offers one. */
   mechanic: { kinds: string[]; text: string }
+}
+
+/**
+ * What a furniture and home store's assistant knows beyond the needs, which name
+ * rooms. A piece's size, materials, care, assembly and warranty come from the
+ * product's own specifications (homeAnswers.ts), never from the assistant.
+ */
+export interface HomeKnowledge {
+  /** Everyday words for a piece and the word the store's product names use: "couch" → "sofa". */
+  synonyms: Record<string, string>
+  /**
+   * Delivery services a shopper may ask for. The assistant says one is offered only
+   * when the store's own pages mention it (`covered`); otherwise it says it can't
+   * promise it. `assembly`: asking for the service ("will you assemble it?") is not
+   * asking how the piece goes together.
+   */
+  services: Array<{ label: string; says: RegExp; covered: RegExp; assembly?: true }>
+  /** Asked about a piece's size or fit without naming one, and not on a product page. */
+  askPiece: string
+  /** Asked whether a piece fits without giving the space: said before the piece's own size. */
+  askSpace: string
+  /** Asked whether a piece goes through a door without giving its width: said before the piece's smallest side. */
+  askOpening: string
+  /** A fact the store doesn't list for a piece: how to find it out. */
+  unknown: string
 }
 
 const WELLNESS: AssistantProfile = {
@@ -292,8 +321,97 @@ const AUTO_PARTS: AssistantProfile = {
   },
 }
 
+/**
+ * A furniture and home store: it gives a piece's size and checks it against a space
+ * the shopper measures, says what a piece is made of, how to look after it, how it
+ * arrives and its warranty, all from the piece's own specifications. Delivery is
+ * answered from the store's own pages, and a service they don't mention is never
+ * promised. It suggests pieces by room. It gives no safety or health answers: a
+ * question about tipping, wiring or health gets this careful answer instead.
+ *
+ * A need is a room (or a small space, or lighting); a kind of piece the shopper
+ * names ("a sofa") is matched against the products' own names.
+ */
+const HOME: AssistantProfile = {
+  id: 'home',
+  help: 'I can check a piece’s size against your space, tell you what it’s made of, how to care for it, how it arrives and its warranty, suggest pieces for a room, look up your order, and answer questions about delivery and returns.',
+  needs: [
+    { label: 'the living room', says: /\b(living ?rooms?|lounge rooms?|family rooms?|sitting rooms?|tv rooms?|dens?)\b/, means: ['living', 'sofa', 'lounge', 'coffee', 'console'] },
+    { label: 'the bedroom', says: /\b(bed ?rooms?|guest rooms?|master suites?|sleep\w*)\b/, means: ['bedroom', 'bed', 'nightstand', 'bedding'] },
+    { label: 'dining', says: /\b(dining( rooms?)?|dinners?|eat[- ]in|kitchens?|breakfast nooks?|entertain\w*|hosting)\b/, means: ['dining'] },
+    { label: 'a home office', says: /\b(home offices?|offices?|work(ing)? from home|wfh|remote work\w*|study (rooms?|nooks?|corners?))\b/, means: ['office', 'desk', 'task'] },
+    { label: 'outdoors', says: /\b(outdoors?|outside|patios?|gardens?|terraces?|balcon(y|ies)|decks?|backyards?|porch(es)?|yards?|poolside)\b/, means: ['outdoor'] },
+    { label: 'lighting', says: /\b(lighting|lights|lamps?|pendants?|lanterns?|chandeliers?|sconces?|dark (rooms?|corners?)|brighten\w*|reading lights?)\b/, means: ['lighting', 'lamp', 'pendant', 'lantern'] },
+    {
+      label: 'a small space',
+      smallest: true,
+      says: /\b(small(er)? (spaces?|rooms?|apartments?|flats?|homes?|houses?|places?|areas?|corners?|living rooms?|bedrooms?|dining rooms?|offices?|balcon(y|ies)|patios?)|studio apartments?|studios?|compact|tiny|narrow|apartments?|condos?|not (a lot of|much) (room|space)|tight spaces?|limited space|space[- ]saving)\b/,
+      means: ['compact', 'small', 'narrow', 'apartment', 'studio'],
+    },
+  ],
+  askNeed: 'Tell me the room or what you need, like a sofa for a small living room, a desk for your home office or lighting for the dining room, and I’ll suggest a few pieces.',
+  suggestionLead: { one: 'here’s the one I’d pick', many: 'here’s what I’d pick' },
+  caution: {
+    says: /\b(medical|doctors?|pregnan\w*|back pain|bad back|posture|sciatica|arthritis|injur\w*|allerg\w*|asthma|eczema|toxic\w*|formaldehyde|off-?gas\w*|vocs?|fumes|flame retardants?|tip-?over|tip(s|ping|ped)? (it |them )?over|fall(s|ing)? over|anchor\w*|wall straps?|anti-?tip|child-?(safe|proof)|baby-?proof\w*|toddlers?|bab(y|ies)|cribs?|climb\w*|choking|hard-?wir\w*|wiring|wired in|electrician|electrical|electric shock|candles?|fire)\b/,
+    text: 'I can’t give safety or medical advice. Follow each piece’s assembly instructions, anchor tall pieces to the wall, and have a licensed electrician fit any light that’s wired in. For anything to do with your health, please ask your doctor. I can tell you what each piece is made of, its size and how it arrives.',
+  },
+  noPromotion: {
+    text: 'There’s no discount code running right now. Our Sale collection has a few pieces at a lower price.',
+    link: { label: 'See the sale', href: '/collections/sale' },
+  },
+  noSubscription: {
+    text: 'We don’t sell subscriptions. Every order you place is listed in your account.',
+    link: { label: 'Your account', href: '/account' },
+  },
+  placeholder: 'Ask about a size, delivery or an order',
+  subscriptions: false,
+  home: {
+    synonyms: {
+      couch: 'sofa', couches: 'sofa', settee: 'sofa', settees: 'sofa', loveseat: 'sofa', loveseats: 'sofa', sectional: 'sofa', sectionals: 'sofa',
+      armchair: 'chair', armchairs: 'chair', 'accent chair': 'lounge chair', 'office chair': 'task chair', 'desk chair': 'task chair',
+      bookcase: 'bookshelf', bookcases: 'bookshelf', bookshelves: 'bookshelf', shelves: 'bookshelf', shelving: 'bookshelf',
+      'bedside table': 'nightstand', 'bedside tables': 'nightstand', 'night stand': 'nightstand', 'end table': 'side table', 'end tables': 'side table',
+      'tv stand': 'media console', 'tv unit': 'media console', 'tv console': 'media console',
+      duvet: 'bedding', 'duvet cover': 'bedding', sheets: 'bedding', comforter: 'bedding', carpet: 'rug', 'area rug': 'rug',
+      'ceiling light': 'pendant light', 'desk lamp': 'lamp', 'floor light': 'floor lamp',
+    },
+    services: [
+      {
+        label: 'carrying it inside or upstairs',
+        says: /\b(white[- ]glove|room of (my|your|our) choice|(bring|carry|take) (it |them |the \w+ )?(in|inside|indoors|upstairs|up)|upstairs|(up|down) (the )?stairs|flights? of stairs|walk[- ]?up|(\d+(st|nd|rd|th)|second|third|fourth|fifth|top) floor|inside (my|the|our) (home|house|apartment|flat)|threshold)\b/,
+        covered: /\b(white[- ]glove|room of (your )?choice|(carry|bring|take)\w* (it |them |every piece |your \w+ )?(inside|indoors|upstairs|up the stairs)|inside your (home|door)|over the threshold)\b/i,
+      },
+      {
+        label: 'assembling it for you',
+        assembly: true,
+        says: /\b((will|do|can|could|would) (you|they|the driver|the delivery team|your team|someone) (assemble|build|set (it |them )?up|put (it |them )?together)|assembl\w* (service|included)|(assemble|build|set (it |them )?up|put (it |them )?together) for (me|us))\b/,
+        covered: /\b(assembly service|we('ll| will)? assemble|assembl\w* (it )?for you|set (it )?up for you|includ\w* assembly|assembly (is )?included)\b/i,
+      },
+      {
+        label: 'taking away the packaging or your old furniture',
+        says: /\b((take|haul|cart) (it |them )?(away|off)|take (the )?(boxes|box|packaging|cardboard) (away|back)|haul\w*|(remov|dispos|recycl)\w* (of )?(my|the|our) (old|packaging|boxes|cardboard)|old (sofa|couch|bed|mattress|furniture|table|chairs?|desk|rug)|junk removal)\b/,
+        covered: /\b(take (it |them |the packaging )?away|haul\w* away|remov\w* (the |your )?(packaging|old furniture)|old furniture|recycl\w* (the |your )?packaging)\b/i,
+      },
+      {
+        label: 'choosing a delivery day or time',
+        says: /\b(time ?slots?|delivery (windows?|slots?|appointments?)|(choose|pick|book|select|set) (a |the |my )?(delivery )?(day|date|time|slot|window)|schedul\w*|appointments?|(weekend|evening|saturday|sunday) deliver\w*|deliver\w* (on (a )?)?(saturdays?|sundays?|weekends?|evenings?))\b/,
+        covered: /\b(time ?slots?|delivery windows?|schedul\w*|appointments?|(choose|pick|book) (a |your )?(delivery )?(day|date|time))\b/i,
+      },
+      {
+        label: 'faster delivery',
+        says: /\b(express|expedit\w*|rush|same[- ]day|next[- ]day|overnight|faster|quicker|sooner|by (tomorrow|the weekend|friday|saturday|monday|christmas|thanksgiving))\b/,
+        covered: /\b(express|expedit\w*|same[- ]day|next[- ]day|overnight|faster)\b/i,
+      },
+    ],
+    askPiece: 'Which piece is it for? Tell me its name, or ask me on its page, and I’ll check its measurements.',
+    askSpace: 'Tell me the width and depth of your space in inches or feet, and I’ll check it.',
+    askOpening: 'How wide is the doorway? Tell me in inches and I’ll check it.',
+    unknown: 'Write to us and we’ll find out for you.',
+  },
+}
+
 /** The profiles there are. A store whose profile is not here answers as wellness. */
-export const ASSISTANT_PROFILES: Partial<Record<AssistantProfileId, AssistantProfile>> = { wellness: WELLNESS, apparel: APPAREL, 'auto-parts': AUTO_PARTS }
+export const ASSISTANT_PROFILES: Partial<Record<AssistantProfileId, AssistantProfile>> = { wellness: WELLNESS, apparel: APPAREL, 'auto-parts': AUTO_PARTS, home: HOME }
 
 export const DEFAULT_ASSISTANT_PROFILE: AssistantProfileId = 'wellness'
 

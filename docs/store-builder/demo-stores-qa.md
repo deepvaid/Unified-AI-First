@@ -141,6 +141,22 @@ Restore, Start from a theme and Delete store. The click-by-click flows are in th
 | 4.41 | Commerce › Orders. | The order placed on Test Garage is still there. |
 | 4.42 | Open Test Garage's old storefront address. | "Storefront not found". |
 
+## Part 5: Lumos
+
+| # | Check | Expected |
+|---|---|---|
+| 5.1 | Sales channels list. | **Lumos Home (demo)**, store #15, after Torqline. |
+| 5.2 | Storefront home at 1280. | Matches `public/storefront/lumos/theme.jpg`: indigo bar, LUMOS wordmark, a search field in the header, the uppercase Inter hero with "PERFECT PLACE" in indigo, a New arrivals badge, two buttons and a stats strip. |
+| 5.3 | Scroll the home page. | "Shop by room" carousel on a pale tint (labels over photos, one dot per room, it loops); "Brands we carry" with six made-up logos; "Featured products" with Boxed cards and Previous/Next arrows; "The Lumos difference" with four cards. |
+| 5.4 | The same at 375. | Hero 48px headline, buttons stacked, stats in one row; one room at a time; logos three to a row; the header search sits in its own row; nothing scrolls sideways. |
+| 5.5 | Living Room. | Boxed cards (badge, heart, bold name, price, full-width ADD TO CART). Filters are Category, Color, Brand and Price (no Size). Stone Side Table shows $219 and the struck $269. |
+| 5.6 | Arlo 3-Seat Sofa: pick Slate. | The gallery keeps the Oat photos and says "Shown in Oat". The rows include "Dimensions and materials" and "Warranty". |
+| 5.7 | Hearts on two cards and on a product page; open the header heart. | Each heart is pressed (filled indigo); the header says "Wishlist, 3 items"; `/wishlist` lists the three, newest first. Removing one moves focus to the next heart. |
+| 5.8 | Add the sofa (Oat), apply COZY20, pay. | 20% off the living room at checkout; the order page and Commerce › Orders show "Fabric: Oat". |
+| 5.9 | Chat: "How wide is the Arlo sofa?", "Will the Ledger desk fit a 60 inch wall?", "Do you assemble it?". | Answers from the product's own Width, from comparing 60 in with the desk, and from the Assembly row and the delivery page (no promise the pages don't make). |
+| 5.10 | Admin › the Arlo sofa's product page. | The Specifications card lists its rows; unused suggested labels show as chips. Northfold's products show no Specifications card. |
+| 5.11 | Themes page of Vitaheal: apply Lumos, then restore. | Four library cards. The dialog names Lumos's look and its 20 products; Vitaheal becomes the furniture store in dollars, then comes back as it was, and the wishlist is empty again. |
+
 ## Regression stores
 
 These stores can never take a theme. They must look and work exactly as before, whatever is applied

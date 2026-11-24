@@ -10,27 +10,58 @@ import type { FitmentProduct } from './fitment.ts'
 
 /**
  * What a store sells, for the settings only some stores can use: parts with vehicle
- * fitment (a vehicle finder, the fit banner), sized products (a size guide). The
- * builder offers a kind, field or option that `requires` one only to a store that has it.
+ * fitment (a vehicle finder, the fit banner), sized products (a size guide), products
+ * with specifications (a specifications or warranty row). The builder offers a kind,
+ * field or option that `requires` one only to a store that has it.
  */
 export interface StoreFacts {
   /** It sells parts with vehicle fitment (`sellsParts`). */
   parts: boolean
   /** It sells sized products: it has size charts, or a product links one. */
   sizes: boolean
+  /** Its products carry specifications or a warranty (a part's, a sofa's dimensions and materials). */
+  specs: boolean
 }
 
 export type StoreNeed = keyof StoreFacts
 
-/** A store that sells neither: what the builder assumes when it is told nothing. */
-const NO_FACTS: StoreFacts = { parts: false, sizes: false }
+/** A store that sells none of these: what the builder assumes when it is told nothing. */
+const NO_FACTS: StoreFacts = { parts: false, sizes: false, specs: false }
 
 /** What a store sells, from its own products and size charts. */
 export function storeFacts(
-  products: readonly (FitmentProduct & { detail?: { sizeChartId?: string } })[],
+  products: readonly (FitmentProduct & { detail?: { sizeChartId?: string; specs?: readonly unknown[]; warranty?: string } })[],
   sizeCharts: readonly unknown[],
 ): StoreFacts {
-  return { parts: sellsParts(products), sizes: sizeCharts.length > 0 || products.some((product) => !!product.detail?.sizeChartId) }
+  return {
+    parts: sellsParts(products),
+    sizes: sizeCharts.length > 0 || products.some((product) => !!product.detail?.sizeChartId),
+    specs: products.some((product) => (product.detail?.specs?.length ?? 0) > 0 || !!product.detail?.warranty?.trim()),
+  }
+}
+
+/**
+ * A heading split where its accent words fall, so those words can be drawn in the
+ * accent colour ("Discover your perfect place" with "perfect place"). The words are
+ * matched as one phrase, ignoring case and runs of spaces, and only as whole words
+ * ("room" is not the end of "Bedroom"); without them, or when the heading does not
+ * hold them, the heading is one plain part.
+ */
+export function accentParts(text: string, accent?: string): { text: string; accent: boolean }[] {
+  if (!text) return []
+  const words = (accent ?? '').trim().split(/\s+/).filter(Boolean)
+  if (!words.length) return [{ text, accent: false }]
+  const body = words.map((word) => word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('\\s+')
+  const phrase = new RegExp(`(?<![\\p{L}\\p{N}])${body}(?![\\p{L}\\p{N}])`, 'giu')
+  const parts: { text: string; accent: boolean }[] = []
+  let from = 0
+  for (const match of text.matchAll(phrase)) {
+    if (match.index > from) parts.push({ text: text.slice(from, match.index), accent: false })
+    parts.push({ text: match[0], accent: true })
+    from = match.index + match[0].length
+  }
+  if (from < text.length) parts.push({ text: text.slice(from), accent: false })
+  return parts
 }
 
 export interface ThemeSectionField {
@@ -41,6 +72,13 @@ export interface ThemeSectionField {
   options?: string[]
   /** What the builder shows for a select's options, when that differs from the stored value ("truck" → "Truck"). */
   optionLabels?: Record<string, string>
+  /** Option names for a store that sells this, over `optionLabels` (a parts store's "Part specifications"). */
+  optionLabelsFor?: Partial<Record<StoreNeed, Record<string, string>>>
+  /**
+   * The option the storefront draws while a select is unset, or holds a value that is
+   * not one of its options (an older theme's): the builder shows it (`selectValue`).
+   */
+  default?: string
   min?: number
   max?: number
   /** Read by the sections drawing only: the builder offers it on a theme drawn that way (ThemeStyles.drawing). */
@@ -60,6 +98,10 @@ export interface ThemeSectionVariant {
   label: string
   description?: string
   preset: Record<string, string | number | boolean>
+  /** A layout only the sections drawing draws (a carousel of collection tiles): offered on a theme drawn that way. */
+  drawing?: 'sections'
+  /** The templates the layout is offered on, where its settings can be changed back (words on the left, on the home page). Every template when absent. */
+  templates?: TemplateType[]
 }
 
 export interface ThemeSectionDef {
@@ -77,11 +119,18 @@ export interface ThemeSectionDef {
    * Without it, a block-accepting section takes the general blocks.
    */
   blocks?: string[]
+  /**
+   * With `blocks`: the section also takes the general blocks (an image banner's own
+   * stats beside its buttons). Without it, a section with blocks of its own takes those only.
+   */
+  generalBlocks?: boolean
   unique?: boolean
   /** A kind only the sections drawing draws: the builder offers it on a theme drawn that way. */
   drawing?: 'sections'
   /** Offered only to a store that sells this (the vehicle finder, to a parts store). */
   requires?: StoreNeed
+  /** The templates a kind is drawn on (a logo strip, on the home page). Every template when absent. */
+  templates?: TemplateType[]
 }
 
 /** A block nested inside a block-accepting section. */
@@ -98,6 +147,8 @@ export interface ThemeBlockDef {
   fields: ThemeSectionField[]
   /** A block only the sections drawing draws. */
   drawing?: 'sections'
+  /** The most a section holds, as the drawing shows no more (a banner's three stats), and why, for the builder to say. */
+  limit?: { max: number; reason: string }
 }
 
 export interface ThemeSection {
@@ -108,6 +159,9 @@ export interface ThemeSection {
   blocks?: ThemeBlock[]
   hidden?: boolean
 }
+
+/** What the builder calls a section's background: the page's own colour, or the theme's tint as a band. */
+const BACKGROUND_LABELS: Readonly<Record<string, string>> = { Page: 'Same as the page', Tint: 'Tinted band' }
 
 /** Display/group order for the categorized Add Section picker. */
 export const sectionCategories: string[] = ['Layout', 'Media', 'Featured', 'Content', 'Commerce']
@@ -146,6 +200,34 @@ export interface ThemeStyles {
   /** Hairlines between sections, rows and fields. */
   dividerColor?: string
   headingCase?: 'As typed' | 'Uppercase'
+  // Part 5 (Lumos): finer control the sections drawing reads, each optional so the
+  // themes before it look the same. Emitted by sectionsDrawingVars (--sf-* names in comments).
+  /** Heading weight (--sf-heading-weight); absent: the heading font's own (THEME_FONT_META). */
+  headingWeight?: number
+  /** Card and tile fill (--sf-card); absent: the page background. */
+  cardColor?: string
+  /** Card and tile corners in px (--sf-card-radius); absent: cornerRadius. */
+  cardRadius?: number
+  /** A soft shadow under cards (--sf-card-shadow). Absent: 'None'. */
+  cardShadow?: 'None' | 'Soft'
+  /** Solid button border (--sf-button-border); absent: the button colour. */
+  buttonBorderColor?: string
+  /** Solid button fill on hover (--sf-button-hover); absent: the button colour darkened. */
+  buttonHoverColor?: string
+  /** Button label case (--sf-button-case). Absent: 'As typed'. */
+  buttonCase?: 'As typed' | 'Uppercase'
+  /** The tint behind sections set to background "Tint" (--sf-tint); absent: surfaceColor. */
+  tintColor?: string
+  /** Page content width in px (--sf-measure); absent: 1200. */
+  measure?: number
+  /** Side padding on desktop in px (--sf-gutter); phones keep 16. Absent: 24. */
+  gutter?: number
+  /** Hero headline size on desktop in px (--sf-hero-title); phones get three quarters. */
+  heroTitleSize?: number
+  /** Section title size on desktop in px (--sf-section-title); phones get three quarters. Absent: 44. */
+  sectionTitleSize?: number
+  /** The theme styles its form controls (44px fields, 20px checks in the accent); this is their border, at least 3:1 on the page. Absent: the controls look as they always did. */
+  controlBorderColor?: string
 }
 
 export interface StoreTheme {
@@ -268,6 +350,46 @@ function sectionsDrawingVars(styles: Partial<ThemeStyles>): Record<string, strin
   vars['--sf-heading-case'] = styles.headingCase === 'Uppercase' ? 'uppercase' : 'none'
   const focus = focusColor(styles)
   if (focus) vars['--sf-focus'] = focus
+  return { ...vars, ...finerVars(styles) }
+}
+
+/** Figma's shadow.small, under a card on a theme whose cards have a soft shadow. */
+const SOFT_CARD_SHADOW = '0 4px 6px -4px rgba(0,0,0,.10)'
+
+/**
+ * The finer styles (Lumos): each becomes a variable only when the theme sets it, so a
+ * theme without them gets exactly the variables it always had, and the storefront's
+ * own fallbacks apply. A heading weight or a button border replaces the one the font
+ * and the button colour would give.
+ *
+ * The gutter is the side padding at 1400px and wider; it narrows with the window to
+ * 16px on a phone (Figma: 56 on desktop, 16 on a phone), so it stays one variable every
+ * page reads. The measure is the content width: `--sf-measure` is what the storefront
+ * has always read as the box the content and both gutters sit in, so it is the content
+ * width plus the two desktop gutters. Title sizes are the desktop ones; `-sm` is three
+ * quarters of each, for phones.
+ */
+function finerVars(styles: Partial<ThemeStyles>): Record<string, string> {
+  const vars: Record<string, string> = {}
+  if (styles.headingWeight !== undefined) vars['--sf-heading-weight'] = String(styles.headingWeight)
+  if (styles.buttonBorderColor) vars['--sf-button-border'] = styles.buttonBorderColor
+  if (styles.buttonHoverColor) vars['--sf-button-hover'] = styles.buttonHoverColor
+  if (styles.buttonCase) vars['--sf-button-case'] = styles.buttonCase === 'Uppercase' ? 'uppercase' : 'none'
+  if (styles.cardColor) vars['--sf-card'] = styles.cardColor
+  if (styles.cardRadius !== undefined) vars['--sf-card-radius'] = `${styles.cardRadius}px`
+  if (styles.cardShadow) vars['--sf-card-shadow'] = styles.cardShadow === 'Soft' ? SOFT_CARD_SHADOW : 'none'
+  if (styles.tintColor) vars['--sf-tint'] = styles.tintColor
+  if (styles.gutter !== undefined) {
+    const gutter = Math.max(0, styles.gutter)
+    vars['--sf-gutter'] = `clamp(${Math.min(16, gutter)}px, ${Number((gutter / 14).toFixed(2))}vw, ${gutter}px)`
+  }
+  if (styles.measure !== undefined) vars['--sf-measure'] = `${styles.measure + 2 * Math.max(0, styles.gutter ?? 24)}px`
+  const titles = { 'hero-title': styles.heroTitleSize, 'section-title': styles.sectionTitleSize }
+  for (const [name, size] of Object.entries(titles)) {
+    if (size === undefined) continue
+    vars[`--sf-${name}`] = `${size}px`
+    vars[`--sf-${name}-sm`] = `${Math.round(size * 0.75)}px`
+  }
   return vars
 }
 
@@ -376,10 +498,13 @@ export const sectionCatalog: ThemeSectionDef[] = [
       { id: 'carousel', label: 'Carousel', preset: { layout: 'Carousel' } },
     ],
     fields: [
+      // A short line in the accent colour above the title ("Recommendations"), on the home page.
+      { key: 'eyebrow', label: 'Line above the title', type: 'text', drawing: 'sections', templates: ['home'] },
       { key: 'title', label: 'Title', type: 'text' },
+      { key: 'accentWords', label: 'Title words in the accent color', type: 'text', drawing: 'sections', templates: ['home'] },
       { key: 'collection', label: 'Collection', type: 'collection', drawing: 'sections' },
       { key: 'productCount', label: 'Products', type: 'slider', min: 2, max: 8 },
-      { key: 'layout', label: 'Layout', type: 'select', options: ['Grid', 'Carousel'] },
+      { key: 'layout', label: 'Layout', type: 'select', options: ['Grid', 'Carousel'], default: 'Grid' },
       // An auto-parts store: with the shopper's vehicle chosen, the parts that fit it ("Popular parts for your 2019 Ford F-150").
       { key: 'vehicle', label: 'Parts for the shopper’s vehicle', type: 'toggle', drawing: 'sections', templates: ['home'], requires: 'parts' },
     ],
@@ -395,16 +520,24 @@ export const sectionCatalog: ThemeSectionDef[] = [
       { id: 'two', label: '2-up', preset: { columns: 2 } },
       { id: 'three', label: '3-up', preset: { columns: 3 } },
       { id: 'four', label: '4-up', preset: { columns: 4 } },
+      // A looping row of tiles with dots: the columns are the tiles in view (one on a phone).
+      { id: 'carousel', label: 'Carousel', description: 'A row that loops, with dots', preset: { columns: 3, layout: 'Carousel', tileStyle: 'Label over photo' }, drawing: 'sections' },
     ],
     fields: [
       { key: 'title', label: 'Title', type: 'text' },
+      { key: 'accentWords', label: 'Title words in the accent color', type: 'text', drawing: 'sections', templates: ['home'] },
       { key: 'columns', label: 'Columns', type: 'slider', min: 2, max: 4 },
       { key: 'tileRatio', label: 'Tile shape', type: 'select', options: ['Portrait', 'Square', 'Landscape'], drawing: 'sections', templates: ['home'] },
+      // Grid: every tile, in rows. Carousel: as many tiles as the columns in view, looping, with a dot per tile.
+      { key: 'layout', label: 'Layout', type: 'select', options: ['Grid', 'Carousel'], default: 'Grid', drawing: 'sections', templates: ['home'] },
+      { key: 'tileStyle', label: 'Tile name', type: 'select', options: ['Label below', 'Label over photo'], optionLabels: { 'Label below': 'Under the photo', 'Label over photo': 'On the photo' }, default: 'Label below', drawing: 'sections', templates: ['home'] },
+      { key: 'background', label: 'Background', type: 'select', options: ['Page', 'Tint'], optionLabels: BACKGROUND_LABELS, default: 'Page', drawing: 'sections', templates: ['home'] },
       { key: 'filters', label: 'Filters', type: 'toggle', drawing: 'sections', templates: ['collection'] },
       { key: 'sort', label: 'Sort', type: 'toggle', drawing: 'sections', templates: ['collection'] },
       { key: 'quickAdd', label: 'Quick add on product cards', type: 'toggle', drawing: 'sections', templates: ['collection'] },
-      // Editorial (a tall photo, name and price) or Dense (a part: square photo, part number, fit, stock and Add to cart).
-      { key: 'cardStyle', label: 'Product card', type: 'select', options: ['Editorial', 'Dense'], drawing: 'sections', templates: ['collection'] },
+      // Editorial (a tall photo, name and price), Dense (a part: square photo, part number, fit, stock and Add to cart)
+      // or Boxed (a framed card: photo, name, price and a full-width Add to cart).
+      { key: 'cardStyle', label: 'Product card', type: 'select', options: ['Editorial', 'Dense', 'Boxed'], default: 'Editorial', drawing: 'sections', templates: ['collection'] },
     ],
   },
   {
@@ -414,14 +547,24 @@ export const sectionCatalog: ThemeSectionDef[] = [
     description: 'Editorial image break with an optional headline.',
     category: 'Media',
     acceptsBlocks: true,
+    // Its buttons are general `button` blocks; on the sections drawing it also takes `stat` blocks (a strip over the photo).
+    blocks: ['stat'],
+    generalBlocks: true,
     variants: [
       { id: 'container-cta', label: 'With container & CTA', preset: { height: 'Medium' } },
       { id: 'full-cta', label: 'Full-width with CTA', preset: { height: 'Large' } },
+      // On the home page only, where its Text position can be set back.
+      { id: 'words-left', label: 'Words on the left', description: 'Text beside a bright photo, with room for stats', preset: { height: 'Large', contentPosition: 'Center left' }, drawing: 'sections', templates: ['home'] },
     ],
     fields: [
+      // A pill above the headline ("New arrivals").
+      { key: 'badge', label: 'Badge above the headline', type: 'text', drawing: 'sections', templates: ['home'] },
       { key: 'headline', label: 'Headline', type: 'text' },
+      { key: 'accentWords', label: 'Headline words in the accent color', type: 'text', drawing: 'sections', templates: ['home'] },
       { key: 'subheadline', label: 'Subheadline', type: 'text' },
       { key: 'height', label: 'Height', type: 'select', options: ['Small', 'Medium', 'Large'] },
+      // Bottom: white words at the foot of the photo, over a dark shade. Center left: the page's own colours beside the photo.
+      { key: 'contentPosition', label: 'Text position', type: 'select', options: ['Bottom', 'Center left'], default: 'Bottom', drawing: 'sections', templates: ['home'] },
     ],
   },
   {
@@ -533,7 +676,41 @@ export const sectionCatalog: ThemeSectionDef[] = [
     acceptsBlocks: true,
     blocks: ['feature'],
     drawing: 'sections',
-    fields: [{ key: 'title', label: 'Heading', type: 'text' }],
+    variants: [
+      { id: 'plain', label: 'Plain', description: 'Icons between two hairlines', preset: { tileStyle: 'Plain' } },
+      { id: 'cards', label: 'Cards', description: 'Each promise on its own card', preset: { tileStyle: 'Card', alignment: 'Center' } },
+    ],
+    fields: [
+      { key: 'eyebrow', label: 'Line above the heading', type: 'text', templates: ['home'] },
+      { key: 'title', label: 'Heading', type: 'text' },
+      { key: 'subtitle', label: 'Line under the heading', type: 'text', templates: ['home'] },
+      // Unset, the promises are centred (the heading keeps to the left).
+      { key: 'alignment', label: 'Alignment', type: 'select', options: ['Left', 'Center'], default: 'Center', templates: ['home'] },
+      // Plain: icons between two hairlines. Card: each on a card, its icon in a tinted circle.
+      { key: 'tileStyle', label: 'Style', type: 'select', options: ['Plain', 'Card'], optionLabels: { Plain: 'Plain', Card: 'Cards' }, default: 'Plain', templates: ['home'] },
+    ],
+  },
+  {
+    // Brand logos in a row (six on a desktop, three to a row on a phone), each a link to that brand's products.
+    // A logo's picture is its `image` setting (a path under /public), set by the theme; without one its name is drawn.
+    kind: 'logo-strip',
+    title: 'Logo strip',
+    icon: 'gallery-horizontal',
+    description: 'A row of brand logos, each a link to that brand’s products.',
+    category: 'Featured',
+    acceptsBlocks: true,
+    blocks: ['logo'],
+    drawing: 'sections',
+    templates: ['home'],
+    variants: [
+      { id: 'page', label: 'On the page', preset: { background: 'Page' } },
+      { id: 'tint', label: 'On a tinted band', preset: { background: 'Tint' } },
+    ],
+    fields: [
+      { key: 'eyebrow', label: 'Line above the title', type: 'text' },
+      { key: 'title', label: 'Title', type: 'text' },
+      { key: 'background', label: 'Background', type: 'select', options: ['Page', 'Tint'], optionLabels: BACKGROUND_LABELS, default: 'Page' },
+    ],
   },
   {
     // An auto-parts store's hero: a photograph with Year, Make and Model selects, and a part-number search.
@@ -579,6 +756,7 @@ export const sectionDefaults: Record<string, Record<string, string | number | bo
   'cart-summary': { showNotes: false, upsells: true },
   footer: { showSocial: true, columns: 3 },
   'icon-row': { title: '' },
+  'logo-strip': { eyebrow: '', title: 'Brands we carry', background: 'Page' },
   'vehicle-finder': {
     headline: 'Find parts that fit',
     subheadline: 'Choose your vehicle and we’ll show the parts made for it.',
@@ -594,6 +772,8 @@ const sectionStarterBlocks: Record<string, () => ThemeBlock[]> = {
     createBlock('feature', { icon: 'rotate-ccw', title: 'Easy returns', text: 'Say how long shoppers have to send something back.' }),
     createBlock('feature', { icon: 'headphones', title: 'Here to help', text: 'Say how shoppers can reach you.' }),
   ],
+  // Six names to replace, as the strip draws a logo without a picture.
+  'logo-strip': () => Array.from({ length: 6 }, () => createBlock('logo', { name: 'Brand name', link: '/collections/all' })),
 }
 
 export function getSectionDef(kind: string): ThemeSectionDef | undefined {
@@ -641,6 +821,7 @@ export const FEATURE_ICONS: Readonly<Record<string, string>> = {
   gift: 'Gift',
   clock: 'Clock',
   'map-pin': 'Map pin',
+  award: 'Award ribbon',
 }
 
 /** Where a collapsible row's body comes from. */
@@ -648,15 +829,22 @@ export const COLLAPSIBLE_SOURCES: Readonly<Record<string, string>> = {
   description: 'Product description',
   fit: 'Fit note and size guide',
   'fabric-care': 'Material and care',
-  specs: 'Part specifications',
+  specs: 'Specifications (from the product)',
   fitment: 'Vehicle compatibility table',
-  warranty: 'Part warranty',
+  warranty: 'Warranty (from the product)',
   'delivery-returns': 'Delivery and returns (the text below)',
   custom: 'The text below',
 }
 
-/** The row contents only some stores have: a part's (a parts store), the fit note and size guide (a store with sizes). */
-const COLLAPSIBLE_SOURCE_NEEDS: Readonly<Record<string, StoreNeed>> = { fit: 'sizes', specs: 'parts', fitment: 'parts', warranty: 'parts' }
+/** What a parts store calls a part's own rows, as it always has. */
+const PART_SOURCE_LABELS: Readonly<Record<string, string>> = { specs: 'Part specifications', warranty: 'Part warranty' }
+
+/**
+ * The row contents only some stores have: the vehicle table (a parts store), the fit note
+ * and size guide (a store with sizes), specifications and a warranty (a store whose
+ * products carry them: a part's, a sofa's dimensions and materials).
+ */
+const COLLAPSIBLE_SOURCE_NEEDS: Readonly<Record<string, StoreNeed>> = { fit: 'sizes', specs: 'specs', fitment: 'parts', warranty: 'specs' }
 // Blocks nest inside block-accepting sections (hero, image-banner, rich-text,
 // featured-products, collection-grid). Fields reuse ThemeSectionField so the
 // same schema-driven settings renderer applies to blocks.
@@ -699,6 +887,7 @@ export const blockCatalog: ThemeBlockDef[] = [
     icon: 'layout-grid',
     fields: [
       { key: 'label', label: 'Label', type: 'text' },
+      { key: 'accent', label: 'Label words in the accent color', type: 'text', drawing: 'sections', templates: ['home'] },
       { key: 'link', label: 'Link', type: 'text' },
     ],
   },
@@ -735,10 +924,33 @@ export const blockCatalog: ThemeBlockDef[] = [
     drawing: 'sections',
     fields: [
       { key: 'title', label: 'Title', type: 'text' },
-      { key: 'source', label: 'Content', type: 'select', options: Object.keys(COLLAPSIBLE_SOURCES), optionLabels: COLLAPSIBLE_SOURCES, optionRequires: COLLAPSIBLE_SOURCE_NEEDS },
-      // A part's rows come from the part, so they take no text.
+      { key: 'source', label: 'Content', type: 'select', options: Object.keys(COLLAPSIBLE_SOURCES), optionLabels: COLLAPSIBLE_SOURCES, optionLabelsFor: { parts: PART_SOURCE_LABELS }, optionRequires: COLLAPSIBLE_SOURCE_NEEDS },
+      // A product's rows come from the product, so they take no text.
       { key: 'text', label: 'Text', type: 'textarea', hideWhen: { key: 'source', values: ['specs', 'fitment', 'warranty'] } },
       { key: 'open', label: 'Open when the page loads', type: 'toggle' },
+    ],
+  },
+  {
+    // One figure in an image banner's stats strip ("12K+ homes furnished"); up to three are drawn.
+    kind: 'stat',
+    title: 'Stat',
+    icon: 'hash',
+    drawing: 'sections',
+    limit: { max: 3, reason: 'Up to 3 stats fit in the strip' },
+    fields: [
+      { key: 'value', label: 'Figure', type: 'text' },
+      { key: 'label', label: 'What it counts', type: 'text' },
+    ],
+  },
+  {
+    // One brand in a logo strip. Its picture is the `image` setting, set by the theme; the name is its text alternative.
+    kind: 'logo',
+    title: 'Logo',
+    icon: 'image',
+    drawing: 'sections',
+    fields: [
+      { key: 'name', label: 'Brand name', type: 'text' },
+      { key: 'link', label: 'Link', type: 'text' },
     ],
   },
 ]
@@ -754,6 +966,8 @@ const blockDefaults: Record<string, Record<string, string | number | boolean>> =
   spacer: { size: 32 },
   feature: { icon: 'badge-check', title: 'A promise', text: 'One line that backs it up.', link: '' },
   'collapsible-row': { title: 'Details', source: 'custom', text: '', open: false },
+  stat: { value: '100+', label: 'Happy customers' },
+  logo: { name: 'Brand name', link: '/collections/all' },
 }
 
 export function getBlockDef(kind: string): ThemeBlockDef | undefined {
@@ -771,9 +985,18 @@ type Drawing = ThemeStyles['drawing']
 const forDrawing = (drawing: Drawing) => (def: { drawing?: 'sections' }) => !def.drawing || def.drawing === drawing
 const forStore = (facts: StoreFacts) => (def: { requires?: StoreNeed }) => !def.requires || facts[def.requires]
 
-/** The section kinds the Add section picker offers a theme, on a store that sells what `facts` says. */
-export function sectionsFor(drawing: Drawing, facts: StoreFacts = NO_FACTS): ThemeSectionDef[] {
-  return sectionCatalog.filter((def) => forDrawing(drawing)(def) && forStore(facts)(def))
+/**
+ * The section kinds the Add section picker offers a theme, on a store that sells what
+ * `facts` says, for a template when one is given (a logo strip is the home page's).
+ * A kind keeps only the layouts (variants) the theme's drawing draws, on the template.
+ */
+export function sectionsFor(drawing: Drawing, facts: StoreFacts = NO_FACTS, template?: TemplateType): ThemeSectionDef[] {
+  const onTemplate = (def: { templates?: TemplateType[] }) => !template || !def.templates || def.templates.includes(template)
+  return sectionCatalog
+    .filter((def) => forDrawing(drawing)(def) && forStore(facts)(def) && onTemplate(def))
+    .map((def) => (def.variants?.some((variant) => variant.drawing || variant.templates)
+      ? { ...def, variants: def.variants.filter((variant) => forDrawing(drawing)(variant) && onTemplate(variant)) }
+      : def))
 }
 
 /** Blocks some section kind holds as its own (a feature, a collapsible row): never offered elsewhere. */
@@ -781,18 +1004,31 @@ const OWN_BLOCKS = new Set(sectionCatalog.flatMap((def) => def.blocks ?? []))
 
 /**
  * The blocks a section of the kind can take on a theme: its own blocks when it has
- * them, else the general blocks when it accepts blocks, else none.
+ * them (and the general ones too when it says so: an image banner's buttons beside its
+ * stats), else the general blocks when it accepts blocks, else none.
  */
 export function blocksFor(kind: string, drawing: Drawing): ThemeBlockDef[] {
   const def = getSectionDef(kind)
   if (!def?.acceptsBlocks) return []
   const usable = blockCatalog.filter(forDrawing(drawing))
-  return def.blocks ? usable.filter((block) => def.blocks!.includes(block.kind)) : usable.filter((block) => !OWN_BLOCKS.has(block.kind))
+  const own = def.blocks ?? []
+  if (own.length && !def.generalBlocks) return usable.filter((block) => own.includes(block.kind))
+  return usable.filter((block) => !OWN_BLOCKS.has(block.kind) || own.includes(block.kind))
+}
+
+/**
+ * Whether a section has room for another block of the kind: a banner's stats strip
+ * draws three, so a fourth is not offered.
+ */
+export function blockHasRoom(section: Pick<ThemeSection, 'blocks'>, kind: string): boolean {
+  const max = getBlockDef(kind)?.limit?.max
+  return max === undefined || (section.blocks ?? []).filter((block) => block.kind === kind).length < max
 }
 
 /**
  * The settings the builder shows for a section or block, on a theme and template, on
- * a store that sells what `facts` says: a select keeps only the options the store can use.
+ * a store that sells what `facts` says: a select keeps only the options the store can
+ * use, under the names that store knows them by.
  */
 export function fieldsFor(
   fields: readonly ThemeSectionField[],
@@ -802,9 +1038,25 @@ export function fieldsFor(
 ): ThemeSectionField[] {
   return fields
     .filter((field) => forDrawing(drawing)(field) && forStore(facts)(field) && (!field.templates || field.templates.includes(template)))
-    .map((field) => (field.options && field.optionRequires
-      ? { ...field, options: field.options.filter((option) => forStore(facts)({ requires: field.optionRequires![option] })) }
-      : field))
+    .map((field) => {
+      const options = field.options && field.optionRequires
+        ? field.options.filter((option) => forStore(facts)({ requires: field.optionRequires![option] }))
+        : field.options
+      const labels = Object.entries(field.optionLabelsFor ?? {})
+        .filter(([need]) => facts[need as StoreNeed])
+        .reduce((all, [, named]) => ({ ...all, ...named }), field.optionLabels)
+      return options === field.options && labels === field.optionLabels ? field : { ...field, options, optionLabels: labels }
+    })
+}
+
+/**
+ * The option a select shows: its value when that is one of the options, else what the
+ * storefront draws without one (the field's `default`): an unset Text position reads
+ * "Bottom", an older theme's tile style "Photo" reads "Under the photo".
+ */
+export function selectValue(field: Pick<ThemeSectionField, 'options' | 'default'>, value: unknown): string {
+  const stored = value === undefined || value === null ? '' : String(value)
+  return !field.default || field.options?.includes(stored) ? stored : field.default
 }
 
 /** Whether a setting shows, given the others: a row's text hides while the row's content comes from the part. */

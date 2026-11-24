@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { GENERATION_STAGES } from '@/composables/useThemeGenerator'
-import { getBlockDef, storefrontThemeVars, type TemplateType, type ThemeBlock, type ThemeSection, type ThemeStyles } from '@/stores/themeBuilderData'
+import { accentParts, getBlockDef, storefrontThemeVars, type TemplateType, type ThemeBlock, type ThemeSection, type ThemeStyles } from '@/stores/themeBuilderData'
+import { FACET_LABELS } from '@/storefront/facets'
 import { toHandle } from '@/storefront/handles'
+import { relatedByCollection } from '@/storefront/productPage'
+import { optionKind } from '@/storefront/variants'
 
 const props = withDefaults(defineProps<{
   /** Ordered sections of the active template. Omit for the static default storefront mock. */
@@ -26,9 +29,27 @@ const props = withDefaults(defineProps<{
   /** The store's header menu labels. */
   menu?: string[]
   /**
+   * The store's header tools (its chrome's `headerTools`): on the sections drawing a store
+   * with 'wishlist' gets a heart in the header, on its cards and beside Add to cart.
+   * Omit for the usual search, account and bag.
+   */
+  headerTools?: string[]
+  /** Search in the header as an icon (the default) or a visible field (Lumos), on the sections drawing. */
+  headerSearch?: 'icon' | 'field'
+  /** What the header's search field says while empty. */
+  searchPlaceholder?: string
+  /**
+   * The store's product card (its collection template's `cardStyle`): every product row
+   * on the sections drawing uses it, as the storefront does. Only 'Boxed' changes the rows.
+   */
+  cardStyle?: string
+  /** The collection template's quick add: a Boxed card's own Add to cart. */
+  quickAdd?: boolean
+  /**
    * The store's own products, for a featured-products section: photo, name and price. A
    * part also brings its part number, or what it comes in ("Front or rear"), and its
-   * choices. Omit for drawn stand-ins.
+   * choices; a product its choices as its page offers them (swatches for a colour) and
+   * its card's badge. Omit for drawn stand-ins.
    */
   products?: Array<{
     name: string
@@ -38,7 +59,8 @@ const props = withDefaults(defineProps<{
     collections?: string[]
     partNumber?: string
     choice?: string
-    options?: { name: string; values: string[] }[]
+    options?: { name: string; values: string[]; display?: 'buttons' | 'swatches'; swatches?: Record<string, string> }[]
+    badge?: 'Sale' | 'New'
   }>
   /**
    * The template the sections belong to. On the sections drawing a collection
@@ -58,6 +80,11 @@ const props = withDefaults(defineProps<{
   pendingBlockIds: () => [],
   brand: 'ATLAS',
   menu: () => ['New', 'Women', 'Men', 'Sale'],
+  headerTools: undefined,
+  headerSearch: 'icon',
+  searchPlaceholder: 'Search',
+  cardStyle: undefined,
+  quickAdd: false,
   products: undefined,
   template: 'home',
   generating: null,
@@ -99,12 +126,53 @@ const rootClasses = computed(() => [
   { 'sf-preview--interactive': props.interactive, 'sf-preview--sections': sectionsDrawing.value },
 ])
 
-/** A featured row's products: on the sections drawing, those of the collection it names. */
+/**
+ * A featured row's products: on the sections drawing, those of the collection it names;
+ * on a product page, the others in the product's collections (as the storefront's row
+ * under a product), never the product itself.
+ */
 function featuredProducts(section: ThemeSection) {
   const all = props.products ?? []
+  const count = num(section, 'productCount', 4)
+  if (sectionsDrawing.value && props.template === 'product' && all.length) {
+    const indexed = all.map((product, id) => ({ ...product, id, collections: product.collections ?? [] }))
+    return relatedByCollection(indexed, indexed[0]!, count)
+  }
   const handle = text(section, 'collection', 'all')
   const listed = sectionsDrawing.value && handle !== 'all' ? all.filter((p) => p.collections?.some((name) => toHandle(name) === handle)) : all
-  return listed.slice(0, num(section, 'productCount', 4))
+  return listed.slice(0, count)
+}
+
+/** A store with a wishlist (its header has the heart), on the sections drawing: hearts on its header, cards and product page. */
+const wishlist = computed(() => sectionsDrawing.value && (props.headerTools ?? []).includes('wishlist'))
+/** The header's search as a field with the store's placeholder, on the sections drawing. */
+const searchField = computed(() => sectionsDrawing.value && props.headerSearch === 'field')
+
+/**
+ * Boxed cards (Lumos), on the sections drawing: a collection page's grid when it asks for
+ * them, and every featured row of a store whose collection page does.
+ */
+function boxed(section: ThemeSection): boolean {
+  if (!sectionsDrawing.value) return false
+  return (section.kind === 'collection-grid' ? section.settings.cardStyle : props.cardStyle) === 'Boxed'
+}
+
+/** A Boxed card's Add to cart: the grid's own quick add, or the collection page's for a featured row. */
+function boxedQuickAdd(section: ThemeSection): boolean {
+  return section.kind === 'collection-grid' ? flag(section, 'quickAdd') : props.quickAdd
+}
+
+/** A card's badge: none for "New" in a row of new arrivals, which would say it on every card. */
+function cardBadge(section: ThemeSection, product: { badge?: 'Sale' | 'New' } | null): string {
+  if (!product?.badge) return ''
+  return product.badge === 'New' && /^new\b/.test(text(section, 'collection')) ? '' : product.badge
+}
+
+/** The filters a collection page offers, in its order (the grid's `facets`, Lumos); else those its cards suggest. */
+function facetLabels(section: ThemeSection): string[] {
+  const keys = text(section, 'facets').split(',').map((key) => key.trim()).filter((key): key is keyof typeof FACET_LABELS => key in FACET_LABELS)
+  if (keys.length) return keys.map((key) => FACET_LABELS[key])
+  return dense(section) ? ['Category', 'Brand', 'Price'] : ['Category', 'Size', 'Color', 'Price']
 }
 
 /** A photo's shape on the sections drawing (a collection grid's `tileRatio`, a product page's `imageRatio`): portrait unless it says otherwise. */
@@ -112,13 +180,78 @@ function ratioOf(shape: string): string {
   return ({ Square: '1 / 1', Landscape: '4 / 3' } as Record<string, string>)[shape] ?? '3 / 4'
 }
 
+/** A collection grid's tile shape: its own, else landscape in a carousel and portrait in a grid (as the storefront draws them). */
+function tileRatio(section: ThemeSection): string {
+  return text(section, 'tileRatio') ? ratioOf(text(section, 'tileRatio')) : carousel(section) ? '4 / 3' : '3 / 4'
+}
+
+/** A home collection grid drawn as a looping row with dots, on the sections drawing. */
+function carousel(section: ThemeSection): boolean {
+  return sectionsDrawing.value && section.kind === 'collection-grid' && props.template !== 'collection' && section.settings.layout === 'Carousel'
+}
+
+/** A collection grid or logo strip on the theme's tint, on the sections drawing. */
+function tinted(section: ThemeSection): boolean {
+  if (!sectionsDrawing.value || section.settings.background !== 'Tint') return false
+  return section.kind === 'logo-strip' || (section.kind === 'collection-grid' && props.template !== 'collection')
+}
+
+/** An image banner with its words left of centre in the page's colours, on the sections drawing. */
+function wordsLeft(section: ThemeSection): boolean {
+  return sectionsDrawing.value && section.kind === 'image-banner' && section.settings.contentPosition === 'Center left'
+}
+
+/** An image banner's stats as the storefront picks them: those with a figure, three at most, on the sections drawing. */
+function bannerStats(section: ThemeSection): ThemeBlock[] {
+  if (!sectionsDrawing.value || section.kind !== 'image-banner') return []
+  return (section.blocks ?? []).filter((block) => block.kind === 'stat' && blockText(block, 'value')).slice(0, 3)
+}
+
+/**
+ * A banner whose buttons and stats follow its words on a phone, rather than sitting
+ * over the photo's foot: words on the left (the buttons stack, a row each) or a stats
+ * strip, as the storefront lays them out at that width.
+ */
+function bannerFlows(section: ThemeSection): boolean {
+  return wordsLeft(section) || bannerStats(section).length > 0
+}
+
+/** A title split where its accent words fall, on the sections drawing; the title whole otherwise. */
+function titleParts(title: string, accent: unknown): { text: string; accent: boolean }[] {
+  return accentParts(title, sectionsDrawing.value && typeof accent === 'string' ? accent : '')
+}
+
 /** Where a block is drawn on the sections drawing: over the banner's photo, beside the product, or under the section. */
-function blocksPlacement(section: ThemeSection): string {
-  if (!sectionsDrawing.value) return ''
-  if (section.kind === 'image-banner') return 'sf-blocks--on-banner'
-  if (section.kind === 'product-detail') return 'sf-blocks--rows'
-  if (section.kind === 'icon-row') return 'sf-blocks--icons'
-  return ''
+function blocksPlacement(section: ThemeSection): string[] {
+  if (!sectionsDrawing.value) return []
+  if (section.kind === 'image-banner') return ['sf-blocks--on-banner', ...(wordsLeft(section) ? ['sf-blocks--on-light'] : [])]
+  if (section.kind === 'product-detail') return ['sf-blocks--rows']
+  if (section.kind === 'icon-row') return ['sf-blocks--icons', ...(section.settings.tileStyle === 'Card' ? ['sf-blocks--cards'] : [])]
+  if (section.kind === 'logo-strip') return ['sf-blocks--logos']
+  if (carousel(section)) return ['sf-blocks--carousel', ...(section.settings.tileStyle === 'Label over photo' ? ['sf-blocks--over'] : [])]
+  if (section.kind === 'collection-grid' && section.settings.tileStyle === 'Label over photo') return ['sf-blocks--over']
+  return []
+}
+
+/**
+ * A section's blocks as the canvas draws them, in regions: its own region, under the
+ * section or over its photo; an image banner on the sections drawing keeps its stats
+ * in a strip of their own under its buttons.
+ */
+function blockGroups(section: ThemeSection): { key: string; blocks: ThemeBlock[]; classes: unknown[]; style?: Record<string, string | number> }[] {
+  const blocks = section.blocks ?? []
+  if (!blocks.length) return []
+  const grid = section.kind === 'collection-grid'
+  const main = {
+    key: 'blocks',
+    blocks,
+    classes: [{ 'sf-blocks--grid': grid }, ...blocksPlacement(section)],
+    style: grid ? { '--sf-cols': num(section, 'columns', 3), ...(sectionsDrawing.value ? { '--sf-tile-ratio': tileRatio(section) } : {}) } : undefined,
+  }
+  const stats = bannerStats(section)
+  if (!stats.length) return [main]
+  const rest = blocks.filter((block) => block.kind !== 'stat')
+  return [...(rest.length ? [{ ...main, blocks: rest }] : []), { key: 'stats', blocks: stats, classes: ['sf-blocks--stats'] }]
 }
 
 function text(section: ThemeSection, key: string, fallback = ''): string {
@@ -135,11 +268,36 @@ function flag(section: ThemeSection, key: string): boolean {
   return section.settings[key] === true
 }
 
-/** A part's page in the canvas: the choices of its first option ("Front", "Rear"), or none for a part with nothing to choose. */
-function partChoices(section: ThemeSection): string[] {
-  if (!flag(section, 'fitment')) return []
-  if (!props.products) return ['Front', 'Rear']
-  return props.products[0]?.options?.[0]?.values.slice(0, 6) ?? []
+interface PdpOption {
+  /** "Fabric"; none for the drawn stand-in. */
+  name?: string
+  /** Drawn as swatches (a colour with its swatches), else as words (a size, a part's "Front"). */
+  swatches: boolean
+  /** The value the page opens on, as the storefront chooses it: a colour's first, or an option's only value. Sizes wait for the shopper. */
+  chosen?: string
+  values: { value: string; hex?: string }[]
+}
+
+/**
+ * The product page's choices, as the storefront's picker offers them: the shown
+ * product's own options (a colour with swatches as swatches, the rest as words; no size
+ * row for a product without sizes). The drawn stand-ins: three swatches and XS to XL,
+ * or a part's Front and Rear.
+ */
+function pdpOptions(section: ThemeSection): PdpOption[] {
+  const words = (values: string[]) => values.map((value) => ({ value }))
+  if (!props.products) {
+    return flag(section, 'fitment')
+      ? [{ swatches: false, values: words(['Front', 'Rear']) }]
+      : [{ swatches: true, values: words(['', '', '']) }, { swatches: false, values: words(['XS', 'S', 'M', 'L', 'XL']) }]
+  }
+  return (props.products[0]?.options ?? []).map((option) => {
+    const hexes = option.swatches ?? {}
+    const color = optionKind(option) === 'color'
+    const swatches = color && option.display !== 'buttons' && option.values.some((value) => !!hexes[value])
+    const chosen = color || option.values.length === 1 ? option.values[0] : undefined
+    return { name: option.name, swatches, chosen, values: option.values.slice(0, 6).map((value) => ({ value, hex: hexes[value] })) }
+  })
 }
 
 /** A collection grid that asks for Dense cards (a parts store's), on the sections drawing. */
@@ -197,7 +355,14 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
         </div>
         <div
           class="sf-section"
-          :class="{ 'sf-section--selected': section.id === selectedId, 'sf-section--new': pendingSet.has(section.id), 'sf-section--pdp': sectionsDrawing && section.kind === 'product-detail' }"
+          :class="{
+            'sf-section--selected': section.id === selectedId,
+            'sf-section--new': pendingSet.has(section.id),
+            'sf-section--pdp': sectionsDrawing && section.kind === 'product-detail',
+            'sf-section--tint': tinted(section),
+            'sf-section--stats': bannerStats(section).length > 0,
+            'sf-section--flow': bannerFlows(section),
+          }"
           :data-label="section.label"
           @click="onSelect(section)"
           @mouseenter="onHover(section.id)"
@@ -222,15 +387,21 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
           <div
             v-else-if="section.kind === 'header'"
             class="sf-header"
-            :class="[`sf-header--${String(section.settings.menuStyle || 'Inline').toLowerCase()}`, { 'sf-header--dark': sectionsDrawing && section.settings.colorScheme === 'Dark' }]"
+            :class="[`sf-header--${String(section.settings.menuStyle || 'Inline').toLowerCase()}`, { 'sf-header--dark': sectionsDrawing && section.settings.colorScheme === 'Dark', 'sf-header--search': searchField }]"
           >
             <strong>{{ brand }}</strong>
             <nav class="sf-header__menu">
               <span v-for="item in menu" :key="item">{{ item }}</span>
             </nav>
+            <!-- The store's search as a field (in a row of its own on a phone), and its heart when it has a wishlist. -->
+            <span v-if="searchField" class="sf-header__search" aria-hidden="true">
+              <span>{{ searchPlaceholder }}</span>
+              <v-icon size="12">search</v-icon>
+            </span>
             <span v-if="sectionsDrawing" class="sf-header__icons" aria-hidden="true">
-              <v-icon size="13">search</v-icon>
-              <v-icon size="13">user-round</v-icon>
+              <v-icon v-if="!searchField" size="13">search</v-icon>
+              <v-icon v-if="!headerTools || headerTools.includes('account')" size="13">user-round</v-icon>
+              <v-icon v-if="wishlist" size="13">heart</v-icon>
               <v-icon size="13">shopping-bag</v-icon>
             </span>
             <span v-else class="sf-header__cart" />
@@ -272,9 +443,36 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
           </div>
 
           <div v-else-if="section.kind === 'featured-products'" class="sf-products" :class="{ 'sf-products--carousel': section.settings.layout === 'Carousel' }">
-            <strong class="sf-heading">{{ text(section, 'title', 'Featured products') }}</strong>
+            <span v-if="sectionsDrawing && text(section, 'eyebrow')" class="sf-eyebrow">{{ text(section, 'eyebrow') }}</span>
+            <strong class="sf-heading"><template v-for="(part, n) in titleParts(text(section, 'title', 'Featured products'), section.settings.accentWords)" :key="n"><span v-if="part.accent" class="sf-accent">{{ part.text }}</span><template v-else>{{ part.text }}</template></template></strong>
+            <!-- A carousel's Previous and Next, beside the title. -->
+            <span v-if="sectionsDrawing && section.settings.layout === 'Carousel'" class="sf-arrows" aria-hidden="true">
+              <span><v-icon size="11">arrow-left</v-icon></span>
+              <span><v-icon size="11">arrow-right</v-icon></span>
+            </span>
+            <!-- A store with Boxed cards (Lumos): each framed, with its badge, heart and Add to cart. -->
+            <div v-if="boxed(section)" class="sf-products__grid">
+              <div
+                v-for="(product, n) in products ? featuredProducts(section) : Array(num(section, 'productCount', 4)).fill(null)"
+                :key="product?.name ?? n"
+                class="sf-product sf-product--boxed"
+              >
+                <span class="sf-product__img">
+                  <img v-if="product?.image" :src="product.image" alt="" loading="lazy">
+                  <span v-if="cardBadge(section, product)" class="sf-product__badge" :class="{ 'sf-product__badge--sale': product?.badge === 'Sale' }">{{ cardBadge(section, product) }}</span>
+                  <span v-if="wishlist" class="sf-product__heart" aria-hidden="true"><v-icon size="10">heart</v-icon></span>
+                </span>
+                <span class="sf-product__body">
+                  <span v-if="product" class="sf-product__name">{{ product.name }}</span>
+                  <span v-else class="sf-product__line" />
+                  <span v-if="product" class="sf-product__amount" :class="{ 'sf-product__amount--sale': product.badge === 'Sale' }">{{ product.price }}</span>
+                  <span v-else class="sf-product__price" />
+                  <span v-if="boxedQuickAdd(section)" class="sf-btn sf-product__cart">Add to cart</span>
+                </span>
+              </div>
+            </div>
             <!-- The store's own products when it has them; drawn stand-ins otherwise. -->
-            <div v-if="products" class="sf-products__grid">
+            <div v-else-if="products" class="sf-products__grid">
               <div v-for="product in featuredProducts(section)" :key="product.name" class="sf-product">
                 <span class="sf-product__img">
                   <img v-if="product.image" :src="product.image" alt="" loading="lazy">
@@ -297,7 +495,7 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
             <strong class="sf-heading sf-listing__title">{{ text(section, 'title', 'Shop all') }}</strong>
             <div class="sf-listing__body" :class="{ 'sf-listing__body--rail': flag(section, 'filters') }">
               <div v-if="flag(section, 'filters')" class="sf-listing__rail">
-                <span v-for="facet in dense(section) ? ['Category', 'Brand', 'Price'] : ['Category', 'Size', 'Color', 'Price']" :key="facet" class="sf-listing__facet">{{ facet }}</span>
+                <span v-for="facet in facetLabels(section)" :key="facet" class="sf-listing__facet">{{ facet }}</span>
               </div>
               <div class="sf-listing__main">
                 <div class="sf-listing__bar">
@@ -320,6 +518,23 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
                       <span class="sf-product__stock">In stock</span>
                       <span class="sf-product__amount sf-product__amount--dense">{{ product?.price ?? '$24.99' }}</span>
                       <span class="sf-btn sf-product__cart">Add to cart</span>
+                    </div>
+                  </template>
+                  <!-- A Boxed card (Lumos): framed, its badge and heart on the photo, then name, price and Add to cart. -->
+                  <template v-else-if="boxed(section)">
+                    <div v-for="(product, n) in products?.slice(0, num(section, 'columns', 4) * 2) ?? Array(num(section, 'columns', 4) * 2).fill(null)" :key="product?.name ?? n" class="sf-product sf-product--boxed">
+                      <span class="sf-product__img">
+                        <img v-if="product?.image" :src="product.image" alt="" loading="lazy">
+                        <span v-if="cardBadge(section, product)" class="sf-product__badge" :class="{ 'sf-product__badge--sale': product?.badge === 'Sale' }">{{ cardBadge(section, product) }}</span>
+                        <span v-if="wishlist" class="sf-product__heart" aria-hidden="true"><v-icon size="10">heart</v-icon></span>
+                      </span>
+                      <span class="sf-product__body">
+                        <span v-if="product" class="sf-product__name">{{ product.name }}</span>
+                        <span v-else class="sf-product__line" />
+                        <span v-if="product" class="sf-product__amount" :class="{ 'sf-product__amount--sale': product.badge === 'Sale' }">{{ product.price }}</span>
+                        <span v-else class="sf-product__price" />
+                        <span v-if="boxedQuickAdd(section)" class="sf-btn sf-product__cart">Add to cart</span>
+                      </span>
                     </div>
                   </template>
                   <template v-else-if="products">
@@ -345,7 +560,7 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
           </div>
 
           <div v-else-if="section.kind === 'collection-grid'" class="sf-collections" :style="{ '--sf-cols': num(section, 'columns', 3) }">
-            <strong class="sf-heading">{{ text(section, 'title', 'Shop by collection') }}</strong>
+            <strong class="sf-heading"><template v-for="(part, n) in titleParts(text(section, 'title', 'Shop by collection'), section.settings.accentWords)" :key="n"><span v-if="part.accent" class="sf-accent">{{ part.text }}</span><template v-else>{{ part.text }}</template></template></strong>
             <div class="sf-collections__grid">
               <!-- Collection blocks are the cards themselves; without them the grid shows placeholder tiles. -->
               <div v-for="n in section.blocks?.some((b) => b.kind === 'collection') ? 0 : num(section, 'columns', 3) * 2" :key="n" class="sf-collections__tile">
@@ -357,10 +572,11 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
           <div
             v-else-if="section.kind === 'image-banner'"
             class="sf-banner"
-            :class="[`sf-banner--${String(section.settings.height || 'Medium').toLowerCase()}`, { 'sf-photo': text(section, 'image') }]"
+            :class="[`sf-banner--${String(section.settings.height || 'Medium').toLowerCase()}`, { 'sf-photo': text(section, 'image'), 'sf-banner--left': wordsLeft(section) }]"
           >
             <img v-if="text(section, 'image')" :src="text(section, 'image')" alt="" class="sf-photo__image">
-            <strong>{{ text(section, 'headline', 'Image banner') }}</strong>
+            <span v-if="sectionsDrawing && text(section, 'badge')" class="sf-banner__badge">{{ text(section, 'badge') }}</span>
+            <strong><template v-for="(part, n) in titleParts(text(section, 'headline', 'Image banner'), section.settings.accentWords)" :key="n"><span v-if="part.accent" class="sf-accent">{{ part.text }}</span><template v-else>{{ part.text }}</template></template></strong>
             <p v-if="text(section, 'subheadline')">{{ text(section, 'subheadline') }}</p>
           </div>
 
@@ -411,13 +627,22 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
             <div class="sf-pdp__info">
               <strong class="sf-heading">{{ products?.[0]?.name ?? 'Ridgeline Parka' }}</strong>
               <em>{{ products?.[0]?.price ?? '$248.00' }}</em>
-              <!-- A part's page (the vehicle fit banner on): its fit, and Front / Rear in place of colours and sizes. -->
+              <!-- A part's page (the vehicle fit banner on): its fit over its choices ("Front", "Rear"). -->
               <span v-if="flag(section, 'fitment')" class="sf-pdp__fit"><v-icon size="12" aria-hidden="true">car-front</v-icon>Check fit · Select vehicle</span>
-              <span v-else class="sf-pdp__swatches" aria-hidden="true"><span v-for="n in 3" :key="n" /></span>
-              <span v-if="partChoices(section).length || !flag(section, 'fitment')" class="sf-pdp__sizes" :class="{ 'sf-pdp__sizes--words': flag(section, 'fitment') }" aria-hidden="true"><span v-for="size in flag(section, 'fitment') ? partChoices(section) : ['XS', 'S', 'M', 'L', 'XL']" :key="size">{{ size }}</span></span>
+              <!-- The product's own choices: "Fabric: Oat" over its swatches, a size or a part's choice as words. -->
+              <span v-for="(option, n) in pdpOptions(section)" :key="option.name ?? n" class="sf-pdp__option" aria-hidden="true">
+                <span v-if="option.name" class="sf-pdp__option-name">{{ option.name }}<template v-if="option.chosen">: <strong>{{ option.chosen }}</strong></template></span>
+                <span v-if="option.swatches" class="sf-pdp__swatches"><span v-for="(item, i) in option.values" :key="i" :style="item.hex ? { background: item.hex } : undefined" /></span>
+                <span v-else class="sf-pdp__sizes" :class="{ 'sf-pdp__sizes--words': option.name || flag(section, 'fitment') }"><span v-for="item in option.values" :key="item.value">{{ item.value }}</span></span>
+              </span>
               <span v-if="flag(section, 'sizeGuide')" class="sf-pdp__guide">Size guide</span>
               <span v-if="flag(section, 'showReviews')" class="sf-pdp__reviews">★★★★★ · 128 reviews</span>
-              <span class="sf-btn sf-pdp__add">Add to cart</span>
+              <!-- Add to cart, the heart beside it on a store with a wishlist, then Buy now (as the storefront's buy box). -->
+              <span class="sf-pdp__buy">
+                <span class="sf-btn sf-pdp__add">Add to cart</span>
+                <span v-if="wishlist" class="sf-pdp__heart" aria-hidden="true"><v-icon size="12">heart</v-icon></span>
+              </span>
+              <span class="sf-btn sf-btn--quiet sf-pdp__add">Buy now</span>
             </div>
           </div>
 
@@ -455,9 +680,18 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
             <span class="sf-btn">Checkout</span>
           </div>
 
-          <div v-else-if="section.kind === 'icon-row'" class="sf-iconrow">
+          <div v-else-if="section.kind === 'icon-row'" class="sf-iconrow" :class="{ 'sf-head--center': section.settings.alignment === 'Center' }">
+            <span v-if="text(section, 'eyebrow')" class="sf-eyebrow">{{ text(section, 'eyebrow') }}</span>
             <strong v-if="text(section, 'title')" class="sf-heading">{{ text(section, 'title') }}</strong>
-            <span v-else-if="!section.blocks?.length" class="sf-iconrow__empty">Add a feature block to say what shoppers can count on.</span>
+            <span v-if="text(section, 'subtitle')" class="sf-subtitle">{{ text(section, 'subtitle') }}</span>
+            <span v-if="!section.blocks?.length && !text(section, 'title')" class="sf-iconrow__empty">Add a feature block to say what shoppers can count on.</span>
+          </div>
+
+          <!-- A logo strip: its title over a row of logo cards (the blocks). -->
+          <div v-else-if="section.kind === 'logo-strip'" class="sf-logos">
+            <span v-if="text(section, 'eyebrow')" class="sf-eyebrow">{{ text(section, 'eyebrow') }}</span>
+            <strong v-if="text(section, 'title')" class="sf-heading">{{ text(section, 'title') }}</strong>
+            <span v-if="!section.blocks?.length" class="sf-iconrow__empty">Add logo blocks for the brands you carry.</span>
           </div>
 
           <div v-else-if="section.kind === 'footer'" class="sf-footer" :class="{ 'sf-footer--dark': sectionsDrawing && section.settings.colorScheme === 'Dark' }">
@@ -475,16 +709,17 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
 
           <div v-else class="sf-unknown">{{ section.label }}</div>
 
-          <!-- Blocks region: additive, only when the section has blocks -->
+          <!-- Blocks regions: additive, only when the section has blocks (an image banner's stats get a strip of their own) -->
           <div
-            v-if="section.blocks?.length"
+            v-for="group in blockGroups(section)"
+            :key="group.key"
             class="sf-blocks"
-            :class="[{ 'sf-blocks--grid': section.kind === 'collection-grid' }, blocksPlacement(section)]"
-            :style="section.kind === 'collection-grid' ? { '--sf-cols': num(section, 'columns', 3), ...(sectionsDrawing ? { '--sf-tile-ratio': ratioOf(text(section, 'tileRatio')) } : {}) } : undefined"
+            :class="group.classes"
+            :style="group.style"
           >
             <component
               :is="interactive ? 'button' : 'div'"
-              v-for="block in section.blocks"
+              v-for="block in group.blocks"
               :key="block.id"
               class="sf-block"
               :class="{
@@ -514,10 +749,19 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
               />
               <span v-else-if="block.kind === 'collection'" class="sf-block__collection" :class="{ 'sf-photo': blockText(block, 'image') }">
                 <img v-if="blockText(block, 'image')" :src="blockText(block, 'image')" alt="" class="sf-photo__image" loading="lazy">
-                <span>{{ blockText(block, 'label', 'Collection') }}</span>
+                <span><template v-for="(part, n) in titleParts(blockText(block, 'label', 'Collection'), block.settings.accent)" :key="n"><span v-if="part.accent" class="sf-accent">{{ part.text }}</span><template v-else>{{ part.text }}</template></template></span>
+              </span>
+              <span v-else-if="block.kind === 'stat'" class="sf-block__stat">
+                <strong>{{ blockText(block, 'value', '4.8') }}</strong>
+                <span>{{ blockText(block, 'label') }}</span>
+              </span>
+              <span v-else-if="block.kind === 'logo'" class="sf-block__logo">
+                <img v-if="blockText(block, 'image')" :src="blockText(block, 'image')" alt="" loading="lazy">
+                <span v-else>{{ blockText(block, 'name', 'Brand name') }}</span>
               </span>
               <span v-else-if="block.kind === 'feature'" class="sf-block__feature">
-                <v-icon size="16" aria-hidden="true">{{ blockText(block, 'icon', 'badge-check') }}</v-icon>
+                <span v-if="sectionsDrawing && section.settings.tileStyle === 'Card'" class="sf-block__chip"><v-icon size="14" aria-hidden="true">{{ blockText(block, 'icon', 'badge-check') }}</v-icon></span>
+                <v-icon v-else size="16" aria-hidden="true">{{ blockText(block, 'icon', 'badge-check') }}</v-icon>
                 <strong>{{ blockText(block, 'title', 'Feature') }}</strong>
                 <span v-if="blockText(block, 'text')">{{ blockText(block, 'text') }}</span>
               </span>
@@ -537,6 +781,10 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
               />
             </component>
           </div>
+          <!-- A carousel's dots: one per tile, the first in front. -->
+          <span v-if="carousel(section) && (section.blocks?.length ?? 0) > 1" class="sf-dots" aria-hidden="true">
+            <span v-for="(block, n) in section.blocks?.filter((b) => b.kind === 'collection')" :key="block.id" :class="{ 'is-on': n === 0 }" />
+          </span>
         </div>
         </template>
 
@@ -1805,6 +2053,324 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
   color: var(--sf-muted, color-mix(in oklch, var(--sf-text) 65%, transparent));
 }
 
+/* ── Part 5 (Lumos): eyebrows, accent words, tints, the carousel, logos, stats, cards ── */
+.sf-preview--sections .sf-btn {
+  text-transform: var(--sf-button-case, none);
+}
+
+.sf-accent {
+  color: var(--sf-accent);
+}
+
+/* A line above a title, in the accent colour; it sits close over the title. */
+.sf-eyebrow {
+  display: block;
+  margin-bottom: -8px;
+  color: var(--sf-accent);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.sf-subtitle {
+  display: block;
+  color: var(--sf-muted, color-mix(in oklch, var(--sf-text) 65%, transparent));
+  font-size: 11px;
+}
+
+.sf-head--center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+
+.sf-head--center .sf-eyebrow {
+  margin-bottom: 0;
+}
+
+/* A section on the theme's tint. */
+.sf-section--tint {
+  background: var(--sf-tint, var(--sf-surface, var(--sf-soft-fill)));
+}
+
+/* Featured products: a carousel's Previous and Next at the title's end. */
+.sf-products {
+  position: relative;
+}
+
+.sf-arrows {
+  position: absolute;
+  top: 18px;
+  right: 16px;
+  display: inline-flex;
+  gap: 4px;
+}
+
+.sf-arrows span {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--sf-divider, var(--sf-soft-line));
+  border-radius: 50%;
+  background: var(--sf-card, var(--sf-bg));
+}
+
+/* An image banner's badge: a pill above the headline. */
+.sf-banner__badge {
+  padding: 2px 8px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 9.5px;
+  font-weight: 500;
+}
+
+/* Accent words on the dark veil: a lighter mix of the accent, as the storefront draws them. */
+.sf-preview--sections .sf-photo:not(.sf-banner--left) .sf-accent {
+  color: color-mix(in srgb, var(--sf-accent) 40%, #ffffff);
+}
+
+/* Words on the left: the page's colours on a wash of the page colour, the photo undimmed. */
+.sf-preview--sections .sf-banner--left.sf-photo {
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 22px 20px 64px;
+  color: var(--sf-text);
+}
+
+.sf-preview--sections .sf-banner--left .sf-photo__image {
+  filter: none;
+}
+
+.sf-banner--left.sf-photo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(90deg,
+    color-mix(in srgb, var(--sf-bg) 92%, transparent) 0%,
+    color-mix(in srgb, var(--sf-bg) 85%, transparent) 50%,
+    color-mix(in srgb, var(--sf-bg) 55%, transparent) 64%,
+    transparent 86%);
+}
+
+.sf-banner--left.sf-photo p {
+  color: var(--sf-text);
+  text-align: left;
+}
+
+.sf-banner--left .sf-banner__badge {
+  background: var(--sf-bg);
+  color: var(--sf-accent);
+}
+
+.sf-blocks--on-light .sf-btn {
+  background: var(--sf-button-bg, var(--sf-brand));
+  box-shadow: inset 0 0 0 1px var(--sf-button-border, transparent);
+  color: var(--sf-button-ink, var(--sf-on-brand));
+}
+
+.sf-blocks--on-light .sf-block + .sf-block .sf-btn {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--sf-text);
+  color: var(--sf-text);
+}
+
+/* A banner with stats: the strip at its foot, the buttons over it. */
+.sf-preview--sections .sf-section--stats .sf-banner {
+  padding-bottom: 104px;
+}
+
+.sf-section--stats .sf-blocks--on-banner {
+  bottom: 62px;
+}
+
+.sf-blocks--stats {
+  position: absolute;
+  bottom: 14px;
+  left: 16px;
+  flex-direction: row;
+  gap: 0;
+  padding: 4px 0;
+  border: 1px solid var(--sf-divider, var(--sf-soft-line));
+  border-radius: var(--sf-radius);
+  background: var(--sf-card, var(--sf-bg));
+  box-shadow: 0 7px 9px -5px rgba(0, 0, 0, 0.1);
+  color: var(--sf-text);
+}
+
+.sf-blocks--stats .sf-block {
+  width: auto;
+  padding: 2px 12px;
+}
+
+.sf-blocks--stats .sf-block + .sf-block {
+  border-left: 1px solid var(--sf-divider, var(--sf-soft-line));
+  border-radius: 0;
+}
+
+.sf-block__stat {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.sf-block__stat strong {
+  color: var(--sf-accent);
+  font-size: 13px;
+  line-height: 1.1;
+}
+
+.sf-block__stat span {
+  color: var(--sf-muted, color-mix(in oklch, var(--sf-text) 65%, transparent));
+  font-size: 8px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* A collection carousel: the columns in view, the rest clipped at the content's edge, dots under it. */
+.sf-preview--sections .sf-blocks--carousel {
+  grid-template-columns: none;
+  grid-auto-columns: calc((100% - (var(--sf-cols, 3) - 1) * 10px) / var(--sf-cols, 3));
+  grid-auto-flow: column;
+  overflow: hidden;
+  margin-inline: 16px;
+  padding-inline: 0;
+  padding-bottom: 10px;
+}
+
+.sf-dots {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  padding: 0 16px 18px;
+}
+
+.sf-dots span {
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--sf-text) 45%, transparent);
+}
+
+.sf-dots span.is-on {
+  width: 12px;
+  background: var(--sf-accent);
+}
+
+/* Collection tiles with the name on the photo: white over a shade, on the card's corners. */
+.sf-preview--sections .sf-blocks--over .sf-block__collection,
+.sf-preview--sections .sf-blocks--over .sf-block__collection.sf-photo {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  justify-content: flex-end;
+  aspect-ratio: var(--sf-tile-ratio, 3 / 4);
+  padding: 10px;
+  border-radius: var(--sf-card-radius, var(--sf-radius));
+  background: var(--sf-surface, var(--sf-soft-fill));
+  color: #ffffff;
+}
+
+.sf-preview--sections .sf-blocks--over .sf-block__collection::before {
+  display: none;
+}
+
+.sf-preview--sections .sf-blocks--over .sf-block__collection .sf-photo__image {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  height: 100%;
+  border-radius: 0;
+  filter: none;
+}
+
+.sf-preview--sections .sf-blocks--over .sf-block__collection::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(0deg, rgba(12, 12, 14, 0.8) 0%, rgba(12, 12, 14, 0.55) 35%, rgba(12, 12, 14, 0) 66%);
+}
+
+.sf-preview--sections .sf-blocks--over .sf-accent {
+  color: color-mix(in srgb, var(--sf-accent) 40%, #ffffff);
+}
+
+/* A logo strip: six logo cards in a row. */
+.sf-logos {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px 16px 0;
+}
+
+.sf-blocks--logos {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+  padding: 10px 16px 20px;
+}
+
+.sf-blocks--logos .sf-block {
+  padding: 0;
+}
+
+.sf-block__logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding: 6px;
+  border: 1px solid var(--sf-divider, var(--sf-soft-line));
+  border-radius: var(--sf-card-radius, var(--sf-radius));
+  background: var(--sf-card, var(--sf-bg));
+  color: var(--sf-text);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.sf-block__logo img {
+  max-width: 100%;
+  max-height: 16px;
+  object-fit: contain;
+}
+
+.sf-block__logo span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Icon cards: each promise on a card, its icon in a tinted circle. */
+.sf-blocks--cards {
+  gap: 6px;
+  border-block: 0;
+}
+
+.sf-blocks--cards .sf-block,
+.sf-blocks--cards .sf-block + .sf-block {
+  padding: 14px 8px;
+  border: 1px solid var(--sf-divider, var(--sf-soft-line));
+  border-radius: var(--sf-card-radius, var(--sf-radius));
+  background: var(--sf-card, var(--sf-bg));
+}
+
+.sf-block__feature .sf-block__chip {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  margin-bottom: 2px;
+  border-radius: 50%;
+  background: var(--sf-tint, var(--sf-surface, var(--sf-soft-fill)));
+  color: var(--sf-accent);
+}
+
 /* The product page: gallery on the left, buy box and its rows on the right. */
 .sf-section--pdp {
   display: grid;
@@ -2088,6 +2654,155 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
   gap: 8px;
 }
 
+/* ── The store's own header, cards and buy box (Lumos) ──────────────── */
+/* Search as a field before the tools, its placeholder muted. */
+.sf-header__search {
+  display: inline-flex;
+  flex: 0 1 170px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 0;
+  height: 26px;
+  margin-left: auto;
+  padding: 0 8px;
+  border: 1px solid var(--sf-divider, var(--sf-soft-line));
+  border-radius: var(--sf-radius);
+  background: var(--sf-bg);
+  color: var(--sf-muted, color-mix(in oklch, var(--sf-text) 60%, transparent));
+  font-size: 10px;
+}
+
+.sf-header__search span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sf-header__search + .sf-header__icons {
+  margin-left: 0;
+}
+
+/* A Boxed card: framed on the card colour, the photo flush to its top, then name, price and a full-width Add to cart. */
+.sf-product--boxed {
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--sf-divider, var(--sf-soft-line));
+  border-radius: var(--sf-card-radius, var(--sf-radius));
+  background: var(--sf-card, var(--sf-bg));
+  box-shadow: var(--sf-card-shadow, none);
+}
+
+.sf-preview--sections .sf-product--boxed .sf-product__img {
+  aspect-ratio: 248 / 273;
+  border-radius: 0;
+}
+
+.sf-product__body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+}
+
+.sf-preview--sections .sf-product--boxed .sf-product__name {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-weight: 700;
+}
+
+.sf-product--boxed .sf-product__amount {
+  color: var(--sf-text);
+}
+
+.sf-product--boxed .sf-product__amount--sale {
+  color: var(--sf-badge-sale, #d4183d);
+}
+
+.sf-product--boxed .sf-product__cart {
+  width: 100%;
+  margin-top: 4px;
+}
+
+.sf-product__badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  padding: 2px 5px;
+  border-radius: 3px;
+  background: var(--sf-badge-custom, var(--sf-accent));
+  color: var(--sf-on-badge-custom, #ffffff);
+  font-size: 7.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.sf-product__badge--sale {
+  background: var(--sf-badge-sale, #d4183d);
+  color: var(--sf-on-badge-sale, #ffffff);
+}
+
+.sf-product__heart {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--sf-card, var(--sf-bg));
+  color: var(--sf-text);
+}
+
+/* The buy box: each choice under its name, Add to cart with the heart beside it, then Buy now. */
+.sf-pdp__option {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sf-pdp__option-name {
+  color: var(--sf-muted, color-mix(in oklch, var(--sf-text) 65%, transparent));
+  font-size: 10px;
+}
+
+.sf-pdp__option-name strong {
+  color: var(--sf-text);
+  font-weight: 600;
+}
+
+.sf-pdp__buy {
+  display: flex;
+  align-self: stretch;
+  gap: 6px;
+}
+
+.sf-pdp__buy .sf-pdp__add {
+  flex: 1 1 auto;
+}
+
+.sf-pdp__heart {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--sf-divider, var(--sf-soft-line));
+  border-radius: 50%;
+  background: var(--sf-card, var(--sf-bg));
+  color: var(--sf-text);
+}
+
+.sf-preview--sections .sf-btn--quiet {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--sf-text);
+  color: var(--sf-text);
+}
+
 /* The collection page: its title, the filters it offers, sort and the product grid. */
 .sf-listing {
   display: flex;
@@ -2185,9 +2900,100 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
   flex-direction: column;
 }
 
+.sf-preview--mobile.sf-preview--sections .sf-blocks--carousel {
+  grid-template-columns: none;
+  grid-auto-columns: 100%;
+}
+
+.sf-preview--mobile .sf-blocks--logos {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+/* A phone: the wash covers the whole photo, and the stats strip spans it. */
+.sf-preview--mobile .sf-banner--left.sf-photo::after {
+  background: color-mix(in srgb, var(--sf-bg) 84%, transparent);
+}
+
+.sf-preview--mobile .sf-blocks--stats {
+  right: 16px;
+}
+
 .sf-preview--mobile .sf-blocks--icons .sf-block + .sf-block {
   border-top: 1px solid var(--sf-divider, var(--sf-soft-line));
   border-left: 0;
+}
+
+/* A phone: the header's search field in a row under the bar; a featured carousel shows 1.2 cards. */
+.sf-preview--mobile .sf-header--search {
+  flex-wrap: wrap;
+}
+
+.sf-preview--mobile .sf-header--search .sf-header__search {
+  order: 3;
+  flex: 1 0 100%;
+  margin: 0 0 8px;
+}
+
+.sf-preview--mobile .sf-header--search .sf-header__icons {
+  margin-left: auto;
+}
+
+.sf-preview--mobile.sf-preview--sections .sf-products--carousel .sf-product {
+  flex-basis: 80%;
+}
+
+/* A phone: a banner's buttons and stats follow its words instead of sitting over the photo's foot,
+   the photo (and the wash over it) behind them all; words on the left stack their buttons, a row each. */
+.sf-preview--mobile.sf-preview--sections .sf-section--flow {
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.sf-preview--mobile.sf-preview--sections .sf-section--flow > .sf-banner {
+  position: static;
+  isolation: auto;
+  min-height: 0;
+  padding: 22px 16px 14px;
+}
+
+/* The photo is the section's now: the banner's own fill would cover it. */
+.sf-preview--mobile.sf-preview--sections .sf-section--flow > .sf-banner.sf-photo {
+  background: none;
+}
+
+.sf-preview--mobile.sf-preview--sections .sf-section--flow > .sf-blocks--on-banner,
+.sf-preview--mobile.sf-preview--sections .sf-section--flow > .sf-blocks--stats {
+  position: relative;
+  inset: auto;
+}
+
+.sf-preview--mobile.sf-preview--sections .sf-section--flow > .sf-blocks--on-banner {
+  padding: 0 16px 12px;
+}
+
+.sf-preview--mobile.sf-preview--sections .sf-section--flow > .sf-blocks--on-banner .sf-block {
+  flex: 1 1 0;
+}
+
+.sf-preview--mobile.sf-preview--sections .sf-section--flow > .sf-blocks--on-light {
+  flex-direction: column;
+}
+
+.sf-preview--mobile.sf-preview--sections .sf-section--flow > .sf-blocks--on-light .sf-block {
+  flex: none;
+}
+
+.sf-preview--mobile.sf-preview--sections .sf-section--flow > .sf-blocks--on-banner .sf-btn {
+  width: 100%;
+}
+
+.sf-preview--mobile.sf-preview--sections .sf-section--flow > .sf-blocks--stats {
+  margin: 0 16px 16px;
+}
+
+.sf-preview--mobile.sf-preview--sections .sf-section--flow > .sf-blocks--stats .sf-block {
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 /* A sections-drawing preview in a narrow box (the store page on a phone) draws the
@@ -2236,6 +3042,92 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
 
   .sf-preview--sections .sf-finder__selects {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sf-preview--sections .sf-blocks--carousel {
+    grid-template-columns: none !important;
+    grid-auto-columns: 100%;
+  }
+
+  .sf-preview--sections .sf-blocks--logos {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .sf-preview--sections .sf-blocks--stats {
+    right: 16px;
+  }
+
+  .sf-preview--sections .sf-banner--left.sf-photo::after {
+    background: color-mix(in srgb, var(--sf-bg) 84%, transparent);
+  }
+
+  .sf-preview--sections .sf-header--search {
+    flex-wrap: wrap;
+  }
+
+  .sf-preview--sections .sf-header--search .sf-header__search {
+    order: 3;
+    flex: 1 0 100%;
+    margin: 0 0 8px;
+  }
+
+  .sf-preview--sections .sf-header--search .sf-header__icons {
+    margin-left: auto;
+  }
+
+  .sf-preview--sections .sf-products--carousel .sf-product {
+    flex-basis: 80%;
+  }
+
+  .sf-preview--sections .sf-section--flow {
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  .sf-preview--sections .sf-section--flow > .sf-banner {
+    position: static;
+    isolation: auto;
+    min-height: 0;
+    padding: 22px 16px 14px;
+  }
+
+  .sf-preview--sections .sf-section--flow > .sf-banner.sf-photo {
+    background: none;
+  }
+
+  .sf-preview--sections .sf-section--flow > .sf-blocks--on-banner,
+  .sf-preview--sections .sf-section--flow > .sf-blocks--stats {
+    position: relative;
+    inset: auto;
+  }
+
+  .sf-preview--sections .sf-section--flow > .sf-blocks--on-banner {
+    padding: 0 16px 12px;
+  }
+
+  .sf-preview--sections .sf-section--flow > .sf-blocks--on-banner .sf-block {
+    flex: 1 1 0;
+  }
+
+  .sf-preview--sections .sf-section--flow > .sf-blocks--on-light {
+    flex-direction: column;
+  }
+
+  .sf-preview--sections .sf-section--flow > .sf-blocks--on-light .sf-block {
+    flex: none;
+  }
+
+  .sf-preview--sections .sf-section--flow > .sf-blocks--on-banner .sf-btn {
+    width: 100%;
+  }
+
+  .sf-preview--sections .sf-section--flow > .sf-blocks--stats {
+    margin: 0 16px 16px;
+  }
+
+  .sf-preview--sections .sf-section--flow > .sf-blocks--stats .sf-block {
+    flex: 1 1 0;
+    min-width: 0;
   }
 }
 </style>

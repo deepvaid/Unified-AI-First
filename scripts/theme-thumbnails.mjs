@@ -34,6 +34,7 @@ const STORES = [
   { slug: 'vitaheal', accountId: '2000290', channelId: 'vitaheal-demo' },
   { slug: 'northfold', accountId: '2000290', channelId: 'northfold-demo' },
   { slug: 'torqline', accountId: '2000290', channelId: 'torqline-demo' },
+  { slug: 'lumos', accountId: '2000290', channelId: 'lumos-demo' },
 ].filter((store) => !ONLY || ONLY.includes(store.slug))
 
 if (!fs.existsSync(path.join(DIST, 'index.html'))) {

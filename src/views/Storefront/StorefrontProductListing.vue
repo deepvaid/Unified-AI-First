@@ -3,7 +3,7 @@ import { computed, inject, nextTick, onBeforeUnmount, ref, useId, watch } from '
 import { useRoute, useRouter } from 'vue-router'
 import type { Product } from '@/stores/useCommerce'
 import {
-  activeFilters, clearFilters, emptyFilters, facetGroups, listProducts, listingSorts, noFitText, parseListingQuery,
+  activeFilters, clearFilters, emptyFilters, facetGroups, listProducts, listingSorts, noFitText, onlyFacets, parseListingQuery,
   resultCountText, toListingQuery, toggleFilter, withListingQuery,
 } from '@/storefront/facets'
 import type { ActiveFilter, FacetKey, ListingFilters, ListingSort } from '@/storefront/facets'
@@ -20,7 +20,8 @@ import { STOREFRONT } from './storefrontContext'
 // collection page and the search results. Its title and intro, the result count,
 // the sort, the filters for what the products have (./facets.ts: a rail on a
 // desktop, a "Filter and sort" sheet on a phone), a chip per filter in use with
-// Clear all, and editorial cards with quick add. Products sold out in every
+// Clear all, and cards in the collection template's style (Editorial, Dense or
+// Boxed) with quick add. Products sold out in every
 // variant go last.
 //
 // The filters and the sort live in the URL (?size=m&color=black&sort=price-asc),
@@ -65,10 +66,13 @@ const money = computed(() => ({ currency: storefront.currency.value, locale: sto
 const noun = computed(() => listingNoun(props.products))
 const sorts = computed(() => listingSorts(props.page))
 
-/** The filters and sort the URL asks for; the ones the template turns off are not read (the fits switch always is). */
+/**
+ * The filters and sort the URL asks for; the ones the template turns off are not read (the fits
+ * switch always is), nor a filter whose group the template leaves out (`facets`).
+ */
 const filters = computed<ListingFilters>(() => {
   const asked = parseListingQuery(route.query)
-  const kept = props.settings.filters ? asked : { ...emptyFilters(asked.sort), fits: asked.fits }
+  const kept = props.settings.filters ? onlyFacets(asked, props.settings.facets) : { ...emptyFilters(asked.sort), fits: asked.fits }
   return props.settings.sort ? kept : { ...kept, sort: 'featured' }
 })
 
@@ -90,9 +94,10 @@ function setFits(on: boolean): void {
 const shown = computed(() => listProducts(props.products, filters.value, listOptions.value))
 // A group none of whose values would list anything with the other filters (sizes, once only
 // accessories are chosen) says nothing, unless something in it is chosen.
-const groups = computed(() => (props.settings.filters ? facetGroups(props.products, filters.value, listOptions.value) : [])
+// The groups the template names (`facets`), in its order; all of them when it names none.
+const groups = computed(() => (props.settings.filters ? facetGroups(props.products, filters.value, { ...listOptions.value, facets: props.settings.facets }) : [])
   .filter((group) => group.selected > 0 || group.values.some((value) => value.count > 0)))
-const chips = computed(() => activeFilters(props.products, filters.value, money.value))
+const chips = computed(() => activeFilters(props.products, filters.value, { ...money.value, facets: props.settings.facets }))
 const countText = computed(() => resultCountText(shown.value.length, props.products.length, noun.value))
 /** The toolbar's count: "8 of 20 styles", and "0 of 4 styles" above the empty state, which says the rest. */
 const toolbarCount = computed(() => (shown.value.length ? countText.value : `0 of ${props.products.length} ${noun.value.other}`))
@@ -274,7 +279,7 @@ function startQuickAdd(product: Product, color: string | undefined): void {
           <button type="button" class="sf-listing__clear" @click="clearAll">Clear all</button>
         </div>
 
-        <ul v-if="shown.length" class="sf-listing__grid" role="list">
+        <ul v-if="shown.length" class="sf-listing__grid" :class="{ 'sf-listing__grid--boxed': settings.cardStyle === 'Boxed' }" role="list">
           <li v-for="product in shown" :key="product.id">
             <StorefrontListingCard
               :product="product"
@@ -424,9 +429,9 @@ function startQuickAdd(product: Product, color: string | undefined): void {
 }
 
 .sf-listing__select {
-  height: 40px;
+  height: var(--sf-control-height, 40px);
   padding: 0 32px 0 12px;
-  border: 1px solid color-mix(in srgb, var(--sf-text, #121011) 22%, transparent);
+  border: 1px solid var(--sf-input-border, color-mix(in srgb, var(--sf-text, #121011) 22%, transparent));
   border-radius: var(--sf-radius, 0);
   background: var(--sf-bg, #ffffff) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center;
   color: var(--sf-text, #121011);
@@ -442,11 +447,14 @@ function startQuickAdd(product: Product, color: string | undefined): void {
 }
 
 .sf-listing__select:focus-visible {
+  border-color: var(--sf-field-focus, var(--sf-input-border, color-mix(in srgb, var(--sf-text, #121011) 22%, transparent)));
   outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
   outline-offset: 2px;
 }
 
-/* Below a desktop the filters are in the sheet this button opens. */
+/* Below a desktop the filters are in the sheet this button opens. Like the list's other buttons it
+   takes the store's button case, but keeps its 14px, so the count beside it stays on one line on a
+   phone (the sheet's buttons take the text of a theme that styles its controls: Lumos). */
 .sf-listing__sheet-button {
   display: none;
   align-items: center;
@@ -460,6 +468,7 @@ function startQuickAdd(product: Product, color: string | undefined): void {
   font: inherit;
   font-size: 14px;
   font-weight: 500;
+  text-transform: var(--sf-button-case, none);
   cursor: pointer;
 }
 
@@ -535,6 +544,11 @@ function startQuickAdd(product: Product, color: string | undefined): void {
   margin: 0;
   padding: 28px 0 0;
   list-style: none;
+}
+
+/* Framed cards (Boxed) sit closer: their frames already part them. */
+.sf-listing__grid--boxed {
+  gap: 24px 20px;
 }
 
 .sf-listing__none {
@@ -620,6 +634,7 @@ function startQuickAdd(product: Product, color: string | undefined): void {
   color: var(--sf-button-ink, var(--sf-on-brand, #ffffff));
   font: inherit;
   font-weight: 700;
+  text-transform: var(--sf-button-case, none);
   cursor: pointer;
 }
 
@@ -697,15 +712,16 @@ function startQuickAdd(product: Product, color: string | undefined): void {
   flex: 1 1 140px;
   align-items: center;
   justify-content: center;
-  min-height: 50px;
+  min-height: var(--sf-control-height, 50px);
   padding: 0 24px;
   border: 1px solid var(--sf-button-border, var(--sf-brand, #121011));
   border-radius: var(--sf-button-radius, var(--sf-radius, 0));
   background: var(--sf-button-bg, var(--sf-brand, #121011));
   color: var(--sf-button-ink, var(--sf-on-brand, #ffffff));
   font: inherit;
-  font-size: 15px;
+  font-size: var(--sf-control-text, 15px);
   font-weight: 600;
+  text-transform: var(--sf-button-case, none);
   cursor: pointer;
 }
 
@@ -841,6 +857,11 @@ function startQuickAdd(product: Product, color: string | undefined): void {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 32px 12px;
     padding-top: 20px;
+  }
+
+  .sf-listing__grid--boxed,
+  .sf-listing__body--rail .sf-listing__grid--boxed {
+    gap: 12px;
   }
 
   .sf-listing__chip,

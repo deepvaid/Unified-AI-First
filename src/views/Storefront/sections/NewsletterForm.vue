@@ -151,21 +151,27 @@ async function submit(): Promise<void> {
   white-space: nowrap;
 }
 
+/* A theme that styles its controls (Lumos) gives the field the same border, height and text as
+   its other fields (--sf-input-border and the rest: storefront-controls.css); others keep these. */
 .sfn__input {
   box-sizing: border-box;
   width: 100%;
-  height: 50px;
+  height: var(--sf-control-height, 50px);
   padding: 0 16px;
-  border: 1px solid color-mix(in srgb, currentColor 45%, transparent);
+  border: 1px solid var(--sf-input-border, color-mix(in srgb, currentColor 45%, transparent));
   border-radius: var(--sf-radius, 4px);
   background: var(--sf-bg, #ffffff);
   color: var(--sf-text, #121011);
   font: inherit;
-  font-size: 15px;
+  font-size: var(--sf-control-text, 15px);
 }
 
 .sfn__input::placeholder {
   color: var(--sf-muted, #5f5f5f);
+}
+
+.sfn__input:focus {
+  border-color: var(--sf-field-focus, var(--sf-input-border, color-mix(in srgb, currentColor 45%, transparent)));
 }
 
 .sfn__input:focus-visible {

@@ -40,6 +40,7 @@ const { useSizeChartsStore } = await import('@/stores/useSizeCharts')
 const { useStorefrontCartStore } = await import('@/stores/useStorefrontCart')
 const { useDemoStores } = await import('@/stores/useDemoStores')
 const { DEMO_STORES } = await import('@/storefront/demoStores')
+type DemoStoreId = import('@/storefront/demoStores').DemoStoreId
 const { snapshotFor } = await import('@/storefront/demoStores/install')
 const { CREATED_STORES_KEY } = await import('@/storefront/createdStores')
 const { localDateKey } = await import('@/maropay/model')
@@ -48,6 +49,7 @@ const ACCOUNT = '2000290'
 const VH = 'vitaheal-demo'
 const NF = 'northfold-demo'
 const TQ = 'torqline-demo'
+const LM = 'lumos-demo'
 const GARAGE = 'test-garage'
 const today = () => localDateKey(Date.now())
 
@@ -90,15 +92,15 @@ function storeOf(app: App, channelId: string) {
   })
 }
 
-const STORES = [VH, NF, TQ]
+const STORES = [VH, NF, TQ, LM]
 const everyStoreOf = (app: App, ids = STORES) => Object.fromEntries(ids.map((id) => [id, storeOf(app, id)]))
 
-function createGarage(app: App, theme: 'vitaheal' | 'northfold' | 'torqline' | null = 'torqline', merchandiseConnected = false) {
+function createGarage(app: App, theme: DemoStoreId | null = 'torqline', merchandiseConnected = false) {
   return app.demoStores.create(ACCOUNT, { name: 'Test Garage', type: 'web_store', storeBuilderEnabled: true, merchandiseConnected, theme })
 }
 
 /** The store runs `blueprintId` as its snapshot has it: its products, theme, currency and chatbot. */
-function assertRuns(app: App, channelId: string, blueprintId: 'vitaheal' | 'northfold' | 'torqline') {
+function assertRuns(app: App, channelId: string, blueprintId: DemoStoreId) {
   const channel = app.channels.channels.find((c) => c.id === channelId)!
   const snapshot = snapshotFor(channel, blueprintId, today())
   const products = app.commerce.products.filter((p) => p.channelIds?.includes(channelId))

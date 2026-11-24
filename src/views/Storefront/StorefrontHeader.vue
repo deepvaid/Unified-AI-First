@@ -2,7 +2,9 @@
 import { computed, inject, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useStorefrontCartStore } from '@/stores/useStorefrontCart'
+import { useStorefrontWishlistStore } from '@/stores/useStorefrontWishlist'
 import { vehicleLabel } from '@/storefront/fitment'
+import { wishlistLinkLabel } from '@/storefront/wishlist'
 import StorefrontAnchor from './StorefrontAnchor.vue'
 import StorefrontDrawer from './StorefrontDrawer.vue'
 import { STOREFRONT } from './storefrontContext'
@@ -11,11 +13,15 @@ import { chromeSettings, flag, templateForRoute, text } from './sections/section
 // The storefront's announcement bar and header. Two drawings:
 // - classic (every theme but the sections drawing's): the markup StorefrontLayout has
 //   always drawn, moved here unchanged, so Vitaheal, Atlas and Neelam look as before;
-// - sections (Northfold, Torqline): the theme's header section decides the menu style
-//   (Inline: wordmark and menu in one row; Centered: wordmark over the menu; Minimal:
-//   wordmark and a menu button), whether it sticks to the top on a desktop, and a light
-//   or dark scheme. Search shows only once the store can search; on a phone, and in the
-//   Minimal style, the menu opens in a drawer.
+// - sections (Northfold, Torqline, Lumos): the theme's header section decides the menu
+//   style (Inline: wordmark and menu in one row; Centered: wordmark over the menu;
+//   Minimal: wordmark and a menu button), whether it sticks to the top on a desktop, and
+//   a light or dark scheme. Search shows only once the store can search; on a phone, and
+//   in the Minimal style, the menu opens in a drawer. The store's chrome can ask for
+//   search as a visible field (`headerSearch: 'field'`, Lumos): in the bar on a wide
+//   screen, in a row of its own under the bar where the bar has no room for it (1240px
+//   and narrower). A store with a wishlist (Lumos) gets a heart beside the cart, with
+//   how many saved products it still sells.
 // The checkout's header (route meta minimalChrome) is the logo and "Secure checkout".
 
 const storefront = inject(STOREFRONT)!
@@ -61,6 +67,15 @@ const sticky = computed(() => flag(settings.value, 'sticky'))
 const dark = computed(() => text(settings.value, 'colorScheme') === 'Dark')
 const hasAccount = computed(() => chrome.value.headerTools.includes('account'))
 
+// Search as a visible field (Lumos): two forms on one query, one shown at a time (in the bar
+// when it has room, else in a row under it), so the DOM order stays the order the eye reads.
+const searchField = computed(() => searchable.value && chrome.value.headerSearch === 'field')
+
+// The wishlist heart, with how many saved products the store still sells.
+const wishlist = useStorefrontWishlistStore()
+const wishCount = computed(() => (storefront.wishlist.value ? wishlist.count(storefront.channel.value.id) : 0))
+const wishLabel = computed(() => wishlistLinkLabel(wishCount.value))
+
 // An auto-parts store's vehicle chip: "Select vehicle", or the vehicle chosen. It opens
 // the vehicle drawer (StorefrontLayout's). Beside the tools on a wide screen; narrower,
 // where the menu needs the bar, in its own row under it (the full width on a phone).
@@ -103,7 +118,7 @@ function onMenuClosed(): void {
   <!-- ── Sections drawing ──────────────────────────────────────────── -->
   <template v-if="sectionsDrawing && !minimal">
     <p v-if="announcement" class="sfh-announce">{{ announcement }}</p>
-    <header class="sfh" :class="[`sfh--${menuStyle}`, { 'sfh--dark': dark, 'sfh--sticky': sticky }]">
+    <header class="sfh" :class="[`sfh--${menuStyle}`, { 'sfh--dark': dark, 'sfh--sticky': sticky, 'sfh--search-field': searchField }]">
       <div class="sfh__row">
         <StorefrontAnchor href="/" class="sfh__logo">
           <v-icon v-if="chrome.wordmarkIcon" size="26" aria-hidden="true">{{ chrome.wordmarkIcon }}</v-icon>
@@ -127,12 +142,33 @@ function onMenuClosed(): void {
           <v-icon size="16" aria-hidden="true">chevron-down</v-icon>
         </button>
 
+        <form v-if="searchField" class="sfh__search sfh__search--bar" role="search" @submit.prevent="search">
+          <span class="sfh__field">
+            <input
+              v-model="query"
+              type="search"
+              class="sfh__field-input"
+              :placeholder="chrome.searchPlaceholder"
+              aria-label="Search the store"
+              enterkeyhint="search"
+              autocomplete="off"
+            >
+            <button type="submit" class="sfh__field-go" aria-label="Search">
+              <v-icon size="20" aria-hidden="true">search</v-icon>
+            </button>
+          </span>
+        </form>
+
         <div class="sfh__tools">
-          <StorefrontAnchor v-if="searchable" href="/search" class="sfh__icon" aria-label="Search" @click="onSearchIcon">
+          <StorefrontAnchor v-if="searchable && !searchField" href="/search" class="sfh__icon" aria-label="Search" @click="onSearchIcon">
             <v-icon size="22" aria-hidden="true">search</v-icon>
           </StorefrontAnchor>
           <StorefrontAnchor v-if="hasAccount" :href="chrome.accountHref ?? '/user/login'" class="sfh__icon sfh__icon--account" aria-label="Account">
             <v-icon size="22" aria-hidden="true">user-round</v-icon>
+          </StorefrontAnchor>
+          <StorefrontAnchor v-if="storefront.wishlist.value" href="/wishlist" class="sfh__icon sfh__wish" :aria-label="wishLabel">
+            <v-icon size="22" aria-hidden="true">heart</v-icon>
+            <span v-if="wishCount" class="sfh__count" aria-hidden="true">{{ wishCount > 99 ? '99+' : wishCount }}</span>
           </StorefrontAnchor>
           <StorefrontAnchor href="/cart-page" class="sfh__icon sfh__cart" :aria-label="cartLabel">
             <v-icon size="22" aria-hidden="true">shopping-bag</v-icon>
@@ -162,11 +198,28 @@ function onMenuClosed(): void {
           <v-icon size="16" aria-hidden="true">chevron-down</v-icon>
         </button>
       </div>
+
+      <form v-if="searchField" class="sfh__search sfh__search--row" role="search" @submit.prevent="search">
+        <span class="sfh__field">
+          <input
+            v-model="query"
+            type="search"
+            class="sfh__field-input"
+            :placeholder="chrome.searchPlaceholder"
+            aria-label="Search the store"
+            enterkeyhint="search"
+            autocomplete="off"
+          >
+          <button type="submit" class="sfh__field-go" aria-label="Search">
+            <v-icon size="20" aria-hidden="true">search</v-icon>
+          </button>
+        </span>
+      </form>
     </header>
 
     <StorefrontDrawer v-model="menuOpen" title="Menu" :phone-sheet="false" close-label="Close menu" @close="onMenuClosed">
       <nav aria-label="Menu" class="sfh-drawer">
-        <StorefrontAnchor v-if="searchable" href="/search" class="sfh-drawer__search" @click="onMenuSearch">
+        <StorefrontAnchor v-if="searchable && !searchField" href="/search" class="sfh-drawer__search" @click="onMenuSearch">
           <v-icon size="20" aria-hidden="true">search</v-icon>
           Search
         </StorefrontAnchor>
@@ -798,6 +851,108 @@ function onMenuClosed(): void {
 .sfh-drawer__search:focus-visible {
   outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
   outline-offset: 2px;
+}
+
+/* ── Search as a field (Lumos) ───────────────────────────────────────────
+ * The theme's field: its control height, a hairline in its field colour that turns
+ * its accent on focus (with the focus ring), its corners, the card colour inside,
+ * a placeholder in its muted colour, and the magnifier as the submit button. In the
+ * bar on a wide screen; under the bar, the full width, where the menu needs the bar. */
+.sfh--search-field .sfh__tools {
+  margin-left: 0;
+}
+
+.sfh__search--bar {
+  flex: 0 1 300px;
+  min-width: 200px;
+  margin-left: auto;
+}
+
+.sfh__search--row {
+  display: none;
+}
+
+.sfh__field {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--sf-control-height, 44px);
+  border: 1px solid var(--sf-input-border, var(--sf-divider, #e5e5e5));
+  border-radius: var(--sf-corner, var(--sf-radius, 0));
+  background: var(--sf-card, var(--sf-bg, #ffffff));
+  color: var(--sf-text, #121011);
+}
+
+.sfh__field:focus-within {
+  border-color: var(--sf-field-focus, var(--sf-text, #121011));
+  outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
+  outline-offset: 2px;
+}
+
+/* A dark header: the ring in the header's ink, so it shows on the dark fill. */
+.sfh--dark .sfh__field:focus-within {
+  outline-color: var(--sf-on-brand, #ffffff);
+}
+
+.sfh__field-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  padding: 0 0 0 16px;
+  border: 0;
+  outline: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 16px;
+}
+
+.sfh__field-input::placeholder {
+  color: var(--sf-muted, #5f5f5f);
+  opacity: 1;
+}
+
+.sfh__field-go {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--sf-muted, #5f5f5f);
+  cursor: pointer;
+}
+
+.sfh__field-go:hover {
+  color: var(--sf-text, #121011);
+}
+
+.sfh__field-go:focus-visible {
+  outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
+  outline-offset: -4px;
+}
+
+/* Where the menu needs the bar (as for the vehicle chip): the field goes to a row of its own, the full width. */
+@media (max-width: 1240px) {
+  .sfh__search--bar {
+    display: none;
+  }
+
+  .sfh--search-field .sfh__tools {
+    margin-left: auto;
+  }
+
+  .sfh__search--row {
+    display: block;
+    box-sizing: border-box;
+    max-width: var(--sf-measure, 1200px);
+    margin: 0 auto;
+    padding: 0 var(--sf-gutter, 24px) 12px;
+  }
 }
 
 @media (max-width: 900px) {

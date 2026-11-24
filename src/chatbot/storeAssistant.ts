@@ -11,7 +11,9 @@
  * questions it answers with care) is the store's assistant profile
  * (assistantProfiles.ts); the rest is the same for every store. A clothing store's
  * profile adds size and fit, fabric and care (clothingAnswers.ts); an auto parts
- * store's adds fit, part numbers and the shopper's vehicle (partsAnswers.ts).
+ * store's adds fit, part numbers and the shopper's vehicle (partsAnswers.ts); a
+ * furniture and home store's adds a piece's size against the shopper's space,
+ * materials, care, assembly, warranty and delivery (homeAnswers.ts).
  *
  * Pure, with relative `.ts` imports only, so `npm run test:chatbot` runs a whole
  * conversation in Node. The builder's preview keeps its own stand-in
@@ -20,7 +22,7 @@
 
 import type { AssistantProfileId, SizeChart } from '../storefront/demoStores/types.ts'
 import type { Fitment, Vehicle } from '../storefront/fitment.ts'
-import { optionValuesOf, variantUnits } from '../storefront/variants.ts'
+import { optionValuesOf, variantAvailable, variantUnits } from '../storefront/variants.ts'
 import { dayLabel } from '../subscriptions/contracts.ts'
 import type { ContractStatus } from '../subscriptions/contracts.ts'
 import { assistantProfile } from './assistantProfiles.ts'
@@ -30,6 +32,8 @@ import {
   measurementsIn, pieceForMeasurements, priceLimit, sizeAnswer, sizesIn, subjectOf, withoutNames,
 } from './clothingAnswers.ts'
 import type { ClothingTurn } from './clothingAnswers.ts'
+import { MY_DELIVERY, aboutPieceNotOrder, contact, homeAnswer, homeSuggestion } from './homeAnswers.ts'
+import type { HomeTurn } from './homeAnswers.ts'
 import { partsAnswer, partsCaution, withoutPartWords } from './partsAnswers.ts'
 import type { PartsTurn } from './partsAnswers.ts'
 import { bestEntry, hits, keywords } from './previewResponder.ts'
@@ -59,6 +63,19 @@ export interface AssistantProduct {
   fitment?: Fitment
   /** Auto parts: each variant's part number, price and stock. */
   variants?: AssistantVariant[]
+  /**
+   * Its own facts, as its page's specifications list them: { label: 'Width', value: '84 in' }.
+   * A furniture and home store's assistant reads Width, Depth, Height, Seat height, Weight,
+   * Materials, Care and Assembly.
+   */
+  specs?: Array<{ label: string; value: string }>
+  /** What the maker covers: "5-year frame warranty". */
+  warranty?: string
+  /**
+   * A product with specifications: the choices it comes in ({ name: 'Fabric', values: ['Oat', 'Slate'] }).
+   * `soldOut`: the values none of its variants can be bought in now (not on a part, whose stock is in `variants`).
+   */
+  options?: Array<{ name: string; values: string[]; soldOut?: string[] }>
 }
 
 /** One variant of a part, as the assistant reads it. */
@@ -86,6 +103,8 @@ export interface StoreProductFields {
     subtitle?: string; description?: string; fitNote?: string; material?: string; care?: string; sizeChartId?: string
     tag?: string
     fitment?: Fitment
+    specs?: Array<{ label: string; value: string }>
+    warranty?: string
     options?: Array<{ name: string; values: string[] }>
     variantsList?: Array<{ title: string; optionValues?: string[]; sku: string; price: string; manageInventory: boolean; allowBackorder: boolean; stock: Record<string, number> }>
   }
@@ -120,6 +139,23 @@ function partFields(product: StoreProductFields): Pick<AssistantProduct, 'catego
   return { category: detail.tag || product.collections[0] || '', fitment: detail.fitment, variants }
 }
 
+/**
+ * A product's choices, each with the values none of its variants can be bought in now
+ * ("Black" when the black one is sold out). A part's stock is read from its variants
+ * instead (partFields), so its choices stay as they are.
+ */
+function choicesOf(detail: NonNullable<StoreProductFields['detail']>): NonNullable<AssistantProduct['options']> {
+  const options = detail.options ?? []
+  const listed = detail.fitment ? [] : (detail.variantsList ?? [])
+  return options.map((option, i) => {
+    const soldOut = option.values.filter((value) => {
+      const having = listed.filter((variant) => optionValuesOf(variant, options)[i] === value)
+      return having.length > 0 && !having.some(variantAvailable)
+    })
+    return { name: option.name, values: [...option.values], ...(soldOut.length ? { soldOut } : {}) }
+  })
+}
+
 /** A store product as the assistant reads it; `url` is its page ("/products/linen-overshirt-3015"). */
 export function assistantProduct(product: StoreProductFields, url?: string): AssistantProduct {
   const price = Number.parseFloat(product.price)
@@ -137,6 +173,10 @@ export function assistantProduct(product: StoreProductFields, url?: string): Ass
     ...(detail?.care ? { care: detail.care } : {}),
     ...(detail?.sizeChartId ? { sizeChartId: detail.sizeChartId } : {}),
     ...(detail?.fitment ? partFields(product) : {}),
+    // Only a product with specifications or a warranty carries them, and its choices.
+    ...(detail?.specs?.length ? { specs: detail.specs } : {}),
+    ...(detail?.warranty ? { warranty: detail.warranty } : {}),
+    ...((detail?.specs?.length || detail?.warranty) && detail.options?.length ? { options: choicesOf(detail) } : {}),
   }
 }
 
@@ -257,6 +297,11 @@ export interface AssistantTurn {
 const CONTACT = { label: 'Contact us', href: '/page/contact' }
 const ACCOUNT = { label: 'Manage subscription', href: '/account' }
 
+/** Where to write to the store. A home store says where its own knowledge does (its contact page may be the FAQ). */
+function contactFor(ctx: AssistantContext): { label: string; href: string } {
+  return assistantProfile(ctx.profile).home ? contact(ctx) : CONTACT
+}
+
 // ── What a message is about ──────────────────────────────────────────────────
 
 const SUBSCRIPTION = /\b(subscription|subscrib\w*|next (delivery|charge|order|shipment|box)|renew\w*|skip\w*|paus\w*|resum\w*|my plan|change (my )?plan)\b/
@@ -339,7 +384,7 @@ function answerOrder(question: string, email: string, ctx: AssistantContext): As
       text: number
         ? `I can’t find order ${number} for ${email}. Check the number in your confirmation email, or write to us and we will look into it.`
         : `I can’t find an order for ${email}. If you used another email, tell me that one, or write to us and we will look into it.`,
-      link: CONTACT,
+      link: contactFor(ctx),
     }]
   }
   const more = !number && mine.length > 1 ? ` You have ${mine.length} orders with us; this is the latest.` : ''
@@ -480,8 +525,14 @@ export function assistantReply(message: string, ctx: AssistantContext, state: As
   const turn = (replies: AssistantReply[], next: Partial<AssistantState> = {}, extra: Partial<AssistantTurn> = {}): AssistantTurn =>
     ({ replies, state: { pending: null, email: state.email, ...next }, offerPrompts: false, ...extra })
   const clothing = profile.clothing
+  const home = profile.home
   /** A clothing answer remembers its piece for the next message. */
   const worn = (answer: ClothingTurn): AssistantTurn => turn(answer.replies, answer.productId ? { productId: answer.productId } : {})
+  /** A home answer remembers its piece, and the question waiting for one. */
+  const placed = (answer: HomeTurn): AssistantTurn => turn(answer.replies, {
+    ...(answer.productId ? { productId: answer.productId } : {}),
+    ...(answer.asked ? { asked: answer.asked } : {}),
+  })
   /** A parts answer remembers its part, the vehicle it offered and the question waiting for a vehicle; it may set the vehicle. */
   const fitted = (answer: PartsTurn): AssistantTurn => turn(
     answer.replies,
@@ -542,10 +593,14 @@ export function assistantReply(message: string, ctx: AssistantContext, state: As
   // ── Orders and subscriptions need to know who is asking ────────────
   const general = GENERAL.test(text) && !/\b(my|next)\b/.test(text)
   const aboutSubscription = !general && !noPlans && SUBSCRIPTION.test(text) && !orderNumberIn(message)
-  const aboutOrder = !general && !aboutSubscription && (ORDER.test(text) || !!orderNumberIn(message) || planWords)
+  // A home store: "Does the bed come in one package?" is about the bed; "When will my sofa arrive?" is about the order.
+  const orderWords = home
+    ? (ORDER.test(text) && !aboutPieceNotOrder(message, ctx, home)) || MY_DELIVERY.test(text)
+    : ORDER.test(text)
+  const aboutOrder = !general && !aboutSubscription && (orderWords || !!orderNumberIn(message) || planWords)
   if (aboutSubscription || aboutOrder) {
     if (!ctx.trackingEnabled) {
-      return turn([{ kind: 'text', text: 'I can’t look up orders or subscriptions in this chat. Write to us and the team will check it for you.', link: aboutSubscription ? ACCOUNT : CONTACT }])
+      return turn([{ kind: 'text', text: 'I can’t look up orders or subscriptions in this chat. Write to us and the team will check it for you.', link: aboutSubscription ? ACCOUNT : contactFor(ctx) }])
     }
     // An order number with its email is enough; a typed email saves a step.
     const typed = EMAIL.exec(message)?.[0].toLowerCase()
@@ -563,15 +618,15 @@ export function assistantReply(message: string, ctx: AssistantContext, state: As
   // ── Is there an offer on? The store's running campaign answers ─────
   // A clothing store's return question that says "sale" ("Can I return a sale item?") is the pages' to answer.
   // So is a parts store's ("Can I return a part from the deals?"): returning and exchanging are its pages' to answer.
-  const pagesQuestion = (!!clothing || !!profile.parts) && (POLICY.test(text) || EXCHANGE.test(text))
+  const pagesQuestion = (!!clothing || !!profile.parts || !!home) && (POLICY.test(text) || EXCHANGE.test(text))
   if (PROMOTION.test(text) && !pagesQuestion) {
     const offer: AssistantReply = {
       kind: 'text',
       text: ctx.promotion ? `Yes. ${ctx.promotion}. Type the code in your cart or at checkout.` : profile.noPromotion.text,
       link: ctx.promotion ? { label: 'Go to your cart', href: '/cart-page' } : profile.noPromotion.link,
     }
-    // "What's on sale?" in a clothing store: the reduced pieces, and the code when one runs.
-    const reduced = clothing && SALE_ITEMS.test(text) && ctx.shoppingEnabled
+    // "What's on sale?" in a clothing or home store: the reduced pieces, and the code when one runs.
+    const reduced = (clothing || home) && SALE_ITEMS.test(text) && ctx.shoppingEnabled
       ? ctx.products.filter((p) => p.collections.some((c) => /^sale$/i.test(c))).slice(0, 3).map((p) => p.id)
       : []
     if (reduced.length) {
@@ -582,7 +637,7 @@ export function assistantReply(message: string, ctx: AssistantContext, state: As
   }
 
   if (HUMAN.test(text)) {
-    return turn([{ kind: 'text', text: 'Of course. Our team answers within one working day. Write to us and say what you need.', link: CONTACT }])
+    return turn([{ kind: 'text', text: 'Of course. Our team answers within one working day. Write to us and say what you need.', link: contactFor(ctx) }])
   }
 
   // ── Size and fit, fabric and care (a clothing store) ───────────────
@@ -592,13 +647,27 @@ export function assistantReply(message: string, ctx: AssistantContext, state: As
     if (answer) return worn(answer)
   }
 
+  // ── Size and fit, materials and care, assembly, warranty and delivery (a furniture and home store) ──
+  // Returning or changing a piece is the store's pages' to answer; a question that also reads as one
+  // for the pages ("Is the sofa covered by a guarantee?") is answered here only about a piece or a delivery service.
+  if (home && !EXCHANGE.test(text)) {
+    const answer = homeAnswer(message, ctx, state, profile, POLICY.test(text))
+    if (answer) return placed(answer)
+  }
+
   // ── A need, or a request for a suggestion ──────────────────────────
   // A parts store's exchange question ("for a longer size") goes to its pages, never to a suggestion.
-  const wantsProduct = !POLICY.test(text) && !(profile.parts && pagesQuestion) && (profile.needs.some((need) => need.says.test(text)) || SHOPPING.test(text)
+  const wantsProduct = !POLICY.test(text) && !((profile.parts || home) && pagesQuestion) && (profile.needs.some((need) => need.says.test(text)) || SHOPPING.test(text)
     || (!!clothing && (!!priceLimit(message) || !!audienceAsked(text))))
   if (wantsProduct && ctx.shoppingEnabled && clothing) {
     const suggestion = clothingSuggestion(message, ctx, profile)
     return turn([suggestion ?? { kind: 'text', text: profile.askNeed }])
+  }
+  // A home store also shows the pieces a message names ("Do you have bookshelves?"), and pieces under a price.
+  if (home && ctx.shoppingEnabled && !POLICY.test(text) && !pagesQuestion) {
+    const suggestion = homeSuggestion(message, ctx, profile, wantsProduct)
+    if (suggestion) return turn([suggestion])
+    if (wantsProduct) return turn([{ kind: 'text', text: profile.askNeed }])
   }
   if (wantsProduct && ctx.shoppingEnabled) {
     // A parts store hands in its sold-out parts too (their part numbers are looked up); a suggestion is only what can be bought.

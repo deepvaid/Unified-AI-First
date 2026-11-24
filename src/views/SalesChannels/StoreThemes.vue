@@ -15,6 +15,7 @@ import { previewProducts } from '@/views/Storefront/storefrontCatalog'
 import { DEMO_STORES } from '@/storefront/demoStores'
 import type { DemoStoreBlueprint } from '@/storefront/demoStores'
 import { readInstalled } from '@/storefront/demoStores/install'
+import { gridSettings } from '@/storefront/listing'
 import type { StoreTheme } from '@/stores/themeBuilderData'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpSectionHeader from '@/components/MpSectionHeader.vue'
@@ -56,6 +57,14 @@ const channelId = computed(() => {
 
 const channel = computed(() => salesChannelsStore.getChannel(accountId.value, channelId.value))
 const previewHeader = computed(() => storefronts.previewHeaderFor(channel.value))
+/** The header's search and tools, and the product card the store's rows use, as the builder draws them. */
+const previewExtras = computed(() => {
+  const grid = gridSettings(current.value?.templates.collection)
+  const cards = { cardStyle: grid.cardStyle, quickAdd: grid.quickAdd }
+  if (!previewHeader.value.brand || !channel.value) return cards
+  const chrome = storefronts.chromeFor(channel.value)
+  return { ...cards, headerSearch: chrome.headerSearch, headerTools: chrome.headerTools, searchPlaceholder: chrome.searchPlaceholder }
+})
 /** The store's own products in the preview's product rows; a store on the shared catalogue keeps the drawn stand-ins. */
 const previewItems = computed(() => (channel.value ? previewProducts(useCommerceStore().products, channel.value) : undefined))
 
@@ -239,7 +248,7 @@ function foldedMeta(theme: StoreTheme): string {
       <template v-if="current">
         <!-- The top of the home page, fading out: the whole page runs past 2,000px and hid the library below it. -->
         <div class="store-themes__window">
-          <StorefrontPreview :sections="current.templates.home" :styles="current.styles" :brand="previewHeader.brand" :menu="previewHeader.menu" :products="previewItems" />
+          <StorefrontPreview :sections="current.templates.home" :styles="current.styles" :brand="previewHeader.brand" :menu="previewHeader.menu" :products="previewItems" v-bind="previewExtras" />
         </div>
         <div class="store-themes__current-bar">
           <div class="min-width-0">

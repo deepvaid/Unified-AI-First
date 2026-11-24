@@ -5,6 +5,7 @@ import type { Product, ProductVariant } from '@/stores/useCommerce'
 import { useStorefrontCartStore } from '@/stores/useStorefrontCart'
 import { fitDetail, lineVehicle, variantFitState } from '@/storefront/fitment'
 import { addsDirectly, cardPhoto, cardPrice, soldOutText } from '@/storefront/listing'
+import { galleryFor } from '@/storefront/productPage'
 import { describeVariant, initialSelection, optionKey, optionKind, optionValuesOf, variantAvailable, variantFor } from '@/storefront/variants'
 import StorefrontAnchor from './StorefrontAnchor.vue'
 import StorefrontDrawer from './StorefrontDrawer.vue'
@@ -73,6 +74,9 @@ const photo = computed(() => {
   const color = colorOption.value ? selection.value?.[colorOption.value.name] : undefined
   return cardPhoto(product.value, color ? { name: color } : undefined)
 })
+
+/** "Shown in Oat" under the photo when the colour chosen has no photo of its own, as the product page says it. */
+const shownIn = computed(() => (product.value && photo.value && selection.value ? galleryFor(product.value, selection.value).shownIn : ''))
 
 /** "Size M · Sand". */
 const line = computed(() => (variant.value && product.value ? describeVariant(variant.value, options.value) : ''))
@@ -172,10 +176,13 @@ defineExpose({ start })
   >
     <template v-if="product">
       <div class="sf-qa__summary" :class="{ 'sf-qa__summary--added': stage === 'added' }">
-        <span class="sf-qa__thumb">
-          <img v-if="photo" :src="photo" alt="" class="sf-qa__image">
-          <v-icon v-else size="32" aria-hidden="true">shirt</v-icon>
-        </span>
+        <div class="sf-qa__media">
+          <span class="sf-qa__thumb">
+            <img v-if="photo" :src="photo" alt="" class="sf-qa__image">
+            <v-icon v-else size="32" aria-hidden="true">shirt</v-icon>
+          </span>
+          <p v-if="shownIn" class="sf-qa__shown">{{ shownIn }}</p>
+        </div>
         <div class="sf-qa__facts">
           <p v-if="stage === 'added'" class="sf-qa__name">{{ product.name }}</p>
           <p v-else-if="product.detail?.subtitle" class="sf-qa__subtitle">{{ product.detail.subtitle }}</p>
@@ -233,12 +240,18 @@ defineExpose({ start })
   margin-bottom: 0;
 }
 
-.sf-qa__thumb {
+.sf-qa__media {
   display: flex;
   flex-shrink: 0;
+  flex-direction: column;
+  gap: 6px;
+  width: 96px;
+}
+
+.sf-qa__thumb {
+  display: flex;
   align-items: center;
   justify-content: center;
-  width: 96px;
   aspect-ratio: 3 / 4;
   overflow: hidden;
   border-radius: var(--sf-radius, 0);
@@ -250,6 +263,13 @@ defineExpose({ start })
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.sf-qa__shown {
+  margin: 0;
+  color: var(--sf-muted, #66625c);
+  font-size: 13px;
+  line-height: 18px;
 }
 
 .sf-qa__facts {
@@ -333,20 +353,24 @@ defineExpose({ start })
   gap: 12px;
 }
 
-/* The store's buttons: its colours and corners, as wide as the drawer. */
+/* The store's buttons: its colours, corners and button case, as wide as the drawer; the height and
+   text of a theme that styles its controls (Lumos: storefront-controls.css). A label stays on one
+   line: two buttons too wide to share a row take a row each. */
 .sf-qa__button {
   display: inline-flex;
   flex: 1 1 160px;
   align-items: center;
   justify-content: center;
-  min-height: 50px;
+  min-height: var(--sf-control-height, 50px);
   padding: 0 20px;
   border: 1px solid var(--sf-brand, #121011);
   border-radius: var(--sf-radius, 0);
   font: inherit;
-  font-size: 15px;
+  font-size: var(--sf-control-text, 15px);
   font-weight: 600;
   text-decoration: none;
+  text-transform: var(--sf-button-case, none);
+  white-space: nowrap;
   cursor: pointer;
 }
 

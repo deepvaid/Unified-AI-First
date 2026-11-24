@@ -324,16 +324,22 @@ watch(query, (q) => {
   pointer-events: none;
 }
 
+/* A theme that styles its controls (Lumos) gives the box and its button the height, border and
+   text of its other fields and buttons (storefront-controls.css), and its button case; others keep these. */
 .sf-search-v2__input {
   width: 100%;
-  height: 48px;
+  height: var(--sf-control-height, 48px);
   padding: 0 14px 0 42px;
-  border: 1px solid color-mix(in srgb, var(--sf-text, #121011) 22%, transparent);
+  border: 1px solid var(--sf-input-border, color-mix(in srgb, var(--sf-text, #121011) 22%, transparent));
   border-radius: var(--sf-radius, 0);
   background: var(--sf-bg, #ffffff);
   color: var(--sf-text, #121011);
   font: inherit;
-  font-size: 15px;
+  font-size: var(--sf-control-text, 15px);
+}
+
+.sf-search-v2__input:focus {
+  border-color: var(--sf-field-focus, var(--sf-input-border, color-mix(in srgb, var(--sf-text, #121011) 22%, transparent)));
 }
 
 .sf-search-v2__input:hover {
@@ -342,15 +348,16 @@ watch(query, (q) => {
 
 .sf-search-v2__go {
   flex-shrink: 0;
-  min-height: 48px;
+  min-height: var(--sf-control-height, 48px);
   padding: 0 22px;
   border: 1px solid var(--sf-brand, #121011);
   border-radius: var(--sf-radius, 0);
   background: var(--sf-brand, #121011);
   color: var(--sf-on-brand, #ffffff);
   font: inherit;
-  font-size: 15px;
+  font-size: var(--sf-control-text, 15px);
   font-weight: 600;
+  text-transform: var(--sf-button-case, none);
   cursor: pointer;
 }
 

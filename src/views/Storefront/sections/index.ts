@@ -5,6 +5,7 @@ import FeaturedProducts from './FeaturedProducts.vue'
 import IconRow from './IconRow.vue'
 import ImageBanner from './ImageBanner.vue'
 import ImageWithText from './ImageWithText.vue'
+import LogoStrip from './LogoStrip.vue'
 import Newsletter from './Newsletter.vue'
 import RichText from './RichText.vue'
 import VehicleFinder from './VehicleFinder.vue'
@@ -26,6 +27,8 @@ export const SECTION_COMPONENTS: Readonly<Record<string, Component>> = {
   'featured-products': FeaturedProducts,
   'rich-text': RichText,
   'icon-row': IconRow,
+  // Brand logos on cards, each a link to the brand's products (Lumos).
+  'logo-strip': LogoStrip,
   newsletter: Newsletter,
   // An auto-parts store's hero: a photo with the Year → Make → Model selects.
   'vehicle-finder': VehicleFinder,

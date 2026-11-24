@@ -1,7 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
+import { useStorefrontWishlistStore } from '@/stores/useStorefrontWishlist'
+import { isolateStorage } from '@/stories/decorators'
 import StorefrontListingCard from './StorefrontListingCard.vue'
 import {
-  F150, listingProduct, northfoldCollection, northfoldStore, soldOutCopy, torqlineCollection, torqlineFrame, torqlinePart, torqlineStore,
+  F150, LUMOS_STORY_CHANNEL, listingProduct, lumosCollection, lumosFrame, lumosProduct, lumosStore, northfoldCollection, northfoldStore, soldOutCopy,
+  torqlineCollection, torqlineFrame, torqlinePart, torqlineStore,
 } from './listingStoryFixtures'
 import { storefrontFrame } from './storefrontStoryFixtures'
 
@@ -11,6 +14,9 @@ const card = storefrontFrame('300px')
 /** One of Torqline's dense cards, as wide as in its four-column grid. */
 const partCard = torqlineFrame('260px')
 const truckPads = torqlinePart('Ceramic Brake Pads, Truck & SUV')
+/** One of Lumos's boxed cards, about as wide as in its three-column grid. */
+const boxedCard = lumosFrame('300px')
+const sofa = lumosProduct('Arlo 3-Seat Sofa')
 
 const meta = {
   title: 'Product/Storefront/StorefrontListingCard',
@@ -21,9 +27,10 @@ const meta = {
       description: {
         component: `
 ### Overview
-A product in a list on a store with the richer theme drawing (Northfold, Torqline): the collection
-and search pages. Shown here with Northfold's own products and theme, and Torqline's for the dense
-parts card. The classic drawing keeps
+A product in a list on a store with the richer theme drawing (Northfold, Torqline, Lumos): the
+collection and search pages, featured products and recommendations. Shown here with Northfold's own
+products and theme, Torqline's for the dense parts card and Lumos's for the boxed card. The classic
+drawing keeps
 \`StorefrontProductCard\` (Vitaheal, Atlas and Neelam are unchanged).
 
 ### Anatomy
@@ -51,10 +58,24 @@ parts card. The classic drawing keeps
   Pads, Truck & SUV". A part without options goes straight into the cart (with the vehicle on its
   line when it fits); one with options opens quick add. A sold-out part has none.
 
+### Boxed: the Figma product card (Lumos)
+\`cardStyle: 'Boxed'\`, from the collection template's grid:
+- A **framed card** on the theme's card colour (\`--sf-card\`), card corners (\`--sf-card-radius\`) and
+  soft shadow (\`--sf-card-shadow\`), with a hairline in its divider colour.
+- **Photo** at 248:273 on the theme's surface, its top corners rounded, with one badge top-left: **Sale**
+  (the sale colour), **New** (the store's badge colour) or **Sold out**; 10px uppercase on a 4px pill.
+- **Heart**, top-right, on a store with a wishlist: a 36px white disc (44px hit area). A toggle button
+  (\`aria-pressed\`) named "Save Arlo 3-Seat Sofa to your wishlist"; saved, the heart is filled in the
+  accent. Pressing it is said politely: "Saved to your wishlist · Arlo 3-Seat Sofa".
+- **Name** (16px bold, two lines at most), the card's one link; **price** (on sale, the sale price in the
+  sale colour and the struck "was" price).
+- **Add to cart**: the store's solid button, the card's width, 44px, at the card's foot so a row lines
+  up. Straight into the cart when there is nothing to choose; quick add otherwise.
+
 ### Props
 - \`colorKeys\`: the list's colour filter. The card leads with the first of those colours the product
   comes in (its own photo when it has one) and opens the product page in it (\`?color=black\`).
-- \`cardStyle\`: \`'Editorial'\` (default) or \`'Dense'\`.
+- \`cardStyle\`: \`'Editorial'\` (default), \`'Dense'\` or \`'Boxed'\`.
 - \`quickAdd\`, \`added\`, \`showNew\`, \`headingLevel\`.
 
 Out of system on purpose (P4-8): it draws with the store's theme variables, not Marobase tokens.
@@ -167,6 +188,58 @@ export const PartsInAGrid: Story = {
     template: `
       <ul role="list" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 44px 20px; margin: 0; padding: 0; list-style: none;">
         <li v-for="product in products" :key="product.id"><StorefrontListingCard :product="product" card-style="Dense" /></li>
+      </ul>
+    `,
+  }),
+}
+
+/** Lumos's boxed card: Arlo 3-Seat Sofa in three fabrics, so Add to cart opens quick add. */
+export const Boxed: Story = {
+  decorators: [boxedCard, lumosStore(), isolateStorage],
+  args: { product: sofa, cardStyle: 'Boxed' },
+}
+
+/** On sale: the Sale badge, the sale price in the sale colour and the struck "was" price. */
+export const BoxedOnSale: Story = {
+  decorators: [boxedCard, lumosStore(), isolateStorage],
+  args: { product: lumosProduct('Stone Side Table'), cardStyle: 'Boxed' },
+}
+
+/** A new arrival, already in the wishlist: the New badge, and the heart filled in the accent (pressed). */
+export const BoxedSaved: Story = {
+  decorators: [
+    boxedCard,
+    (story) => ({
+      components: { story },
+      setup() {
+        const wishlist = useStorefrontWishlistStore()
+        const desk = lumosProduct('Ledger Desk')
+        if (!wishlist.has(LUMOS_STORY_CHANNEL, desk.id)) wishlist.toggle(LUMOS_STORY_CHANNEL, desk.id)
+        return {}
+      },
+      template: '<story />',
+    }),
+    lumosStore(),
+    isolateStorage,
+  ],
+  args: { product: lumosProduct('Ledger Desk'), cardStyle: 'Boxed' },
+}
+
+/** The lantern set (nothing to choose) went straight into the cart: its button reads "Added" for a moment. */
+export const BoxedJustAdded: Story = {
+  decorators: [boxedCard, lumosStore(), isolateStorage],
+  args: { product: lumosProduct('Lantern Set of 3'), cardStyle: 'Boxed', added: true },
+}
+
+/** Lumos's Living Room as its collection page lists it, three across at desktop width. */
+export const BoxedInAGrid: Story = {
+  decorators: [lumosFrame('1000px'), lumosStore(), isolateStorage],
+  render: () => ({
+    components: { StorefrontListingCard },
+    setup: () => ({ products: lumosCollection('Living Room').slice(0, 6) }),
+    template: `
+      <ul role="list" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px 20px; margin: 0; padding: 0; list-style: none;">
+        <li v-for="product in products" :key="product.id"><StorefrontListingCard :product="product" card-style="Boxed" /></li>
       </ul>
     `,
   }),

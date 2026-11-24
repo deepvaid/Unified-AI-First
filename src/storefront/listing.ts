@@ -1,5 +1,5 @@
 // How a product reads in a store's product lists on the richer theme drawing
-// (the collection and search pages of Northfold and Torqline): its price and
+// (the collection and search pages of Northfold, Torqline and Lumos): its price and
 // sale, its colours, the photo for a chosen colour, a part's number and stock
 // line, whether quick add needs a choice, what the list calls what it holds, and
 // the grid settings the collection template gives it. Filters and sort are in
@@ -10,7 +10,8 @@
 
 import { LOW_STOCK, optionKey, optionKind, variantAvailable, variantUnits } from './variants.ts'
 import type { SellableVariant, VariantOption } from './variants.ts'
-import type { ListingNoun } from './facets.ts'
+import { parseFacets } from './facets.ts'
+import type { FacetKey, ListingNoun } from './facets.ts'
 import type { FitState } from './fitment.ts'
 import { partNumberOf } from './productPage.ts'
 
@@ -43,6 +44,8 @@ export interface CardProduct {
     imagesByColor?: Record<string, string[]>
     /** The vehicles a part fits (auto-parts stores). */
     fitment?: unknown
+    /** The size chart a piece of clothing links (Products › Size charts). */
+    sizeChartId?: string
   }
 }
 
@@ -250,11 +253,13 @@ export function soldOutText(value: string, optionName: string, soldDuringVisit =
 
 /**
  * What a list calls what it holds, from the products in it: "styles" where
- * they come in sizes (clothing), "parts" where they carry vehicle fitment,
- * else "products". So a store's copy follows its catalogue, wherever it runs.
+ * they come in sizes with a size chart (clothing; a rug or a bed in sizes is
+ * still a product), "parts" where they carry vehicle fitment, else "products".
+ * So a store's copy follows its catalogue, wherever it runs.
  */
 export function listingNoun(products: readonly CardProduct[]): ListingNoun {
-  if (products.some((p) => (p.detail?.options ?? []).some((option) => optionKind(option) === 'size'))) return { one: 'style', other: 'styles' }
+  const clothing = (p: CardProduct) => !!p.detail?.sizeChartId && (p.detail.options ?? []).some((option) => optionKind(option) === 'size')
+  if (products.some(clothing)) return { one: 'style', other: 'styles' }
   if (products.some((p) => p.detail?.fitment !== undefined)) return { one: 'part', other: 'parts' }
   return { one: 'product', other: 'products' }
 }
@@ -262,9 +267,12 @@ export function listingNoun(products: readonly CardProduct[]): ListingNoun {
 /**
  * How a list draws its cards: Editorial, a tall photo with the name, price and
  * colours (Northfold); Dense, a square photo with the part number, fit, stock and
- * Add to cart (Torqline).
+ * Add to cart (Torqline); Boxed, the Figma product card: a framed card with the
+ * photo, a badge, the wishlist heart, the name, the price and Add to cart (Lumos).
  */
-export type CardStyle = 'Editorial' | 'Dense'
+export type CardStyle = 'Editorial' | 'Dense' | 'Boxed'
+
+const CARD_STYLES: readonly CardStyle[] = ['Editorial', 'Dense', 'Boxed']
 
 /** What the collection template's product grid asks of the list. */
 export interface GridSettings {
@@ -277,6 +285,12 @@ export interface GridSettings {
   /** Cards to a row on a wide screen, 2-5 (two on a phone whatever this is). */
   columns: number
   cardStyle: CardStyle
+  /**
+   * The filter groups the collection and search pages show, in this order (the
+   * section's `facets`: "category,color,brand,price"). Absent: every group the
+   * products have (./facets.ts).
+   */
+  facets?: FacetKey[]
 }
 
 export const DEFAULT_GRID: Readonly<GridSettings> = { filters: true, sort: true, quickAdd: true, columns: 4, cardStyle: 'Editorial' }
@@ -302,11 +316,13 @@ export function gridSettings(template: readonly GridSection[] | undefined): Grid
   const section = template?.find((s) => s.kind === 'collection-grid')
   if (!section) return { ...DEFAULT_GRID }
   const columns = Math.round(Number(section.settings.columns))
+  const facets = parseFacets(section.settings.facets)
   return {
     filters: flag(section.settings.filters, DEFAULT_GRID.filters),
     sort: flag(section.settings.sort, DEFAULT_GRID.sort),
     quickAdd: flag(section.settings.quickAdd, DEFAULT_GRID.quickAdd),
     columns: Number.isFinite(columns) && columns > 0 ? Math.min(5, Math.max(2, columns)) : DEFAULT_GRID.columns,
-    cardStyle: section.settings.cardStyle === 'Dense' ? 'Dense' : DEFAULT_GRID.cardStyle,
+    cardStyle: CARD_STYLES.find((style) => style === section.settings.cardStyle) ?? DEFAULT_GRID.cardStyle,
+    ...(facets ? { facets } : {}),
   }
 }

@@ -18,7 +18,7 @@ import type { PackShape } from '../packShot.ts'
 import type { TemplateType, ThemeSection, ThemeStyles } from '../themeSections.ts'
 
 /** The demo stores, each also a theme in the library. A new one is added here and to DEMO_STORES. */
-export type DemoStoreId = 'vitaheal' | 'northfold' | 'torqline'
+export type DemoStoreId = 'vitaheal' | 'northfold' | 'torqline' | 'lumos'
 
 /**
  * Set on a web store that can take a theme from the library: the three demo
@@ -33,7 +33,7 @@ export interface StoreBlueprintRef {
 }
 
 /** The chatbot knowledge a store's assistant answers with (src/chatbot/assistantProfiles.ts). */
-export type AssistantProfileId = 'wellness' | 'apparel' | 'auto-parts'
+export type AssistantProfileId = 'wellness' | 'apparel' | 'auto-parts' | 'home'
 
 /** What a store sells and shows, for docs, tests and the theme card. Features switch on from the data itself. */
 export interface StoreCapabilities {

@@ -292,6 +292,8 @@ const routes: RouteRecordRaw[] = [
       { path: 'products/:handle', name: 'StorefrontProduct', component: () => import('@/views/Storefront/StorefrontProduct.vue') },
       { path: 'search', name: 'StorefrontSearch', component: () => import('@/views/Storefront/StorefrontSearch.vue') },
       { path: 'cart-page', name: 'StorefrontCart', component: () => import('@/views/Storefront/StorefrontCart.vue') },
+      // The products the shopper saved with a heart, on a store whose theme has a wishlist (Lumos); the store's 404 elsewhere.
+      { path: 'wishlist', name: 'StorefrontWishlist', component: () => import('@/views/Storefront/StorefrontWishlist.vue') },
       // The shopper's own page: sign in (mocked), then their subscriptions (on a store that sells them) and orders.
       { path: 'account', name: 'StorefrontAccount', component: () => import('@/views/Storefront/StorefrontAccount.vue') },
       // One of the signed-in shopper's orders on this store, by its number without the "#".

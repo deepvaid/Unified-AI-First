@@ -74,6 +74,7 @@ export function northfoldContext(): StorefrontContext {
     setVehicle: () => {},
     fitOf: () => 'unknown',
     chooseVehicle: () => {},
+    wishlist: computed(() => false),
   }
 }
 
@@ -144,6 +145,7 @@ export function torqlineContext(initial: Vehicle | null = null): StorefrontConte
     setVehicle: (next) => { vehicle.value = next },
     fitOf: (product) => fitState(product, vehicle.value),
     chooseVehicle: () => { vehicleDrawerOpen.value = true },
+    wishlist: computed(() => false),
   }
 }
 

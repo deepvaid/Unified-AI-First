@@ -10,11 +10,13 @@ import { chromeSettings, flag, num, templateForRoute, text } from './sections/se
 
 // The storefront's footer, hidden on the checkout. Two drawings:
 // - classic: the markup StorefrontLayout has always drawn, moved here unchanged;
-// - sections (Northfold, Torqline): the theme's footer section caps the link columns,
-//   shows the social links or not, and paints light or dark. The wordmark leads, with
-//   the newsletter under it; the home page leaves the newsletter out of the footer
-//   when the page has a newsletter section of its own. The ways to pay and the
-//   copyright close it.
+// - sections (Northfold, Torqline, Lumos): the theme's footer section caps the link
+//   columns, shows the social links or not, and paints light or dark. The wordmark
+//   leads, with the store's tagline under it when it has one, then the newsletter,
+//   or the newsletter gets a column of its own at the end (`newsletterColumn`,
+//   Lumos); the home page leaves the newsletter out of the footer when the page has
+//   a newsletter section of its own. The copyright, the store's legal links beside
+//   it (`bottomLinks`) and the ways to pay close it.
 
 const storefront = inject(STOREFRONT)!
 const route = useRoute()
@@ -49,17 +51,27 @@ const social = computed(() => (flag(settings.value, 'showSocial') ? chrome.value
 /** The home page's own newsletter section asks for the same thing: one form a page is enough. */
 const newsletterOnPage = computed(() => route.name === 'StorefrontHome'
   && (storefront.theme.value?.templates.home ?? []).some((s) => s.kind === 'newsletter' && !s.hidden))
+const newsletter = computed(() => (newsletterOnPage.value ? null : chrome.value.newsletter))
+/** The newsletter as the footer's last column (Lumos), not under the wordmark. */
+const newsletterColumn = computed(() => !!newsletter.value && chrome.value.newsletterColumn === true)
+/** The column's line under its heading: the store's own newsletter heading, unless that is just "Newsletter". */
+const newsletterLine = computed(() => {
+  const heading = newsletter.value?.heading.trim() ?? ''
+  return heading.toLowerCase() === 'newsletter' ? '' : heading
+})
+const bottomLinks = computed(() => chrome.value.bottomLinks ?? [])
 </script>
 
 <template>
   <template v-if="!minimal">
     <!-- ── Sections drawing ──────────────────────────────────────────── -->
     <footer v-if="storefront.sectionsDrawing.value" class="sff" :class="{ 'sff--dark': dark }">
-      <div class="sff__grid">
+      <div class="sff__grid" :class="{ 'sff__grid--news': newsletterColumn }" :style="newsletterColumn ? { '--sff-links': columns.length } : undefined">
         <div class="sff__lead">
           <StorefrontAnchor href="/" class="sff__wordmark">{{ chrome.wordmark }}</StorefrontAnchor>
-          <template v-if="chrome.newsletter && !newsletterOnPage">
-            <h2 class="sff__heading">{{ chrome.newsletter.heading }}</h2>
+          <p v-if="chrome.tagline" class="sff__tagline">{{ chrome.tagline }}</p>
+          <template v-if="newsletter && !newsletterColumn">
+            <h2 class="sff__heading">{{ newsletter.heading }}</h2>
             <NewsletterForm />
           </template>
           <ul v-if="social.length" class="sff__social" aria-label="Social links">
@@ -78,9 +90,23 @@ const newsletterOnPage = computed(() => route.name === 'StorefrontHome'
             </li>
           </ul>
         </nav>
+        <div v-if="newsletter && newsletterColumn" class="sff__news">
+          <h2 class="sff__heading">Newsletter</h2>
+          <p v-if="newsletterLine" class="sff__news-line">{{ newsletterLine }}</p>
+          <NewsletterForm />
+        </div>
       </div>
       <div class="sff__base">
-        <p v-if="chrome.copyright" class="sff__copyright">{{ chrome.copyright }}</p>
+        <div v-if="chrome.copyright || bottomLinks.length" class="sff__legal">
+          <p v-if="chrome.copyright" class="sff__copyright">{{ chrome.copyright }}</p>
+          <nav v-if="bottomLinks.length" aria-label="Legal">
+            <ul class="sff__bottom-links">
+              <li v-for="item in bottomLinks" :key="item.label">
+                <StorefrontAnchor :href="item.href" class="sff__bottom-link">{{ item.label }}</StorefrontAnchor>
+              </li>
+            </ul>
+          </nav>
+        </div>
         <ul v-if="footerMarks.length" class="sff__marks" aria-label="Ways to pay">
           <li v-for="mark in footerMarks" :key="mark"><StorefrontPayMark :mark="mark" /></li>
         </ul>
@@ -305,6 +331,41 @@ const newsletterOnPage = computed(() => route.name === 'StorefrontHome'
   text-transform: var(--sf-heading-case, none);
 }
 
+.sff__tagline {
+  max-width: 300px;
+  margin: -8px 0 0;
+  color: var(--sf-muted, inherit);
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.sff--dark .sff__tagline {
+  color: inherit;
+}
+
+/* The newsletter as the last column (Lumos): the widest after the wordmark's, so the field has room. */
+.sff__grid--news {
+  grid-template-columns: minmax(0, 1.6fr) repeat(var(--sff-links, 2), minmax(0, 1fr)) minmax(0, 1.5fr);
+}
+
+.sff__news {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.sff__news-line {
+  margin: 0;
+  color: var(--sf-muted, inherit);
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.sff--dark .sff__news-line {
+  color: inherit;
+}
+
 .sff__heading {
   margin: 0;
   font-size: 13px;
@@ -376,6 +437,13 @@ const newsletterOnPage = computed(() => route.name === 'StorefrontHome'
   border-top-color: color-mix(in srgb, currentColor 20%, transparent);
 }
 
+.sff__legal {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 24px;
+}
+
 .sff__copyright {
   margin: 0;
   color: var(--sf-muted, inherit);
@@ -384,6 +452,38 @@ const newsletterOnPage = computed(() => route.name === 'StorefrontHome'
 
 .sff--dark .sff__copyright {
   color: inherit;
+}
+
+.sff__bottom-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 20px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* 32px tall, so the small links are still easy to hit. */
+.sff__bottom-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  color: var(--sf-muted, inherit);
+  font-size: 13px;
+}
+
+.sff--dark .sff__bottom-link {
+  color: inherit;
+}
+
+.sff__bottom-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.sff__bottom-link:focus-visible {
+  outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
+  outline-offset: 2px;
 }
 
 .sff__marks {
@@ -406,8 +506,13 @@ const newsletterOnPage = computed(() => route.name === 'StorefrontHome'
     padding-top: 48px;
   }
 
-  .sff__lead {
+  .sff__lead,
+  .sff__news {
     grid-column: 1 / -1;
+  }
+
+  .sff__grid--news {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

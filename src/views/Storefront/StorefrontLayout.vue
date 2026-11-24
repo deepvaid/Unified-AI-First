@@ -30,7 +30,7 @@ import StorefrontFooter from './StorefrontFooter.vue'
 import StorefrontStoreChanged from './StorefrontStoreChanged.vue'
 import StorefrontHeader from './StorefrontHeader.vue'
 import StorefrontVehicleDrawer from './StorefrontVehicleDrawer.vue'
-import { STOREFRONT } from './storefrontContext'
+import { STOREFRONT, storefrontControlVars } from './storefrontContext'
 import { announce } from './storefrontAnnouncer'
 
 // A Maropost web store as its shoppers see it — full page, no admin chrome. Opened
@@ -108,9 +108,12 @@ const fitOf = (product: FitmentProduct) => fitState(product, vehicle.value)
 // The vehicle selector's drawer is open; any page, the header chip and the chat open it.
 const vehicleDrawer = ref(false)
 const chooseVehicle = () => { if (sellsParts.value) vehicleDrawer.value = true }
+// A wishlist (Lumos): the sections drawing, with the wishlist among the header's tools. Kept per store in
+// this browser (useStorefrontWishlist); the classic drawing keeps its own header heart.
+const wishlist = computed(() => sectionsDrawing.value && chrome.value.headerTools.includes('wishlist'))
 provide(STOREFRONT, {
   channel, theme, chrome, link, currency, formatMoney, formatExact, ownMoneyFormat, checkout, demo, searchable, campaignMessage, offerFor,
-  sectionsDrawing, sizeCharts, sizeChartFor, announce, sellsParts, vehicle, setVehicle, fitOf, chooseVehicle,
+  sectionsDrawing, sizeCharts, sizeChartFor, announce, sellsParts, vehicle, setVehicle, fitOf, chooseVehicle, wishlist,
 })
 
 /** After the store-change note goes, the keyboard moves to the page's heading. */
@@ -136,7 +139,8 @@ const chatbot = computed(() => {
   const linked = demo.value ? chatbots.getByChannel(channelId.value) : undefined
   return linked?.status === 'Active' ? linked : undefined
 })
-const themeVars = computed(() => storefrontThemeVars(theme.value?.styles))
+// The theme's variables, and its form controls' when it draws its own (storefrontControlVars).
+const themeVars = computed(() => ({ ...storefrontThemeVars(theme.value?.styles), ...storefrontControlVars(theme.value?.styles) }))
 </script>
 
 <template>
@@ -204,7 +208,7 @@ const themeVars = computed(() => storefrontThemeVars(theme.value?.styles))
 
 /* On the page's own measure, above whatever page is open (its bottom margin is the note's own). */
 .sf-body__changed {
-  max-width: 1200px;
+  max-width: var(--sf-measure, 1200px);
   margin: 0 auto;
   padding: 24px var(--sf-gutter, 24px) 0;
 }

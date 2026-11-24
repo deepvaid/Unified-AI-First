@@ -16,11 +16,15 @@ const meta = {
 The storefront's footer, shown here in Northfold's theme. Hidden on the checkout. Two drawings:
 
 - **Classic** — every theme but the sections drawing's: the markup the storefront has always drawn.
-- **Sections** (\`styles.drawing: 'sections'\`: Northfold, Torqline) — the theme's **footer section**
-  caps the link \`columns\`, shows the social links or not (\`showSocial\`), and paints **Light** or
-  **Dark** (\`colorScheme\`). The wordmark leads with the store's newsletter sign-up under it; the
-  ways to pay and the copyright close it. On the home page the newsletter stays out of the footer
-  when the page has a newsletter section of its own, so a page never asks twice.
+- **Sections** (\`styles.drawing: 'sections'\`: Northfold, Torqline, Lumos) — the theme's **footer
+  section** caps the link \`columns\`, shows the social links or not (\`showSocial\`), and paints
+  **Light** or **Dark** (\`colorScheme\`). The wordmark leads with the store's newsletter sign-up under
+  it; the ways to pay and the copyright close it. On the home page the newsletter stays out of the
+  footer when the page has a newsletter section of its own, so a page never asks twice.
+
+The store's chrome can add (Lumos): a \`tagline\` under the wordmark; \`newsletterColumn\`, the
+newsletter as the footer's last column ("Newsletter", with the store's own line under it); and
+\`bottomLinks\`, the legal links beside the copyright (a "Legal" navigation).
 
 ### Newsletter
 The button is never disabled: an empty or mistyped email, or the consent box left unticked, is said
@@ -44,6 +48,21 @@ export const Default: Story = {}
 /** The brand colour, with its own ink; two link columns. */
 export const DarkTwoColumns: Story = {
   decorators: [withStorefront({ footer: { colorScheme: 'Dark', columns: 2 } })],
+}
+
+/** Lumos's chrome on Northfold's theme: a tagline, the newsletter as its own column, legal links beside the copyright. */
+export const TaglineNewsletterColumnLegalLinks: Story = {
+  decorators: [withStorefront({
+    chrome: {
+      tagline: 'Clothes made to be worn for years',
+      newsletterColumn: true,
+      bottomLinks: [
+        { label: 'Privacy policy', href: '/policies/privacy-policy' },
+        { label: 'Terms of service', href: '/policies/terms-of-service' },
+        { label: 'Accessibility', href: '/page/accessibility' },
+      ],
+    },
+  })],
 }
 
 /** Sign up with nothing filled in: each missing answer is said under its field, and focus goes to the first. */

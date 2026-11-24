@@ -36,6 +36,7 @@ const ASSISTANT_KINDS: Record<AssistantProfileId, string> = {
   wellness: 'a health and wellness store',
   apparel: 'a clothing store',
   'auto-parts': 'an auto parts store',
+  home: 'a furniture and home store',
 }
 
 /** What a store holds now, as Apply and Restore count it. */
@@ -56,6 +57,8 @@ export interface StoreFacts {
   broughtPlans: number
   /** Connected to Merchandise Cloud, so its storefront has search. Absent: connected. */
   searchConnected?: boolean
+  /** Its storefront has a wishlist, which Apply empties like the cart. */
+  wishlist?: boolean
   /** Subscriptions shoppers hold in the store. */
   subscribers: number
   sizeCharts: number
@@ -135,7 +138,7 @@ export function applySummary(store: StoreFacts, theme: ThemeFacts): string[] {
   if (store.broughtPlans && store.runs) lines.push(store.broughtPlans === 1 ? `The subscription plan ${store.runs} brought is removed.` : `The ${countWord(store.broughtPlans)} subscription plans ${store.runs} brought are removed.`)
   if (theme.plans) lines.push(theme.plans === 1 ? `${theme.name}’s subscription plan is added.` : `${theme.name}’s ${countWord(theme.plans)} subscription plans are added.`)
   if (!store.blank) lines.push('Changes you made to this store’s products and campaigns are not kept: a restore brings back the original store, not your changes.')
-  lines.push('Orders already placed stay. The cart is emptied.')
+  lines.push(store.wishlist ? 'Orders already placed stay. The cart and saved wishlist are emptied.' : 'Orders already placed stay. The cart is emptied.')
   lines.push(store.blank ? 'Restore original store makes this store blank again.' : 'Restore original store puts this store back as it started.')
   return lines
 }
@@ -160,6 +163,8 @@ export interface RestoreFacts {
   appliedPlans?: number
   /** The Merchandise Cloud connection goes back to how the store started, when that is not how it is now. */
   connectionBack?: 'connected' | 'disconnected'
+  /** Its storefront has a wishlist, which a restore empties like the cart. */
+  wishlist?: boolean
 }
 
 /** The restore dialog's one sentence above its list. */
@@ -177,7 +182,7 @@ export function restoreSummary(facts: RestoreFacts): string[] {
       'Its subscription plans, size charts, campaigns, search rules and chatbot are removed.',
       ...(facts.connectionBack ? [`Merchandise Cloud is ${facts.connectionBack} again, as it was when the store was made.`] : []),
       'Duplicated and draft themes are removed.',
-      'The cart is emptied.',
+      facts.wishlist ? 'The cart and saved wishlist are emptied.' : 'The cart is emptied.',
       'Orders already placed stay.',
     ]
   }
@@ -199,7 +204,7 @@ export function restoreSummary(facts: RestoreFacts): string[] {
       : 'Campaigns you added are removed.',
     ...(facts.connectionBack ? [`Merchandise Cloud is ${facts.connectionBack} again, as it was when the store started.`] : []),
     'The chatbot’s settings go back, and its chats from this store are removed.',
-    'The cart is emptied.',
+    facts.wishlist ? 'The cart and saved wishlist are emptied.' : 'The cart is emptied.',
     'Orders already placed stay.',
   ]
 }

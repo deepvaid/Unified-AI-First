@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { parseDecimal, zero } from '@/maropay/money'
 import type { Product, ProductVariant } from '@/stores/useCommerce'
 import { useStorefrontCartStore } from '@/stores/useStorefrontCart'
+import { useStorefrontWishlistStore } from '@/stores/useStorefrontWishlist'
 import { audienceOf } from '@/storefront/audience'
 import { isAvailable } from '@/storefront/catalog'
 import { fitDetail, lineVehicle, variantFitState } from '@/storefront/fitment'
@@ -11,6 +12,7 @@ import { soldOutText } from '@/storefront/listing'
 import { galleryFor, partNumberOf, priceFor, productRows, selectionFromQuery, withSelectionQuery } from '@/storefront/productPage'
 import type { ThemeSection } from '@/storefront/themeSections'
 import { describeVariant, initialSelection, optionKind, variantAvailable } from '@/storefront/variants'
+import { heartLabel, toggleAnnouncement } from '@/storefront/wishlist'
 import StorefrontAnchor from '../StorefrontAnchor.vue'
 import StorefrontDrawer from '../StorefrontDrawer.vue'
 import StorefrontFitBanner from '../StorefrontFitBanner.vue'
@@ -47,6 +49,9 @@ import StorefrontProductRows from './StorefrontProductRows.vue'
 // takes 22 in "Doesn’t fit", with "Your vehicle takes: Driver 22 in, passenger 22 in".
 // A choice added to the cart while it fits carries the vehicle on its line ("Fits 2019
 // Ford F-150"); one that doesn't carries none. Buy now's line gets it at the checkout.
+//
+// On a store with a wishlist (Lumos) a heart beside Add to cart saves the product: a toggle
+// button (`aria-pressed`) with one name, and what it did is said politely.
 //
 // Section settings: galleryLayout ('Stacked' | 'Thumbnails'), imageRatio ('Portrait' |
 // 'Square' | 'Landscape'), sizeGuide (true unless false), fitment (false unless true).
@@ -195,6 +200,14 @@ function addToCart(): void {
   storefront.announce(line ? `Added to your cart · ${line}` : 'Added to your cart')
 }
 
+// ── The wishlist (a store that has one) ─────────────────────────────────────
+const wishlist = useStorefrontWishlistStore()
+const saved = computed(() => wishlist.has(channelId.value, props.product.id))
+function toggleSaved(): void {
+  const now = wishlist.toggle(channelId.value, props.product.id)
+  storefront.announce(toggleAnnouncement(props.product.name, now))
+}
+
 /** Buys just this choice, without touching the cart. */
 function buyNow(): void {
   if (!ready()) return
@@ -299,16 +312,29 @@ watch(stickyHeader, placeInfo)
       </p>
 
       <div class="sf-pm__actions" data-sf-clear>
-        <button
-          type="button"
-          class="sf-button sf-button--block sf-pm__add"
-          :class="{ 'is-sold-out': soldOut }"
-          :aria-disabled="soldOut ? 'true' : undefined"
-          @click="addToCart"
-        >
-          <v-icon v-if="justAdded && !soldOut" size="18" aria-hidden="true">check</v-icon>
-          {{ addLabel }}
-        </button>
+        <div class="sf-pm__buy">
+          <button
+            type="button"
+            class="sf-button sf-button--block sf-pm__add"
+            :class="{ 'is-sold-out': soldOut }"
+            :aria-disabled="soldOut ? 'true' : undefined"
+            @click="addToCart"
+          >
+            <v-icon v-if="justAdded && !soldOut" size="18" aria-hidden="true">check</v-icon>
+            {{ addLabel }}
+          </button>
+          <button
+            v-if="storefront.wishlist.value"
+            type="button"
+            class="sf-pm__heart"
+            :class="{ 'is-saved': saved }"
+            :aria-pressed="saved ? 'true' : 'false'"
+            :aria-label="heartLabel(product.name)"
+            @click="toggleSaved"
+          >
+            <v-icon size="20" aria-hidden="true">heart</v-icon>
+          </button>
+        </div>
         <button v-if="!soldOut" type="button" class="sf-button sf-button--secondary sf-button--block" @click="buyNow">
           Buy now
         </button>
@@ -470,6 +496,65 @@ watch(stickyHeader, placeInfo)
 .sf-pm__add.is-sold-out {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Add to cart, with the wishlist heart beside it on a store that has one. */
+.sf-pm__buy {
+  display: flex;
+  gap: 10px;
+}
+
+.sf-pm__buy .sf-pm__add {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* A round button the height of Add to cart, on the card colour; saved, the heart is filled in the accent. */
+.sf-pm__heart {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--sf-control-height, 50px);
+  height: var(--sf-control-height, 50px);
+  padding: 0;
+  border: 1px solid var(--sf-input-border, var(--sf-divider, #c9c9c9));
+  border-radius: 50%;
+  background: var(--sf-card, var(--sf-bg, #ffffff));
+  color: var(--sf-text, #121011);
+  cursor: pointer;
+  transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease;
+}
+
+.sf-pm__heart:hover {
+  border-color: var(--sf-button-bg, var(--sf-accent, #121011));
+  background: var(--sf-button-bg, var(--sf-accent, #121011));
+  color: var(--sf-button-ink, #ffffff);
+}
+
+.sf-pm__heart.is-saved {
+  color: var(--sf-accent, #121011);
+}
+
+.sf-pm__heart.is-saved :deep(svg) {
+  fill: currentColor;
+}
+
+.sf-pm__heart.is-saved:hover {
+  border-color: var(--sf-input-border, var(--sf-divider, #c9c9c9));
+  background: var(--sf-card, var(--sf-bg, #ffffff));
+  color: var(--sf-badge-sale, #b3261e);
+}
+
+.sf-pm__heart:focus-visible {
+  outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sf-pm__heart {
+    transition: none;
+  }
 }
 
 .sf-pm__added {

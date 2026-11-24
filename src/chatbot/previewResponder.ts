@@ -1,8 +1,8 @@
 /**
  * The builder preview's stand-in for the assistant. Pure and import-free so `node:test`
  * can run it. It answers from the chatbot's own knowledge base and is honest about what
- * a preview cannot do: anything that needs the live store (orders, invoices) says so
- * instead of inventing a result.
+ * a preview cannot do: anything that needs the live store (orders, invoices, a product's
+ * size, what is on sale) says so instead of inventing a result.
  */
 
 export interface PreviewEntry {
@@ -27,6 +27,8 @@ export type PreviewReply =
 
 const LIVE = /\b(track|tracking|my order|order status|where('s| is).*order|parcel|shipment|invoice|cancel my)\b/
 const SHOPPING = /\b(buy|shop|shopping|looking for|recommend|boots?|shoes?|dress(es)?|add to cart)\b/
+/** A question only the store's products answer: a piece's size, or what is on sale. */
+const CATALOGUE = /\b(how (big|wide|deep|tall|high|heavy) (is|are)|dimensions? of|on sale|sale (items?|pieces?|styles?)|reduced|markdowns?|clearance)\b/
 
 const STOP_WORDS = new Set([
   'the', 'and', 'for', 'are', 'you', 'your', 'our', 'can', 'what', 'whats', 'how', 'does', 'did', 'will',
@@ -53,6 +55,11 @@ export function hits(tokens: string[], text: string): number {
   return tokens.filter((t) => haystack.some((w) => w.length >= 3 && (w.startsWith(t) || t.startsWith(w)))).length
 }
 
+/** How well an entry answers a message's words. Titles count double. */
+function scoreOf(tokens: string[], entry: PreviewEntry): number {
+  return hits(tokens, entry.title) * 2 + hits(tokens, entry.text)
+}
+
 /** Best knowledge-base entry for a message, or null when nothing matches. Titles count double. */
 export function bestEntry(message: string, entries: PreviewEntry[]): PreviewEntry | null {
   const tokens = keywords(message)
@@ -60,7 +67,7 @@ export function bestEntry(message: string, entries: PreviewEntry[]): PreviewEntr
   let best: PreviewEntry | null = null
   let bestScore = 0
   for (const entry of entries) {
-    const score = hits(tokens, entry.title) * 2 + hits(tokens, entry.text)
+    const score = scoreOf(tokens, entry)
     if (score > bestScore) {
       best = entry
       bestScore = score
@@ -86,6 +93,14 @@ export function respond(message: string, ctx: PreviewContext): PreviewReply {
   }
 
   const entry = bestEntry(message, ctx.entries)
+  // "How big is the Arlo sofa?" is not the warranty entry because it says "sofas": one word in passing
+  // doesn't answer a question about the products. An entry about it ("Arlo sofa sizes") still does.
+  if (CATALOGUE.test(text) && (!entry || scoreOf(keywords(message), entry) < 2)) {
+    return {
+      kind: 'live',
+      text: 'This needs your live store’s products, so the preview can’t look it up. Once the chatbot is published, I’ll answer from each product’s own details.',
+    }
+  }
   if (entry) return { kind: 'answer', text: entry.text, source: entry.source }
 
   const topics = ctx.entries.slice(0, 3).map((e) => e.title)

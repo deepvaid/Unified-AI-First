@@ -2,8 +2,8 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
   activeFilters, applyFilters, clearFilters, compareSizes, emptyFilters, facetGroups, hasActiveFilters, listProducts,
-  listingSorts, noFitText, parseListingQuery, parsePriceRange, priceRangeLabel, priceRanges, removeFilter, resultCountText,
-  sortProducts, toListingQuery, toggleFilter, withListingQuery,
+  listingSorts, noFitText, onlyFacets, parseFacets, parseListingQuery, parsePriceRange, priceRangeLabel, priceRanges, removeFilter,
+  resultCountText, sortProducts, toListingQuery, toggleFilter, withListingQuery,
 } from '../../src/storefront/facets.ts'
 import type { ListingFilters, ListingProduct } from '../../src/storefront/facets.ts'
 import { vitahealProducts } from '../../src/storefront/vitahealDemo.ts'
@@ -233,6 +233,33 @@ test('when nothing fits, the list says where and offers everything there', () =>
   assert.equal(noFitText(civic, { name: 'Deals' }).showAll, 'Show all deals')
   assert.deepEqual(noFitText(civic), { title: 'No parts fit your 2015 Honda Civic', showAll: 'Show all parts' })
   assert.deepEqual(noFitText(civic, { page: 'search' }), { title: 'No parts fit your 2015 Honda Civic', showAll: 'Show all results' })
+})
+
+test('a template can name the groups a list shows, in its order; the others are not read', () => {
+  // The setting as a template writes it: keys in any case, comma-separated; unknown words and repeats dropped.
+  assert.deepEqual(parseFacets('category,color,brand,price'), ['category', 'color', 'brand', 'price'])
+  assert.deepEqual(parseFacets(' Price, size ,price, shape '), ['price', 'size'])
+  assert.equal(parseFacets(''), undefined)
+  assert.equal(parseFacets('shape'), undefined)
+  assert.equal(parseFacets(true), undefined)
+  assert.equal(parseFacets(undefined), undefined)
+  // Only the groups named, in that order; Size is left out, and Brand still needs two brands to say anything.
+  const withBrand = [...STORE, { ...byId(3014), id: 3999, vendor: 'Field & Co', detail: { ...byId(3014).detail, brand: 'Field & Co' } }]
+  const facets = parseFacets('category,color,brand,price')
+  assert.deepEqual(facetGroups(withBrand, filters(), { facets }).map((g) => g.key), ['category', 'color', 'brand', 'price'])
+  assert.deepEqual(facetGroups(STORE, filters(), { facets }).map((g) => g.key), ['category', 'color', 'price'])
+  // `omit` still leaves a group out of the ones named; absent, every group in the usual order.
+  assert.deepEqual(facetGroups(withBrand, filters(), { facets, omit: ['category'] }).map((g) => g.key), ['color', 'brand', 'price'])
+  assert.deepEqual(facetGroups(withBrand, filters(), { facets: undefined }).map((g) => g.key), ['category', 'size', 'color', 'price', 'brand'])
+  // A filter in the URL for a group the list does not show is not read, so it never narrows the list unseen.
+  const asked = filters({ size: ['m'], color: ['black'], sort: 'newest', fits: false })
+  assert.deepEqual(onlyFacets(asked, facets), { ...asked, size: [] })
+  assert.equal(onlyFacets(asked, undefined), asked)
+  // Chips follow the panel's order.
+  const chosen = filters({ price: ['0-50'], color: ['black'], category: ['tees'] })
+  assert.deepEqual(activeFilters(STORE, chosen, { facets }).map((c) => c.key), ['category', 'color', 'price'])
+  assert.deepEqual(activeFilters(STORE, chosen).map((c) => c.key), ['category', 'color', 'price'])
+  assert.deepEqual(activeFilters(STORE, chosen, { facets: ['price', 'color', 'category'] }).map((c) => c.key), ['price', 'color', 'category'])
 })
 
 test('chips name each chosen value and know the filters without it', () => {

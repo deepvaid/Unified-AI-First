@@ -56,3 +56,25 @@ test('with no knowledge base it says there is nothing to answer from', () => {
 test('stop-word-only messages do not match anything', () => {
   assert.equal(bestEntry('what are you', entries), null)
 })
+
+test('a question only the products answer says it needs the live store, unless an entry is about it', () => {
+  // A furniture store's knowledge: "sofas" in the warranty and "sale" in the returns are words in passing.
+  const home: PreviewEntry[] = [
+    { title: 'Returns and refunds', text: 'Returns are free within 30 days of delivery, sale pieces included.', source: 'Store policies' },
+    { title: 'Warranty', text: 'Sofas, chairs, tables, beds and storage have a 5-year frame warranty.', source: 'Help pages' },
+    { title: 'Delivery times and cost', text: 'Delivery is free on every order. It takes 3 to 5 business days.', source: 'Help pages' },
+  ]
+  const preview = (q: string, entries = home) => respond(q, { ...ctx, entries })
+  for (const q of ['How big is the Arlo sofa?', 'What’s on sale?', 'What are the dimensions of the coffee table?', 'Is anything reduced?']) {
+    const reply = preview(q)
+    assert.equal(reply.kind, 'live', q)
+    assert.match(reply.text, /live store’s products/, q)
+  }
+  // The store's own pages still answer their questions, sale or no sale.
+  assert.equal(preview('Can I return a sale item?').kind, 'answer')
+  assert.equal(preview('Is there a warranty on sofas?').kind, 'answer')
+  assert.equal(preview('How long does delivery take?').kind, 'answer')
+  // An entry about it answers it.
+  const sale = [...home, { title: 'What is on sale', text: 'The Sale collection has a few pieces at a lower price.', source: 'Help pages' }]
+  assert.equal(preview('What’s on sale?', sale).text, 'The Sale collection has a few pieces at a lower price.')
+})

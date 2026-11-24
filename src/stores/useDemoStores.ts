@@ -16,6 +16,7 @@ import { useStoreThemesStore } from '@/stores/useStoreThemes'
 import { useStorefrontStore } from '@/stores/useStorefront'
 import { useStorefrontCartStore } from '@/stores/useStorefrontCart'
 import { useStorefrontVehicleStore } from '@/stores/useStorefrontVehicle'
+import { useStorefrontWishlistStore } from '@/stores/useStorefrontWishlist'
 import { useSubscriptionsStore } from '@/stores/useSubscriptions'
 import { localDateKey } from '@/maropay/model'
 import { canApplyTheme, demoStoreFor, homeBlueprintOf } from '@/storefront/demoStores'
@@ -136,6 +137,7 @@ export const useDemoStores = defineStore('demoStores', () => {
     reseed(channelId)
     useStorefrontCartStore().storeChanged(channelId)
     useStorefrontVehicleStore().clearVehicle(channelId)
+    useStorefrontWishlistStore().clear(channelId)
     return true
   }
 
@@ -155,6 +157,7 @@ export const useDemoStores = defineStore('demoStores', () => {
     markSeeded(channel)
     useStorefrontCartStore().storeChanged(channelId)
     useStorefrontVehicleStore().clearVehicle(channelId)
+    useStorefrontWishlistStore().clear(channelId)
     return true
   }
 
@@ -201,6 +204,13 @@ export const useDemoStores = defineStore('demoStores', () => {
     restoreHistory(channel.id)
     useStorefrontCartStore().clear(channel.id)
     useStorefrontVehicleStore().clearVehicle(channel.id)
+    useStorefrontWishlistStore().clear(channel.id)
+  }
+
+  /** The store's storefront has a wishlist now: the sections drawing, with the header's wishlist tool. */
+  function showsWishlist(channel: SalesChannel): boolean {
+    return useStoreThemesStore().themeForChannel(channel.id)?.styles.drawing === 'sections'
+      && useStorefrontStore().chromeFor(channel).headerTools.includes('wishlist')
   }
 
   /** The store as Apply and Restore count it: what it sells now. */
@@ -221,6 +231,7 @@ export const useDemoStores = defineStore('demoStores', () => {
       runs: applied?.card.name ?? null,
       broughtPlans: plans.filter((plan) => brought.has(plan.id)).length,
       searchConnected: !!channel.webStore?.merchandiseConnected,
+      wishlist: showsWishlist(channel),
       subscribers: subscriptions.contracts.filter((contract) => contract.channelId === channel.id).length,
     }
   }
@@ -257,6 +268,7 @@ export const useDemoStores = defineStore('demoStores', () => {
       announcesByEmail: homeBlueprintOf(channelId)?.admin.audienceListId !== undefined,
       ...(before !== now ? { pricesBackTo: before } : {}),
       ...(appliedPlans ? { appliedPlans } : {}),
+      ...(showsWishlist(channel) ? { wishlist: true } : {}),
       ...(started !== connected ? { connectionBack: started ? 'connected' as const : 'disconnected' as const } : {}),
     }
   }
@@ -319,6 +331,7 @@ export const useDemoStores = defineStore('demoStores', () => {
       if (event.newValue === null) restoreHistory(channel.id)
       useStorefrontCartStore().storeChanged(channel.id)
       useStorefrontVehicleStore().clearVehicle(channel.id)
+      useStorefrontWishlistStore().clear(channel.id)
     })
   }
 

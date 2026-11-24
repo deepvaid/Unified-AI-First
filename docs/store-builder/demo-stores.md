@@ -2,10 +2,10 @@
 
 For developers working on the demo stores, the theme library, Apply, Restore, Start from a theme
 and Delete store. It says where each piece lives, what the browser keeps, and how to add a store.
-QA checks are in [demo-stores-qa.md](demo-stores-qa.md). The walkthroughs for sales are the three
+QA checks are in [demo-stores-qa.md](demo-stores-qa.md). The walkthroughs for sales are the four
 demo scripts listed below.
 
-## The three demo stores
+## The four demo stores
 
 Each demo store is a web store on account `2000290`, seeded when the app starts. Each one is also a
 theme in the library, named after the store.
@@ -15,16 +15,19 @@ theme in the library, named after the store.
 | Vitaheal (demo) | `vitaheal-demo` | 12 | Vitaheal | Supplements, on subscription plans | SEK (`sv-SE`) | [vitaheal-demo-script.md](vitaheal-demo-script.md) |
 | Northfold (demo) | `northfold-demo` | 13 | Northfold | Women's and men's clothing in sizes and colors | USD | [northfold-demo-script.md](northfold-demo-script.md) |
 | Torqline Auto Parts (demo) | `torqline-demo` | 14 | Torqline | Auto parts with vehicle fitment | USD | [torqline-demo-script.md](torqline-demo-script.md) |
+| Lumos Home (demo) | `lumos-demo` | 15 | Lumos | Furniture, lighting and decor, in fabrics and finishes | USD | [lumos-demo-script.md](lumos-demo-script.md) |
 
 | Store | Blueprint id | Slot | Products (home ids) | Photos | Fonts | Drawing | Chatbot profile |
 |---|---|---|---|---|---|---|---|
 | Vitaheal | `vitaheal` | 2 | 8 (2001-2008) | `public/storefront/vitaheal/` | Figtree | classic | `wellness` |
 | Northfold | `northfold` | 3 | 20 (3001-3020) | `public/storefront/northfold/` | Instrument Serif, DM Sans | sections | `apparel` |
 | Torqline | `torqline` | 4 | 21 (4001-4021) | `public/storefront/torqline/` | Barlow Condensed, Barlow | sections | `auto-parts` |
+| Lumos | `lumos` | 5 | 20 (5001-5020) | `public/storefront/lumos/` | Inter | sections | `home` |
 
 "Drawing" is how the storefront draws the theme. A theme whose styles say `drawing: 'sections'`
 gets the richer storefront: header and footer settings, page templates, filters, quick add, the
-variant picker and size guide, and the vehicle selector on a store that sells parts
+variant picker and size guide, the vehicle selector on a store that sells parts, and the wishlist
+when the header has its tool
 ([storefrontContext.ts](../../src/views/Storefront/storefrontContext.ts)). Vitaheal keeps the classic
 drawing it always had.
 
@@ -94,8 +97,8 @@ blank. `slot` numbers the store in the id blocks.
 
 | Slot | Store |
 |---|---|
-| 2, 3, 4 | Vitaheal, Northfold, Torqline (their home channels) |
-| 5-9 | Kept free for the demo stores added later |
+| 2, 3, 4, 5 | Vitaheal, Northfold, Torqline, Lumos (their home channels) |
+| 6-9 | Kept free for the demo stores added later (6 is planned for Aurora) |
 | 10-99 | Stores made with Create sales channel and Store Builder on (`FIRST_CREATED_SLOT` to `MAX_STORE_SLOT`, given by `nextStoreSlot`) |
 
 Every other store has no `webStore.blueprint` and never gets one. These must never change, whatever
@@ -126,7 +129,7 @@ Ids are unique by construction: one block per store and blueprint
 | Where | Products | Variants | Collections |
 |---|---|---|---|
 | Vitaheal on its home channel | 2001-2008 | `productId * 10 + n` (20011...) | 23-27 |
-| Northfold, Torqline on their home channel | `slot * 1000 + n` (3001..., 4001...) | `productId * 100 + n` | `slot * 1000 + 900 + n` (3901..., 4901...) |
+| Northfold, Torqline, Lumos on their home channel | `slot * 1000 + n` (3001..., 4001..., 5001...) | `productId * 100 + n` | `slot * 1000 + 900 + n` (3901..., 4901..., 5901...) |
 | A blueprint installed on store slot 2-9 | `storeSlot * 10000 + blueprintSlot * 1000 + n` (Torqline on Vitaheal: 42001...) | `productId * 100 + n` | product base `+ 900 + n` |
 | A blueprint installed on store slot 10-99 | the same, plus 1,000,000 | `productId * 100 + n` | the same, plus 1,000,000 |
 | A product a merchant creates | 100001 and up (`nextMerchantProductId`) | | |
@@ -396,3 +399,32 @@ thumbnail and that the file exists.
 6. **Write its script.** Add `docs/store-builder/<slug>-demo-script.md` in the Steps-table format of
    the other three, with a theme-swap step, then add the store to the tables in this guide and a
    section to [demo-stores-qa.md](demo-stores-qa.md).
+
+## Lumos: what it added to the sections drawing
+
+Lumos is the first store rebuilt from a live UAT theme (Lumos v1.1.9, UAT account 1400, store #34) with the look of a
+Figma style guide (Lumos-Design-Style-Guide). The look follows Figma; the sections, their order and settings follow UAT.
+Everything it added is optional and only the sections drawing reads it, so the stores before it draw as they did:
+
+- **Theme styles** ([themeSections.ts](../../src/storefront/themeSections.ts) `ThemeStyles`): `headingWeight`,
+  `cardColor`, `cardRadius`, `cardShadow`, `buttonBorderColor`, `buttonHoverColor`, `buttonCase`, `tintColor`,
+  `measure`, `gutter`, `heroTitleSize`, `sectionTitleSize`, each emitted as an `--sf-*` variable only when set. The
+  builder's Styles panel does not edit them yet; a theme seeds them.
+- **Sections:** the image banner's `badge`, `accentWords`, `contentPosition` and `stat` blocks; the collection grid's
+  `Carousel` layout (looping, dots), `Label over photo` tiles, `Tint` background and per-tile `accent`; a new
+  `logo-strip` kind with `logo` blocks; `eyebrow` and `accentWords` on featured products (with arrows on its carousel);
+  `eyebrow`, `subtitle`, `alignment` and `Card` tiles on the icon row; specifications and warranty rows for any store
+  whose products carry them.
+- **Chrome** ([useStorefront.ts](../../src/stores/useStorefront.ts) `StorefrontChrome`): `headerSearch: 'field'`,
+  `tagline`, `newsletterColumn`, `bottomLinks`.
+- **Cards:** the `Boxed` card style ([listing.ts](../../src/storefront/listing.ts)), the Figma product card with a badge,
+  a wishlist heart and a full-width Add to cart.
+- **Wishlist:** rules in [wishlist.ts](../../src/storefront/wishlist.ts), the shopper's list in
+  [useStorefrontWishlist.ts](../../src/stores/useStorefrontWishlist.ts) (`mp.storefront.wishlist.v1`, per store; cleared
+  by Apply, Restore and Delete like the cart), the page `/wishlist`. Only a sections-drawing store whose header lists the
+  `wishlist` tool has it.
+- **Chat:** the `home` profile ([homeAnswers.ts](../../src/chatbot/homeAnswers.ts)) reads the product's specification
+  rows Width, Depth, Height, Seat height, Weight, Materials, Care and Assembly, and its warranty.
+- **Admin:** the product editor's Specifications card shows for any product with specifications (suggested labels as
+  chips), and a store without photos draws a sofa (`packShot` shape `furniture`).
+

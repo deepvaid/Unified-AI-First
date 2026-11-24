@@ -319,7 +319,7 @@ function addCreatedStore(app: App) {
   const vitaheal = plain(app.channels.channels.find((channel) => channel.id === VH))
   app.channels.channels.push({
     ...vitaheal, id: CREATED, name: 'Test Garage',
-    webStore: { ...vitaheal.webStore, domain: 'test-garage.uat.maropost.store', blueprint: { original: 'vitaheal', slot: 5 } },
+    webStore: { ...vitaheal.webStore, domain: 'test-garage.uat.maropost.store', blueprint: { original: 'vitaheal', slot: 10 } },
   })
 }
 
@@ -327,14 +327,14 @@ function addCreatedStore(app: App) {
 function createdStoreOf(app: App) {
   app.merch.setActiveChannel(CREATED)
   return plain({
-    product: app.commerce.products.find((product) => product.id === 52001)?.name,
+    product: app.commerce.products.find((product) => product.id === 1102001)?.name,
     campaign: app.storeCampaigns.campaignsForChannel(CREATED)[0]?.name,
     plan: app.subscriptions.plans.find((plan) => plan.channelId === CREATED)?.name,
     synonyms: app.merch.searchRulesFor(CREATED).synonyms.map((synonym) => synonym.queries.join()),
     welcome: app.chatbot.getByChannel(CREATED)?.config.welcomeMessage,
-    status: app.chatbot.getById(104)?.status,
+    status: app.chatbot.getById(109)?.status,
     contracts: app.subscriptions.contracts.filter((contract) => contract.channelId === CREATED).map((contract) => contract.number),
-    chats: app.chatbot.conversationsFor(104).map((chat) => chat.id),
+    chats: app.chatbot.conversationsFor(109).map((chat) => chat.id),
   })
 }
 
@@ -351,15 +351,15 @@ test('a store made from a theme comes back after a reload with every change it s
   assert.deepEqual(keptKeys(), [], 'bringing a store in writes nothing')
 
   // A merchant's afternoon on it, and a shopper who subscribes.
-  first.commerce.products.find((product) => product.id === 52001)!.name = 'Unwind (garage)'
+  first.commerce.products.find((product) => product.id === 1102001)!.name = 'Unwind (garage)'
   first.storeCampaigns.saveCampaign({ ...first.storeCampaigns.campaignsForChannel(CREATED)[0]!, name: 'Campaign (garage)' })
   const plan = first.subscriptions.plans.find((p) => p.channelId === CREATED)!
   plan.name = 'Plan (garage)'
   first.merch.setActiveChannel(CREATED)
   first.merch.createSynonym({ type: 'two_way', queries: ['spanner'], leadsTo: ['wrench'] })
   first.chatbot.getByChannel(CREATED)!.config.welcomeMessage = 'Hello (garage)'
-  first.chatbot.setStatus(104, 'Inactive')
-  first.chatbot.recordConversation({ id: 'live-garage', chatbotId: 104, visitor: 'Visitor', startedAt: '2026-11-18T10:00:00.000Z', topic: 'Sleep', resolved: true, messages: [] })
+  first.chatbot.setStatus(109, 'Inactive')
+  first.chatbot.recordConversation({ id: 'live-garage', chatbotId: 109, visitor: 'Visitor', startedAt: '2026-11-18T10:00:00.000Z', topic: 'Sleep', resolved: true, messages: [] })
   const product = first.commerce.products.find((p) => p.channelIds?.includes(CREATED) && plan.productIds.includes(p.id))!
   first.subscriptions.startFromCheckout({
     channelId: CREATED, methodId: 'card', customer: { name: 'Garage Shopper', email: 'shopper@example.com' }, amount: { currency: 'SEK' },

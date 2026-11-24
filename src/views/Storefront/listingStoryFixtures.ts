@@ -1,6 +1,6 @@
 /*
- * P5.5 exemption — the stores drawn here are a MERCHANT's (Northfold's, Torqline's), the
- * content the storefront draws, not Marobase chrome. Same line Phase 4 drew for the
+ * P5.5 exemption — the stores drawn here are a MERCHANT's (Northfold's, Torqline's, Lumos's),
+ * the content the storefront draws, not Marobase chrome. Same line Phase 4 drew for the
  * storefront (DESIGN_AUDIT.md P4-8).
  */
 import { computed, provide, ref } from 'vue'
@@ -9,7 +9,8 @@ import type { Decorator } from '@storybook/vue3'
 import type { Money } from '@/maropay/money'
 import type { Product } from '@/stores/useCommerce'
 import { demoStoreFor } from '@/storefront/demoStores'
-import { snapshotFor } from '@/storefront/demoStores/install'
+import { contextFor, snapshotFor } from '@/storefront/demoStores/install'
+import { LUMOS_BLUEPRINT } from '@/storefront/demoStores/lumos'
 import { checkoutProfile } from '@/storefront/checkoutProfile'
 import { fitState } from '@/storefront/fitment'
 import type { FitmentProduct, Vehicle } from '@/storefront/fitment'
@@ -19,7 +20,7 @@ import { storefrontThemeVars } from '@/storefront/themeSections'
 import { TORQLINE_CHROME } from '@/storefront/torqlineDemo'
 import { roundForDisplay } from '@/subscriptions/plans'
 import { announce } from './storefrontAnnouncer'
-import { STOREFRONT } from './storefrontContext'
+import { STOREFRONT, storefrontControlVars } from './storefrontContext'
 import type { StorefrontContext } from './storefrontContext'
 import { northfold } from './storefrontStoryFixtures'
 
@@ -27,7 +28,8 @@ import { northfold } from './storefrontStoryFixtures'
 // draw Northfold (demo) as its shoppers see it: its own seeded products and theme, and
 // the storefront context StorefrontLayout gives every page, with the parts these
 // pieces read (money, links, the store, the announcer). The parts stories draw
-// Torqline Auto Parts (demo) the same way, with a vehicle chosen or not.
+// Torqline Auto Parts (demo) the same way, with a vehicle chosen or not, and the
+// Boxed card and wishlist stories draw Lumos Home (demo), whose theme has a wishlist.
 
 const CHANNEL = demoStoreFor('northfold').homeChannel
 const BASE = `/accounts/2000290/sales_channels/${CHANNEL.id}/storefront`
@@ -80,6 +82,7 @@ const context = {
   setVehicle: () => {},
   fitOf: () => 'unknown',
   chooseVehicle: () => {},
+  wishlist: computed(() => false),
 } as unknown as StorefrontContext
 
 /**
@@ -174,6 +177,80 @@ export function torqlineStore(vehicle: Vehicle | null = null, query: Record<stri
       provide(STOREFRONT, torqlineContext(vehicle))
       const ready = ref(false)
       void useRouter().replace({ path: `${TORQLINE_BASE}/${page}`, query }).finally(() => { ready.value = true })
+      return { ready }
+    },
+    template: '<story v-if="ready" />',
+  })
+}
+
+// ── Lumos Home (demo) ────────────────────────────────────────────────────────
+
+const LUMOS_CHANNEL = LUMOS_BLUEPRINT.homeChannel
+/** Lumos's channel, for a story that saves to its wishlist. */
+export const LUMOS_STORY_CHANNEL = LUMOS_CHANNEL.id
+const LUMOS_BASE = `/accounts/2000290/sales_channels/${LUMOS_CHANNEL.id}/storefront`
+
+/** Lumos as its home channel is seeded, on a fixed day, built from its blueprint. */
+export const lumos = LUMOS_BLUEPRINT.build(contextFor(LUMOS_BLUEPRINT, LUMOS_CHANNEL, '2026-11-24'))
+
+/** Lumos's twenty pieces, as the store sells them. */
+export const lumosProducts: Product[] = lumos.products.map((p) => ({ ...p, status: p.inventory > 0 ? 'In Stock' : 'Out of Stock' }))
+
+export function lumosProduct(name: string): Product {
+  const product = lumosProducts.find((p) => p.name === name)
+  if (!product) throw new Error(`No Lumos product "${name}"`)
+  return product
+}
+
+/** A collection's pieces, in the store's order. */
+export function lumosCollection(title: string): Product[] {
+  return lumosProducts.filter((p) => p.collections.includes(title))
+}
+
+/** Lumos's storefront: its own theme and chrome, Boxed cards and the wishlist. */
+const lumosContext = {
+  ...context,
+  channel: computed(() => LUMOS_CHANNEL),
+  theme: computed(() => ({ ...lumos.theme, channelId: LUMOS_CHANNEL.id, status: 'Published' as const, updatedAt: lumos.theme.publishedAt })),
+  chrome: computed(() => lumos.chrome),
+  link: (href: string) => (/^[a-z][a-z0-9+.-]*:/i.test(href) ? href : href === '/' ? LUMOS_BASE : `${LUMOS_BASE}${href.startsWith('/') ? '' : '/'}${href}`),
+  sizeCharts: computed(() => []),
+  wishlist: computed(() => true),
+} as unknown as StorefrontContext
+
+/** Lumos's page around a story: its theme's colours, fonts, corners and controls, as StorefrontLayout gives them. */
+export function lumosFrame(width = '300px', padding = '24px'): Decorator {
+  const style = {
+    ...storefrontThemeVars(lumos.theme.styles),
+    ...storefrontControlVars(lumos.theme.styles),
+    '--sf-gutter': '24px',
+    '--sf-measure': '1200px',
+    boxSizing: 'border-box',
+    maxWidth: width,
+    padding,
+    background: 'var(--sf-bg)',
+    color: 'var(--sf-text)',
+    fontFamily: 'var(--sf-body-font), system-ui, sans-serif',
+    fontSize: '16px',
+    lineHeight: '24px',
+  }
+  return () => ({
+    setup: () => ({ style }),
+    template: '<div :style="style"><story /></div>',
+  })
+}
+
+/**
+ * Provides Lumos to the story, and starts it on `page` (a collection by default). Its
+ * wishlist is the app's, kept in this browser: pair it with `isolateStorage`.
+ */
+export function lumosStore(query: Record<string, string> = {}, page = 'collections/living-room'): Decorator {
+  return (story) => ({
+    components: { story },
+    setup() {
+      provide(STOREFRONT, lumosContext)
+      const ready = ref(false)
+      void useRouter().replace({ path: `${LUMOS_BASE}/${page}`, query }).finally(() => { ready.value = true })
       return { ready }
     },
     template: '<story v-if="ready" />',

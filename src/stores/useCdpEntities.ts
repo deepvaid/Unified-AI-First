@@ -161,6 +161,8 @@ export const VITAHEAL_CUSTOMERS_LIST_ID = 901
 export const NORTHFOLD_CUSTOMERS_LIST_ID = 903
 /** The list a Torqline store campaign is announced to. */
 export const TORQLINE_CUSTOMERS_LIST_ID = 904
+/** The Lumos Home (demo) store's customers: who its campaigns are announced to (src/storefront/demoStores/lumos.ts). */
+export const LUMOS_CUSTOMERS_LIST_ID = 905
 
 export const useCdpEntitiesStore = defineStore('cdpEntities', () => {
   // ── Lists ────────────────────────────────────────────────────────────────────
@@ -180,6 +182,7 @@ export const useCdpEntitiesStore = defineStore('cdpEntities', () => {
     { id: NORTHFOLD_CUSTOMERS_LIST_ID, name: 'Northfold customers', type: 'Normal', addToManageSubscription: true, brand: 'Northfold', displayName: 'Northfold', description: 'Everyone who has ordered from the Northfold (demo) store.', postUrl: '', fromName: 'Northfold', fromEmail: 'hello@northfold.example', replyTo: 'hello@northfold.example', language: 'English', address: '18 Ferry Lane, Portland, ME 04101', carts: blankCarts(), count: 2316, created: '2026-11-19' },
     // The Torqline Auto Parts (demo) store's customers: a store campaign is announced to them.
     { id: TORQLINE_CUSTOMERS_LIST_ID, name: 'Torqline customers', type: 'Normal', addToManageSubscription: true, brand: 'Torqline', displayName: 'Torqline', description: 'Everyone who has ordered from the Torqline Auto Parts (demo) store.', postUrl: '', fromName: 'Torqline', fromEmail: 'hello@torqline.example', replyTo: 'hello@torqline.example', language: 'English', address: '2250 Harmon Avenue, Columbus, OH 43223', carts: blankCarts(), count: 3148, created: '2026-11-23' },
+    { id: LUMOS_CUSTOMERS_LIST_ID, name: 'Lumos Home customers', type: 'Normal', addToManageSubscription: true, brand: 'Lumos', displayName: 'Lumos Home', description: 'Everyone who has ordered from the Lumos Home (demo) store.', postUrl: '', fromName: 'Lumos Home', fromEmail: 'hello@lumos.example', replyTo: 'hello@lumos.example', language: 'English', address: '640 Alder Street, Portland, OR 97205', carts: blankCarts(), count: 2264, created: '2026-11-24' },
   ])
 
   function addList(input: Omit<CdpList, 'id' | 'count' | 'created'>): CdpList {

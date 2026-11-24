@@ -2,10 +2,12 @@
 import { computed, inject, ref, watch } from 'vue'
 import { parseDecimal } from '@/maropay/money'
 import type { Product } from '@/stores/useCommerce'
+import { useStorefrontWishlistStore } from '@/stores/useStorefrontWishlist'
 import { fitLabel } from '@/storefront/fitment'
 import type { FitState } from '@/storefront/fitment'
 import { addsDirectly, cardPhoto, cardPrice, choiceSummary, chosenColor, colorsOf, isNewArrival, partNumber, soldOut, stockLine, unbrokenHyphens } from '@/storefront/listing'
 import type { CardStyle } from '@/storefront/listing'
+import { heartLabel, toggleAnnouncement } from '@/storefront/wishlist'
 import StorefrontAnchor from './StorefrontAnchor.vue'
 import { STOREFRONT } from './storefrontContext'
 import { CATEGORY_ICONS, priceOf, productHandle } from './storefrontCatalog'
@@ -26,6 +28,14 @@ import { CATEGORY_ICONS, priceOf, productHandle } from './storefrontCatalog'
 // an Add to cart button. That button emits `quick-add` too: the list's quick add
 // puts a part without options straight in the cart, and opens for the rest, and
 // for a part the shopper's vehicle doesn't take, so it says so before adding.
+//
+// The `Boxed` style is the Figma product card (Lumos): a framed card on the theme's
+// card colour, corners and shadow; the photo at 248:273 with a badge (Sale, New or
+// Sold out) and, on a store with a wishlist, a heart that saves the product; then
+// the name (two lines at most), the price, and a full-width Add to cart that adds
+// straight away or opens quick add when there is a choice to make, as Dense does.
+// The heart is a toggle button (`aria-pressed`) with one name; what it did is said
+// politely ("Saved to your wishlist · Arlo 3-Seat Sofa").
 
 const props = withDefaults(defineProps<{
   product: Product
@@ -38,7 +48,7 @@ const props = withDefaults(defineProps<{
   /** The "New" mark (off on a New… collection's own page, where every card would carry it). */
   showNew?: boolean
   headingLevel?: 2 | 3 | 4
-  /** Editorial (Northfold) or Dense (a part, Torqline): the collection template's `cardStyle`. */
+  /** Editorial (Northfold), Dense (a part, Torqline) or Boxed (Lumos): the collection template's `cardStyle`. */
   cardStyle?: CardStyle
 }>(), {
   colorKeys: () => [],
@@ -100,10 +110,69 @@ const fit = computed(() => {
   return icon ? { state, icon, label, shown: unbrokenHyphens(label) } : null
 })
 const addLabel = computed(() => `${props.added ? 'Added to cart' : 'Add to cart'}, ${props.product.name}`)
+
+// ── Boxed (the Figma product card) ────────────────────────────────────────
+const boxed = computed(() => props.cardStyle === 'Boxed')
+const wishlist = useStorefrontWishlistStore()
+const saved = computed(() => wishlist.has(storefront.channel.value.id, props.product.id))
+function toggleSaved(): void {
+  const now = wishlist.toggle(storefront.channel.value.id, props.product.id)
+  storefront.announce(toggleAnnouncement(props.product.name, now))
+}
+/** Boxed spells its sale out ("Sale"); the price under the name says by how much. */
+const boxedBadge = computed(() => (badge.value?.kind === 'sale' ? { ...badge.value, text: 'Sale' } : badge.value))
 </script>
 
 <template>
-  <article v-if="dense" class="sf-dcard" :class="{ 'is-sold-out': out }">
+  <article v-if="boxed" class="sf-bcard" :class="{ 'is-sold-out': out }">
+    <component :is="`h${headingLevel}`" class="sf-bcard__name">
+      <StorefrontAnchor :href="href" class="sf-bcard__link">{{ product.name }}</StorefrontAnchor>
+    </component>
+    <p class="sf-bcard__price">
+      <template v-if="price.compareAt">
+        <span class="sf-bcard__sale"><span class="sf-sr">Sale price </span>{{ money(price.price) }}</span>
+        <s class="sf-bcard__was"><span class="sf-sr">Usual price </span>{{ money(price.compareAt) }}</s>
+      </template>
+      <span v-else><template v-if="price.from">From </template>{{ money(price.price) }}</span>
+    </p>
+
+    <div class="sf-bcard__media">
+      <img v-if="photo && !broken" :src="photo" alt="" class="sf-bcard__image" loading="lazy" @error="broken = true">
+      <v-icon v-else size="44" class="sf-bcard__placeholder" aria-hidden="true">{{ CATEGORY_ICONS[product.category] ?? 'package' }}</v-icon>
+      <span
+        v-if="boxedBadge"
+        class="sf-bcard__badge"
+        :class="`sf-bcard__badge--${boxedBadge.kind}`"
+        :aria-hidden="boxedBadge.kind === 'sale' ? 'true' : undefined"
+      >{{ boxedBadge.text }}</span>
+      <button
+        v-if="storefront.wishlist.value"
+        type="button"
+        class="sf-bcard__heart"
+        :class="{ 'is-saved': saved }"
+        :aria-pressed="saved ? 'true' : 'false'"
+        :aria-label="heartLabel(product.name)"
+        @click="toggleSaved"
+      >
+        <v-icon size="16" aria-hidden="true">heart</v-icon>
+      </button>
+    </div>
+
+    <button
+      v-if="quickAdd && !out"
+      type="button"
+      class="sf-bcard__add"
+      :class="{ 'is-added': added }"
+      :aria-label="addLabel"
+      :aria-haspopup="addsDirectly(product, storefront.fitOf(product)) ? undefined : 'dialog'"
+      @click="emit('quick-add', product, color?.name)"
+    >
+      <v-icon v-if="added" size="18" aria-hidden="true">check</v-icon>
+      {{ added ? 'Added' : 'Add to cart' }}
+    </button>
+  </article>
+
+  <article v-else-if="dense" class="sf-dcard" :class="{ 'is-sold-out': out }">
     <component :is="`h${headingLevel}`" class="sf-dcard__name">
       <StorefrontAnchor :href="href" class="sf-dcard__link">{{ product.name }}</StorefrontAnchor>
     </component>
@@ -412,6 +481,263 @@ const addLabel = computed(() => `${props.added ? 'Added to cart' : 'Add to cart'
 
   .sf-lcard:hover .sf-lcard__image {
     transform: none;
+  }
+}
+
+/* ── Boxed: the Figma product card (Lumos) ─────────────────────────────────
+ * A framed card on the theme's card colour (--sf-card), its card corners
+ * (--sf-card-radius) and shadow (--sf-card-shadow), a hairline in its divider
+ * colour. The photo at 248:273 on the theme's surface, its top corners rounded;
+ * the badge top-left, the heart top-right. Then the name (16px bold, two lines),
+ * the price (16px; a sale in the sale colour with the "was" price struck) and a
+ * full-width solid Add to cart at the card's foot, so a row of cards lines up.
+ * Each fallback is the card's own value, for a theme that sets none of these. */
+.sf-bcard {
+  --sf-bcard-radius: var(--sf-card-radius, var(--sf-radius, 8px));
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  border: 1px solid var(--sf-divider, #e8e8e8);
+  border-radius: var(--sf-bcard-radius);
+  background: var(--sf-card, var(--sf-bg, #ffffff));
+  color: var(--sf-text, #272727);
+  box-shadow: var(--sf-card-shadow, none);
+}
+
+/* The photo leads the card; in the reading order it follows the name and price. */
+.sf-bcard__media {
+  position: relative;
+  order: -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 248 / 273;
+  overflow: hidden;
+  border-radius: calc(var(--sf-bcard-radius) - 1px) calc(var(--sf-bcard-radius) - 1px) 0 0;
+  background: var(--sf-surface, color-mix(in srgb, var(--sf-text, #272727) 4%, var(--sf-bg, #ffffff)));
+  color: var(--sf-muted, #6d6d6d);
+}
+
+.sf-bcard__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.is-sold-out .sf-bcard__image {
+  opacity: 0.6;
+}
+
+.sf-bcard__name {
+  display: -webkit-box;
+  margin: 12px 12px 0;
+  overflow: hidden;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 20px;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.sf-bcard__link {
+  color: var(--sf-text, #272727);
+  text-decoration: none;
+}
+
+/* The name's hit area covers the card, so the photo opens the product too. */
+.sf-bcard__link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: var(--sf-bcard-radius);
+}
+
+.sf-bcard:hover .sf-bcard__link {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.sf-bcard__link:focus-visible {
+  outline: none;
+}
+
+.sf-bcard__link:focus-visible::after {
+  outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
+  outline-offset: 2px;
+}
+
+.sf-bcard__price {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+  margin: 6px 12px 16px;
+  font-size: 16px;
+  line-height: 22px;
+  font-variant-numeric: tabular-nums;
+}
+
+.sf-bcard__sale {
+  color: var(--sf-badge-sale, #b3261e);
+  font-weight: 600;
+}
+
+.sf-bcard__was {
+  color: var(--sf-muted, #6d6d6d);
+  font-size: 14px;
+}
+
+/* A small pill, top-left: 10px uppercase on the badge's own colour. */
+.sf-bcard__badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 12px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.sf-bcard__badge--sale {
+  background: var(--sf-badge-sale, #b3261e);
+  color: var(--sf-on-badge-sale, #ffffff);
+}
+
+.sf-bcard__badge--new {
+  background: var(--sf-badge-custom, var(--sf-accent, #1a1a1a));
+  color: var(--sf-on-badge-custom, #ffffff);
+}
+
+.sf-bcard__badge--sold-out {
+  background: var(--sf-badge-sold-out, #66625c);
+  color: var(--sf-on-badge-sold-out, #ffffff);
+}
+
+/* The wishlist heart: a 36px white disc, top-right, above the card's link. Its hit area is
+   44px; hover fills it with the button colour; saved, the heart is filled in the accent. */
+.sf-bcard__heart {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--sf-card, var(--sf-bg, #ffffff));
+  color: var(--sf-text, #272727);
+  box-shadow: 0 2px 4px -2px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+  cursor: pointer;
+  transition: background-color 200ms ease, color 200ms ease;
+}
+
+.sf-bcard__heart::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+}
+
+.sf-bcard__heart:hover {
+  background: var(--sf-button-bg, var(--sf-accent, #1a1a1a));
+  color: var(--sf-button-ink, #ffffff);
+}
+
+.sf-bcard__heart.is-saved {
+  color: var(--sf-accent, #1a1a1a);
+}
+
+.sf-bcard__heart.is-saved :deep(svg) {
+  fill: currentColor;
+}
+
+.sf-bcard__heart.is-saved:hover {
+  background: var(--sf-card, var(--sf-bg, #ffffff));
+  color: var(--sf-badge-sale, #b3261e);
+}
+
+.sf-bcard__heart:focus-visible {
+  outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
+  outline-offset: 2px;
+}
+
+/* The store's solid button, the card's width, at its foot (the space left goes above it), above the card's link. */
+.sf-bcard__add {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  margin: auto 12px 12px;
+  padding: 0 16px;
+  border: 1px solid var(--sf-button-border, var(--sf-button-bg, var(--sf-brand, #121011)));
+  border-radius: var(--sf-button-radius, var(--sf-radius, 4px));
+  background: var(--sf-button-bg, var(--sf-brand, #121011));
+  color: var(--sf-button-ink, var(--sf-on-brand, #ffffff));
+  font: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 20px;
+  text-transform: var(--sf-button-case, none);
+  cursor: pointer;
+  transition: background-color 200ms ease, border-color 200ms ease;
+}
+
+.sf-bcard__add:hover,
+.sf-bcard__add.is-added {
+  border-color: var(--sf-button-hover, var(--sf-button-bg, var(--sf-brand, #121011)));
+  background: var(--sf-button-hover, var(--sf-button-bg, var(--sf-brand, #121011)));
+}
+
+.sf-bcard__add:focus-visible {
+  outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sf-bcard__heart,
+  .sf-bcard__add {
+    transition: none;
+  }
+}
+
+/* A phone: two cards to a row, so the type and the button come down a step. */
+@media (max-width: 600px) {
+  .sf-bcard__name {
+    margin: 10px 10px 0;
+    font-size: 14px;
+    line-height: 18px;
+  }
+
+  .sf-bcard__price {
+    margin: 4px 10px 12px;
+    font-size: 14px;
+    line-height: 20px;
+  }
+
+  .sf-bcard__was {
+    font-size: 13px;
+  }
+
+  .sf-bcard__add {
+    margin: auto 10px 10px;
+    padding: 0 8px;
+    font-size: 13px;
   }
 }
 

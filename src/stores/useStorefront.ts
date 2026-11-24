@@ -56,6 +56,15 @@ export interface StorefrontChrome {
   copyright: string
   /** Show the theme's announcement bar above the header on every page, not in the home page's flow. */
   announcementAboveHeader?: boolean
+  // Part 5 (Lumos), read by the sections drawing only.
+  /** Search in the header as an icon (default) or a visible field. */
+  headerSearch?: 'icon' | 'field'
+  /** One line under the wordmark in the footer's first column. */
+  tagline?: string
+  /** The newsletter as a footer column of its own, not under the wordmark. */
+  newsletterColumn?: boolean
+  /** Links in the footer's bottom row, beside the copyright (legal pages). */
+  bottomLinks?: StorefrontLink[]
 }
 
 const NEELAM_STORE: StorefrontChrome = {

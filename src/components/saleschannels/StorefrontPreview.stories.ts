@@ -11,6 +11,7 @@ import { createBlock, createSection, type ThemeSection, type ThemeStyles } from 
 import { constrain } from '@/stories/decorators'
 import { demoStoreFor } from '@/storefront/demoStores'
 import { snapshotFor } from '@/storefront/demoStores/install'
+import { cardPrice, gridSettings, isNewArrival } from '@/storefront/listing'
 
 function homeSections(): ThemeSection[] {
   return [
@@ -89,6 +90,12 @@ portrait collection tiles with the name under the photo, the **icon row** and it
 page's **collapsible rows** beside a stacked gallery, the header's icons and colour scheme, and (with
 \`template="collection"\`) the collection page's filters, sort and product grid. Every other theme's preview
 is unchanged.
+
+**The store's own header and cards** (Lumos). \`headerSearch: 'field'\` draws the header's search as a field with
+\`searchPlaceholder\` (a row of its own on a phone); \`headerTools\` with \`'wishlist'\` adds the heart to the header,
+the cards and the buy box. \`cardStyle\` is the collection template's product card: with \`'Boxed'\` every product
+row is drawn in framed cards with their badge, heart and (with \`quickAdd\`) Add to cart. On a product page the
+buy box shows the product's own choices (swatches for a colour) and the row under it leaves the product out.
 
 ### 🟢 Do's
 - **Do** drive \`sections\`/\`styles\` from the \`useStoreThemes\` store so canvas and settings stay in sync.
@@ -225,4 +232,51 @@ export const SectionsDrawingCollection: Story = {
 /** The same home page in the phone frame: the menu folds away, the icon row stacks. */
 export const SectionsDrawingMobile: Story = {
   args: { ...northfoldArgs, sections: northfold.theme.templates.home, device: 'mobile' },
+}
+
+// Lumos (part 5), as its home channel is seeded: the hero's badge, accent words, words on the left
+// and stats strip; the rooms carousel with names on the photos and dots, on a tint; the logo strip;
+// the featured row's eyebrow and arrows in Boxed cards; the icon cards. Its header has the search
+// field and the wishlist heart, as the builder passes them from the store's chrome.
+const lumos = snapshotFor(demoStoreFor('lumos').homeChannel, 'lumos', '2026-11-20')
+const lumosProducts = lumos.products.map((p) => ({
+  name: p.name,
+  price: `$${p.price}`,
+  image: p.imageUrls?.[0],
+  images: p.imageUrls?.slice(0, 2),
+  collections: p.collections,
+  options: p.detail?.options ?? [],
+  badge: cardPrice(p).compareAt ? 'Sale' as const : isNewArrival(p) ? 'New' as const : undefined,
+}))
+const lumosGrid = gridSettings(lumos.theme.templates.collection)
+const lumosArgs = {
+  styles: lumos.theme.styles,
+  products: lumosProducts,
+  brand: lumos.chrome.wordmark,
+  menu: lumos.chrome.nav.map((item) => item.label),
+  headerTools: lumos.chrome.headerTools,
+  headerSearch: lumos.chrome.headerSearch,
+  searchPlaceholder: lumos.chrome.searchPlaceholder,
+  cardStyle: lumosGrid.cardStyle,
+  quickAdd: lumosGrid.quickAdd,
+}
+
+/** Lumos's home page in the builder canvas: every part 5 setting drawn as the storefront draws it. */
+export const SectionsDrawingLumos: Story = {
+  args: { ...lumosArgs, sections: lumos.theme.templates.home },
+}
+
+/** The same in the phone frame: the search field under the bar, the hero's buttons stacked over its stats, one room in the carousel, 1.2 featured cards, the logos three to a row. */
+export const SectionsDrawingLumosMobile: Story = {
+  args: { ...lumosArgs, sections: lumos.theme.templates.home, device: 'mobile' },
+}
+
+/** Lumos's product template: the sofa's fabric swatches, Add to cart with the heart, Buy now, its rows, and other pieces in Boxed cards. */
+export const SectionsDrawingLumosProduct: Story = {
+  args: { ...lumosArgs, sections: lumos.theme.templates.product, template: 'product' },
+}
+
+/** Lumos's collection template: its filters, sort, and Boxed cards with their badges and Add to cart. */
+export const SectionsDrawingLumosCollection: Story = {
+  args: { ...lumosArgs, sections: lumos.theme.templates.collection, template: 'collection' },
 }

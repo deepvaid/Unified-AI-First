@@ -2,7 +2,7 @@ import { ref } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 import AddSectionDialog from './AddSectionDialog.vue'
 import StorefrontPreview from './StorefrontPreview.vue'
-import type { ThemeSectionDef } from '@/stores/themeBuilderData'
+import { sectionsFor, type ThemeSectionDef } from '@/stores/themeBuilderData'
 import { overlayDocs } from '@/stories/decorators'
 
 const meta = {
@@ -92,3 +92,37 @@ export const InContextStoreEditor: Story = {
     `,
   }),
 }
+
+/**
+ * The picker a theme on the sections drawing gets for its home page, with a kind opened by
+ * its play function: the kinds only that drawing draws (the icon row, the logo strip) and
+ * the layouts only it draws (the collection grid's carousel, the banner's words on the left).
+ */
+function sectionsDrawingPicker(kindTitle: string): Story {
+  return {
+    render: () => ({
+      components: { AddSectionDialog },
+      setup() {
+        const open = ref(true)
+        return { open, isKindDisabled: () => false, sections: sectionsFor('sections', { parts: false, sizes: false, specs: true }, 'home') }
+      },
+      template: `
+        <div>
+          <v-btn variant="outlined" prepend-icon="plus" @click="open = true">Add section</v-btn>
+          <AddSectionDialog v-model="open" :sections="sections" :is-kind-disabled="isKindDisabled" />
+        </div>
+      `,
+    }),
+    play: async () => {
+      await new Promise((resolve) => setTimeout(resolve, 400))
+      const row = [...document.querySelectorAll<HTMLElement>('.asd-item')].find((el) => el.textContent?.includes(kindTitle))
+      row?.click()
+    },
+  }
+}
+
+/** The collection grid's layouts on the sections drawing: 2-up to 4-up, and the looping carousel with dots. */
+export const SectionsDrawingCarousel: Story = sectionsDrawingPicker('Collection grid')
+
+/** The logo strip (sections drawing, home page): on the page or on a tinted band. */
+export const SectionsDrawingLogoStrip: Story = sectionsDrawingPicker('Logo strip')
