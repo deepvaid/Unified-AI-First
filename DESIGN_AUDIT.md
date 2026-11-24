@@ -3498,7 +3498,9 @@ How it works and how to add a fourth store: `docs/store-builder/demo-stores.md`;
 
 Decided with the user before building: theme edits, copies and drafts are kept in the browser; Apply
 keeps the store's own subscription plans (seeded or made in it) listed and paused; a store made with
-Create sales channel can be deleted.
+Create sales channel can be deleted. Decided after the reviews: a store made from a theme, or with one
+applied, shows that theme's brand to shoppers (wordmark, footer, tab title), as a complete copy does;
+the store's own name stays in the admin.
 
 - **Themes page** (`StoreThemes.vue`, `ThemeLibraryCard.vue`): the current theme shows the top of its
   home page in a 480px window that fades out (`layout.themePreviewHeight`; the whole page ran past
@@ -3597,8 +3599,6 @@ did not have.
 - The verb stays **Apply** (the plan's word); the dialog's first line says the store becomes a copy.
 - The Products list shows a copied store's products beside the originals with the same SKUs; the
   Sales channel filter tells them apart. A store column there would be a Products-page change.
-- A store made from a theme shows the theme's brand (wordmark, footer, tab title) to shoppers, as a
-  complete copy does; giving it its own name is a product decision.
 - Preview of a theme still opens its showcase store, so it is unavailable while that store runs
   another theme (decided in the plan); a read-only preview from the seed would lift that.
 - Chats kept through an Apply show under the new store's assistant; a stale screen-reader message can

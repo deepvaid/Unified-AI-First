@@ -309,7 +309,9 @@ part is seeded before its page opens. For a web store with Store Builder on:
   blank, it needs setup and has no currency of its own (it prices in the account's Maropay
   settlement currency), and a restore puts it back to that;
 - it is saved in `mp.store-builder.created-stores.v1` and added at the end of the list, so the store
-  tab that **Show store** opens has it too.
+  tab that **Show store** opens has it too;
+- shoppers see the theme's brand (wordmark, footer, tab title), as on any store a theme is applied
+  to: the copy is complete. The store's own name is what the admin shows.
 
 A web store without Store Builder, an offline store, or a Store Builder store when no slot is left
 (all of 10-99 taken) is made as before: at the top of the list, not kept in the browser, and it can
