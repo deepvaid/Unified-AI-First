@@ -7,7 +7,7 @@
  *
  * A chatbot names its profile in `ChatbotConfig.assistantProfile`, so a store's
  * assistant travels with it when its theme is applied elsewhere. Unset: wellness.
- * Wellness is Vitaheal's, apparel Northfold's, auto parts Torqline's, home Lumos's, supplements Daybloom's.
+ * Wellness is Vitaheal's, apparel Northfold's and Aurora's, auto parts Torqline's, home Lumos's, supplements Daybloom's.
  *
  * Pure, with relative `.ts` imports only, so `npm run test:chatbot` runs it in Node.
  */
@@ -124,6 +124,73 @@ export interface ClothingKnowledge {
   heightWeight: string
   /** After a fibre-free suggestion, or a fabric answer. */
   fabricNote: string
+  /**
+   * What the assistant knows for a store that sells for the outdoors: whether a piece keeps
+   * out rain or wind, how warm it is, how to layer, and sizes by foot length, shoe size and
+   * head. Used only where the store's own data is outdoor (`signals`), so a clothing store
+   * that never says "waterproof" answers exactly as it does without it.
+   */
+  outdoor?: OutdoorKnowledge
+}
+
+/** Weather a piece may keep out, as a store writes it: "waterproof", and less, "water-resistant". */
+export interface AssistantProtection {
+  /** The word for full protection, as the answer says it: "waterproof". */
+  word: string
+  /** A question about it: "Is it waterproof?", "Will it keep me dry?". */
+  asks: RegExp
+  /** What a store writes for less than full protection. */
+  partly: RegExp
+  /** How the answer names less: "water-resistant". */
+  partlyName: string
+  /** Where full protection matters, before the piece that has it: "For steady rain". */
+  when: string
+  /**
+   * Words that ask for it by a part or another name ("a membrane", "a hardshell", a fabric
+   * brand), which `asks` also matches: answered with what a piece's page says, never a bare
+   * "Yes", since the page may not use the shopper's word.
+   */
+  proxies?: RegExp
+  /** A fabric brand asked for by name, which the store doesn't sell, and what the answer says first. */
+  brand?: { says: RegExp; text: string }
+}
+
+/**
+ * The layers of an outdoor outfit, by the words a store's product names and subtitles use.
+ * A layer the store sells nothing for is left out of the advice.
+ */
+export interface AssistantLayers {
+  /** Next to the skin. */
+  base: RegExp
+  /** Over the base layer. */
+  mid: RegExp
+  /** The warm layer for the cold. */
+  warm: RegExp
+  /** Keeps out the rain and wind. */
+  shell: RegExp
+  /** For the head in the cold, and socks. */
+  hat: RegExp
+  socks: RegExp
+}
+
+export interface OutdoorKnowledge {
+  /** A store is an outdoor one when one of its products says this, or a size chart sizes feet or heads. */
+  signals: RegExp
+  /** What it can help with, in place of the profile's own. */
+  help: string
+  /** The needs it suggests pieces for, in place of the profile's own. */
+  needs: AssistantNeed[]
+  /** Asked for a suggestion without saying what for. */
+  askNeed: string
+  /** Weather a shopper asks about, full protection first. */
+  protections: AssistantProtection[]
+  layers: AssistantLayers
+  /** More pieces worn over others: between two sizes, the larger one leaves room to layer. */
+  layering: string[]
+  /** After layering advice: what no answer can promise. */
+  layerNote: string
+  /** After asking whose piece it is (one made for women and for men), for a size and for layers. */
+  askAudience: { size: string; layers: string }
 }
 
 /**
@@ -287,7 +354,8 @@ const FABRIC_PAGE: AssistantLink = { label: 'Fabric and care', href: '/page/fabr
  * A clothing store: it suggests pieces by kind and occasion, answers size and fit
  * from each product's fit note and size chart, and fabric and care from its fabric
  * and care fields. It gives no health answers: an allergy to a fibre gets the
- * pieces made without it, never advice.
+ * pieces made without it, never advice. A store whose own data is outdoor (Aurora)
+ * also answers rain, warmth, layers, packs and boot, sock and hat sizes (`outdoor`).
  */
 const APPAREL: AssistantProfile = {
   id: 'apparel',
@@ -337,6 +405,62 @@ const APPAREL: AssistantProfile = {
     askPiece: 'Which piece is it for? Tell me its name, or ask me on its page, and I’ll check its fit note and size chart.',
     heightWeight: 'I can’t tell your size from height and weight alone, because our sizes go by body measurements.',
     fabricNote: 'Every product lists its full fabric under Fabric and care.',
+    outdoor: {
+      // A temperature counts only as a rating ("warm to about 14°F"), never a wash temperature ("wash at 30°C").
+      signals: /\b(waterproof|water[- ]?(resistant|repellent)|windproof|wind[- ]?resistant)\b|\b(warm|rated|comfortable)\b[^.!?]{0,40}?\b(to|for)\s+(about\s+|around\s+)?[−-]?\d+\s?°\s?[FC]\b/i,
+      help: 'I can look up your order, help you find your size in clothes, boots, socks and hats, tell you whether a piece is waterproof or warm enough, help you layer for the weather, suggest gear, and answer questions about shipping and returns.',
+      needs: [
+        { kind: 'piece', label: 'a jacket', says: /\b(coats?|jackets?|outerwear|parkas?|shells?|anoraks?|puffers?|raincoats?)\b/, means: ['jacket', 'shell', 'coat'] },
+        { kind: 'piece', label: 'a fleece or mid layer', says: /\b(fleeces?|mid ?layers?|pullovers?|sweaters?|jumpers?|hoodies?)\b/, means: ['fleece', 'pullover'] },
+        { kind: 'piece', label: 'a base layer', says: /\b(base ?layers?|thermals?|long underwear|tops?|tees?|t-shirts?|shirts?)\b/, means: ['base', 'top'] },
+        { kind: 'piece', label: 'pants', says: /\b(pants|trousers?|bottoms|shorts|convertibles?)\b/, means: ['pant', 'trouser'] },
+        { kind: 'piece', label: 'boots', says: /\b(boots?|hiking shoes?|shoes?|footwear)\b/, means: ['boot', 'footwear'] },
+        { kind: 'piece', label: 'a pack', says: /\b(back ?packs?|day ?packs?|packs?|rucksacks?|bags?)\b/, means: ['backpack', 'daypack', 'liter'] },
+        { kind: 'piece', label: 'socks', says: /\bsocks?\b/, means: ['sock'] },
+        { kind: 'piece', label: 'a hat', says: /\b(hats?|caps?|beanies?|toques?)\b/, means: ['hat', 'beanie'] },
+        { kind: 'piece', label: 'gear', says: /\b(gear|accessor\w*|equipment)\b/, means: ['accessor', 'gear'] },
+        { kind: 'piece', label: 'a gift', says: /\b(gifts?|presents?|birthday|christmas|stocking)\b/, means: ['sock', 'beanie', 'bottle', 'headlamp'] },
+        { kind: 'occasion', label: 'the cold', says: /\b(warm(?!\s+(weather|days?|climates?))\w*|cold|winter\w*|chilly|freezing|snow\w*|insulat\w*|cozy|cosy)\b/, means: ['down', 'fleece', 'merino', 'insulat', 'warm', 'beanie'] },
+        { kind: 'occasion', label: 'rain', says: /\b(rain\w*|wet|showers?|drizzle|storms?|waterproof)\b/, means: ['rain', 'waterproof', 'shell'] },
+        { kind: 'occasion', label: 'warm days', says: /\b(summer|hot|heat|humid|sunn?y?|warm (weather|days?|climates?))\b/, means: ['sun', 'lightweight', 'breathable', 'convertible'] },
+        { kind: 'occasion', label: 'hiking', says: /\b(hik\w*|trails?|trek\w*|walk\w*|backpacking)\b/, means: ['hiking', 'trail', 'trek'] },
+        { kind: 'occasion', label: 'camping', says: /\b(camp\w*|overnights?|tents?)\b/, means: ['camp', 'overnight', 'headlamp'] },
+      ],
+      askNeed: 'Tell me what you’re looking for, like a rain shell, hiking boots, a warm layer or a daypack, and I’ll suggest a few pieces.',
+      protections: [
+        {
+          word: 'waterproof',
+          // "hardshell" asks it, and leaves "shell" to name the kind of piece.
+          asks: /\b(water ?proof|rain ?proof|keeps? (me |you |it |them |things |my \w+ )?dry|stay dry|in (the )?(rain|downpours?)|leak\w*|seam[- ]sealed|taped seams|membranes?|gore[- ]?tex|pertex|futurelight|h2no|omni[- ]?tech|dry[- ]?vent|neoshell|dermizax|outdry)\b|\bhard[- ]?(?=shells?\b)/,
+          partly: /\bwater[- ]?(resistant|repellent)\b|\bdwr\b|\bshower ?proof\b/i,
+          partlyName: 'water-resistant',
+          when: 'For steady rain',
+          proxies: /\b(membranes?|gore[- ]?tex|pertex|futurelight|h2no|omni[- ]?tech|dry[- ]?vent|neoshell|dermizax|outdry)\b|\bhard[- ]?shells?\b/,
+          brand: { says: /\b(gore[- ]?tex|pertex|futurelight|h2no|omni[- ]?tech|dry[- ]?vent|neoshell|dermizax|outdry)\b/, text: 'We don’t sell that brand.' },
+        },
+        {
+          word: 'windproof',
+          asks: /\b(wind ?proof|block\w* (the )?wind|in (the )?wind|keeps? (the )?wind out)\b/,
+          partly: /\bwind[- ]?(resistant|blocking)\b/i,
+          partlyName: 'wind-resistant',
+          when: 'For strong wind',
+        },
+      ],
+      layers: {
+        base: /\bbase ?layers?\b/i,
+        mid: /\b(fleece|mid ?layers?)\b/i,
+        warm: /\b(down|insulat\w*|puffer)\b/i,
+        shell: /\b(shell|rain (jacket|coat))\b/i,
+        hat: /\b(beanie|toque)\b/i,
+        socks: /\bsocks?\b/i,
+      },
+      layering: ['fleece', 'shell', 'down', 'insulat', 'pullover'],
+      layerNote: 'I can’t promise how warm you’ll be: wind, rain and how hard you’re moving all count, so take a spare layer.',
+      askAudience: {
+        size: 'Tell me which, and I’ll check its size chart.',
+        layers: 'Is it for women or men? Tell me and I’ll show you each piece.',
+      },
+    },
   },
 }
 

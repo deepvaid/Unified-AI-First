@@ -35,6 +35,7 @@ const STORES = [
   { slug: 'northfold', accountId: '2000290', channelId: 'northfold-demo' },
   { slug: 'torqline', accountId: '2000290', channelId: 'torqline-demo' },
   { slug: 'lumos', accountId: '2000290', channelId: 'lumos-demo' },
+  { slug: 'aurora', accountId: '2000290', channelId: 'aurora-demo' },
   { slug: 'daybloom', accountId: '2000290', channelId: 'daybloom-demo' },
 ].filter((store) => !ONLY || ONLY.includes(store.slug))
 

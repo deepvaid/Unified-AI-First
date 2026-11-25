@@ -10,10 +10,11 @@
  * What it knows about the kind of store (the needs it suggests products for, the
  * questions it answers with care) is the store's assistant profile
  * (assistantProfiles.ts); the rest is the same for every store. A clothing store's
- * profile adds size and fit, fabric and care (clothingAnswers.ts); an auto parts
- * store's adds fit, part numbers and the shopper's vehicle (partsAnswers.ts); a
- * furniture and home store's adds a piece's size against the shopper's space,
- * materials, care, assembly, warranty and delivery (homeAnswers.ts).
+ * profile adds size and fit, fabric and care (clothingAnswers.ts), and where the
+ * store sells for the outdoors, rain, warmth, layers, packs, and boot, sock and hat
+ * sizes; an auto parts store's adds fit, part numbers and the shopper's vehicle
+ * (partsAnswers.ts); a furniture and home store's adds a piece's size against the
+ * shopper's space, materials, care, assembly, warranty and delivery (homeAnswers.ts).
  *
  * Pure, with relative `.ts` imports only, so `npm run test:chatbot` runs a whole
  * conversation in Node. The builder's preview keeps its own stand-in
@@ -29,7 +30,7 @@ import { assistantProfile } from './assistantProfiles.ts'
 import type { AssistantNeed, AssistantProfile, RefillKnowledge } from './assistantProfiles.ts'
 import {
   CARE, FABRIC, HEIGHT_WEIGHT, SIZE, audienceAsked, careAnswer, fabricAnswer, fibreAvoidance, forAudience,
-  measurementsIn, pieceForMeasurements, priceLimit, productsNamed, sizeAnswer, sizesIn, subjectOf, withoutNames,
+  measurementsIn, outdoorAnswer, outdoorStore, pieceForMeasurements, priceLimit, productsNamed, sizeAnswer, sizesIn, subjectOf, withoutNames,
 } from './clothingAnswers.ts'
 import type { ClothingTurn } from './clothingAnswers.ts'
 import { MY_DELIVERY, aboutPieceNotOrder, contact, homeAnswer, homeSuggestion } from './homeAnswers.ts'
@@ -258,7 +259,10 @@ export interface AssistantState {
   productId?: number
   /** Auto parts: a vehicle the assistant offered to set for the store; the shopper's "yes" sets it. */
   offer?: Vehicle
-  /** Auto parts: a question waiting for the shopper's vehicle; the vehicle they name next answers it. */
+  /**
+   * Auto parts: a question waiting for the shopper's vehicle; the vehicle they name next answers it.
+   * Outdoor clothing: a question waiting for whom it is for; "women's" next answers it.
+   */
   asked?: string
   /** Auto parts: the vehicle the last answer was about, when it isn't the store's, and whether it is the shopper's own. */
   named?: { vehicle: Vehicle; theirs: boolean }
@@ -447,16 +451,21 @@ function suggestionText(profile: AssistantProfile, needs: AssistantNeed[], count
  * needs it names, else the words it uses; with only a price or an audience, the
  * store's own order. When the price leaves nothing, the closest pieces above it.
  */
-function clothingSuggestion(message: string, ctx: AssistantContext, profile: AssistantProfile): AssistantReply | null {
+function clothingSuggestion(message: string, ctx: AssistantContext, profile: AssistantProfile, storeNeeds: AssistantNeed[], outdoor: boolean): AssistantReply | null {
   const text = message.toLowerCase()
   const clothing = profile.clothing!
   const audience = audienceAsked(text)
   const price = priceLimit(message)
-  const needs = profile.needs.filter((need) => need.says.test(text))
-  const people = forAudience(ctx.products, audience, clothing)
+  const needs = storeNeeds.filter((need) => need.says.test(text))
+  const everyone = forAudience(ctx.products, audience, clothing)
+  // An outdoor store keeps to the kind of piece asked for ("warm boots" are boots); the occasion ranks them.
+  const kinds = outdoor ? needs.filter((need) => need.kind === 'piece').flatMap((need) => need.means) : []
+  const ofKind = kinds.length ? everyone.filter((p) => hits(kinds, `${p.name} ${p.subtitle} ${p.collections.join(' ')}`) > 0) : []
+  const people = ofKind.length ? ofKind : everyone
   const affordable = price ? people.filter((p) => p.price === undefined || p.price <= price.max) : people
   if (needs.length) {
-    const means = needs.flatMap((need) => need.means)
+    // An outdoor store also ranks by the shopper's own words: "trekking poles" are poles, not hiking boots.
+    const means = [...needs.flatMap((need) => need.means), ...(outdoor ? keywords(message).filter((t) => !/^\d/.test(t)) : [])]
     const ids = rankProducts(means, affordable)
     if (ids.length) return { kind: 'products', text: suggestionText(profile, needs, ids.length, audience, price?.phrase ?? null), productIds: ids }
     const closest = price ? rankProducts(means, people) : []
@@ -476,7 +485,7 @@ function clothingSuggestion(message: string, ctx: AssistantContext, profile: Ass
  * A fibre to avoid ("I’m allergic to wool"): whether the piece in question has
  * it, the pieces made without it, and where every fabric is listed. Never advice.
  */
-function fibreAnswer(message: string, ctx: AssistantContext, state: AssistantState, profile: AssistantProfile): ClothingTurn | null {
+function fibreAnswer(message: string, ctx: AssistantContext, state: AssistantState, profile: AssistantProfile, storeNeeds: AssistantNeed[]): ClothingTurn | null {
   const clothing = profile.clothing!
   const text = message.toLowerCase()
   const avoid = fibreAvoidance(message, ctx, clothing)
@@ -488,16 +497,18 @@ function fibreAnswer(message: string, ctx: AssistantContext, state: AssistantSta
     replies.push({ kind: 'text', topic: 'Fabric and care', text: `${product.name}: ${product.material.replace(/\.?$/, '.')} ${avoid.contains(product) ? `It has ${avoid.fibre.name} in it.` : `There’s no ${avoid.fibre.name} in it.`}` })
   }
   const pool = forAudience(avoid.without, audienceAsked(text), clothing).filter((p) => p.id !== product?.id)
-  const pieces = profile.needs.filter((need) => need.says.test(text) && need.kind === 'piece')
+  const pieces = storeNeeds.filter((need) => need.says.test(text) && need.kind === 'piece')
   const ids = ctx.shoppingEnabled ? rankProducts(pieces.length ? pieces.flatMap((need) => need.means) : avoid.fibre.instead, pool) : []
   if (ids.length) replies.push({ kind: 'products', text: `These are made without any ${avoid.fibre.name}:`, productIds: ids })
   replies.push({ kind: 'text', topic: 'Fabric and care', text: clothing.fabricNote, link: clothing.fabricPage })
   return { replies, ...(product ? { productId: product.id } : {}) }
 }
 
-/** A clothing store's answers on care, fabric, and size and fit, about the piece in question. */
+/** A clothing store's answers on care, fabric, and size and fit, about the piece in question; an outdoor store's add weather, layers and gear. */
 function clothingAnswer(message: string, ctx: AssistantContext, state: AssistantState, profile: AssistantProfile): ClothingTurn | null {
   const clothing = profile.clothing!
+  const outdoor = outdoorStore(ctx, clothing)
+  if (outdoor) return outdoorAnswer(message, ctx, state, clothing, outdoor)
   const text = message.toLowerCase()
   const { product, named } = subjectOf(message, ctx, state.productId)
   // The question without the pieces' own names: "the organic cotton tee" is not a question about fabric.
@@ -592,8 +603,15 @@ export function assistantReply(message: string, ctx: AssistantContext, state: As
     ({ replies, state: { pending: null, email: state.email, ...next }, offerPrompts: false, ...extra })
   const clothing = profile.clothing
   const home = profile.home
-  /** A clothing answer remembers its piece for the next message. */
-  const worn = (answer: ClothingTurn): AssistantTurn => turn(answer.replies, answer.productId ? { productId: answer.productId } : {})
+  // A clothing store that sells for the outdoors has its own needs and help (its data says so: clothingAnswers.ts).
+  const outdoor = clothing ? outdoorStore(ctx, clothing) : null
+  const needs = outdoor?.needs ?? profile.needs
+  const help = outdoor?.help ?? profile.help
+  /** A clothing answer remembers its piece for the next message, and an outdoor one the question waiting for whom it is for. */
+  const worn = (answer: ClothingTurn): AssistantTurn => turn(answer.replies, {
+    ...(answer.productId ? { productId: answer.productId } : {}),
+    ...(answer.asked ? { asked: answer.asked } : {}),
+  })
   /** A home answer remembers its piece, and the question waiting for one. */
   const placed = (answer: HomeTurn): AssistantTurn => turn(answer.replies, {
     ...(answer.productId ? { productId: answer.productId } : {}),
@@ -631,7 +649,7 @@ export function assistantReply(message: string, ctx: AssistantContext, state: As
   // ── A fibre to avoid (a clothing store): what everything is made of, never advice ──
   // A skin or health condition named alongside the fibre gets the caution below instead.
   if (clothing && !profile.caution.says.test(text.replace(/\ballerg\w*/g, ' '))) {
-    const avoid = fibreAnswer(message, ctx, state, profile)
+    const avoid = fibreAnswer(message, ctx, state, profile, needs)
     if (avoid) return worn(avoid)
   }
 
@@ -731,11 +749,11 @@ export function assistantReply(message: string, ctx: AssistantContext, state: As
 
   // ── A need, or a request for a suggestion ──────────────────────────
   // A parts store's exchange question ("for a longer size") goes to its pages, never to a suggestion.
-  const wantsProduct = !POLICY.test(text) && !((profile.parts || home) && pagesQuestion) && (profile.needs.some((need) => need.says.test(text)) || SHOPPING.test(text)
+  const wantsProduct = !POLICY.test(text) && !((profile.parts || home) && pagesQuestion) && (needs.some((need) => need.says.test(text)) || SHOPPING.test(text)
     || (!!clothing && (!!priceLimit(message) || !!audienceAsked(text))))
   if (wantsProduct && ctx.shoppingEnabled && clothing) {
-    const suggestion = clothingSuggestion(message, ctx, profile)
-    return turn([suggestion ?? { kind: 'text', text: profile.askNeed }])
+    const suggestion = clothingSuggestion(message, ctx, profile, needs, !!outdoor)
+    return turn([suggestion ?? { kind: 'text', text: outdoor?.askNeed ?? profile.askNeed }])
   }
   // A home store also shows the pieces a message names ("Do you have bookshelves?"), and pieces under a price.
   if (home && ctx.shoppingEnabled && !POLICY.test(text) && !pagesQuestion) {
@@ -759,7 +777,7 @@ export function assistantReply(message: string, ctx: AssistantContext, state: As
   }
 
   if (text.split(/\s+/).length <= 4) {
-    if (GREETING.test(text)) return turn([{ kind: 'text', text: `Hi! ${profile.help}` }], {}, { offerPrompts: true })
+    if (GREETING.test(text)) return turn([{ kind: 'text', text: `Hi! ${help}` }], {}, { offerPrompts: true })
     if (THANKS.test(text)) return turn([{ kind: 'text', text: 'You’re welcome. Is there anything else I can help with?' }])
   }
 
@@ -774,5 +792,5 @@ export function assistantReply(message: string, ctx: AssistantContext, state: As
   }
 
   if (THANKS.test(text)) return turn([{ kind: 'text', text: 'You’re welcome. Is there anything else I can help with?' }])
-  return turn([{ kind: 'text', text: `I’m not sure about that one. ${profile.help}` }], {}, { offerPrompts: true })
+  return turn([{ kind: 'text', text: `I’m not sure about that one. ${help}` }], {}, { offerPrompts: true })
 }

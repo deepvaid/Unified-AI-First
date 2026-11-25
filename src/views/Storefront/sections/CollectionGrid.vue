@@ -190,8 +190,9 @@ function onClickCapture(event: MouseEvent): void {
 .sfc--over .sfc__tile {
   position: relative;
   overflow: hidden;
-  border-radius: var(--sf-card-radius, var(--sf-radius, 0));
-  box-shadow: var(--sf-card-shadow, none);
+  /* A theme's tile corners and shadow (tileRadius / tileShadow), else its card's. */
+  border-radius: var(--sf-tile-radius, var(--sf-card-radius, var(--sf-radius, 0)));
+  box-shadow: var(--sf-tile-shadow, var(--sf-card-shadow, none));
   isolation: isolate;
 }
 

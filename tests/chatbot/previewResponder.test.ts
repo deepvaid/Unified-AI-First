@@ -1,6 +1,8 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { bestEntry, respond, type PreviewContext, type PreviewEntry } from '../../src/chatbot/previewResponder.ts'
+import { DEMO_STORES } from '../../src/storefront/demoStores/index.ts'
+import { snapshotFor } from '../../src/storefront/demoStores/install.ts'
 
 const entries: PreviewEntry[] = [
   { title: 'Shipping and delivery', text: 'Standard delivery takes 3–5 business days and is free on orders over $75.', source: 'FAQ' },
@@ -77,4 +79,42 @@ test('a question only the products answer says it needs the live store, unless a
   // An entry about it answers it.
   const sale = [...home, { title: 'What is on sale', text: 'The Sale collection has a few pieces at a lower price.', source: 'Help pages' }]
   assert.equal(preview('What’s on sale?', sale).text, 'The Sale collection has a few pieces at a lower price.')
+})
+
+test('a size question and a warmth question never get the sample shopping cards, nor a page that only names the piece', () => {
+  const outdoor: PreviewEntry[] = [
+    { title: 'Finding your size', text: 'Every product page has a size guide. Boots go by foot length.', source: 'Help pages' },
+    { title: 'Fabric and care', text: 'Wash down jackets cold on a gentle cycle and tumble dry low with two clean tennis balls.', source: 'Help pages' },
+  ]
+  const preview = (q: string, entries = outdoor) => respond(q, { ...ctx, entries })
+  assert.equal(preview('What size boots should I get?').text, 'Every product page has a size guide. Boots go by foot length.')
+  assert.equal(preview('Which size should I get in the boots?').kind, 'answer')
+  // A care page that says "down jackets" doesn't say how warm one is: the live store does.
+  for (const q of ['How warm is the down jacket?', 'Is the down jacket warm enough for 20°F?']) {
+    const reply = preview(q)
+    assert.equal(reply.kind, 'live', q)
+    assert.match(reply.text, /live store’s products/, q)
+  }
+  // A page about warmth answers it.
+  const warmth = [...outdoor, { title: 'How warm are the jackets?', text: 'The down jackets are warm to about 14°F (−10°C) over a base layer and a fleece.', source: 'Help pages' }]
+  assert.match(preview('How warm is the down jacket?', warmth).text, /14°F/)
+  // A shopping question still shows the sample cards.
+  assert.equal(preview('looking for red boots size 11').kind, 'products')
+})
+
+test('every demo store’s seeded quick prompts get an answer or the live store in the builder preview, never sample cards or a shrug', () => {
+  for (const blueprint of DEMO_STORES) {
+    const config = snapshotFor(blueprint.homeChannel, blueprint.id, '2026-11-24').chatbot.config
+    const entries = (config.knowledgeSources ?? [])
+      .filter((s) => s.enabled && s.status === 'Active')
+      .flatMap((s) => (s.entries ?? []).map((e) => ({ title: e.title, text: e.text, source: s.name })))
+    const prompts = (config.quickPrompts ?? []).filter((p) => p.enabled).map((p) => p.text)
+    assert.ok(prompts.length, blueprint.id)
+    for (const prompt of prompts) {
+      for (const shoppingEnabled of [true, false]) {
+        const reply = respond(prompt, { shoppingEnabled, trackingEnabled: true, entries })
+        assert.ok(reply.kind === 'answer' || reply.kind === 'live', `${blueprint.id} · ${prompt} · shopping ${shoppingEnabled}: ${reply.kind}`)
+      }
+    }
+  }
 })

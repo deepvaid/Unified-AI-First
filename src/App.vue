@@ -189,8 +189,9 @@ const isFlush = computed(() => !!route.meta?.flush)
 // The AI experience owns the whole screen and hosts its own Da Vinci conversation.
 // Showing the drawer alongside it puts two Da Vinci surfaces on screen at once,
 // each with its own greeting, so it stays closed there. The Trial Lab renders
-// its own shell for a brand-new user, so the drawer stays closed there too.
-const copilotAvailable = computed(() => route.name !== 'DaVinciExperience' && !route.meta?.trialLab)
+// its own shell for a brand-new user, so the drawer stays closed there too. A store's storefront is
+// what its shoppers see, so the merchant's assistant never opens over it.
+const copilotAvailable = computed(() => route.name !== 'DaVinciExperience' && !route.meta?.trialLab && !route.meta?.shopper)
 const copilotVisible = computed({
   get: () => copilot.isOpen && copilotAvailable.value,
   set: (value: boolean) => {

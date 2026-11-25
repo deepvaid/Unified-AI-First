@@ -1,7 +1,7 @@
 import { computed, type Ref } from 'vue'
 import { parseDecimal, type Money } from '@/maropay/money'
 import { hasPriceRange, lowestPrice, type CatalogProduct } from '@/storefront/catalog'
-import { cardPrice, choiceSummary, gridSettings, isNewArrival, partNumber } from '@/storefront/listing'
+import { gridSettings } from '@/storefront/listing'
 import { formatStorePrice } from '@/storefront/price'
 import { canSearch } from '@/storefront/storeSearch'
 import { cheapestSelection } from '@/storefront/variants'
@@ -78,38 +78,29 @@ export function useStorefrontPreviewProps(channel: Ref<SalesChannel | undefined>
   const commerce = useCommerceStore()
   const subscriptions = useSubscriptionsStore()
 
-  const header = computed(() => {
-    const shown = storefronts.previewHeaderFor(channel.value)
-    if (!shown.brand || !channel.value) return shown
-    const chrome = storefronts.chromeFor(channel.value)
-    return { ...shown, headerSearch: chrome.headerSearch, headerTools: chrome.headerTools, searchPlaceholder: chrome.searchPlaceholder }
-  })
+  const header = computed(() => ({ ...storefronts.previewHeaderFor(channel.value), ...storefronts.previewChromeFor(channel.value) }))
 
   /**
-   * A part also brings what its card and page show: its part number, or what it comes in
-   * ("Front or rear"); a product its choices as the product page offers them (a fabric's
-   * swatches), the choice it opens on when the theme opens on the lowest-priced one, and
-   * its card's badge: Sale, then "Subscribe available" when the theme's purchase options
-   * block asks for it and the product is on a plan, then New.
+   * Each product as its card shows it (previewProducts: its part number or what it comes
+   * in, its choices, its struck price), plus the choice it opens on when the theme opens
+   * on the lowest-priced one, and its card's badge: Sale, then "Subscribe available" when
+   * the theme's purchase options block asks for it and the product is on a plan, then New.
    */
   const products = computed(() => {
     const store = channel.value
     if (!store) return undefined
     const items = previewProducts(commerce.products, store)
     if (!items) return undefined
-    const byName = new Map(storefrontProducts(commerce.products, store.id).filter(inStock).map((product) => [product.name, product]))
+    const byId = new Map(storefrontProducts(commerce.products, store.id).filter(inStock).map((product) => [product.id, product]))
     const subscribeBadge = purchaseOptionsSettings(theme.value)?.cardBadge === true
     return items.map((item) => {
-      const product = byName.get(item.name)
+      const product = byId.get(item.id)
       if (!product) return item
       const onPlan = subscribeBadge && subscriptions.offeredFor(store.id, product.id).length > 0
       return {
         ...item,
-        partNumber: partNumber(product),
-        choice: choiceSummary(product),
-        options: product.detail?.options.map((o) => ({ name: o.name, values: o.values, display: o.display, swatches: o.swatches })) ?? [],
         start: cheapestSelection(product),
-        badge: cardPrice(product).compareAt ? 'Sale' as const : onPlan ? 'Subscribe' as const : isNewArrival(product) ? 'New' as const : undefined,
+        badge: item.badge === 'Sale' ? 'Sale' as const : onPlan ? 'Subscribe' as const : item.badge,
       }
     })
   })

@@ -8,6 +8,8 @@ import { scrollBehavior } from './scroll'
 declare module 'vue-router' {
   interface RouteMeta {
     fullPage?: boolean
+    /** A shopper-facing page (a store's storefront): no admin surface, the Da Vinci drawer included, shows on it. */
+    shopper?: boolean
     /** Builder/wizard chrome: real AppBar + rail-collapsed sidebar + rounded content frame. */
     builderShell?: boolean
     flush?: boolean
@@ -287,7 +289,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/accounts/:accountId/sales_channels/:channelId/storefront',
     component: () => import('@/views/Storefront/StorefrontLayout.vue'),
-    meta: { ...commerceGate, fullPage: true },
+    meta: { ...commerceGate, fullPage: true, shopper: true },
     children: [
       { path: '', name: 'StorefrontHome', component: () => import('@/views/Storefront/StorefrontHome.vue') },
       { path: 'page/:handle', name: 'StorefrontPage', component: () => import('@/views/Storefront/StorefrontContent.vue'), meta: { contentKind: 'page' } },

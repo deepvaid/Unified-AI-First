@@ -4,6 +4,7 @@
 
 import type { SalesChannel } from '../../stores/useSalesChannels.ts'
 import type { DemoStoreBlueprint, DemoStoreId } from './types.ts'
+import { AURORA_BLUEPRINT } from './aurora.ts'
 import { LUMOS_BLUEPRINT } from './lumos.ts'
 import { DAYBLOOM_BLUEPRINT } from './daybloom.ts'
 import { NORTHFOLD_BLUEPRINT } from './northfold.ts'
@@ -15,7 +16,7 @@ export type {
   StoreBlueprintRef, StoreCapabilities, StoreHistory, StoreSnapshot, ThemeCard,
 } from './types.ts'
 
-export const DEMO_STORES: readonly DemoStoreBlueprint[] = [VITAHEAL_BLUEPRINT, NORTHFOLD_BLUEPRINT, TORQLINE_BLUEPRINT, LUMOS_BLUEPRINT, DAYBLOOM_BLUEPRINT]
+export const DEMO_STORES: readonly DemoStoreBlueprint[] = [VITAHEAL_BLUEPRINT, NORTHFOLD_BLUEPRINT, TORQLINE_BLUEPRINT, LUMOS_BLUEPRINT, AURORA_BLUEPRINT, DAYBLOOM_BLUEPRINT]
 
 /** A blueprint id this build knows (one read from the browser may name a store that no longer exists). */
 export function isDemoStoreId(id: unknown): id is DemoStoreId {

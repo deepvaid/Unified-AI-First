@@ -72,14 +72,50 @@ export interface StorefrontChrome {
   /** Show the theme's announcement bar above the header on every page, not in the home page's flow. */
   announcementAboveHeader?: boolean
   // Part 5 (Lumos), read by the sections drawing only.
-  /** Search in the header as an icon (default) or a visible field. */
-  headerSearch?: 'icon' | 'field'
+  /** Search in the header as an icon (default), a visible field, or a rounded pill field (Aurora). */
+  headerSearch?: 'icon' | 'field' | 'pill'
   /** One line under the wordmark in the footer's first column. */
   tagline?: string
   /** The newsletter as a footer column of its own, not under the wordmark. */
   newsletterColumn?: boolean
   /** Links in the footer's bottom row, beside the copyright (legal pages). */
   bottomLinks?: StorefrontLink[]
+}
+
+/** What StorefrontPreview takes of a store's chrome beyond its wordmark and menu (previewChromeFor). */
+export interface PreviewChrome {
+  headerSearch?: StorefrontChrome['headerSearch']
+  headerTools?: StorefrontHeaderTool[]
+  searchPlaceholder?: string
+  socialIcons?: string[]
+  footer?: {
+    columns: { heading: string; links: string[] }[]
+    newsletter?: { heading: string; button: string; consent?: string }
+    copyright?: string
+  }
+}
+
+/**
+ * A store's chrome as StorefrontPreview takes it beyond its wordmark and menu: the header's
+ * search and tools (a search field and a wishlist heart, Lumos; a pill search and social icons,
+ * Aurora), and the footer's columns, newsletter and copyright.
+ */
+export function previewChrome(chrome: StorefrontChrome): PreviewChrome {
+  const label = (part: string | { label: string }) => (typeof part === 'string' ? part : part.label)
+  return {
+    headerSearch: chrome.headerSearch,
+    headerTools: chrome.headerTools,
+    searchPlaceholder: chrome.searchPlaceholder,
+    // A link named "X" gets X's mark, as the storefront's header draws it.
+    socialIcons: chrome.social.map((link) => (link.label.trim().toLowerCase() === 'x' ? 'x' : link.icon)),
+    footer: {
+      columns: chrome.footerColumns.map((column) => ({ heading: column.heading.label, links: column.items.map((item) => item.label) })),
+      newsletter: chrome.newsletter
+        ? { heading: chrome.newsletter.heading, button: chrome.newsletter.button, consent: chrome.newsletter.consent.map(label).join('') }
+        : undefined,
+      copyright: chrome.copyright,
+    },
+  }
 }
 
 const NEELAM_STORE: StorefrontChrome = {
@@ -191,5 +227,15 @@ export const useStorefrontStore = defineStore('storefront', () => {
     return crawled ? { brand: crawled.wordmark, menu: crawled.nav.map((item) => item.label) } : {}
   }
 
-  return { chromeFor, previewHeaderFor, attachDemo, reseedDemo }
+  /**
+   * The rest of the store's chrome for the admin's drawing of it (previewChrome), as the builder,
+   * the theme library and the store page all pass it. Empty where previewHeaderFor is: those
+   * stores keep the sample chrome.
+   */
+  function previewChromeFor(channel: SalesChannel | undefined): PreviewChrome {
+    if (!channel || !previewHeaderFor(channel).brand) return {}
+    return previewChrome(chromeFor(channel))
+  }
+
+  return { chromeFor, previewHeaderFor, previewChromeFor, attachDemo, reseedDemo }
 })

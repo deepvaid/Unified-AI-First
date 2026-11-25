@@ -100,8 +100,8 @@ const facts = computed(() => {
     facts: products.some((product) => !!product.detail?.specs?.length),
   }
 })
-/** The kinds the open template can take (a logo strip is the home page's). */
-const addableSections = computed(() => sectionsFor(drawing.value, facts.value, activeTemplate.value))
+/** The kinds the open template can take (a logo strip is the home page's; white words on its banner's photo, when it has one). */
+const addableSections = computed(() => sectionsFor(drawing.value, facts.value, activeTemplate.value, activeSections.value))
 
 const backRoute = computed(() =>
   channel.value
@@ -1172,9 +1172,10 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
               </template>
             </MpFormField>
 
-            <!-- The sections drawing's cards: their own corners (cards without them follow Corner radius) and shadow. -->
+            <!-- The sections drawing's cards: their own corners (cards without them follow Corner radius) and shadow;
+                 then the collection tiles', which follow the cards' until set (Aurora: 24px cards, 8px tiles). -->
             <template v-if="drawing === 'sections'">
-              <MpFormField label="Card corners" hint="Product cards, room tiles and logo cards">
+              <MpFormField label="Card corners" hint="Product cards, logo cards and icon cards">
                 <template #default="{ labelId, descriptionId }">
                   <v-slider
                     :model-value="theme.styles.cardRadius ?? theme.styles.cornerRadius"
@@ -1194,6 +1195,28 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
                   :items="cardShadowItems"
                   ariaLabel="Card shadow"
                   @update:model-value="(v) => { if (v) setStyle({ cardShadow: v as NonNullable<ThemeStyles['cardShadow']> }) }"
+                />
+              </MpFormField>
+              <MpFormField label="Tile corners" hint="Collection tiles. They follow Card corners until you change them.">
+                <template #default="{ labelId, descriptionId }">
+                  <v-slider
+                    :model-value="theme.styles.tileRadius ?? theme.styles.cardRadius ?? theme.styles.cornerRadius"
+                    :min="0"
+                    :max="24"
+                    :step="2"
+                    thumb-label
+                    :aria-labelledby="labelId"
+                    :aria-describedby="descriptionId"
+                    @update:model-value="(v: number) => setStyle({ tileRadius: v })"
+                  ></v-slider>
+                </template>
+              </MpFormField>
+              <MpFormField label="Tile shadow">
+                <MpSegmentedControl
+                  :model-value="theme.styles.tileShadow ?? theme.styles.cardShadow ?? 'None'"
+                  :items="cardShadowItems"
+                  ariaLabel="Tile shadow"
+                  @update:model-value="(v) => { if (v) setStyle({ tileShadow: v as NonNullable<ThemeStyles['tileShadow']> }) }"
                 />
               </MpFormField>
             </template>

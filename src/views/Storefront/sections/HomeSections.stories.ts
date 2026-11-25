@@ -1,7 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import { isolateStorage } from '@/stories/decorators'
 import { demoStoreFor } from '@/storefront/demoStores'
-import { snapshotFor } from '@/storefront/demoStores/install'
+import { AURORA_BLUEPRINT } from '@/storefront/demoStores/aurora'
+import { contextFor, snapshotFor } from '@/storefront/demoStores/install'
 import { createSection, storefrontThemeVars } from '@/storefront/themeSections'
 import type { ThemeSection } from '@/storefront/themeSections'
 import StorefrontHome from '../StorefrontHome.vue'
@@ -10,6 +11,7 @@ import FeaturedProducts from './FeaturedProducts.vue'
 import IconRow from './IconRow.vue'
 import ImageBanner from './ImageBanner.vue'
 import LogoStrip from './LogoStrip.vue'
+import { AURORA_PAGE_STYLE } from '../listingStoryFixtures'
 import { LUMOS_STYLES, lumosHomeSections } from './lumosStoryFixtures'
 import Newsletter from './Newsletter.vue'
 import { withStorefront } from './storyContext'
@@ -58,6 +60,10 @@ home page draws its template section by section, through one component per kind 
   \`tileStyle: 'Label over photo'\`, \`background: 'Tint'\`, \`accentWords\` and a tile's \`accent\`.
 - \`featured-products\`: an \`eyebrow\` and \`accentWords\`; a carousel has Previous and Next.
 - \`icon-row\`: an \`eyebrow\`, a \`subtitle\`, \`alignment\` and \`tileStyle: 'Card'\`.
+
+**Aurora (part 6)** adds \`contentPosition: 'Middle left'\` to \`image-banner\`: white words centred at the left over a
+near-black shade from the left, at least 58% as far as the words reach (white keeps 4.9:1 over any photo), the first
+button white with dark ink; a Small banner is 400px tall, on a phone too.
 
 A kind without a component draws nothing (a developer gets one console warning). Every other theme
 keeps the classic drawing. Add a kind: write its component, list it in the registry, and add it to
@@ -174,6 +180,21 @@ export const RoomsCarousel: Story = {
     await new Promise((resolve) => setTimeout(resolve, 200))
     canvasElement.querySelectorAll<HTMLButtonElement>('.sfc__dot')[2]?.click()
   },
+}
+
+// ── Aurora (part 6) ─────────────────────────────────────────────────────────
+// Aurora's styles on an inner frame (Source Serif 4 headings at 700 over the system sans, 61px hero titles, a
+// 1380px measure with 32px gutters), and its home page's hero as the blueprint seeds it.
+const aurora = AURORA_BLUEPRINT.build(contextFor(AURORA_BLUEPRINT, AURORA_BLUEPRINT.homeChannel, '2026-11-20'))
+const auroraHero = aurora.theme.templates.home.find((s) => s.kind === 'image-banner')!
+
+/** Aurora's full-width hero: white words in the middle of its left side over a shade from the left, and a white button. */
+export const AuroraHero: Story = {
+  render: () => ({
+    components: { ImageBanner },
+    setup: () => ({ frame: AURORA_PAGE_STYLE, section: auroraHero }),
+    template: '<div :style="frame"><ImageBanner :section="section" :heading-level="1" /></div>',
+  }),
 }
 
 /** A product carousel with a line above its title and an accent word: Previous and Next beside "View all". */

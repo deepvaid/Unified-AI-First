@@ -51,3 +51,23 @@ test('a piece for everyone, and a chart without gendered columns, are shown as w
   assert.equal(chartForAudience(womensTops, 'her'), womensTops)
   assert.deepEqual(columnsForAudience(['US size', 'Bust'], 'him'), [{ index: 0, label: 'US size' }, { index: 1, label: 'Bust' }])
 })
+
+test('a piece’s chart leaves out the sizes it isn’t made in', () => {
+  // Aurora's Boots: women's 6–10 and men's 8–12 in one chart, a dash where a size has none.
+  const boots = {
+    ...womensTops,
+    id: 'boots',
+    name: 'Boots',
+    columns: ['Women’s foot length', 'Men’s foot length'],
+    rows: [['6', '9.25', '—'], ['7', '9.5', '—'], ['8', '9.875', '10'], ['9', '10.25', '10.375'], ['10', '10.5', '10.75'], ['11', '—', '11.125'], ['12', '—', '11.5']]
+      .map(([size, ...values]) => ({ size: size!, values })),
+  }
+  assert.deepEqual(chartForAudience(boots, 'her').rows.map((r) => r.size), ['6', '7', '8', '9', '10'])
+  assert.deepEqual(chartForAudience(boots, 'him').rows.map((r) => r.size), ['8', '9', '10', '11', '12'])
+  assert.deepEqual(chartForAudience(boots, 'him').rows[0], { size: '8', values: ['10'] })
+  // A piece for everyone sees every size, the dashes included.
+  assert.equal(chartForAudience(boots, null).rows.length, 7)
+  // An empty cell is blank too; a row with a value in any kept column stays.
+  const blanks = { ...boots, rows: [{ size: 'S', values: ['', '9'] }, { size: 'M', values: [' ', '—'] }, { size: 'L', values: ['10', ''] }] }
+  assert.deepEqual(chartForAudience(blanks, 'her').rows.map((r) => r.size), ['L'])
+})

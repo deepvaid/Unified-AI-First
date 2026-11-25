@@ -50,6 +50,7 @@ const VH = 'vitaheal-demo'
 const NF = 'northfold-demo'
 const TQ = 'torqline-demo'
 const LM = 'lumos-demo'
+const AU = 'aurora-demo'
 const GARAGE = 'test-garage'
 const today = () => localDateKey(Date.now())
 
@@ -99,7 +100,7 @@ function storeOf(app: App, channelId: string) {
   })
 }
 
-const STORES = [VH, NF, TQ, LM]
+const STORES = [VH, NF, TQ, LM, AU]
 const everyStoreOf = (app: App, ids = STORES) => Object.fromEntries(ids.map((id) => [id, storeOf(app, id)]))
 
 function createGarage(app: App, theme: DemoStoreId | null = 'torqline', merchandiseConnected = false) {

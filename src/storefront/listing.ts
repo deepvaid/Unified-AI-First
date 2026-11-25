@@ -150,9 +150,19 @@ export function cardPhoto(product: CardProduct, color?: Pick<CardColor, 'name'>)
 
 // ── Badges ───────────────────────────────────────────────────────────────────
 
-/** A product shopped from a "New…" collection ("New in", "New arrivals") is new. */
+/**
+ * A "New…" collection, by its name or its handle ("New in", "new-in", "New arrivals",
+ * "new-arrivals"; not "Newsletter picks"). Its products are new, and a list of it (its
+ * own page, a home row of it, in the store and in the builder's drawing) shows no "New"
+ * mark, which every card would carry.
+ */
+export function isNewCollection(nameOrHandle: string): boolean {
+  return /^new\b/i.test(nameOrHandle.trim())
+}
+
+/** A product shopped from a "New…" collection is new. */
 export function isNewArrival(product: Pick<CardProduct, 'collections'>): boolean {
-  return (product.collections ?? []).some((name) => /^new\b/i.test(name.trim()))
+  return (product.collections ?? []).some(isNewCollection)
 }
 
 /** The products sold out in every variant (a product without variants: no units on hand). */
@@ -305,11 +315,13 @@ export function storeNoun(catalogue: readonly CardProduct[], setup: { sizeCharts
  * How a list draws its cards: Editorial, a tall photo with the name, price and
  * colours (Northfold); Dense, a square photo with the part number, fit, stock and
  * Add to cart (Torqline); Boxed, the Figma product card: a framed card with the
- * photo, a badge, the wishlist heart, the name, the price and Add to cart (Lumos).
+ * photo, a badge, the wishlist heart, the name, the price and Add to cart (Lumos);
+ * Framed, Aurora's product card: a thick light frame with round corners, the square
+ * photo inset in it, the name and price stacked, and Add to cart below (no heart).
  */
-export type CardStyle = 'Editorial' | 'Dense' | 'Boxed'
+export type CardStyle = 'Editorial' | 'Dense' | 'Boxed' | 'Framed'
 
-const CARD_STYLES: readonly CardStyle[] = ['Editorial', 'Dense', 'Boxed']
+const CARD_STYLES: readonly CardStyle[] = ['Editorial', 'Dense', 'Boxed', 'Framed']
 
 /** What the collection template's product grid asks of the list. */
 export interface GridSettings {

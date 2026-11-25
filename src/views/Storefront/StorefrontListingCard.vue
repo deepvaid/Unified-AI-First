@@ -43,6 +43,14 @@ import { CATEGORY_ICONS, priceOf, productHandle } from './storefrontCatalog'
 // photo when the theme's purchase options block asks for that badge (Vitaheal), after
 // Sold out and Sale and before New, on the theme's own badge colour. Its Add to cart
 // always opens quick add, which offers the plans.
+//
+// The `Framed` style is Aurora's product card scheme: a white card in a thick frame of
+// the theme's divider colour, on the theme's card corners and shadow (Theme styles;
+// UAT's 24px and none when it sets neither), the square photo inset in it on the
+// theme's surface, with the same badge as Boxed; then the name and the price stacked,
+// and a full-width Add to cart at the card's foot (straight in, or quick add when there
+// is a choice to make, as Boxed). No heart: Aurora's card scheme has the wishlist off,
+// and the product page keeps its own heart.
 
 const props = withDefaults(defineProps<{
   product: Product
@@ -52,10 +60,10 @@ const props = withDefaults(defineProps<{
   quickAdd?: boolean
   /** The product was just added straight from this card: the "+" reads "Added" for a moment. */
   added?: boolean
-  /** The "New" mark (off on a New… collection's own page, where every card would carry it). */
+  /** The "New" mark (off in a list of a New… collection, its page or a row of it, where every card would carry it: isNewCollection). */
   showNew?: boolean
   headingLevel?: 2 | 3 | 4
-  /** Editorial (Northfold), Dense (a part, Torqline) or Boxed (Lumos): the collection template's `cardStyle`. */
+  /** Editorial (Northfold), Dense (a part, Torqline), Boxed (Lumos) or Framed (Aurora): the collection template's `cardStyle`. */
   cardStyle?: CardStyle
 }>(), {
   colorKeys: () => [],
@@ -129,12 +137,52 @@ function toggleSaved(): void {
   const now = wishlist.toggle(storefront.channel.value.id, props.product.id)
   storefront.announce(toggleAnnouncement(props.product.name, now))
 }
-/** Boxed spells its sale out ("Sale"); the price under the name says by how much. */
+/** Boxed (and Framed) spell their sale out ("Sale"); the price under the name says by how much. */
 const boxedBadge = computed(() => (badge.value?.kind === 'sale' ? { ...badge.value, text: 'Sale' } : badge.value))
+
+// ── Framed (Aurora's product card) ────────────────────────────────────────
+const framed = computed(() => props.cardStyle === 'Framed')
 </script>
 
 <template>
-  <article v-if="boxed" class="sf-bcard" :class="{ 'is-sold-out': out }">
+  <article v-if="framed" class="sf-fcard" :class="{ 'is-sold-out': out }">
+    <component :is="`h${headingLevel}`" class="sf-fcard__name">
+      <StorefrontAnchor :href="href" class="sf-fcard__link">{{ product.name }}</StorefrontAnchor>
+    </component>
+    <p class="sf-fcard__price">
+      <template v-if="price.compareAt">
+        <span class="sf-fcard__sale"><span class="sf-sr">Sale price </span>{{ money(price.price) }}</span>
+        <s class="sf-fcard__was"><span class="sf-sr">Usual price </span>{{ money(price.compareAt) }}</s>
+      </template>
+      <span v-else><template v-if="price.from">From </template>{{ money(price.price) }}</span>
+    </p>
+
+    <div class="sf-fcard__media">
+      <img v-if="photo && !broken" :src="photo" alt="" class="sf-fcard__image" loading="lazy" @error="broken = true">
+      <v-icon v-else size="44" class="sf-fcard__placeholder" aria-hidden="true">{{ CATEGORY_ICONS[product.category] ?? 'package' }}</v-icon>
+      <span
+        v-if="boxedBadge"
+        class="sf-fcard__badge"
+        :class="`sf-fcard__badge--${boxedBadge.kind}`"
+        :aria-hidden="boxedBadge.kind === 'sale' ? 'true' : undefined"
+      >{{ boxedBadge.text }}</span>
+    </div>
+
+    <button
+      v-if="quickAdd && !out"
+      type="button"
+      class="sf-fcard__add"
+      :class="{ 'is-added': added }"
+      :aria-label="addLabel"
+      :aria-haspopup="addsDirectly(product, storefront.fitOf(product)) ? undefined : 'dialog'"
+      @click="emit('quick-add', product, color?.name)"
+    >
+      <v-icon v-if="added" size="18" aria-hidden="true">check</v-icon>
+      {{ added ? 'Added' : 'Add to cart' }}
+    </button>
+  </article>
+
+  <article v-else-if="boxed" class="sf-bcard" :class="{ 'is-sold-out': out }">
     <component :is="`h${headingLevel}`" class="sf-bcard__name">
       <StorefrontAnchor :href="href" class="sf-bcard__link">{{ product.name }}</StorefrontAnchor>
     </component>
@@ -767,6 +815,228 @@ const boxedBadge = computed(() => (badge.value?.kind === 'sale' ? { ...badge.val
 
   .sf-bcard__add {
     margin: auto 10px 10px;
+    padding: 0 8px;
+    font-size: 13px;
+  }
+}
+
+/* ── Framed: Aurora's product card ─────────────────────────────────────────
+ * UAT Aurora's card scheme: a card on the theme's card colour in a 5px frame of its
+ * divider colour, on the theme's card corners (--sf-card-radius) and shadow
+ * (--sf-card-shadow), UAT's 24px and none when the theme sets neither. Everything sits
+ * 20px inside the frame: the square photo (two thirds of the card's corners, 16px on
+ * 24, the theme's surface behind it) with the badge top-left, the name (16px bold,
+ * two lines at most) and the price stacked at the left, then the
+ * store's solid button the card's width (its button corners), at the foot so a row of
+ * cards lines up. A phone shows two to a row, so the frame, the inset and the type
+ * come down a step. */
+.sf-fcard {
+  --sf-fcard-frame: 5px;
+  --sf-fcard-inset: 20px;
+  --sf-fcard-radius: var(--sf-card-radius, 24px);
+  --sf-fcard-photo-radius: calc(var(--sf-fcard-radius) * 2 / 3);
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: var(--sf-fcard-inset);
+  border: var(--sf-fcard-frame) solid var(--sf-divider, #f0f0f0);
+  border-radius: var(--sf-fcard-radius);
+  background: var(--sf-card, var(--sf-bg, #ffffff));
+  color: var(--sf-text, #121011);
+  box-shadow: var(--sf-card-shadow, none);
+}
+
+/* The photo leads the card; in the reading order it follows the name and price. */
+.sf-fcard__media {
+  position: relative;
+  order: -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: var(--sf-fcard-photo-radius);
+  background: var(--sf-surface, color-mix(in srgb, var(--sf-text, #121011) 4%, var(--sf-bg, #ffffff)));
+  color: var(--sf-muted, #545354);
+}
+
+.sf-fcard__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.is-sold-out .sf-fcard__image {
+  opacity: 0.6;
+}
+
+.sf-fcard__name {
+  display: -webkit-box;
+  margin: 16px 0 0;
+  overflow: hidden;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 22px;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.sf-fcard__link {
+  color: var(--sf-text, #121011);
+  text-decoration: none;
+}
+
+/* The name's hit area covers the card, frame and all, so the photo opens the product too. */
+.sf-fcard__link::after {
+  content: '';
+  position: absolute;
+  inset: calc(-1 * var(--sf-fcard-frame));
+  z-index: 1;
+  border-radius: var(--sf-fcard-radius);
+}
+
+.sf-fcard:hover .sf-fcard__link {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.sf-fcard__link:focus-visible {
+  outline: none;
+}
+
+.sf-fcard__link:focus-visible::after {
+  outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
+  outline-offset: 2px;
+}
+
+.sf-fcard__price {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+  margin: 4px 0 20px;
+  font-size: 16px;
+  line-height: 22px;
+  font-variant-numeric: tabular-nums;
+}
+
+.sf-fcard__sale {
+  color: var(--sf-badge-sale, #b91c1c);
+  font-weight: 600;
+}
+
+.sf-fcard__was {
+  color: var(--sf-muted, #545354);
+  font-size: 14px;
+}
+
+/* One mark, top-left on the photo, on the badge's own colour. */
+.sf-fcard__badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+}
+
+.sf-fcard__badge--sale {
+  background: var(--sf-badge-sale, #b91c1c);
+  color: var(--sf-on-badge-sale, #ffffff);
+}
+
+.sf-fcard__badge--new {
+  background: var(--sf-badge-custom, var(--sf-brand, #373842));
+  color: var(--sf-on-badge-custom, #ffffff);
+}
+
+.sf-fcard__badge--sold-out {
+  background: var(--sf-badge-sold-out, #121011);
+  color: var(--sf-on-badge-sold-out, #ffffff);
+}
+
+/* The store's solid button, the card's width, at its foot (the space left goes above it), above the card's link. */
+.sf-fcard__add {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  margin-top: auto;
+  padding: 0 16px;
+  border: 1px solid var(--sf-button-border, var(--sf-button-bg, var(--sf-brand, #373842)));
+  border-radius: var(--sf-button-radius, 6px);
+  background: var(--sf-button-bg, var(--sf-brand, #373842));
+  color: var(--sf-button-ink, var(--sf-on-brand, #ffffff));
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  text-transform: var(--sf-button-case, none);
+  cursor: pointer;
+  transition: background-color 200ms ease, border-color 200ms ease;
+}
+
+.sf-fcard__add:hover,
+.sf-fcard__add.is-added {
+  border-color: var(--sf-button-hover, var(--sf-button-bg, var(--sf-brand, #373842)));
+  background: var(--sf-button-hover, var(--sf-button-bg, var(--sf-brand, #373842)));
+}
+
+.sf-fcard__add:focus-visible {
+  outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sf-fcard__add {
+    transition: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .sf-fcard {
+    --sf-fcard-frame: 3px;
+    --sf-fcard-inset: 10px;
+    /* The theme's corners, 16px at most (10px photo corners on 16). */
+    --sf-fcard-radius: min(var(--sf-card-radius, 24px), 16px);
+    --sf-fcard-photo-radius: calc(var(--sf-fcard-radius) * 5 / 8);
+  }
+
+  .sf-fcard__name {
+    margin-top: 10px;
+    font-size: 14px;
+    line-height: 19px;
+  }
+
+  .sf-fcard__price {
+    margin-bottom: 12px;
+    font-size: 14px;
+    line-height: 20px;
+  }
+
+  .sf-fcard__was {
+    font-size: 13px;
+  }
+
+  .sf-fcard__badge {
+    top: 8px;
+    left: 8px;
+    padding: 2px 6px;
+    font-size: 11px;
+  }
+
+  .sf-fcard__add {
     padding: 0 8px;
     font-size: 13px;
   }

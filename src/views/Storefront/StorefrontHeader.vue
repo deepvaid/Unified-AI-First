@@ -14,19 +14,23 @@ import { chromeSettings, flag, templateForRoute, text } from './sections/section
 // The storefront's announcement bar and header. Two drawings:
 // - classic (every theme but the sections drawing's): the markup StorefrontLayout has
 //   always drawn, moved here unchanged, so Atlas and Neelam look as before;
-// - sections (Vitaheal, Northfold, Torqline, Lumos): the theme's header section decides
-//   the menu style (Inline: wordmark and menu in one row; Centered: wordmark over the
-//   menu; Minimal: wordmark and a menu button), whether it sticks to the top on a
-//   desktop, and a light or dark scheme. Search shows only once the store can search; on
-//   a phone, and in the Minimal style, the menu opens in a drawer. The store's chrome can
-//   ask for search as a visible field (`headerSearch: 'field'`, Lumos, Vitaheal): in the
-//   bar on a wide screen, in a row of its own under the bar where the bar has no room for
-//   it (1240px and narrower, and always in the Centered style). A store with a wishlist
-//   (Lumos) gets a heart beside the cart, with how many saved products it still sells.
+// - sections (Vitaheal, Northfold, Torqline, Lumos, Aurora): the theme's header section
+//   decides the menu style (Inline: wordmark and menu in one row; Centered: wordmark over
+//   the menu; Minimal: wordmark and a menu button; Stacked, UAT Aurora's: the social links,
+//   the wordmark in the middle and search and the tools at the end, the menu in a row of
+//   its own under them), whether it sticks to the top on a desktop, and a light or dark
+//   scheme. Search shows only once the store can search; on a phone, and in the Minimal
+//   style, the menu opens in a drawer (from the start of the page, its links in capitals,
+//   in the Stacked style). The store's chrome can ask for search as a visible field
+//   (`headerSearch: 'field'`, Lumos, Vitaheal) or a pill (`'pill'`, Aurora): in the bar on
+//   a wide screen, in a row of its own under the bar where the bar has no room for it
+//   (1240px and narrower, and always in the Centered style; on a phone in the Stacked
+//   style, whose menu has a row of its own). A store with a wishlist (Lumos) gets a heart
+//   beside the cart, with how many saved products it still sells.
 // In both drawings a menu link that carries a `menu` (Vitaheal's "Shop" and "About", Daybloom's
 // "Shop" and "Learn") is a button that opens a panel of links under the header, a mega menu
 // (StorefrontMegaPanel); in the phone menu, and the sections drawing's drawer, it is a row
-// that opens in place.
+// that opens in place. The Stacked header's menu row draws plain links.
 // The checkout's header (route meta minimalChrome) is the logo and "Secure checkout".
 
 const storefront = inject(STOREFRONT)!
@@ -122,17 +126,26 @@ function search(): void {
 const settings = computed(() => chromeSettings(storefront.theme.value, templateForRoute(route.name), 'header'))
 const menuStyle = computed(() => {
   const style = text(settings.value, 'menuStyle', 'Inline')
-  return ['Inline', 'Centered', 'Minimal'].includes(style) ? style.toLowerCase() : 'inline'
+  return ['Inline', 'Centered', 'Minimal', 'Stacked'].includes(style) ? style.toLowerCase() : 'inline'
 })
+const stacked = computed(() => menuStyle.value === 'stacked')
 const sticky = computed(() => flag(settings.value, 'sticky'))
 const dark = computed(() => text(settings.value, 'colorScheme') === 'Dark')
 const hasAccount = computed(() => chrome.value.headerTools.includes('account'))
 /** A menu with a mega menu in it: it takes the bar's full height, so the pointer never leaves a link on its way to the panel. */
 const hasPanels = computed(() => chrome.value.nav.some((item) => item.menu))
+/** Stacked (Aurora): the store's social links at the start of the bar, when the header's `social` is on. */
+const social = computed(() => (stacked.value && flag(settings.value, 'social') ? chrome.value.social : []))
+/**
+ * The X link gets X's own mark, drawn here: the icon set has none (its `x` is a close cross),
+ * so a store names the link "X" and gives it the earlier bird (`twitter`) or `x`.
+ */
+const isX = (item: { label: string; icon: string }) => item.icon === 'x' || item.label.trim().toLowerCase() === 'x'
 
-// Search as a visible field (Lumos): two forms on one query, one shown at a time (in the bar
-// when it has room, else in a row under it), so the DOM order stays the order the eye reads.
-const searchField = computed(() => searchable.value && chrome.value.headerSearch === 'field')
+// Search as a visible field (Lumos), or as a pill (Aurora): two forms on one query, one shown at a
+// time (in the bar when it has room, else in a row under it), so the DOM order stays the order the eye reads.
+const searchField = computed(() => searchable.value && (chrome.value.headerSearch === 'field' || chrome.value.headerSearch === 'pill'))
+const searchPill = computed(() => chrome.value.headerSearch === 'pill')
 
 // The wishlist heart, with how many saved products the store still sells.
 const wishlist = useStorefrontWishlistStore()
@@ -181,7 +194,110 @@ function onMenuClosed(): void {
   <!-- ── Sections drawing ──────────────────────────────────────────── -->
   <template v-if="sectionsDrawing && !minimal">
     <p v-if="announcement" class="sfh-announce">{{ announcement }}</p>
-    <header class="sfh" :class="[`sfh--${menuStyle}`, { 'sfh--dark': dark, 'sfh--sticky': sticky, 'sfh--search-field': searchField }]">
+
+    <!-- Stacked (Aurora): the menu button (on a phone), the social links, the wordmark in the middle,
+         search and the tools at the end; the menu in a row of its own; search under the bar on a phone. -->
+    <header v-if="stacked" class="sfh sfh--stacked" :class="{ 'sfh--dark': dark, 'sfh--sticky': sticky, 'sfh--search-pill': searchPill }">
+      <div class="sfh__stack">
+        <button
+          type="button"
+          class="sfh__icon sfh__burger"
+          aria-label="Menu"
+          aria-haspopup="dialog"
+          :aria-expanded="menuOpen"
+          @click="menuOpen = true"
+        >
+          <v-icon size="24" aria-hidden="true">menu</v-icon>
+        </button>
+
+        <ul v-if="social.length" class="sfh__social" aria-label="Social links">
+          <li v-for="item in social" :key="item.label">
+            <StorefrontAnchor :href="item.href" class="sfh__social-link" :aria-label="item.label">
+              <svg v-if="isX(item)" class="sfh__x" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path fill="currentColor" d="M18.9 1.15h3.68l-8.04 9.19L24 22.85h-7.41l-5.8-7.58-6.64 7.58H.47l8.6-9.83L0 1.15h7.59l5.24 6.93zm-1.29 19.5h2.04L6.49 3.24H4.3z" />
+              </svg>
+              <v-icon v-else size="18" aria-hidden="true">{{ item.icon }}</v-icon>
+            </StorefrontAnchor>
+          </li>
+        </ul>
+
+        <StorefrontAnchor href="/" class="sfh__logo">
+          <v-icon v-if="chrome.wordmarkIcon" size="26" aria-hidden="true">{{ chrome.wordmarkIcon }}</v-icon>
+          <span>{{ chrome.wordmark }}</span>
+        </StorefrontAnchor>
+
+        <div class="sfh__end">
+          <form v-if="searchField" class="sfh__search sfh__search--bar" role="search" @submit.prevent="search">
+            <span class="sfh__field">
+              <input
+                v-model="query"
+                type="search"
+                class="sfh__field-input"
+                :placeholder="chrome.searchPlaceholder"
+                aria-label="Search the store"
+                enterkeyhint="search"
+                autocomplete="off"
+              >
+              <button type="submit" class="sfh__field-go" aria-label="Search">
+                <v-icon size="20" aria-hidden="true">search</v-icon>
+              </button>
+            </span>
+          </form>
+
+          <div class="sfh__tools">
+            <StorefrontAnchor v-if="searchable && !searchField" href="/search" class="sfh__icon" aria-label="Search" @click="onSearchIcon">
+              <v-icon size="22" aria-hidden="true">search</v-icon>
+            </StorefrontAnchor>
+            <StorefrontAnchor v-if="hasAccount" :href="chrome.accountHref ?? '/user/login'" class="sfh__icon sfh__icon--filled" aria-label="Account">
+              <v-icon size="22" aria-hidden="true">user-round</v-icon>
+            </StorefrontAnchor>
+            <StorefrontAnchor v-if="storefront.wishlist.value" href="/wishlist" class="sfh__icon sfh__icon--filled sfh__wish" :aria-label="wishLabel">
+              <v-icon size="22" aria-hidden="true">heart</v-icon>
+              <span v-if="wishCount" class="sfh__count" aria-hidden="true">{{ wishCount > 99 ? '99+' : wishCount }}</span>
+            </StorefrontAnchor>
+            <StorefrontAnchor href="/cart-page" class="sfh__icon sfh__icon--filled sfh__cart" :aria-label="cartLabel">
+              <v-icon size="22" aria-hidden="true">shopping-cart</v-icon>
+              <span v-if="cartCount" class="sfh__count" aria-hidden="true">{{ cartCount > 99 ? '99+' : cartCount }}</span>
+            </StorefrontAnchor>
+          </div>
+        </div>
+      </div>
+
+      <nav v-if="chrome.nav.length" class="sfh__nav sfh__nav--stacked" aria-label="Main">
+        <StorefrontAnchor v-for="item in chrome.nav" :key="item.label" :href="item.href" class="sfh__link">{{ item.label }}</StorefrontAnchor>
+      </nav>
+
+      <div v-if="sellsParts" class="sfh__vehicle-row">
+        <button type="button" class="sfh__vehicle" aria-haspopup="dialog" :aria-label="vehicleName" @click="storefront.chooseVehicle()">
+          <v-icon size="18" aria-hidden="true">car-front</v-icon>
+          <span class="sfh__vehicle-text">{{ vehicleText }}</span>
+          <v-icon size="16" aria-hidden="true">chevron-down</v-icon>
+        </button>
+      </div>
+
+      <form v-if="searchField" class="sfh__search sfh__search--row" role="search" @submit.prevent="search">
+        <span class="sfh__field">
+          <input
+            v-model="query"
+            type="search"
+            class="sfh__field-input"
+            :placeholder="chrome.searchPlaceholder"
+            aria-label="Search the store"
+            enterkeyhint="search"
+            autocomplete="off"
+          >
+          <button type="submit" class="sfh__field-go" aria-label="Search">
+            <v-icon size="20" aria-hidden="true">search</v-icon>
+          </button>
+        </span>
+      </form>
+    </header>
+
+    <header
+      v-else
+      class="sfh"
+      :class="[`sfh--${menuStyle}`, { 'sfh--dark': dark, 'sfh--sticky': sticky, 'sfh--search-field': searchField, 'sfh--search-pill': searchPill && searchField }]"
+    >
       <!-- The bar a mega menu's panel hangs from: under the menu row, over the search and vehicle rows. -->
       <div class="sfh__bar">
         <div class="sfh__row">
@@ -308,8 +424,15 @@ function onMenuClosed(): void {
       </form>
     </header>
 
-    <StorefrontDrawer v-model="menuOpen" title="Menu" :phone-sheet="false" close-label="Close menu" @close="onMenuClosed">
-      <nav aria-label="Menu" class="sfh-drawer">
+    <StorefrontDrawer
+      v-model="menuOpen"
+      title="Menu"
+      :phone-sheet="false"
+      close-label="Close menu"
+      :class="{ 'sfh-menu--start': stacked }"
+      @close="onMenuClosed"
+    >
+      <nav aria-label="Menu" class="sfh-drawer" :class="{ 'sfh-drawer--caps': stacked }">
         <StorefrontAnchor v-if="searchable && !searchField" href="/search" class="sfh-drawer__search" @click="onMenuSearch">
           <v-icon size="20" aria-hidden="true">search</v-icon>
           Search
@@ -1319,5 +1442,261 @@ function onMenuClosed(): void {
     flex: 1 1 auto;
     text-align: left;
   }
+}
+
+/* ── Search as a pill (Aurora) ───────────────────────────────────────────
+ * The field rounded right off, 40px tall and 150-200px wide in the bar, with the
+ * magnifier inside at its end. Under the bar, the full width, its corners square. */
+.sfh--search-pill .sfh__search--bar {
+  flex: 0 1 200px;
+  min-width: 150px;
+}
+
+.sfh--search-pill .sfh__search--bar .sfh__field {
+  height: 40px;
+  border-radius: 999px;
+}
+
+.sfh--search-pill .sfh__search--bar .sfh__field-input {
+  padding-left: 18px;
+}
+
+.sfh--search-pill .sfh__search--bar .sfh__field-go {
+  width: 40px;
+  border-radius: 999px;
+}
+
+.sfh--search-pill .sfh__search--row .sfh__field {
+  border-radius: 0;
+}
+
+/* ── Stacked (Aurora) ────────────────────────────────────────────────────
+ * UAT Aurora's header. Row one: the social links at the start, the wordmark in the
+ * middle, the search pill and the tools at the end, the account, heart and cart
+ * filled, the cart's count in the sale colour. Row two: the menu, centred, 20px in the
+ * heading face. No hairline under it. A phone: the menu button, the wordmark, the
+ * tools; search the full width under them; the social links and the menu row go (the
+ * menu opens in a drawer from the start of the page). */
+.sfh--stacked {
+  border-bottom-color: transparent;
+}
+
+/* Equal sides, so the wordmark sits in the middle; a side whose content needs more takes it, and the wordmark gives way. */
+.sfh__stack {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 16px;
+  box-sizing: border-box;
+  max-width: var(--sf-measure, 1200px);
+  margin: 0 auto;
+  padding: 28px var(--sf-gutter, 24px) 0;
+}
+
+.sfh__burger {
+  display: none;
+  grid-area: 1 / 1;
+  justify-self: start;
+}
+
+.sfh__social {
+  display: flex;
+  grid-area: 1 / 1;
+  justify-self: start;
+  align-items: center;
+  margin: 0 0 0 -10px;
+  padding: 0;
+  list-style: none;
+}
+
+.sfh__social-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--sf-radius, 0);
+}
+
+.sfh__social-link:hover {
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
+
+.sfh__social-link:focus-visible {
+  outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
+  outline-offset: 2px;
+}
+
+.sfh__x {
+  width: 16px;
+  height: 16px;
+}
+
+.sfh--stacked .sfh__logo {
+  grid-area: 1 / 2;
+  min-height: 52px;
+}
+
+.sfh__end {
+  display: flex;
+  grid-area: 1 / 3;
+  justify-self: end;
+  align-items: center;
+  gap: 12px;
+}
+
+.sfh--stacked .sfh__tools {
+  gap: 4px;
+  margin-left: 0;
+}
+
+/* The account, heart and cart are drawn filled, as UAT draws them. */
+.sfh__icon--filled :deep(svg) {
+  fill: currentColor;
+}
+
+/* The counts ring themselves in the header's colour, so they part from a filled icon; the cart's is the sale colour. */
+.sfh--stacked .sfh__count {
+  top: 2px;
+  right: -3px;
+  font-size: 12px;
+  box-shadow: 0 0 0 2px var(--sf-bg, #ffffff);
+}
+
+.sfh--stacked .sfh__cart .sfh__count {
+  background: var(--sf-badge-sale, #b91c1c);
+  color: var(--sf-on-badge-sale, #ffffff);
+}
+
+.sfh--stacked.sfh--dark .sfh__count {
+  box-shadow: 0 0 0 2px var(--sf-brand, #121011);
+}
+
+.sfh__nav--stacked {
+  justify-content: center;
+  gap: 4px 44px;
+  box-sizing: border-box;
+  max-width: var(--sf-measure, 1200px);
+  margin: 0 auto;
+  padding: 10px var(--sf-gutter, 24px) 14px;
+  font-family: var(--sf-heading-font, system-ui), Georgia, serif;
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 28px;
+}
+
+/* A parts store's vehicle chip: always in its row, under the menu. */
+.sfh--stacked .sfh__vehicle-row {
+  display: block;
+  box-sizing: border-box;
+  max-width: var(--sf-measure, 1200px);
+  margin: 0 auto;
+  padding: 0 var(--sf-gutter, 24px) 12px;
+}
+
+.sfh--stacked .sfh__vehicle-row .sfh__vehicle {
+  margin: 0;
+}
+
+/* The menu has a row of its own, so the pill keeps its place in the bar down to a phone. */
+@media (min-width: 901px) and (max-width: 1240px) {
+  .sfh--stacked .sfh__search--bar {
+    display: block;
+  }
+
+  .sfh--stacked .sfh__search--row {
+    display: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .sfh__stack {
+    gap: 4px;
+    min-height: 60px;
+    padding: 8px var(--sf-gutter, 24px);
+  }
+
+  .sfh__burger {
+    display: inline-flex;
+    margin-left: -10px;
+  }
+
+  .sfh__social {
+    display: none;
+  }
+
+  .sfh--stacked .sfh__logo {
+    min-height: 0;
+  }
+
+  .sfh--stacked .sfh__tools {
+    gap: 0;
+    margin-right: -10px;
+  }
+}
+
+/* A phone: 40px tools, so the wordmark stays in the middle of the bar. */
+@media (max-width: 480px) {
+  .sfh--stacked .sfh__icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .sfh--stacked .sfh__count {
+    top: 0;
+    right: -4px;
+  }
+}
+
+/* ── The menu drawer, Stacked: from the start of the page, its links in capitals between hairlines ── */
+.sf-drawer.sfh-menu--start {
+  --sf-drawer-width: 360px;
+  inset-inline: 0 auto;
+  width: min(var(--sf-drawer-width), 85vw);
+  box-shadow: 12px 0 40px rgba(0, 0, 0, 0.14);
+}
+
+.sf-drawer.sfh-menu--start[open] {
+  animation-name: sfh-menu-in-start;
+}
+
+@keyframes sfh-menu-in-start {
+  from { transform: translateX(-100%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sf-drawer.sfh-menu--start[open] {
+    animation: none;
+  }
+}
+
+.sfh-drawer--caps {
+  gap: 0;
+}
+
+.sfh-drawer--caps .sfh-drawer__more {
+  margin-top: 24px;
+  padding-top: 0 !important;
+  border-top: 0;
+}
+
+.sfh-drawer--caps li + li {
+  border-top: 1px solid var(--sf-divider, #e5e5e5);
+}
+
+.sfh-drawer--caps .sfh-drawer__link {
+  min-height: 52px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.sfh-drawer--caps .sfh-drawer__link--small {
+  min-height: 48px;
+  color: var(--sf-muted, #545354);
+  font-weight: 400;
 }
 </style>

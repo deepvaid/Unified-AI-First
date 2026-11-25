@@ -7,6 +7,7 @@ import type { SalesChannel } from '@/stores/useSalesChannels'
 import { canApplyTheme } from '@/storefront/demoStores'
 import { catalogFor, hasPriceRange, isAvailable, lowestPrice, storesWithOwnCatalogue } from '@/storefront/catalog'
 import { formatStorePrice } from '@/storefront/price'
+import { cardPrice, choiceSummary, isNewArrival, partNumber } from '@/storefront/listing'
 import { roundForDisplay } from '@/subscriptions/plans'
 
 // What a storefront sells. A store with products assigned to it (Vitaheal (demo)) sells
@@ -59,6 +60,8 @@ export function inStock(product: Product): boolean {
 
 /** A product as the admin's drawing of the storefront shows it. */
 export interface PreviewProduct {
+  /** The product's id: two products may share a name (a women's and a men's piece), never an id. */
+  id: number
   name: string
   /** As the store's product card reads: "From 399 kr". */
   price: string
@@ -67,20 +70,47 @@ export interface PreviewProduct {
   images?: string[]
   /** The collections it is in, for a preview row that names one (the sections drawing). */
   collections?: string[]
+  /** On sale, the price it was, as the store writes prices ("$40.00"); a Framed card strikes it through. */
+  compareAt?: string
+  /** A part's number, as its card shows it. */
+  partNumber?: string
+  /** What it comes in ("Front or rear"), as a part's card says. */
+  choice?: string
+  /** Its choices as its page offers them (a colour's swatches). */
+  options?: { name: string; values: string[]; display?: 'buttons' | 'swatches'; swatches?: Record<string, string> }[]
+  /** Its card's badge. */
+  badge?: 'Sale' | 'New'
 }
 
 /**
  * The products a store's home page features, for the admin's drawing of it
- * (StorefrontPreview), in the storefront's own order and wording. Only for a
+ * (StorefrontPreview), in the storefront's own order and wording, with what its
+ * card shows (a part's number, a sale's struck price, its badge). Only for a
  * store with products of its own: a store on the shared catalogue keeps the
  * drawn stand-ins, so this returns undefined for it.
  */
 export function previewProducts(products: Product[], channel: Pick<SalesChannel, 'id' | 'webStore'>): PreviewProduct[] | undefined {
   if (!storesWithOwnCatalogue(products).includes(channel.id)) return undefined
   const currency = channel.webStore?.currency ?? 'USD'
-  return storefrontProducts(products, channel.id).filter(inStock).map((product) => {
-    const price = formatStorePrice(roundForDisplay(parseDecimal(lowestPrice(product), currency) ?? priceOf(product, currency)), channel.webStore?.locale)
-    return { name: product.name, price: hasPriceRange(product) ? `From ${price}` : price, image: product.imageUrls?.[0], images: product.imageUrls?.slice(0, 2), collections: product.collections }
+  const locale = channel.webStore?.locale
+  // The channel given, not the store's copy of it: the same products storefrontProducts sells, without reading the store.
+  return catalogFor(products, channel.id, canApplyTheme(channel)).filter(inStock).map((product) => {
+    const price = formatStorePrice(roundForDisplay(parseDecimal(lowestPrice(product), currency) ?? priceOf(product, currency)), locale)
+    const was = cardPrice(product).compareAt
+    const wasPrice = was ? parseDecimal(was, currency) : null
+    return {
+      id: product.id,
+      name: product.name,
+      price: hasPriceRange(product) ? `From ${price}` : price,
+      image: product.imageUrls?.[0],
+      images: product.imageUrls?.slice(0, 2),
+      collections: product.collections,
+      compareAt: wasPrice ? formatStorePrice(roundForDisplay(wasPrice), locale) : undefined,
+      partNumber: partNumber(product),
+      choice: choiceSummary(product),
+      options: product.detail?.options.map((o) => ({ name: o.name, values: o.values, display: o.display, swatches: o.swatches })) ?? [],
+      badge: was ? 'Sale' as const : isNewArrival(product) ? 'New' as const : undefined,
+    }
   })
 }
 

@@ -11,9 +11,10 @@ import MpListRow from '@/components/MpListRow.vue'
 import MpSegmentedControl from '@/components/MpSegmentedControl.vue'
 import SizeChartTable from './SizeChartTable.vue'
 import {
-  canSave, cleanSizeChart, convertRows, hasMeasurements, issueList, missingSizes, sizeChartIssues,
+  canSave, cleanSizeChart, convertRows, hasValuesToConvert, issueList, missingSizes, sizeChartIssues,
 } from '@/storefront/sizeChartForm'
 import type { SizeChartDraft, SizeChartIssueTarget } from '@/storefront/sizeChartForm'
+import { hasMeasurements } from '@/storefront/sizeCharts'
 import type { SizeChart, SizeUnit } from '@/storefront/sizeCharts'
 
 /**
@@ -81,19 +82,31 @@ const storeItems = computed(() => {
 /** A chart stays in its store once made; a new one can only go elsewhere when there is somewhere else. */
 const storeFixed = computed(() => editing.value || props.stores.length < 2)
 
-const UNIT_ITEMS = [
-  { value: 'in', label: 'Inches' },
-  { value: 'cm', label: 'Centimeters' },
-]
 const UNIT_WORDS: Record<SizeUnit, string> = { in: 'inches', cm: 'centimeters' }
 
-/** The numbers already written are converted, so the chart still measures the same. */
+/**
+ * A chart whose every column is a size (socks by shoe size) reads the same in either
+ * unit: shoppers see it as written, with no unit switch, so it has no unit to choose.
+ */
+const sizesOnly = computed(() => form.value.columns.length > 0 && !hasMeasurements(form.value))
+const unitItems = computed(() => [
+  { value: 'in', label: 'Inches', disabled: sizesOnly.value },
+  { value: 'cm', label: 'Centimeters', disabled: sizesOnly.value },
+])
+const unitHint = computed(() => unitNote.value
+  || (sizesOnly.value ? 'This chart has sizes only, so shoppers see it as written.' : 'The unit the measurements are written in. Shoppers can switch.'))
+
+const gridHelp = computed(() => `${sizesOnly.value ? 'Sizes, shown to shoppers as written' : `Body measurements in ${UNIT_WORDS[form.value.unit]}`}. `
+  + 'Write a range as 34-36, and a dash (—) for a size a column doesn’t have. The arrow keys move between cells.')
+
+/** The measurements already written are converted, so the chart still measures the same; a column of sizes is kept. */
 function setUnit(next: string | null): void {
   if (next !== 'in' && next !== 'cm') return
   const from = form.value.unit
   if (next === from) return
-  const convert = hasMeasurements(form.value.rows)
-  form.value = { ...form.value, unit: next, rows: convert ? convertRows(form.value.rows, from, next) : form.value.rows }
+  const { columns, rows } = form.value
+  const convert = hasValuesToConvert(columns, rows)
+  form.value = { ...form.value, unit: next, rows: convert ? convertRows(rows, from, next, columns) : rows }
   unitNote.value = convert ? `Measurements converted to ${UNIT_WORDS[next]}.` : ''
 }
 
@@ -188,14 +201,14 @@ function discard(): void {
         :hint="editing ? 'A chart stays with the store it was made for.' : undefined"
         persistent-hint
       />
-      <MpFormField label="Unit" :hint="unitNote || 'The unit the measurements are written in. Shoppers can switch.'">
-        <MpSegmentedControl :model-value="form.unit" :items="UNIT_ITEMS" ariaLabel="Unit" @update:model-value="setUnit" />
+      <MpFormField label="Unit" :hint="unitHint">
+        <MpSegmentedControl :model-value="form.unit" :items="unitItems" ariaLabel="Unit" @update:model-value="setUnit" />
       </MpFormField>
     </MpFormGrid>
 
     <MpFormSection
       title="Measurements"
-      :description="`Body measurements in ${UNIT_WORDS[form.unit]}. Write a range as 34-36. The arrow keys move between cells.`"
+      :description="gridHelp"
     >
       <SizeChartTable
         ref="tableRef"

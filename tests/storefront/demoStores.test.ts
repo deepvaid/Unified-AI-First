@@ -24,8 +24,20 @@ const publicFile = (path: string) => new URL(`../../public${path}`, import.meta.
 /** Faces every browser has: nothing to load. */
 const SYSTEM_FONTS = new Set(['Georgia', 'system-ui'])
 const fontImport = readFileSync(new URL('../../src/styles/global.scss', import.meta.url), 'utf8').match(/@import url\('(https:\/\/fonts\.googleapis\.com[^']+)'\)/)?.[1] ?? ''
-/** Names of real brands a demo store must not carry (each store's own test also lists the brand it stands in for). */
-const REAL_BRANDS = /\b(bkm|shopify|nike|adidas|uniqlo|levi'?s|patagonia|zara|everlane|carhartt|bosch|brembo|acdelco|motorcraft|mopar|denso|ngk|moog|bilstein|castrol|mobil ?1)\b/i
+/**
+ * Names of real brands a demo store must not carry (each store's own test also lists the brand it stands in for):
+ * fashion, parts and, for Aurora, outdoor clothing, footwear and gear, with the trademarked fabrics and parts
+ * outdoor copy reaches for (a waterproof membrane, a fleece, an insulation, a sole, a zip).
+ */
+const REAL_BRANDS = new RegExp(`\\b(${[
+  'bkm', 'shopify', 'nike', 'adidas', 'uniqlo', "levi'?s", 'patagonia', 'zara', 'everlane', 'carhartt',
+  'bosch', 'brembo', 'acdelco', 'motorcraft', 'mopar', 'denso', 'ngk', 'moog', 'bilstein', 'castrol', 'mobil ?1',
+  'north ?face', "arc'?teryx", 'columbia', 'rei', 'salomon', 'merrell', 'osprey', 'marmot', 'mammut', 'black diamond', 'smartwool',
+  'darn tough', 'icebreaker', 'fj[aä]llr[aä]ven', 'mountain hardwear', 'outdoor research', 'deuter', 'petzl', 'nalgene', 'hydro ?flask',
+  'yeti', 'camelbak', 'cotopaxi', 'helly hansen', 'canada goose', 'timberland', 'keen', 'danner', 'la sportiva', 'scarpa', 'lowa',
+  'hoka', 'k[uü]hl', 'therm-?a-?rest', 'msr', 'big agnes', 'leki', 'sorel', 'teva', 'chaco',
+  'gore-?tex', 'polartec', 'primaloft', 'thinsulate', 'cordura', 'pertex', 'vibram', 'ykk',
+].join('|')})\\b`, 'i')
 /**
  * The vehicle makes shoppers pick from (src/storefront/vehicles.ts), and "Chevy",
  * the nickname src/storefront/fitment.ts reads. Real brands too, so a store names

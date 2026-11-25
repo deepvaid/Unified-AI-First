@@ -3,7 +3,7 @@ import { computed, inject } from 'vue'
 import { useRoute } from 'vue-router'
 import { useCommerceStore } from '@/stores/useCommerce'
 import { useProductExtrasStore } from '@/stores/useProductExtras'
-import { gridSettings, storeNoun } from '@/storefront/listing'
+import { gridSettings, isNewCollection, storeNoun } from '@/storefront/listing'
 import StorefrontAnchor from './StorefrontAnchor.vue'
 import StorefrontNotFound from './StorefrontNotFound.vue'
 import StorefrontProductCard from './StorefrontProductCard.vue'
@@ -54,7 +54,7 @@ const noun = computed(() => storeNoun(storefrontProducts(commerce.products, stor
       :title="title"
       :intro="intro"
       :settings="settings"
-      :show-new="!/^new\b/i.test(title)"
+      :show-new="!isNewCollection(title)"
       :scope="isAll ? '' : title"
     >
       <template #empty>

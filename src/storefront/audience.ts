@@ -64,9 +64,13 @@ export function columnsForAudience(columns: readonly string[], audience: Audienc
   })
 }
 
+/** A value a chart leaves blank: nothing, or a dash ("—", a size a column doesn't have). */
+const BLANK = /^[-–—]?$/
+
 /**
  * The chart as a piece's size guide shows it: its columns for the audience (see
- * `columnsForAudience`), each row's values to match, and without the "How to
+ * `columnsForAudience`), each row's values to match, without a size whose values are
+ * all blank for it (a men's boot is not made in a women's 6), and without the "How to
  * measure" lines for a measurement only the other audience's columns take ("Bust:"
  * on a men's jacket).
  */
@@ -86,7 +90,9 @@ export function chartForAudience<C extends SizeChart>(chart: C, audience: Audien
   return {
     ...chart,
     columns: kept.map((c) => c.label),
-    rows: chart.rows.map((row) => ({ ...row, values: kept.map((c) => row.values[c.index] ?? '') })),
+    rows: chart.rows
+      .map((row) => ({ ...row, values: kept.map((c) => row.values[c.index] ?? '') }))
+      .filter((row) => !kept.length || row.values.some((value) => !BLANK.test(value.trim()))),
     howToMeasure: lines.join('\n'),
   }
 }

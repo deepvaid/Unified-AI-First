@@ -3672,3 +3672,82 @@ skeptic; all 16 were confirmed and fixed. The largest:
 - The product editor's Attributes card (the packed box) and the Specifications card both have Width and Height fields.
 - `facets` is a seed-only setting (no builder control yet).
 - Aurora (an outdoor gear store built on the UAT Aurora theme) is part 6.
+
+## Aurora demo store (store themes, part 6) — 2026-11-24
+
+A fifth demo store and library theme, **Aurora Outdoor (demo)** (channel `aurora-demo`, store #16, slot 6): outdoor clothing
+and footwear for women and men, with a few packs and accessories, in US dollars, no subscriptions. It is rebuilt from the
+live UAT theme Aurora v1.8.9 (UAT account 1400, store #34, crawled read-only in Chrome). Decided with the user: a whole demo
+store like Northfold, Torqline and Lumos; a real serif for headings (Source Serif 4, weight 700) in place of the browser's
+Times fallback UAT shows, body text in `system-ui`; the Aurora header and footer on every page (not UAT's generic "sy-" set);
+the apparel chat profile; home = UAT's full-bleed banner and Featured Collections slider plus a few existing sections in
+Aurora's style. UAT's defects are not copied (the font fallback, no type scaling on phones, low-contrast field borders and
+small text). Its walkthrough is `docs/store-builder/aurora-demo-script.md`.
+
+- **Catalogue:** 20 pieces (6001-6020): down jackets, rain shells, hiking pants, merino tops and hiking boots made for
+  women and for men, each named for its wearer ("Women’s Summit Down Jacket", "Men’s Summit Down Jacket"; the chat treats a
+  pair as one style), two fleeces, two packs, socks, a beanie, trekking poles, a headlamp, a bottle and a sun hat; sizes and colour
+  swatches; seven size charts (women's and men's tops and pants, boots by foot length, socks, hats); ten collections; three
+  campaigns (Trail season TRAIL20 running, Layer up LAYERUP15 ended, Boot week BOOTS15 upcoming); search rules; "Goes well
+  with" recommendations; 54 free Unsplash photos (`public/storefront/aurora/CREDITS.md`), eight of them colourways, with
+  brand marks retouched or cropped out. The product copy and swatches describe what each photo shows (the women's down
+  jacket is a boxy puffer, the men's rain shell a pullover anorak, the poles have foam grips), and a chat test replays
+  the seeded chats and quick prompts against the real seed.
+- **Sections drawing additions** (optional, read only by the sections drawing, so the stores before it are unchanged):
+  the header's `Stacked` menu style with social icons and a pill search field (`headerSearch: 'pill'`); the footer layout
+  "Menus and newsletter" with accordions on phones; the image banner's "Middle left" position over a shade (white text at
+  4.89:1 or better on any photo) and the "White words on the photo" banner, which takes the photo of the template's own
+  banner and is offered only where there is one (`ThemeSectionVariant.photoFromBanner`, `bannerPhoto`, `variantPreset`;
+  `sectionsFor` takes the template's sections as a 4th argument); the `Framed` product card with a struck "was" price,
+  which follows Theme styles › Card corners and Card shadow; theme styles `tileRadius` and `tileShadow` for collection
+  tiles (Aurora: product cards 24px with no shadow, tiles 8px with a soft one, as on UAT); `ThemeSectionField.hint`;
+  Source Serif 4 loaded in `global.scss`. The builder edits and previews all of them. One rule, `isNewCollection`, keeps
+  the "New" badge off the cards of a "New…" row on the home page, the collection page and the builder canvas alike.
+- **Size charts:** a chart without measurement columns (socks: sizes only) offers no in/cm switch, on the storefront
+  (`isMeasurementColumn`, `hasMeasurements` in `src/storefront/sizeCharts.ts`) or in the admin's chart editor, whose unit
+  switch converts only measurement columns (`convertRows(rows, from, to, columns)`; its check is renamed
+  `hasValuesToConvert`). A foot length converts to the nearest half centimetre (other lengths as before), and one
+  wearer's size guide leaves out the sizes that boot isn't made in.
+- **Chat:** the apparel profile answers outdoor questions too (waterproofing, warmth, layering, boot sizes in inches or
+  centimetres, as the size guide shows them) from the product's own fabric and the size charts; a store counts as outdoor
+  from weather words and warmth ratings, never a laundry temperature. Northfold's replies are unchanged. In the builder's
+  chatbot preview, size and "how warm" questions now defer to the live store instead of showing sample cards or an
+  unrelated entry; this also changes Vitaheal's preview for questions such as "Help me sleep better" (its storefront
+  replies are byte-identical).
+- **Admin previews:** the builder, the theme library and the store page now draw the store's chrome and cards the same way,
+  through `previewChrome` / `previewChromeFor` (useStorefront) and `previewProducts` (ids, part numbers, sale prices,
+  badges; the chat prices its cards by id). The canvas's Standard footer now draws the store's own columns and copyright
+  in place of grey bars, so Northfold's, Torqline's and Lumos's footers in the builder and on the Themes page change
+  (their storefronts don't).
+- Ids: chatbot 105, CDP list 906 "Aurora Outdoor customers", announcement email 9005, timezone America/Denver.
+
+### Reviews
+
+Three independent reviews (shopper, merchant, code) ran on the integrated work, each serious finding re-checked by a
+skeptic; all 20 were confirmed and fixed, with most of the 16 nits, in four file-owned tracks each re-checked by an
+independent checker. The other four demo stores' storefronts were pixel-identical to HEAD throughout. The largest:
+- women's and men's pieces sharing one name, so cards, cart, orders and the admin couldn't tell them apart, and the chat
+  priced the men's hiking pants at the women's $79 (now named for their wearer; the chat prices by id);
+- the boot size guide listing sizes the boot isn't made in, foot lengths rounded to whole centimetres, and the admin's
+  unit switch turning the socks' shoe sizes into centimetres;
+- the chat losing a foot length given in cm without the word "foot", keeping the earlier wearer when a question named the
+  other one, offering down jackets for "gore-tex" or "hardshell", and suggesting the rating's own layers below a rating;
+- two of the chatbot's quick prompts answered wrongly in the builder's preview;
+- the Framed card ignoring Card corners and Card shadow; the "New" badge on every card of the New arrivals row on the
+  storefront but not in the builder; "White words on the photo" adding a banner with no photo; the selection label
+  covering the Stacked header's social icons;
+- walkthrough steps that promised a Category filter and a "Shown in" note the page doesn't show.
+
+### Not done here
+
+- Seven colourways have no photo of their own (the rain shells' Slate and Graphite, the fleeces' Forest and Charcoal, the
+  women's merino top in Black, both packs in Black): they show the first colour's photos and name it ("Shown in Moss").
+- The women's and men's Canyon boots are photographed as two different models, and the Layers tile shows a blue fleece
+  no product comes in.
+- The wishlist page draws Lumos's Boxed card on Aurora too, because its heart is how a shopper removes a piece.
+- The builder canvas shows a cart count of 2 on the Stacked header to show the badge (UAT's builder shows 4).
+- The header's Facebook, Instagram and X links all open the store's community page (the demo has no social accounts),
+  and keep the networks' names.
+- "Words on the left" (Lumos's banner layout) can still be added without a photo; `photoFromBanner` would fix it the
+  same way.
+- A "New…" row lists the collection in its own order, not strictly newest first.

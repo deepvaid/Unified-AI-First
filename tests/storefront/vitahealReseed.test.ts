@@ -94,7 +94,7 @@ const vitaheal = (app: App) => app.channels.channels.find((c) => c.id === VH)!
 test('only Vitaheal\'s seed version moves to 2; every other demo store stays at 1', () => {
   assert.equal(demoStoreFor('vitaheal').seedVersion, 2)
   assert.deepEqual(DEMO_STORES.filter((b) => b.id !== 'vitaheal').map((b) => [b.id, b.seedVersion]), [
-    ['northfold', 1], ['torqline', 1], ['lumos', 1], ['daybloom', 1],
+    ['northfold', 1], ['torqline', 1], ['lumos', 1], ['aurora', 1], ['daybloom', 1],
   ])
 })
 

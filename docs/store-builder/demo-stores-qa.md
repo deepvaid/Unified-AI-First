@@ -1,12 +1,13 @@
 # Demo stores: QA checklist
 
-A check per line, with the result to expect. It covers the four parts of the demo stores work:
+A check per line, with the result to expect. It covers the parts of the demo stores work:
 the groundwork (Vitaheal unchanged), Northfold, Torqline, and the theme library with Apply,
-Restore, Start from a theme and Delete store; and Daybloom, the fourth store, added in the
+Restore, Start from a theme and Delete store; Lumos (Part 5) and Aurora (Part 6); and Daybloom, added in the
 feedback round, with Vitaheal's move to the Lumos look (D.22 to D.37), and Rubbecca's second review:
 Vitaheal's sixteen products and pages that open at their top (D.38 to D.65). The click-by-click flows are in the demo scripts:
 [Vitaheal](vitaheal-demo-script.md), [Northfold](northfold-demo-script.md),
-[Torqline](torqline-demo-script.md) and [Daybloom](daybloom-demo-script.md). How it works is in
+[Torqline](torqline-demo-script.md), [Lumos](lumos-demo-script.md), [Aurora](aurora-demo-script.md) and
+[Daybloom](daybloom-demo-script.md). How it works is in
 [demo-stores.md](demo-stores.md).
 
 ## Before you start
@@ -174,11 +175,29 @@ Vitaheal's sixteen products and pages that open at their top (D.38 to D.65). The
 | 5.10 | Admin › the Arlo sofa's product page. | The Specifications card lists its rows; unused suggested labels show as chips. Northfold's products show no Specifications card. |
 | 5.11 | Themes page of Vitaheal: apply Lumos, then restore. | Four library cards. The dialog names Lumos's look and its 20 products; Vitaheal becomes the furniture store in dollars, then comes back as it was, and the wishlist is empty again. |
 
+## Part 6: Aurora
+
+| # | Check | Expected |
+|---|---|---|
+| 6.1 | Sales channels list. | **Aurora Outdoor (demo)**, store #16, after Lumos Home. |
+| 6.2 | Storefront home at 1280. | Matches `public/storefront/aurora/theme.jpg`: the TRAIL20 bar, social icons left, the Aurora wordmark centred, a pill search and filled icons right, the menu centred below; a full-bleed trail photo with "Keep the world adventurous forever" in a serif, white, on the left. |
+| 6.3 | Scroll the home page. | "Featured Collections" slider (three tiles, labels over photos, dots); New arrivals (the two fleeces, the headlamp and the beanie) and Best sellers (the trail bottle at $32 with $40 struck through) in Framed cards, with no "New" badge in the New arrivals row; a "Made for the trail" story; the footer with three menu columns and "Stay in touch". |
+| 6.4 | The same at 375. | Burger, wordmark and icons in one row, a full-width search under it, one collection tile at a time, the footer columns as accordions; nothing scrolls sideways. |
+| 6.5 | Women › Women’s Ridgeline Rain Shell: pick Slate and a size; open the size guide. | "Shown in Moss" under the photos; swatches and sizes as on Northfold; the guide shows the women's chart in inches and centimeters. |
+| 6.6 | Trail Merino Socks: open the size guide. | Shoe sizes as written, with no in/cm switch. |
+| 6.7 | Chat: "Is the rain shell waterproof?", "Is the down jacket warm enough for 20°F?", "I'm between sizes in boots". | Answers from the product's own rows and the boots chart; "I can't promise" where the store says nothing. |
+| 6.8 | Buy a jacket with TRAIL20 and pay; Track your order. | 20% off the jacket; the order page names the size and colour. |
+| 6.9 | Jackets, Footwear, Products in the admin, the cart and an order. | Each women's and men's piece says whose it is in its name (Women’s Summit Down Jacket, Men’s Summit Down Jacket); no two cards, admin rows, cart lines or order lines read the same. |
+| 6.10 | Men’s Canyon Hiking Boot › Size guide, then cm. | Sizes 8 to 12 only (the women's boot 6 to 10), no "—" rows; foot lengths in cm to the half centimeter. |
+| 6.11 | Admin › Aurora's chatbot › preview: press each quick prompt. | Each answers from the knowledge base or says it needs the live store; "How warm is the down jacket?" gives 14°F (−10°C); no sample product cards. |
+| 6.12 | Admin › the store › Campaigns. | Trail season Active, started four days ago, 18 orders; Layer up Ended; Boot week Scheduled. |
+| 6.13 | Themes page of Northfold: apply Aurora, then restore. | Six library cards; Northfold becomes Aurora with its header and footer, then comes back as it was. |
+
 ## Feedback round: Daybloom
 
 | # | Check | Expected |
 |---|---|---|
-| D.1 | Sales channels list. | **Daybloom (demo)**, store #17, after Lumos Home. |
+| D.1 | Sales channels list. | **Daybloom (demo)**, store #17, after Aurora Outdoor. |
 | D.2 | Storefront home. | Matches `public/storefront/daybloom/theme.jpg`: the Aurora look (white page, dark grey bar and buttons, system font), the `SLEEP15` bar, four promises in a row, **Shop by goal**, four **Bestsellers** with a "Subscribe available" badge. |
 | D.3 | Press **Shop** in the header. | A panel opens under the header: **Shop by goal** (5 links), **Shop by format** (3), **More ways to shop** (4) and a picture tile "Subscribe and save up to 20%". The button says it is expanded. |
 | D.4 | With the panel open: press **Escape**; open it again and press outside it; open it and Tab through it and on. | Escape closes it and focus is back on **Shop**. A press outside closes it. Tab walks the panel's links, and it closes when focus leaves it. |
@@ -263,7 +282,7 @@ unless a check says otherwise.
 | D.62 | Before D.60's reload, change a Northfold product too. | After the reload the Northfold change is still there: only Vitaheal moved to seed 2. |
 | D.63 | Apply Vitaheal to Northfold and change a product there. In `mp.demo-store.northfold-demo.installed.v1` set `seedVersion` to 1, then reload. | Northfold, running Vitaheal, sells the sixteen products, and the change is gone. The record says seed 2. |
 | D.64 | Create sales channel from the **Vitaheal** theme. Rename a product of the new store, then reload. | The new name stays. |
-| D.65 | Vitaheal › Edit theme › Home › **Featured products** (its title is Our range; pressing Our range in the preview selects it too). | The **Products** slider sits at its right end; focused, it reads 12, and Home / End take it to 2 / 12. Northfold, Torqline, Lumos and Daybloom show the same featured rows as before. |
+| D.65 | Vitaheal › Edit theme › Home › **Featured products** (its title is Our range; pressing Our range in the preview selects it too). | The **Products** slider sits at its right end; focused, it reads 12, and Home / End take it to 2 / 12. Northfold, Torqline, Lumos, Aurora and Daybloom show the same featured rows as before. |
 
 ## Regression stores
 

@@ -71,7 +71,7 @@ export function accentParts(text: string, accent?: string): { text: string; acce
 export interface ThemeSectionField {
   key: string
   label: string
-  /** One plain line under a toggle in the builder, when the label alone does not say what it does. */
+  /** One plain line under a toggle in the builder, when the label alone does not say what it does, or when what it changes is not always drawn (the header's social icons, which a phone hides). */
   hint?: string
   /** 'collection': one of the store's collections (its handle), or 'all'. */
   type: 'text' | 'textarea' | 'select' | 'color' | 'toggle' | 'slider' | 'collection'
@@ -95,8 +95,12 @@ export interface ThemeSectionField {
   requires?: StoreNeed
   /** Options of a select offered only to a store that sells this ("Vehicle compatibility table" to a parts store). */
   optionRequires?: Readonly<Record<string, StoreNeed>>
+  /** Options of a select only the sections drawing draws (a header's "Stacked"): offered on a theme drawn that way. */
+  optionDrawing?: Readonly<Record<string, 'sections'>>
   /** Not shown while another setting has one of these values (a row's text, while its content comes from the part). */
   hideWhen?: { key: string; values: readonly string[] }
+  /** Shown only while another setting has one of these values (the header's social icons, in the Stacked header). */
+  showWhen?: { key: string; values: readonly string[] }
 }
 
 export interface ThemeSectionVariant {
@@ -108,6 +112,12 @@ export interface ThemeSectionVariant {
   drawing?: 'sections'
   /** The templates the layout is offered on, where its settings can be changed back (words on the left, on the home page). Every template when absent. */
   templates?: TemplateType[]
+  /**
+   * The layout is drawn over a photo, and a section has no photo picker yet: it starts
+   * with the photo of the template's image banner (`bannerPhoto`), and the picker offers
+   * it only on a template that has one.
+   */
+  photoFromBanner?: true
 }
 
 export interface ThemeSectionDef {
@@ -222,6 +232,13 @@ export interface ThemeStyles {
   cardRadius?: number
   /** A soft shadow under cards (--sf-card-shadow). Absent: 'None'. */
   cardShadow?: 'None' | 'Soft'
+  /**
+   * Collection tiles' corners in px (--sf-tile-radius), for a theme whose tiles differ
+   * from its cards (Aurora: 24px product cards, 8px tiles, as UAT's); absent: cardRadius.
+   */
+  tileRadius?: number
+  /** A soft shadow under collection tiles (--sf-tile-shadow); absent: cardShadow. */
+  tileShadow?: 'None' | 'Soft'
   /** Solid button border (--sf-button-border); absent: the button colour. */
   buttonBorderColor?: string
   /** Solid button fill on hover (--sf-button-hover); absent: the button colour darkened. */
@@ -267,7 +284,7 @@ export const TEMPLATE_TYPE_LABELS: Record<TemplateType, string> = {
 }
 
 /** Fonts offered by the theme styles panel. */
-export const themeFonts = ['Inter', 'Figtree', 'Inconsolata', 'Georgia', 'Space Grotesk', 'DM Sans', 'Instrument Serif', 'Barlow', 'Barlow Condensed', 'system-ui']
+export const themeFonts = ['Inter', 'Figtree', 'Inconsolata', 'Georgia', 'Space Grotesk', 'DM Sans', 'Instrument Serif', 'Barlow', 'Barlow Condensed', 'Source Serif 4', 'system-ui']
 
 /**
  * How the sections drawing sets a font: its fallbacks, and the weight headings take
@@ -284,6 +301,8 @@ export const THEME_FONT_META: Readonly<Record<string, { fallback: string; headin
   'Instrument Serif': { fallback: 'Georgia, serif', headingWeight: 400 },
   Barlow: { fallback: 'system-ui, sans-serif', headingWeight: 600 },
   'Barlow Condensed': { fallback: "'Arial Narrow', sans-serif", headingWeight: 700 },
+  // Aurora's headings: a real web serif where UAT's theme fell back to the browser's Times.
+  'Source Serif 4': { fallback: "Georgia, 'Times New Roman', serif", headingWeight: 700 },
   'system-ui': { fallback: 'sans-serif', headingWeight: 700 },
 }
 
@@ -390,6 +409,8 @@ function finerVars(styles: Partial<ThemeStyles>): Record<string, string> {
   if (styles.cardColor) vars['--sf-card'] = styles.cardColor
   if (styles.cardRadius !== undefined) vars['--sf-card-radius'] = `${styles.cardRadius}px`
   if (styles.cardShadow) vars['--sf-card-shadow'] = styles.cardShadow === 'Soft' ? SOFT_CARD_SHADOW : 'none'
+  if (styles.tileRadius !== undefined) vars['--sf-tile-radius'] = `${styles.tileRadius}px`
+  if (styles.tileShadow) vars['--sf-tile-shadow'] = styles.tileShadow === 'Soft' ? SOFT_CARD_SHADOW : 'none'
   if (styles.tintColor) vars['--sf-tint'] = styles.tintColor
   if (styles.gutter !== undefined) {
     const gutter = Math.max(0, styles.gutter)
@@ -472,7 +493,11 @@ export const sectionCatalog: ThemeSectionDef[] = [
     category: 'Layout',
     unique: true,
     fields: [
-      { key: 'menuStyle', label: 'Menu style', type: 'select', options: ['Inline', 'Centered', 'Minimal'] },
+      // Stacked (Aurora): social icons, the wordmark in the middle and the tools in one row, the menu centred under it.
+      { key: 'menuStyle', label: 'Menu style', type: 'select', options: ['Inline', 'Centered', 'Minimal', 'Stacked'], optionDrawing: { Stacked: 'sections' } },
+      // The store's social links at the left of a Stacked header's first row.
+      // A phone, and a narrow preview, draw the phone header, which has no social icons: the hint says so.
+      { key: 'social', label: 'Show social icons', type: 'toggle', drawing: 'sections', showWhen: { key: 'menuStyle', values: ['Stacked'] }, hint: 'Shown on wider screens. Phones, and a narrow preview, hide them.' },
       { key: 'sticky', label: 'Sticky on scroll', type: 'toggle' },
       { key: 'colorScheme', label: 'Color scheme', type: 'select', options: ['Light', 'Dark'], drawing: 'sections' },
     ],
@@ -547,9 +572,10 @@ export const sectionCatalog: ThemeSectionDef[] = [
       { key: 'filters', label: 'Filters', type: 'toggle', drawing: 'sections', templates: ['collection'] },
       { key: 'sort', label: 'Sort', type: 'toggle', drawing: 'sections', templates: ['collection'] },
       { key: 'quickAdd', label: 'Quick add on product cards', type: 'toggle', drawing: 'sections', templates: ['collection'] },
-      // Editorial (a tall photo, name and price), Dense (a part: square photo, part number, fit, stock and Add to cart)
-      // or Boxed (a framed card: photo, name, price and a full-width Add to cart).
-      { key: 'cardStyle', label: 'Product card', type: 'select', options: ['Editorial', 'Dense', 'Boxed'], default: 'Editorial', drawing: 'sections', templates: ['collection'] },
+      // Editorial (a tall photo, name and price), Dense (a part: square photo, part number, fit, stock and Add to cart),
+      // Boxed (a framed card: photo, name, price and a full-width Add to cart) or Framed (Aurora: a thick rounded
+      // frame, the square photo inset in it, name and price stacked, a full-width Add to cart).
+      { key: 'cardStyle', label: 'Product card', type: 'select', options: ['Editorial', 'Dense', 'Boxed', 'Framed'], default: 'Editorial', drawing: 'sections', templates: ['collection'] },
     ],
   },
   {
@@ -567,6 +593,8 @@ export const sectionCatalog: ThemeSectionDef[] = [
       { id: 'full-cta', label: 'Full-width with CTA', preset: { height: 'Large' } },
       // On the home page only, where its Text position can be set back.
       { id: 'words-left', label: 'Words on the left', description: 'Text beside a bright photo, with room for stats', preset: { height: 'Large', contentPosition: 'Center left' }, drawing: 'sections', templates: ['home'] },
+      // Over the photo of the page's own banner (Aurora's hero), as sections have no photo picker yet.
+      { id: 'photo-left', label: 'White words on the photo', description: 'Text on the left over your banner’s photo, under a shade', preset: { height: 'Small', contentPosition: 'Middle left' }, drawing: 'sections', templates: ['home'], photoFromBanner: true },
     ],
     fields: [
       // A pill above the headline ("New arrivals").
@@ -575,8 +603,18 @@ export const sectionCatalog: ThemeSectionDef[] = [
       { key: 'accentWords', label: 'Headline words in the accent color', type: 'text', drawing: 'sections', templates: ['home'] },
       { key: 'subheadline', label: 'Subheadline', type: 'text' },
       { key: 'height', label: 'Height', type: 'select', options: ['Small', 'Medium', 'Large'] },
-      // Bottom: white words at the foot of the photo, over a dark shade. Center left: the page's own colours beside the photo.
-      { key: 'contentPosition', label: 'Text position', type: 'select', options: ['Bottom', 'Center left'], default: 'Bottom', drawing: 'sections', templates: ['home'] },
+      // Bottom: white words at the foot of the photo, over a dark shade. Center left: the page's own colours beside the
+      // photo (Lumos). Middle left: white words centred at the left, over a dark shade across the photo (Aurora).
+      {
+        key: 'contentPosition',
+        label: 'Text position',
+        type: 'select',
+        options: ['Bottom', 'Center left', 'Middle left'],
+        optionLabels: { 'Center left': 'Left, in the page colors', 'Middle left': 'Left, white on a shade' },
+        default: 'Bottom',
+        drawing: 'sections',
+        templates: ['home'],
+      },
     ],
   },
   {
@@ -679,7 +717,18 @@ export const sectionCatalog: ThemeSectionDef[] = [
     category: 'Layout',
     unique: true,
     fields: [
-      { key: 'showSocial', label: 'Show social icons', type: 'toggle' },
+      // Standard: the wordmark, link columns and social icons. Menus and newsletter (Aurora): the link columns in
+      // one half, the newsletter in the other, the copyright under them; no wordmark or social icons.
+      {
+        key: 'layout',
+        label: 'Layout',
+        type: 'select',
+        options: ['Standard', 'Menus and newsletter'],
+        optionLabels: { 'Menus and newsletter': 'Menus beside the newsletter' },
+        default: 'Standard',
+        drawing: 'sections',
+      },
+      { key: 'showSocial', label: 'Show social icons', type: 'toggle', hideWhen: { key: 'layout', values: ['Menus and newsletter'] } },
       { key: 'columns', label: 'Link columns', type: 'slider', min: 2, max: 4 },
       { key: 'colorScheme', label: 'Color scheme', type: 'select', options: ['Light', 'Dark'], drawing: 'sections' },
     ],
@@ -1072,14 +1121,43 @@ const forStore = (facts: StoreFacts) => (def: { requires?: StoreNeed }) => !def.
  * The section kinds the Add section picker offers a theme, on a store that sells what
  * `facts` says, for a template when one is given (a logo strip is the home page's).
  * A kind keeps only the layouts (variants) the theme's drawing draws, on the template.
+ * Given the template's own `sections`, a layout drawn over the banner's photo (White
+ * words on the photo) is offered only when the template has a banner photo to bring.
  */
-export function sectionsFor(drawing: Drawing, facts: StoreFacts = NO_FACTS, template?: TemplateType): ThemeSectionDef[] {
+export function sectionsFor(
+  drawing: Drawing,
+  facts: StoreFacts = NO_FACTS,
+  template?: TemplateType,
+  sections?: readonly Pick<ThemeSection, 'kind' | 'settings'>[],
+): ThemeSectionDef[] {
   const onTemplate = (def: { templates?: TemplateType[] }) => !template || !def.templates || def.templates.includes(template)
+  const hasPhoto = (variant: ThemeSectionVariant) => !variant.photoFromBanner || !sections || bannerPhoto(sections) !== ''
   return sectionCatalog
     .filter((def) => forDrawing(drawing)(def) && forStore(facts)(def) && onTemplate(def))
-    .map((def) => (def.variants?.some((variant) => variant.drawing || variant.templates)
-      ? { ...def, variants: def.variants.filter((variant) => forDrawing(drawing)(variant) && onTemplate(variant)) }
+    .map((def) => (def.variants?.some((variant) => variant.drawing || variant.templates || variant.photoFromBanner)
+      ? { ...def, variants: def.variants.filter((variant) => forDrawing(drawing)(variant) && onTemplate(variant) && hasPhoto(variant)) }
       : def))
+}
+
+/** The photo of the template's image banner (the first with one); '' when it has none. */
+export function bannerPhoto(sections: readonly Pick<ThemeSection, 'kind' | 'settings'>[]): string {
+  for (const section of sections) {
+    const image = section.kind === 'image-banner' ? section.settings.image : undefined
+    if (typeof image === 'string' && image.trim()) return image
+  }
+  return ''
+}
+
+/**
+ * The settings a section added in a layout starts with: the layout's preset, and for a
+ * layout drawn over the banner's photo, the photo of the template's banner (`sections`).
+ */
+export function variantPreset(
+  variant: ThemeSectionVariant,
+  sections: readonly Pick<ThemeSection, 'kind' | 'settings'>[],
+): Record<string, string | number | boolean> {
+  const image = variant.photoFromBanner ? bannerPhoto(sections) : ''
+  return image ? { ...variant.preset, image } : { ...variant.preset }
 }
 
 /** Blocks some section kind holds as its own (a feature, a collapsible row): never offered elsewhere. */
@@ -1110,8 +1188,8 @@ export function blockHasRoom(section: Pick<ThemeSection, 'blocks'>, kind: string
 
 /**
  * The settings the builder shows for a section or block, on a theme and template, on
- * a store that sells what `facts` says: a select keeps only the options the store can
- * use, under the names that store knows them by.
+ * a store that sells what `facts` says: a select keeps only the options the theme's
+ * drawing draws and the store can use, under the names that store knows them by.
  */
 export function fieldsFor(
   fields: readonly ThemeSectionField[],
@@ -1122,8 +1200,9 @@ export function fieldsFor(
   return fields
     .filter((field) => forDrawing(drawing)(field) && forStore(facts)(field) && (!field.templates || field.templates.includes(template)))
     .map((field) => {
-      const options = field.options && field.optionRequires
-        ? field.options.filter((option) => forStore(facts)({ requires: field.optionRequires![option] }))
+      const options = field.options && (field.optionRequires || field.optionDrawing)
+        ? field.options.filter((option) => forStore(facts)({ requires: field.optionRequires?.[option] })
+          && forDrawing(drawing)({ drawing: field.optionDrawing?.[option] }))
         : field.options
       const labels = Object.entries(field.optionLabelsFor ?? {})
         .filter(([need]) => facts[need as StoreNeed])
@@ -1142,9 +1221,14 @@ export function selectValue(field: Pick<ThemeSectionField, 'options' | 'default'
   return !field.default || field.options?.includes(stored) ? stored : field.default
 }
 
-/** Whether a setting shows, given the others: a row's text hides while the row's content comes from the part. */
+/**
+ * Whether a setting shows, given the others: a row's text hides while the row's content
+ * comes from the part; the header's social icons show only in the Stacked header.
+ */
 export function fieldShown(field: ThemeSectionField, settings: Readonly<Record<string, string | number | boolean>>): boolean {
-  return !field.hideWhen || !field.hideWhen.values.includes(String(settings[field.hideWhen.key] ?? ''))
+  const value = (key: string) => String(settings[key] ?? '')
+  if (field.hideWhen && field.hideWhen.values.includes(value(field.hideWhen.key))) return false
+  return !field.showWhen || field.showWhen.values.includes(value(field.showWhen.key))
 }
 
 let blockIdCounter = 0
