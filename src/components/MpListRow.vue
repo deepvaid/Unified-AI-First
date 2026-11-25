@@ -56,11 +56,16 @@ const twoLine = computed(() => !!props.subtitle || !!slots.subtitle)
  * actions sit beside it instead of nested inside it (WCAG 4.1.2 — W-10).
  */
 const split = computed(() => isInteractive.value && !!slots.actions)
-const linkAttrs = computed(() => ({
-  to: props.to,
-  href: props.href,
-  type: props.clickable && !props.to && !props.href ? 'button' : undefined,
-}))
+/**
+ * Only the attribute the resolved tag takes. `href` is not a RouterLink prop, so even an
+ * undefined one falls through and overwrites the href RouterLink renders.
+ */
+const linkAttrs = computed(() => {
+  if (props.to) return { to: props.to }
+  if (props.href) return { href: props.href }
+  if (props.clickable) return { type: 'button' }
+  return {}
+})
 </script>
 
 <template>
