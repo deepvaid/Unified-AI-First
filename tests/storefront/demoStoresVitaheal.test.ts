@@ -26,6 +26,20 @@ import type { StoreSnapshot } from '../../src/storefront/demoStores/types.ts'
 // same. A one-off script built the blueprint at the fixture's `today` and checked that
 // every other key (products, plans, campaigns, merchandising, chatbot, content,
 // subscriptions and the rest) was byte-identical before it wrote anything.
+//
+// Recaptured a third time, on 2026-11-25 (eight more products, seed version 2), by a one-off
+// script that listed every changed path first. Only these moved: `products` gained 2009-2016
+// after the first eight (unchanged); `collections` and `collectionRecords` gained Immunity
+// (id 28) and the new products' counts; `theme` gained the Immunity tile in "Shop by goal" and
+// "Our range" went from 8 to 12; `chrome` gained Immunity in the Shop menu (desktop and phone)
+// and the footer's Shop column; both `plans` gained 2009, 2010 and 2014; `merchandising` gained
+// the synonym `vh-syn-immune`. Every other key was byte-identical.
+//
+// Recaptured a fourth time, the same day, after the review of the new range: in `products`,
+// the new products' copy (the refill bag line, the health wording, Daily Multi, Plant Protein's
+// protein label) and Creatine's pack (30 servings, as the other powders on the plans); in
+// `theme`, Immunity moved third in "Shop by goal" (in view on a desktop) and the product page's
+// subscription row reads "This product can be bought on a subscription". Nothing else moved.
 
 const fixture = JSON.parse(readFileSync(new URL('./fixtures/vitaheal-seed.json', import.meta.url), 'utf8'))
 /** As stored: JSON drops undefined fields, as the fixture did. */
@@ -58,7 +72,8 @@ test('the theme is the record useStoreThemes seeded, with the same section ids a
   assert.equal(t.version, '2.0')
 })
 
-test('the collections keep their admin ids (23-27), titles, counts and date', () => {
+test('the collections keep their admin ids (23-28), titles, counts and date', () => {
+  assert.deepEqual(home.collections.map((c) => c.id), [23, 24, 25, 26, 27, 28])
   assert.deepEqual(home.collections.map(({ title, productCount }) => ({ title, productCount })), fixture.collections)
   assert.deepEqual(
     home.collections.map((c) => [c.id, c.title, c.productCount, c.updatedAt]),
@@ -96,14 +111,14 @@ const ctx = contextFor(blueprint, other, fixture.today)
 const copy: StoreSnapshot = json(blueprint.build(ctx))
 const text = JSON.stringify(copy)
 
-test('a copy takes the store\'s own id block: products 52001-52008, variants *100, collections 52901-', () => {
+test('a copy takes the store\'s own id block: products 52001-52016, variants *100, collections 52901-', () => {
   assert.equal(ctx.home, false)
-  assert.deepEqual(copy.products.map((p) => p.id), [52001, 52002, 52003, 52004, 52005, 52006, 52007, 52008])
+  assert.deepEqual(copy.products.map((p) => p.id), Array.from({ length: 16 }, (_, i) => 52001 + i))
   for (const p of copy.products) {
     assert.ok(p.id >= INSTALL_ID_FLOOR)
     p.detail!.variantsList.forEach((v, i) => assert.equal(v.id, p.id * 100 + i + 1))
   }
-  assert.deepEqual(copy.collections.map((c) => c.id), [52901, 52902, 52903, 52904, 52905])
+  assert.deepEqual(copy.collections.map((c) => c.id), [52901, 52902, 52903, 52904, 52905, 52906])
 })
 
 test('a copy belongs to the store it is installed in: channel, name, domain and string ids', () => {

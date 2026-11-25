@@ -40,7 +40,7 @@ const storefront = inject(STOREFRONT)!
 const commerce = useCommerceStore()
 
 const handle = computed(() => text(props.section.settings, 'collection', 'all'))
-const count = computed(() => Math.min(8, Math.max(1, num(props.section.settings, 'productCount', 4))))
+const count = computed(() => Math.min(12, Math.max(1, num(props.section.settings, 'productCount', 4))))
 const carousel = computed(() => text(props.section.settings, 'layout') === 'Carousel')
 const grid = computed(() => gridSettings(storefront.theme.value?.templates.collection))
 const quickAddOn = computed(() => grid.value.quickAdd)

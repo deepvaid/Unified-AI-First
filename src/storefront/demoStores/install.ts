@@ -3,9 +3,9 @@
 //
 // Ids are unique by construction, one block per (store, blueprint):
 //   home      a blueprint on its own channel: products slot*1000 + n
-//             (Vitaheal 2001-2008), variants productId*100 + n, collections
+//             (Vitaheal 2001-2016), variants productId*100 + n, collections
 //             slot*1000 + 900 + n. Vitaheal keeps the ids it was seeded with:
-//             variants productId*10 + n, collections 22 + n (23-27).
+//             variants productId*10 + n, collections 22 + n (23-28).
 //   installed anywhere else: base = storeSlot*10000 + blueprintSlot*1000, so
 //             products base + n (>= INSTALL_ID_FLOOR; Vitaheal on store slot 4 is
 //             42001...), variants productId*100 + n, collections base + 900 + n.

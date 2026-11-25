@@ -269,7 +269,7 @@ const VITAHEAL_LOCALE = VITAHEAL_CHANNEL.webStore?.locale
 /** Vitaheal as its home channel is seeded, on a fixed day, built from its blueprint. */
 export const vitaheal = VITAHEAL_BLUEPRINT.build(contextFor(VITAHEAL_BLUEPRINT, VITAHEAL_CHANNEL, '2026-11-25'))
 
-/** Vitaheal's eight supplements, as the store sells them. */
+/** Vitaheal's sixteen supplements, as the store sells them. */
 export const vitahealShelf: Product[] = vitaheal.products.map((p) => ({ ...p, status: p.inventory > 0 ? 'In Stock' : 'Out of Stock' }))
 
 export function vitahealProduct(name: string): Product {

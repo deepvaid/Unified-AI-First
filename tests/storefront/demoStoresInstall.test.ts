@@ -71,9 +71,11 @@ function idsOf(blueprint: DemoStoreBlueprint, channel: SalesChannel) {
 
 test('Vitaheal keeps its seeded ids on its home channel', () => {
   const ids = idsOf(vitaheal, vitaheal.homeChannel)
-  assert.deepEqual(ids.products, [2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008])
+  assert.deepEqual(ids.products, Array.from({ length: 16 }, (_, i) => 2001 + i))
   assert.deepEqual(ids.variants.slice(0, 3), [20011, 20012, 20021])
-  assert.deepEqual(ids.collections, [23, 24, 25, 26, 27])
+  // The eight added on 2026-11-25 number their variants the same way: Plant Protein's can and refill bag.
+  assert.deepEqual(ids.variants.filter((id) => Math.floor(id / 10) === 2009), [20091, 20092])
+  assert.deepEqual(ids.collections, [23, 24, 25, 26, 27, 28])
 })
 
 test('ids never repeat across every store and blueprint, and each install stays in its block', () => {

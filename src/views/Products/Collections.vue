@@ -5,6 +5,7 @@ import {
   useProductExtrasStore, formatStamp,
   type Collection, type CollectionType, type CollectionStatus,
 } from '@/stores/useProductExtras'
+import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import { useToast } from '@/composables/useToast'
 import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import MpPageHeader from '@/components/MpPageHeader.vue'
@@ -23,12 +24,16 @@ import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
  * storefront merchandising. Rebuilt from UAT; see docs/rebuild/collections/.
  */
 const store = useProductExtrasStore()
+const salesChannels = useSalesChannelsStore()
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
 
 const accountId = computed(() => String(route.params.accountId))
 const basePath = computed(() => `/commerce/${accountId.value}/products/collections`)
+
+/** The store a demo store's collection belongs to, by name; '' for the account's own collections. */
+const storeName = (collection: Collection) => salesChannels.getChannel(accountId.value, collection.salesChannels[0])?.name ?? ''
 
 const search = ref('')
 const typeFilter = ref<'All types' | CollectionType>('All types')
@@ -49,10 +54,11 @@ const headers = [
   { title: 'Type', key: 'type', sortable: true, hideBelow: 'md' as const },
   { title: 'Products', key: 'productCount', align: 'end' as const, sortable: true },
   { title: 'Status', key: 'status', sortable: true, hideBelow: 'sm' as const },
+  { title: 'Store', key: 'store', sortable: false, hideBelow: 'lg' as const },
   { title: 'Updated at', key: 'updatedAt', sortable: true, hideBelow: 'lg' as const },
   { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, sortable: false, width: 56 },
 ]
-const { visibleHeaders } = useResponsiveTableHeaders(headers)
+const { visibleHeaders, isVisible } = useResponsiveTableHeaders(headers)
 
 const parents = computed(() => Array.from(new Set(store.collections.map((c) => c.parent))))
 
@@ -60,6 +66,7 @@ const filtered = computed(() => {
   const term = search.value.trim().toLowerCase()
   return store.collections.filter((c) => {
     const byTerm = !term || c.title.toLowerCase().includes(term) || c.handle.toLowerCase().includes(term)
+      || storeName(c).toLowerCase().includes(term)
     const byType = typeFilter.value === 'All types' || c.type === typeFilter.value
     const byStatus = !statusFilter.value.length || statusFilter.value.includes(c.status)
     const byParent = parentFilter.value === 'All parents' || c.parent === parentFilter.value
@@ -181,7 +188,7 @@ function doBulkDelete() {
         :quick-filter="statusQuickFilter"
         v-model:search="search"
         title="All collections"
-        search-placeholder="Search title or handle"
+        search-placeholder="Search title, handle or store"
         :total-count="filtered.length"
         :active-filters="activeFilterEntries"
         :headers="headers"
@@ -231,7 +238,7 @@ function doBulkDelete() {
           <div class="py-1">
             <div class="text-body-2 font-weight-medium">{{ item.title }}</div>
             <div class="text-caption text-medium-emphasis">
-              {{ item.parent }}<template v-if="ruleSummary(item)"> · {{ ruleSummary(item) }}</template>
+              {{ item.parent }}<template v-if="!isVisible('store') && storeName(item)"> · {{ storeName(item) }}</template><template v-if="ruleSummary(item)"> · {{ ruleSummary(item) }}</template>
             </div>
           </div>
         </template>
@@ -249,6 +256,9 @@ function doBulkDelete() {
         </template>
         <template #item.status="{ item }">
           <MpStatusChip :status="item.status" type="general" size="sm" />
+        </template>
+        <template #item.store="{ item }">
+          <span class="text-body-2">{{ storeName(item) || '—' }}</span>
         </template>
         <template #item.updatedAt="{ item }">
           <span class="text-body-2 text-medium-emphasis">{{ formatStamp(item.updatedAt) }}</span>

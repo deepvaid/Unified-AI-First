@@ -15,6 +15,8 @@ test('a query finds the products that are about every word of it, the best fit f
   // A product's whole name finds it before a longer name that holds it.
   assert.deepEqual(names(searchStore('balance', products, NO_SEARCH_RULES).products).slice(0, 2), ['Balance', 'Balance Refill'])
   assert.deepEqual(names(searchStore('nasal strip', products, NO_SEARCH_RULES).products), ['Nasal Strips'])
+  // A name that holds more of the words fits better: Collagen+ is about vitamin C too, but not by name.
+  assert.equal(searchStore('vitamin c', products, NO_SEARCH_RULES).products[0]!.name, 'Vitamin C + Zinc')
   // The start of a word is enough, and case and spacing do not matter.
   assert.deepEqual(names(searchStore('  ELECTRO ', products, NO_SEARCH_RULES).products), ['Vitaheal Electrolytes'])
   // A collection's name finds what is in it.
@@ -56,10 +58,12 @@ test('a pinned product leads the results, even when its own words would not find
 })
 
 test('a synonym widens the query, and what the shopper typed still counts for more', () => {
-  assert.deepEqual(searchStore('tired', products, NO_SEARCH_RULES).products, [])
+  // On its own, "tired" finds only Magnesium, whose copy says it helps reduce tiredness.
+  assert.deepEqual(names(searchStore('tired', products, NO_SEARCH_RULES).products), ['Magnesium'])
   const tired = searchStore('tired', products, rules)
   assert.deepEqual(tired.alsoSearched, ['energy', 'focus'])
   assert.equal(tired.products[0]!.name, 'Clear Focus')
+  assert.ok(names(tired.products).includes('Magnesium'), 'what the shopper typed still finds its own')
 
   assert.deepEqual(synonymsFor('jet lag', rules.synonyms), ['sleep'])
   assert.deepEqual(synonymsFor('Anti-Ageing', rules.synonyms), ['longevity'])
@@ -81,7 +85,8 @@ test('a redirect sends the whole query to a page, and a blacklisted product is n
 
   // Not by its own words, and not by a pin either.
   const hidden: SearchRules = { ...rules, hiddenProductIds: [String(byName('Unwind').id)] }
-  assert.deepEqual(names(searchStore('sleep', products, hidden).products), ['Nasal Strips'])
+  assert.deepEqual(names(searchStore('sleep', products, rules).products), ['Unwind', 'Nasal Strips', 'Magnesium'])
+  assert.deepEqual(names(searchStore('sleep', products, hidden).products), ['Nasal Strips', 'Magnesium'])
   assert.deepEqual(searchStore('unwind', products, hidden).products, [])
 })
 

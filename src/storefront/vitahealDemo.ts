@@ -174,11 +174,12 @@ export const VITAHEAL_PHOTOS = {
   tileSport: `${VITAHEAL_PHOTO_DIR}/tile-sport.jpg`,
   tileLongevity: `${VITAHEAL_PHOTO_DIR}/tile-longevity.jpg`,
   tileHydrate: `${VITAHEAL_PHOTO_DIR}/tile-hydrate.jpg`,
+  tileImmunity: `${VITAHEAL_PHOTO_DIR}/tile-immunity.jpg`,
 } as const
 
 // ── Catalogue ────────────────────────────────────────────────────────────────
 
-export const VITAHEAL_COLLECTION_NAMES = ['Subscription', 'Sport', 'Longevity', 'Sleep', 'Hydrate'] as const
+export const VITAHEAL_COLLECTION_NAMES = ['Subscription', 'Sport', 'Longevity', 'Sleep', 'Hydrate', 'Immunity'] as const
 type VitahealCollection = (typeof VITAHEAL_COLLECTION_NAMES)[number]
 
 interface VariantSeed {
@@ -391,6 +392,181 @@ const PRODUCT_SEEDS: ProductSeed[] = [
       ['Made in', 'Sweden'],
     ],
   },
+  // Added after Rubbecca's second review (25 Nov 2026): general supplements, and powders sold in a
+  // can or a cheaper refill bag. The three powders are on the plans; the capsules are bought once.
+  {
+    id: 2009,
+    name: 'Plant Protein',
+    subtitle: 'Protein for muscle and recovery',
+    description: 'Pea and rice protein with a smooth chocolate taste, 21 g in every scoop. Shake it with water or oat milk after training. The refill bag fits the can and costs less.',
+    photo: 'plant-protein',
+    option: 'Format',
+    variants: [
+      { title: 'Can', sku: 'VTH-PRO-CAN', price: 399, weightKg: 1, stock: 84 },
+      { title: 'Refill bag', sku: 'VTH-PRO-REF', price: 369, weightKg: 0.93, stock: 120 },
+    ],
+    collections: ['Sport', 'Subscription'],
+    facts: [
+      ['Serving size', '1 scoop (30 g)'],
+      ['Servings per pack', '30'],
+      ['Protein', '21 g'],
+      ['Pea and rice protein isolate', '26 g'],
+      ['Sugars', '1 g'],
+      ['Other ingredients', 'Cocoa, natural flavour, sweetener (steviol glycosides)'],
+      ['How to take it', 'Shake 1 scoop with 300 ml of water or oat milk after training.'],
+      ['Free from', FREE_FROM],
+      ['Made in', 'Sweden'],
+    ],
+  },
+  {
+    id: 2010,
+    name: 'Daily Greens',
+    subtitle: 'Greens and fibre in one scoop',
+    description: 'Spirulina, chlorella, spinach and apple fibre in one green scoop. Mix it into water or a smoothie each morning. The refill bag fits the can and costs less.',
+    photo: 'daily-greens',
+    option: 'Format',
+    variants: [
+      { title: 'Can', sku: 'VTH-GRN-CAN', price: 449, weightKg: 0.28, stock: 76 },
+      { title: 'Refill bag', sku: 'VTH-GRN-REF', price: 429, weightKg: 0.24, stock: 92 },
+    ],
+    collections: ['Longevity', 'Subscription'],
+    facts: [
+      ['Serving size', '1 scoop (7 g)'],
+      ['Servings per pack', '30'],
+      ['Spirulina', '2 g'],
+      ['Chlorella', '1.5 g'],
+      ['Apple fibre', '1.5 g'],
+      ['Spinach', '1 g'],
+      ['Vitamin C', '40 mg (50% NRV)'],
+      ['Other ingredients', 'Natural apple flavour, sweetener (steviol glycosides)'],
+      ['How to take it', 'Stir 1 scoop into water or a smoothie once a day.'],
+      ['Free from', FREE_FROM],
+      ['Made in', 'Sweden'],
+    ],
+  },
+  {
+    id: 2011,
+    name: 'Vitamin D3 + K2',
+    subtitle: 'For the dark months',
+    description: 'Vitamin D3 with K2 in one small capsule, for the months when the Swedish sun stays low. Vitamin D contributes to the normal function of the immune system. One capsule a day with a meal.',
+    photo: 'vitamin-d3',
+    variants: [{ title: 'Default', sku: 'VTH-VD3-90', price: 199, weightKg: 0.06, stock: 230 }],
+    collections: ['Immunity'],
+    facts: [
+      ['Serving size', '1 capsule'],
+      ['Servings per pack', '90'],
+      ['Vitamin D3 (cholecalciferol)', '25 µg (500% NRV)'],
+      ['Vitamin K2 (as MK-7)', '75 µg (100% NRV)'],
+      ['Other ingredients', 'Olive oil, vegetable capsule (hypromellose)'],
+      ['How to take it', 'Take 1 capsule a day with a meal.'],
+      ['Free from', FREE_FROM],
+      ['Made in', 'Sweden'],
+    ],
+  },
+  {
+    id: 2012,
+    name: 'Omega-3',
+    subtitle: 'Heart and brain, from algae',
+    description: 'Plant-based omega-3 from algae oil: vegan, with no fishy aftertaste. DHA and EPA contribute to the normal function of the heart. Two softgels a day with food.',
+    photo: 'omega-3',
+    variants: [{ title: 'Default', sku: 'VTH-OMG-60', price: 329, weightKg: 0.1, stock: 150 }],
+    collections: ['Longevity'],
+    facts: [
+      ['Serving size', '2 softgels'],
+      ['Servings per pack', '30'],
+      ['Algae oil', '1,000 mg'],
+      ['DHA', '400 mg'],
+      ['EPA', '200 mg'],
+      ['Vitamin E', '6 mg (50% NRV)'],
+      ['Other ingredients', 'Softgel (modified starch, glycerol, carrageenan), sunflower lecithin'],
+      ['How to take it', 'Take 2 softgels a day with food.'],
+      ['Suitable for', 'Vegans'],
+      ['Free from', FREE_FROM],
+      ['Made in', 'Sweden'],
+    ],
+  },
+  {
+    id: 2013,
+    name: 'Magnesium',
+    subtitle: 'Muscles and less tiredness',
+    description: 'Magnesium bisglycinate, a gentle form, in two small capsules. Magnesium contributes to normal muscle function and to the reduction of tiredness and fatigue. Take them in the evening, after training or before bed.',
+    photo: 'magnesium',
+    variants: [{ title: 'Default', sku: 'VTH-MAG-120', price: 229, weightKg: 0.12, stock: 175 }],
+    collections: ['Sleep', 'Sport'],
+    facts: [
+      ['Serving size', '2 capsules'],
+      ['Servings per pack', '60'],
+      ['Magnesium (as bisglycinate)', '200 mg (53% NRV)'],
+      ['Other ingredients', 'Vegetable capsule (hypromellose), rice flour'],
+      ['How to take it', 'Take 2 capsules in the evening, with water.'],
+      ['Free from', FREE_FROM],
+      ['Made in', 'Sweden'],
+    ],
+  },
+  {
+    id: 2014,
+    name: 'Creatine',
+    subtitle: 'Strength for short, hard efforts',
+    description: 'Pure creatine monohydrate, unflavoured, 3 g in every scoop. Creatine increases physical performance in short bursts of high-intensity exercise. Stir it into any drink, every day. The refill bag fits the can and costs less.',
+    photo: 'creatine',
+    option: 'Format',
+    variants: [
+      { title: 'Can', sku: 'VTH-CRE-CAN', price: 299, weightKg: 0.14, stock: 98 },
+      { title: 'Refill bag', sku: 'VTH-CRE-REF', price: 279, weightKg: 0.1, stock: 140 },
+    ],
+    collections: ['Sport', 'Subscription'],
+    facts: [
+      ['Serving size', '1 scoop (3 g)'],
+      ['Servings per pack', '30'],
+      ['Creatine monohydrate', '3 g'],
+      ['Other ingredients', 'None'],
+      ['How to take it', 'Stir 1 scoop into water, juice or a shake once a day.'],
+      ['Free from', FREE_FROM],
+      ['Made in', 'Sweden'],
+    ],
+  },
+  {
+    id: 2015,
+    name: 'Vitamin C + Zinc',
+    subtitle: 'Immune support through winter',
+    description: 'Vitamin C and zinc in one capsule. Both contribute to the normal function of the immune system. Take one each morning through the cold months.',
+    photo: 'vitamin-c-zinc',
+    variants: [{ title: 'Default', sku: 'VTH-VCZ-60', price: 179, weightKg: 0.07, stock: 190 }],
+    collections: ['Immunity'],
+    facts: [
+      ['Serving size', '1 capsule'],
+      ['Servings per pack', '60'],
+      ['Vitamin C', '500 mg (625% NRV)'],
+      ['Zinc (as bisglycinate)', '10 mg (100% NRV)'],
+      ['Other ingredients', 'Vegetable capsule (hypromellose), rice flour'],
+      ['How to take it', 'Take 1 capsule each morning with water.'],
+      ['Free from', FREE_FROM],
+      ['Made in', 'Sweden'],
+    ],
+  },
+  {
+    id: 2016,
+    name: 'Daily Multi',
+    subtitle: 'Everyday vitamins and minerals',
+    description: 'Everyday vitamins and minerals in one tablet, to cover the gaps on busy days, with vitamins C and D and zinc for the immune system. One with breakfast.',
+    photo: 'daily-multi',
+    variants: [{ title: 'Default', sku: 'VTH-MUL-60', price: 249, weightKg: 0.09, stock: 160 }],
+    collections: ['Immunity'],
+    facts: [
+      ['Serving size', '1 tablet'],
+      ['Servings per pack', '60'],
+      ['Vitamin D3', '10 µg (200% NRV)'],
+      ['Vitamin C', '80 mg (100% NRV)'],
+      ['Vitamin B12', '2.5 µg (100% NRV)'],
+      ['Folate', '200 µg (100% NRV)'],
+      ['Zinc', '10 mg (100% NRV)'],
+      ['Iodine', '150 µg (100% NRV)'],
+      ['Other ingredients', 'Bulking agent (cellulose), anti-caking agent (magnesium salts of fatty acids)'],
+      ['How to take it', 'Take 1 tablet with breakfast.'],
+      ['Free from', FREE_FROM],
+      ['Made in', 'Sweden'],
+    ],
+  },
 ]
 
 function handleOf(name: string): string {
@@ -413,7 +589,7 @@ function toVariant(seed: ProductSeed, v: VariantSeed, index: number): ProductVar
 }
 
 /**
- * The eight products, assigned to this store only. `status` is left to
+ * The sixteen products, assigned to this store only. `status` is left to
  * useCommerce, which derives it from the stock like every other product's.
  */
 export function vitahealProducts(): Omit<Product, 'status'>[] {
@@ -481,6 +657,7 @@ const COLLECTION_DESCRIPTIONS: Record<VitahealCollection, string> = {
   Longevity: 'For the long run: cellular energy, skin and joints, and daily balance.',
   Sleep: 'Wind down in the evening, sleep deeply and wake up ready.',
   Hydrate: 'Electrolytes for training, heat and long days.',
+  Immunity: 'Vitamins C and D and zinc, for the dark Swedish winter.',
 }
 
 /** The collections as the admin lists them. On the storefront a collection is its name on the products. */
@@ -684,6 +861,7 @@ export const VITAHEAL_MERCHANDISING: {
     { id: 'vh-syn-insomnia', channelId: VITAHEAL_CHANNEL_ID, status: 'active', type: 'one_way', queries: ['insomnia', 'jet lag', 'restless'], leadsTo: ['sleep'], updatedAt: MERCH_UPDATED },
     { id: 'vh-syn-ageing', channelId: VITAHEAL_CHANNEL_ID, status: 'active', type: 'one_way', queries: ['ageing', 'aging', 'anti-ageing'], leadsTo: ['longevity'], updatedAt: MERCH_UPDATED },
     { id: 'vh-syn-hydration', channelId: VITAHEAL_CHANNEL_ID, status: 'active', type: 'two_way', queries: ['hydration', 'electrolytes', 'rehydrate'], leadsTo: [], updatedAt: MERCH_UPDATED },
+    { id: 'vh-syn-immune', channelId: VITAHEAL_CHANNEL_ID, status: 'active', type: 'one_way', queries: ['immune', 'cold', 'flu', 'winter'], leadsTo: ['immunity'], updatedAt: MERCH_UPDATED },
   ],
   redirects: [
     { id: 'vh-red-returns', channelId: VITAHEAL_CHANNEL_ID, queries: ['returns', 'refund', 'return policy'], leadsTo: `${STORE_URL}/policies/refund-policy`, updatedAt: MERCH_UPDATED },
@@ -793,6 +971,7 @@ const COLLECTION_LINKS = [
   { label: 'Sport', href: '/collections/sport' },
   { label: 'Longevity', href: '/collections/longevity' },
   { label: 'Hydrate', href: '/collections/hydrate' },
+  { label: 'Immunity', href: '/collections/immunity' },
 ]
 
 const SUBSCRIPTION_LINK = { label: 'Subscription', href: '/collections/subscription' }
@@ -1072,7 +1251,7 @@ function productLink(id: number): string {
 
 const HEADER = { menuStyle: 'Inline', sticky: true, colorScheme: 'Light' } as const
 const FOOTER = { showSocial: false, columns: 3, colorScheme: 'Light' } as const
-const SUBSCRIPTION_ROW = 'Most of our products can be bought on a subscription: a monthly delivery saves 20%, and a 3-month supply saves 30%.\n\nWe email you before each renewal. Skip a delivery, pause or cancel from your account at any time before the next charge date.'
+const SUBSCRIPTION_ROW = 'This product can be bought on a subscription: a monthly delivery saves 20%, and a 3-month supply saves 30%.\n\nWe email you before each renewal. Skip a delivery, pause or cancel from your account at any time before the next charge date.'
 const SHIPPING_AND_RETURNS = 'Orders placed before 10:00 CET on a weekday leave our warehouse the same day. Delivery takes 3 to 7 working days, and shipping is free on orders over 549 kr.\n\nYou can return unopened products within 14 days of delivery for a full refund.'
 const WARNINGS = 'Do not exceed the recommended daily dose. Food supplements are not a substitute for a varied diet. Keep out of reach of children.\n\nIf you are pregnant, breastfeeding, taking medication or have a medical condition, ask your doctor before use.'
 /** A row under the product page's buy box that opens and closes. */
@@ -1117,6 +1296,7 @@ export const VITAHEAL_THEME_TEMPLATES: Record<TemplateType, ThemeSection[]> = {
       blocks: [
         createBlock('collection', { label: 'Sleep', link: '/collections/sleep', image: VITAHEAL_PHOTOS.tileSleep }, 'vitaheal-collection-sleep'),
         createBlock('collection', { label: 'Sport', link: '/collections/sport', image: VITAHEAL_PHOTOS.tileSport }, 'vitaheal-collection-sport'),
+        createBlock('collection', { label: 'Immunity', link: '/collections/immunity', image: VITAHEAL_PHOTOS.tileImmunity }, 'vitaheal-collection-immunity'),
         createBlock('collection', { label: 'Longevity', link: '/collections/longevity', image: VITAHEAL_PHOTOS.tileLongevity }, 'vitaheal-collection-longevity'),
         createBlock('collection', { label: 'Hydrate', link: '/collections/hydrate', image: VITAHEAL_PHOTOS.tileHydrate }, 'vitaheal-collection-hydrate'),
       ],
@@ -1125,7 +1305,8 @@ export const VITAHEAL_THEME_TEMPLATES: Record<TemplateType, ThemeSection[]> = {
       eyebrow: 'Blended and packed in Sweden',
       title: 'Our range',
       collection: 'all',
-      productCount: 8,
+      // Twelve of the sixteen: the eight first products and four of the newer ones.
+      productCount: 12,
       layout: 'Carousel',
     }, 'vitaheal-home-featured'),
     createSection('image-with-text', {

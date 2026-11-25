@@ -26,10 +26,10 @@ import { optionValuesOf, variantAvailable, variantUnits } from '../storefront/va
 import { dayLabel } from '../subscriptions/contracts.ts'
 import type { ContractStatus } from '../subscriptions/contracts.ts'
 import { assistantProfile } from './assistantProfiles.ts'
-import type { AssistantNeed, AssistantProfile } from './assistantProfiles.ts'
+import type { AssistantNeed, AssistantProfile, RefillKnowledge } from './assistantProfiles.ts'
 import {
   CARE, FABRIC, HEIGHT_WEIGHT, SIZE, audienceAsked, careAnswer, fabricAnswer, fibreAvoidance, forAudience,
-  measurementsIn, pieceForMeasurements, priceLimit, sizeAnswer, sizesIn, subjectOf, withoutNames,
+  measurementsIn, pieceForMeasurements, priceLimit, productsNamed, sizeAnswer, sizesIn, subjectOf, withoutNames,
 } from './clothingAnswers.ts'
 import type { ClothingTurn } from './clothingAnswers.ts'
 import { MY_DELIVERY, aboutPieceNotOrder, contact, homeAnswer, homeSuggestion } from './homeAnswers.ts'
@@ -317,6 +317,8 @@ const GENERAL = /\b(how (do|does)|what (is|are)|do you (offer|have)|can i (subsc
 const POLICY = /\b(guarantee\w*|refund\w*|returns?|return (it|policy)|shipping|ship to|deliver(y|ies) (time|cost)|policy|vat|payment methods?)\b/
 const PROMOTION = /\b(discounts?|coupons?|promo(tion)?s?|vouchers?|on sale|sales?|deals?|(special|any|current) offers?)\b/
 const SHOPPING = /\b(recommend\w*|suggest\w*|which (product|one)|what (should|can|do) i (take|buy|use|try)|looking for|help me (choose|pick|find)|what do you (sell|have)|best (product|supplement))\b/
+/** Every asking phrase of a request, and the words around them that name no need ("Can you suggest something to buy?"). */
+const REQUEST = new RegExp(`${SHOPPING.source}|\\b(buy\\w*|purchas\\w*|get|try|order|something|anything|one|would|should|could)\\b`, 'g')
 /** Clothing: a question about returning or changing a piece is the store's pages' to answer, even when it says "size". */
 const EXCHANGE = /\b(exchange\w*|swap\w*|send (it |them )?back|return\w*|refund\w*)\b/
 /** Clothing: the words of a question only about subscriptions, on a store that sells none. */
@@ -332,8 +334,9 @@ const SALE_ITEMS = /\b(on sale|sale (items?|styles?)|what('s| is) (on )?sale|red
  */
 export function productsFor(message: string, products: AssistantProduct[], profile?: AssistantProfileId): { label: string | null; productIds: number[] } {
   const text = message.toLowerCase()
-  const needs = assistantProfile(profile).needs.filter((need) => need.says.test(text))
-  const tokens = needs.length ? needs.flatMap((need) => need.means) : keywords(message)
+  const own = assistantProfile(profile)
+  const needs = own.needs.filter((need) => need.says.test(text))
+  const tokens = needs.length ? needs.flatMap((need) => need.means) : keywords(own.requestWordsIgnored ? text.replace(REQUEST, ' ') : message)
   if (!tokens.length) return { label: null, productIds: [] }
   return {
     label: needs.length ? needs.map((need) => need.label).join(' and ') : null,
@@ -513,6 +516,69 @@ function clothingAnswer(message: string, ctx: AssistantContext, state: Assistant
   return null
 }
 
+// ── Refills (a wellness store) ───────────────────────────────────────────────
+
+/** A product that comes in a refill: the choice that is it ("Refill bag") and the others ("Can"), or none when the product is itself the refill ("Balance Refill"). */
+interface Refill {
+  product: AssistantProduct
+  choice: string | null
+  others: string[]
+  soldOut: boolean
+}
+
+function refillsIn(products: AssistantProduct[], refills: RefillKnowledge): Refill[] {
+  return products.flatMap((product): Refill[] => {
+    for (const option of product.options ?? []) {
+      const choice = option.values.find((value) => refills.choice.test(value))
+      if (choice) return [{ product, choice, others: option.values.filter((v) => v !== choice), soldOut: !!option.soldOut?.includes(choice) }]
+    }
+    return /\brefill\b/i.test(product.name) ? [{ product, choice: null, others: [], soldOut: false }] : []
+  })
+}
+
+const article = (word: string) => (/^[aeiou]/i.test(word) ? 'an' : 'a')
+const listed = (names: string[]) => (names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}` : names[0] ?? '')
+
+/**
+ * Which products come in a refill, read from their own choices: all of them, or
+ * whether the ones the shopper names do ("Is there a refill bag for the protein?").
+ * The newest come first, as in the store's Newest sort. The sentence names them all,
+ * and at most three get a card, as every suggestion does; a "No" gets no cards.
+ * Null when the store sells no refills, so its pages answer.
+ */
+function refillAnswer(message: string, ctx: AssistantContext, refills: RefillKnowledge): AssistantReply | null {
+  const all = refillsIn(ctx.products, refills).sort((a, b) => b.product.id - a.product.id)
+  if (!all.length) return null
+  const cards = (list: Refill[]) => list.slice(0, 3).map((r) => r.product.id)
+  const names = (list: AssistantProduct[]) => listed(list.map((p) => p.name))
+  const text = message.trim().toLowerCase()
+  // "Which products come in a refill?" asks which, not whether.
+  const yes = /^(which|what)\b/.test(text) ? '' : 'Yes. '
+  // "Do your products come in refills?" asks about them all; otherwise the products it names, read without the refill words.
+  // productsNamed keeps only the best-named ("Clear Focus" over "Unwind"), so a product named in full counts too.
+  const named = /\b(products|everything|all|any)\b/.test(text) ? [] : [...new Set([
+    ...productsNamed(text.replace(new RegExp(refills.says.source, 'g'), ' '), ctx.products),
+    ...ctx.products.filter((p) => text.includes(p.name.toLowerCase())),
+  ])]
+  const every = names(all.map((r) => r.product))
+  if (!named.length) return { kind: 'products', text: `${yes}${every} come in a refill. Choose the refill on a product’s page:`, productIds: cards(all) }
+  const theirs = all.filter((r) => named.includes(r.product))
+  if (!theirs.length) {
+    return { kind: 'text', topic: 'Product advice', text: `No, ${names(named)} ${named.length === 1 ? 'doesn’t' : 'don’t'} come in a refill. ${every} do.` }
+  }
+  const [one] = theirs
+  if (theirs.length > 1 || !one) return { kind: 'products', text: `${yes}These come in a refill:`, productIds: cards(theirs) }
+  const name = one.product.name
+  if (!one.choice) {
+    const base = name.replace(/\s*\brefill\b\s*/i, ' ').trim()
+    return { kind: 'products', text: base ? `Yes. ${name} is the refill for ${base}:` : `Yes. ${name} is a refill:`, productIds: [one.product.id] }
+  }
+  const choice = one.choice.toLowerCase()
+  if (one.soldOut) return { kind: 'products', text: `${name} comes in ${article(choice)} ${choice}, but it’s sold out right now.`, productIds: [one.product.id] }
+  const besides = one.others.length ? ` as well as the ${one.others.map((v) => v.toLowerCase()).join(' or ')}` : ''
+  return { kind: 'products', text: `Yes. ${name} comes in ${article(choice)} ${choice}${besides}. Choose ${one.choice} on its page:`, productIds: [one.product.id] }
+}
+
 // ── The conversation ─────────────────────────────────────────────────────────
 
 /** What the assistant says to a message, and where the conversation stands after it. */
@@ -653,6 +719,14 @@ export function assistantReply(message: string, ctx: AssistantContext, state: As
   if (home && !EXCHANGE.test(text)) {
     const answer = homeAnswer(message, ctx, state, profile, POLICY.test(text))
     if (answer) return placed(answer)
+  }
+
+  // ── Refills (a wellness store): which products come in one ─────────
+  // Only whether there is one, or which: returning one, subscribing to one, or what one is made of
+  // ("Are the refill bags recyclable?") is the store's pages' to answer.
+  if (profile.refills && ctx.shoppingEnabled && profile.refills.says.test(text) && profile.refills.asks.test(text) && !POLICY.test(text) && !SUBSCRIPTION.test(text)) {
+    const refill = refillAnswer(message, ctx, profile.refills)
+    if (refill) return turn([refill])
   }
 
   // ── A need, or a request for a suggestion ──────────────────────────

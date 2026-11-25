@@ -57,6 +57,13 @@ const plain = (value: unknown) => JSON.parse(JSON.stringify(value))
 const settle = () => new Promise((resolve) => setTimeout(resolve, 10))
 const keptKeys = () => [...memory.keys()].filter((key) => key.startsWith('mp.')).sort()
 const savedBrowser = () => Object.fromEntries(keptKeys().map((key) => [key, memory.get(key)!]))
+/**
+ * Since Vitaheal's seed version 2 (eight more products, 2026-11-25) a browser's first start
+ * seeds Vitaheal again and records the version it holds (useDemoStores reseedStale); a restore
+ * clears it and writes it again. It names the theme the store started with: no theme is applied.
+ */
+const VH_SEED = 'mp.vitaheal-demo.installed.v1'
+const seedRecord = () => JSON.parse(memory.get(VH_SEED) ?? 'null') as { blueprintId: string; seedVersion: number } | null
 
 function startApp(saved: Record<string, string> = {}) {
   memory.clear()
@@ -139,7 +146,10 @@ for (const storeId of [...STORES, GARAGE]) {
       await settle()
       assert.deepEqual(storeOf(app, storeId), before)
       assert.deepEqual(everyStoreOf(app, others), othersBefore)
-      assert.ok(!keptKeys().some((key) => key.includes(`${storeId}.`) && !key.endsWith('created-stores.v1')), keptKeys().join())
+      // Nothing of the store is kept, but Vitaheal's record of the seed it holds (its own theme, not an applied one).
+      const kept = keptKeys().filter((key) => key.includes(`${storeId}.`) && !key.endsWith('created-stores.v1'))
+      assert.deepEqual(kept, storeId === VH ? [VH_SEED] : [], keptKeys().join())
+      if (storeId === VH) assert.deepEqual([seedRecord()?.blueprintId, seedRecord()?.seedVersion], ['vitaheal', 2])
     })
   }
 }
@@ -171,8 +181,8 @@ test('a store made from a theme is last in the list, a copy of that theme in its
   assertRuns(app, GARAGE, 'torqline')
   // Its own block: store slot 10 (past the merchant window, so plus 1,000,000), Torqline's digit 4.
   assert.ok(app.commerce.products.filter((p) => p.channelIds?.includes(GARAGE)).every((p) => p.id > 1_104_000 && p.id < 1_105_000))
-  // Only the store itself is saved; its parts follow their seed until changed.
-  assert.deepEqual(keptKeys(), [CREATED_STORES_KEY])
+  // Only the store itself is saved (and Vitaheal's seed version); its parts follow their seed until changed.
+  assert.deepEqual(keptKeys(), [CREATED_STORES_KEY, VH_SEED])
   const garage = storeOf(app, GARAGE)
   const demos = everyStoreOf(app)
 
@@ -181,7 +191,7 @@ test('a store made from a theme is last in the list, a copy of that theme in its
   assert.equal(again.channels.channels.at(-1)?.id, GARAGE)
   assert.deepEqual(storeOf(again, GARAGE), garage)
   assert.deepEqual(everyStoreOf(again), demos)
-  assert.deepEqual(keptKeys(), [CREATED_STORES_KEY])
+  assert.deepEqual(keptKeys(), [CREATED_STORES_KEY, VH_SEED])
 })
 
 test('a blank store has nothing until a theme is applied, and a restore makes it blank again', async () => {
@@ -221,6 +231,7 @@ test('a store made connected to Merchandise Cloud stays connected after a reload
 
 test('deleting a store made here removes everything of it from the app and this browser; the demo stores stay as they are', async () => {
   const app = startApp()
+  await settle()
   const demos = everyStoreOf(app)
   createGarage(app, 'vitaheal')
   await settle()
@@ -243,7 +254,7 @@ test('deleting a store made here removes everything of it from the app and this 
   assert.deepEqual(everyStoreOf(app), demos)
 
   // Gone after a reload too. Its id and slot are never used again here: what the app keeps by store id stays with the deleted store.
-  assert.deepEqual(keptKeys(), [CREATED_STORES_KEY])
+  assert.deepEqual(keptKeys(), [CREATED_STORES_KEY, VH_SEED])
   const again = startApp(savedBrowser())
   await settle()
   assert.equal(again.channels.channels.some((c) => c.id === GARAGE), false)
@@ -338,6 +349,7 @@ test('publishing a copy takes the theme it was copied from off the store; applyi
 
 test('a plan the merchant made stays listed, switched off, while another theme runs; a restore removes it', async () => {
   const app = startApp()
+  await settle()
   const seeded = storeOf(app, VH)
   const own = app.subscriptions.plans.filter((plan) => plan.channelId === VH)
   const made = app.subscriptions.createPlan(VH, { ...own[0]!, name: 'Merchant plan', isDefault: false })

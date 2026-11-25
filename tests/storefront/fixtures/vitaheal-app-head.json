@@ -1071,6 +1071,997 @@
           ]
         },
         "status": "In Stock"
+      },
+      {
+        "id": 2009,
+        "name": "Plant Protein",
+        "sku": "VTH-PRO-REF",
+        "price": "369.00",
+        "compareAtPrice": "",
+        "inventory": 204,
+        "category": "Beauty & Health",
+        "vendor": "Vitaheal",
+        "images": 2,
+        "variants": 2,
+        "type": "product",
+        "publishStatus": "Published",
+        "collections": [
+          "Sport",
+          "Subscription"
+        ],
+        "salesChannelNames": [
+          "Vitaheal (demo)"
+        ],
+        "productType": "Physical",
+        "channelIds": [
+          "vitaheal-demo"
+        ],
+        "imageUrls": [
+          "/storefront/vitaheal/plant-protein-1.jpg",
+          "/storefront/vitaheal/plant-protein-2.jpg"
+        ],
+        "detail": {
+          "subtitle": "Protein for muscle and recovery",
+          "url": "plant-protein",
+          "description": "Pea and rice protein with a smooth chocolate taste, 21 g in every scoop. Shake it with water or oat milk after training. The refill bag fits the can and costs less.",
+          "hasVariants": true,
+          "options": [
+            {
+              "name": "Format",
+              "values": [
+                "Can",
+                "Refill bag"
+              ]
+            }
+          ],
+          "variantsList": [
+            {
+              "id": 20091,
+              "title": "Can",
+              "sku": "VTH-PRO-CAN",
+              "manageInventory": true,
+              "allowBackorder": false,
+              "costPrice": "127.68",
+              "price": "399.00",
+              "weight": "1.00",
+              "stock": {
+                "Oxford Warehouse": 84
+              }
+            },
+            {
+              "id": 20092,
+              "title": "Refill bag",
+              "sku": "VTH-PRO-REF",
+              "manageInventory": true,
+              "allowBackorder": false,
+              "costPrice": "118.08",
+              "price": "369.00",
+              "weight": "0.93",
+              "stock": {
+                "Oxford Warehouse": 120
+              }
+            }
+          ],
+          "taxCategory": "Standard",
+          "material": "",
+          "brand": "Vitaheal",
+          "tag": "Supplements",
+          "collection": "Sport",
+          "categories": [
+            "Beauty & Health"
+          ],
+          "width": "",
+          "length": "",
+          "height": "",
+          "weight": "0.93",
+          "midCode": "",
+          "hsCode": "2106.90",
+          "countryOfOrigin": "Sweden",
+          "discountable": true,
+          "salesChannels": [
+            "Vitaheal (demo)"
+          ],
+          "seo": {
+            "title": "Plant Protein | Vitaheal",
+            "metaDescription": "Protein for muscle and recovery. Pea and rice protein with a smooth chocolate taste, 21 g in every scoop. Shake it with water or oat milk after training. The refill bag fits the can and costs less.",
+            "urlHandle": "plant-protein",
+            "ogTitle": "Plant Protein",
+            "ogDescription": "Protein for muscle and recovery"
+          },
+          "specs": [
+            {
+              "label": "Serving size",
+              "value": "1 scoop (30 g)"
+            },
+            {
+              "label": "Servings per pack",
+              "value": "30"
+            },
+            {
+              "label": "Protein",
+              "value": "21 g"
+            },
+            {
+              "label": "Pea and rice protein isolate",
+              "value": "26 g"
+            },
+            {
+              "label": "Sugars",
+              "value": "1 g"
+            },
+            {
+              "label": "Other ingredients",
+              "value": "Cocoa, natural flavour, sweetener (steviol glycosides)"
+            },
+            {
+              "label": "How to take it",
+              "value": "Shake 1 scoop with 300 ml of water or oat milk after training."
+            },
+            {
+              "label": "Free from",
+              "value": "Gluten, lactose, soy and added sugar"
+            },
+            {
+              "label": "Made in",
+              "value": "Sweden"
+            }
+          ]
+        },
+        "status": "In Stock"
+      },
+      {
+        "id": 2010,
+        "name": "Daily Greens",
+        "sku": "VTH-GRN-REF",
+        "price": "429.00",
+        "compareAtPrice": "",
+        "inventory": 168,
+        "category": "Beauty & Health",
+        "vendor": "Vitaheal",
+        "images": 2,
+        "variants": 2,
+        "type": "product",
+        "publishStatus": "Published",
+        "collections": [
+          "Longevity",
+          "Subscription"
+        ],
+        "salesChannelNames": [
+          "Vitaheal (demo)"
+        ],
+        "productType": "Physical",
+        "channelIds": [
+          "vitaheal-demo"
+        ],
+        "imageUrls": [
+          "/storefront/vitaheal/daily-greens-1.jpg",
+          "/storefront/vitaheal/daily-greens-2.jpg"
+        ],
+        "detail": {
+          "subtitle": "Greens and fibre in one scoop",
+          "url": "daily-greens",
+          "description": "Spirulina, chlorella, spinach and apple fibre in one green scoop. Mix it into water or a smoothie each morning. The refill bag fits the can and costs less.",
+          "hasVariants": true,
+          "options": [
+            {
+              "name": "Format",
+              "values": [
+                "Can",
+                "Refill bag"
+              ]
+            }
+          ],
+          "variantsList": [
+            {
+              "id": 20101,
+              "title": "Can",
+              "sku": "VTH-GRN-CAN",
+              "manageInventory": true,
+              "allowBackorder": false,
+              "costPrice": "143.68",
+              "price": "449.00",
+              "weight": "0.28",
+              "stock": {
+                "Oxford Warehouse": 76
+              }
+            },
+            {
+              "id": 20102,
+              "title": "Refill bag",
+              "sku": "VTH-GRN-REF",
+              "manageInventory": true,
+              "allowBackorder": false,
+              "costPrice": "137.28",
+              "price": "429.00",
+              "weight": "0.24",
+              "stock": {
+                "Oxford Warehouse": 92
+              }
+            }
+          ],
+          "taxCategory": "Standard",
+          "material": "",
+          "brand": "Vitaheal",
+          "tag": "Supplements",
+          "collection": "Longevity",
+          "categories": [
+            "Beauty & Health"
+          ],
+          "width": "",
+          "length": "",
+          "height": "",
+          "weight": "0.24",
+          "midCode": "",
+          "hsCode": "2106.90",
+          "countryOfOrigin": "Sweden",
+          "discountable": true,
+          "salesChannels": [
+            "Vitaheal (demo)"
+          ],
+          "seo": {
+            "title": "Daily Greens | Vitaheal",
+            "metaDescription": "Greens and fibre in one scoop. Spirulina, chlorella, spinach and apple fibre in one green scoop. Mix it into water or a smoothie each morning. The refill bag fits the can and costs less.",
+            "urlHandle": "daily-greens",
+            "ogTitle": "Daily Greens",
+            "ogDescription": "Greens and fibre in one scoop"
+          },
+          "specs": [
+            {
+              "label": "Serving size",
+              "value": "1 scoop (7 g)"
+            },
+            {
+              "label": "Servings per pack",
+              "value": "30"
+            },
+            {
+              "label": "Spirulina",
+              "value": "2 g"
+            },
+            {
+              "label": "Chlorella",
+              "value": "1.5 g"
+            },
+            {
+              "label": "Apple fibre",
+              "value": "1.5 g"
+            },
+            {
+              "label": "Spinach",
+              "value": "1 g"
+            },
+            {
+              "label": "Vitamin C",
+              "value": "40 mg (50% NRV)"
+            },
+            {
+              "label": "Other ingredients",
+              "value": "Natural apple flavour, sweetener (steviol glycosides)"
+            },
+            {
+              "label": "How to take it",
+              "value": "Stir 1 scoop into water or a smoothie once a day."
+            },
+            {
+              "label": "Free from",
+              "value": "Gluten, lactose, soy and added sugar"
+            },
+            {
+              "label": "Made in",
+              "value": "Sweden"
+            }
+          ]
+        },
+        "status": "In Stock"
+      },
+      {
+        "id": 2011,
+        "name": "Vitamin D3 + K2",
+        "sku": "VTH-VD3-90",
+        "price": "199.00",
+        "compareAtPrice": "",
+        "inventory": 230,
+        "category": "Beauty & Health",
+        "vendor": "Vitaheal",
+        "images": 2,
+        "variants": 1,
+        "type": "product",
+        "publishStatus": "Published",
+        "collections": [
+          "Immunity"
+        ],
+        "salesChannelNames": [
+          "Vitaheal (demo)"
+        ],
+        "productType": "Physical",
+        "channelIds": [
+          "vitaheal-demo"
+        ],
+        "imageUrls": [
+          "/storefront/vitaheal/vitamin-d3-1.jpg",
+          "/storefront/vitaheal/vitamin-d3-2.jpg"
+        ],
+        "detail": {
+          "subtitle": "For the dark months",
+          "url": "vitamin-d3-k2",
+          "description": "Vitamin D3 with K2 in one small capsule, for the months when the Swedish sun stays low. Vitamin D contributes to the normal function of the immune system. One capsule a day with a meal.",
+          "hasVariants": false,
+          "options": [],
+          "variantsList": [
+            {
+              "id": 20111,
+              "title": "Default",
+              "sku": "VTH-VD3-90",
+              "manageInventory": true,
+              "allowBackorder": false,
+              "costPrice": "63.68",
+              "price": "199.00",
+              "weight": "0.06",
+              "stock": {
+                "Oxford Warehouse": 230
+              }
+            }
+          ],
+          "taxCategory": "Standard",
+          "material": "",
+          "brand": "Vitaheal",
+          "tag": "Supplements",
+          "collection": "Immunity",
+          "categories": [
+            "Beauty & Health"
+          ],
+          "width": "",
+          "length": "",
+          "height": "",
+          "weight": "0.06",
+          "midCode": "",
+          "hsCode": "2106.90",
+          "countryOfOrigin": "Sweden",
+          "discountable": true,
+          "salesChannels": [
+            "Vitaheal (demo)"
+          ],
+          "seo": {
+            "title": "Vitamin D3 + K2 | Vitaheal",
+            "metaDescription": "For the dark months. Vitamin D3 with K2 in one small capsule, for the months when the Swedish sun stays low. Vitamin D contributes to the normal function of the immune system. One capsule a day with a meal.",
+            "urlHandle": "vitamin-d3-k2",
+            "ogTitle": "Vitamin D3 + K2",
+            "ogDescription": "For the dark months"
+          },
+          "specs": [
+            {
+              "label": "Serving size",
+              "value": "1 capsule"
+            },
+            {
+              "label": "Servings per pack",
+              "value": "90"
+            },
+            {
+              "label": "Vitamin D3 (cholecalciferol)",
+              "value": "25 µg (500% NRV)"
+            },
+            {
+              "label": "Vitamin K2 (as MK-7)",
+              "value": "75 µg (100% NRV)"
+            },
+            {
+              "label": "Other ingredients",
+              "value": "Olive oil, vegetable capsule (hypromellose)"
+            },
+            {
+              "label": "How to take it",
+              "value": "Take 1 capsule a day with a meal."
+            },
+            {
+              "label": "Free from",
+              "value": "Gluten, lactose, soy and added sugar"
+            },
+            {
+              "label": "Made in",
+              "value": "Sweden"
+            }
+          ]
+        },
+        "status": "In Stock"
+      },
+      {
+        "id": 2012,
+        "name": "Omega-3",
+        "sku": "VTH-OMG-60",
+        "price": "329.00",
+        "compareAtPrice": "",
+        "inventory": 150,
+        "category": "Beauty & Health",
+        "vendor": "Vitaheal",
+        "images": 2,
+        "variants": 1,
+        "type": "product",
+        "publishStatus": "Published",
+        "collections": [
+          "Longevity"
+        ],
+        "salesChannelNames": [
+          "Vitaheal (demo)"
+        ],
+        "productType": "Physical",
+        "channelIds": [
+          "vitaheal-demo"
+        ],
+        "imageUrls": [
+          "/storefront/vitaheal/omega-3-1.jpg",
+          "/storefront/vitaheal/omega-3-2.jpg"
+        ],
+        "detail": {
+          "subtitle": "Heart and brain, from algae",
+          "url": "omega-3",
+          "description": "Plant-based omega-3 from algae oil: vegan, with no fishy aftertaste. DHA and EPA contribute to the normal function of the heart. Two softgels a day with food.",
+          "hasVariants": false,
+          "options": [],
+          "variantsList": [
+            {
+              "id": 20121,
+              "title": "Default",
+              "sku": "VTH-OMG-60",
+              "manageInventory": true,
+              "allowBackorder": false,
+              "costPrice": "105.28",
+              "price": "329.00",
+              "weight": "0.10",
+              "stock": {
+                "Oxford Warehouse": 150
+              }
+            }
+          ],
+          "taxCategory": "Standard",
+          "material": "",
+          "brand": "Vitaheal",
+          "tag": "Supplements",
+          "collection": "Longevity",
+          "categories": [
+            "Beauty & Health"
+          ],
+          "width": "",
+          "length": "",
+          "height": "",
+          "weight": "0.10",
+          "midCode": "",
+          "hsCode": "2106.90",
+          "countryOfOrigin": "Sweden",
+          "discountable": true,
+          "salesChannels": [
+            "Vitaheal (demo)"
+          ],
+          "seo": {
+            "title": "Omega-3 | Vitaheal",
+            "metaDescription": "Heart and brain, from algae. Plant-based omega-3 from algae oil: vegan, with no fishy aftertaste. DHA and EPA contribute to the normal function of the heart. Two softgels a day with food.",
+            "urlHandle": "omega-3",
+            "ogTitle": "Omega-3",
+            "ogDescription": "Heart and brain, from algae"
+          },
+          "specs": [
+            {
+              "label": "Serving size",
+              "value": "2 softgels"
+            },
+            {
+              "label": "Servings per pack",
+              "value": "30"
+            },
+            {
+              "label": "Algae oil",
+              "value": "1,000 mg"
+            },
+            {
+              "label": "DHA",
+              "value": "400 mg"
+            },
+            {
+              "label": "EPA",
+              "value": "200 mg"
+            },
+            {
+              "label": "Vitamin E",
+              "value": "6 mg (50% NRV)"
+            },
+            {
+              "label": "Other ingredients",
+              "value": "Softgel (modified starch, glycerol, carrageenan), sunflower lecithin"
+            },
+            {
+              "label": "How to take it",
+              "value": "Take 2 softgels a day with food."
+            },
+            {
+              "label": "Suitable for",
+              "value": "Vegans"
+            },
+            {
+              "label": "Free from",
+              "value": "Gluten, lactose, soy and added sugar"
+            },
+            {
+              "label": "Made in",
+              "value": "Sweden"
+            }
+          ]
+        },
+        "status": "In Stock"
+      },
+      {
+        "id": 2013,
+        "name": "Magnesium",
+        "sku": "VTH-MAG-120",
+        "price": "229.00",
+        "compareAtPrice": "",
+        "inventory": 175,
+        "category": "Beauty & Health",
+        "vendor": "Vitaheal",
+        "images": 2,
+        "variants": 1,
+        "type": "product",
+        "publishStatus": "Published",
+        "collections": [
+          "Sleep",
+          "Sport"
+        ],
+        "salesChannelNames": [
+          "Vitaheal (demo)"
+        ],
+        "productType": "Physical",
+        "channelIds": [
+          "vitaheal-demo"
+        ],
+        "imageUrls": [
+          "/storefront/vitaheal/magnesium-1.jpg",
+          "/storefront/vitaheal/magnesium-2.jpg"
+        ],
+        "detail": {
+          "subtitle": "Muscles and less tiredness",
+          "url": "magnesium",
+          "description": "Magnesium bisglycinate, a gentle form, in two small capsules. Magnesium contributes to normal muscle function and to the reduction of tiredness and fatigue. Take them in the evening, after training or before bed.",
+          "hasVariants": false,
+          "options": [],
+          "variantsList": [
+            {
+              "id": 20131,
+              "title": "Default",
+              "sku": "VTH-MAG-120",
+              "manageInventory": true,
+              "allowBackorder": false,
+              "costPrice": "73.28",
+              "price": "229.00",
+              "weight": "0.12",
+              "stock": {
+                "Oxford Warehouse": 175
+              }
+            }
+          ],
+          "taxCategory": "Standard",
+          "material": "",
+          "brand": "Vitaheal",
+          "tag": "Supplements",
+          "collection": "Sleep",
+          "categories": [
+            "Beauty & Health"
+          ],
+          "width": "",
+          "length": "",
+          "height": "",
+          "weight": "0.12",
+          "midCode": "",
+          "hsCode": "2106.90",
+          "countryOfOrigin": "Sweden",
+          "discountable": true,
+          "salesChannels": [
+            "Vitaheal (demo)"
+          ],
+          "seo": {
+            "title": "Magnesium | Vitaheal",
+            "metaDescription": "Muscles and less tiredness. Magnesium bisglycinate, a gentle form, in two small capsules. Magnesium contributes to normal muscle function and to the reduction of tiredness and fatigue. Take them in the evening, after training or before bed.",
+            "urlHandle": "magnesium",
+            "ogTitle": "Magnesium",
+            "ogDescription": "Muscles and less tiredness"
+          },
+          "specs": [
+            {
+              "label": "Serving size",
+              "value": "2 capsules"
+            },
+            {
+              "label": "Servings per pack",
+              "value": "60"
+            },
+            {
+              "label": "Magnesium (as bisglycinate)",
+              "value": "200 mg (53% NRV)"
+            },
+            {
+              "label": "Other ingredients",
+              "value": "Vegetable capsule (hypromellose), rice flour"
+            },
+            {
+              "label": "How to take it",
+              "value": "Take 2 capsules in the evening, with water."
+            },
+            {
+              "label": "Free from",
+              "value": "Gluten, lactose, soy and added sugar"
+            },
+            {
+              "label": "Made in",
+              "value": "Sweden"
+            }
+          ]
+        },
+        "status": "In Stock"
+      },
+      {
+        "id": 2014,
+        "name": "Creatine",
+        "sku": "VTH-CRE-REF",
+        "price": "279.00",
+        "compareAtPrice": "",
+        "inventory": 238,
+        "category": "Beauty & Health",
+        "vendor": "Vitaheal",
+        "images": 2,
+        "variants": 2,
+        "type": "product",
+        "publishStatus": "Published",
+        "collections": [
+          "Sport",
+          "Subscription"
+        ],
+        "salesChannelNames": [
+          "Vitaheal (demo)"
+        ],
+        "productType": "Physical",
+        "channelIds": [
+          "vitaheal-demo"
+        ],
+        "imageUrls": [
+          "/storefront/vitaheal/creatine-1.jpg",
+          "/storefront/vitaheal/creatine-2.jpg"
+        ],
+        "detail": {
+          "subtitle": "Strength for short, hard efforts",
+          "url": "creatine",
+          "description": "Pure creatine monohydrate, unflavoured, 3 g in every scoop. Creatine increases physical performance in short bursts of high-intensity exercise. Stir it into any drink, every day. The refill bag fits the can and costs less.",
+          "hasVariants": true,
+          "options": [
+            {
+              "name": "Format",
+              "values": [
+                "Can",
+                "Refill bag"
+              ]
+            }
+          ],
+          "variantsList": [
+            {
+              "id": 20141,
+              "title": "Can",
+              "sku": "VTH-CRE-CAN",
+              "manageInventory": true,
+              "allowBackorder": false,
+              "costPrice": "95.68",
+              "price": "299.00",
+              "weight": "0.14",
+              "stock": {
+                "Oxford Warehouse": 98
+              }
+            },
+            {
+              "id": 20142,
+              "title": "Refill bag",
+              "sku": "VTH-CRE-REF",
+              "manageInventory": true,
+              "allowBackorder": false,
+              "costPrice": "89.28",
+              "price": "279.00",
+              "weight": "0.10",
+              "stock": {
+                "Oxford Warehouse": 140
+              }
+            }
+          ],
+          "taxCategory": "Standard",
+          "material": "",
+          "brand": "Vitaheal",
+          "tag": "Supplements",
+          "collection": "Sport",
+          "categories": [
+            "Beauty & Health"
+          ],
+          "width": "",
+          "length": "",
+          "height": "",
+          "weight": "0.10",
+          "midCode": "",
+          "hsCode": "2106.90",
+          "countryOfOrigin": "Sweden",
+          "discountable": true,
+          "salesChannels": [
+            "Vitaheal (demo)"
+          ],
+          "seo": {
+            "title": "Creatine | Vitaheal",
+            "metaDescription": "Strength for short, hard efforts. Pure creatine monohydrate, unflavoured, 3 g in every scoop. Creatine increases physical performance in short bursts of high-intensity exercise. Stir it into any drink, every day. The refill bag fits the can and costs less.",
+            "urlHandle": "creatine",
+            "ogTitle": "Creatine",
+            "ogDescription": "Strength for short, hard efforts"
+          },
+          "specs": [
+            {
+              "label": "Serving size",
+              "value": "1 scoop (3 g)"
+            },
+            {
+              "label": "Servings per pack",
+              "value": "30"
+            },
+            {
+              "label": "Creatine monohydrate",
+              "value": "3 g"
+            },
+            {
+              "label": "Other ingredients",
+              "value": "None"
+            },
+            {
+              "label": "How to take it",
+              "value": "Stir 1 scoop into water, juice or a shake once a day."
+            },
+            {
+              "label": "Free from",
+              "value": "Gluten, lactose, soy and added sugar"
+            },
+            {
+              "label": "Made in",
+              "value": "Sweden"
+            }
+          ]
+        },
+        "status": "In Stock"
+      },
+      {
+        "id": 2015,
+        "name": "Vitamin C + Zinc",
+        "sku": "VTH-VCZ-60",
+        "price": "179.00",
+        "compareAtPrice": "",
+        "inventory": 190,
+        "category": "Beauty & Health",
+        "vendor": "Vitaheal",
+        "images": 2,
+        "variants": 1,
+        "type": "product",
+        "publishStatus": "Published",
+        "collections": [
+          "Immunity"
+        ],
+        "salesChannelNames": [
+          "Vitaheal (demo)"
+        ],
+        "productType": "Physical",
+        "channelIds": [
+          "vitaheal-demo"
+        ],
+        "imageUrls": [
+          "/storefront/vitaheal/vitamin-c-zinc-1.jpg",
+          "/storefront/vitaheal/vitamin-c-zinc-2.jpg"
+        ],
+        "detail": {
+          "subtitle": "Immune support through winter",
+          "url": "vitamin-c-zinc",
+          "description": "Vitamin C and zinc in one capsule. Both contribute to the normal function of the immune system. Take one each morning through the cold months.",
+          "hasVariants": false,
+          "options": [],
+          "variantsList": [
+            {
+              "id": 20151,
+              "title": "Default",
+              "sku": "VTH-VCZ-60",
+              "manageInventory": true,
+              "allowBackorder": false,
+              "costPrice": "57.28",
+              "price": "179.00",
+              "weight": "0.07",
+              "stock": {
+                "Oxford Warehouse": 190
+              }
+            }
+          ],
+          "taxCategory": "Standard",
+          "material": "",
+          "brand": "Vitaheal",
+          "tag": "Supplements",
+          "collection": "Immunity",
+          "categories": [
+            "Beauty & Health"
+          ],
+          "width": "",
+          "length": "",
+          "height": "",
+          "weight": "0.07",
+          "midCode": "",
+          "hsCode": "2106.90",
+          "countryOfOrigin": "Sweden",
+          "discountable": true,
+          "salesChannels": [
+            "Vitaheal (demo)"
+          ],
+          "seo": {
+            "title": "Vitamin C + Zinc | Vitaheal",
+            "metaDescription": "Immune support through winter. Vitamin C and zinc in one capsule. Both contribute to the normal function of the immune system. Take one each morning through the cold months.",
+            "urlHandle": "vitamin-c-zinc",
+            "ogTitle": "Vitamin C + Zinc",
+            "ogDescription": "Immune support through winter"
+          },
+          "specs": [
+            {
+              "label": "Serving size",
+              "value": "1 capsule"
+            },
+            {
+              "label": "Servings per pack",
+              "value": "60"
+            },
+            {
+              "label": "Vitamin C",
+              "value": "500 mg (625% NRV)"
+            },
+            {
+              "label": "Zinc (as bisglycinate)",
+              "value": "10 mg (100% NRV)"
+            },
+            {
+              "label": "Other ingredients",
+              "value": "Vegetable capsule (hypromellose), rice flour"
+            },
+            {
+              "label": "How to take it",
+              "value": "Take 1 capsule each morning with water."
+            },
+            {
+              "label": "Free from",
+              "value": "Gluten, lactose, soy and added sugar"
+            },
+            {
+              "label": "Made in",
+              "value": "Sweden"
+            }
+          ]
+        },
+        "status": "In Stock"
+      },
+      {
+        "id": 2016,
+        "name": "Daily Multi",
+        "sku": "VTH-MUL-60",
+        "price": "249.00",
+        "compareAtPrice": "",
+        "inventory": 160,
+        "category": "Beauty & Health",
+        "vendor": "Vitaheal",
+        "images": 2,
+        "variants": 1,
+        "type": "product",
+        "publishStatus": "Published",
+        "collections": [
+          "Immunity"
+        ],
+        "salesChannelNames": [
+          "Vitaheal (demo)"
+        ],
+        "productType": "Physical",
+        "channelIds": [
+          "vitaheal-demo"
+        ],
+        "imageUrls": [
+          "/storefront/vitaheal/daily-multi-1.jpg",
+          "/storefront/vitaheal/daily-multi-2.jpg"
+        ],
+        "detail": {
+          "subtitle": "Everyday vitamins and minerals",
+          "url": "daily-multi",
+          "description": "Everyday vitamins and minerals in one tablet, to cover the gaps on busy days, with vitamins C and D and zinc for the immune system. One with breakfast.",
+          "hasVariants": false,
+          "options": [],
+          "variantsList": [
+            {
+              "id": 20161,
+              "title": "Default",
+              "sku": "VTH-MUL-60",
+              "manageInventory": true,
+              "allowBackorder": false,
+              "costPrice": "79.68",
+              "price": "249.00",
+              "weight": "0.09",
+              "stock": {
+                "Oxford Warehouse": 160
+              }
+            }
+          ],
+          "taxCategory": "Standard",
+          "material": "",
+          "brand": "Vitaheal",
+          "tag": "Supplements",
+          "collection": "Immunity",
+          "categories": [
+            "Beauty & Health"
+          ],
+          "width": "",
+          "length": "",
+          "height": "",
+          "weight": "0.09",
+          "midCode": "",
+          "hsCode": "2106.90",
+          "countryOfOrigin": "Sweden",
+          "discountable": true,
+          "salesChannels": [
+            "Vitaheal (demo)"
+          ],
+          "seo": {
+            "title": "Daily Multi | Vitaheal",
+            "metaDescription": "Everyday vitamins and minerals. Everyday vitamins and minerals in one tablet, to cover the gaps on busy days, with vitamins C and D and zinc for the immune system. One with breakfast.",
+            "urlHandle": "daily-multi",
+            "ogTitle": "Daily Multi",
+            "ogDescription": "Everyday vitamins and minerals"
+          },
+          "specs": [
+            {
+              "label": "Serving size",
+              "value": "1 tablet"
+            },
+            {
+              "label": "Servings per pack",
+              "value": "60"
+            },
+            {
+              "label": "Vitamin D3",
+              "value": "10 µg (200% NRV)"
+            },
+            {
+              "label": "Vitamin C",
+              "value": "80 mg (100% NRV)"
+            },
+            {
+              "label": "Vitamin B12",
+              "value": "2.5 µg (100% NRV)"
+            },
+            {
+              "label": "Folate",
+              "value": "200 µg (100% NRV)"
+            },
+            {
+              "label": "Zinc",
+              "value": "10 mg (100% NRV)"
+            },
+            {
+              "label": "Iodine",
+              "value": "150 µg (100% NRV)"
+            },
+            {
+              "label": "Other ingredients",
+              "value": "Bulking agent (cellulose), anti-caking agent (magnesium salts of fatty acids)"
+            },
+            {
+              "label": "How to take it",
+              "value": "Take 1 tablet with breakfast."
+            },
+            {
+              "label": "Free from",
+              "value": "Gluten, lactose, soy and added sugar"
+            },
+            {
+              "label": "Made in",
+              "value": "Sweden"
+            }
+          ]
+        },
+        "status": "In Stock"
       }
     ],
     "campaigns": [
@@ -1191,6 +2182,22 @@
           ],
           "leadsTo": [],
           "updatedAt": "Nov 16, 2026"
+        },
+        {
+          "id": "vh-syn-immune",
+          "channelId": "vitaheal-demo",
+          "status": "active",
+          "type": "one_way",
+          "queries": [
+            "immune",
+            "cold",
+            "flu",
+            "winter"
+          ],
+          "leadsTo": [
+            "immunity"
+          ],
+          "updatedAt": "Nov 16, 2026"
         }
       ],
       "redirects": [
@@ -1298,6 +2305,22 @@
           ],
           "leadsTo": [],
           "updatedAt": "Nov 16, 2026"
+        },
+        {
+          "id": "vh-syn-immune",
+          "channelId": "vitaheal-demo",
+          "status": "active",
+          "type": "one_way",
+          "queries": [
+            "immune",
+            "cold",
+            "flu",
+            "winter"
+          ],
+          "leadsTo": [
+            "immunity"
+          ],
+          "updatedAt": "Nov 16, 2026"
         }
       ],
       "redirectList": [
@@ -1402,7 +2425,10 @@
           2002,
           2003,
           2005,
-          2006
+          2006,
+          2009,
+          2010,
+          2014
         ],
         "isDefault": true,
         "status": "Active"
@@ -1425,7 +2451,10 @@
           2002,
           2003,
           2005,
-          2006
+          2006,
+          2009,
+          2010,
+          2014
         ],
         "isDefault": false,
         "status": "Active"

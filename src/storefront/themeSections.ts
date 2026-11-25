@@ -515,7 +515,7 @@ export const sectionCatalog: ThemeSectionDef[] = [
       { key: 'title', label: 'Title', type: 'text' },
       { key: 'accentWords', label: 'Title words in the accent color', type: 'text', drawing: 'sections', templates: ['home'] },
       { key: 'collection', label: 'Collection', type: 'collection', drawing: 'sections' },
-      { key: 'productCount', label: 'Products', type: 'slider', min: 2, max: 8 },
+      { key: 'productCount', label: 'Products', type: 'slider', min: 2, max: 12 },
       { key: 'layout', label: 'Layout', type: 'select', options: ['Grid', 'Carousel'], default: 'Grid' },
       // An auto-parts store: with the shopper's vehicle chosen, the parts that fit it ("Popular parts for your 2019 Ford F-150").
       { key: 'vehicle', label: 'Parts for the shopper’s vehicle', type: 'toggle', drawing: 'sections', templates: ['home'], requires: 'parts' },

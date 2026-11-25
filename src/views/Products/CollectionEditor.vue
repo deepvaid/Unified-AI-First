@@ -6,6 +6,10 @@ import {
   COLLECTION_FIELDS, COLLECTION_TEXT_OPERATORS, COLLECTION_NUMBER_OPERATORS,
   type CollectionInput, type CollectionType, type CollectionRule, type CollectionField, type CatalogProduct,
 } from '@/stores/useProductExtras'
+import { useCommerceStore, type Product } from '@/stores/useCommerce'
+import { useSalesChannelsStore } from '@/stores/useSalesChannels'
+import { parseDecimal } from '@/maropay/money'
+import { formatStorePrice } from '@/storefront/price'
 import { useToast } from '@/composables/useToast'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpFormSection from '@/components/MpFormSection.vue'
@@ -23,6 +27,8 @@ import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
  * `/products/collections/new?type=dynamic|manual`.
  */
 const store = useProductExtrasStore()
+const commerce = useCommerceStore()
+const salesChannels = useSalesChannelsStore()
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
@@ -127,12 +133,33 @@ const selectedProducts = computed<CatalogProduct[]>(() =>
     .filter((p): p is CatalogProduct => Boolean(p)),
 )
 
+// ── A store's collection ────────────────────────────────────────────
+// A demo store's collection (or one a theme brought) gets its products from each
+// product's own Collections field, which the storefront reads too. The editor
+// lists them and points to the product page instead of offering the picker.
+const saved = computed(() => (collectionId.value === null ? undefined : store.collections.find((c) => c.id === collectionId.value)))
+const storeId = computed(() => saved.value?.salesChannels[0] ?? null)
+const storeChannel = computed(() => salesChannels.getChannel(accountId.value, storeId.value ?? undefined))
+const storeName = computed(() => storeChannel.value?.name ?? 'the store')
+const storeMembers = computed<Product[]>(() => {
+  const id = storeId.value
+  const title = saved.value?.title
+  return id && title ? commerce.products.filter((p) => p.channelIds?.includes(id) && p.collections.includes(title)) : []
+})
+
+/** A product's price in its store's currency ("399 kr"), as the Products list shows it. */
+function money(product: Product): string {
+  const web = storeChannel.value?.webStore
+  const amount = web?.currency ? parseDecimal(product.price, web.currency) : null
+  return amount ? formatStorePrice(amount, web?.locale) : `$${(parseFloat(product.price) || 0).toFixed(2)}`
+}
+
 const dirty = computed(() => JSON.stringify(form.value) !== snapshot.value)
 const valid = computed(() => {
   if (!form.value.title.trim()) return false
   return isAutomated.value
     ? form.value.rules.every((r) => r.value.trim().length > 0)
-    : form.value.productItemIds.length > 0
+    : storeId.value !== null || form.value.productItemIds.length > 0
 })
 
 // ── Product picker (manual collections) ─────────────────────────────
@@ -205,7 +232,9 @@ async function save() {
       :title="isEdit ? `Edit ${form.type.toLowerCase()} collection` : `New ${form.type.toLowerCase()} collection`"
       :subtitle="isAutomated
         ? 'Products join this collection automatically whenever they match your conditions.'
-        : 'You choose exactly which products belong to this collection.'"
+        : storeId
+          ? `A collection of ${storeName}. Its products join it from their own page.`
+          : 'You choose exactly which products belong to this collection.'"
       :back-to="listPath"
     >
       <template #actions>
@@ -222,9 +251,14 @@ async function save() {
         <v-card variant="flat" border rounded="lg" class="col-card">
           <MpFormSection title="General" required />
           <MpFormGrid :cols="2">
+            <!-- A store's products name its collection by title, so a store's collection keeps its title. -->
             <v-text-field
               v-model="form.title"
               label="Title *"
+              :readonly="storeId !== null"
+              :class="{ 'mp-field-readonly': storeId !== null }"
+              :hint="storeId !== null ? 'The store’s products list this collection by its title, so it cannot be renamed here.' : undefined"
+              :persistent-hint="storeId !== null"
               :error-messages="form.title.trim() ? [] : ['Title is required']"
             />
             <v-select v-model="form.parent" :items="parentOptions" label="Parent collection" />
@@ -278,41 +312,71 @@ async function save() {
 
         <!-- Manual: products -->
         <v-card v-else variant="flat" border rounded="lg" class="col-card">
-          <MpFormSection title="Products" required description="The exact products this collection contains." />
-          <v-btn variant="outlined" prepend-icon="plus" class="text-none align-self-start" @click="openPicker">
-            Add products
-          </v-btn>
+          <!-- A store's collection: its products, each joined from its own page. -->
+          <template v-if="storeId">
+            <MpFormSection title="Products" :description="`The products of ${storeName} that list this collection.`" />
+            <p class="text-body-2 text-medium-emphasis mb-0">
+              A product joins or leaves this collection from its own page: open the product and change Collections under Organise.
+            </p>
+            <div v-if="storeMembers.length" class="col-picked">
+              <MpListRow
+                v-for="product in storeMembers"
+                :key="product.id"
+                variant="divided"
+                :eyebrow="product.sku"
+                :meta="money(product)"
+              >
+                <template #title>
+                  <RouterLink :to="{ name: 'ProductEdit', params: { accountId, productId: product.id } }" class="mp-link">{{ product.name }}</RouterLink>
+                </template>
+              </MpListRow>
+            </div>
+            <MpEmptyState
+              v-else
+              icon="package"
+              title="No products in this collection yet"
+              :description="`None of the products of ${storeName} list ${saved?.title} under Collections.`"
+              class="py-8"
+            />
+          </template>
 
-          <div v-if="selectedProducts.length" class="col-picked">
-            <MpListRow
-              v-for="product in selectedProducts"
-              :key="product.itemId"
-              variant="divided"
-              :title="product.name || product.itemId"
-              :eyebrow="product.itemId"
-              :meta="`$${product.price.toFixed(2)}`"
-            >
-              <template #trailing>
-                <v-btn
-                  icon="x"
-                  size="x-small"
-                  variant="text"
-                  :aria-label="`Remove ${product.name || product.itemId}`"
-                  @click="removeProduct(product.itemId)"
-                />
-              </template>
-            </MpListRow>
-          </div>
-          <MpEmptyState
-            v-else
-            icon="package"
-            title="No products yet"
-            description="Add at least one product before this collection can be saved."
-            action-label="Add products"
-            action-icon="plus"
-            class="py-8"
-            @action="openPicker"
-          />
+          <template v-else>
+            <MpFormSection title="Products" required description="The exact products this collection contains." />
+            <v-btn variant="outlined" prepend-icon="plus" class="text-none align-self-start" @click="openPicker">
+              Add products
+            </v-btn>
+
+            <div v-if="selectedProducts.length" class="col-picked">
+              <MpListRow
+                v-for="product in selectedProducts"
+                :key="product.itemId"
+                variant="divided"
+                :title="product.name || product.itemId"
+                :eyebrow="product.itemId"
+                :meta="`$${product.price.toFixed(2)}`"
+              >
+                <template #trailing>
+                  <v-btn
+                    icon="x"
+                    size="x-small"
+                    variant="text"
+                    :aria-label="`Remove ${product.name || product.itemId}`"
+                    @click="removeProduct(product.itemId)"
+                  />
+                </template>
+              </MpListRow>
+            </div>
+            <MpEmptyState
+              v-else
+              icon="package"
+              title="No products yet"
+              description="Add at least one product before this collection can be saved."
+              action-label="Add products"
+              action-icon="plus"
+              class="py-8"
+              @action="openPicker"
+            />
+          </template>
         </v-card>
 
         <v-card variant="flat" border rounded="lg" class="col-card">
@@ -459,6 +523,7 @@ async function save() {
 .col-picked {
   border: 1px solid rgb(var(--v-border-color), var(--v-border-opacity));
   border-radius: var(--mp-radius-10);
+  padding-inline: var(--mp-component-listItem-paddingInline);
   overflow: hidden;
 }
 

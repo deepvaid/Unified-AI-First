@@ -1,27 +1,27 @@
 {
  "guest · Hi": {
   "says": [
-   "Hi! I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, skin or healthy ageing, and answer questions about delivery and returns."
+   "Hi! I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, protein, immune support, skin or healthy ageing, and answer questions about delivery and returns."
   ],
-  "sha": "361cd89d916078f7"
+  "sha": "72dbd2a5f52318e5"
  },
  "guest · Hello there": {
   "says": [
-   "Hi! I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, skin or healthy ageing, and answer questions about delivery and returns."
+   "Hi! I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, protein, immune support, skin or healthy ageing, and answer questions about delivery and returns."
   ],
-  "sha": "361cd89d916078f7"
+  "sha": "72dbd2a5f52318e5"
  },
  "guest · hej": {
   "says": [
-   "Hi! I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, skin or healthy ageing, and answer questions about delivery and returns."
+   "Hi! I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, protein, immune support, skin or healthy ageing, and answer questions about delivery and returns."
   ],
-  "sha": "361cd89d916078f7"
+  "sha": "72dbd2a5f52318e5"
  },
  "guest · Good morning": {
   "says": [
-   "Hi! I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, skin or healthy ageing, and answer questions about delivery and returns."
+   "Hi! I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, protein, immune support, skin or healthy ageing, and answer questions about delivery and returns."
   ],
-  "sha": "361cd89d916078f7"
+  "sha": "72dbd2a5f52318e5"
  },
  "guest · Thanks!": {
   "says": [
@@ -37,15 +37,15 @@
  },
  "guest · asdf qwerty": {
   "says": [
-   "I’m not sure about that one. I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, skin or healthy ageing, and answer questions about delivery and returns."
+   "I’m not sure about that one. I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, protein, immune support, skin or healthy ageing, and answer questions about delivery and returns."
   ],
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "guest · ": {
   "says": [
-   "I’m not sure about that one. I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, skin or healthy ageing, and answer questions about delivery and returns."
+   "I’m not sure about that one. I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, protein, immune support, skin or healthy ageing, and answer questions about delivery and returns."
   ],
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "guest · Where is my order?": {
   "says": [
@@ -139,15 +139,15 @@
  },
  "guest · I can’t sleep": {
   "says": [
-   "For better sleep, this is the one we make for it:"
+   "For better sleep, these are the ones we make for it:"
   ],
-  "sha": "055133e9f0d7677b"
+  "sha": "f08afca6e7580470"
  },
  "guest · Help me sleep better": {
   "says": [
-   "For better sleep, this is the one we make for it:"
+   "For better sleep, these are the ones we make for it:"
   ],
-  "sha": "055133e9f0d7677b"
+  "sha": "f08afca6e7580470"
  },
  "guest · I feel stressed in the evenings": {
   "says": [
@@ -193,15 +193,15 @@
  },
  "guest · What do you recommend?": {
   "says": [
-   "Tell me what you would like help with, for example better sleep, focus, hydration, skin or healthy ageing, and I will suggest a product."
+   "Tell me what you would like help with, for example better sleep, focus, hydration, protein, immune support, skin or healthy ageing, and I will suggest a product."
   ],
-  "sha": "a82183a17b9a4ec1"
+  "sha": "eaaa342aa58e7256"
  },
  "guest · what should I buy?": {
   "says": [
-   "Tell me what you would like help with, for example better sleep, focus, hydration, skin or healthy ageing, and I will suggest a product."
+   "Tell me what you would like help with, for example better sleep, focus, hydration, protein, immune support, skin or healthy ageing, and I will suggest a product."
   ],
-  "sha": "a82183a17b9a4ec1"
+  "sha": "eaaa342aa58e7256"
  },
  "guest · Which one is best for running?": {
   "says": [
@@ -319,15 +319,15 @@
  },
  "guest · I’m 5’6 and 140 lb": {
   "says": [
-   "I’m not sure about that one. I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, skin or healthy ageing, and answer questions about delivery and returns."
+   "I’m not sure about that one. I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, protein, immune support, skin or healthy ageing, and answer questions about delivery and returns."
   ],
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "guest · between M and L": {
   "says": [
-   "I’m not sure about that one. I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, skin or healthy ageing, and answer questions about delivery and returns."
+   "I’m not sure about that one. I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, protein, immune support, skin or healthy ageing, and answer questions about delivery and returns."
   ],
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "guest · Which size should I get?": {
   "says": [
@@ -337,21 +337,21 @@
  },
  "guest · can I wash the merino": {
   "says": [
-   "I’m not sure about that one. I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, skin or healthy ageing, and answer questions about delivery and returns."
+   "I’m not sure about that one. I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, protein, immune support, skin or healthy ageing, and answer questions about delivery and returns."
   ],
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "guest · is the linen see-through": {
   "says": [
-   "I’m not sure about that one. I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, skin or healthy ageing, and answer questions about delivery and returns."
+   "I’m not sure about that one. I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, protein, immune support, skin or healthy ageing, and answer questions about delivery and returns."
   ],
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "guest · How do I wash merino?": {
   "says": [
-   "I’m not sure about that one. I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, skin or healthy ageing, and answer questions about delivery and returns."
+   "I’m not sure about that one. I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, protein, immune support, skin or healthy ageing, and answer questions about delivery and returns."
   ],
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "guest · I’m allergic to wool": {
   "says": [
@@ -361,15 +361,15 @@
  },
  "guest · a warm coat under $250": {
   "says": [
-   "I’m not sure about that one. I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, skin or healthy ageing, and answer questions about delivery and returns."
+   "I’m not sure about that one. I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, protein, immune support, skin or healthy ageing, and answer questions about delivery and returns."
   ],
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "guest · gift for him": {
   "says": [
-   "I’m not sure about that one. I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, skin or healthy ageing, and answer questions about delivery and returns."
+   "I’m not sure about that one. I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, protein, immune support, skin or healthy ageing, and answer questions about delivery and returns."
   ],
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "guest · What’s on sale?": {
   "says": [
@@ -385,15 +385,15 @@
  },
  "guest · bust 36 waist 30": {
   "says": [
-   "I’m not sure about that one. I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, skin or healthy ageing, and answer questions about delivery and returns."
+   "I’m not sure about that one. I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, protein, immune support, skin or healthy ageing, and answer questions about delivery and returns."
   ],
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "guest · I’m usually a medium. Will it fit?": {
   "says": [
-   "I’m not sure about that one. I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, skin or healthy ageing, and answer questions about delivery and returns."
+   "I’m not sure about that one. I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, protein, immune support, skin or healthy ageing, and answer questions about delivery and returns."
   ],
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "guest · anything under 300 kr?": {
   "says": [
@@ -402,16 +402,16 @@
   "sha": "68885890f0f991e9"
  },
  "signedIn · Hi": {
-  "sha": "361cd89d916078f7"
+  "sha": "72dbd2a5f52318e5"
  },
  "signedIn · Hello there": {
-  "sha": "361cd89d916078f7"
+  "sha": "72dbd2a5f52318e5"
  },
  "signedIn · hej": {
-  "sha": "361cd89d916078f7"
+  "sha": "72dbd2a5f52318e5"
  },
  "signedIn · Good morning": {
-  "sha": "361cd89d916078f7"
+  "sha": "72dbd2a5f52318e5"
  },
  "signedIn · Thanks!": {
   "sha": "675efd32302dce3d"
@@ -420,10 +420,10 @@
   "sha": "675efd32302dce3d"
  },
  "signedIn · asdf qwerty": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "signedIn · ": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "signedIn · Where is my order?": {
   "sha": "2f9322768b275c9a"
@@ -471,10 +471,10 @@
   "sha": "68885890f0f991e9"
  },
  "signedIn · I can’t sleep": {
-  "sha": "055133e9f0d7677b"
+  "sha": "f08afca6e7580470"
  },
  "signedIn · Help me sleep better": {
-  "sha": "055133e9f0d7677b"
+  "sha": "f08afca6e7580470"
  },
  "signedIn · I feel stressed in the evenings": {
   "sha": "915c9004f9cef145"
@@ -498,10 +498,10 @@
   "sha": "9407cc6267d733c6"
  },
  "signedIn · What do you recommend?": {
-  "sha": "a82183a17b9a4ec1"
+  "sha": "eaaa342aa58e7256"
  },
  "signedIn · what should I buy?": {
-  "sha": "a82183a17b9a4ec1"
+  "sha": "eaaa342aa58e7256"
  },
  "signedIn · Which one is best for running?": {
   "sha": "006aa94b23cfad4c"
@@ -561,31 +561,31 @@
   "sha": "006aa94b23cfad4c"
  },
  "signedIn · I’m 5’6 and 140 lb": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "signedIn · between M and L": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "signedIn · Which size should I get?": {
   "sha": "722b0e3e5ea632d9"
  },
  "signedIn · can I wash the merino": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "signedIn · is the linen see-through": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "signedIn · How do I wash merino?": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "signedIn · I’m allergic to wool": {
   "sha": "2c50f9db9fa4442f"
  },
  "signedIn · a warm coat under $250": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "signedIn · gift for him": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "signedIn · What’s on sale?": {
   "sha": "5a4eaccb01595650"
@@ -594,25 +594,25 @@
   "sha": "a14bbbb9c9e85e52"
  },
  "signedIn · bust 36 waist 30": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "signedIn · I’m usually a medium. Will it fit?": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "signedIn · anything under 300 kr?": {
   "sha": "68885890f0f991e9"
  },
  "promotion · Hi": {
-  "sha": "361cd89d916078f7"
+  "sha": "72dbd2a5f52318e5"
  },
  "promotion · Hello there": {
-  "sha": "361cd89d916078f7"
+  "sha": "72dbd2a5f52318e5"
  },
  "promotion · hej": {
-  "sha": "361cd89d916078f7"
+  "sha": "72dbd2a5f52318e5"
  },
  "promotion · Good morning": {
-  "sha": "361cd89d916078f7"
+  "sha": "72dbd2a5f52318e5"
  },
  "promotion · Thanks!": {
   "sha": "675efd32302dce3d"
@@ -621,10 +621,10 @@
   "sha": "675efd32302dce3d"
  },
  "promotion · asdf qwerty": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "promotion · ": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "promotion · Where is my order?": {
   "sha": "2f9322768b275c9a"
@@ -672,10 +672,10 @@
   "sha": "68885890f0f991e9"
  },
  "promotion · I can’t sleep": {
-  "sha": "055133e9f0d7677b"
+  "sha": "f08afca6e7580470"
  },
  "promotion · Help me sleep better": {
-  "sha": "055133e9f0d7677b"
+  "sha": "f08afca6e7580470"
  },
  "promotion · I feel stressed in the evenings": {
   "sha": "915c9004f9cef145"
@@ -699,10 +699,10 @@
   "sha": "9407cc6267d733c6"
  },
  "promotion · What do you recommend?": {
-  "sha": "a82183a17b9a4ec1"
+  "sha": "eaaa342aa58e7256"
  },
  "promotion · what should I buy?": {
-  "sha": "a82183a17b9a4ec1"
+  "sha": "eaaa342aa58e7256"
  },
  "promotion · Which one is best for running?": {
   "sha": "006aa94b23cfad4c"
@@ -762,31 +762,31 @@
   "sha": "006aa94b23cfad4c"
  },
  "promotion · I’m 5’6 and 140 lb": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "promotion · between M and L": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "promotion · Which size should I get?": {
   "sha": "722b0e3e5ea632d9"
  },
  "promotion · can I wash the merino": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "promotion · is the linen see-through": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "promotion · How do I wash merino?": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "promotion · I’m allergic to wool": {
   "sha": "2c50f9db9fa4442f"
  },
  "promotion · a warm coat under $250": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "promotion · gift for him": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "promotion · What’s on sale?": {
   "sha": "a9b7f71cab5e9609"
@@ -795,25 +795,25 @@
   "sha": "a14bbbb9c9e85e52"
  },
  "promotion · bust 36 waist 30": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "promotion · I’m usually a medium. Will it fit?": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "promotion · anything under 300 kr?": {
   "sha": "68885890f0f991e9"
  },
  "nothingYet · Hi": {
-  "sha": "361cd89d916078f7"
+  "sha": "72dbd2a5f52318e5"
  },
  "nothingYet · Hello there": {
-  "sha": "361cd89d916078f7"
+  "sha": "72dbd2a5f52318e5"
  },
  "nothingYet · hej": {
-  "sha": "361cd89d916078f7"
+  "sha": "72dbd2a5f52318e5"
  },
  "nothingYet · Good morning": {
-  "sha": "361cd89d916078f7"
+  "sha": "72dbd2a5f52318e5"
  },
  "nothingYet · Thanks!": {
   "sha": "675efd32302dce3d"
@@ -822,10 +822,10 @@
   "sha": "675efd32302dce3d"
  },
  "nothingYet · asdf qwerty": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "nothingYet · ": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "nothingYet · Where is my order?": {
   "sha": "c88f49660048e2b8"
@@ -873,10 +873,10 @@
   "sha": "68885890f0f991e9"
  },
  "nothingYet · I can’t sleep": {
-  "sha": "055133e9f0d7677b"
+  "sha": "f08afca6e7580470"
  },
  "nothingYet · Help me sleep better": {
-  "sha": "055133e9f0d7677b"
+  "sha": "f08afca6e7580470"
  },
  "nothingYet · I feel stressed in the evenings": {
   "sha": "915c9004f9cef145"
@@ -900,10 +900,10 @@
   "sha": "9407cc6267d733c6"
  },
  "nothingYet · What do you recommend?": {
-  "sha": "a82183a17b9a4ec1"
+  "sha": "eaaa342aa58e7256"
  },
  "nothingYet · what should I buy?": {
-  "sha": "a82183a17b9a4ec1"
+  "sha": "eaaa342aa58e7256"
  },
  "nothingYet · Which one is best for running?": {
   "sha": "006aa94b23cfad4c"
@@ -963,31 +963,31 @@
   "sha": "006aa94b23cfad4c"
  },
  "nothingYet · I’m 5’6 and 140 lb": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "nothingYet · between M and L": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "nothingYet · Which size should I get?": {
   "sha": "722b0e3e5ea632d9"
  },
  "nothingYet · can I wash the merino": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "nothingYet · is the linen see-through": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "nothingYet · How do I wash merino?": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "nothingYet · I’m allergic to wool": {
   "sha": "2c50f9db9fa4442f"
  },
  "nothingYet · a warm coat under $250": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "nothingYet · gift for him": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "nothingYet · What’s on sale?": {
   "sha": "5a4eaccb01595650"
@@ -996,25 +996,25 @@
   "sha": "a14bbbb9c9e85e52"
  },
  "nothingYet · bust 36 waist 30": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "nothingYet · I’m usually a medium. Will it fit?": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "nothingYet · anything under 300 kr?": {
   "sha": "68885890f0f991e9"
  },
  "shoppingOff · Hi": {
-  "sha": "361cd89d916078f7"
+  "sha": "72dbd2a5f52318e5"
  },
  "shoppingOff · Hello there": {
-  "sha": "361cd89d916078f7"
+  "sha": "72dbd2a5f52318e5"
  },
  "shoppingOff · hej": {
-  "sha": "361cd89d916078f7"
+  "sha": "72dbd2a5f52318e5"
  },
  "shoppingOff · Good morning": {
-  "sha": "361cd89d916078f7"
+  "sha": "72dbd2a5f52318e5"
  },
  "shoppingOff · Thanks!": {
   "sha": "675efd32302dce3d"
@@ -1023,10 +1023,10 @@
   "sha": "675efd32302dce3d"
  },
  "shoppingOff · asdf qwerty": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "shoppingOff · ": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "shoppingOff · Where is my order?": {
   "sha": "6fe38da04b8dac0f"
@@ -1074,37 +1074,37 @@
   "sha": "68885890f0f991e9"
  },
  "shoppingOff · I can’t sleep": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "shoppingOff · Help me sleep better": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "shoppingOff · I feel stressed in the evenings": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "shoppingOff · I need more focus at work": {
   "sha": "68885890f0f991e9"
  },
  "shoppingOff · I get cramps when I train": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "shoppingOff · something for my skin": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "shoppingOff · I want to age well": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "shoppingOff · my partner says I snore": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "shoppingOff · something for women": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "shoppingOff · What do you recommend?": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "shoppingOff · what should I buy?": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "shoppingOff · Which one is best for running?": {
   "sha": "722b0e3e5ea632d9"
@@ -1158,37 +1158,37 @@
   "sha": "e5a599c15f0d2ae2"
  },
  "shoppingOff · What size should I get in the merino sweater?": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "shoppingOff · does the car coat run large": {
   "sha": "212e025dbb71cb33"
  },
  "shoppingOff · I’m 5’6 and 140 lb": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "shoppingOff · between M and L": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "shoppingOff · Which size should I get?": {
   "sha": "722b0e3e5ea632d9"
  },
  "shoppingOff · can I wash the merino": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "shoppingOff · is the linen see-through": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "shoppingOff · How do I wash merino?": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "shoppingOff · I’m allergic to wool": {
   "sha": "2c50f9db9fa4442f"
  },
  "shoppingOff · a warm coat under $250": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "shoppingOff · gift for him": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "shoppingOff · What’s on sale?": {
   "sha": "5a4eaccb01595650"
@@ -1197,25 +1197,25 @@
   "sha": "a14bbbb9c9e85e52"
  },
  "shoppingOff · bust 36 waist 30": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "shoppingOff · I’m usually a medium. Will it fit?": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "shoppingOff · anything under 300 kr?": {
   "sha": "68885890f0f991e9"
  },
  "trackingOff · Hi": {
-  "sha": "361cd89d916078f7"
+  "sha": "72dbd2a5f52318e5"
  },
  "trackingOff · Hello there": {
-  "sha": "361cd89d916078f7"
+  "sha": "72dbd2a5f52318e5"
  },
  "trackingOff · hej": {
-  "sha": "361cd89d916078f7"
+  "sha": "72dbd2a5f52318e5"
  },
  "trackingOff · Good morning": {
-  "sha": "361cd89d916078f7"
+  "sha": "72dbd2a5f52318e5"
  },
  "trackingOff · Thanks!": {
   "sha": "675efd32302dce3d"
@@ -1224,10 +1224,10 @@
   "sha": "675efd32302dce3d"
  },
  "trackingOff · asdf qwerty": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "trackingOff · ": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "trackingOff · Where is my order?": {
   "sha": "b1714001d258a960"
@@ -1275,10 +1275,10 @@
   "sha": "68885890f0f991e9"
  },
  "trackingOff · I can’t sleep": {
-  "sha": "055133e9f0d7677b"
+  "sha": "f08afca6e7580470"
  },
  "trackingOff · Help me sleep better": {
-  "sha": "055133e9f0d7677b"
+  "sha": "f08afca6e7580470"
  },
  "trackingOff · I feel stressed in the evenings": {
   "sha": "915c9004f9cef145"
@@ -1302,10 +1302,10 @@
   "sha": "9407cc6267d733c6"
  },
  "trackingOff · What do you recommend?": {
-  "sha": "a82183a17b9a4ec1"
+  "sha": "eaaa342aa58e7256"
  },
  "trackingOff · what should I buy?": {
-  "sha": "a82183a17b9a4ec1"
+  "sha": "eaaa342aa58e7256"
  },
  "trackingOff · Which one is best for running?": {
   "sha": "006aa94b23cfad4c"
@@ -1365,31 +1365,31 @@
   "sha": "006aa94b23cfad4c"
  },
  "trackingOff · I’m 5’6 and 140 lb": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "trackingOff · between M and L": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "trackingOff · Which size should I get?": {
   "sha": "722b0e3e5ea632d9"
  },
  "trackingOff · can I wash the merino": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "trackingOff · is the linen see-through": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "trackingOff · How do I wash merino?": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "trackingOff · I’m allergic to wool": {
   "sha": "2c50f9db9fa4442f"
  },
  "trackingOff · a warm coat under $250": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "trackingOff · gift for him": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "trackingOff · What’s on sale?": {
   "sha": "5a4eaccb01595650"
@@ -1398,25 +1398,25 @@
   "sha": "a14bbbb9c9e85e52"
  },
  "trackingOff · bust 36 waist 30": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "trackingOff · I’m usually a medium. Will it fit?": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "trackingOff · anything under 300 kr?": {
   "sha": "68885890f0f991e9"
  },
  "notDemo · Hi": {
-  "sha": "361cd89d916078f7"
+  "sha": "72dbd2a5f52318e5"
  },
  "notDemo · Hello there": {
-  "sha": "361cd89d916078f7"
+  "sha": "72dbd2a5f52318e5"
  },
  "notDemo · hej": {
-  "sha": "361cd89d916078f7"
+  "sha": "72dbd2a5f52318e5"
  },
  "notDemo · Good morning": {
-  "sha": "361cd89d916078f7"
+  "sha": "72dbd2a5f52318e5"
  },
  "notDemo · Thanks!": {
   "sha": "675efd32302dce3d"
@@ -1425,10 +1425,10 @@
   "sha": "675efd32302dce3d"
  },
  "notDemo · asdf qwerty": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "notDemo · ": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "notDemo · Where is my order?": {
   "sha": "6fe38da04b8dac0f"
@@ -1476,10 +1476,10 @@
   "sha": "68885890f0f991e9"
  },
  "notDemo · I can’t sleep": {
-  "sha": "055133e9f0d7677b"
+  "sha": "f08afca6e7580470"
  },
  "notDemo · Help me sleep better": {
-  "sha": "055133e9f0d7677b"
+  "sha": "f08afca6e7580470"
  },
  "notDemo · I feel stressed in the evenings": {
   "sha": "915c9004f9cef145"
@@ -1503,10 +1503,10 @@
   "sha": "9407cc6267d733c6"
  },
  "notDemo · What do you recommend?": {
-  "sha": "a82183a17b9a4ec1"
+  "sha": "eaaa342aa58e7256"
  },
  "notDemo · what should I buy?": {
-  "sha": "a82183a17b9a4ec1"
+  "sha": "eaaa342aa58e7256"
  },
  "notDemo · Which one is best for running?": {
   "sha": "006aa94b23cfad4c"
@@ -1566,31 +1566,31 @@
   "sha": "006aa94b23cfad4c"
  },
  "notDemo · I’m 5’6 and 140 lb": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "notDemo · between M and L": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "notDemo · Which size should I get?": {
   "sha": "722b0e3e5ea632d9"
  },
  "notDemo · can I wash the merino": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "notDemo · is the linen see-through": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "notDemo · How do I wash merino?": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "notDemo · I’m allergic to wool": {
   "sha": "2c50f9db9fa4442f"
  },
  "notDemo · a warm coat under $250": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "notDemo · gift for him": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "notDemo · What’s on sale?": {
   "sha": "5a4eaccb01595650"
@@ -1599,25 +1599,25 @@
   "sha": "a14bbbb9c9e85e52"
  },
  "notDemo · bust 36 waist 30": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "notDemo · I’m usually a medium. Will it fit?": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "notDemo · anything under 300 kr?": {
   "sha": "68885890f0f991e9"
  },
  "wellnessNamed · Hi": {
-  "sha": "361cd89d916078f7"
+  "sha": "72dbd2a5f52318e5"
  },
  "wellnessNamed · Hello there": {
-  "sha": "361cd89d916078f7"
+  "sha": "72dbd2a5f52318e5"
  },
  "wellnessNamed · hej": {
-  "sha": "361cd89d916078f7"
+  "sha": "72dbd2a5f52318e5"
  },
  "wellnessNamed · Good morning": {
-  "sha": "361cd89d916078f7"
+  "sha": "72dbd2a5f52318e5"
  },
  "wellnessNamed · Thanks!": {
   "sha": "675efd32302dce3d"
@@ -1626,10 +1626,10 @@
   "sha": "675efd32302dce3d"
  },
  "wellnessNamed · asdf qwerty": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "wellnessNamed · ": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "wellnessNamed · Where is my order?": {
   "sha": "6fe38da04b8dac0f"
@@ -1677,10 +1677,10 @@
   "sha": "68885890f0f991e9"
  },
  "wellnessNamed · I can’t sleep": {
-  "sha": "055133e9f0d7677b"
+  "sha": "f08afca6e7580470"
  },
  "wellnessNamed · Help me sleep better": {
-  "sha": "055133e9f0d7677b"
+  "sha": "f08afca6e7580470"
  },
  "wellnessNamed · I feel stressed in the evenings": {
   "sha": "915c9004f9cef145"
@@ -1704,10 +1704,10 @@
   "sha": "9407cc6267d733c6"
  },
  "wellnessNamed · What do you recommend?": {
-  "sha": "a82183a17b9a4ec1"
+  "sha": "eaaa342aa58e7256"
  },
  "wellnessNamed · what should I buy?": {
-  "sha": "a82183a17b9a4ec1"
+  "sha": "eaaa342aa58e7256"
  },
  "wellnessNamed · Which one is best for running?": {
   "sha": "006aa94b23cfad4c"
@@ -1767,31 +1767,31 @@
   "sha": "006aa94b23cfad4c"
  },
  "wellnessNamed · I’m 5’6 and 140 lb": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "wellnessNamed · between M and L": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "wellnessNamed · Which size should I get?": {
   "sha": "722b0e3e5ea632d9"
  },
  "wellnessNamed · can I wash the merino": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "wellnessNamed · is the linen see-through": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "wellnessNamed · How do I wash merino?": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "wellnessNamed · I’m allergic to wool": {
   "sha": "2c50f9db9fa4442f"
  },
  "wellnessNamed · a warm coat under $250": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "wellnessNamed · gift for him": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "wellnessNamed · What’s on sale?": {
   "sha": "5a4eaccb01595650"
@@ -1800,10 +1800,10 @@
   "sha": "a14bbbb9c9e85e52"
  },
  "wellnessNamed · bust 36 waist 30": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "wellnessNamed · I’m usually a medium. Will it fit?": {
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  },
  "wellnessNamed · anything under 300 kr?": {
   "sha": "68885890f0f991e9"
@@ -1912,9 +1912,9 @@
  },
  "chat 5.1 · Help me sleep better": {
   "says": [
-   "For better sleep, this is the one we make for it:"
+   "For better sleep, these are the ones we make for it:"
   ],
-  "sha": "055133e9f0d7677b"
+  "sha": "f08afca6e7580470"
  },
  "chat 6 · Where is my order?": {
   "says": [
@@ -1948,8 +1948,8 @@
  },
  "chat 8.1 · between M and L": {
   "says": [
-   "I’m not sure about that one. I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, skin or healthy ageing, and answer questions about delivery and returns."
+   "I’m not sure about that one. I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, protein, immune support, skin or healthy ageing, and answer questions about delivery and returns."
   ],
-  "sha": "f0dd5a2e57726c22"
+  "sha": "b8d5af00e8fd12ec"
  }
 }

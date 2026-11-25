@@ -17,6 +17,19 @@
 // Patched once since, on 2026-11-24 (feedback round): Vitaheal's products were given their
 // facts (`detail.specs`) on purpose, so `fresh.products` was replaced with today's; a check
 // confirmed nothing else in either scenario had changed, and nothing but `specs` in a product.
+//
+// Patched a second time, on 2026-11-25 (eight more products, seed version 2): in `fresh`,
+// `products` gained 2009-2016 after the first eight (unchanged), both `plans` gained 2009, 2010
+// and 2014, and the synonym `vh-syn-immune` was added to `searchRules.synonyms` and
+// `merchandising.synonymList`. Those four parts were replaced with today's; every other part
+// was checked identical. `saved` was not touched: it is what that browser read before the
+// registry, and a browser that holds vitaheal-saved-head.json at seed version 2 still reads it
+// back exactly (demoStoresApp.test.ts). At seed 1 the store is seeded again instead
+// (vitahealReseed.test.ts).
+//
+// Patched a third time, the same day, after the review of the new range: in `fresh`, only
+// `products` was replaced (the new products' copy, and Creatine's 30-serving pack and weights);
+// every other part was checked identical, and `saved` was not touched.
 import { setMaxListeners } from 'node:events'
 import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { register } from 'node:module'

@@ -371,13 +371,16 @@ watch(sheet, async (now, before) => {
   else payButton.value?.focus()
 })
 
-watch(done, async (isDone) => {
+watch(done, async (isDone, wasDone) => {
   if (!isDone) return
   if (!buyNow.value) cart.clear(channelId.value)
   // On a store with an account page, whoever just paid is signed in: "Manage your subscription" opens
   // without asking who they are, and the store's chatbot can find the order they just placed.
   if (session.value && storefront.chrome.value.accountHref) shopper.signIn(channelId.value, session.value.customer.email)
   await nextTick()
+  // The receipt replaces the long form on the same address: it opens at its top, as a new page would.
+  // Not on a reload of the receipt, where the router puts the shopper back where they were.
+  if (wasDone === false) window.scrollTo({ top: 0 })
   receipt.value?.focus()
 }, { immediate: true })
 

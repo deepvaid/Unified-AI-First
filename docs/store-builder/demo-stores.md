@@ -20,7 +20,7 @@ theme in the library, named after the store.
 
 | Store | Blueprint id | Slot | Products (home ids) | Photos | Fonts | Drawing | Chatbot profile |
 |---|---|---|---|---|---|---|---|
-| Vitaheal | `vitaheal` | 2 | 8 (2001-2008) | `public/storefront/vitaheal/` | Inter | sections | `wellness` |
+| Vitaheal | `vitaheal` | 2 | 16 (2001-2016) | `public/storefront/vitaheal/` | Inter | sections | `wellness` |
 | Northfold | `northfold` | 3 | 20 (3001-3020) | `public/storefront/northfold/` | Instrument Serif, DM Sans | sections | `apparel` |
 | Torqline | `torqline` | 4 | 21 (4001-4021) | `public/storefront/torqline/` | Barlow Condensed, Barlow | sections | `auto-parts` |
 | Lumos | `lumos` | 5 | 20 (5001-5020) | `public/storefront/lumos/` | Inter | sections | `home` |
@@ -56,8 +56,10 @@ four rows under the description, a line under each collection's title, the subsc
 a policy page, and the Purchase options block. Its two plans of one fixed delivery, its prices
 and its eight subscribers are as they were, and the 3-month supply is still chosen first.
 Vitaheal's `seedVersion` was not raised for this (raising it writes a key in every browser on
-the next start): a browser that had saved an edited Vitaheal theme keeps that theme, without the
-strip and the rows, until **Restore original store**, which every script starts with.
+the next start): a browser that had saved an edited Vitaheal theme kept that theme, without the
+strip and the rows, until **Restore original store**, which every script starts with. Since
+2026-11-25 the seed version is 2, so such a browser is seeded again on its next start
+([Sixteen products](#sixteen-products-rubbeccas-second-review-2026-11-25)).
 
 ### Vitaheal on the Lumos look (feedback round, 2026-11-25)
 
@@ -102,16 +104,145 @@ amount is charged), campaigns (the WINTER15 bar), search rules, chatbot, pages, 
 every section and block id; checkout's consent and terms, the account with subscriptions and
 orders, and chat.
 
-**Seed version.** It stays 1, so loading the app still writes nothing to the browser. A browser
-that saved an edited Vitaheal theme before 25 November keeps the classic look until
-**Restore original store**. Every script starts with that restore, and the Themes page and
-Settings › Store data say so when a demo store runs an older edited copy of its own theme.
+**Seed version.** It stayed 1 for the move, so a browser that saved an edited Vitaheal theme
+before it kept the classic look until **Restore original store**. The Themes page and Settings ›
+Store data say so when a demo store runs an older edited copy of its own theme. Later the same day
+the seed version went to 2 for the sixteen products (below): such a browser is seeded again on its
+next start, so it gets the new look too, and that note has nothing left to show for Vitaheal.
 
 **Added with it, for any store:** a theme row can be shown only on products sold on a plan
 (`plansOnly` on a collapsible row); a subscription keeps the price of the format it was bought
 on when the shopper changes plan (`contractUnitPrice` in `src/subscriptions/contracts.ts`); and
 whether a store can be searched is one rule (`canSearch` in `src/storefront/storeSearch.ts`) that
 the storefront and the admin's previews share.
+
+### Sixteen products (Rubbecca's second review, 2026-11-25)
+
+**Why.** Rubbecca reviewed the demo again on 25 November. She asked for more products ("a few
+refill bags or general supplements"), and found that a product or collection opened scrolled to
+the bottom of its page.
+
+**The products** (in [vitahealDemo.ts](../../src/storefront/vitahealDemo.ts)). Eight more, after
+Balance. Their variants number from the product, as the first eight's do (`productId * 10 + n`).
+
+| Id | Product | Choice (Format) | Price (kr) | Goals |
+|---|---|---|---|---|
+| 2009 | Plant Protein | Can / Refill bag | 399 / 369 | Sport, Subscription |
+| 2010 | Daily Greens | Can / Refill bag | 449 / 429 | Longevity, Subscription |
+| 2011 | Vitamin D3 + K2 | none | 199 | Immunity |
+| 2012 | Omega-3 | none | 329 | Longevity |
+| 2013 | Magnesium | none | 229 | Sleep, Sport |
+| 2014 | Creatine | Can / Refill bag | 299 / 279 | Sport, Subscription |
+| 2015 | Vitamin C + Zinc | none | 179 | Immunity |
+| 2016 | Daily Multi | none | 249 | Immunity |
+
+- **Plans.** The plans read the Subscription collection, so both now take eight products
+  (2001, 2002, 2003, 2005, 2006 and the three powders, 2009, 2010, 2014). Their cards say
+  **Subscribe available**. The capsules and tablets are bought once.
+- **Refill bags.** The bag is the cheaper format, so the card reads "From" its price and the page
+  opens on it (`preselectVariant`). A shopper who links to the can still gets the can.
+- **A sixth goal, Immunity** (collection 28, with a line under its title): last in the Shop panel's
+  "Shop by goal", before Subscription in the footer's Shop column, and a fifth **Shop by goal** tile
+  (`tile-immunity.jpg`). The goals now hold Subscription 8, Sport 6, Longevity 6, Sleep 3, Hydrate 1
+  and Immunity 3 products.
+- **Our range** shows twelve: the first eight, then Plant Protein, Daily Greens, Vitamin D3 + K2
+  and Omega-3. The featured products section's **Products** slider now runs 2 to 12 for every
+  store ([themeSections.ts](../../src/storefront/themeSections.ts)), and
+  [FeaturedProducts.vue](../../src/views/Storefront/sections/FeaturedProducts.vue) stops at 12. Every
+  other store asks for 8 or fewer, so nothing else moves.
+- **Search.** A one-way synonym (`vh-syn-immune`): immune, cold, flu and winter lead to immunity.
+  Magnesium's copy talks about tiredness, so "tired" now finds it without a synonym, and "sleep"
+  finds it after Unwind and Nasal Strips.
+- **Photos.** Two per product and the tile, in `public/storefront/vitaheal/`, each with a
+  `CREDITS.md` row. `theme.jpg` stays: the store's first screen did not change.
+
+**The chat** ([assistantProfiles.ts](../../src/chatbot/assistantProfiles.ts),
+[storeAssistant.ts](../../src/chatbot/storeAssistant.ts)). The wellness profile has five more
+needs:
+
+| Need | Asked as | Suggests |
+|---|---|---|
+| immune support | "I keep catching colds", flu, "for the winter", zinc, vitamin D | Vitamin C + Zinc, Vitamin D3 + K2, Daily Multi |
+| muscle and strength | protein, creatine, "build muscle", lifting weights | Plant Protein, Creatine |
+| heart and brain | heart, omega-3, fish oil | Omega-3 |
+| everyday vitamins | multivitamin, "vitamins and minerals" | Daily Multi, Vitamin D3 + K2, Vitamin C + Zinc |
+| greens and fibre | greens, superfoods, vegetables, fibre | Daily Greens |
+
+- A cold drink, a winter delivery or "What strength is Magnesium?" is no need: those words count
+  only in a phrase like the ones above.
+- "Protein after the gym" asks for muscle and strength only. The gym is when, not what. "I run and
+  lift weights" asks for both needs.
+- "Something for women" now matches Balance by its own word, "blend" (it read "month", which
+  Vitamin D3 + K2's "For the dark months" also has). It still answers Balance, then Balance Refill.
+- "I can't sleep" answers Unwind and Magnesium, because Magnesium is in the Sleep goal.
+- **Refills.** A question about whether there is a refill (`refills.says` and `refills.asks` on
+  the profile) is answered from each product's own choices (Refill, Refill bag, Bag) and from a
+  product named "… Refill". "Do you sell refills?" names the eight that come in one, the newest
+  first, with three cards. "Is there a refill bag for the protein?" names Plant Protein and its
+  Refill bag. A product without one gets "No" and the names of those that have one, as text. A
+  sold-out refill is said to be sold out. Any other refill question ("Are the refill bags
+  recyclable?", "How do I refill the can?"), and returning or subscribing to a refill, goes to the
+  store's pages, as before.
+- A request that names no need ("What should I buy?", "What would you recommend I buy?") is
+  matched without the words that ask for a suggestion and the words around them
+  (`requestWordsIgnored`). So it asks what the shopper needs instead of matching product copy.
+- Immune support takes a cold the shopper has or wants to avoid ("anything for a cold?", "I keep
+  catching colds"), not a cold drink or cold hands, and winter, but not a delivery over the winter
+  holidays. "Tired" now leads to steady energy, where Magnesium's "tiredness" puts it first.
+- **Medical caution.** A shopper who names a condition or a medicine (a heart condition, blood
+  thinners, warfarin, chemo, kidney problems, being immunocompromised…) gets the "I can’t give
+  medical advice" answer before any need is matched. This caution is shared with Daybloom, so
+  Daybloom gets it for those messages too.
+- The help line now names protein and immune support.
+- Daybloom's profile turns `refills` and `requestWordsIgnored` off. Apart from the wider medical
+  caution, its answers and the other stores' are unchanged.
+
+**Seed 2.** Vitaheal's `seedVersion` is 2
+([demoStores/vitaheal.ts](../../src/storefront/demoStores/vitaheal.ts)), the first blueprint to
+raise it. The others stay at 1. On the next start, every store that runs the Vitaheal theme and
+recorded seed 1, or no seed, is seeded again and records seed 2 (`reseedStale`). That is the home
+store in a browser that used it before, a store that had Vitaheal applied, and a store made from
+it. So a reviewer who opened the store before gets the sixteen products on their next visit.
+
+| Dropped | Kept |
+|---|---|
+| Changes to products, plans and store campaigns. | Orders, and each fulfilment's progress (`mp.commerce.fulfillments.v1`). |
+| Search rules added or changed (a `knackered` synonym). | Subscribers, new ones included. |
+| Chatbot settings. | Chats. |
+| Changes to the store's own theme. | Campaign announcement emails. |
+| Products a merchant added to this store only. | Whether the chatbot is on. |
+| | The Merchandise Cloud connection. |
+| | The cart, with no "store changed" notice. |
+| | Theme copies. |
+
+Worth knowing:
+
+- A copy of the theme that was published goes back to a Draft, and the store runs Vitaheal 2.0
+  again.
+- Winter wellness week forgets the email it was announced with. The email stays in Marketing.
+- A store that applied the Vitaheal theme at seed 1 loses its changes the same way.
+- A tab that was already open when another tab ran the reseed follows it when the saved slots go,
+  but from its own code. A tab still running the build from before the new range seeds the eight
+  products again, and anything it then saves (a product, a plan, the theme, a search rule) is saved
+  over seed 2: every tab follows it, and a reload does not seed it again. Only **Restore original
+  store** does. So close every tab of the old build before restoring.
+
+So the first start in any browser, an empty one too, now writes one key:
+`mp.vitaheal-demo.installed.v1`, `{ "blueprintId": "vitaheal", "seedVersion": 2, "appliedAt": … }`.
+It names the store's own theme, so no theme counts as applied (the Themes page shows no "Copied
+from"). A restore clears it and writes it again at once. A browser at seed 2 is not seeded again:
+what it saved is read back.
+
+**Fixed with it, for every store: a page opens at its top**
+([src/router/scroll.ts](../../src/router/scroll.ts), the router's `scrollBehavior`). The router had
+no scroll rule, so a page opened where the last one was scrolled to. Now:
+
+- A storefront page opened from another page starts at its top: a route named `Storefront…`, on a
+  new path.
+- Back and Forward return to where the page was, on every page.
+- A filter, a sort or a product's choice changes only the address's query, so the page keeps its
+  place.
+- Admin pages are unchanged: a link in the admin leaves the window where it is.
 
 ## What a theme is
 
@@ -211,7 +342,7 @@ Ids are unique by construction: one block per store and blueprint
 
 | Where | Products | Variants | Collections |
 |---|---|---|---|
-| Vitaheal on its home channel | 2001-2008 | `productId * 10 + n` (20011...) | 23-27 |
+| Vitaheal on its home channel | 2001-2016 | `productId * 10 + n` (20011...) | 23-28 |
 | Northfold, Torqline, Lumos, Daybloom on their home channel | `slot * 1000 + n` (3001..., 4001..., 5001..., 7001...) | `productId * 100 + n` | `slot * 1000 + 900 + n` (3901..., 4901..., 5901..., 7901...) |
 | A blueprint installed on store slot 2-9 | `storeSlot * 10000 + blueprintSlot * 1000 + n` (Torqline on Vitaheal: 42001...) | `productId * 100 + n` | product base `+ 900 + n` |
 | A blueprint installed on store slot 10-99 | the same, plus 1,000,000 | `productId * 100 + n` | the same, plus 1,000,000 |
@@ -243,7 +374,7 @@ writes nothing and keeps following its seed.
 
 | Key name | Kept by | What it holds | Apply | Restore |
 |---|---|---|---|---|
-| `installed.v1` | [install.ts](../../src/storefront/demoStores/install.ts) | The theme applied: `{ blueprintId, seedVersion, appliedAt }`. Absent: the store runs what it started with. | Written first | Cleared first |
+| `installed.v1` | [install.ts](../../src/storefront/demoStores/install.ts) | The theme applied: `{ blueprintId, seedVersion, appliedAt }`. Absent: the store runs what it started with. On Vitaheal it is there from the first start and names Vitaheal itself: it records the seed the store holds (2). | Written first | Cleared first (on Vitaheal, written again at once) |
 | `products.v1` | [useCommerce.ts](../../src/stores/useCommerce.ts) | The store's products. | Replaced | Replaced |
 | `size-charts.v1` | [useSizeCharts.ts](../../src/stores/useSizeCharts.ts) | Size charts. | Replaced | Replaced |
 | `themes.v1` | [useStoreThemes.ts](../../src/stores/useStoreThemes.ts) | The store's themes: edits, copies and drafts. | Theme replaced, drafts kept | Drafts and copies removed |
@@ -291,7 +422,9 @@ store.
   `mp.store-builder.created-stores.v1`, so a store made or deleted in another tab comes in or leaves.
 - **A seed fix reaches every browser.** When a blueprint's `seedVersion` passes the one a store was
   seeded at (a store without an `installed` record counts as version 1), the store is reseeded on
-  the next start and the new version is recorded.
+  the next start and the new version is recorded. Vitaheal is at 2 since 2026-11-25 (see
+  [Sixteen products](#sixteen-products-rubbeccas-second-review-2026-11-25) for what that keeps and
+  drops); the other blueprints are at 1.
 - **Storage full.** When the browser refuses a save, one warning toast says changes will be gone
   after a reload. Apply returns false if it cannot write the `installed` record.
 
@@ -315,7 +448,7 @@ store.
 `applyPreview(channelId, blueprintId)` lists what Apply does, for the confirm dialog
 (`applySummary`). Applying Northfold to Vitaheal reads:
 
-- 20 products replace the 8 in this store.
+- 20 products replace the 16 in this store.
 - Northfold’s look, 6 collections, 8 pages and menus replace this store’s.
 - 3 campaigns, 9 search rules and 5 size charts replace this store’s.
 - The chatbot answers as a clothing store.
@@ -345,7 +478,8 @@ record, reseeds every part, then puts back what only a restore touches (`restore
 - the store's campaign announcement emails removed.
 
 The cart is emptied and the vehicle forgotten. Orders stay. Every key the store kept is gone
-afterwards, apart from the shared emails key, which keeps the other stores' emails.
+afterwards, apart from the shared emails key, which keeps the other stores' emails. On Vitaheal
+the `installed` record is written again at once, to record seed 2.
 
 A store that started blank goes back to blank: no theme, products, pages, plans or rules, and its
 chatbot's settings back to none.
@@ -472,7 +606,9 @@ thumbnail and that the file exists.
 |---|---|
 | [demoStores.test.ts](../../tests/storefront/demoStores.test.ts) | Every blueprint: ids, SKUs, options and swatches, links on every install, photos and credits, the thumbnail, fonts, no real brand names, no subscription data on a store without subscriptions. |
 | [demoStoresInstall.test.ts](../../tests/storefront/demoStoresInstall.test.ts) | The registry, slots, `canApplyTheme`, the id blocks and the `installed` record. |
-| [demoStoresVitaheal.test.ts](../../tests/storefront/demoStoresVitaheal.test.ts) | Vitaheal's home build deep-equals its seed from before the registry (the look recaptured on 2026-11-24 and 2026-11-25). |
+| [demoStoresVitaheal.test.ts](../../tests/storefront/demoStoresVitaheal.test.ts) | Vitaheal's home build deep-equals its seed from before the registry (recaptured on 2026-11-24, then twice on 2026-11-25: the look, then the sixteen products). |
+| [vitahealDemo.test.ts](../../tests/storefront/vitahealDemo.test.ts), [vitahealRange.test.ts](../../tests/storefront/vitahealRange.test.ts), [vitahealReseed.test.ts](../../tests/storefront/vitahealReseed.test.ts) | Vitaheal's reference tables and look; the eight products added on 2026-11-25, the Immunity goal and Our range; seed 2: who is seeded again, and what that keeps and drops. |
+| [scroll.test.ts](../../tests/storefront/scroll.test.ts) | Where a page scrolls after a navigation: storefront pages at their top, Back to the saved place, admin pages as before. |
 | [demoStoresApp.test.ts](../../tests/storefront/demoStoresApp.test.ts) | The Pinia stores together: seeding, browser keys, Restore, the stores that must not change. |
 | [themeSwap.test.ts](../../tests/storefront/themeSwap.test.ts) | Apply, Restore, created stores, Delete store, theme copies, plans and the cart, across tabs and reloads. |
 | [themeSummary.test.ts](../../tests/storefront/themeSummary.test.ts) | The words of the Apply and Restore dialogs and the Review step. |

@@ -142,7 +142,8 @@ test('a plan needs a name, sensible numbers and at least one product', () => {
 
 test('the demo store has the reference store\'s two plans, on the products of its Subscription collection', () => {
   const onPlans = vitahealProducts().filter((p) => p.collections.includes('Subscription')).map((p) => p.id)
-  assert.equal(onPlans.length, 5)
+  // The reference store's five, then the three powders added on 2026-11-25: Plant Protein, Daily Greens and Creatine.
+  assert.deepEqual(onPlans, [2001, 2002, 2003, 2005, 2006, 2009, 2010, 2014])
   assert.deepEqual(VITAHEAL_PLANS.map((p) => [p.name, deliverySummary(p), p.discountPct, p.freeShipping, p.isDefault]), [
     ['3-month supply', '3 units every 3 months', 30, true, true],
     ['Monthly subscription', '1 unit every month', 20, false, false],

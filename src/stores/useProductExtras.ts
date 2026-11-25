@@ -557,7 +557,7 @@ export const useProductExtrasStore = defineStore('productExtras', () => {
     attached.add(channel.id)
     collections.value = replaceStoreRows(collections.value, (c) => c.salesChannels.includes(channel.id), demoCollections(channel.id, demoSnapshotOf(channel)))
   }
-  // The demo stores' collections (Vitaheal's are 23-27), after the others. Their storefronts read them from the products' own `collections`.
+  // The demo stores' collections (Vitaheal's are 23-28), after the others. Their storefronts read them from the products' own `collections`.
   for (const channel of SEEDED_DEMO_CHANNELS) attachStore(channel)
 
   /**
@@ -609,6 +609,8 @@ export const useProductExtrasStore = defineStore('productExtras', () => {
     const collection = collections.value.find((c) => c.id === id)
     if (!collection) return
     const handle = input.seo.urlHandle || toHandle(input.title)
+    // A store's collection gets its products from their own Collections field, so its count stays.
+    const picked = input.type === 'Manual' && !collection.salesChannels.length
     Object.assign(collection, {
       title: input.title,
       handle,
@@ -619,7 +621,7 @@ export const useProductExtrasStore = defineStore('productExtras', () => {
       matchMode: input.matchMode,
       rules: input.rules,
       productItemIds: input.productItemIds,
-      productCount: input.type === 'Manual' ? input.productItemIds.length : collection.productCount,
+      productCount: picked ? input.productItemIds.length : collection.productCount,
       seo: { ...input.seo, urlHandle: handle },
       imageName: input.imageName,
       updatedAt: nowIso(),

@@ -83,7 +83,12 @@ function fit(phrase: string[], product: SearchableProduct): number {
   ]
   // A phrase spread over two fields still counts: the product is about all of its words.
   // A query that is a product's whole name means that product ("Balance" before "Balance Refill").
-  return (wordsOf(product.name).join(' ') === phrase.join(' ') ? 5 : 1) + parts.reduce((score, [text, weight]) => score + (phrase.some((word) => wordsOf(text).some((w) => w.startsWith(word))) ? weight : 0), 0)
+  // The name counts by how many of the words it holds: "vitamin c" finds Vitamin C + Zinc before Collagen+.
+  const share = (text: string): number => {
+    const words = wordsOf(text)
+    return phrase.filter((word) => words.some((w) => w.startsWith(word))).length / phrase.length
+  }
+  return (wordsOf(product.name).join(' ') === phrase.join(' ') ? 5 : 1) + parts.reduce((score, [text, weight], i) => score + (i === 0 ? weight * share(text) : share(text) > 0 ? weight : 0), 0)
 }
 
 /** Whether `query` is, or holds as whole words, `term`. */

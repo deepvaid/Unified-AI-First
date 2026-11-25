@@ -17,10 +17,18 @@ import type { DemoStoreBlueprint, InstallContext, StoreSnapshot } from './types.
 const SLOT = 2
 /**
  * The library version. 2.0 since the second feedback round (2026-11-25): the Lumos look on
- * the sections drawing. The seed version stays 1, so loading the app writes nothing; a
- * browser that holds an edited Vitaheal theme keeps it until Restore original store.
+ * the sections drawing.
  */
 const VERSION = '2.0'
+/**
+ * 2 since the eight products added after the second review (2026-11-25): a browser that saved
+ * the store at seed 1 is seeded again on its next start (useDemoStores reseedStale), so it sells
+ * all sixteen. That reseed puts back the products, plans, store campaigns, search rules, chatbot
+ * settings and the theme the store started with (a copy of it stays, as a draft); orders,
+ * subscribers, chats, announcement emails, the chatbot's on/off, the Merchandise Cloud
+ * connection and the cart stay. The store then records seed 2 (tests/storefront/vitahealReseed.test.ts).
+ */
+const SEED_VERSION = 2
 const HOME_DOMAIN = VITAHEAL_CHANNEL.webStore!.domain
 /** When the seed was written: the theme's publish date and the collections' last update. */
 const SEEDED_AT = '2026-11-16T09:00:00Z'
@@ -137,7 +145,7 @@ function rehome(home: StoreSnapshot, ctx: InstallContext): StoreSnapshot {
 export const VITAHEAL_BLUEPRINT: DemoStoreBlueprint = {
   id: 'vitaheal',
   slot: SLOT,
-  seedVersion: 1,
+  seedVersion: SEED_VERSION,
   homeChannel: {
     ...VITAHEAL_CHANNEL,
     webStore: { ...VITAHEAL_CHANNEL.webStore!, blueprint: { original: 'vitaheal', slot: SLOT } },

@@ -1,6 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { NEW_CONVERSATION, assistantReply, productsFor } from '../../src/chatbot/storeAssistant.ts'
+import { assistantProfile } from '../../src/chatbot/assistantProfiles.ts'
+import { NEW_CONVERSATION, assistantProduct, assistantReply, productsFor } from '../../src/chatbot/storeAssistant.ts'
 import type { AssistantContext, AssistantOrder, AssistantProduct, AssistantState, AssistantSubscription } from '../../src/chatbot/storeAssistant.ts'
 import { VITAHEAL_CHATBOT, VITAHEAL_CONVERSATIONS, vitahealProducts } from '../../src/storefront/vitahealDemo.ts'
 
@@ -74,12 +75,167 @@ test('with shopping turned off there are no suggestions', () => {
   assert.notEqual(chat(['I can’t sleep'], ctx({ shoppingEnabled: false })).replies[0]!.kind, 'products')
 })
 
+// ── The range added after the first review: immunity, protein, omega-3, vitamins, greens ──
+
+/** What a message is answered with: the reply's words, and the names on its product cards. */
+function suggestion(message: string, context = ctx()): { text: string; names: string[] } {
+  const reply = chat([message], context).replies[0]!
+  return { text: reply.text, names: reply.kind === 'products' ? named(reply.productIds) : [] }
+}
+const inCollection = (collection: string) => products.filter((p) => p.collections.includes(collection)).map((p) => p.name)
+
+test('a shopper who keeps catching colds is shown the Immunity products', () => {
+  for (const message of [
+    'I keep catching colds', 'something for my immune system', 'I always get sick in winter', 'Do you have vitamin C?', 'zinc',
+    'Do you have anything for a cold?', 'What helps with a cold?', 'I have a cold', 'Something for the winter', 'winter',
+  ]) {
+    const { text, names } = suggestion(message)
+    assert.match(text, /^For immune support, /, message)
+    assert.deepEqual(names.sort(), inCollection('Immunity').sort(), message)
+  }
+  // A cold drink, cold hands, or delivery and opening hours in winter, is not a cold.
+  for (const message of ['Can I mix it with cold water?', 'Can I have it with a cold drink?', 'I had cold coffee with it, is that ok?', 'I always have cold hands and feet']) {
+    assert.deepEqual(suggestion(message).names, [], message)
+  }
+  for (const message of ['Does delivery take longer in winter?', 'Do you ship over the winter holidays?', 'Are you open over the winter holidays?']) {
+    assert.equal(chat([message]).replies[0]!.kind, 'answer', message)
+  }
+})
+
+test('protein after the gym is Plant Protein, not hydration', () => {
+  const { text, names } = suggestion('protein after the gym')
+  assert.equal(text, 'For muscle and strength, these are the ones we make for it:')
+  assert.equal(names[0], 'Plant Protein')
+  assert.ok(!names.includes('Vitaheal Electrolytes'))
+  assert.ok(suggestion('creatine').names.includes('Creatine'))
+  assert.match(suggestion('I want to build muscle').text, /^For muscle and strength, /)
+  // Training said on its own is still hydration; running and lifting ask for both.
+  assert.deepEqual(suggestion('I get cramps when I train').names, ['Vitaheal Electrolytes'])
+  assert.match(suggestion('I run marathons and lift weights').text, /^For hydration and training and muscle and strength, /)
+  // "Strength" alone may be a dose, not a need.
+  assert.deepEqual(suggestion('What strength is Magnesium?').names, [])
+})
+
+test('omega 3 is Omega-3, for heart and brain', () => {
+  for (const message of ['omega 3', 'Do you have omega-3?', 'something for my heart', 'fish oil']) {
+    assert.deepEqual(suggestion(message), { text: 'For heart and brain, this is the one we make for it:', names: ['Omega-3'] }, message)
+  }
+})
+
+test('a multivitamin is Daily Multi first, with the other vitamins', () => {
+  const { text, names } = suggestion('do you have a multivitamin?')
+  assert.match(text, /^For everyday vitamins, /)
+  assert.deepEqual(names, ['Daily Multi', 'Vitamin D3 + K2', 'Vitamin C + Zinc'])
+})
+
+test('greens are Daily Greens', () => {
+  for (const message of ['greens powder', 'I don’t eat enough vegetables']) {
+    assert.deepEqual(suggestion(message), { text: 'For greens and fibre, this is the one we make for it:', names: ['Daily Greens'] }, message)
+  }
+})
+
+test('a shopper who is always tired is shown Magnesium too, whose own words are "less tiredness"', () => {
+  const { text, names } = suggestion('I am always tired in the afternoon')
+  assert.match(text, /^For steady energy, /)
+  assert.ok(names.includes('Magnesium'), names.join(', '))
+})
+
+test('the new products’ words don’t answer questions about something else', () => {
+  // A request's words ("something", "buy") name no need, whatever a product's own words say: it gets a question back.
+  for (const message of [
+    'what should I buy?', 'Can you suggest something to buy?', 'What would you recommend I buy?', 'I’m looking for something to buy',
+    'Which one should I buy?', 'What’s the best product to buy?',
+  ]) {
+    assert.match(suggestion(message).text, /^Tell me what you would like help with/, message)
+  }
+  // Balance first, and not Vitamin D3 + K2 "for the dark months".
+  assert.deepEqual(suggestion('something for women').names, ['Balance', 'Balance Refill'])
+  // A request still reads the words it names besides asking.
+  assert.deepEqual(suggestion('I’m looking for something vegan').names, ['Omega-3'])
+})
+
+test('the help line, and the question back to a request, name protein and immune support among the suggestions', () => {
+  assert.match(chat(['Hi']).replies[0]!.text, /suggest a product for sleep, focus, hydration, protein, immune support, skin or healthy ageing/)
+  assert.match(chat(['What do you recommend?']).replies[0]!.text, /better sleep, focus, hydration, protein, immune support, skin or healthy ageing/)
+})
+
+// ── Refills ──────────────────────────────────────────────────────────────────
+
+/** The products as the store hands them to the chat: with their choices ("Can", "Refill bag"). */
+const onTheStore = vitahealProducts().map((p) => assistantProduct(p, `/products/${p.detail!.url}`))
+const onTheStoreNamed = (ids: number[]) => ids.map((id) => onTheStore.find((p) => p.id === id)!.name)
+/** The products that come in a refill, newest first, as the store's Newest sort has them. */
+const REFILLED = 'Creatine, Daily Greens, Plant Protein, Balance Refill, Collagen+, Daily NAD+, Clear Focus and Unwind'
+
+test('asked about refills, the assistant names the products that come in one, with at most three cards', () => {
+  const store = ctx({ products: onTheStore })
+  const all = chat(['do you sell refills?'], store).replies[0]!
+  assert.equal(all.text, `Yes. ${REFILLED} come in a refill. Choose the refill on a product’s page:`)
+  // The newest first: the three powders.
+  assert.deepEqual(all.kind === 'products' ? onTheStoreNamed(all.productIds) : [], ['Creatine', 'Daily Greens', 'Plant Protein'])
+  // "Which" asks which, not whether.
+  assert.equal(chat(['Which products come in refill bags?'], store).replies[0]!.text, `${REFILLED} come in a refill. Choose the refill on a product’s page:`)
+
+  const protein = chat(['is there a refill bag for the protein?'], store).replies[0]!
+  assert.equal(protein.text, 'Yes. Plant Protein comes in a refill bag as well as the can. Choose Refill bag on its page:')
+  assert.deepEqual(protein.kind === 'products' ? onTheStoreNamed(protein.productIds) : [], ['Plant Protein'])
+
+  assert.equal(chat(['Is there a refill for Unwind?'], store).replies[0]!.text, 'Yes. Unwind comes in a bag as well as the can. Choose Bag on its page:')
+  assert.equal(chat(['refill for balance'], store).replies[0]!.text, 'Yes. Balance Refill is the refill for Balance:')
+  // Two products named: both, though one name has more words than the other.
+  const two = chat(['Do you have refills for Clear Focus and Unwind?'], store).replies[0]!
+  assert.equal(two.text, 'Yes. These come in a refill:')
+  assert.deepEqual(two.kind === 'products' ? onTheStoreNamed(two.productIds).sort() : [], ['Clear Focus', 'Unwind'])
+  // A "No" says which do, with no cards the shopper did not ask about.
+  const none = chat(['Is there a refill for the electrolytes?'], store).replies[0]!
+  assert.equal(none.kind, 'text')
+  assert.equal(none.text, `No, Vitaheal Electrolytes doesn’t come in a refill. ${REFILLED} do.`)
+})
+
+test('any other question about a refill is the store’s pages’ to answer, never a "Yes"', () => {
+  const store = ctx({ products: onTheStore })
+  for (const message of [
+    'Are the refill bags recyclable?', 'Is the refill bag compostable?', 'Are your refills plastic free?', 'The refill bags, are they recyclable?',
+    'How do I refill the can?', 'How long does a refill bag last?', 'Why are refills cheaper?',
+  ]) {
+    assert.equal(chat([message], store).replies[0]!.kind, 'answer', message)
+  }
+})
+
+test('a sold-out refill is said to be sold out', () => {
+  const soldOut = onTheStore.map((p) => (p.name === 'Plant Protein' ? { ...p, options: p.options!.map((o) => ({ ...o, soldOut: ['Refill bag'] })) } : p))
+  assert.equal(chat(['is there a refill bag for the protein?'], ctx({ products: soldOut })).replies[0]!.text, 'Plant Protein comes in a refill bag, but it’s sold out right now.')
+})
+
+test('returning or subscribing to a refill is the store’s pages’ to answer, and only the wellness store answers refills', () => {
+  const store = ctx({ products: onTheStore })
+  assert.equal(chat(['Can I return a refill bag?'], store).replies[0]!.kind, 'answer')
+  assert.equal(chat(['do you sell refills?'], ctx({ products: onTheStore, shoppingEnabled: false })).replies[0]!.kind, 'answer')
+  assert.ok(assistantProfile('wellness').refills)
+  assert.equal(assistantProfile('supplements').refills, undefined)
+})
+
 test('a health question gets "ask your doctor", never a product', () => {
   for (const message of ['Can I take this while pregnant?', 'Is Clear Focus safe with my blood pressure medication?', 'Will Unwind cure my insomnia?', 'Can my child take it?']) {
     const reply = chat([message]).replies[0]!
     assert.equal(reply.kind, 'text', message)
     assert.match(reply.text, /doctor or pharmacist/, message)
   }
+})
+
+test('a condition or a medicine named with a need gets "ask your doctor", never the product for the need', () => {
+  for (const message of [
+    'I have a heart condition', 'I have a heart murmur', 'I take blood thinners, is omega-3 ok?', 'I take warfarin, is Vitamin D3 + K2 ok?',
+    'I’m immunocompromised', 'I have kidney problems, can I take creatine?', 'I had a heart attack last year', 'I’m on chemo, what helps my immune system?',
+  ]) {
+    const reply = chat([message]).replies[0]!
+    assert.equal(reply.kind, 'text', message)
+    assert.match(reply.text, /^I can’t give medical advice/, message)
+  }
+  // The need on its own still finds its product, and "terms and conditions" is no condition.
+  assert.deepEqual(suggestion('Something for my heart').names, ['Omega-3'])
+  assert.deepEqual(suggestion('I keep catching colds').names.sort(), inCollection('Immunity').sort())
+  assert.doesNotMatch(chat(['What are your terms and conditions?']).replies[0]!.text, /medical advice/)
 })
 
 // ── Orders ───────────────────────────────────────────────────────────────────

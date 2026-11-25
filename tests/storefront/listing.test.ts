@@ -200,16 +200,26 @@ test('a card carries one mark: sold out, else the saving, else "Subscribe availa
   assert.deepEqual(products.map((p) => cardBadge(p)?.kind ?? ''), products.map((p) => (cardPrice(p).salePercent ? 'sale' : isNewArrival(p) ? 'new' : '')))
 })
 
-test('Vitaheal: the five products on a plan say "Subscribe available" and open quick add; the rest add straight away', () => {
+test('Vitaheal: the eight products on a plan say "Subscribe available" and open quick add; the rest add straight away', () => {
   const vitaheal = vitahealProducts() as CardProduct[]
   const onPlan = (p: CardProduct) => plansForProduct(VITAHEAL_PLANS, VITAHEAL_CHANNEL_ID, p.id).length > 0
   const name = (p: CardProduct) => (p as CardProduct & { name: string }).name
   assert.deepEqual(vitaheal.filter((p) => cardBadge(p, { subscribe: onPlan(p) })?.kind === 'subscribe').map(name), vitaheal.filter(onPlan).map(name))
-  assert.equal(vitaheal.filter(onPlan).length, 5)
+  assert.equal(vitaheal.filter(onPlan).length, 8)
   // The products with nothing to choose and no plan add straight away; the ones on a plan always ask.
-  assert.deepEqual(vitaheal.filter((p) => addsDirectly(p, 'unknown', onPlan(p))).map(name), ['Nasal Strips', 'Balance Refill', 'Balance'])
+  assert.deepEqual(vitaheal.filter((p) => addsDirectly(p, 'unknown', onPlan(p))).map(name), [
+    'Nasal Strips', 'Balance Refill', 'Balance', 'Vitamin D3 + K2', 'Omega-3', 'Magnesium', 'Vitamin C + Zinc', 'Daily Multi',
+  ])
   assert.ok(vitaheal.filter(onPlan).every((p) => !addsDirectly(p, 'unknown', true)))
-  // Each of those five also has a format or flavour to choose, so it is Balance, with nothing to
+  // Of the eight added on 2026-11-25: Plant Protein is on a plan and comes in a can or a refill bag, so its
+  // card opens quick add; Vitamin D3 + K2 has nothing to choose and no plan, so its card adds it straight away.
+  const plantProtein = vitaheal.find((p) => name(p) === 'Plant Protein')!
+  const vitaminD = vitaheal.find((p) => name(p) === 'Vitamin D3 + K2')!
+  assert.deepEqual([onPlan(plantProtein), needsChoice(plantProtein), addsDirectly(plantProtein, 'unknown', onPlan(plantProtein))], [true, true, false])
+  assert.deepEqual(cardBadge(plantProtein, { subscribe: onPlan(plantProtein) }), { kind: 'subscribe', text: 'Subscribe available' })
+  assert.deepEqual([onPlan(vitaminD), needsChoice(vitaminD), addsDirectly(vitaminD, 'unknown', onPlan(vitaminD))], [false, false, true])
+  assert.notEqual(cardBadge(vitaminD, { subscribe: onPlan(vitaminD) })?.kind, 'subscribe')
+  // Each of those eight also has a format or flavour to choose, so it is Balance, with nothing to
   // choose, that shows the plan is what opens quick add (the film puts Balance on a plan).
   assert.ok(vitaheal.filter(onPlan).every(needsChoice))
   const balance = vitaheal.find((p) => name(p) === 'Balance')!

@@ -744,6 +744,78 @@ here already exists when those slices start.
     - phones: the hero headline below 375px, quick add's subscription button, the account
       card's name; the canvas's "From" price and stats; hints on the three new toggles; and
       accessible names for the search page's own field and "View all".
+- **Feedback round, second review: sixteen products, and pages that open at their top (built,
+  2026-11-25).** Rubbecca reviewed the Vitaheal demo again. She asked for more products ("a few
+  refill bags or general supplements"), and found that a product or collection opened scrolled to
+  the bottom of its page.
+  - **Eight more products,** after Balance (2009-2016). Three powders come in a can or a cheaper
+    refill bag and are on both plans: Plant Protein (399 / 369 kr), Daily Greens (449 / 429 kr)
+    and Creatine (299 / 279 kr). Five are bought once: Vitamin D3 + K2 (199 kr), Omega-3
+    (329 kr), Magnesium (229 kr), Vitamin C + Zinc (179 kr) and Daily Multi (249 kr). Each has
+    its facts and two photos. The store now sells sixteen products, 25 variants, and eight are on
+    the plans (five before).
+  - **A bag first.** A powder's card reads "From" the bag's price, and its page opens on the bag.
+  - **A sixth goal, Immunity,** with the three immune products: in the Shop panel, the footer and
+    a Shop by goal tile, third so it is in view on a desktop. The home page's Our range shows twelve products. The featured
+    products section's Products slider now goes up to 12 for every store; every other store asks
+    for 8 or fewer.
+  - **Search.** Immune, cold, flu and winter lead to the Immunity products (a synonym).
+    "Tired" now also finds Magnesium, whose copy talks about tiredness.
+  - **Chat.** Five more needs: immune support, muscle and strength, heart and brain, everyday
+    vitamins, greens and fibre. "Do you sell refills?" names the eight products that come in
+    one, read from their own choices, with the three new powders as cards; "Is there a refill bag
+    for the protein?" names Plant Protein. "I can't sleep" now also suggests Magnesium. A cold drink, a winter delivery or "What
+    strength is it?" is not taken for a need. Daybloom's and the other stores' answers are unchanged.
+  - **Reviewers who opened the store before** get the sixteen products on their next visit.
+    Vitaheal's seed version is now 2, so a browser that saved it at seed 1 is seeded again. That
+    drops changes to products, plans, store campaigns, search rules, chatbot settings and the
+    theme. It keeps orders, subscribers, chats, announcement emails, the chatbot's on or off, the
+    Merchandise Cloud connection, the cart and theme copies. Loading the app now writes one key,
+    the seed the store holds (`mp.vitaheal-demo.installed.v1`).
+  - **Pages open at their top** (`src/router/scroll.ts`, every store). A storefront page opened
+    from another starts at its top, and so does a new search. Back and Forward return to where
+    the page was, also when the same page was opened twice from the same place (vue-router's own
+    saved position can be the first visit's, so `scroll.ts` keeps each history entry's place by an
+    id on the entry). A filter, a sort or a product's choice keeps the place. The checkout's
+    receipt opens at its top. Admin pages are as before.
+  - **Reference files.** `vitaheal-seed.json` was recaptured a third time; only the products, the
+    collections, the Immunity tile and links, Our range's count, the plans' products and the new
+    synonym moved. `vitaheal-app-head.json` was patched by hand, as on 2026-11-24, because its
+    capture script reads the code from before the registry.
+    `wellness-replies.json` (the chat's answers) was recaptured: only the help line and the sleep
+    answer changed.
+  - **A store made from a theme records its seed.** With Vitaheal at seed 2, a store made with
+    Create sales channel from the Vitaheal theme counted as seed 1, so its first reload seeded it
+    again and its changes went. `useDemoStores.create` now records the seed it was made at.
+  - **Review.** A shopper, a merchant and a code review, each finding re-checked by a skeptic,
+    confirmed 29 findings. Fixed:
+    - Back after opening the same product twice landed where the first visit was left.
+    - Chat: a shopper who names a condition or a medicine (heart, blood thinners, chemo…) gets
+      the medical caution, on Daybloom too. "Are the refill bags recyclable?" no longer answers
+      "Yes". "What would you recommend I buy?" asks the need. A cold drink or a winter delivery is
+      not taken for immune support, and "anything for a cold?" is. The refill answer names all
+      eight with three cards, and its "No" has no cards. "Tired" finds Magnesium first.
+    - Admin: a store's collection lists its products (they join from their own page) and keeps
+      its title; the Collections list has a Store column. This was there before this round.
+    - Copy: the refill bag line, the health wording, Daily Multi, Plant Protein's protein label
+      and the subscription row ("This product can be bought on a subscription"). Creatine's pack
+      is 30 servings, as the other powders on the plans.
+    - Search: "vitamin c" finds Vitamin C + Zinc first. Vitamin C + Zinc's first photo is a
+      capsule, not a powder tub.
+  - **Tests.** `npm run test:storefront` (560), `npm run test:chatbot` (162),
+    `npm run test:subscriptions` (62), `npm run test:commerce` (28). New:
+    `vitahealRange.test.ts` (7), `vitahealReseed.test.ts` (14), `scroll.test.ts` (8).
+  - **Script.** `vitaheal-demo-script.md` has a "New since 25 November" section; steps 1, 11 and
+    12 follow the new range, "More to show" has the refills, Immunity and the new chat answers,
+    and "If something looks wrong" covers a browser from before. QA: D.38 to D.65 in
+    `demo-stores-qa.md`.
+  - **Not done.** The film's caption now says sixteen products (`scripts/demo-video/record.mjs`),
+    but the film was not recorded again. One seeded chat in the admin still reads "Unwind and Nasal
+    Strips" for sleep (it was already off: the assistant answered Unwind alone before). Left from
+    the review, as polish: Unwind's choice is "Bag" where the new powders say "Refill bag"; Daily
+    Greens and Vitamin D3 + K2 share their names with Daybloom products in admin lists; no photo
+    shows a refill bag; the Immunity products' "You may also like" has two cards; an admin page
+    opened from low on a list still opens low (as before this round).
 
 **Sales-demo pass (added 2026-11-16, after the audience was confirmed as sales people showing prospects):**
 
@@ -863,7 +935,7 @@ It draws only on themes with `drawing: 'sections'`, so Vitaheal's product page i
 | P11 | Payment methods | S9 | not started | |
 | P12 | Checkout | S9 | not started | Groundwork in the demo pass, part 4: countries, sample shopper and money format follow the store's currency (`checkoutProfile.ts`) |
 | P13 | Structured product content | S4 | partial | A table of facts per product (names and values), edited on the product and shown in a collapsible row ("Supplement facts"), with theme rows for warnings, delivery and the subscription (feedback round, part 3). Open: %NRV columns, allergens in bold, ingredient cards, certificates |
-| P14 | Catalog basics | S0 | done | A product can be added to the store from the admin, with pictures, and is kept across reloads (demo pass, part 2). Eight products, 14 variants with SKU, weight and one compare-at price, five collections, all in the admin and on the Vitaheal storefront only |
+| P14 | Catalog basics | S0 | done | A product can be added to the store from the admin, with pictures, and is kept across reloads (demo pass, part 2). Eight products, 14 variants with SKU, weight and one compare-at price, five collections, all in the admin and on the Vitaheal storefront only. Sixteen products, 25 variants and six collections since the second review (2026-11-25), still one compare-at price |
 | P15 | Add-on discount | S5 | not started | |
 | P16 | Returns and guarantee | S14 | not started | Guarantee terms page seeded |
 | P17 | Reviews | S11 | not started | |

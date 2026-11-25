@@ -20,8 +20,11 @@ const byName = (name: string) => products.find((p) => p.name === name)!
 const variantPrices = (name: string) => Object.fromEntries(byName(name).detail!.variantsList.map((v) => [v.title, Number(v.price)]))
 const handle = (name: string) => name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
 
-test('the catalogue is the eight reference products at their SEK prices', () => {
-  assert.equal(products.length, 8)
+test('the catalogue is the eight reference products at their SEK prices, then the eight added after the second review', () => {
+  assert.equal(products.length, 16)
+  assert.deepEqual(products.slice(0, 8).map((p) => p.name), [
+    'Unwind', 'Clear Focus', 'Daily NAD+', 'Nasal Strips', 'Vitaheal Electrolytes', 'Collagen+', 'Balance Refill', 'Balance',
+  ])
   assert.deepEqual(variantPrices('Vitaheal Electrolytes'), { 'Lemon & Ginger': 279, 'Wild Berries': 279, 'Starter Pack (both flavours)': 499 })
   assert.deepEqual(variantPrices('Unwind'), { Can: 419, Bag: 399 })
   assert.deepEqual(variantPrices('Clear Focus'), { Original: 409, Refill: 389 })
@@ -53,7 +56,7 @@ test('a card shows the lowest price, with "From" only where variants differ', ()
 })
 
 test('products belong to this store only, are published, in stock and have two pictures', () => {
-  assert.equal(catalogFor(products, VITAHEAL_CHANNEL_ID).length, 8)
+  assert.equal(catalogFor(products, VITAHEAL_CHANNEL_ID).length, 16)
   assert.equal(catalogFor(products, 'neelam-store').length, 0)
   for (const p of products) {
     assert.deepEqual(p.channelIds, [VITAHEAL_CHANNEL_ID])
@@ -64,10 +67,13 @@ test('products belong to this store only, are published, in stock and have two p
   }
 })
 
-test('collections match the reference: five on subscription', () => {
+test('collections match the reference, with Immunity last: eight on subscription', () => {
   const counts = Object.fromEntries(VITAHEAL_COLLECTIONS.map((c) => [c.title, c.productCount]))
-  assert.deepEqual(Object.keys(counts), ['Subscription', 'Sport', 'Longevity', 'Sleep', 'Hydrate'])
-  assert.equal(counts.Subscription, 5)
+  assert.deepEqual(Object.keys(counts), ['Subscription', 'Sport', 'Longevity', 'Sleep', 'Hydrate', 'Immunity'])
+  assert.equal(counts.Subscription, 8)
+  // Each count is the products that carry the collection.
+  for (const c of VITAHEAL_COLLECTIONS) assert.equal(c.productCount, products.filter((p) => p.collections.includes(c.title)).length, c.title)
+  assert.deepEqual(counts, { Subscription: 8, Sport: 6, Longevity: 6, Sleep: 3, Hydrate: 1, Immunity: 3 })
   for (const c of VITAHEAL_COLLECTIONS) assert.ok(c.productCount > 0, `${c.title} has products`)
 })
 
@@ -147,7 +153,8 @@ test('the content is the pages, policies and posts the store needs', () => {
 
 test('every photo the store names is a file in public/, so nothing is loaded from another site', () => {
   const photos = [...Object.values(VITAHEAL_PHOTOS), ...products.flatMap((p) => p.imageUrls!)]
-  assert.equal(photos.length, 7 + 8 * 2)
+  // The home page's eight photos (the Immunity tile added), and two for each of the sixteen products.
+  assert.equal(photos.length, 8 + 16 * 2)
   for (const photo of photos) {
     assert.match(photo, /^\/storefront\/vitaheal\/[a-z0-9-]+\.jpg$/)
     assert.ok(existsSync(new URL(`../../public${photo}`, import.meta.url)), `${photo} exists`)
@@ -179,7 +186,7 @@ test('the footer: the tagline, three link columns, the newsletter in a column of
   assert.equal(c.newsletterColumn, true)
   assert.ok(c.newsletter?.consent?.length, 'the sign-up keeps its consent line')
   assert.deepEqual(c.footerColumns.map((col) => [col.heading.label, col.items.map((l) => l.label)]), [
-    ['Shop', ['All products', 'Sleep', 'Sport', 'Longevity', 'Hydrate', 'Subscription']],
+    ['Shop', ['All products', 'Sleep', 'Sport', 'Longevity', 'Hydrate', 'Immunity', 'Subscription']],
     ['About Vitaheal', ['Our story', 'Ambassadors', 'Contact']],
     ['Help', ['My subscription', 'Money-back guarantee', 'Refund policy', 'Subscription terms']],
   ])
@@ -227,7 +234,7 @@ test('the header’s Shop and About open a panel of links; Subscription goes str
   ])
   const shop = nav[0]!.menu!
   assert.deepEqual(shop.columns.map((c) => [c.heading, c.links.map((l) => l.label)]), [
-    ['Shop by goal', ['Sleep', 'Sport', 'Longevity', 'Hydrate']],
+    ['Shop by goal', ['Sleep', 'Sport', 'Longevity', 'Hydrate', 'Immunity']],
     ['More ways to shop', ['All products', 'Subscribe and save']],
   ])
   assert.equal(shop.feature?.link.href, '/collections/subscription')
@@ -292,10 +299,13 @@ test('the home page: the hero with its badge and three figures, the goals carous
     'Shop by goal', 'goal', 'Carousel', 'Label over photo', 'Tint', 'Landscape', 3,
   ])
   assert.deepEqual(goals.blocks!.map((b) => [b.settings.label, b.settings.link]), [
-    ['Sleep', '/collections/sleep'], ['Sport', '/collections/sport'], ['Longevity', '/collections/longevity'], ['Hydrate', '/collections/hydrate'],
+    // Immunity, new for winter, is third: in view on a desktop, where the carousel shows three.
+    ['Sleep', '/collections/sleep'], ['Sport', '/collections/sport'], ['Immunity', '/collections/immunity'],
+    ['Longevity', '/collections/longevity'], ['Hydrate', '/collections/hydrate'],
   ])
+  assert.equal(goals.blocks!.find((b) => b.id === 'vitaheal-collection-immunity')!.settings.image, VITAHEAL_PHOTOS.tileImmunity)
   assert.deepEqual(settings(sectionOf('vitaheal-home-featured'), ['eyebrow', 'title', 'collection', 'productCount', 'layout']), [
-    'Blended and packed in Sweden', 'Our range', 'all', 8, 'Carousel',
+    'Blended and packed in Sweden', 'Our range', 'all', 12, 'Carousel',
   ])
   assert.deepEqual(home.filter((s) => s.kind === 'image-with-text').map((s) => [s.settings.buttonLabel, s.settings.imageSide]), [['Shop Unwind', 'Left'], ['Shop Clear Focus', 'Right']])
 
@@ -348,7 +358,7 @@ test('the product page: the plans, then the description open and four rows; it o
   assert.deepEqual(sectionOf('vitaheal-cart-summary').settings, { showNotes: false, upsells: true })
 })
 
-test('“How subscriptions work” shows only on a product sold on a plan: on Unwind, not on Nasal Strips, and on Balance once a plan offers it', () => {
+test('“How subscriptions work” shows only on a product sold on a plan: on Unwind and Creatine, not on Nasal Strips or Omega-3, and on Balance once a plan offers it', () => {
   const detail = sectionOf('vitaheal-product-detail')
   assert.deepEqual(detail.blocks!.filter((b) => b.settings.plansOnly === true).map((b) => b.id), ['vitaheal-row-subscription'])
   const titles = (name: string, plans: typeof VITAHEAL_PLANS = VITAHEAL_PLANS) => {
@@ -357,9 +367,9 @@ test('“How subscriptions work” shows only on a product sold on a plan: on Un
     return productRows(detail.blocks, product, { sizeGuide: false, hasPlans }).map((r) => r.title)
   }
   const onPlan = products.filter((p) => plansForProduct(VITAHEAL_PLANS, VITAHEAL_CHANNEL_ID, p.id).length > 0).map((p) => p.name)
-  assert.deepEqual(onPlan, ['Unwind', 'Clear Focus', 'Daily NAD+', 'Vitaheal Electrolytes', 'Collagen+'])
+  assert.deepEqual(onPlan, ['Unwind', 'Clear Focus', 'Daily NAD+', 'Vitaheal Electrolytes', 'Collagen+', 'Plant Protein', 'Daily Greens', 'Creatine'])
   for (const name of onPlan) assert.ok(titles(name).includes('How subscriptions work'), name)
-  for (const name of ['Nasal Strips', 'Balance', 'Balance Refill']) {
+  for (const name of ['Nasal Strips', 'Balance', 'Balance Refill', 'Vitamin D3 + K2', 'Omega-3', 'Magnesium', 'Vitamin C + Zinc', 'Daily Multi']) {
     assert.deepEqual(titles(name), ['Description', 'Product facts', 'Shipping and returns', 'Warnings'], name)
   }
   // The merchant puts Balance on the monthly plan: the row comes with it. Paused, the plan offers it nothing again.

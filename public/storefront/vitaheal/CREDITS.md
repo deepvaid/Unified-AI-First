@@ -18,6 +18,7 @@ or logo is in shot. To replace a photo, save a new file under the same name.
 | `tile-sport.jpg` | "Shop by goal": Sport | @bubble144 | https://unsplash.com/photos/man-jogging-on-a-sunny-day-with-people-around-dLd6PM5CKK4 |
 | `tile-longevity.jpg` | "Shop by goal": Longevity | @kalenemsley | https://unsplash.com/photos/woman-walking-on-pathway-on-top-of-hill-at-golden-hour-7bwQXzbF6KE |
 | `tile-hydrate.jpg` | "Shop by goal": Hydrate | @giorgiotrovato | https://unsplash.com/photos/clear-drinking-glass-on-white-table-rCzy18K9hq0 |
+| `tile-immunity.jpg` | "Shop by goal": Immunity | @kellysikkema | https://unsplash.com/photos/a-cup-of-tea-with-lemon-and-ginger-on-a-cutting-board-GDpTZESzJDQ |
 | `unwind-1.jpg` | Unwind | @nutraseller | https://unsplash.com/photos/amber-bottle-with-white-label-on-counter-78MSOwXof1M |
 | `unwind-2.jpg` | Unwind | @switchinglanes | https://unsplash.com/photos/an-overhead-view-of-a-cup-of-tea-on-a-saucer-PiVZUFpsx1Q |
 | `clear-focus-1.jpg` | Clear Focus | @nutraseller | https://unsplash.com/photos/clear-bottle-with-white-label-filled-with-capsules-yYZthq7bucQ |
@@ -34,5 +35,21 @@ or logo is in shot. To replace a photo, save a new file under the same name.
 | `balance-refill-2.jpg` | Balance Refill | @mockupbee | https://unsplash.com/photos/a-roll-of-toilet-paper-ghsa1586bVU |
 | `balance-1.jpg` | Balance | @supliful | https://unsplash.com/photos/a-container-of-nuts-xJ6riIl5yE4 |
 | `balance-2.jpg` | Balance | @supliful | https://unsplash.com/photos/a-white-and-gold-capsule-ZL5PSYBfPwk |
+| `plant-protein-1.jpg` | Plant Protein | @nutraseller | https://unsplash.com/photos/black-jar-with-a-blank-white-label-J8Udz8J7lcQ |
+| `plant-protein-2.jpg` | Plant Protein | @alexsaks | https://unsplash.com/photos/a-pile-of-protein-powder-with-a-scoop-h2fn-gkM60A |
+| `daily-greens-1.jpg` | Daily Greens | @supliful | https://unsplash.com/photos/GvIvP-O6jMg |
+| `daily-greens-2.jpg` | Daily Greens | @andrealacasse | https://unsplash.com/photos/a-wooden-spoon-filled-with-green-powder-XwZqwur07mo |
+| `vitamin-d3-1.jpg` | Vitamin D3 + K2 | @supliful | https://unsplash.com/photos/dwNhw7NL8To |
+| `vitamin-d3-2.jpg` | Vitamin D3 + K2 | @mab_studio | https://unsplash.com/photos/brown-gel-close-up-photography-przZDqzZKpk |
+| `omega-3-1.jpg` | Omega-3 | @supliful | https://unsplash.com/photos/JGMLHFg5UXE |
+| `omega-3-2.jpg` | Omega-3 | @christina_kozak | https://unsplash.com/photos/a-person-holding-a-handful-of-pills-in-their-hand-Xe8YmGY-5D4 |
+| `magnesium-1.jpg` | Magnesium | @nutraseller | https://unsplash.com/photos/uW3LRqBlt_k |
+| `magnesium-2.jpg` | Magnesium | @theoshwellness | https://unsplash.com/photos/a-person-holding-a-pill-in-their-hand-GioPOErnucg |
+| `creatine-1.jpg` | Creatine | @supliful | https://unsplash.com/photos/AUhRvnBXSwE |
+| `creatine-2.jpg` | Creatine | @nutraseller | https://unsplash.com/photos/IC7wKhah0zo |
+| `vitamin-c-zinc-1.jpg` | Vitamin C + Zinc | @praneet007 | https://unsplash.com/photos/a-brown-and-white-pill-bottle-sitting-on-top-of-a-table-83ZBQIbhTe0 |
+| `vitamin-c-zinc-2.jpg` | Vitamin C + Zinc | @diana_pole | https://unsplash.com/photos/orange-fruit-slices-on-yellow-surface-v0ZjnfxnP60 |
+| `daily-multi-1.jpg` | Daily Multi | @nutraseller | https://unsplash.com/photos/black-jar-with-white-label-on-blue-background-shV9ZRKOrmE |
+| `daily-multi-2.jpg` | Daily Multi (cropped so the bottle and its seal are out of shot) | @afterave | https://unsplash.com/photos/a-bottle-of-pills-and-a-rose-on-a-table-rEics1H_UyQ |
 
 `theme.jpg` is not a photo: it is a screenshot of this store's home page, taken by `npm run themes:thumbnails` (`scripts/theme-thumbnails.mjs`) for the store's card in the theme library.

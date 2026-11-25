@@ -70,6 +70,15 @@ const plain = (value: unknown) => JSON.parse(JSON.stringify(value))
 /** Lets the stores' watchers save to the browser. */
 const settle = () => new Promise((resolve) => setTimeout(resolve, 10))
 const keptKeys = () => [...memory.keys()].filter((key) => key.startsWith('mp.')).sort()
+/**
+ * Since Vitaheal's seed version 2 (eight more products, 2026-11-25) a browser's first start
+ * seeds Vitaheal again and records the version it holds (useDemoStores reseedStale): the one
+ * key loading writes. A restore clears it and writes it again.
+ */
+const VH_SEED = 'mp.vitaheal-demo.installed.v1'
+const seedRecord = () => JSON.parse(memory.get(VH_SEED) ?? 'null') as { blueprintId: string; seedVersion: number } | null
+/** `saved` as a browser that has recorded seed 2 holds it, so what it saved is read back rather than seeded again. */
+const atSeed2 = (saved: Record<string, string>) => ({ ...saved, [VH_SEED]: JSON.stringify({ blueprintId: 'vitaheal', seedVersion: 2, appliedAt: '2026-11-25T09:00:00.000Z' }) })
 
 /** The app starting in a browser that holds `saved`. */
 function startApp(saved: Record<string, string> = {}) {
@@ -129,7 +138,7 @@ async function editVitaheal(app: App) {
   await settle()
 }
 
-test('every store seeds Vitaheal as it did before the registry, and writes nothing to the browser on load', async () => {
+test('every store seeds Vitaheal as it did before the registry, and on load writes only the seed version it holds', async () => {
   const app = startApp()
   await settle()
   const channel = app.channels.channels.find((c) => c.id === VH)!
@@ -146,11 +155,18 @@ test('every store seeds Vitaheal as it did before the registry, and writes nothi
   assert.deepEqual(plain(app.subscriptions.plans.filter((plan) => plan.channelId === VH)), fixture.plans)
   assert.equal(app.chatbot.getByChannel(VH)?.id, 101)
   assert.equal(app.chatbot.getByChannel(VH)?.config.assistantProfile, 'wellness')
-  assert.deepEqual(keptKeys(), [])
+  assert.deepEqual(keptKeys(), [VH_SEED])
+  assert.deepEqual([seedRecord()?.blueprintId, seedRecord()?.seedVersion], ['vitaheal', 2])
+  // The next start finds it up to date: nothing is seeded again, and nothing more is written.
+  const saved = Object.fromEntries(memory)
+  startApp(saved)
+  await settle()
+  assert.deepEqual(Object.fromEntries(memory), saved)
 })
 
 test('the other stores are no demo store: no theme can be applied to them and nothing of theirs is touched', async () => {
   const app = startApp()
+  await settle()
   const before = stateOf(app)
   for (const id of ['neelam-store', 'retest-sales-notification', 'shopify-fashion', 'beta-sales-channel', 'max-test-store', 'pos-store']) {
     assert.equal(app.demoStores.canApply(id), false, id)
@@ -159,11 +175,12 @@ test('the other stores are no demo store: no theme can be applied to them and no
   }
   await settle()
   assert.deepEqual(stateOf(app), before)
-  assert.deepEqual(keptKeys(), [])
+  assert.deepEqual(keptKeys(), [VH_SEED])
 })
 
 test('Restore original store puts back everything it started with, its theme included, and forgets what the browser kept', async () => {
   const app = startApp()
+  await settle()
   const seeded = catalogueOf(app)
   const seededLook = lookOf(app)
   await editVitaheal(app)
@@ -177,22 +194,29 @@ test('Restore original store puts back everything it started with, its theme inc
   assert.deepEqual(catalogueOf(app), seeded)
   // Since the theme library (part 4): the theme goes back too, its copies and drafts removed, with the collections, pages and menus.
   assert.deepEqual(lookOf(app), seededLook)
-  assert.deepEqual(keptKeys().filter((key) => key.startsWith('mp.vitaheal-demo.')), [])
+  // Only the seed version it holds now, written again.
+  assert.deepEqual(keptKeys().filter((key) => key.startsWith('mp.vitaheal-demo.')), [VH_SEED])
+  assert.equal(seedRecord()?.seedVersion, 2)
 })
 
 test('applying the theme a store started from is a restore, and records no applied theme', async () => {
   const app = startApp()
+  await settle()
   const seeded = stateOf(app)
   await editVitaheal(app)
   assert.equal(app.demoStores.blueprintOf(VH)?.id, 'vitaheal')
   assert.equal(app.demoStores.apply(VH, 'vitaheal'), true)
   await settle()
   assert.deepEqual(stateOf(app), seeded)
-  assert.deepEqual(keptKeys(), [])
+  // The record names the theme the store started with: no theme is applied, it only says which seed it holds.
+  assert.deepEqual(keptKeys(), [VH_SEED])
+  assert.deepEqual([seedRecord()?.blueprintId, seedRecord()?.seedVersion], ['vitaheal', 2])
+  assert.equal(app.demoStores.restoreFacts(VH)?.applied, null)
 })
 
 test('reseeding a store keeps a product it shares with another store, in the other store only', async () => {
   const app = startApp()
+  await settle()
   const vitaheal = app.channels.channels.find((channel) => channel.id === VH)!
   const shared = app.commerce.createProduct({
     name: 'Shared tote', sku: 'SHARED-1', price: '10.00', inventory: 5, category: 'Bags', vendor: 'Test', variants: 1,
@@ -216,8 +240,10 @@ test('reseeding a store keeps a product it shares with another store, in the oth
 
 test('what the app before the registry saved in a browser is read under the same keys, not written back, and restored away', async () => {
   // Written by the code before the registry, in a browser that walked the demo script and edited every part.
-  const saved = JSON.parse(readFileSync(new URL('./fixtures/vitaheal-saved-head.json', import.meta.url), 'utf8')) as Record<string, string>
-  assert.deepEqual(Object.keys(saved).sort(), VITAHEAL_KEYS)
+  const head = JSON.parse(readFileSync(new URL('./fixtures/vitaheal-saved-head.json', import.meta.url), 'utf8')) as Record<string, string>
+  assert.deepEqual(Object.keys(head).sort(), VITAHEAL_KEYS)
+  // As a browser that has recorded seed 2 holds it. At seed 1, as that code left it, the store is seeded again (vitahealReseed.test.ts).
+  const saved = atSeed2(head)
   const app = startApp(saved)
   await settle()
   assert.equal(app.commerce.products.find((product) => product.id === 2001)?.name, 'Unwind (edited)')
@@ -237,18 +263,19 @@ test('what the app before the registry saved in a browser is read under the same
   await settle()
   assert.equal(app.emails.campaigns.some((email) => email.id === 34), false)
   assert.equal(app.commerce.products.find((product) => product.id === 2001)?.name, 'Unwind')
-  assert.deepEqual(keptKeys(), [])
+  assert.deepEqual(keptKeys(), [VH_SEED])
 })
 
 test('what a browser kept before the registry is read under the same keys, and not written back', async () => {
   const first = startApp()
+  await settle()
   await editVitaheal(first)
   first.chatbot.recordConversation({ id: 'live-1', chatbotId: 101, visitor: 'Visitor', startedAt: '2026-11-18T10:00:00.000Z', topic: 'Sleep', resolved: true, messages: [] })
   first.storeCampaigns.setEmailCampaign(first.storeCampaigns.campaignsForChannel(VH)[0]!.id, first.emails.createCampaign({ kind: 'email', name: 'Announcement', tag: STORE_CAMPAIGN_TAG, audienceSummary: 'Vitaheal customers' } as Parameters<typeof first.emails.createCampaign>[0]))
   await settle()
   const saved = Object.fromEntries(keptKeys().map((key) => [key, memory.get(key)!]))
-  // The keys browsers already hold, and since the theme library (part 4) the theme's edits.
-  assert.deepEqual(Object.keys(saved).filter((key) => key.startsWith('mp.vitaheal-demo.')), [...VITAHEAL_KEYS, 'mp.vitaheal-demo.themes.v1'])
+  // The keys browsers already hold, since the theme library (part 4) the theme's edits, and since seed 2 the seed it holds.
+  assert.deepEqual(Object.keys(saved).filter((key) => key.startsWith('mp.vitaheal-demo.')).sort(), [...VITAHEAL_KEYS, VH_SEED, 'mp.vitaheal-demo.themes.v1'].sort())
 
   const second = startApp(saved)
   await settle()
@@ -266,7 +293,8 @@ test('what a browser kept before the registry is read under the same keys, and n
 test('every store holds for Vitaheal what it held before the registry, in an empty browser and in one with saved changes', async () => {
   for (const scenario of ['fresh', 'saved'] as const) {
     const now = await frozen(async () => {
-      const app = startApp(scenario === 'saved' ? SAVED_HEAD : {})
+      // The saved browser as one that has recorded seed 2; at seed 1 it is seeded again (vitahealReseed.test.ts).
+      const app = startApp(scenario === 'saved' ? atSeed2(SAVED_HEAD) : {})
       await settle()
       return readVitaheal(app)
     })
@@ -312,16 +340,8 @@ test('a duplicated product numbers its variants in its own block from 1, and the
 // A store made from a theme (Part 4: "Start from a theme"): the stores do not seed it
 // on their own, so the app brings it in with useDemoStores().attach once its channel exists.
 const CREATED = 'test-garage'
-const CREATED_KEYS = (kept: string[]) => kept.filter((key) => key.startsWith(`mp.demo-store.${CREATED}.`))
-
-/** What Part 4 will do on every start: put the created store's channel in the list. */
-function addCreatedStore(app: App) {
-  const vitaheal = plain(app.channels.channels.find((channel) => channel.id === VH))
-  app.channels.channels.push({
-    ...vitaheal, id: CREATED, name: 'Test Garage',
-    webStore: { ...vitaheal.webStore, domain: 'test-garage.uat.maropost.store', blueprint: { original: 'vitaheal', slot: 10 } },
-  })
-}
+/** The keys of the created store's parts (not the record of the seed it was made at). */
+const CREATED_KEYS = (kept: string[]) => kept.filter((key) => key.startsWith(`mp.demo-store.${CREATED}.`) && !key.endsWith('.installed.v1'))
 
 /** What a merchant changed on the created store, as the stores hold it now. */
 function createdStoreOf(app: App) {
@@ -338,17 +358,20 @@ function createdStoreOf(app: App) {
   })
 }
 
+// A store made from a theme records the seed it was made at (useDemoStores.create, markSeeded), so a
+// blueprint past seed 1 (Vitaheal is at 2) does not seed it again over its changes on the next start.
 test('a store made from a theme comes back after a reload with every change it saved; a reseed still resets it and a restore forgets it', async () => {
   const first = startApp()
+  await settle()
   const vitaheal = readVitaheal(first)
-  addCreatedStore(first)
-  assert.equal(first.demoStores.attach(CREATED), true)
+  const made = first.demoStores.create(ACCOUNT, { name: 'Test Garage', type: 'web_store', storeBuilderEnabled: true, theme: 'vitaheal' } as Parameters<typeof first.demoStores.create>[1])
+  assert.deepEqual([made.id, made.webStore?.blueprint], [CREATED, { original: 'vitaheal', slot: 10 }])
   await settle()
   const seeded = createdStoreOf(first)
   assert.equal(seeded.product, 'Unwind')
   assert.equal(seeded.status, 'Active')
   assert.deepEqual(seeded.contracts, [])
-  assert.deepEqual(keptKeys(), [], 'bringing a store in writes nothing')
+  assert.deepEqual(CREATED_KEYS(keptKeys()), [], 'making a store writes none of its parts')
 
   // A merchant's afternoon on it, and a shopper who subscribes.
   first.commerce.products.find((product) => product.id === 1102001)!.name = 'Unwind (garage)'
@@ -372,9 +395,9 @@ test('a store made from a theme comes back after a reload with every change it s
   assert.deepEqual(CREATED_KEYS(keptKeys()), ['campaigns', 'chatbot', 'conversations', 'merchandising', 'plans', 'products', 'subscriptions'].map((name) => `mp.demo-store.${CREATED}.${name}.v1`))
   const saved = Object.fromEntries(keptKeys().map((key) => [key, memory.get(key)!]))
 
-  // The next start: the store is brought in again and reads every change back, writing nothing.
+  // The next start: the store is brought in from the browser again and reads every change back, writing nothing.
   const second = startApp(saved)
-  addCreatedStore(second)
+  await settle()
   assert.equal(second.demoStores.attach(CREATED), true)
   await settle()
   assert.deepEqual(createdStoreOf(second), edited)
@@ -428,7 +451,7 @@ function northfoldOf(app: App) {
   })
 }
 
-test('every store seeds Northfold from its blueprint, connected to Merchandise Cloud, and writes nothing to the browser on load', async () => {
+test('every store seeds Northfold from its blueprint, connected to Merchandise Cloud, and writes nothing of its own to the browser on load', async () => {
   const app = startApp()
   await settle()
   const nf = northfoldOf(app)
@@ -457,7 +480,8 @@ test('every store seeds Northfold from its blueprint, connected to Merchandise C
   assert.equal(nf.chats.length, 3)
   assert.deepEqual(nf.plans, [])
   assert.deepEqual(nf.contracts, [])
-  assert.deepEqual(keptKeys(), [])
+  // Only Vitaheal's seed version (the first start since seed 2); Northfold, at seed 1, writes nothing.
+  assert.deepEqual(keptKeys(), [VH_SEED])
   // Vitaheal is as it was.
   assert.equal(app.chatbot.getByChannel(VH)?.id, 101)
   assert.equal(app.channels.channels.find((c) => c.id === VH)?.webStore?.merchandiseConnected, false)
@@ -513,6 +537,6 @@ test('Restore original store puts Northfold back as seeded, connected again, for
   await settle()
   assert.deepEqual(northfoldOf(second), seeded)
   assert.deepEqual(NORTHFOLD_KEYS(keptKeys()), [])
-  assert.deepEqual(keptKeys(), [], 'Northfold\'s announcement went with it, and nothing else was kept')
+  assert.deepEqual(keptKeys(), [VH_SEED], 'Northfold\'s announcement went with it, and nothing else was kept but Vitaheal\'s seed version')
   assert.deepEqual(readVitaheal(second), vitaheal)
 })

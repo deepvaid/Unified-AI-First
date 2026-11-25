@@ -337,7 +337,7 @@ const SCENES = [
     await go(`${STORE}/merchandising`, 2600)
     await click(page.getByRole('button', { name: 'Connect Merchandising' }), 600)
     await text('Search and recommendations are live on this store').waitFor()
-    await caption('Merchant', 'Eight products synced: search and recommendations are on')
+    await caption('Merchant', 'Sixteen products synced: search and recommendations are on')
     await pause(3800)
   }],
 

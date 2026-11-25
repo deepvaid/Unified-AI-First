@@ -84,6 +84,7 @@ This is NOT a production app — it uses mock data and has no backend API.
 │   ├── stores/                ← 6 Pinia stores with mock data
 │   ├── plugins/vuetify.ts     ← Vuetify theme (light + dark) + global defaults
 │   ├── router/index.ts        ← All routes (90+)
+│   ├── router/scroll.ts       ← Where the window scrolls after a navigation: a storefront page opened from another starts at its top, Back and Forward return to the saved place, a filter, sort or product choice keeps it, admin pages as before (`tests/storefront/scroll.test.ts`)
 │   └── styles/
 │       ├── global.scss        ← Global overrides, utilities, hover effects
 │       └── app-styles.ts      ← Shared stylesheet manifest (app + Storybook)
@@ -478,7 +479,7 @@ Example: `[feat]: add MpDateRangePicker component with story`
   report for the real MCC; never edit its statuses), `bkm-build-prompt.md` (the slice-by-slice build
   prompt) and `bkm-build-tracker.md` (prototype progress per slice and requirement). The demo store is
   sales channel `vitaheal-demo` ("Vitaheal", a fictional brand that stands in for BKM so sales can show it to any
-  prospect), seeded from `src/storefront/vitahealDemo.ts`. Its products, subscription plans, subscribers, campaigns, chatbot settings and chats, and its Merchandise Cloud connection and rules, are kept in this browser
+  prospect), seeded from `src/storefront/vitahealDemo.ts`: sixteen supplements (2001-2016) in six goals, eight of them on its two plans. Its seed version is 2, so a browser that saved the store at seed 1 is seeded again on its next start. Its products, subscription plans, subscribers, campaigns, chatbot settings and chats, and its Merchandise Cloud connection and rules, are kept in this browser
   (`mp.vitaheal-demo.*` in localStorage) and put back from the store's Settings tab ("Restore original store").
   The store carries `webStore.demo`: its checkout uses plain words where another store shows a prototype note, and amounts
   that are charged read "585,90 kr" (the product pages and cart show whole kronor).

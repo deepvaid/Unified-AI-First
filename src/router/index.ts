@@ -3,6 +3,7 @@ import { useAccountsStore, type SubscriptionKey } from '@/stores/useAccounts'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import { trialLabRoutes } from '@/views/TrialLab/trialLabRoutes'
 import { setPageTitle, titleFromRouteName } from '@/composables/usePageTitle'
+import { scrollBehavior } from './scroll'
 
 declare module 'vue-router' {
   interface RouteMeta {
@@ -529,6 +530,7 @@ const routes: RouteRecordRaw[] = [
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
+  scrollBehavior,
 })
 
 router.beforeEach((to) => {

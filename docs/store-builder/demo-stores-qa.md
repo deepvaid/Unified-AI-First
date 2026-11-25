@@ -3,7 +3,8 @@
 A check per line, with the result to expect. It covers the four parts of the demo stores work:
 the groundwork (Vitaheal unchanged), Northfold, Torqline, and the theme library with Apply,
 Restore, Start from a theme and Delete store; and Daybloom, the fourth store, added in the
-feedback round, with Vitaheal's move to the Lumos look (D.22 to D.31). The click-by-click flows are in the demo scripts:
+feedback round, with Vitaheal's move to the Lumos look (D.22 to D.37), and Rubbecca's second review:
+Vitaheal's sixteen products and pages that open at their top (D.38 to D.65). The click-by-click flows are in the demo scripts:
 [Vitaheal](vitaheal-demo-script.md), [Northfold](northfold-demo-script.md),
 [Torqline](torqline-demo-script.md) and [Daybloom](daybloom-demo-script.md). How it works is in
 [demo-stores.md](demo-stores.md).
@@ -22,14 +23,14 @@ feedback round, with Vitaheal's move to the Lumos look (D.22 to D.31). The click
 
 | # | Check | Expected |
 |---|---|---|
-| 1.1 | Open the app in a fresh browser and list the keys. | No `mp.vitaheal-demo.`, `mp.demo-store.` or `mp.store-builder.` key exists until something is changed. |
-| 1.2 | Walk the Vitaheal script, steps 1 to 13. | Every step behaves as the script says: kronor prices, `WINTER15` takes 15% off the first order, Skip next delivery works, the assistant answers, the order and Linnea Berg show in Commerce, the plan with delivery options is created and Balance offers its three frequencies, Connect Merchandising syncs eight products, `tired` finds energy and focus, `knackered` works after the synonym is added. |
-| 1.3 | Compare the Vitaheal storefront home with `public/storefront/vitaheal/theme.jpg`. | Same look: the Lumos look in navy on white (Inter, uppercase headings), the menu with **Shop**, **Subscription** and **About**, the hero with its badge and three figures, the announcement bar with `WINTER15`. The picture is made by `npm run themes:thumbnails` after a build; until it is rerun it shows the older look. |
+| 1.1 | Open the app in a fresh browser and list the keys. | One key only: `mp.vitaheal-demo.installed.v1`, holding `"blueprintId":"vitaheal"` and `"seedVersion":2` (since 2026-11-25 it records the seed Vitaheal holds). No other `mp.vitaheal-demo.`, `mp.demo-store.` or `mp.store-builder.` key exists until something is changed. Reload: nothing more is written. |
+| 1.2 | Walk the Vitaheal script, steps 1 to 13. | Every step behaves as the script says: kronor prices, `WINTER15` takes 15% off the first order, Skip next delivery works, the assistant answers, the order and Linnea Berg show in Commerce, the plan with delivery options is created and Balance offers its three frequencies, Connect Merchandising syncs sixteen products, `tired` finds Magnesium and, through a synonym, energy and focus, `knackered` works after the synonym is added. |
+| 1.3 | Compare the Vitaheal storefront home with `public/storefront/vitaheal/theme.jpg`. | Same look: the Lumos look in navy on white (Inter, uppercase headings), the menu with **Shop**, **Subscription** and **About**, the hero with its badge and three figures, the announcement bar with `WINTER15`. The picture is made by `npm run themes:thumbnails` after a build. It shows the first screen, which the sixteen products did not change. |
 | 1.4 | Look at a charged amount (checkout total, receipt). | Kronor with decimals, such as "585,90 kr". Product pages and the cart show whole kronor. |
-| 1.5 | Products: open a Vitaheal product. | Product ids 2001 to 2008, as before. |
+| 1.5 | Products: open a Vitaheal product. | Product ids 2001 to 2016: the first eight as before, then the eight added on 2026-11-25. |
 | 1.6 | Change a Vitaheal product's price, then reload. | The change stays. The key `mp.vitaheal-demo.products.v1` exists. |
-| 1.7 | In a browser that used Vitaheal before this work, open the store. | Its earlier changes are still there (same `mp.vitaheal-demo.*` keys). |
-| 1.8 | Store › Settings › Store data › **Restore original store**, then **Restore store**. | Toast "Vitaheal (demo) is back to how it started". The product change is gone. No `mp.vitaheal-demo.*` key is left (apart from `mp.vitaheal-demo.emails.v1` if another store has an announcement email). |
+| 1.7 | In a browser that used Vitaheal before this work, open the store. | Until 2026-11-25 its earlier changes were still there (same `mp.vitaheal-demo.*` keys). Since Vitaheal's seed 2 such a browser is seeded again on its next start: see D.60. |
+| 1.8 | Store › Settings › Store data › **Restore original store**, then **Restore store**. | Toast "Vitaheal (demo) is back to how it started". The product change is gone. The only `mp.vitaheal-demo.*` keys left are `mp.vitaheal-demo.installed.v1` (seed 2, written again at once) and `mp.vitaheal-demo.emails.v1` if another store has an announcement email. |
 | 1.9 | Account page on the Vitaheal storefront, after an order. | It lists the shopper's subscriptions and their orders. |
 
 ## Part 2: Northfold
@@ -95,7 +96,7 @@ feedback round, with Vitaheal's move to the Lumos look (D.22 to D.31). The click
 
 | # | Check | Expected |
 |---|---|---|
-| 4.11 | Restore Vitaheal first. Put Unwind in the cart on the Vitaheal storefront tab. Then, in the admin, **Apply** on the Northfold card. | Dialog "Apply Northfold to Vitaheal (demo)?", "Vitaheal (demo) becomes a copy of the Northfold store.", danger button **Apply theme**, and these lines: 20 products replace the 8 in this store; Northfold’s look, 6 collections, 8 pages and menus replace this store’s; 3 campaigns, 9 search rules and 5 size charts replace this store’s; The chatbot answers as a clothing store; Prices change to US dollars; Search works once this store connects to Merchandise Cloud; This store’s two subscription plans are paused, so no one new can subscribe; its eight subscribers keep their subscriptions; Changes you made to this store’s products and campaigns are not kept: a restore brings back the original store, not your changes; Orders already placed stay. The cart is emptied; Restore original store puts this store back as it started. |
+| 4.11 | Restore Vitaheal first. Put Unwind in the cart on the Vitaheal storefront tab. Then, in the admin, **Apply** on the Northfold card. | Dialog "Apply Northfold to Vitaheal (demo)?", "Vitaheal (demo) becomes a copy of the Northfold store.", danger button **Apply theme**, and these lines: 20 products replace the 16 in this store; Northfold’s look, 6 collections, 8 pages and menus replace this store’s; 3 campaigns, 9 search rules and 5 size charts replace this store’s; The chatbot answers as a clothing store; Prices change to US dollars; Search works once this store connects to Merchandise Cloud; This store’s two subscription plans are paused, so no one new can subscribe; its eight subscribers keep their subscriptions; Changes you made to this store’s products and campaigns are not kept: a restore brings back the original store, not your changes; Orders already placed stay. The cart is emptied; Restore original store puts this store back as it started. |
 | 4.12 | Press **Apply theme**. | Toast "Vitaheal (demo) is now a copy of Northfold" with **Show store**, which opens the storefront in a new tab. |
 | 4.13 | The storefront tab that was already open. | It shows Northfold's look, products and dollar prices without a reload. The cart says "This store changed while you were shopping, so your cart was emptied: Unwind." with **Got it**. |
 | 4.14 | The Themes page now. | Current theme Northfold, "Copied from Northfold on {today}", **Restore original store**. The Northfold card says Current theme. The Vitaheal card offers **Restore original store** and says its showcase store runs Northfold right now, so it can't be previewed. |
@@ -112,7 +113,7 @@ feedback round, with Vitaheal's move to the Lumos look (D.22 to D.31). The click
 | # | Check | Expected |
 |---|---|---|
 | 4.22 | On Vitaheal (running Torqline), **Restore original store** on the Current theme card. | Dialog "Restore the original store?", "Vitaheal (demo) goes back to the products it started with.", danger button **Restore store**. Its first line says the theme goes back to Vitaheal, the next that prices go back to Swedish kronor; it also says theme drafts and copies are removed. |
-| 4.23 | Press **Restore store**. | Toast "Vitaheal (demo) is back to how it started". Vitaheal's look, eight products, kronor, two active plans, eight subscribers. Theme copies are gone. |
+| 4.23 | Press **Restore store**. | Toast "Vitaheal (demo) is back to how it started". Vitaheal's look, sixteen products, kronor, two active plans, eight subscribers. Theme copies are gone. |
 | 4.24 | The order placed in 4.17. | Still in Commerce › Orders. |
 | 4.25 | **Restore original store** on the Vitaheal card in the library, and in the Settings tab. | Both open the same dialog and do the same thing. |
 | 4.26 | Apply a theme, then restore Northfold and Torqline the same way. | Each comes back as seeded, connected to Merchandise Cloud. |
@@ -202,18 +203,67 @@ feedback round, with Vitaheal's move to the Lumos look (D.22 to D.31). The click
 | D.23 | Vitaheal's plans and prices. | Two plans as before (3-month supply 30%, Monthly subscription 20%). Electrolytes opens on Lemon & Ginger; on the 3-month supply it is still 585,90 kr at checkout, and product pages and the cart show whole kronor. `WINTER15` still takes 15% off the first order. |
 | D.24 | Atlas Outfitters and Neelam-Store storefronts. | No panel in the header, no promises strip, no rows, no Lumos look: these themes do not ask for them. |
 | D.25 | Vitaheal at 1280: hover **Shop**, move away; press **Shop**, then **Escape**; press **About** and press outside it. Then at 375 open the menu. | The panel hangs right under the menu row and opens on hover; a press keeps it open and the button says it is expanded; Escape closes it with focus back on **Shop**; a press outside closes it. At 375 **Shop** and **About** are rows in the menu that open in place, with their headings and links and no picture tile. Nothing scrolls sideways. |
-| D.26 | Vitaheal › **Shop** › **All products**. | Boxed cards four to a row, sort and a Price filter. The five products on a plan say **Subscribe available** on the lime badge, in dark text; Nasal Strips, Balance and Balance Refill have none. A sale or sold-out badge would take its place. |
+| D.26 | Vitaheal › **Shop** › **All products**. | Sixteen boxed cards, four to a row, with sort and a Price filter. The eight products on a plan say **Subscribe available** on the lime badge, in dark text: Unwind, Clear Focus, Daily NAD+, Vitaheal Electrolytes, Collagen+, Plant Protein, Daily Greens and Creatine. The other eight have none: Nasal Strips, Balance Refill, Balance, Vitamin D3 + K2, Omega-3, Magnesium, Vitamin C + Zinc and Daily Multi. A sale or sold-out badge would take its place. |
 | D.27 | Quick add on Unwind's card. | The drawer has **Format** and the purchase options, on the 3-month supply; its button reads **Add subscription to cart**, and the cart line names the plan. With **One-time purchase** chosen it adds the product without a plan. |
 | D.28 | Balance, after step 8 of the Vitaheal script (the plan with delivery options). | **One-time purchase** 419 kr is chosen first. A **Subscribe and save** group, "Save up to 20%": every month 335 kr, every 2 months 356 kr, every 3 months 377 kr, each with 419 kr struck. Pick every 2 months: the button reads **Add subscription to cart**. Restoring the store removes the plan. |
 | D.29 | Daybloom storefront: home, **Shop**, Magnesium Glycinate, a card, the checkout. | Exactly as D.2 to D.12: the classic drawing in the Aurora look, the same panel, Purchase options, facts, promises and card badges. Vitaheal's move changed nothing here. |
 | D.30 | Vitaheal › Themes. | The library card reads **Vitaheal 2.0** with "A supplements store on subscription, in kronor: Inter, uppercase headings, boxed product cards and a mega menu by goal." The store's page names the theme **Vitaheal 2.0**. |
-| D.31 | A browser that saved an edited Vitaheal theme before 2026-11-25. | The store keeps that older look (Figtree, the classic drawing) until **Restore original store**; the Themes page and Settings › Store data say so, with the Restore action. After it, D.22. Nothing new is written to the browser on load. |
+| D.31 | A browser that saved an edited Vitaheal theme before 2026-11-25. | Since Vitaheal's seed 2 the store is seeded again on the next start: it shows D.22, with sixteen products, and the Themes page and Settings › Store data show no note about an older look. `mp.vitaheal-demo.installed.v1` records seed 2. What else the reseed drops and keeps is D.60. |
 | D.32 | Vitaheal: buy Electrolytes **Starter Pack** on the 3-month supply, pay, then **Manage your subscription** › **Change plan** › Monthly. | The form and the result say 399,20 kr per delivery (the Starter Pack's price at 20% off), not the cheapest flavour's. The card's line starts "Starter Pack (both flavours) ·"; the admin subscriber names it too. |
 | D.33 | Vitaheal store page and **Themes**, before Merchandise Cloud is connected; then connect it. | The previews show no header search field, as the storefront; after connecting, both show **Search supplements**. The builder canvas always shows the field. |
 | D.34 | Plans › New plan › Plan with delivery options, store Vitaheal. | The shopper preview opens on **One-time purchase**, as Vitaheal's product pages do (Daybloom's preview opens on the subscription). The fields read "Discount, every month", "Discount, every 2 months" and so on. |
 | D.35 | Nasal Strips, then Balance after D.28. | No "How subscriptions work" row on Nasal Strips; Balance shows it once a plan offers it. In the builder the row's **Only on products sold on a plan** is on. |
 | D.36 | Commerce › Fulfillment after a Vitaheal checkout. | The fulfilment and the order say **Stockholm warehouse**; the order's fulfilment chip matches the fulfilment's status. |
 | D.37 | Vitaheal at 320 and 360: home, a quick add on Daily NAD+, **Manage your subscription**. | The headline fits the screen; the figures stay on one line; quick add's button stays inside the drawer with the price on its own line; the subscription's name sits clear of its status chip. |
+
+## Second review: Vitaheal's sixteen products, and pages that open at their top
+
+Rubbecca reviewed the Vitaheal demo again on 2026-11-25. She asked for more products, and found
+that a product or collection opened scrolled to the bottom of its page. Restore Vitaheal first,
+unless a check says otherwise.
+
+### A page opens at its top
+
+| # | Check | Expected |
+|---|---|---|
+| D.38 | Vitaheal home at 1280: scroll down to **Our range** and press a product's name. | The product page opens at its top: the header, the photos and the name are in view. It used to open scrolled to the bottom. |
+| D.39 | Press the browser's **Back**, then **Forward**. | Back: the home page is where you left it, at **Our range**. Forward: the product is where you left it. |
+| D.40 | Scroll to the bottom of the home page and press **Immunity** in the footer. Then scroll to the bottom of a product page and press a product in the row there. | Each page opens at its top. |
+| D.41 | **Shop** › **All products**: scroll down, change the sort, then pick a range in the Price filter. Then press **Back**. | The page stays where it was each time, and the address follows. Back takes the filter off and keeps the place. |
+| D.42 | **Plant Protein**: scroll down a little, then pick **Can**. | The page stays where it was. The choice goes in the address. |
+| D.43 | Home › **Unwind**, Back, **Unwind** again. Scroll to **You may also like** and press a product there, then Back. Then: read Unwind to the bottom, Back, open Unwind again, press **Sleep** in its breadcrumb at the top, Back. | The first Back returns Unwind at **You may also like**; the second returns it at its top. Neither returns to where an earlier visit was left. |
+| D.44 | Search **sleep**, scroll to the bottom of the results, then search **protein** from the header. | The new results open at their top. Sorting the results keeps the place. |
+| D.45 | Fill the checkout from the bottom of the page and press **Pay**. Then try the declined card (4000 0000 0000 0002). | The receipt opens at its top. A declined card stays at **Pay**, with its message beside it. |
+| D.46 | On Northfold and Lumos: open a product from low on the home page, press Back, then sort and filter a collection. On Daybloom (the classic drawing): open a product and a collection from low on a page. | The same as on Vitaheal: a new page opens at its top, Back returns to the place, a sort or filter keeps it. |
+| D.47 | Admin › **Commerce** › **Orders**: scroll down the list, open an order, press **Back**. | The list is where it was. Admin pages are otherwise as before. |
+
+### Sixteen products
+
+| # | Check | Expected |
+|---|---|---|
+| D.48 | Vitaheal home. | **Shop by goal** has five tiles: Sleep, Sport, Immunity, Longevity and Hydrate. Immunity, new for winter, has its own photo and is in view at 1280 without paging the carousel. **Our range** has twelve cards: Unwind, Clear Focus, Daily NAD+, Nasal Strips, Vitaheal Electrolytes, Collagen+, Balance Refill, Balance, Plant Protein, Daily Greens, Vitamin D3 + K2 and Omega-3. |
+| D.49 | Hover **Shop**. Look at the footer's Shop column. At 375 open the menu and press **Shop**. | **Shop by goal** lists Sleep, Sport, Longevity, Hydrate and Immunity, in the panel and in the menu. The footer's Shop column reads All products, Sleep, Sport, Longevity, Hydrate, Immunity, Subscription. |
+| D.50 | **Shop** › **Immunity**. | "Vitamins C and D and zinc, for the dark Swedish winter." under the title. Three products: Vitamin D3 + K2, Vitamin C + Zinc and Daily Multi. |
+| D.51 | **Plant Protein**: its card, then its page. | The card reads "From 369 kr" with **Subscribe available**. The page opens on **Refill bag** (the cheaper format; **Can** is 399 kr) and on the 3-month supply, and the button reads **Add subscription to cart**. **Product facts** starts with a serving of 1 scoop (30 g) and 21 g of protein. Daily Greens (429 kr / 449 kr) and Creatine (279 kr / 299 kr) work the same way. |
+| D.52 | **Creatine**, then **Omega-3**. | Creatine has the **How subscriptions work** row. Omega-3 has no plans and no such row, and its button reads **Add to cart**. |
+| D.53 | Quick add on Plant Protein's card, then on Vitamin D3 + K2's. | Plant Protein opens the drawer with **Format** and the purchase options. Vitamin D3 + K2 goes straight into the cart, with no drawer. |
+| D.54 | Admin › **Products** › **Collections**: search **Vitaheal** and open **Immunity**. Then **Commerce** › **Subscriptions** › **Plans**. | The Store column says which store each collection belongs to (below 1280 it is under the title). Six Vitaheal collections: Subscription 8, Sport 6, Longevity 6, Sleep 3, Hydrate 1, Immunity 3 products; Daybloom's Immunity is its own row. Immunity lists Vitamin D3 + K2, Vitamin C + Zinc and Daily Multi in kronor, says a product joins from its own page, and its title cannot be changed. Save keeps the count. Both Vitaheal plans say 8 products. |
+| D.55 | Merchandising for Vitaheal, before connecting. Connect it, then on the store search **flu**, **cold**, **winter**, **protein**, **tired** and **sleep**. | The card says connecting syncs the store's 16 published products; the toast says "16 products are synced". Flu, cold and winter find the three Immunity products, through the synonym. Protein finds Plant Protein. Tired finds Clear Focus, Magnesium, Daily NAD+ and Balance. Sleep finds Unwind first, then Nasal Strips and Magnesium. |
+| D.56 | Chat (**Need help?**): "Hi", then "Do you sell refills?", "Is there a refill bag for the protein?" and "Is there a refill for the electrolytes?". | The greeting offers a product "for sleep, focus, hydration, protein, immune support, skin or healthy ageing". Refills: "Yes. Creatine, Daily Greens, Plant Protein, Balance Refill, Collagen+, Daily NAD+, Clear Focus and Unwind come in a refill. Choose the refill on a product’s page:" with three cards, the newest first (Creatine, Daily Greens, Plant Protein). Protein: "Yes. Plant Protein comes in a refill bag as well as the can. Choose Refill bag on its page:" with its card. Electrolytes: "No, Vitaheal Electrolytes doesn’t come in a refill.", then the eight names, with no cards. "Are the refill bags recyclable?" gets the About page's answer, not a "Yes". |
+| D.57 | Chat: "I keep catching colds", "Protein after the gym", "Something for my heart", "I need a multivitamin", "Greens powder", "I can't sleep". | Colds: "For immune support", Vitamin C + Zinc, Vitamin D3 + K2 and Daily Multi. Gym: "For muscle and strength", Plant Protein and Creatine, no Electrolytes. Heart: Omega-3. Multivitamin: Daily Multi first, then Vitamin D3 + K2 and Vitamin C + Zinc. Greens: Daily Greens. Sleep: Unwind and Magnesium. |
+| D.58 | Chat: "Can I mix it with cold water?", "What strength is Magnesium?", "What should I buy?", "What would you recommend I buy?", "Something for women", "I'm looking for something vegan", "Can I return a refill?", "Do you ship over the winter holidays?". | No product cards for the first two. Both "buy" questions ask what you would like help with. Women: Balance, then Balance Refill. Vegan: Omega-3. Returning a refill: the refund policy's answer. Winter holidays: the delivery answer, no cards. |
+| D.59 | Chat: "I take blood thinners, is omega-3 ok?", "I have a heart condition", "I'm on chemo, what helps my immune system?". Then "Do you have anything for a cold?" and "I am always tired in the afternoon". | The first three get "I can’t give medical advice…" with no product cards. A cold: the three Immunity products. Tired: Magnesium, Clear Focus and Daily NAD+. |
+
+### A browser that used Vitaheal before
+
+| # | Check | Expected |
+|---|---|---|
+| D.60 | Make a browser from before 2026-11-25: change a product, a plan, a store campaign, a synonym (`knackered`), the chatbot's welcome and the theme; place an order and **Pack** it; subscribe on the store; chat; leave something in the cart. Then delete `mp.vitaheal-demo.installed.v1` and reload. | The store sells sixteen products. Gone: the changes to products, plans, campaigns, search rules, chatbot settings and the theme. A copy of the theme that was published is a Draft, and the store runs Vitaheal 2.0. Still there: the order and its packed step, the subscribers with the new one, the chat, any announcement email in Marketing, the chatbot on or off as it was, the Merchandise Cloud connection, and the cart, with no "store changed" notice. A campaign that was announced no longer links to its email. `mp.vitaheal-demo.installed.v1` holds seed 2. |
+| D.61 | Change a product again, then reload. | The change stays: a browser at seed 2 is not seeded again. |
+| D.62 | Before D.60's reload, change a Northfold product too. | After the reload the Northfold change is still there: only Vitaheal moved to seed 2. |
+| D.63 | Apply Vitaheal to Northfold and change a product there. In `mp.demo-store.northfold-demo.installed.v1` set `seedVersion` to 1, then reload. | Northfold, running Vitaheal, sells the sixteen products, and the change is gone. The record says seed 2. |
+| D.64 | Create sales channel from the **Vitaheal** theme. Rename a product of the new store, then reload. | The new name stays. |
+| D.65 | Vitaheal › Edit theme › Home › **Featured products** (its title is Our range; pressing Our range in the preview selects it too). | The **Products** slider sits at its right end; focused, it reads 12, and Home / End take it to 2 / 12. Northfold, Torqline, Lumos and Daybloom show the same featured rows as before. |
 
 ## Regression stores
 
@@ -240,6 +290,6 @@ or restored elsewhere.
 | B.4 | With the storefront open in a second tab, apply a theme, then restore. | The second tab switches theme and back without a reload. Its cart is emptied each time. |
 | B.5 | With the sales channels list open in a second tab, create a store, then delete it. | The second tab's list gains it, then loses it. |
 | B.6 | Restore Northfold while Vitaheal and Torqline have saved changes. | Only `mp.demo-store.northfold-demo.*` keys go. The other stores' keys stay. `mp.vitaheal-demo.emails.v1` loses only Northfold's announcement emails. |
-| B.7 | Apply a theme, then look at the store's keys. | `<prefix>installed.v1` holds `{ blueprintId, seedVersion, appliedAt }`. Restore removes it. |
+| B.7 | Apply a theme, then look at the store's keys. | `<prefix>installed.v1` holds `{ blueprintId, seedVersion, appliedAt }`. Restore removes it. On Vitaheal, Restore writes it again at once, naming Vitaheal and seed 2. |
 | B.8 | Choose a vehicle and fill a cart, then paste the store's address into a new tab. | The new tab has an empty cart and no vehicle (they live in sessionStorage, per tab). |
 | B.9 | Fill the browser's storage, then change a product. | One warning toast, "Changes not kept". The app keeps working. |

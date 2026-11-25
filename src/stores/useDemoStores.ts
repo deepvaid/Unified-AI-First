@@ -178,8 +178,12 @@ export const useDemoStores = defineStore('demoStores', () => {
   function create(accountId: string, payload: CreateSalesChannelPayload): SalesChannel {
     const channel = salesChannels.createChannel(accountId, payload)
     attach(channel.id)
+    // Record the seed the store was made at, or the next start counts it as seed 1 and,
+    // once its theme's blueprint is past that (Vitaheal is at 2), seeds it again over its changes.
+    const made = salesChannels.channels.find((c) => c.id === channel.id) ?? channel
+    markSeeded(made)
     revision.value++
-    return salesChannels.channels.find((c) => c.id === channel.id) ?? channel
+    return made
   }
 
   /**

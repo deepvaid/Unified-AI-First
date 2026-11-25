@@ -71,6 +71,29 @@ export interface AssistantProfile {
   parts?: PartsKnowledge
   /** Furniture and home: a piece's size and whether it fits a space, materials and care, assembly, warranty, and delivery from the store's pages. */
   home?: HomeKnowledge
+  /** Wellness: which products come in a refill, read from the products themselves. */
+  refills?: RefillKnowledge
+  /**
+   * Wellness: a request that names no need ("What would you recommend I buy?") is matched
+   * against the products without the words that ask for a suggestion and the words around
+   * them ("something", "buy"), so it gets a question back rather than the products whose
+   * description happens to use one of them. Unset: every word of it is matched.
+   */
+  requestWordsIgnored?: true
+}
+
+/** What a wellness store's assistant knows about refills: which products come in one is read from each product. */
+export interface RefillKnowledge {
+  /** A question about refills. */
+  says: RegExp
+  /**
+   * The refill question it answers: whether there is one, or which products come in one ("Do you
+   * sell refills?", "Is there a refill for Unwind?", "refill for balance"). Anything else about a
+   * refill ("Are the refill bags recyclable?", "How do I refill the can?") is the store's pages' to answer.
+   */
+  asks: RegExp
+  /** A product's choice that is its refill ("Refill", "Refill bag", "Bag"). A product named "… Refill" is one too. */
+  choice: RegExp
 }
 
 /** A fibre a shopper may want to avoid ("I’m allergic to wool"). */
@@ -151,24 +174,63 @@ export interface HomeKnowledge {
   unknown: string
 }
 
+/**
+ * What muscle and strength are about: protein, creatine, muscle, building strength. Said with a
+ * training word ("protein after the gym"), they are what the shopper wants and the gym is only
+ * when, so the training words then don't also ask for hydration. "strength" alone may be a dose
+ * ("What strength is it?").
+ */
+const STRENGTH = 'protein\\w*|creatine|muscles?|muscular|(for|build\\w*|gain\\w*|improv\\w*|increas\\w*|more|my) strength|get(ting)? stronger'
+
+/** A cold you drink, touch or keep: "with a cold drink", "cold hands" are no cold. */
+const NOT_A_COLD = 'water|drinks?|coffee|tea|milk|juice|smoothies?|shakes?|brew|hands|feet|storage'
+/** Shipping, opening hours or a holiday: "over the winter holidays" is a delivery or contact question. */
+const WINTER_ERRAND = 'ship\\w*|deliver\\w*|post(age|al)?|dispatch\\w*|arriv\\w*|open|closed|holidays?'
+
 const WELLNESS: AssistantProfile = {
   id: 'wellness',
-  help: 'I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, skin or healthy ageing, and answer questions about delivery and returns.',
+  help: 'I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, protein, immune support, skin or healthy ageing, and answer questions about delivery and returns.',
   needs: [
     { label: 'better sleep', says: /\b(sleep\w*|insomnia|awake|restless|bedtime|wind(ing)? down|at night)\b/, means: ['sleep', 'bed', 'evening'] },
     { label: 'feeling calmer', says: /\b(stress\w*|anxious|anxiety|calm\w*|relax\w*|overwhelmed)\b/, means: ['calm', 'winding'] },
     { label: 'focus', says: /\b(focus\w*|concentrat\w*|brain fog|study\w*|sharp\w*|alert\w*|productiv\w*|distract\w*)\b/, means: ['focus'] },
-    { label: 'steady energy', says: /\b(tired\w*|fatigue\w*|exhausted|energy|sluggish|afternoon dip|worn out)\b/, means: ['energy'] },
-    { label: 'hydration and training', says: /\b(hydrat\w*|dehydrat\w*|thirst\w*|cramps?|sweat\w*|electrolytes?|run(ning|ner)?|workouts?|train\w*|gym|sports?|exercis\w*|cycling|marathon)\b/, means: ['hydrat', 'train', 'sport'] },
+    // "tired" finds Magnesium, whose own words are "less tiredness", as the store's search does.
+    { label: 'steady energy', says: /\b(tired\w*|fatigue\w*|exhausted|energy|sluggish|afternoon dip|worn out)\b/, means: ['energy', 'tired'] },
+    {
+      label: 'hydration and training',
+      says: new RegExp(`\\b(hydrat\\w*|dehydrat\\w*|thirst\\w*|cramps?|sweat\\w*|electrolytes?)\\b|^(?![\\s\\S]*\\b(${STRENGTH})\\b)[\\s\\S]*\\b(run(ning|ner)?|workouts?|train\\w*|gym|sports?|exercis\\w*|cycling|marathon)\\b`),
+      means: ['hydrat', 'train', 'sport'],
+    },
     { label: 'skin, hair and joints', says: /\b(skin|hair|nails?|joints?|knees?|collagen|glow\w*|wrinkles?)\b/, means: ['skin', 'hair', 'joint', 'collagen'] },
     { label: 'healthy ageing', says: /\b(age(ing)?|aging|longevity|getting older|cellular|nad)\b/, means: ['longevity', 'cellular', 'ageing'] },
     { label: 'easier breathing', says: /\b(snor\w*|breath\w*|blocked nose|stuffy|congest\w*|nasal|nose)\b/, means: ['breath', 'nose'] },
-    { label: 'women’s daily balance', says: /\b(wom[ae]n\w*|cycle|period|hormon\w*|menopause|pms)\b/, means: ['women', 'month'] },
+    // "blend" is Balance's own word for itself, so the can comes before its refill. ("month" was,
+    // until Vitamin D3 + K2 came "for the dark months".)
+    { label: 'women’s daily balance', says: /\b(wom[ae]n\w*|cycle|period|hormon\w*|menopause|pms)\b/, means: ['women', 'blend'] },
+    // A cold drink or a winter delivery is not a cold or the winter months: "a cold" needs its
+    // article, and the winter is the season only when the message names no shipping, delivery or
+    // opening hours. "winter" on its own is the season, as in search.
+    {
+      label: 'immune support',
+      says: new RegExp(`\\b(immun\\w*|colds|(catch\\w*|caught|fight\\w*( off)?) (a )?cold\\b|(get(ting)?|got|have|had|having|for|with|from|against|treat\\w*|help\\w*( with)?) (a|the) cold\\b(?! (${NOT_A_COLD})\\b)|help\\w* with cold\\b(?! (${NOT_A_COLD})\\b)|common cold|cold (and|or|&) flu|cold (season|months)|flu|(get|getting|got) sick|winter (months|season|bugs?)|dark (months|winters?)|vitamin [cd]3?|zinc)\\b|^(?![\\s\\S]*\\b(${WINTER_ERRAND})\\b)[\\s\\S]*\\b(for|through|over) (the )?winter\\b|^\\s*winter\\s*[?.!]*\\s*$`),
+      means: ['immun'],
+    },
+    // Lifting is training, not hydration: "I run and lift weights" asks for both.
+    {
+      label: 'muscle and strength',
+      says: new RegExp(`\\b(${STRENGTH}|strength training|weight ?lifting|lift(ing)? weights|i lift|weight training|bodybuild\\w*|powerlift\\w*)\\b`),
+      means: ['protein', 'muscle', 'strength', 'creatine'],
+    },
+    { label: 'heart and brain', says: /\b(heart|omega\S*|fish oil|algae oil|dha|epa)\b/, means: ['omega', 'heart'] },
+    { label: 'everyday vitamins', says: /\b(multi-?vitamins?|daily multi|vitamins|(daily|everyday) vitamin|vitamins? and minerals|minerals)\b/, means: ['vitamin', 'mineral'] },
+    { label: 'greens and fibre', says: /\b(greens|green (powders?|drinks?|juices?|smoothies?)|superfoods?|spirulina|chlorella|vegetables?|veggies|fib(re|er))\b/, means: ['green', 'spirulina', 'fibre'] },
   ],
-  askNeed: 'Tell me what you would like help with, for example better sleep, focus, hydration, skin or healthy ageing, and I will suggest a product.',
+  askNeed: 'Tell me what you would like help with, for example better sleep, focus, hydration, protein, immune support, skin or healthy ageing, and I will suggest a product.',
   suggestionLead: { one: 'this is the one we make for it', many: 'these are the ones we make for it' },
   caution: {
-    says: /\b(pregnan\w*|breast\s?feed\w*|nursing|medication|medicines?|prescription|antidepress\w*|blood pressure|diabet\w*|disease|illness|diagnos\w*|allerg\w*|side effects?|doctor|cure|treat(s|ment)?|my (child|kid|baby|son|daughter)|under 18)\b/,
+    // A condition, a medicine or a weak immune system, named alongside a need ("I take blood thinners,
+    // is omega-3 ok?"), still gets the careful answer. Never a bare "conditions": "terms and conditions".
+    says: /\b(pregnan\w*|breast\s?feed\w*|nursing|medication|medicines?|prescription|antidepress\w*|blood pressure|diabet\w*|disease|illness|diagnos\w*|allerg\w*|side effects?|doctor|cure|treat(s|ment)?|my (child|kid|baby|son|daughter)|under 18|(a|an|my|medical|health|heart|chronic|underlying|kidney|liver|thyroid|autoimmune) conditions?|heart (attack|failure|murmur|problems?|surgery)|strokes?|arrhythmi\w*|a-?fib|blood thinn\w*|anticoagul\w*|warfarin|statins?|cholesterol|kidney (problems?|issues?|stones?)|immuno-?compromised|immunosuppress\w*|immune deficien\w*|weak(ened)? immune|chemo\w*|transplant\w*)\b/,
     text: 'I can’t give medical advice. If you are pregnant, breastfeeding, taking medication, managing a condition or asking for a child, please check with your doctor or pharmacist before starting a supplement. I can tell you what each product contains and what it is made for.',
   },
   noPromotion: {
@@ -180,6 +242,14 @@ const WELLNESS: AssistantProfile = {
     link: { label: 'See subscriptions', href: '/collections/subscription' },
   },
   placeholder: 'Ask about an order, a subscription or a product',
+  refills: {
+    says: /\b(refill\w*|in (a |the )?bags?)\b/,
+    // Whether there is one, or which; a bare phrase ("refill for balance", "any refills?") asks that too,
+    // unless it starts like another question or says "is" or "are" ("The refill bags, are they recyclable?").
+    asks: /\b(do|does|can|could) (you|vitaheal) (sell|stock|have|offer|make|do)\b|\b(is|are) there\b|\b(can|could|do) i (buy|get|order)\b|\bcomes? in (a |the )?(refills?|bags?)\b|\bavailable\b|^(which|what) (products?|ones?|supplements?)\b|^(?!(how|why|what|which|when|where|who|are|is|was|were|can|could|will|would|should|does|do|did)\b)(?![\s\S]*\b(is|are|was|were)\b)/,
+    choice: /\b(refill|bag)\b/i,
+  },
+  requestWordsIgnored: true,
 }
 
 /**
@@ -206,6 +276,9 @@ const SUPPLEMENTS: AssistantProfile = {
     text: 'You can start one from any product in our Subscribe and save collection.',
     link: { label: 'See the products', href: '/collections/subscribe-and-save' },
   },
+  // Daybloom sells no refills, and reads every word of a request, as it always has.
+  refills: undefined,
+  requestWordsIgnored: undefined,
 }
 
 const FABRIC_PAGE: AssistantLink = { label: 'Fabric and care', href: '/page/fabric-and-care' }
