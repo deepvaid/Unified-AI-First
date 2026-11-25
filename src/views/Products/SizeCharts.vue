@@ -11,6 +11,7 @@ import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeade
 import { useToast } from '@/composables/useToast'
 import { sizeRange, sizesOf } from '@/storefront/sizeChartForm'
 import type { SizeChartDraft } from '@/storefront/sizeChartForm'
+import { hasMeasurements } from '@/storefront/sizeCharts'
 import type { SizeChart } from '@/storefront/sizeCharts'
 import { productHandle } from '@/views/Storefront/storefrontCatalog'
 import MpPageHeader from '@/components/MpPageHeader.vue'
@@ -88,6 +89,8 @@ const search = ref('')
 // ── Table ────────────────────────────────────────────────────────────
 interface ChartRow extends SizeChart {
   storeName: string
+  /** "Inches", "Centimeters", or "Sizes only" for a chart with no measurements (socks by shoe size). */
+  unitLabel: string
   sizeList: string
   sizeCount: number
   users: Product[]
@@ -99,6 +102,7 @@ const allRows = computed<ChartRow[]>(() => charts.value.map((chart) => {
   return {
     ...chart,
     storeName: storeName(chart.channelId),
+    unitLabel: hasMeasurements(chart) ? UNIT_LABELS[chart.unit] : 'Sizes only',
     sizeList: sizeRange(chart.rows),
     sizeCount: chart.rows.length,
     users,
@@ -116,7 +120,7 @@ const rows = computed(() => {
 const headers = [
   { title: 'Name', key: 'name', sortable: true },
   { title: 'Store', key: 'storeName', sortable: true, hideBelow: 'md' as const },
-  { title: 'Unit', key: 'unit', sortable: true, hideBelow: 'md' as const },
+  { title: 'Unit', key: 'unitLabel', sortable: true, hideBelow: 'md' as const },
   { title: 'Sizes', key: 'sizeList', sortable: false, hideBelow: 'sm' as const },
   { title: 'Used by', key: 'usedCount', sortable: true },
   { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, sortable: false, width: 48 },
@@ -278,16 +282,16 @@ const pendingUsers = computed(() => (pending.value ? sizeCharts.productsUsing(pe
               {{ item.columns.join(' · ') || 'No measurements' }}
             </div>
             <!-- Dropped columns fold in here rather than disappearing. -->
-            <div v-if="!isVisible('storeName') || !isVisible('unit') || !isVisible('sizeList')" class="text-caption text-medium-emphasis">
-              {{ [!isVisible('sizeList') ? item.sizeList : '', !isVisible('unit') ? UNIT_LABELS[item.unit] : '', !isVisible('storeName') ? item.storeName : ''].filter(Boolean).join(' · ') }}
+            <div v-if="!isVisible('storeName') || !isVisible('unitLabel') || !isVisible('sizeList')" class="text-caption text-medium-emphasis">
+              {{ [!isVisible('sizeList') ? item.sizeList : '', !isVisible('unitLabel') ? item.unitLabel : '', !isVisible('storeName') ? item.storeName : ''].filter(Boolean).join(' · ') }}
             </div>
           </div>
         </template>
         <template #item.storeName="{ item }">
           <span class="text-body-2">{{ item.storeName }}</span>
         </template>
-        <template #item.unit="{ item }">
-          <span class="text-body-2">{{ UNIT_LABELS[item.unit] }}</span>
+        <template #item.unitLabel="{ item }">
+          <span class="text-body-2">{{ item.unitLabel }}</span>
         </template>
         <template #item.sizeList="{ item }">
           <span class="text-body-2 text-no-wrap">{{ item.sizeList || '—' }}</span>
