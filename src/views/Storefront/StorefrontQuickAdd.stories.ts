@@ -1,9 +1,9 @@
 import { onMounted, ref } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
-import { overlayDocs } from '@/stories/decorators'
+import { isolateStorage, overlayDocs } from '@/stories/decorators'
 import type { Product } from '@/stores/useCommerce'
 import StorefrontQuickAdd from './StorefrontQuickAdd.vue'
-import { F150, listingProduct, northfoldStore, torqlineFrame, torqlinePart, torqlineStore } from './listingStoryFixtures'
+import { F150, listingProduct, northfoldStore, torqlineFrame, torqlinePart, torqlineStore, vitahealFrame, vitahealProduct, vitahealStore } from './listingStoryFixtures'
 import { storefrontFrame } from './storefrontStoryFixtures'
 
 /**
@@ -60,6 +60,12 @@ StorefrontListingCard). Shown here with Northfold's own products and theme.
   (StorefrontFitBanner, compact: "Fits your 2019 Ford F-150"; **Select vehicle** while none is
   chosen), and a part that fits goes into the cart with the vehicle on its line, which then reads
   "Front · Part # TQ-BRK-4471 · Fits 2019 Ford F-150".
+- A product the store sells on a **subscription plan** (Vitaheal) always opens the drawer, even with
+  nothing to choose. Under the picker are its purchase options (StorefrontPurchaseOptions) in the theme's
+  layout, preselected as its purchase options block says, priced on the choice made, with the policy line.
+  On a plan the button reads **Add subscription to cart · 838 kr**, the line goes into the cart on the plan
+  at its price, and the drawer then reads "Bag · 3-month supply" and "838 kr per delivery". When the
+  product template opens on the lowest-priced choice (\`preselectVariant\`), so does the drawer.
 
 Out of system on purpose (P4-8): it draws with the store's theme variables, not Marobase tokens.
         `,
@@ -102,4 +108,10 @@ export const PartForAVehicle: Story = {
 export const PartNoVehicle: Story = {
   decorators: [torqlineFrame('100%'), torqlineStore(null)],
   render: opened('Ceramic Brake Pads, Truck & SUV', undefined, torqlinePart),
+}
+
+/** Vitaheal's Unwind: its format, then its plans and buying once, the 3-month supply chosen first. */
+export const WithPlans: Story = {
+  decorators: [vitahealFrame('100%'), vitahealStore(), isolateStorage],
+  render: opened('Unwind', undefined, vitahealProduct),
 }

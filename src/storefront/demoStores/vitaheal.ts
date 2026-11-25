@@ -15,6 +15,12 @@ import type { ThemeSection } from '../themeSections.ts'
 import type { DemoStoreBlueprint, InstallContext, StoreSnapshot } from './types.ts'
 
 const SLOT = 2
+/**
+ * The library version. 2.0 since the second feedback round (2026-11-25): the Lumos look on
+ * the sections drawing. The seed version stays 1, so loading the app writes nothing; a
+ * browser that holds an edited Vitaheal theme keeps it until Restore original store.
+ */
+const VERSION = '2.0'
 const HOME_DOMAIN = VITAHEAL_CHANNEL.webStore!.domain
 /** When the seed was written: the theme's publish date and the collections' last update. */
 const SEEDED_AT = '2026-11-16T09:00:00Z'
@@ -26,14 +32,14 @@ function homeSnapshot(ctx: InstallContext): StoreSnapshot {
     theme: {
       id: `theme-${ctx.prefix}`,
       name: 'Vitaheal',
-      version: '1.0',
+      version: VERSION,
       publishedAt: SEEDED_AT,
       styles: { ...VITAHEAL_THEME_STYLES },
       templates: VITAHEAL_THEME_TEMPLATES,
     },
     market,
     products: vitahealProducts(),
-    collections: VITAHEAL_COLLECTIONS.map((c, i) => ({ id: ctx.ids.collection(i + 1), title: c.title, productCount: c.productCount, updatedAt: SEEDED_AT })),
+    collections: VITAHEAL_COLLECTIONS.map((c, i) => ({ id: ctx.ids.collection(i + 1), title: c.title, productCount: c.productCount, updatedAt: SEEDED_AT, description: c.description })),
     chrome: VITAHEAL_CHROME,
     menus: VITAHEAL_MENUS,
     content: VITAHEAL_CONTENT,
@@ -145,12 +151,13 @@ export const VITAHEAL_BLUEPRINT: DemoStoreBlueprint = {
     timezone: 'Europe/Stockholm',
   },
   photoDir: VITAHEAL_PHOTO_DIR,
-  capabilities: { subscriptions: true, variantPicker: false, sizeGuide: false, vehicleFitment: false },
+  // The sections product page lets the shopper pick a format or flavour (it opens on the cheapest).
+  capabilities: { subscriptions: true, variantPicker: true, sizeGuide: false, vehicleFitment: false },
   card: {
     name: 'Vitaheal',
-    version: '1.0',
+    version: VERSION,
     kind: 'Health and wellness',
-    description: 'Navy on white with Figtree. A supplements store priced in Swedish kronor, with subscribe-and-save plans, stories and shop-by-goal tiles.',
+    description: 'A supplements store on subscription, in kronor: Inter, uppercase headings, boxed product cards and a mega menu by goal.',
     thumbnail: `${VITAHEAL_PHOTO_DIR}/theme.jpg`,
   },
   build(ctx) {

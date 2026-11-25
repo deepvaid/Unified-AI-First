@@ -56,7 +56,8 @@ export function demoSlotFor<T>(
   return slotAt(`${channelStoragePrefix(channelId)}${name}.v${version}`, storage, isValid)
 }
 
-function slotAt<T>(key: string, storage: StorageLike | undefined, isValid: (value: unknown) => value is T): DemoSlot<T> {
+/** One saved value under a key of its own, for what is kept outside any one store (the progress of order fulfillments). */
+export function slotAt<T>(key: string, storage: StorageLike | undefined, isValid: (value: unknown) => value is T): DemoSlot<T> {
   return {
     key,
     load() {

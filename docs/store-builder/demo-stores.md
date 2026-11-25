@@ -16,20 +16,102 @@ theme in the library, named after the store.
 | Northfold (demo) | `northfold-demo` | 13 | Northfold | Women's and men's clothing in sizes and colors | USD | [northfold-demo-script.md](northfold-demo-script.md) |
 | Torqline Auto Parts (demo) | `torqline-demo` | 14 | Torqline | Auto parts with vehicle fitment | USD | [torqline-demo-script.md](torqline-demo-script.md) |
 | Lumos Home (demo) | `lumos-demo` | 15 | Lumos | Furniture, lighting and decor, in fabrics and finishes | USD | [lumos-demo-script.md](lumos-demo-script.md) |
+| Daybloom (demo) | `daybloom-demo` | 17 | Daybloom | Supplements by goal and format, on a plan with delivery options | USD | [daybloom-demo-script.md](daybloom-demo-script.md) |
 
 | Store | Blueprint id | Slot | Products (home ids) | Photos | Fonts | Drawing | Chatbot profile |
 |---|---|---|---|---|---|---|---|
-| Vitaheal | `vitaheal` | 2 | 8 (2001-2008) | `public/storefront/vitaheal/` | Figtree | classic | `wellness` |
+| Vitaheal | `vitaheal` | 2 | 8 (2001-2008) | `public/storefront/vitaheal/` | Inter | sections | `wellness` |
 | Northfold | `northfold` | 3 | 20 (3001-3020) | `public/storefront/northfold/` | Instrument Serif, DM Sans | sections | `apparel` |
 | Torqline | `torqline` | 4 | 21 (4001-4021) | `public/storefront/torqline/` | Barlow Condensed, Barlow | sections | `auto-parts` |
 | Lumos | `lumos` | 5 | 20 (5001-5020) | `public/storefront/lumos/` | Inter | sections | `home` |
+| Daybloom | `daybloom` | 7 | 10 (7001-7010) | `public/storefront/daybloom/` | system-ui (Aurora's) | classic | `supplements` |
 
 "Drawing" is how the storefront draws the theme. A theme whose styles say `drawing: 'sections'`
 gets the richer storefront: header and footer settings, page templates, filters, quick add, the
 variant picker and size guide, the vehicle selector on a store that sells parts, and the wishlist
 when the header has its tool
-([storefrontContext.ts](../../src/views/Storefront/storefrontContext.ts)). Vitaheal keeps the classic
-drawing it always had.
+([storefrontContext.ts](../../src/views/Storefront/storefrontContext.ts)). Daybloom is on the classic
+drawing; Vitaheal moved to the sections drawing on 2026-11-25 (below).
+
+Daybloom is the Aurora look: the classic drawing in Aurora's own colours and type. The classic
+drawing draws three things for a theme that asks for them, so Atlas and Neelam, which do not,
+look as before:
+
+- **a mega menu**: a header link that carries a `menu` (`StorefrontNavLink` in
+  [useStorefront.ts](../../src/stores/useStorefront.ts)) opens a panel of link columns with a picture
+  tile ([StorefrontHeader.vue](../../src/views/Storefront/StorefrontHeader.vue)); in the phone menu it
+  opens in place;
+- **an icon row** on the home page (the `icon-row` section, drawn by the sections drawing's own
+  component);
+- **collapsible rows** on the product page (the `collapsible-row` block), among them a **Product
+  facts table** filled from the product's `detail.specs` (a supplement's facts). The product editor
+  shows a **Product facts** card on a product that has facts, or whose store's products do.
+
+Daybloom also seeds what the subscriptions part of the feedback round added: a plan with delivery
+options, and the product page's **Purchase options** block.
+
+**Vitaheal has the same features since 2026-11-24**, in its own colours and type: a mega menu
+("Shop" and "About"), a strip of four promises on the home page, facts on every product with
+four rows under the description, a line under each collection's title, the subscription terms as
+a policy page, and the Purchase options block. Its two plans of one fixed delivery, its prices
+and its eight subscribers are as they were, and the 3-month supply is still chosen first.
+Vitaheal's `seedVersion` was not raised for this (raising it writes a key in every browser on
+the next start): a browser that had saved an edited Vitaheal theme keeps that theme, without the
+strip and the rows, until **Restore original store**, which every script starts with.
+
+### Vitaheal on the Lumos look (feedback round, 2026-11-25)
+
+**Why.** Rubbecca, who owns the PRD, asked on 20 November that the sales demo not lead with the
+Aurora-like look, and suggested "Lumos style bare minimum". So Vitaheal moved from the classic
+drawing to the sections drawing, in the Lumos theme's look, while Daybloom keeps the Aurora look on
+the classic drawing.
+
+**What changed** (all in [vitahealDemo.ts](../../src/storefront/vitahealDemo.ts)):
+
+- **Styles:** `drawing: 'sections'`, Inter for headings and text, uppercase headings at weight
+  500 and uppercase buttons, corners of 4, white cards of radius 8 with a soft shadow, a near-white
+  surface and a pale navy tint, a 1328px page with 56px gutters, 64px hero and 32px section titles,
+  and form fields edged at 3:1. The contrast pairs are checked in
+  [vitahealDemo.test.ts](../../tests/storefront/vitahealDemo.test.ts).
+- **Header and footer:** Inline, sticky and light in every template; a search field
+  (`headerSearch: 'field'`, "Search supplements") that shows once the store is connected to
+  Merchandise Cloud; a tagline, the newsletter as a footer column, and the legal links (privacy,
+  terms, cookies) in the footer's bottom row. The Shop column gained **All products**, because the
+  sections footer's column headings are not links. The mega menu ("Shop" and "About") is drawn by
+  the sections header too, and opens in place in its phone drawer.
+- **Home:** a hero with a **Made in Sweden** badge, a second button (**Subscribe and save**) and
+  three figures that are the store's own facts (what a plan saves, free shipping over
+  549 kr, 30 days to try Unwind); the goals as a carousel on the tint; the range as a carousel; the
+  two stories; the promises as centred cards. The home page's rich text and newsletter sections
+  were dropped: the footer column carries the sign-up on every page. The hero has Lumos's words on
+  the left: navy on a white wash, with **one job well** in the brand colour. White words over the
+  photo's bright mist read at 1.4:1 to 2.6:1, so `hero.jpg` was re-cropped from the same Unsplash
+  photo with the runner three-quarters across, past the wash.
+- **Product page:** the Purchase options block first, then a **Description** row (open), then the
+  four rows as before. The product detail opens on the lowest-priced choice and shows a quantity
+  selector and a stock line (`preselectVariant`, `quantity`, `stockLine`), and draws no reviews.
+- **Collection page:** boxed cards four to a row, with quick add (it offers the plans), sort and a
+  price filter (every product is the same brand and kind, so price is the filter that helps).
+- **Theme library:** the theme is version 2.0 ("Vitaheal 2.0" in the admin), with a new card
+  text. `capabilities.variantPicker` is now true: the sections product page lets the shopper pick
+  a format or flavour.
+
+**What stays:** the navy, the badge colours (violet sale, lime **Subscribe available**, black sold
+out) and the wordmark; the products, plans, prices (whole kronor on the pages, "585,90 kr" where an
+amount is charged), campaigns (the WINTER15 bar), search rules, chatbot, pages, subscribers and
+every section and block id; checkout's consent and terms, the account with subscriptions and
+orders, and chat.
+
+**Seed version.** It stays 1, so loading the app still writes nothing to the browser. A browser
+that saved an edited Vitaheal theme before 25 November keeps the classic look until
+**Restore original store**. Every script starts with that restore, and the Themes page and
+Settings › Store data say so when a demo store runs an older edited copy of its own theme.
+
+**Added with it, for any store:** a theme row can be shown only on products sold on a plan
+(`plansOnly` on a collapsible row); a subscription keeps the price of the format it was bought
+on when the shopper changes plan (`contractUnitPrice` in `src/subscriptions/contracts.ts`); and
+whether a store can be searched is one rule (`canSearch` in `src/storefront/storeSearch.ts`) that
+the storefront and the admin's previews share.
 
 ## What a theme is
 
@@ -58,7 +140,7 @@ any drafts or copies made from it.
 | [demoStores/index.ts](../../src/storefront/demoStores/index.ts) | `DEMO_STORES` (the library, in order), `isDemoStoreId`, `demoStoreFor(id)`, `homeBlueprintOf(channelId)`, `isDemoChannelId`, `canApplyTheme(channel)`. |
 | [demoStores/install.ts](../../src/storefront/demoStores/install.ts) | The id blocks (`contextFor`, `INSTALL_ID_FLOOR`, `MERCHANT_PRODUCT_ID_FLOOR`, `nextMerchantProductId`), `snapshotFor(channel, blueprintId, today)`, `historyFor`, the `installed` record (`installedSlot`, `readInstalled`, `writeInstalled`, `clearInstalled`), `currentBlueprintId` and `isSeedStale`. |
 | [demoStores/summary.ts](../../src/storefront/demoStores/summary.ts) | The words every screen uses: `applySummary`, `restoreSummary`, `restoreParts`, `startSummary`, `themeFacts`, `currencyName`, `countWord`. |
-| [demoStores/vitaheal.ts](../../src/storefront/demoStores/vitaheal.ts), [northfold.ts](../../src/storefront/demoStores/northfold.ts), [torqline.ts](../../src/storefront/demoStores/torqline.ts) | The three blueprints. Their data is in [vitahealDemo.ts](../../src/storefront/vitahealDemo.ts), [northfoldDemo.ts](../../src/storefront/northfoldDemo.ts) and [torqlineDemo.ts](../../src/storefront/torqlineDemo.ts). |
+| [demoStores/vitaheal.ts](../../src/storefront/demoStores/vitaheal.ts), [northfold.ts](../../src/storefront/demoStores/northfold.ts), [torqline.ts](../../src/storefront/demoStores/torqline.ts), [daybloom.ts](../../src/storefront/demoStores/daybloom.ts) | The four blueprints. Their data is in [vitahealDemo.ts](../../src/storefront/vitahealDemo.ts), [northfoldDemo.ts](../../src/storefront/northfoldDemo.ts), [torqlineDemo.ts](../../src/storefront/torqlineDemo.ts) and [daybloomDemo.ts](../../src/storefront/daybloomDemo.ts). |
 | [createdStores.ts](../../src/storefront/createdStores.ts) | Stores made with Create sales channel: `CREATED_STORES_KEY`, `FIRST_CREATED_SLOT`, `MAX_STORE_SLOT`, `readCreatedStores`, `writeCreatedStores`, `nextStoreSlot`, `storeKeys`. |
 | [demoStorage.ts](../../src/storefront/demoStorage.ts) | Storage keys: `DEMO_STORAGE_PREFIX`, `channelStoragePrefix`, `demoSlot`, `demoSlotFor`, `StorageLike`. |
 | [demoKeep.ts](../../src/stores/demoKeep.ts) | How a Pinia store keeps its part in the browser: `browserStorage`, `keepInBrowser`, `keepPerChannel`. |
@@ -73,7 +155,7 @@ Everything under `src/storefront/` is pure TypeScript with relative `.ts` import
 
 | Field | What it is |
 |---|---|
-| `id` | `'vitaheal'`, `'northfold'` or `'torqline'` (`DemoStoreId`). |
+| `id` | `'vitaheal'`, `'northfold'`, `'torqline'` or `'daybloom'` (`DemoStoreId`). |
 | `slot` | The home channel's slot (2-9). It is also the blueprint's digit in installed ids. |
 | `seedVersion` | Bump it when the seed changes. A browser that saved data from an older seed then reseeds that store on the next start (`isSeedStale`, `reseedStale`). |
 | `homeChannel` | The showcase store: the seeded `SalesChannel`, with `webStore.blueprint` set. |
@@ -97,8 +179,9 @@ blank. `slot` numbers the store in the id blocks.
 
 | Slot | Store |
 |---|---|
-| 2, 3, 4, 5 | Vitaheal, Northfold, Torqline, Lumos (their home channels) |
-| 6-9 | Kept free for the demo stores added later (6 is planned for Aurora) |
+| 2, 3, 4, 5, 7 | Vitaheal, Northfold, Torqline, Lumos, Daybloom (their home channels) |
+| 6 | Kept for Aurora, the next demo store of the theme library |
+| 8-9 | Kept free for the demo stores added later |
 | 10-99 | Stores made with Create sales channel and Store Builder on (`FIRST_CREATED_SLOT` to `MAX_STORE_SLOT`, given by `nextStoreSlot`) |
 
 Every other store has no `webStore.blueprint` and never gets one. These must never change, whatever
@@ -129,7 +212,7 @@ Ids are unique by construction: one block per store and blueprint
 | Where | Products | Variants | Collections |
 |---|---|---|---|
 | Vitaheal on its home channel | 2001-2008 | `productId * 10 + n` (20011...) | 23-27 |
-| Northfold, Torqline, Lumos on their home channel | `slot * 1000 + n` (3001..., 4001..., 5001...) | `productId * 100 + n` | `slot * 1000 + 900 + n` (3901..., 4901..., 5901...) |
+| Northfold, Torqline, Lumos, Daybloom on their home channel | `slot * 1000 + n` (3001..., 4001..., 5001..., 7001...) | `productId * 100 + n` | `slot * 1000 + 900 + n` (3901..., 4901..., 5901..., 7901...) |
 | A blueprint installed on store slot 2-9 | `storeSlot * 10000 + blueprintSlot * 1000 + n` (Torqline on Vitaheal: 42001...) | `productId * 100 + n` | product base `+ 900 + n` |
 | A blueprint installed on store slot 10-99 | the same, plus 1,000,000 | `productId * 100 + n` | the same, plus 1,000,000 |
 | A product a merchant creates | 100001 and up (`nextMerchantProductId`) | | |
@@ -171,6 +254,7 @@ writes nothing and keeps following its seed.
 | `conversations.v1` | [useChatbot.ts](../../src/stores/useChatbot.ts) | Chats shoppers had on the storefront. | Kept | Removed |
 | `plans.v1` | [useSubscriptions.ts](../../src/stores/useSubscriptions.ts) | Subscription plans. | The theme's come in, the store's own are paused | Back as seeded |
 | `subscriptions.v1` | [useSubscriptions.ts](../../src/stores/useSubscriptions.ts) | Subscriptions shoppers hold. | Kept | Back as seeded |
+| `launch.v1` | [useStoreLaunch.ts](../../src/stores/useStoreLaunch.ts) | A created store's launch steps marked done by hand: `["shipping", "taxes"]`. | Kept | Removed |
 
 Not kept at all: collections ([useProductExtras.ts](../../src/stores/useProductExtras.ts)), pages and
 blog settings ([useStoreContent.ts](../../src/stores/useStoreContent.ts)), menus
@@ -253,8 +337,8 @@ plans an applied theme brought, and a Merchandise Cloud connection that goes bac
 `useDemoStores().restore(channelId)` puts the store back as it started: it clears the `installed`
 record, reseeds every part, then puts back what only a restore touches (`restoreHistory`):
 
-- the Merchandise Cloud connection as seeded (Vitaheal disconnected, Northfold and Torqline
-  connected, a created store as it was made);
+- the Merchandise Cloud connection as seeded (Vitaheal disconnected; Northfold, Torqline and
+  Daybloom connected; a created store as it was made);
 - the theme as seeded, with its drafts and copies removed;
 - the chatbot's settings, with its storefront chats removed;
 - the subscribers as seeded;
@@ -320,6 +404,30 @@ A web store without Store Builder, an offline store, or a Store Builder store wh
 (all of 10-99 taken) is made as before: at the top of the list, not kept in the browser, and it can
 never take a theme.
 
+### A new store's first minutes
+
+A store made here opens on its own page in two stages
+([storeLaunch.ts](../../src/storefront/storeLaunch.ts), pure):
+
+1. **Setting up.** The page shows the store's setup steps and nothing else
+   ([StoreSetupProgress.vue](../../src/components/saleschannels/StoreSetupProgress.vue)): its Commerce
+   Cloud account, search (only when connected to Merchandise Cloud), the storefront (naming the
+   theme), checkout, and its address. Each takes `SETUP_STEP_MS`. Where it stands is read from the
+   store's `createdAt` (`setupProgress`), so nothing is stored: a reload or another tab shows the
+   same step, and a store made earlier is simply ready. When the last step is done the page says
+   "… is ready" and shows the overview. Nothing waits on it: the store's parts are seeded before
+   the page opens, so the storefront already works.
+2. **Launch your store.** The overview has the launch checklist where other stores have "Finish
+   setup" ([StoreLaunchChecklist.vue](../../src/components/saleschannels/StoreLaunchChecklist.vue)):
+   eight steps (`launchChecklist`). Five are read from the store (a stock location, a product, a
+   published theme, a way to pay, its address). Three have nothing to read (name and logo, shipping,
+   taxes): the merchant marks them done, and [useStoreLaunch.ts](../../src/stores/useStoreLaunch.ts)
+   keeps that under the store's `launch.v1` key. Restore and Delete store forget it.
+
+The seeded demo stores are not "made here": they never show the setup steps, and keep "Finish setup".
+The account's own **Get started** guide ([GetStarted.vue](../../src/views/GetStarted.vue),
+`useOnboarding.ts`) is a different thing: it is per account, and was left as it is.
+
 ## Delete store
 
 Only a store made with Create sales channel can be deleted (`isCreated`). The store's Settings tab
@@ -343,7 +451,7 @@ change:
 
 ```sh
 npm run build
-npm run themes:thumbnails                  # all three, from dist/
+npm run themes:thumbnails                  # all four, from dist/
 npm run themes:thumbnails -- --only=torqline
 npm run themes:thumbnails -- --dist=<dir>  # another build
 ```
@@ -364,20 +472,23 @@ thumbnail and that the file exists.
 |---|---|
 | [demoStores.test.ts](../../tests/storefront/demoStores.test.ts) | Every blueprint: ids, SKUs, options and swatches, links on every install, photos and credits, the thumbnail, fonts, no real brand names, no subscription data on a store without subscriptions. |
 | [demoStoresInstall.test.ts](../../tests/storefront/demoStoresInstall.test.ts) | The registry, slots, `canApplyTheme`, the id blocks and the `installed` record. |
-| [demoStoresVitaheal.test.ts](../../tests/storefront/demoStoresVitaheal.test.ts) | Vitaheal's home build deep-equals its seed from before the registry. |
+| [demoStoresVitaheal.test.ts](../../tests/storefront/demoStoresVitaheal.test.ts) | Vitaheal's home build deep-equals its seed from before the registry (the look recaptured on 2026-11-24 and 2026-11-25). |
 | [demoStoresApp.test.ts](../../tests/storefront/demoStoresApp.test.ts) | The Pinia stores together: seeding, browser keys, Restore, the stores that must not change. |
 | [themeSwap.test.ts](../../tests/storefront/themeSwap.test.ts) | Apply, Restore, created stores, Delete store, theme copies, plans and the cart, across tabs and reloads. |
 | [themeSummary.test.ts](../../tests/storefront/themeSummary.test.ts) | The words of the Apply and Restore dialogs and the Review step. |
 | [createdStores.test.ts](../../tests/storefront/createdStores.test.ts) | The created-stores key, slots and `storeKeys`. |
-| [northfoldDemo.test.ts](../../tests/storefront/northfoldDemo.test.ts), [torqlineDemo.test.ts](../../tests/storefront/torqlineDemo.test.ts) | Each store's reference tables: prices, sold-out sizes, size charts, fitment. |
+| [storeLaunch.test.ts](../../tests/storefront/storeLaunch.test.ts), [storeLaunchApp.test.ts](../../tests/storefront/storeLaunchApp.test.ts) | A new store's setup steps and launch checklist; marked steps kept, and forgotten on restore and delete. |
+| [northfoldDemo.test.ts](../../tests/storefront/northfoldDemo.test.ts), [torqlineDemo.test.ts](../../tests/storefront/torqlineDemo.test.ts), [daybloomDemo.test.ts](../../tests/storefront/daybloomDemo.test.ts) | Each store's reference tables: prices, sold-out sizes, size charts, fitment; Daybloom's plan with delivery options, supplement facts and mega menu. |
 
-## Add a fourth store in six steps
+## Add a fifth store in six steps
 
 1. **Write its data and blueprint.** Copy [northfoldDemo.ts](../../src/storefront/northfoldDemo.ts)
    and [demoStores/northfold.ts](../../src/storefront/demoStores/northfold.ts). Build every id from
    `ctx.ids`, every string id from `ctx.prefix` and every link from the products the blueprint
-   creates, so it installs cleanly on any store. Give it the next free slot (5; blueprint slots
-   run 2-9, and created stores start at 10, so they never clash) and a `seedVersion` of 1.
+   creates, so it installs cleanly on any store. Give it the next free slot (7; blueprint slots
+   run 2-9, 5 is the stand-in store the tests install into, and created stores start at 10, so
+   they never clash) and a `seedVersion` of 1. A store with subscribers numbers them clear of the
+   others (Vitaheal S-1001..., Daybloom S-1101...): subscriptions of every store share one list.
 2. **Add photos and credits.** Put them in `public/storefront/<slug>/` with a `CREDITS.md` that
    names every file (File | Used for | Photographer | Source). Free licenses only, no real brand
    names or logos in shot.
@@ -397,7 +508,7 @@ thumbnail and that the file exists.
    in [theme-thumbnails.mjs](../../scripts/theme-thumbnails.mjs), then `npm run build` and
    `npm run themes:thumbnails -- --only=<slug>`, and look at the picture.
 6. **Write its script.** Add `docs/store-builder/<slug>-demo-script.md` in the Steps-table format of
-   the other three, with a theme-swap step, then add the store to the tables in this guide and a
+   the other four, with a theme-swap step, then add the store to the tables in this guide and a
    section to [demo-stores-qa.md](demo-stores-qa.md).
 
 ## Lumos: what it added to the sections drawing

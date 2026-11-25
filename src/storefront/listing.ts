@@ -1,7 +1,7 @@
 // How a product reads in a store's product lists on the richer theme drawing
 // (the collection and search pages of Northfold, Torqline and Lumos): its price and
-// sale, its colours, the photo for a chosen colour, a part's number and stock
-// line, whether quick add needs a choice, what the list calls what it holds, and
+// sale, its colours, the photo for a chosen colour, the mark on that photo, a part's
+// number and stock line, whether quick add needs a choice, what the list calls what it holds, and
 // the grid settings the collection template gives it. Filters and sort are in
 // ./facets.ts.
 //
@@ -161,6 +161,28 @@ export function soldOut(product: CardProduct): boolean {
   return variants.length ? !variants.some(variantAvailable) : product.inventory <= 0
 }
 
+export type CardBadgeKind = 'sold-out' | 'sale' | 'subscribe' | 'new'
+
+export interface CardBadge {
+  kind: CardBadgeKind
+  /** "Sold out", "−25%", "Subscribe available", "New". */
+  text: string
+}
+
+/**
+ * The one mark on a card's photo: sold out, else the saving, else "Subscribe available"
+ * (a product on a subscription plan, on a store whose theme asks for the badge:
+ * `subscribe`), else "New" (unless `showNew` is off). None when nothing applies.
+ */
+export function cardBadge(product: CardProduct, { showNew = true, subscribe = false }: { showNew?: boolean; subscribe?: boolean } = {}): CardBadge | null {
+  if (soldOut(product)) return { kind: 'sold-out', text: 'Sold out' }
+  const { salePercent } = cardPrice(product)
+  if (salePercent) return { kind: 'sale', text: `−${salePercent}%` }
+  if (subscribe) return { kind: 'subscribe', text: 'Subscribe available' }
+  if (showNew && isNewArrival(product)) return { kind: 'new', text: 'New' }
+  return null
+}
+
 // ── Parts ────────────────────────────────────────────────────────────────────
 
 /**
@@ -231,12 +253,14 @@ export function needsChoice(product: CardProduct): boolean {
 
 /**
  * The card's button puts the product straight in the cart: it has nothing to choose,
- * and it is not a part the shopper's vehicle doesn't take (that one opens quick add,
- * which says so before anything is added). `fit` is the product's own state against
- * the vehicle; 'unknown' for anything that is not a part.
+ * it is not a part the shopper's vehicle doesn't take (that one opens quick add,
+ * which says so before anything is added), and it is on no subscription plan (quick
+ * add offers the plans, so a shopper is never signed up, or left off a plan, unasked).
+ * `fit` is the product's own state against the vehicle; 'unknown' for anything that
+ * is not a part. `hasPlans`: the store offers the product on a plan.
  */
-export function addsDirectly(product: CardProduct, fit: FitState = 'unknown'): boolean {
-  return !needsChoice(product) && fit !== 'no-fit'
+export function addsDirectly(product: CardProduct, fit: FitState = 'unknown', hasPlans = false): boolean {
+  return !needsChoice(product) && fit !== 'no-fit' && !hasPlans
 }
 
 /**
@@ -261,6 +285,19 @@ export function listingNoun(products: readonly CardProduct[]): ListingNoun {
   const clothing = (p: CardProduct) => !!p.detail?.sizeChartId && (p.detail.options ?? []).some((option) => optionKind(option) === 'size')
   if (products.some(clothing)) return { one: 'style', other: 'styles' }
   if (products.some((p) => p.detail?.fitment !== undefined)) return { one: 'part', other: 'parts' }
+  return { one: 'product', other: 'products' }
+}
+
+/**
+ * What a store calls what it sells, for a list with nothing in it ("New styles are on
+ * their way"): its catalogue's word (`listingNoun`). A store with no products yet is
+ * called by what it is set up to sell: styles when it has size charts, parts when its
+ * product page shows the vehicle fit banner, else products.
+ */
+export function storeNoun(catalogue: readonly CardProduct[], setup: { sizeCharts?: boolean; fitment?: boolean } = {}): ListingNoun {
+  if (catalogue.length) return listingNoun(catalogue)
+  if (setup.sizeCharts) return { one: 'style', other: 'styles' }
+  if (setup.fitment) return { one: 'part', other: 'parts' }
   return { one: 'product', other: 'products' }
 }
 

@@ -4,7 +4,9 @@ import { useRoute, useRouter } from 'vue-router'
 import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import { useInitialLoad } from '@/composables/useInitialLoad'
 import { useCommerceStore, FULFILLMENT_QUEUE_STATUSES, type FulfillmentQueueItem, type FulfillmentQueueStatus } from '@/stores/useCommerce'
+import { fulfillmentNumber } from '@/commerce/fulfillment'
 import { downloadCsv } from '@/utils/exportCsv'
+import { formatMoneyParts } from '@/utils/formatMoneyParts'
 import { useToast } from '@/composables/useToast'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
@@ -98,6 +100,7 @@ const stageColor: Record<string, string> = {
   'Packed': 'info',
   'Label Created': 'primary',
   'Shipped': 'success',
+  // Delivered is done: it takes the neutral chip.
 }
 const stageCount = (s: string) => store.fulfillments.filter(f => f.status === s).length
 function toggleStage(s: FulfillmentQueueStatus) {
@@ -119,24 +122,23 @@ function selectAll() {
 function goToOrder(item: FulfillmentQueueItem) {
   router.push({ name: 'OrderDetail', params: { accountId: accountId.value, orderId: String(item.orderId) } })
 }
+const detailRoute = (item: FulfillmentQueueItem) => ({ name: 'FulfillmentDetail', params: { accountId: accountId.value, fulfillmentId: item.id } })
+const isSent = (item: FulfillmentQueueItem) => item.status === 'Shipped' || item.status === 'Delivered'
+const total = (item: FulfillmentQueueItem) => formatMoneyParts(Number(item.total) || 0, item.currency).formatted
 
-const NEXT_STAGE: Record<string, string> = { 'Picked': 'Packed', 'Packed': 'Label Created', 'Label Created': 'Shipped' }
-
-function advanceStage(item: FulfillmentQueueItem) {
-  const next = NEXT_STAGE[item.status]
-  if (!next) return
-  if (next === 'Shipped') {
-    askShip([item.id])
-    return
-  }
-  store.advanceFulfillment(item.id)
-  notify(`${item.orderNumber} moved to ${next}`)
+function packItem(item: FulfillmentQueueItem) {
+  if (store.packFulfillment(item.id)) notify(`${item.orderNumber} packed`)
+}
+function deliverItem(item: FulfillmentQueueItem) {
+  if (store.deliverFulfillment(item.id)) notify(`${item.orderNumber} marked delivered`)
 }
 
 // Ship dialog (row + bulk) with optional tracking number
 const shipDialog = ref(false)
 const shipIds = ref<number[]>([])
 const shipTracking = ref('')
+/** A fulfillment with a label already has its tracking number: only the others can take one here. */
+const shipNeedsTracking = computed(() => shipIds.value.some((id) => !store.fulfillmentById(id)?.parcel))
 function askShip(ids: number[]) {
   shipIds.value = ids
   shipTracking.value = ''
@@ -156,7 +158,7 @@ function printPackingSlips() {
 
 function exportFulfillments() {
   downloadCsv('fulfillments', filteredFulfillments.value, [
-    { title: 'ID', value: (f) => `FF-${String(f.id).padStart(4, '0')}` },
+    { title: 'ID', value: (f) => fulfillmentNumber(f.id) },
     { title: 'Order', value: 'orderNumber' },
     { title: 'Customer', value: 'customer' },
     { title: 'Location', value: 'location' },
@@ -176,7 +178,7 @@ function exportFulfillments() {
   <div class="h-100 d-flex flex-column gap-5">
     <MpPageHeader
       title="Fulfillment"
-      :subtitle="`${store.fulfillments.filter(f => f.status !== 'Shipped').length} orders awaiting fulfillment`"
+      :subtitle="`${store.fulfillments.filter(f => !isSent(f)).length} orders awaiting fulfillment`"
     >
       <template #actions>
         <v-btn variant="outlined" prepend-icon="download" class="text-none" @click="exportFulfillments">Export</v-btn>
@@ -262,7 +264,7 @@ function exportFulfillments() {
           />
         </template>
         <template v-slot:item.id="{ item }">
-          <span class="text-body-2 text-medium-emphasis text-no-wrap">FF-{{ String(item.id).padStart(4, '0') }}</span>
+          <router-link :to="detailRoute(item)" class="mp-link text-body-2 text-no-wrap">{{ fulfillmentNumber(item.id) }}</router-link>
         </template>
 
         <template v-slot:item.orderNumber="{ item }">
@@ -293,7 +295,7 @@ function exportFulfillments() {
         </template>
 
         <template v-slot:item.total="{ item }">
-          <span class="font-weight-bold text-no-wrap fq-num">${{ item.total }}</span>
+          <span class="font-weight-bold text-no-wrap fq-num">{{ total(item) }}</span>
         </template>
 
         <template v-slot:item.createdAt="{ item }">
@@ -302,14 +304,12 @@ function exportFulfillments() {
 
         <template v-slot:item.actions="{ item }">
           <MpRowActionsMenu ariaLabel="Fulfillment actions" :itemLabel="item.orderNumber">
+            <MpMenuItem icon="package-check" title="View fulfillment" :to="detailRoute(item)"></MpMenuItem>
             <MpMenuItem icon="eye" title="View order" @click="goToOrder(item)"></MpMenuItem>
-            <MpMenuItem
-              v-if="NEXT_STAGE[item.status] && NEXT_STAGE[item.status] !== 'Shipped'"
-              icon="arrow-right"
-              :title="`Advance to ${NEXT_STAGE[item.status]}`"
-              @click="advanceStage(item)"
-            ></MpMenuItem>
-            <MpMenuItem icon="truck" title="Mark shipped" :disabled="item.status === 'Shipped'" @click="askShip([item.id])"></MpMenuItem>
+            <MpMenuItem v-if="item.status === 'Picked'" icon="package" title="Pack" @click="packItem(item)"></MpMenuItem>
+            <MpMenuItem v-if="item.status === 'Packed'" icon="tag" title="Pick carrier" :to="detailRoute(item)"></MpMenuItem>
+            <MpMenuItem v-if="!isSent(item)" icon="truck" title="Mark shipped" @click="askShip([item.id])"></MpMenuItem>
+            <MpMenuItem v-if="item.status === 'Shipped'" icon="package-check" title="Mark delivered" @click="deliverItem(item)"></MpMenuItem>
           </MpRowActionsMenu>
         </template>
 
@@ -343,6 +343,7 @@ function exportFulfillments() {
         The linked order{{ shipIds.length === 1 ? '' : 's' }} will be updated to Shipped and the customer{{ shipIds.length === 1 ? '' : 's' }} notified.
       </div>
       <v-text-field
+        v-if="shipNeedsTracking"
         v-model="shipTracking"
         label="Tracking number (optional)"
         placeholder="e.g. 1Z999AA10123456784"

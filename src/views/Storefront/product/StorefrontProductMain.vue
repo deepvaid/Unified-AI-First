@@ -1,22 +1,26 @@
 <script setup lang="ts">
 import { computed, inject, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { parseDecimal, zero } from '@/maropay/money'
+import { parseDecimal, toDecimal, zero } from '@/maropay/money'
 import type { Product, ProductVariant } from '@/stores/useCommerce'
-import { useStorefrontCartStore } from '@/stores/useStorefrontCart'
+import { MAX_QTY, useStorefrontCartStore } from '@/stores/useStorefrontCart'
 import { useStorefrontWishlistStore } from '@/stores/useStorefrontWishlist'
+import { useSubscriptionsStore } from '@/stores/useSubscriptions'
 import { audienceOf } from '@/storefront/audience'
 import { isAvailable } from '@/storefront/catalog'
 import { fitDetail, lineVehicle, variantFitState } from '@/storefront/fitment'
-import { soldOutText } from '@/storefront/listing'
+import { soldOutText, stockLine } from '@/storefront/listing'
 import { galleryFor, partNumberOf, priceFor, productRows, selectionFromQuery, withSelectionQuery } from '@/storefront/productPage'
+import { purchaseOptionsOf } from '@/storefront/themeSections'
 import type { ThemeSection } from '@/storefront/themeSections'
-import { describeVariant, initialSelection, optionKind, variantAvailable } from '@/storefront/variants'
+import { cheapestInitialSelection, describeVariant, initialSelection, optionKind, stockNote, variantAvailable } from '@/storefront/variants'
 import { heartLabel, toggleAnnouncement } from '@/storefront/wishlist'
+import { defaultOptionId, linePlan, purchaseOptions } from '@/subscriptions/plans'
 import StorefrontAnchor from '../StorefrontAnchor.vue'
 import StorefrontDrawer from '../StorefrontDrawer.vue'
 import StorefrontFitBanner from '../StorefrontFitBanner.vue'
 import StorefrontPayMark from '../StorefrontPayMark.vue'
+import StorefrontPurchaseOptions from '../StorefrontPurchaseOptions.vue'
 import StorefrontSizeGuide from '../StorefrontSizeGuide.vue'
 import StorefrontVariantPicker from '../StorefrontVariantPicker.vue'
 import { chromeSettings, flag } from '../sections/sectionSettings'
@@ -53,8 +57,18 @@ import StorefrontProductRows from './StorefrontProductRows.vue'
 // On a store with a wishlist (Lumos) a heart beside Add to cart saves the product: a toggle
 // button (`aria-pressed`) with one name, and what it did is said politely.
 //
+// On a store with subscription plans (Vitaheal) a product on a plan shows its purchase
+// options under the choices (StorefrontPurchaseOptions), laid out as the section's
+// purchase options block says. A plan's price follows the chosen variant (the lowest
+// price until one is chosen). With a plan chosen the button reads "Add subscription to
+// cart", the line carries the plan ("Added to your cart · Bag · 3-month supply"), and
+// Buy now is hidden: the checkout's consent to a subscription is in its form.
+//
 // Section settings: galleryLayout ('Stacked' | 'Thumbnails'), imageRatio ('Portrait' |
-// 'Square' | 'Landscape'), sizeGuide (true unless false), fitment (false unless true).
+// 'Square' | 'Landscape'), sizeGuide (true unless false), fitment, preselectVariant (open
+// on the lowest-priced choice; a choice in the URL still wins), quantity (a quantity
+// stepper beside Add to cart) and stockLine ("In stock, ready to ship" under the price),
+// each false unless true.
 
 const props = defineProps<{
   product: Product
@@ -66,8 +80,11 @@ const route = useRoute()
 const router = useRouter()
 const storefront = inject(STOREFRONT)!
 const cart = useStorefrontCartStore()
+const subscriptions = useSubscriptionsStore()
 
 const channelId = computed(() => storefront.channel.value.id)
+/** The store's plans that offer this product: none on a product sold once only. */
+const offered = computed(() => subscriptions.offeredFor(channelId.value, props.product.id))
 const options = computed(() => props.product.detail?.options ?? [])
 const settings = computed(() => props.section.settings)
 const galleryLayout = computed(() => (settings.value.galleryLayout === 'Stacked' ? 'Stacked' : 'Thumbnails'))
@@ -77,7 +94,11 @@ const imageRatio = computed(() => {
 })
 
 // ── The choice ───────────────────────────────────────────────────────────────
-const selection = ref<Record<string, string>>(initialSelection(props.product, selectionFromQuery(route.query)))
+// With the section's `preselectVariant` the page opens on the lowest-priced choice; a choice in the URL still wins.
+const openingQuery = selectionFromQuery(route.query)
+const selection = ref<Record<string, string>>(settings.value.preselectVariant === true
+  ? cheapestInitialSelection(props.product, openingQuery)
+  : initialSelection(props.product, openingQuery))
 const variant = ref<ProductVariant>()
 const picker = ref<{ validate: () => boolean; focus: (optionName?: string) => Promise<void> } | null>(null)
 
@@ -88,7 +109,7 @@ const chosenSize = computed(() => (sizeOption.value ? selection.value[sizeOption
 
 // Every change of choice goes in the URL (replacing, not adding to, the history).
 watch(selection, (value) => {
-  added.value = null
+  forgetAdded()
   const query = withSelectionQuery(route.query, options.value, value)
   const same = (a: object, b: object) => JSON.stringify(Object.entries(a).sort()) === JSON.stringify(Object.entries(b).sort())
   if (!same(query, route.query)) void router.replace({ query })
@@ -107,7 +128,8 @@ const fitNote = computed(() => props.product.detail?.fitNote?.trim() ?? '')
 
 /** The product's size chart, when the template shows a size guide and the product links one. */
 const chart = computed(() => (settings.value.sizeGuide === false ? undefined : storefront.sizeChartFor(props.product)))
-const rows = computed(() => productRows(props.section.blocks, props.product, { sizeGuide: !!chart.value, vehicle: storefront.vehicle.value }))
+/** A row set to show only on products sold on a plan ("How subscriptions work") is left off one no plan offers. */
+const rows = computed(() => productRows(props.section.blocks, props.product, { sizeGuide: !!chart.value, vehicle: storefront.vehicle.value, hasPlans: offered.value.length > 0 }))
 
 // ── A part: its number and its fit ───────────────────────────────────────────
 const sellsParts = computed(() => storefront.sellsParts.value)
@@ -150,13 +172,56 @@ function onGuideClosed(): void {
   void router.replace({ query: rest })
 }
 
+/** With the section's `stockLine`: "In stock, ready to ship", "Only 2 left" or "Sold out", for the choice once one is made. */
+const stock = computed((): { level: 'in' | 'low' | 'out'; text: string } => {
+  if (soldOut.value) return { level: 'out', text: 'Sold out' }
+  const whole = stockLine(props.product)
+  const low = chosenVariant.value ? stockNote(chosenVariant.value) : whole.level === 'low' ? whole.text : null
+  return low ? { level: 'low', text: low } : { level: 'in', text: 'In stock, ready to ship' }
+})
+
+// ── How to buy it: once, or on a plan ───────────────────────────────────────
+// A product on no plan has only "once", and then no options are shown. The block's
+// settings are the drawn section's own; without the block, cards as every store had.
+const purchase = computed(() => purchaseOptions(asMoney(price.value.price), offered.value))
+const buyBox = computed(() => purchaseOptionsOf(props.section))
+const purchaseStyle = computed(() => (({ 'Radio buttons': 'radios', Dropdown: 'dropdown' } as const)[buyBox.value?.style as 'Radio buttons' | 'Dropdown'] ?? 'cards'))
+const firstOptionId = () => defaultOptionId(purchase.value, buyBox.value?.subscriptionFirst)
+const optionId = ref(firstOptionId())
+const option = computed(() => purchase.value.find((o) => o.id === optionId.value) ?? null)
+/** The plan chosen, or null to buy once. */
+const plan = computed(() => option.value?.plan ?? null)
+// The chosen plan can go while the page is open (the merchant pauses it): fall back to the default.
+watch(() => purchase.value.map((o) => o.id).join(), () => {
+  if (!option.value) optionId.value = firstOptionId()
+})
+watch(optionId, forgetAdded)
+
 // ── Buying ───────────────────────────────────────────────────────────────────
 const added = ref<{ line: string } | null>(null)
 const justAdded = ref(false)
 let addedTimer: number | undefined
 onBeforeUnmount(() => window.clearTimeout(addedTimer))
 
-const addLabel = computed(() => (soldOut.value ? 'Sold out' : justAdded.value ? 'Added to cart' : 'Add to cart'))
+/** Another choice or purchase option was not added: the button goes back to "Add to cart" and the note under it goes. */
+function forgetAdded(): void {
+  added.value = null
+  justAdded.value = false
+  window.clearTimeout(addedTimer)
+}
+
+/** How many, with the section's `quantity` (else one). */
+const qty = ref(1)
+watch(qty, (value) => {
+  if (!Number.isFinite(value) || value < 1) qty.value = 1
+  else if (value > MAX_QTY) qty.value = MAX_QTY
+})
+
+const addLabel = computed(() => {
+  if (soldOut.value) return 'Sold out'
+  if (justAdded.value) return 'Added to cart'
+  return plan.value ? 'Add subscription to cart' : 'Add to cart'
+})
 
 /**
  * Whether the choice can be bought. If an option is unchosen, the picker says
@@ -191,8 +256,11 @@ function addToCart(): void {
   const chosen = chosenVariant.value
   // The vehicle goes on the line only while this choice of the part fits it.
   const vehicle = sellsParts.value ? lineVehicle(props.product, chosen, storefront.vehicle.value) : undefined
-  cart.add(channelId.value, props.product, 1, { variant: chosen, vehicle })
-  const line = chosen ? describeVariant(chosen, options.value) : ''
+  // On a plan the line's price is one delivery's, to the cent (585,90 kr), as the classic page adds it.
+  const onPlan = plan.value && option.value ? { plan: linePlan(plan.value), price: toDecimal(option.value.price) } : {}
+  cart.add(channelId.value, props.product, qty.value, { variant: chosen, vehicle, ...onPlan })
+  // "Bag · 3-month supply".
+  const line = [chosen ? describeVariant(chosen, options.value) : '', plan.value ? option.value!.name : ''].filter(Boolean).join(' · ')
   added.value = { line }
   justAdded.value = true
   window.clearTimeout(addedTimer)
@@ -208,13 +276,16 @@ function toggleSaved(): void {
   storefront.announce(toggleAnnouncement(props.product.name, now))
 }
 
-/** Buys just this choice, without touching the cart. */
+/**
+ * Buys just this choice, without touching the cart. Never on a plan: the checkout's
+ * `?buy=` buys once, so the button is hidden while a plan is chosen.
+ */
 function buyNow(): void {
-  if (!ready()) return
+  if (plan.value || !ready()) return
   const chosen = chosenVariant.value
   void router.push({
     path: storefront.link('/checkout'),
-    query: { buy: String(props.product.id), qty: '1', ...(chosen ? { variant: String(chosen.id) } : {}) },
+    query: { buy: String(props.product.id), qty: String(qty.value), ...(chosen ? { variant: String(chosen.id) } : {}) },
   })
 }
 
@@ -288,6 +359,10 @@ watch(stickyHeader, placeInfo)
             <StorefrontPayMark :mark="label" />
           </template>
         </p>
+        <p v-if="settings.stockLine === true" class="sf-pm__stock" :class="`sf-pm__stock--${stock.level}`">
+          <span class="sf-pm__dot" aria-hidden="true" />
+          {{ stock.text }}
+        </p>
       </div>
 
       <StorefrontVariantPicker
@@ -311,8 +386,29 @@ watch(stickyHeader, placeInfo)
         <span>{{ fitNote }}</span>
       </p>
 
+      <StorefrontPurchaseOptions
+        v-if="purchase.length > 1"
+        v-model="optionId"
+        data-sf-clear
+        :options="purchase"
+        :format-money="storefront.formatMoney"
+        :variant="purchaseStyle"
+        :policy-text="buyBox?.policyText"
+        :terms-href="buyBox?.termsLink"
+        :account-href="buyBox ? '/account' : ''"
+      />
+
       <div class="sf-pm__actions" data-sf-clear>
-        <div class="sf-pm__buy">
+        <div class="sf-pm__buy" :class="{ 'sf-pm__buy--qty': settings.quantity === true }">
+          <div v-if="settings.quantity === true" class="sf-qty" role="group" :aria-label="`Quantity of ${product.name}`">
+            <button type="button" aria-label="Decrease quantity" :disabled="qty <= 1 || soldOut" @click="qty--">
+              <v-icon size="16" aria-hidden="true">minus</v-icon>
+            </button>
+            <input v-model.number="qty" type="number" inputmode="numeric" min="1" :max="MAX_QTY" aria-label="Quantity" :disabled="soldOut">
+            <button type="button" aria-label="Increase quantity" :disabled="qty >= MAX_QTY || soldOut" @click="qty++">
+              <v-icon size="16" aria-hidden="true">plus</v-icon>
+            </button>
+          </div>
           <button
             type="button"
             class="sf-button sf-button--block sf-pm__add"
@@ -335,7 +431,8 @@ watch(stickyHeader, placeInfo)
             <v-icon size="20" aria-hidden="true">heart</v-icon>
           </button>
         </div>
-        <button v-if="!soldOut" type="button" class="sf-button sf-button--secondary sf-button--block" @click="buyNow">
+        <!-- Buy now buys once: hidden while a plan is chosen, whose consent is in the checkout's form. -->
+        <button v-if="!soldOut && !plan" type="button" class="sf-button sf-button--secondary sf-button--block" @click="buyNow">
           Buy now
         </button>
       </div>
@@ -445,6 +542,41 @@ watch(stickyHeader, placeInfo)
   color: var(--sf-muted, #66625c);
 }
 
+/* "In stock, ready to ship" behind a dot: green in stock, the sale colour when few are left, muted when gone. */
+.sf-pm__stock {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--sf-text, #121011);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.sf-pm__dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #2e7d32;
+}
+
+.sf-pm__stock--low {
+  font-weight: 600;
+}
+
+.sf-pm__stock--low .sf-pm__dot {
+  background: var(--sf-badge-sale, #b3261e);
+}
+
+.sf-pm__stock--out {
+  color: var(--sf-muted, #66625c);
+}
+
+.sf-pm__stock--out .sf-pm__dot {
+  background: currentColor;
+}
+
 /* Beside the Size legend: underlined, 24px tall, 44px of hit area. */
 .sf-pm__guide {
   position: relative;
@@ -507,6 +639,22 @@ watch(stickyHeader, placeInfo)
 .sf-pm__buy .sf-pm__add {
   flex: 1 1 auto;
   min-width: 0;
+}
+
+/* The quantity stepper (storefront-controls.css) keeps its width before Add to cart. Where the
+   button would be narrower than "Add subscription to cart" in capitals, it goes under the stepper
+   (a phone, a narrow desktop column), whatever it says, so choosing a plan never moves it. */
+.sf-pm__buy .sf-qty {
+  flex: none;
+}
+
+.sf-pm__buy--qty {
+  flex-wrap: wrap;
+}
+
+.sf-pm__buy--qty .sf-pm__add {
+  flex: 1 1 0;
+  min-width: min(100%, 280px);
 }
 
 /* A round button the height of Add to cart, on the card colour; saved, the heart is filled in the accent. */

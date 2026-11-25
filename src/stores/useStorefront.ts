@@ -20,6 +20,21 @@ export interface StorefrontLink {
   href: string
 }
 
+/**
+ * The panel a header link opens instead of going straight to its page (a mega
+ * menu): columns of links under a heading, and a picture tile beside them.
+ */
+export interface StorefrontMegaMenu {
+  columns: { heading: string; links: StorefrontLink[] }[]
+  /** `image` is a path under /public; it is decoration, the words beside it carry the meaning. */
+  feature?: { image: string; heading: string; text: string; link: StorefrontLink }
+}
+
+/** A link of the header's menu. With `menu` it opens that panel, and `href` is the panel's "see everything" link. */
+export interface StorefrontNavLink extends StorefrontLink {
+  menu?: StorefrontMegaMenu
+}
+
 export interface StorefrontFooterColumn {
   heading: StorefrontLink
   items: StorefrontLink[]
@@ -49,8 +64,8 @@ export interface StorefrontChrome {
   accountHref?: string
   social: Array<StorefrontLink & { icon: string }>
   searchPlaceholder: string
-  nav: StorefrontLink[]
-  mobileNav: StorefrontLink[]
+  nav: StorefrontNavLink[]
+  mobileNav: StorefrontNavLink[]
   footerColumns: StorefrontFooterColumn[]
   newsletter: StorefrontNewsletter | null
   copyright: string

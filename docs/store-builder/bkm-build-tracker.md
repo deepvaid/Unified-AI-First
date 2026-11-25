@@ -516,6 +516,234 @@ here already exists when those slices start.
   - **Not covered:** Safari and Firefox; a screen reader; a real uploaded product picture (the
     test product used the drawn pack shot); creating a new plan through the drawer (checked up
     to its error messages).
+- **Feedback round, part 1: order fulfilment (done, 2026-11-24).** Asked for by Jaspreet after
+  the demo was shared ("a view of order fulfillments", so merchants see how orders are
+  processed). Branch `feature/demo-feedback-round`. It follows the live Fulfillment pages (UAT,
+  account 2000290): a queue, and a page per fulfillment with the steps Pick, Pack, Pick carrier,
+  Shipped.
+  - **What a merchant does.** An order placed at a store's checkout gets a fulfillment at the
+    top of Commerce › Fulfillment (order #20001 is FF-20001), in the order's own currency. Its
+    page shows the products, the address and one next step: **Pack**, **Pick carrier** (carrier,
+    service, tracking number, optional package size), **Mark shipped**, **Mark delivered**. The
+    order page links to it, and "Mark fulfilled" on the orders list ships through it.
+  - **What the shopper sees.** The order page on the store goes from Preparing to Shipped, with
+    the carrier and tracking number, to Delivered. A label alone does not say Shipped.
+  - **Two tabs.** The admin tab gets a new store order without a reload, and the store tab
+    follows each step. What was done to a fulfillment is kept in the browser
+    (`mp.commerce.fulfillments.v1`, by account and order) and cleared by a payments reset.
+  - **Rules and tests.** `src/commerce/fulfillment.ts`; `npm run test:commerce` (21 tests: the
+    steps, what the order and the shopper show, a reload, two tabs, a reset).
+  - **On the live page's menu, not built here:** Print picklist, Put on hold, Split
+    fulfillment, Change location, Cancel fulfillment, and notes on a fulfillment. "Print Packing
+    Slips" on the queue is still only a message. Delivery is marked by hand: no carrier is called.
+  - **Seen and left alone:** the 18 seeded fulfillments do not agree with their seeded orders (a
+    Shipped fulfillment on a Cancelled order). On a phone the subscription page's columns run
+    past the edge, as this page's did before its fix: `min-width-0` is not a class in this app.
+- **Feedback round, part 2: subscription plans with delivery options (done, 2026-11-24).** Asked
+  for by Rubbecca: her prototype (recording "Introducing Subscription Plans Prototype") and her
+  PRD "Recurring product purchase - subscription management". Decided by the human: her plan
+  model is for the new health store only (part 3), Vitaheal's plans stay as they are, and one
+  plans page lists both.
+  - **Two kinds of plan, one list.** A plan with delivery options ("Subscribe and save": every
+    1, 2 or 3 months, each with its own discount, one selected first) beside the plan of one
+    fixed delivery Vitaheal sells ("3-month supply"). Commerce › Subscriptions › Plans lists
+    both, with their options, discount range and active subscribers; **New plan** offers both.
+  - **The plan's own page.** Plan details (a name only the merchant sees, the label shoppers
+    read, active or paused), plan options (a row per frequency: deliver every, discount,
+    default, up to six), the store's products to tick (a product can be on three plans), and
+    beside it the shopper preview with real prices. Leaving with changes asks first.
+  - **The theme builder.** Product template › Product detail › Add block › **Purchase options**,
+    offered to a store that has plans, one per product page: style (cards, radio buttons,
+    dropdown), default selection (buying once, or the subscription), policy text, a
+    subscription terms link, and a "Subscribe available" badge on product cards. The canvas
+    draws the block with the store's own plans and prices. It applies when the theme is published.
+  - **The store.** The product page reads buying once first, then the plan's label with the
+    most it saves and a row per frequency; under it the policy line with "Subscription terms"
+    and "My subscriptions". Cart, checkout, the order and the subscription read "Subscribe and
+    save · every 2 months". On the account page the shopper changes how often it comes.
+  - **How it is kept.** A plan's options are on the plan (`options`, `shopperLabel`), in the same
+    list and the same browser slot as the store's other plans, so applying a theme and
+    restoring a store treat it like any plan. A shopper is offered one row per option
+    (`offeredRows`), which a cart line, an order and a subscription hold like any plan.
+  - **Vitaheal is as it was.** Its two plans, its product pages and its film are unchanged: no
+    block is seeded in its theme, and without the block a store shows cards with no policy line
+    or badge. "Restore original store" removes a plan or a block added while trying this.
+  - **Rules and tests.** `src/subscriptions/plans.ts`, `purchaseOptionsSettings` in
+    `src/storefront/themeSections.ts`; `npm run test:subscriptions` (54) and
+    `npm run test:storefront` (390). Story: Product › Storefront › StorefrontPurchaseOptions.
+  - **To try it before part 3's store exists:** Plans › New plan › Plan with delivery options,
+    for Vitaheal; tick Balance, Balance Refill or Nasal Strips (they are on no other plan). Then
+    Vitaheal's theme builder › Product › Product detail › Add block › Purchase options › Publish.
+  - **From the PRD, not built:** plans per variant and bulk assignment by collection; a
+    "Subscription only" product; the subscription tag in the product list; the settings for
+    what shoppers may do (skip, pause, cut-off days); cancellation reasons; the subscription
+    panel on an order; the dashboard numbers; analytics events. Her status "Inactive" is
+    "Paused" here, as on the rest of the page.
+  - **Seen and left alone:** the richer theme drawing (Northfold, Torqline) has no purchase
+    options on its product page, so the block does nothing there; those stores have no plans.
+- **Feedback round, part 3: Daybloom, a health store on the Aurora look (done, 2026-11-24).**
+  Asked for by Rubbecca: the demo store runs Aurora, and a health-and-supplements store needs
+  its own home page, product page, collection page, mega-menu header and checkout (her
+  "Health & Supplements Industry - Theme Requirements"). Decided by the human: a new store
+  beside Vitaheal, on the Aurora look, named Daybloom, in US dollars; Vitaheal stays as it is.
+  - **The store.** Sales channel `daybloom-demo` ("Daybloom (demo)", store #17), the fifth demo
+    store and a theme in the library (store #15 and slot 5 went to Lumos, #16 and slot 6 to Aurora, in
+    the theme library's parts 5 and 6). Ten made-up products by goal (Sleep, Energy, Gut health,
+    Immunity, Daily wellness) and format (Capsules, Powders, Gummies), two of them bundles, at
+    $19 to $75; eleven collections, each with one line under its title; seven pages (Our story,
+    Quality and testing, Subscribe and save, FAQ, Shipping and returns, Contact, Accessibility)
+    and four policies (with Subscription terms); three campaigns (`SLEEP15` runs); search rules
+    and "Goes well with"; six subscribers; a chatbot on a profile of its own (`supplements`).
+    Seeded connected to Merchandise Cloud, so search works on the first visit.
+  - **The Aurora look.** Aurora's own colours, system font and 6px corners on the classic
+    drawing (whose sizes are Aurora's). The classic drawing gained three things, each drawn only
+    where a theme asks for it, so Vitaheal, Atlas and Neelam look as before:
+    - **A mega menu.** A header link that carries a menu ("Shop", "Learn") is a button that
+      opens a panel under the header: columns of links (shop by goal, by format, more ways to
+      shop) and a picture tile. Opens on hover or a press; Escape, a press outside or the
+      keyboard moving on closes it. In the phone menu the link opens in place.
+    - **An icon row** on the home page: four promises with icons (tested, subscribe and save,
+      free shipping, guarantee).
+    - **Collapsible rows on the product page:** Supplement facts (the product's own table),
+      How Subscribe and save works, Shipping and returns, Warnings. A collection page shows the
+      collection's description under its title when it has one.
+  - **Supplement facts.** A product carries a list of names and values (`detail.specs`, as a
+    part's specifications do). The product editor shows them in a **Product facts** card on a
+    product that has facts, or whose store's products do; the theme's row "Product facts table"
+    draws them. Each Daybloom product has its size, serving size, each ingredient with its
+    amount, suggested use and what it is free from; fish is named where it is.
+  - **Subscribe and save, her way, seeded.** One plan with delivery options (every month 20%
+    off, every 2 months 15%, every 3 months 10%) on the eight single products; the product
+    template's Purchase options block opens the page on the subscription, with "Pause, skip or
+    cancel any time." and the subscription terms; product cards say "Subscribe available".
+  - **Checkout.** US-dollar checkout to five countries, delivery only, the address kept on the
+    order. Under the consent to repeat charges: the plan's promise and **Subscription terms**
+    (a new tab). The confirmation and the account page write dates the US way on this store.
+  - **What a US supplements store must say.** The footer carries the statement that the
+    products are not intended to diagnose, treat, cure or prevent any disease; the product
+    page has the warnings; no product copy claims to treat anything; the assistant gives no
+    medical advice. All of it is merchant-editable text.
+  - **Rules and tests.** `src/storefront/daybloomDemo.ts`, `demoStores/daybloom.ts` (slot 7;
+    the tests install into slots 10 and 11); `tests/storefront/daybloomDemo.test.ts` (18) and
+    `tests/chatbot/supplementsAssistant.test.ts` (9), with the shared demo-store suite. Story:
+    Product › Storefront › StorefrontHeader › ClassicWithMegaMenu. Script:
+    `daybloom-demo-script.md`; QA: part 5 of `demo-stores-qa.md`.
+  - **From her requirements, not built:** reviews and ratings; variant chips, quantity tiers
+    and a sticky add-to-cart on the classic product page (every Daybloom product is sold in one
+    size); a cart drawer and free-shipping bar; filters on the classic collection page; a
+    build-your-own bundle; ingredient pages, a quiz and comparison; market switcher, languages
+    and local payment marks; structured data. The mega menu's columns and picture are the
+    theme's: the store's Navigation page lists only the header's five links.
+  - **Seen and left alone:** the classic product page still has no variant picker, so a store
+    on it should sell single-size products (Vitaheal's "From" prices are that gap).
+- **Feedback round, part 4: a new store's first minutes in the back office (done, 2026-11-24).**
+  Asked for by Jaspreet: the demo is "theme and storefront heavy" and leaves out onboarding in the
+  back office. Decided by the human: both pieces the live product has, the store's "setup in
+  progress" page and the "Launch your store" checklist.
+  - **Setting up.** A store made with Create sales channel opens on its setup steps: connecting
+    the Commerce Cloud account, setting up search and recommendations (when Merchandise Cloud is
+    connected), building the storefront (it names the theme), setting up checkout, and putting
+    the store online at its address. One step runs at a time, each saying Done, In progress or
+    Waiting; the page shows nothing else, and its chip reads "Setting up". About two seconds a
+    step, then "… is ready" with Show store. A reload, or another tab, shows the same step.
+  - **Launch your store.** On the new store's overview, where other stores have "Finish setup":
+    a location, the first product, the store's name and logo, a theme, shipping, taxes,
+    payments, the store's address. Five are read from the store and say what is true now ("10
+    products in this store", "Daybloom 1.0 is published", "Shoppers can pay with Stripe"), each
+    with a button to where it is done. Three have nothing to read, so the merchant presses
+    **Mark as done**; taxes also opens the tax categories. With all eight done: "Your store is
+    ready to launch" and View store. A blank store has its first product and theme to do.
+  - **What is kept.** Setup keeps nothing: it is read from when the store was made. Steps marked
+    by hand are kept in this browser with the store's other data (`launch.v1`); Restore
+    original store and Delete store forget them.
+  - **Left as they were.** The seeded demo stores show no setup steps and keep "Finish setup"
+    (Vitaheal's "Connect merchandising" starts there, as its script says). The account's own Get
+    started guide is unchanged.
+  - **Rules and tests.** `src/storefront/storeLaunch.ts`, `src/stores/useStoreLaunch.ts`;
+    `tests/storefront/storeLaunch.test.ts` (14) and `storeLaunchApp.test.ts` (3). Stories:
+    Product › Sales Channels › StoreSetupProgress and StoreLaunchChecklist. Script: "To start from
+    the very beginning" in `daybloom-demo-script.md`; QA: 4.30 to 4.36b in `demo-stores-qa.md`.
+  - **From the live product, not built:** shipping zones and rates, tax rates by region, a logo
+    upload and a custom domain (the checklist names the steps; three are ticked by hand); the
+    live setup page's failure and retry states; the checklist on the account's Get started page.
+  - **Seen and left alone:** a store made from a theme shows the theme's brand to shoppers, so
+    the name step says "the name your theme came with". Renaming the storefront is not built.
+- **Feedback round, follow-up: Vitaheal gets the health-store features too (done, 2026-11-24).**
+  Decided by the human after part 4 ("add Rubbecca's suggested missing features in Vitaheal
+  also"), with two choices: everything in the look, and keep Vitaheal's two plans with her
+  Purchase options block added. This replaces the earlier "Vitaheal stays exactly as it is".
+  - **Header.** "Shop" opens a panel: shop by goal (Sleep, Sport, Longevity, Hydrate), more ways
+    to shop, and a picture tile for the subscription. "About" opens the story, ambassadors and
+    the help pages. "Subscription" is a plain link. The phone menu opens both in place.
+  - **Home.** A strip of four promises under the hero: tested in Sweden, subscribe and save,
+    free shipping over 549 kr, the 30-day guarantee on Unwind.
+  - **Product page.** Every product has its facts (serving size, each ingredient with its
+    amount in % NRV, how to take it, what it is free from, made in Sweden; the nasal strips say
+    what is in the box), shown as the first of four rows under the description: Product facts,
+    How subscriptions work, Shipping and returns, Warnings. Under the purchase options: "Skip,
+    pause or cancel anytime.", Subscription terms and My subscriptions. Product cards on a plan
+    say "Subscribe available".
+  - **Collections and checkout.** Each collection says what it is for under its title. A new
+    policy page, Subscription terms, is linked from the product page, the checkout's consent
+    and the footer.
+  - **As it was.** The two plans, their prices and discounts, the 3-month supply chosen first,
+    the eight subscribers, the campaigns, search rules, chatbot, colours and type. Every number
+    in the script still holds (585,90 kr; `WINTER15`).
+  - **Reference files.** The tests that pinned Vitaheal's seed from before the registry were
+    re-captured for this one deliberate change (`vitaheal-seed.json`: products, header, menus,
+    pages, theme, collection descriptions; `vitaheal-app-head.json`: only the products' facts,
+    checked). `vitahealDemo.test.ts` has four new checks.
+  - **Script and film.** Steps 1, 2 and 4 of `vitaheal-demo-script.md` name the new menu, the
+    line under the options and Product facts. The film's first scene opens Shop, then Sleep; all
+    twelve scenes run, and the film was recorded again. `theme.jpg` was re-captured.
+  - **Not raised:** Vitaheal's seed version. A browser that saved an edited Vitaheal theme keeps
+    it until Restore original store, which the script starts with.
+- **Feedback round, second follow-up: Vitaheal on the Lumos look (built, 2026-11-25).** Rubbecca,
+  who owns the PRD, asked on 20 November that the sales demo not lead with the Aurora-like look
+  ("Lumos style bare minimum"); the human chose to move Vitaheal. Daybloom keeps the Aurora look.
+  - **Look.** Vitaheal is drawn on the sections drawing in the Lumos theme's look and its own
+    navy: Inter, uppercase headings and buttons, corners of 4, white cards with a soft shadow, a
+    pale navy tint, a 1328px page. Its badge colours and wordmark stay. Every colour pair passes
+    WCAG 2.1 AA, and form fields are edged at 3:1 (checked in `vitahealDemo.test.ts`).
+  - **Home.** A hero with a "Made in Sweden" badge, a second button (Subscribe and save) and
+    three true figures: 20–30% saved on a plan, free shipping over 549 kr, 30 days money back on
+    Unwind. The goals as a carousel, the range as a carousel, the two stories, and the promises
+    as cards. The newsletter moved to a footer column; the legal links to the footer's bottom row.
+  - **Kept on the new drawing.** The mega menu (Shop and About, in place on a phone), the plans
+    and Purchase options with "Add subscription to cart", the facts and rows (with the
+    description now an open row first), the collection lines, the WINTER15 bar, whole kronor on
+    pages and "585,90 kr" when charged, checkout consent and terms, the account, chat, and
+    Merchandise Cloud search as a header field once connected.
+  - **New on the product page and cards.** It opens on the lowest-priced choice, with a quantity
+    and a stock line. Boxed cards say "Subscribe available", and quick add offers the plans.
+  - **Theme library.** Version 2.0, "Vitaheal 2.0" in the admin, with a new card text.
+  - **Reference files.** `vitaheal-seed.json` was recaptured a second time, for its look only
+    (`themeStyles`, `theme`, `chrome`, and `admin` for the theme's name); a script checked that
+    products, plans, campaigns, search rules, chatbot, pages and subscribers stayed byte-identical.
+    `themeVars.test.ts` moved Vitaheal off the classic list.
+  - **Script and film.** The plan with delivery options is now step 8 of
+    `vitaheal-demo-script.md`, after the subscriber, and a scene of its own in the film: the film
+    shows every step but the theme library. Steps 1 and 12 name the new home and the header's
+    search field.
+  - **Not raised:** the seed version, again. A browser that saved an edited Vitaheal theme keeps
+    the classic look until Restore original store; the Themes page and Settings now say so, with
+    the Restore action. `theme.jpg` was captured again from the new look.
+  - **Reviews (2026-11-25).** Three reviewers (shopper, merchant, code), each serious finding
+    re-checked by a skeptic; every confirmed one is fixed:
+    - a subscription's price follows the format it was bought on, so Change plan on a dearer
+      format no longer drops to the cheapest one (`contractUnitPrice`), and the account and admin
+      name the format;
+    - the store page and Themes previews show the header search only once the store can search
+      (`canSearch` in `src/storefront/storeSearch.ts`, shared with the storefront);
+    - the plan editor's shopper preview follows the theme's default selection, and every plan
+      option field is named after its row;
+    - a theme row can be shown only on products sold on a plan (`plansOnly`); Vitaheal's "How
+      subscriptions work" uses it;
+    - Vitaheal's orders ship from a Swedish warehouse, and the order's fulfilment chip follows its
+      fulfilment;
+    - phones: the hero headline below 375px, quick add's subscription button, the account
+      card's name; the canvas's "From" price and stats; hints on the three new toggles; and
+      accessible names for the search page's own field and "View all".
 
 **Sales-demo pass (added 2026-11-16, after the audience was confirmed as sales people showing prospects):**
 
@@ -570,7 +798,7 @@ It draws only on themes with `drawing: 'sections'`, so Vitaheal's product page i
 |---|---|---|---|---|
 | T01 | Announcement bar | S2 | partial | Single-message bar, above the header on every page of the Vitaheal store (demo pass). Open: rotating messages, link, dismiss |
 | T02 | Header over hero | S2 | not started | |
-| T03 | Dropdown navigation | S2 | not started | Menus seeded flat |
+| T03 | Dropdown navigation | S2 | partial | A mega menu on the classic drawing: a header link with a panel of link columns and a picture tile, on Daybloom (feedback round, part 3); on Vitaheal since its follow-up, and on the sections drawing since 2026-11-25. Open: the panel's links edited in Navigation (menus are still flat) |
 | T04 | Cart drawer | S10 | not started | |
 | T05 | Footer | S2 | not started | Three link columns and a newsletter block seeded in the existing footer |
 | T06 | Country and currency selector | S9 | not started | |
@@ -586,7 +814,7 @@ It draws only on themes with `drawing: 'sections'`, so Vitaheal's product page i
 | T16 | Blog | S13 | not started | Three posts seeded; no storefront route yet |
 | T17 | Contact page | S13 | not started | Contact page seeded as plain content |
 | T18 | Policy pages | S0 | partial | Refund, privacy and terms served at `/policies/:handle` and linked in the footer. No admin page to edit them, and no `policy` template (S1) |
-| T19 | Collection page | S1 | not started | |
+| T19 | Collection page | S1 | partial | The classic page shows the collection's description under its title (feedback round, part 3); filters, sort and quick add on the sections drawing. Open: a goal banner with a photo, filters on the classic page, a buying guide under the grid |
 | T20 | Account pages | S8 | partial | The subscriptions page only (demo pass, part 5) |
 | T21 | Theme settings | S0 | partial | Figtree and Inconsolata, navy scheme, 8px buttons and the three badge colours are theme settings, with a Badges group in the Styles tab. Open: custom hex colours, border colour, accent font |
 | T22 | Video hero | S3 | partial | A photo hero with headline, subheadline and button (demo pass). Open: video, poster, overlay setting |
@@ -596,7 +824,7 @@ It draws only on themes with `drawing: 'sections'`, so Vitaheal's product page i
 | T26 | Overlapping images story | S3 | not started | |
 | T27 | Page hero banner | S1 | not started | |
 | T28 | Text and divider | S3 | not started | |
-| T29 | Icons row | S3 | not started | |
+| T29 | Icons row | S3 | partial | The icon row section on both drawings: up to four promises with an icon, a title, a line and a link (Northfold, Torqline; Daybloom on the classic drawing, feedback round part 3). Open: certification badge images |
 | T30 | FAQ accordion | S3 | not started | |
 | T31 | Mosaic and quote grid | S3 | not started | |
 | T32 | Instagram feed | S3 | not started | |
@@ -622,7 +850,7 @@ It draws only on themes with `drawing: 'sections'`, so Vitaheal's product page i
 | T52 | Curated reviews grid | S6 | not started | |
 | T53 | Related products | S6 | not started | |
 | T54 | Product card | S5 | partial | Photo, second photo on hover, subtitle and "From" price. Open: rating, badge |
-| P01 | Subscription plans | S7 | partial | Plans with interval, units per delivery and discount, edited in Commerce › Subscriptions › Plans; bought through checkout with consent; order tagged (demo pass, part 3). Open: per-variant attachment, contracts (S8) |
+| P01 | Subscription plans | S7 | partial | Plans with interval, units per delivery and discount, edited in Commerce › Subscriptions › Plans; bought through checkout with consent; order tagged (demo pass, part 3). Plans with delivery options, each with its own discount, on a page of their own, and a Purchase options block in the theme builder (feedback round, part 2). Open: per-variant attachment, contracts (S8) |
 | P02 | Recurring billing | S8 | partial | A subscription per plan line, charged by hand ("Charge now") into a renewal order (demo pass, part 5). Open: a scheduler, "Run renewals due today", the 1, 3, 7 day retry schedule |
 | P03 | Subscriber portal | S8 | partial | `/account`: skip, pause, resume, change plan, cancel with a reason, pay again (demo pass, part 5). Open: reschedule, swap flavour, update payment method |
 | P04 | Subscription pricing rules | S7 | partial | Percentage discount per plan and a free-shipping flag shown as a badge (demo pass, part 3). Open: the flag changing a shipping charge (needs rates, S10) |
@@ -634,7 +862,7 @@ It draws only on themes with `drawing: 'sections'`, so Vitaheal's product page i
 | P10 | VAT per country | S9 | not started | |
 | P11 | Payment methods | S9 | not started | |
 | P12 | Checkout | S9 | not started | Groundwork in the demo pass, part 4: countries, sample shopper and money format follow the store's currency (`checkoutProfile.ts`) |
-| P13 | Structured product content | S4 | not started | |
+| P13 | Structured product content | S4 | partial | A table of facts per product (names and values), edited on the product and shown in a collapsible row ("Supplement facts"), with theme rows for warnings, delivery and the subscription (feedback round, part 3). Open: %NRV columns, allergens in bold, ingredient cards, certificates |
 | P14 | Catalog basics | S0 | done | A product can be added to the store from the admin, with pictures, and is kept across reloads (demo pass, part 2). Eight products, 14 variants with SKU, weight and one compare-at price, five collections, all in the admin and on the Vitaheal storefront only |
 | P15 | Add-on discount | S5 | not started | |
 | P16 | Returns and guarantee | S14 | not started | Guarantee terms page seeded |
@@ -646,7 +874,7 @@ It draws only on themes with `drawing: 'sections'`, so Vitaheal's product page i
 | P22 | Consent management | S12 | not started | |
 | P23 | Helpdesk | S14 | not started | |
 | P24 | SEO and structured data | S13 | not started | SEO title and description seeded on products, pages and posts |
-| P25 | Order tracking and dispatch | S10 | not started | |
+| P25 | Order tracking and dispatch | S10 | partial | A fulfillment per store order, worked step by step (pack, carrier and tracking number, shipped, delivered); the shopper's order page follows (feedback round, part 1). Open: carrier rates and labels from a real carrier, tracking events, emails, returns |
 | P26 | Agentic commerce endpoints | S16 | not started | To be recorded as out of scope in S16 |
 | P27 | Migration | S15 | not started | |
 | P28 | Pre-orders | S14 | not started | |

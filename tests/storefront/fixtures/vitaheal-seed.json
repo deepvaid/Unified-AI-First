@@ -29,7 +29,7 @@
   },
   "admin": {
     "revenue": "1.9M kr",
-    "themeName": "Vitaheal 1.0",
+    "themeName": "Vitaheal 2.0",
     "business": [
       {
         "label": "Legal name",
@@ -170,7 +170,45 @@
           "urlHandle": "unwind",
           "ogTitle": "Unwind",
           "ogDescription": "Sleep and calm"
-        }
+        },
+        "specs": [
+          {
+            "label": "Serving size",
+            "value": "1 scoop (6 g)"
+          },
+          {
+            "label": "Servings per pack",
+            "value": "30"
+          },
+          {
+            "label": "Magnesium (as bisglycinate)",
+            "value": "300 mg (80% NRV)"
+          },
+          {
+            "label": "L-theanine",
+            "value": "200 mg"
+          },
+          {
+            "label": "Lemon balm extract",
+            "value": "300 mg"
+          },
+          {
+            "label": "Other ingredients",
+            "value": "Natural flavour, sweetener (steviol glycosides)"
+          },
+          {
+            "label": "How to take it",
+            "value": "Stir 1 scoop into warm water about an hour before bed."
+          },
+          {
+            "label": "Free from",
+            "value": "Gluten, lactose, soy and added sugar"
+          },
+          {
+            "label": "Made in",
+            "value": "Sweden"
+          }
+        ]
       }
     },
     {
@@ -268,7 +306,49 @@
           "urlHandle": "clear-focus",
           "ogTitle": "Clear Focus",
           "ogDescription": "Focus and steady energy"
-        }
+        },
+        "specs": [
+          {
+            "label": "Serving size",
+            "value": "2 capsules"
+          },
+          {
+            "label": "Servings per pack",
+            "value": "30"
+          },
+          {
+            "label": "L-tyrosine",
+            "value": "500 mg"
+          },
+          {
+            "label": "Rhodiola rosea extract",
+            "value": "200 mg"
+          },
+          {
+            "label": "Vitamin B6",
+            "value": "1.4 mg (100% NRV)"
+          },
+          {
+            "label": "Vitamin B12",
+            "value": "2.5 µg (100% NRV)"
+          },
+          {
+            "label": "Other ingredients",
+            "value": "Vegetable capsule (hypromellose), rice flour"
+          },
+          {
+            "label": "How to take it",
+            "value": "Take 2 capsules with breakfast."
+          },
+          {
+            "label": "Free from",
+            "value": "Gluten, lactose, soy and added sugar"
+          },
+          {
+            "label": "Made in",
+            "value": "Sweden"
+          }
+        ]
       }
     },
     {
@@ -366,7 +446,41 @@
           "urlHandle": "daily-nad",
           "ogTitle": "Daily NAD+",
           "ogDescription": "Longevity and cellular energy"
-        }
+        },
+        "specs": [
+          {
+            "label": "Serving size",
+            "value": "1 capsule"
+          },
+          {
+            "label": "Servings per pack",
+            "value": "30"
+          },
+          {
+            "label": "Nicotinamide riboside",
+            "value": "300 mg"
+          },
+          {
+            "label": "Niacin",
+            "value": "16 mg (100% NRV)"
+          },
+          {
+            "label": "Other ingredients",
+            "value": "Vegetable capsule (hypromellose), rice flour"
+          },
+          {
+            "label": "How to take it",
+            "value": "Take 1 capsule each morning."
+          },
+          {
+            "label": "Free from",
+            "value": "Gluten, lactose, soy and added sugar"
+          },
+          {
+            "label": "Made in",
+            "value": "Sweden"
+          }
+        ]
       }
     },
     {
@@ -443,7 +557,33 @@
           "urlHandle": "nasal-strips",
           "ogTitle": "Nasal Strips",
           "ogDescription": "Easier breathing, day or night"
-        }
+        },
+        "specs": [
+          {
+            "label": "In the box",
+            "value": "30 strips"
+          },
+          {
+            "label": "Size",
+            "value": "One size, for adults"
+          },
+          {
+            "label": "Made of",
+            "value": "A flexible band with a skin-friendly adhesive"
+          },
+          {
+            "label": "How to use it",
+            "value": "Place one strip across the bridge of a clean, dry nose. Remove it within 12 hours."
+          },
+          {
+            "label": "Free from",
+            "value": "Latex and medication"
+          },
+          {
+            "label": "Made in",
+            "value": "Sweden"
+          }
+        ]
       }
     },
     {
@@ -557,7 +697,49 @@
           "urlHandle": "vitaheal-electrolytes",
           "ogTitle": "Vitaheal Electrolytes",
           "ogDescription": "Daily hydration, no added sugar"
-        }
+        },
+        "specs": [
+          {
+            "label": "Serving size",
+            "value": "1 stick (5 g)"
+          },
+          {
+            "label": "Servings per pack",
+            "value": "20"
+          },
+          {
+            "label": "Sodium",
+            "value": "500 mg"
+          },
+          {
+            "label": "Potassium",
+            "value": "200 mg (10% NRV)"
+          },
+          {
+            "label": "Magnesium",
+            "value": "60 mg (16% NRV)"
+          },
+          {
+            "label": "Sugars",
+            "value": "0 g"
+          },
+          {
+            "label": "Other ingredients",
+            "value": "Natural flavour, citric acid, sweetener (steviol glycosides)"
+          },
+          {
+            "label": "How to take it",
+            "value": "Mix 1 stick with half a litre of water before, during or after training."
+          },
+          {
+            "label": "Free from",
+            "value": "Gluten, lactose, soy and added sugar"
+          },
+          {
+            "label": "Made in",
+            "value": "Sweden"
+          }
+        ]
       }
     },
     {
@@ -655,7 +837,41 @@
           "urlHandle": "collagen",
           "ogTitle": "Collagen+",
           "ogDescription": "Skin, hair and joints"
-        }
+        },
+        "specs": [
+          {
+            "label": "Serving size",
+            "value": "1 scoop (10 g)"
+          },
+          {
+            "label": "Servings per pack",
+            "value": "30"
+          },
+          {
+            "label": "Collagen peptides (bovine)",
+            "value": "10 g"
+          },
+          {
+            "label": "Vitamin C",
+            "value": "80 mg (100% NRV)"
+          },
+          {
+            "label": "Other ingredients",
+            "value": "None"
+          },
+          {
+            "label": "How to take it",
+            "value": "Stir 1 scoop into coffee, a smoothie or water once a day."
+          },
+          {
+            "label": "Free from",
+            "value": "Gluten, lactose, soy and added sugar"
+          },
+          {
+            "label": "Made in",
+            "value": "Sweden"
+          }
+        ]
       }
     },
     {
@@ -731,7 +947,49 @@
           "urlHandle": "balance-refill",
           "ogTitle": "Balance Refill",
           "ogDescription": "Made for women"
-        }
+        },
+        "specs": [
+          {
+            "label": "Serving size",
+            "value": "1 scoop (8 g)"
+          },
+          {
+            "label": "Servings per pack",
+            "value": "30"
+          },
+          {
+            "label": "Iron",
+            "value": "7 mg (50% NRV)"
+          },
+          {
+            "label": "Folate",
+            "value": "200 µg (100% NRV)"
+          },
+          {
+            "label": "Vitamin B6",
+            "value": "1.4 mg (100% NRV)"
+          },
+          {
+            "label": "Magnesium",
+            "value": "150 mg (40% NRV)"
+          },
+          {
+            "label": "Other ingredients",
+            "value": "Natural raspberry flavour, sweetener (steviol glycosides)"
+          },
+          {
+            "label": "How to take it",
+            "value": "Stir 1 scoop into water, any time of day."
+          },
+          {
+            "label": "Free from",
+            "value": "Gluten, lactose, soy and added sugar"
+          },
+          {
+            "label": "Made in",
+            "value": "Sweden"
+          }
+        ]
       }
     },
     {
@@ -807,7 +1065,49 @@
           "urlHandle": "balance",
           "ogTitle": "Balance",
           "ogDescription": "Made for women"
-        }
+        },
+        "specs": [
+          {
+            "label": "Serving size",
+            "value": "1 scoop (8 g)"
+          },
+          {
+            "label": "Servings per pack",
+            "value": "30"
+          },
+          {
+            "label": "Iron",
+            "value": "7 mg (50% NRV)"
+          },
+          {
+            "label": "Folate",
+            "value": "200 µg (100% NRV)"
+          },
+          {
+            "label": "Vitamin B6",
+            "value": "1.4 mg (100% NRV)"
+          },
+          {
+            "label": "Magnesium",
+            "value": "150 mg (40% NRV)"
+          },
+          {
+            "label": "Other ingredients",
+            "value": "Natural raspberry flavour, sweetener (steviol glycosides)"
+          },
+          {
+            "label": "How to take it",
+            "value": "Stir 1 scoop into water, any time of day."
+          },
+          {
+            "label": "Free from",
+            "value": "Gluten, lactose, soy and added sugar"
+          },
+          {
+            "label": "Made in",
+            "value": "Sweden"
+          }
+        ]
       }
     }
   ],
@@ -843,7 +1143,7 @@
       "productCount": 5,
       "status": "Active",
       "updatedAt": "2026-11-16T09:00:00Z",
-      "description": "",
+      "description": "Save 20% to 30% on every delivery. Skip, pause or cancel anytime.",
       "matchMode": "all",
       "rules": [],
       "productItemIds": [],
@@ -868,7 +1168,7 @@
       "productCount": 3,
       "status": "Active",
       "updatedAt": "2026-11-16T09:00:00Z",
-      "description": "",
+      "description": "For training days: focus, hydration and easier breathing.",
       "matchMode": "all",
       "rules": [],
       "productItemIds": [],
@@ -893,7 +1193,7 @@
       "productCount": 4,
       "status": "Active",
       "updatedAt": "2026-11-16T09:00:00Z",
-      "description": "",
+      "description": "For the long run: cellular energy, skin and joints, and daily balance.",
       "matchMode": "all",
       "rules": [],
       "productItemIds": [],
@@ -918,7 +1218,7 @@
       "productCount": 2,
       "status": "Active",
       "updatedAt": "2026-11-16T09:00:00Z",
-      "description": "",
+      "description": "Wind down in the evening, sleep deeply and wake up ready.",
       "matchMode": "all",
       "rules": [],
       "productItemIds": [],
@@ -943,7 +1243,7 @@
       "productCount": 1,
       "status": "Active",
       "updatedAt": "2026-11-16T09:00:00Z",
-      "description": "",
+      "description": "Electrolytes for training, heat and long days.",
       "matchMode": "all",
       "rules": [],
       "productItemIds": [],
@@ -964,14 +1264,33 @@
     "brandColor": "#0a2240",
     "accentColor": "#0a2240",
     "background": "#ffffff",
-    "textColor": "#000000",
-    "headingFont": "Figtree",
-    "bodyFont": "Figtree",
-    "cornerRadius": 8,
+    "textColor": "#1b1f27",
+    "headingFont": "Inter",
+    "bodyFont": "Inter",
+    "cornerRadius": 4,
     "buttonStyle": "solid",
     "saleBadgeColor": "#6d52ff",
     "customBadgeColor": "#e4ff52",
-    "soldOutBadgeColor": "#000000"
+    "soldOutBadgeColor": "#000000",
+    "drawing": "sections",
+    "buttonColor": "#0a2240",
+    "surfaceColor": "#f8fafc",
+    "mutedColor": "#5f6672",
+    "dividerColor": "#e5e8ee",
+    "headingCase": "Uppercase",
+    "headingWeight": 500,
+    "cardColor": "#ffffff",
+    "cardRadius": 8,
+    "cardShadow": "Soft",
+    "buttonBorderColor": "#0a2240",
+    "buttonHoverColor": "#16335c",
+    "buttonCase": "Uppercase",
+    "tintColor": "#f1f4f9",
+    "measure": 1328,
+    "gutter": 56,
+    "heroTitleSize": 64,
+    "sectionTitleSize": 32,
+    "controlBorderColor": "#8c919b"
   },
   "theme": {
     "id": "theme-vitaheal",
@@ -984,14 +1303,33 @@
       "brandColor": "#0a2240",
       "accentColor": "#0a2240",
       "background": "#ffffff",
-      "textColor": "#000000",
-      "headingFont": "Figtree",
-      "bodyFont": "Figtree",
-      "cornerRadius": 8,
+      "textColor": "#1b1f27",
+      "headingFont": "Inter",
+      "bodyFont": "Inter",
+      "cornerRadius": 4,
       "buttonStyle": "solid",
       "saleBadgeColor": "#6d52ff",
       "customBadgeColor": "#e4ff52",
-      "soldOutBadgeColor": "#000000"
+      "soldOutBadgeColor": "#000000",
+      "drawing": "sections",
+      "buttonColor": "#0a2240",
+      "surfaceColor": "#f8fafc",
+      "mutedColor": "#5f6672",
+      "dividerColor": "#e5e8ee",
+      "headingCase": "Uppercase",
+      "headingWeight": 500,
+      "cardColor": "#ffffff",
+      "cardRadius": 8,
+      "cardShadow": "Soft",
+      "buttonBorderColor": "#0a2240",
+      "buttonHoverColor": "#16335c",
+      "buttonCase": "Uppercase",
+      "tintColor": "#f1f4f9",
+      "measure": 1328,
+      "gutter": 56,
+      "heroTitleSize": 64,
+      "sectionTitleSize": 32,
+      "controlBorderColor": "#8c919b"
     },
     "templates": {
       "home": [
@@ -1009,8 +1347,9 @@
           "kind": "header",
           "label": "Header",
           "settings": {
-            "menuStyle": "Centered",
-            "sticky": true
+            "menuStyle": "Inline",
+            "sticky": true,
+            "colorScheme": "Light"
           }
         },
         {
@@ -1020,7 +1359,10 @@
           "settings": {
             "headline": "Supplements that do one job well",
             "height": "Large",
+            "badge": "Made in Sweden",
+            "accentWords": "one job well",
             "subheadline": "Sleep, focus and recovery, made in Sweden and delivered to your door.",
+            "contentPosition": "Center left",
             "image": "/storefront/vitaheal/hero.jpg"
           },
           "blocks": [
@@ -1031,31 +1373,40 @@
                 "label": "Shop all products",
                 "link": "/collections/all"
               }
+            },
+            {
+              "id": "vitaheal-banner-subscribe",
+              "kind": "button",
+              "settings": {
+                "label": "Subscribe and save",
+                "link": "/collections/subscription"
+              }
+            },
+            {
+              "id": "vitaheal-banner-stat-plans",
+              "kind": "stat",
+              "settings": {
+                "value": "20–30%",
+                "label": "Saved on a plan"
+              }
+            },
+            {
+              "id": "vitaheal-banner-stat-shipping",
+              "kind": "stat",
+              "settings": {
+                "value": "549 kr",
+                "label": "Free shipping over"
+              }
+            },
+            {
+              "id": "vitaheal-banner-stat-guarantee",
+              "kind": "stat",
+              "settings": {
+                "value": "30 days",
+                "label": "Money back on Unwind"
+              }
             }
           ]
-        },
-        {
-          "id": "vitaheal-home-featured",
-          "kind": "featured-products",
-          "label": "Featured products",
-          "settings": {
-            "title": "Our range",
-            "productCount": 8,
-            "layout": "Grid"
-          }
-        },
-        {
-          "id": "vitaheal-home-story-unwind",
-          "kind": "image-with-text",
-          "label": "Image with text",
-          "settings": {
-            "heading": "Unwind helps you switch off, sleep deeply and wake up ready",
-            "body": "One warm cup about an hour before bed. Nothing in it knocks you out; it helps your body do what it already knows how to do.",
-            "buttonLabel": "Shop Unwind",
-            "buttonLink": "/products/unwind-2001",
-            "imageSide": "Left",
-            "image": "/storefront/vitaheal/story-unwind.jpg"
-          }
         },
         {
           "id": "vitaheal-home-collections",
@@ -1063,7 +1414,12 @@
           "label": "Collection grid",
           "settings": {
             "title": "Shop by goal",
-            "columns": 3
+            "columns": 3,
+            "accentWords": "goal",
+            "layout": "Carousel",
+            "tileStyle": "Label over photo",
+            "background": "Tint",
+            "tileRatio": "Landscape"
           },
           "blocks": [
             {
@@ -1105,6 +1461,84 @@
           ]
         },
         {
+          "id": "vitaheal-home-featured",
+          "kind": "featured-products",
+          "label": "Featured products",
+          "settings": {
+            "title": "Our range",
+            "productCount": 8,
+            "layout": "Carousel",
+            "eyebrow": "Blended and packed in Sweden",
+            "collection": "all"
+          }
+        },
+        {
+          "id": "vitaheal-home-story-unwind",
+          "kind": "image-with-text",
+          "label": "Image with text",
+          "settings": {
+            "heading": "Unwind helps you switch off, sleep deeply and wake up ready",
+            "body": "One warm cup about an hour before bed. Nothing in it knocks you out; it helps your body do what it already knows how to do.",
+            "buttonLabel": "Shop Unwind",
+            "buttonLink": "/products/unwind-2001",
+            "imageSide": "Left",
+            "image": "/storefront/vitaheal/story-unwind.jpg"
+          }
+        },
+        {
+          "id": "vitaheal-home-promises",
+          "kind": "icon-row",
+          "label": "Icon row",
+          "settings": {
+            "title": "The Vitaheal promise",
+            "eyebrow": "Why Vitaheal",
+            "alignment": "Center",
+            "tileStyle": "Card"
+          },
+          "blocks": [
+            {
+              "id": "vitaheal-promise-tested",
+              "kind": "feature",
+              "settings": {
+                "icon": "shield-check",
+                "title": "Tested in Sweden",
+                "text": "Every batch, before it ships.",
+                "link": "/page/about"
+              }
+            },
+            {
+              "id": "vitaheal-promise-subscribe",
+              "kind": "feature",
+              "settings": {
+                "icon": "clock",
+                "title": "Subscribe and save",
+                "text": "20% to 30% off. Skip or cancel anytime.",
+                "link": "/collections/subscription"
+              }
+            },
+            {
+              "id": "vitaheal-promise-shipping",
+              "kind": "feature",
+              "settings": {
+                "icon": "truck",
+                "title": "Free shipping",
+                "text": "On orders over 549 kr.",
+                "link": ""
+              }
+            },
+            {
+              "id": "vitaheal-promise-guarantee",
+              "kind": "feature",
+              "settings": {
+                "icon": "rotate-ccw",
+                "title": "30-day guarantee",
+                "text": "Money back on your first Unwind.",
+                "link": "/page/money-back-guarantee"
+              }
+            }
+          ]
+        },
+        {
           "id": "vitaheal-home-story-focus",
           "kind": "image-with-text",
           "label": "Image with text",
@@ -1118,31 +1552,13 @@
           }
         },
         {
-          "id": "vitaheal-home-subscribe",
-          "kind": "rich-text",
-          "label": "Rich text",
-          "settings": {
-            "heading": "Subscribe and save 20%",
-            "body": "Most of our customers subscribe. You get every delivery for less, and you can skip, pause or cancel whenever you like.",
-            "alignment": "Center"
-          }
-        },
-        {
-          "id": "vitaheal-home-newsletter",
-          "kind": "newsletter",
-          "label": "Newsletter",
-          "settings": {
-            "headline": "Get the Vitaheal letter",
-            "buttonLabel": "Subscribe"
-          }
-        },
-        {
           "id": "vitaheal-home-footer",
           "kind": "footer",
           "label": "Footer",
           "settings": {
             "showSocial": false,
-            "columns": 3
+            "columns": 3,
+            "colorScheme": "Light"
           }
         }
       ],
@@ -1152,8 +1568,9 @@
           "kind": "header",
           "label": "Header",
           "settings": {
-            "menuStyle": "Centered",
-            "sticky": true
+            "menuStyle": "Inline",
+            "sticky": true,
+            "colorScheme": "Light"
           }
         },
         {
@@ -1162,8 +1579,78 @@
           "label": "Product detail",
           "settings": {
             "galleryLayout": "Thumbnails",
-            "showReviews": true
-          }
+            "showReviews": false,
+            "imageRatio": "Square",
+            "sizeGuide": false,
+            "fitment": false,
+            "preselectVariant": true,
+            "quantity": true,
+            "stockLine": true
+          },
+          "blocks": [
+            {
+              "id": "vitaheal-purchase-options",
+              "kind": "purchase-options",
+              "settings": {
+                "style": "Cards",
+                "defaultSelection": "One-time purchase",
+                "policyText": "Skip, pause or cancel anytime.",
+                "termsLink": "/policies/subscription-terms",
+                "cardBadge": true
+              }
+            },
+            {
+              "id": "vitaheal-row-description",
+              "kind": "collapsible-row",
+              "settings": {
+                "title": "Description",
+                "source": "description",
+                "text": "",
+                "open": true
+              }
+            },
+            {
+              "id": "vitaheal-row-facts",
+              "kind": "collapsible-row",
+              "settings": {
+                "title": "Product facts",
+                "source": "facts",
+                "text": "",
+                "open": false
+              }
+            },
+            {
+              "id": "vitaheal-row-subscription",
+              "kind": "collapsible-row",
+              "settings": {
+                "title": "How subscriptions work",
+                "source": "custom",
+                "text": "Most of our products can be bought on a subscription: a monthly delivery saves 20%, and a 3-month supply saves 30%.\n\nWe email you before each renewal. Skip a delivery, pause or cancel from your account at any time before the next charge date.",
+                "open": false,
+                "plansOnly": true
+              }
+            },
+            {
+              "id": "vitaheal-row-shipping",
+              "kind": "collapsible-row",
+              "settings": {
+                "title": "Shipping and returns",
+                "source": "delivery-returns",
+                "text": "Orders placed before 10:00 CET on a weekday leave our warehouse the same day. Delivery takes 3 to 7 working days, and shipping is free on orders over 549 kr.\n\nYou can return unopened products within 14 days of delivery for a full refund.",
+                "open": false
+              }
+            },
+            {
+              "id": "vitaheal-row-warnings",
+              "kind": "collapsible-row",
+              "settings": {
+                "title": "Warnings",
+                "source": "custom",
+                "text": "Do not exceed the recommended daily dose. Food supplements are not a substitute for a varied diet. Keep out of reach of children.\n\nIf you are pregnant, breastfeeding, taking medication or have a medical condition, ask your doctor before use.",
+                "open": false
+              }
+            }
+          ]
         },
         {
           "id": "vitaheal-product-related",
@@ -1181,7 +1668,8 @@
           "label": "Footer",
           "settings": {
             "showSocial": false,
-            "columns": 3
+            "columns": 3,
+            "colorScheme": "Light"
           }
         }
       ],
@@ -1191,8 +1679,9 @@
           "kind": "header",
           "label": "Header",
           "settings": {
-            "menuStyle": "Centered",
-            "sticky": true
+            "menuStyle": "Inline",
+            "sticky": true,
+            "colorScheme": "Light"
           }
         },
         {
@@ -1200,8 +1689,13 @@
           "kind": "collection-grid",
           "label": "Collection grid",
           "settings": {
-            "title": "Shop by collection",
-            "columns": 3
+            "title": "",
+            "columns": 4,
+            "filters": true,
+            "facets": "price",
+            "sort": true,
+            "quickAdd": true,
+            "cardStyle": "Boxed"
           }
         },
         {
@@ -1210,7 +1704,8 @@
           "label": "Footer",
           "settings": {
             "showSocial": false,
-            "columns": 3
+            "columns": 3,
+            "colorScheme": "Light"
           }
         }
       ],
@@ -1220,8 +1715,9 @@
           "kind": "header",
           "label": "Header",
           "settings": {
-            "menuStyle": "Centered",
-            "sticky": true
+            "menuStyle": "Inline",
+            "sticky": true,
+            "colorScheme": "Light"
           }
         },
         {
@@ -1239,7 +1735,8 @@
           "label": "Footer",
           "settings": {
             "showSocial": false,
-            "columns": 3
+            "columns": 3,
+            "colorScheme": "Light"
           }
         }
       ]
@@ -1252,29 +1749,61 @@
     "headerTools": [
       "account"
     ],
+    "headerSearch": "field",
     "accountHref": "/account",
     "social": [],
-    "searchPlaceholder": "Search...",
+    "searchPlaceholder": "Search supplements",
     "nav": [
       {
-        "label": "All products",
-        "href": "/collections/all"
-      },
-      {
-        "label": "Sleep",
-        "href": "/collections/sleep"
-      },
-      {
-        "label": "Sport",
-        "href": "/collections/sport"
-      },
-      {
-        "label": "Longevity",
-        "href": "/collections/longevity"
-      },
-      {
-        "label": "Hydrate",
-        "href": "/collections/hydrate"
+        "label": "Shop",
+        "href": "/collections/all",
+        "menu": {
+          "columns": [
+            {
+              "heading": "Shop by goal",
+              "links": [
+                {
+                  "label": "Sleep",
+                  "href": "/collections/sleep"
+                },
+                {
+                  "label": "Sport",
+                  "href": "/collections/sport"
+                },
+                {
+                  "label": "Longevity",
+                  "href": "/collections/longevity"
+                },
+                {
+                  "label": "Hydrate",
+                  "href": "/collections/hydrate"
+                }
+              ]
+            },
+            {
+              "heading": "More ways to shop",
+              "links": [
+                {
+                  "label": "All products",
+                  "href": "/collections/all"
+                },
+                {
+                  "label": "Subscribe and save",
+                  "href": "/collections/subscription"
+                }
+              ]
+            }
+          ],
+          "feature": {
+            "image": "/storefront/vitaheal/story-unwind.jpg",
+            "heading": "Subscribe and save 20% to 30%",
+            "text": "A fresh pack every month, or a 3-month supply. Skip, pause or cancel anytime.",
+            "link": {
+              "label": "See subscriptions",
+              "href": "/collections/subscription"
+            }
+          }
+        }
       },
       {
         "label": "Subscription",
@@ -1282,29 +1811,94 @@
       },
       {
         "label": "About",
-        "href": "/page/about"
+        "href": "/page/about",
+        "menu": {
+          "columns": [
+            {
+              "heading": "About Vitaheal",
+              "links": [
+                {
+                  "label": "Our story",
+                  "href": "/page/about"
+                },
+                {
+                  "label": "Ambassadors",
+                  "href": "/page/ambassadors"
+                }
+              ]
+            },
+            {
+              "heading": "Help",
+              "links": [
+                {
+                  "label": "Contact",
+                  "href": "/page/contact"
+                },
+                {
+                  "label": "Money-back guarantee",
+                  "href": "/page/money-back-guarantee"
+                },
+                {
+                  "label": "Refund policy",
+                  "href": "/policies/refund-policy"
+                }
+              ]
+            }
+          ]
+        }
       }
     ],
     "mobileNav": [
       {
-        "label": "All products",
-        "href": "/collections/all"
-      },
-      {
-        "label": "Sleep",
-        "href": "/collections/sleep"
-      },
-      {
-        "label": "Sport",
-        "href": "/collections/sport"
-      },
-      {
-        "label": "Longevity",
-        "href": "/collections/longevity"
-      },
-      {
-        "label": "Hydrate",
-        "href": "/collections/hydrate"
+        "label": "Shop",
+        "href": "/collections/all",
+        "menu": {
+          "columns": [
+            {
+              "heading": "Shop by goal",
+              "links": [
+                {
+                  "label": "Sleep",
+                  "href": "/collections/sleep"
+                },
+                {
+                  "label": "Sport",
+                  "href": "/collections/sport"
+                },
+                {
+                  "label": "Longevity",
+                  "href": "/collections/longevity"
+                },
+                {
+                  "label": "Hydrate",
+                  "href": "/collections/hydrate"
+                }
+              ]
+            },
+            {
+              "heading": "More ways to shop",
+              "links": [
+                {
+                  "label": "All products",
+                  "href": "/collections/all"
+                },
+                {
+                  "label": "Subscribe and save",
+                  "href": "/collections/subscription"
+                }
+              ]
+            }
+          ],
+          "feature": {
+            "image": "/storefront/vitaheal/story-unwind.jpg",
+            "heading": "Subscribe and save 20% to 30%",
+            "text": "A fresh pack every month, or a 3-month supply. Skip, pause or cancel anytime.",
+            "link": {
+              "label": "See subscriptions",
+              "href": "/collections/subscription"
+            }
+          }
+        }
       },
       {
         "label": "Subscription",
@@ -1312,11 +1906,41 @@
       },
       {
         "label": "About",
-        "href": "/page/about"
-      },
-      {
-        "label": "Contact",
-        "href": "/page/contact"
+        "href": "/page/about",
+        "menu": {
+          "columns": [
+            {
+              "heading": "About Vitaheal",
+              "links": [
+                {
+                  "label": "Our story",
+                  "href": "/page/about"
+                },
+                {
+                  "label": "Ambassadors",
+                  "href": "/page/ambassadors"
+                }
+              ]
+            },
+            {
+              "heading": "Help",
+              "links": [
+                {
+                  "label": "Contact",
+                  "href": "/page/contact"
+                },
+                {
+                  "label": "Money-back guarantee",
+                  "href": "/page/money-back-guarantee"
+                },
+                {
+                  "label": "Refund policy",
+                  "href": "/policies/refund-policy"
+                }
+              ]
+            }
+          ]
+        }
       },
       {
         "label": "My subscription",
@@ -1334,6 +1958,10 @@
           "href": "/collections/all"
         },
         "items": [
+          {
+            "label": "All products",
+            "href": "/collections/all"
+          },
           {
             "label": "Sleep",
             "href": "/collections/sleep"
@@ -1395,20 +2023,14 @@
             "href": "/policies/refund-policy"
           },
           {
-            "label": "Privacy policy",
-            "href": "/policies/privacy-policy"
-          },
-          {
-            "label": "Terms of service",
-            "href": "/policies/terms-of-service"
-          },
-          {
-            "label": "Cookies",
-            "href": "/page/cookies"
+            "label": "Subscription terms",
+            "href": "/policies/subscription-terms"
           }
         ]
       }
     ],
+    "tagline": "Made in Sweden, for every day",
+    "newsletterColumn": true,
     "newsletter": {
       "heading": "Get the Vitaheal letter",
       "placeholder": "Email address",
@@ -1429,6 +2051,20 @@
       "busy": "Signing up...",
       "success": "Thank you. You are on the list."
     },
+    "bottomLinks": [
+      {
+        "label": "Privacy policy",
+        "href": "/policies/privacy-policy"
+      },
+      {
+        "label": "Terms of service",
+        "href": "/policies/terms-of-service"
+      },
+      {
+        "label": "Cookies",
+        "href": "/page/cookies"
+      }
+    ],
     "copyright": "© 2026 Vitaheal (demo store). Made in Sweden."
   },
   "menus": [
@@ -1442,42 +2078,18 @@
       "items": [
         {
           "id": "mi-vitaheal-main-1",
-          "title": "All products",
+          "title": "Shop",
           "linkType": "url",
           "target": "/collections/all"
         },
         {
           "id": "mi-vitaheal-main-2",
-          "title": "Sleep",
-          "linkType": "url",
-          "target": "/collections/sleep"
-        },
-        {
-          "id": "mi-vitaheal-main-3",
-          "title": "Sport",
-          "linkType": "url",
-          "target": "/collections/sport"
-        },
-        {
-          "id": "mi-vitaheal-main-4",
-          "title": "Longevity",
-          "linkType": "url",
-          "target": "/collections/longevity"
-        },
-        {
-          "id": "mi-vitaheal-main-5",
-          "title": "Hydrate",
-          "linkType": "url",
-          "target": "/collections/hydrate"
-        },
-        {
-          "id": "mi-vitaheal-main-6",
           "title": "Subscription",
           "linkType": "url",
           "target": "/collections/subscription"
         },
         {
-          "id": "mi-vitaheal-main-7",
+          "id": "mi-vitaheal-main-3",
           "title": "About",
           "linkType": "url",
           "target": "/page/about"
@@ -1530,18 +2142,24 @@
         },
         {
           "id": "mi-vitaheal-footer-7",
+          "title": "Subscription terms",
+          "linkType": "url",
+          "target": "/policies/subscription-terms"
+        },
+        {
+          "id": "mi-vitaheal-footer-8",
           "title": "Privacy policy",
           "linkType": "url",
           "target": "/policies/privacy-policy"
         },
         {
-          "id": "mi-vitaheal-footer-8",
+          "id": "mi-vitaheal-footer-9",
           "title": "Terms of service",
           "linkType": "url",
           "target": "/policies/terms-of-service"
         },
         {
-          "id": "mi-vitaheal-footer-9",
+          "id": "mi-vitaheal-footer-10",
           "title": "Cookies",
           "linkType": "url",
           "target": "/page/cookies"
@@ -1666,6 +2284,21 @@
       "template": "Default",
       "seoTitle": "Terms of service | Vitaheal",
       "seoDescription": "The terms that apply when you buy from the Vitaheal store.",
+      "imageName": "",
+      "publishedAt": "",
+      "updatedAt": "Nov 16, 2026"
+    },
+    {
+      "id": "vitaheal-policy-subscription-terms",
+      "channelId": "vitaheal-demo",
+      "kind": "policy",
+      "title": "Subscription terms",
+      "handle": "subscription-terms",
+      "body": "<h2>Subscription terms</h2><p>These terms apply when you buy a product on a subscription.</p><h3>What you agree to</h3><p>You ask us to send the product, and charge the payment method you used at checkout, at the interval of the plan you chose: every month, or every 3 months for a 3-month supply. The subscription runs until you cancel it.</p><h3>Price</h3><p>A monthly subscription saves 20% and a 3-month supply saves 30% on the product’s price. Prices are in Swedish kronor and include VAT.</p><h3>Before each renewal</h3><p>We email you before each renewal, so you have time to change it.</p><h3>Skip, pause or cancel</h3><p>You can skip a delivery, pause or cancel from <a href=\"/account\">your account</a>, at any time before the next charge date. A delivery that has already been charged can be returned under our <a href=\"/policies/refund-policy\">refund policy</a>.</p>",
+      "status": "Active",
+      "template": "Default",
+      "seoTitle": "Subscription terms | Vitaheal",
+      "seoDescription": "The terms that apply to a subscription at Vitaheal.",
       "imageName": "",
       "publishedAt": "",
       "updatedAt": "Nov 16, 2026"

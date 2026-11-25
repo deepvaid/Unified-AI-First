@@ -1,15 +1,21 @@
 <script setup lang="ts">
-import { computed, inject, nextTick, ref } from 'vue'
-import { parseDecimal } from '@/maropay/money'
+import { computed, inject, nextTick, ref, watch } from 'vue'
+import { parseDecimal, toDecimal } from '@/maropay/money'
 import type { Product, ProductVariant } from '@/stores/useCommerce'
 import { useStorefrontCartStore } from '@/stores/useStorefrontCart'
+import { useSubscriptionsStore } from '@/stores/useSubscriptions'
 import { fitDetail, lineVehicle, variantFitState } from '@/storefront/fitment'
 import { addsDirectly, cardPhoto, cardPrice, soldOutText } from '@/storefront/listing'
 import { galleryFor } from '@/storefront/productPage'
-import { describeVariant, initialSelection, optionKey, optionKind, optionValuesOf, variantAvailable, variantFor } from '@/storefront/variants'
+import { purchaseOptionsSettings } from '@/storefront/themeSections'
+import {
+  cheapestInitialSelection, describeVariant, initialSelection, optionKey, optionKind, optionValuesOf, variantAvailable, variantFor,
+} from '@/storefront/variants'
+import { ONE_TIME, defaultOptionId, linePlan, purchaseOptions } from '@/subscriptions/plans'
 import StorefrontAnchor from './StorefrontAnchor.vue'
 import StorefrontDrawer from './StorefrontDrawer.vue'
 import StorefrontFitBanner from './StorefrontFitBanner.vue'
+import StorefrontPurchaseOptions from './StorefrontPurchaseOptions.vue'
 import StorefrontVariantPicker from './StorefrontVariantPicker.vue'
 import { STOREFRONT } from './storefrontContext'
 import { priceOf, productHandle } from './storefrontCatalog'
@@ -29,6 +35,15 @@ import { priceOf, productHandle } from './storefrontCatalog'
 // vehicle doesn't take is never added straight from its card: the drawer opens and
 // says so first.
 //
+// A product the store sells on a subscription plan always opens the drawer, even
+// with nothing to choose: under the picker are its purchase options
+// (StorefrontPurchaseOptions, laid out and preselected as the theme's purchase
+// options block asks, with its policy line), priced on the choice made, else the
+// card's price. On a plan the button reads "Add subscription to cart", and the line
+// goes into the cart on that plan at its price, as on the product page. When the
+// product template opens on the lowest-priced choice (product-detail
+// `preselectVariant`, Vitaheal), so does the drawer.
+//
 // The list calls `start(product, color)`; one of these serves a whole list.
 
 const emit = defineEmits<{
@@ -38,6 +53,7 @@ const emit = defineEmits<{
 
 const storefront = inject(STOREFRONT)!
 const cart = useStorefrontCartStore()
+const subscriptions = useSubscriptionsStore()
 const channelId = computed(() => storefront.channel.value.id)
 
 const open = ref(false)
@@ -78,8 +94,36 @@ const photo = computed(() => {
 /** "Shown in Oat" under the photo when the colour chosen has no photo of its own, as the product page says it. */
 const shownIn = computed(() => (product.value && photo.value && selection.value ? galleryFor(product.value, selection.value).shownIn : ''))
 
-/** "Size M · Sand". */
-const line = computed(() => (variant.value && product.value ? describeVariant(variant.value, options.value) : ''))
+// ── A product on a subscription plan ──────────────────────────────────────
+const plansOf = (p: Product) => subscriptions.offeredFor(channelId.value, p.id)
+/** Its plans, then buying once; none for a product on no plan. Priced on the choice made, else the card's price. */
+const purchase = computed(() => {
+  const p = product.value
+  const plans = p ? plansOf(p) : []
+  if (!p || !plans.length || !price.value) return []
+  const currency = storefront.currency.value
+  return purchaseOptions(parseDecimal(price.value.price, currency) ?? priceOf(p, currency), plans)
+})
+/** How the theme's purchase options block lays them out, and which comes first. */
+const buyBox = computed(() => purchaseOptionsSettings(storefront.theme.value))
+const purchaseVariant = computed(() => (({ 'Radio buttons': 'radios', Dropdown: 'dropdown' } as const)[buyBox.value?.style as 'Radio buttons' | 'Dropdown'] ?? 'cards'))
+const firstOptionId = () => defaultOptionId(purchase.value, buyBox.value?.subscriptionFirst)
+const optionId = ref(ONE_TIME)
+const option = computed(() => purchase.value.find((o) => o.id === optionId.value) ?? null)
+// The chosen plan can go while the drawer is open (the merchant pauses it): fall back to the default.
+watch(() => purchase.value.map((o) => o.id).join(), () => {
+  if (purchase.value.length && !option.value) optionId.value = firstOptionId()
+})
+const onPlan = computed(() => !!option.value?.plan)
+
+/** The product template opens on the lowest-priced choice (Vitaheal), so the drawer does too. */
+const preselect = computed(() => storefront.theme.value?.templates.product?.find((s) => s.kind === 'product-detail' && !s.hidden)?.settings.preselectVariant === true)
+
+/** "Size M · Sand", and the plan when there is one: "Bag · 3-month supply". */
+const line = computed(() => [
+  variant.value && product.value ? describeVariant(variant.value, options.value) : '',
+  onPlan.value ? option.value!.name : '',
+].filter(Boolean).join(' · '))
 
 /** How the part fits the shopper's vehicle, on a store that sells parts: the choice made, else the part. */
 const fit = computed(() => {
@@ -116,7 +160,7 @@ const detailsHref = computed(() => {
  * first colour in stock ('opened').
  */
 function start(p: Product, color?: string): 'added' | 'opened' {
-  if (addsDirectly(p, storefront.sellsParts.value ? storefront.fitOf(p) : 'unknown')) {
+  if (addsDirectly(p, storefront.sellsParts.value ? storefront.fitOf(p) : 'unknown', plansOf(p).length > 0)) {
     addDirect(p)
     return 'added'
   }
@@ -125,7 +169,10 @@ function start(p: Product, color?: string): 'added' | 'opened' {
   variant.value = undefined
   availableAtOpen.value = new Set((p.detail?.variantsList ?? []).filter(variantAvailable).map((v) => v.id))
   stage.value = 'choose'
-  selection.value = initialSelection(p, color && colorKey ? { [optionKey(colorKey.name)]: optionKey(color) } : {})
+  // The card's colour, then (on a theme that opens on the lowest-priced choice) the cheapest choice in it.
+  const query = color && colorKey ? { [optionKey(colorKey.name)]: optionKey(color) } : {}
+  selection.value = preselect.value ? cheapestInitialSelection(p, query) : initialSelection(p, query)
+  optionId.value = firstOptionId()
   open.value = true
   return 'opened'
 }
@@ -150,15 +197,21 @@ async function add(): Promise<void> {
     return
   }
   const v = variant.value
-  if (!v) return
-  if (!variantAvailable(v)) {
+  // A product with nothing to choose (here for its plans) may have no variant of its own.
+  if (!v && options.value.length) return
+  if (v && !variantAvailable(v)) {
     const at = options.value.findIndex((option) => option.name === sizeOption.value?.name)
     const value = optionValuesOf(v, options.value)[at] ?? ''
     storefront.announce(soldOutText(value, sizeOption.value?.name ?? '', availableAtOpen.value.has(v.id)))
     void picker.value.focus(sizeOption.value?.name)
     return
   }
-  cart.add(channelId.value, p, 1, { variant: v, ...vehicleFor(p, v) })
+  const chosen = option.value
+  cart.add(channelId.value, p, 1, {
+    variant: v,
+    ...vehicleFor(p, v),
+    ...(chosen?.plan ? { plan: linePlan(chosen.plan), price: toDecimal(chosen.price) } : {}),
+  })
   stage.value = 'added'
   storefront.announce(`Added to your cart · ${p.name}${line.value ? ` · ${line.value}` : ''}`)
   emit('added', p, v)
@@ -187,7 +240,8 @@ defineExpose({ start })
           <p v-if="stage === 'added'" class="sf-qa__name">{{ product.name }}</p>
           <p v-else-if="product.detail?.subtitle" class="sf-qa__subtitle">{{ product.detail.subtitle }}</p>
           <p v-if="stage === 'added' && line" class="sf-qa__line">{{ line }}</p>
-          <p v-if="price" class="sf-qa__price">
+          <p v-if="stage === 'added' && onPlan" class="sf-qa__price">{{ storefront.formatMoney(option!.price) }} per delivery</p>
+          <p v-else-if="price" class="sf-qa__price">
             <template v-if="price.compareAt">
               <span class="sf-qa__sale"><span class="sf-sr">Sale price </span>{{ money(price.price) }}</span>
               <s class="sf-qa__was"><span class="sf-sr">Usual price </span>{{ money(price.compareAt) }}</s>
@@ -214,11 +268,26 @@ defineExpose({ start })
         layout="sheet"
         @variant="variant = $event"
       />
+
+      <StorefrontPurchaseOptions
+        v-if="stage === 'choose' && purchase.length > 1"
+        v-model="optionId"
+        class="sf-qa__plans"
+        :class="{ 'sf-qa__plans--first': !options.length }"
+        :options="purchase"
+        :format-money="storefront.formatMoney"
+        :variant="purchaseVariant"
+        :policy-text="buyBox?.policyText"
+        :terms-href="buyBox?.termsLink"
+      />
     </template>
 
     <template #footer>
-      <button v-if="stage === 'choose'" type="button" class="sf-qa__button sf-qa__button--primary" @click="add">
-        Add to cart<template v-if="price"> · {{ money(price.price) }}</template>
+      <button v-if="stage === 'choose'" type="button" class="sf-qa__button sf-qa__button--primary sf-qa__button--add" @click="add">
+        <span class="sf-qa__add">
+          <template v-if="onPlan">Add subscription to cart <span class="sf-qa__add-price"><span class="sf-qa__add-dot">· </span>{{ storefront.formatMoney(option!.price) }}</span></template>
+          <template v-else>Add to cart<template v-if="price"> · {{ money(price.price) }}</template></template>
+        </span>
       </button>
       <div v-else ref="addedActions" class="sf-qa__actions">
         <StorefrontAnchor href="/cart-page" class="sf-qa__button sf-qa__button--primary" @click="open = false">View cart ({{ cart.count(channelId) }})</StorefrontAnchor>
@@ -335,6 +404,15 @@ defineExpose({ start })
   margin-bottom: 24px;
 }
 
+.sf-qa__plans {
+  margin-top: 24px;
+}
+
+/* Nothing to choose above them: the options follow the summary straight away. */
+.sf-qa__plans--first {
+  margin-top: 0;
+}
+
 .sf-qa__subtotal {
   display: flex;
   justify-content: space-between;
@@ -396,6 +474,37 @@ defineExpose({ start })
 .sf-qa__button:focus-visible {
   outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
   outline-offset: 2px;
+}
+
+/* "Add to cart · price" is the drawer's one button, so its label wraps rather than run past the
+   drawer, and a price never breaks. On a phone the longer "Add subscription to cart" puts its price
+   on a line of its own, without the dot (still read out). */
+.sf-qa__button--add {
+  padding-block: 8px;
+}
+
+.sf-qa__add {
+  white-space: normal;
+  text-align: center;
+}
+
+.sf-qa__add-price {
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .sf-qa__add-price {
+    display: block;
+  }
+
+  .sf-qa__add-dot {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
 }
 
 .sf-sr {

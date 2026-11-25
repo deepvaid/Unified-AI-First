@@ -13,6 +13,19 @@ import type { StoreSnapshot } from '../../src/storefront/demoStores/types.ts'
 // collections from useProductExtras), for the fixed date in its `today`. The
 // blueprint on its home channel must be exactly that, so nothing a visitor or a
 // merchant sees changed. Recapture it only for a deliberate seed change.
+//
+// Recaptured once, on 2026-11-24 (feedback round): Vitaheal was given the health-store
+// features on purpose. Its products gained their facts (`detail.specs`), its header a
+// mega menu, its pages the subscription terms, its theme a promises strip and the
+// product page's rows and Purchase options block, and its collections a description.
+// Plans, campaigns, search rules, the chatbot, the channel and the styles are as captured.
+//
+// Recaptured a second time, on 2026-11-25 (second feedback round): Vitaheal moved to the
+// Lumos look on the sections drawing. Only `themeStyles`, `theme` and `chrome` changed, and
+// `admin` for the theme's name ('Vitaheal 2.0'); `menus` was recaptured and came out the
+// same. A one-off script built the blueprint at the fixture's `today` and checked that
+// every other key (products, plans, campaigns, merchandising, chatbot, content,
+// subscriptions and the rest) was byte-identical before it wrote anything.
 
 const fixture = JSON.parse(readFileSync(new URL('./fixtures/vitaheal-seed.json', import.meta.url), 'utf8'))
 /** As stored: JSON drops undefined fields, as the fixture did. */
@@ -42,7 +55,7 @@ test('the theme is the record useStoreThemes seeded, with the same section ids a
   assert.deepEqual(record, fixture.theme)
   assert.deepEqual(t.styles, fixture.themeStyles)
   assert.deepEqual(json(VITAHEAL_THEME_TEMPLATES), fixture.theme.templates)
-  assert.equal(t.version, '1.0')
+  assert.equal(t.version, '2.0')
 })
 
 test('the collections keep their admin ids (23-27), titles, counts and date', () => {

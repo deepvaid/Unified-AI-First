@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useCommerceStore } from '@/stores/useCommerce'
 import { useDemoStores } from '@/stores/useDemoStores'
 import { useSubscriptionsStore } from '@/stores/useSubscriptions'
@@ -10,7 +10,7 @@ import { useToast } from '@/composables/useToast'
 import { parseDecimal } from '@/maropay/money'
 import type { Money } from '@/maropay/money'
 import { formatStorePrice } from '@/storefront/price'
-import { deliverySummary, fullPricePerDelivery, planErrors, pricePerDelivery, roundForDisplay } from '@/subscriptions/plans'
+import { deliverySummary, discountRange, fullPricePerDelivery, intervalLabel, optionsSummary, planErrors, pricePerDelivery, roundForDisplay } from '@/subscriptions/plans'
 import type { IntervalUnit, PlanInput, PlanStatus, SubscriptionPlan } from '@/subscriptions/plans'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
@@ -26,11 +26,17 @@ import MpAlert from '@/components/MpAlert.vue'
 
 /**
  * Commerce › Subscriptions › Plans: the plans a store's shoppers can subscribe
- * on (deliver every N weeks or months, units per delivery, a discount). A plan
- * shows on the product page of each product it is attached to. The rules are in
- * src/subscriptions/plans.ts; contracts and renewals are a later slice (S8).
+ * on. A plan shows on the product page of each product it is attached to. There
+ * are two kinds, listed together:
+ * - a plan with delivery options ("Subscribe and save": every 1, 2 or 3 months,
+ *   each with its own discount), made and edited on its own page
+ *   (SubscriptionPlanEditor.vue);
+ * - a plan of one fixed delivery (a "3-month supply": N units every N weeks or
+ *   months at one discount), made and edited in the drawer here.
+ * The rules are in src/subscriptions/plans.ts.
  */
 const route = useRoute()
+const router = useRouter()
 const commerce = useCommerceStore()
 const subscriptions = useSubscriptionsStore()
 const demoStores = useDemoStores()
@@ -69,8 +75,8 @@ const headers = [
   { title: 'Plan', key: 'name', sortable: true },
   { title: 'Delivery', key: 'delivery', sortable: false, hideBelow: 'sm' as const },
   { title: 'Discount', key: 'discountPct', sortable: true, align: 'end' as const },
-  { title: 'Free shipping', key: 'freeShipping', sortable: false, hideBelow: 'lg' as const },
   { title: 'Products', key: 'products', sortable: false, hideBelow: 'md' as const },
+  { title: 'Active subscribers', key: 'subscribers', sortable: false, align: 'end' as const, hideBelow: 'lg' as const },
   { title: 'Store', key: 'store', sortable: false, hideBelow: 'lg' as const },
   { title: 'Status', key: 'status', sortable: true },
   { title: 'Actions', key: 'actions', headerProps: { class: 'mp-th-sr' }, sortable: false, width: 48 },
@@ -89,8 +95,17 @@ const rows = computed(() => {
   const q = search.value.trim().toLowerCase()
   return subscriptions.plans.filter((plan) =>
     (!statusFilter.value.length || statusFilter.value.includes(plan.status))
-    && (!q || plan.name.toLowerCase().includes(q) || storeName(plan.channelId).toLowerCase().includes(q)))
+    && (!q || plan.name.toLowerCase().includes(q) || !!plan.shopperLabel?.toLowerCase().includes(q) || storeName(plan.channelId).toLowerCase().includes(q)))
 })
+
+/** How a plan delivers, in one line: its options, or its one fixed delivery. */
+const deliveryOf = (plan: SubscriptionPlan): string => (plan.options?.length ? optionsSummary(plan.options) : deliverySummary(plan))
+/** The line under it: which option is selected first, or that a fixed delivery ships free. */
+function deliveryNote(plan: SubscriptionPlan): string {
+  const lead = plan.options?.find((option) => option.isDefault)
+  if (lead) return plan.options!.length > 1 ? `Default: ${intervalLabel(lead)}` : ''
+  return plan.freeShipping ? 'Free shipping' : ''
+}
 
 function productNames(plan: SubscriptionPlan): string[] {
   const inStore = productsOf(plan.channelId)
@@ -124,7 +139,16 @@ function openCreate() {
   drawer.value = true
 }
 
+const editorRoute = (planId?: string) => (planId
+  ? { name: 'SubscriptionPlanEdit', params: { accountId: accountId.value, planId } }
+  : { name: 'SubscriptionPlanNew', params: { accountId: accountId.value } })
+
+/** A plan with delivery options opens its own page; a plan of one fixed delivery, the drawer. */
 function openEdit(plan: SubscriptionPlan) {
+  if (plan.options?.length) {
+    void router.push(editorRoute(plan.id))
+    return
+  }
   const { id, channelId, ...input } = plan
   editingId.value = id
   formStore.value = channelId
@@ -181,6 +205,12 @@ const confirmDelete = ref(false)
 const pendingDelete = ref<SubscriptionPlan | null>(null)
 
 function askDelete(plan: SubscriptionPlan) {
+  // A plan with delivery options that shoppers still hold is paused, not deleted.
+  const holding = plan.options?.length ? subscriptions.activeSubscribers(plan.id) : 0
+  if (holding) {
+    toast.warning(`“${plan.name}” has ${holding} active ${holding === 1 ? 'subscriber' : 'subscribers'}, so it can’t be deleted. Pause it instead: shoppers stop seeing it, and subscribers keep their deliveries.`)
+    return
+  }
   pendingDelete.value = plan
   confirmDelete.value = true
 }
@@ -199,10 +229,18 @@ function doDelete() {
     <MpPageHeader
       eyebrow="Commerce · Subscriptions"
       title="Subscription plans"
-      subtitle="What shoppers can subscribe on: how often it is delivered, how many units, and the discount."
+      subtitle="What shoppers can subscribe on: how often it is delivered, and the discount."
     >
       <template #actions>
-        <v-btn v-if="planStores.length" color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="openCreate">New plan</v-btn>
+        <v-menu v-if="planStores.length" location="bottom end">
+          <template #activator="{ props: menu }">
+            <v-btn v-bind="menu" color="primary" variant="flat" prepend-icon="plus" append-icon="chevron-down" class="text-none">New plan</v-btn>
+          </template>
+          <v-list role="menu" aria-label="Kinds of plan">
+            <MpMenuItem icon="repeat" title="Plan with delivery options" subtitle="Shoppers pick how often. Each option has its own discount." :to="editorRoute()" />
+            <MpMenuItem icon="package" title="Fixed delivery plan" subtitle="One size and frequency, such as a 3-month supply." @click="openCreate" />
+          </v-list>
+        </v-menu>
       </template>
     </MpPageHeader>
 
@@ -234,18 +272,21 @@ function doDelete() {
               <button type="button" class="mp-link text-body-2 font-weight-medium sp-name" @click="openEdit(item)">{{ item.name }}</button>
               <v-chip v-if="item.isDefault" size="x-small" variant="tonal" color="primary" label>Preselected</v-chip>
             </div>
+            <!-- What shoppers read over a plan's delivery options. -->
+            <div v-if="item.shopperLabel" class="text-caption text-medium-emphasis">{{ item.shopperLabel }}</div>
             <!-- A dropped Delivery column folds in here rather than disappearing. -->
-            <div v-if="!isVisible('delivery')" class="text-caption text-medium-emphasis">{{ deliverySummary(item) }}</div>
+            <div v-if="!isVisible('delivery')" class="text-caption text-medium-emphasis">{{ deliveryOf(item) }}</div>
           </div>
         </template>
         <template #item.delivery="{ item }">
-          <span class="text-body-2">{{ deliverySummary(item) }}</span>
+          <div class="text-body-2">{{ deliveryOf(item) }}</div>
+          <div v-if="deliveryNote(item)" class="text-caption text-medium-emphasis">{{ deliveryNote(item) }}</div>
         </template>
         <template #item.discountPct="{ item }">
-          <span class="text-body-2">{{ item.discountPct ? `${item.discountPct}%` : '—' }}</span>
+          <span class="text-body-2 text-no-wrap">{{ discountRange(item) }}</span>
         </template>
-        <template #item.freeShipping="{ item }">
-          <span class="text-body-2" :class="{ 'text-medium-emphasis': !item.freeShipping }">{{ item.freeShipping ? 'Yes' : 'No' }}</span>
+        <template #item.subscribers="{ item }">
+          <span class="text-body-2">{{ subscriptions.activeSubscribers(item.id) }}</span>
         </template>
         <template #item.products="{ item }">
           <v-tooltip v-if="productNames(item).length" location="top" :text="productNames(item).join(', ')">
@@ -290,7 +331,7 @@ function doDelete() {
 
     <MpFormDrawer
       v-model="drawer"
-      :title="editingId ? 'Edit plan' : 'New plan'"
+      :title="editingId ? 'Edit plan' : 'New fixed delivery plan'"
       subtitle="Shown as a purchase option on the product page"
     >
       <MpFormGrid :cols="2">

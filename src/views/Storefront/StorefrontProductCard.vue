@@ -2,6 +2,8 @@
 import { computed, inject } from 'vue'
 import { parseDecimal } from '@/maropay/money'
 import type { Product } from '@/stores/useCommerce'
+import { useSubscriptionsStore } from '@/stores/useSubscriptions'
+import { purchaseOptionsSettings } from '@/storefront/themeSections'
 import { hasPriceRange, lowestPrice } from '@/storefront/catalog'
 import StorefrontAnchor from './StorefrontAnchor.vue'
 import { STOREFRONT } from './storefrontContext'
@@ -10,7 +12,8 @@ import { CATEGORY_ICONS, inStock, priceOf, productHandle } from './storefrontCat
 // A product in a grid (home, collections, "You may also like"). A product with
 // pictures shows its first, and its second while the card is hovered or focused;
 // one whose variants differ in price shows the lowest after "From". Products
-// without either look as they always did.
+// without either look as they always did. A product on a subscription plan says
+// "Subscribe available" when the store's theme asks for that (its purchase options block).
 
 const props = defineProps<{ product: Product }>()
 const storefront = inject(STOREFRONT)!
@@ -22,6 +25,8 @@ const price = computed(() => {
 const image = computed(() => props.product.imageUrls?.[0])
 const secondImage = computed(() => props.product.imageUrls?.[1])
 const subtitle = computed(() => props.product.detail?.subtitle.trim())
+const subscribable = computed(() => !!purchaseOptionsSettings(storefront.theme.value)?.cardBadge
+  && useSubscriptionsStore().offeredFor(storefront.channel.value.id, props.product.id).length > 0)
 </script>
 
 <template>
@@ -31,6 +36,7 @@ const subtitle = computed(() => props.product.detail?.subtitle.trim())
       <img v-if="image && secondImage" :src="secondImage" alt="" class="sf-card__image sf-card__image--second" loading="lazy">
       <v-icon v-else size="44">{{ CATEGORY_ICONS[product.category] ?? 'package' }}</v-icon>
       <span v-if="!inStock(product)" class="sf-card__tag">Sold out</span>
+      <span v-else-if="subscribable" class="sf-card__tag sf-card__tag--subscribe">Subscribe available</span>
     </span>
     <span v-if="subtitle" class="sf-card__subtitle">{{ subtitle }}</span>
     <span class="sf-card__name">{{ product.name }}</span>
@@ -78,6 +84,13 @@ const subtitle = computed(() => props.product.detail?.subtitle.trim())
   color: var(--sf-on-badge-sold-out, #ffffff);
   font-size: 12px;
   font-weight: 600;
+}
+
+/* The merchant's own badge colours, as for "New" or "Bestseller". */
+.sf-card__tag--subscribe {
+  z-index: 1;
+  background: var(--sf-badge-custom, #f0f0f0);
+  color: var(--sf-on-badge-custom, #121011);
 }
 
 .sf-card__image {

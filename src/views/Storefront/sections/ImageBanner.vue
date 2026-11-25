@@ -459,6 +459,24 @@ const buttons = computed(() => {
   }
 }
 
+/* A narrow phone (under 375): the headline no bigger than lets a long word ("SUPPLEMENTS")
+   fit between the gutters, which reflow asks for at 320, and each figure on one line
+   ("20–30%"), a little smaller and closer to its rule so it still fits its column. */
+@media (max-width: 374px) {
+  .sfb__headline {
+    font-size: min(var(--sf-hero-title-sm, clamp(48px, 7vw, 88px)), 12.5vw);
+  }
+
+  .sfb__stat {
+    padding: 0 min(12px, 2.5vw);
+  }
+
+  .sfb__stat-value {
+    font-size: min(22px, 6vw);
+    white-space: nowrap;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .sfb__button {
     transition: none;

@@ -15,8 +15,9 @@ const meta = {
 ### Overview
 The storefront's footer, shown here in Northfold's theme. Hidden on the checkout. Two drawings:
 
-- **Classic** — every theme but the sections drawing's: the markup the storefront has always drawn.
-- **Sections** (\`styles.drawing: 'sections'\`: Northfold, Torqline, Lumos) — the theme's **footer
+- **Classic** — every theme but the sections drawing's (Daybloom, Atlas, Neelam's Aurora): the markup
+  the storefront has always drawn.
+- **Sections** (\`styles.drawing: 'sections'\`: Vitaheal, Northfold, Torqline, Lumos) — the theme's **footer
   section** caps the link \`columns\`, shows the social links or not (\`showSocial\`), and paints
   **Light** or **Dark** (\`colorScheme\`). The wordmark leads with the store's newsletter sign-up under
   it; the ways to pay and the copyright close it. On the home page the newsletter stays out of the
@@ -73,7 +74,12 @@ export const NewsletterErrors: Story = {
   },
 }
 
-/** Vitaheal's footer: the classic drawing, exactly as before the sections drawing. */
-export const Classic: Story = {
+/** Vitaheal's footer on the sections drawing: its tagline, three link columns, the newsletter as its own column, legal links beside the copyright. */
+export const Vitaheal: Story = {
   decorators: [withStorefront({ channelId: 'vitaheal-demo' })],
+}
+
+/** Daybloom's footer: the classic drawing. */
+export const Classic: Story = {
+  decorators: [withStorefront({ channelId: 'daybloom-demo' })],
 }

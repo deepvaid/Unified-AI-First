@@ -150,6 +150,21 @@ test('a row with nothing to say is left out; a section without rows shows the de
   assert.deepEqual(productRows(custom, bare, { sizeGuide: false }).map((r) => r.paragraphs), [['Wrapped in paper.', 'With a card.']])
 })
 
+test('a row set to show only on products sold on a plan is left off a product no plan offers', () => {
+  const bare = { detail: { description: 'Plain.' } }
+  const blocks = [
+    { id: 'plans', kind: 'collapsible-row', settings: { title: 'How subscriptions work', source: 'custom', text: 'Save 20%.', plansOnly: true } },
+    { id: 'gift', kind: 'collapsible-row', settings: { title: 'Gift wrap', source: 'custom', text: 'Wrapped in paper.', plansOnly: false } },
+  ]
+  const titles = (opts: { sizeGuide: boolean; hasPlans?: boolean }) => productRows(blocks, bare, opts).map((r) => r.title)
+  assert.deepEqual(titles({ sizeGuide: false, hasPlans: true }), ['How subscriptions work', 'Gift wrap'])
+  assert.deepEqual(titles({ sizeGuide: false, hasPlans: false }), ['Gift wrap'])
+  assert.deepEqual(titles({ sizeGuide: false }), ['Gift wrap'], 'a page that does not say the product has plans shows it none')
+  // A row without the setting shows on every product, as it always did (Northfold's rows).
+  const detail = home.theme.templates.product.find((s) => s.kind === 'product-detail')!
+  assert.deepEqual(productRows(detail.blocks, overshirt, { sizeGuide: true, hasPlans: false }), productRows(detail.blocks, overshirt, { sizeGuide: true }))
+})
+
 test('a row’s source may be written as the builder labels it', () => {
   assert.equal(rowSource('Fit and sizing'), 'fit')
   assert.equal(rowSource('Fabric and care'), 'fabric-care')

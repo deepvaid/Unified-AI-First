@@ -1,5 +1,5 @@
 /*
- * P5.5 exemption — the stores drawn here are a MERCHANT's (Northfold's, Torqline's, Lumos's),
+ * P5.5 exemption — the stores drawn here are a MERCHANT's (Northfold's, Torqline's, Lumos's, Vitaheal's),
  * the content the storefront draws, not Marobase chrome. Same line Phase 4 drew for the
  * storefront (DESIGN_AUDIT.md P4-8).
  */
@@ -11,6 +11,7 @@ import type { Product } from '@/stores/useCommerce'
 import { demoStoreFor } from '@/storefront/demoStores'
 import { contextFor, snapshotFor } from '@/storefront/demoStores/install'
 import { LUMOS_BLUEPRINT } from '@/storefront/demoStores/lumos'
+import { VITAHEAL_BLUEPRINT } from '@/storefront/demoStores/vitaheal'
 import { checkoutProfile } from '@/storefront/checkoutProfile'
 import { fitState } from '@/storefront/fitment'
 import type { FitmentProduct, Vehicle } from '@/storefront/fitment'
@@ -30,6 +31,8 @@ import { northfold } from './storefrontStoryFixtures'
 // pieces read (money, links, the store, the announcer). The parts stories draw
 // Torqline Auto Parts (demo) the same way, with a vehicle chosen or not, and the
 // Boxed card and wishlist stories draw Lumos Home (demo), whose theme has a wishlist.
+// The subscription stories draw Vitaheal (demo): Boxed cards, in kronor, with its plans
+// (the subscriptions store seeds them for its channel, as the app does).
 
 const CHANNEL = demoStoreFor('northfold').homeChannel
 const BASE = `/accounts/2000290/sales_channels/${CHANNEL.id}/storefront`
@@ -251,6 +254,79 @@ export function lumosStore(query: Record<string, string> = {}, page = 'collectio
       provide(STOREFRONT, lumosContext)
       const ready = ref(false)
       void useRouter().replace({ path: `${LUMOS_BASE}/${page}`, query }).finally(() => { ready.value = true })
+      return { ready }
+    },
+    template: '<story v-if="ready" />',
+  })
+}
+
+// ── Vitaheal (demo) ──────────────────────────────────────────────────────────
+
+const VITAHEAL_CHANNEL = VITAHEAL_BLUEPRINT.homeChannel
+const VITAHEAL_BASE = `/accounts/2000290/sales_channels/${VITAHEAL_CHANNEL.id}/storefront`
+const VITAHEAL_LOCALE = VITAHEAL_CHANNEL.webStore?.locale
+
+/** Vitaheal as its home channel is seeded, on a fixed day, built from its blueprint. */
+export const vitaheal = VITAHEAL_BLUEPRINT.build(contextFor(VITAHEAL_BLUEPRINT, VITAHEAL_CHANNEL, '2026-11-25'))
+
+/** Vitaheal's eight supplements, as the store sells them. */
+export const vitahealShelf: Product[] = vitaheal.products.map((p) => ({ ...p, status: p.inventory > 0 ? 'In Stock' : 'Out of Stock' }))
+
+export function vitahealProduct(name: string): Product {
+  const product = vitahealShelf.find((p) => p.name === name)
+  if (!product) throw new Error(`No Vitaheal product "${name}"`)
+  return product
+}
+
+/** Vitaheal's storefront: its own theme and chrome, in kronor (whole kronor shown, öre charged), no wishlist. */
+const vitahealContext = {
+  ...context,
+  channel: computed(() => VITAHEAL_CHANNEL),
+  theme: computed(() => ({ ...vitaheal.theme, channelId: VITAHEAL_CHANNEL.id, status: 'Published' as const, updatedAt: vitaheal.theme.publishedAt })),
+  chrome: computed(() => vitaheal.chrome),
+  link: (href: string) => (/^[a-z][a-z0-9+.-]*:/i.test(href) ? href : href === '/' ? VITAHEAL_BASE : `${VITAHEAL_BASE}${href.startsWith('/') ? '' : '/'}${href}`),
+  currency: computed(() => 'SEK'),
+  formatMoney: (amount: Money) => formatStorePrice(roundForDisplay(amount), VITAHEAL_LOCALE),
+  formatExact: (amount: Money) => formatStorePrice(amount, VITAHEAL_LOCALE),
+  ownMoneyFormat: computed(() => true),
+  checkout: computed(() => checkoutProfile('SEK')),
+  sizeCharts: computed(() => []),
+  wishlist: computed(() => false),
+} as unknown as StorefrontContext
+
+/** Vitaheal's page around a story: its theme's colours, fonts, corners and controls, as StorefrontLayout gives them. */
+export function vitahealFrame(width = '300px', padding = '24px'): Decorator {
+  const style = {
+    ...storefrontThemeVars(vitaheal.theme.styles),
+    ...storefrontControlVars(vitaheal.theme.styles),
+    '--sf-gutter': '24px',
+    '--sf-measure': '1200px',
+    boxSizing: 'border-box',
+    maxWidth: width,
+    padding,
+    background: 'var(--sf-bg)',
+    color: 'var(--sf-text)',
+    fontFamily: 'var(--sf-body-font), system-ui, sans-serif',
+    fontSize: '16px',
+    lineHeight: '24px',
+  }
+  return () => ({
+    setup: () => ({ style }),
+    template: '<div :style="style"><story /></div>',
+  })
+}
+
+/**
+ * Provides Vitaheal to the story, and starts it on `page` (the Subscription collection by
+ * default). Its cart is the app's, kept in this browser: pair it with `isolateStorage`.
+ */
+export function vitahealStore(query: Record<string, string> = {}, page = 'collections/subscription'): Decorator {
+  return (story) => ({
+    components: { story },
+    setup() {
+      provide(STOREFRONT, vitahealContext)
+      const ready = ref(false)
+      void useRouter().replace({ path: `${VITAHEAL_BASE}/${page}`, query }).finally(() => { ready.value = true })
       return { ready }
     },
     template: '<story v-if="ready" />',

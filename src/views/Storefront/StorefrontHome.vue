@@ -7,6 +7,7 @@ import StorefrontProductCard from './StorefrontProductCard.vue'
 import { STOREFRONT } from './storefrontContext'
 import { inStock, storefrontProducts } from './storefrontCatalog'
 import { BANNER_KINDS, sectionComponent } from './sections'
+import IconRow from './sections/IconRow.vue'
 
 // The storefront home page: the current theme's home template, section by
 // section. The header and footer belong to StorefrontLayout. Featured products
@@ -16,7 +17,8 @@ import { BANNER_KINDS, sectionComponent } from './sections'
 // without one a banner or card keeps its drawn stand-in.
 // A theme on the sections drawing (Northfold, Torqline) is drawn section by section
 // through the components in ./sections (one per kind); the classic drawing below is
-// every other theme's, unchanged.
+// every other theme's. It draws an icon row (a strip of promises, as Daybloom's
+// home page has) with the sections drawing's own component.
 
 const storefront = inject(STOREFRONT)!
 const commerce = useCommerceStore()
@@ -189,6 +191,8 @@ function looped(section: ThemeSection): ThemeBlock[] {
           <StorefrontProductCard v-for="product in featured(section)" :key="product.id" :product="product" />
         </div>
       </section>
+
+      <IconRow v-else-if="section.kind === 'icon-row'" :section="section" class="sf-promises" />
 
       <div v-else-if="section.kind === 'announcement-bar'" class="sf-announcement">{{ storefront.campaignMessage.value || text(section, 'text') }}</div>
     </template>
@@ -416,6 +420,12 @@ function looped(section: ThemeSection): ThemeBlock[] {
 
 .sf-story__button:hover {
   text-decoration: none !important;
+}
+
+/* The icon row keeps the classic page's rhythm: 48px above, like its neighbours. */
+.sf-home .sf-promises {
+  max-width: 1200px;
+  padding: 48px 24px 0;
 }
 
 .sf-richtext {

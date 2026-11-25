@@ -27,6 +27,8 @@ export const NORTHFOLD_CAMPAIGN_CONTENT_ID = 9002
 export const TORQLINE_CAMPAIGN_CONTENT_ID = 9003
 /** The Lumos Home (demo) store's campaign announcement (src/storefront/demoStores/lumos.ts). */
 export const LUMOS_CAMPAIGN_CONTENT_ID = 9004
+/** The email content a Daybloom store campaign is announced with (9005 is kept for Aurora Outdoor). */
+export const DAYBLOOM_CAMPAIGN_CONTENT_ID = 9006
 
 export interface ContentItem {
   id: number
@@ -198,6 +200,17 @@ function seedContent(): ContentItem[] {
     editorType: 'Drag & Drop',
     createdAt: new Date(Date.now() - 43_200_000).toISOString(),
     updatedAt: new Date(Date.now() - 180_000).toISOString(),
+    folderId: null,
+    archived: false,
+    usedByCampaigns: 0,
+  })
+  // The Daybloom (demo) store's, after that.
+  out.push({
+    id: DAYBLOOM_CAMPAIGN_CONTENT_ID,
+    name: 'Daybloom: campaign announcement',
+    editorType: 'Drag & Drop',
+    createdAt: new Date(Date.now() - 21_600_000).toISOString(),
+    updatedAt: new Date(Date.now() - 300_000).toISOString(),
     folderId: null,
     archived: false,
     usedByCampaigns: 0,

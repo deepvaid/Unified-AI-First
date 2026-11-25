@@ -147,6 +147,53 @@ export function initialSelection(product: VariantProduct, query: Readonly<Record
 }
 
 /**
+ * The choice of the lowest-priced variant a shopper can buy (the first of any that
+ * cost the same), for a product page that opens on it: Unwind opens on Bag at 399 kr
+ * rather than "From 399 kr". With `given`, among the variants that come with those
+ * values (the cheapest in Sand). Empty when nothing can be bought, or there is no choice.
+ */
+export function cheapestSelection<V extends SellableVariant & { price: string }>(product: VariantProduct<V>, given: VariantSelection = {}): Record<string, string> {
+  const options = product.detail?.options ?? []
+  if (!options.length) return {}
+  const cost = (variant: V) => {
+    const price = Number.parseFloat(variant.price)
+    return Number.isFinite(price) ? price : Infinity
+  }
+  const fits = (variant: V) => {
+    const values = optionValuesOf(variant, options)
+    return options.every((option, i) => given[option.name] === undefined || values[i] === given[option.name])
+  }
+  const cheapest = (product.detail?.variantsList ?? []).filter((variant) => variantAvailable(variant) && fits(variant))
+    .reduce<V | undefined>((best, variant) => (!best || cost(variant) < cost(best) ? variant : best), undefined)
+  if (!cheapest) return {}
+  const values = optionValuesOf(cheapest, options)
+  const selection: Record<string, string> = {}
+  options.forEach((option, i) => {
+    if (values[i]) selection[option.name] = values[i]!
+  })
+  return selection
+}
+
+/**
+ * What a page that opens on the lowest-priced choice has chosen: what the URL names
+ * (as `initialSelection` reads it), the rest from the cheapest variant that comes with
+ * it, then the usual start for anything still open. `?format=can` opens Unwind on Can;
+ * no query opens it on Bag.
+ */
+export function cheapestInitialSelection<V extends SellableVariant & { price: string }>(
+  product: VariantProduct<V>,
+  query: Readonly<Record<string, string | undefined>> = {},
+): Record<string, string> {
+  const usual = initialSelection(product, query)
+  const named = Object.fromEntries(Object.entries(usual).filter(([name]) => query[optionKey(name)] !== undefined))
+  const selection = { ...named, ...cheapestSelection(product, named) }
+  for (const [name, value] of Object.entries(usual)) {
+    if (selection[name] === undefined && valueState(product, selection, name, value) !== 'absent') selection[name] = value
+  }
+  return selection
+}
+
+/**
  * How a chosen variant reads on a cart line, an order and the checkout: sizes
  * first, then the other values, "Size M · Black" or "Front". Empty for a product
  * without options.

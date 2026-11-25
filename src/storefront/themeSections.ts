@@ -21,6 +21,10 @@ export interface StoreFacts {
   sizes: boolean
   /** Its products carry specifications or a warranty (a part's, a sofa's dimensions and materials). */
   specs: boolean
+  /** It has subscription plans. The builder is told so; `storeFacts` does not look for them. */
+  subscriptions?: boolean
+  /** A product of it carries a table of facts (a supplement's facts). The builder is told so, like `subscriptions`. */
+  facts?: boolean
 }
 
 export type StoreNeed = keyof StoreFacts
@@ -67,6 +71,8 @@ export function accentParts(text: string, accent?: string): { text: string; acce
 export interface ThemeSectionField {
   key: string
   label: string
+  /** One plain line under a toggle in the builder, when the label alone does not say what it does. */
+  hint?: string
   /** 'collection': one of the store's collections (its handle), or 'all'. */
   type: 'text' | 'textarea' | 'select' | 'color' | 'toggle' | 'slider' | 'collection'
   options?: string[]
@@ -149,6 +155,12 @@ export interface ThemeBlockDef {
   drawing?: 'sections'
   /** The most a section holds, as the drawing shows no more (a banner's three stats), and why, for the builder to say. */
   limit?: { max: number; reason: string }
+  /** Offered only to a store that sells this (purchase options, to a store with subscription plans). */
+  requires?: StoreNeed
+  /** A section holds one at most (a product page's purchase options). */
+  unique?: boolean
+  /** Shown under the block's settings in the builder. */
+  note?: string
 }
 
 export interface ThemeSection {
@@ -629,15 +641,21 @@ export const sectionCatalog: ThemeSectionDef[] = [
     description: 'Gallery, price, and buy box for the product template.',
     category: 'Commerce',
     unique: true,
-    // Collapsible rows under the buy box, on the sections drawing (the block is drawn there only).
+    // Collapsible rows under the buy box, and how a store with subscription plans offers
+    // them in the buy box. Both drawings draw the purchase options in the buy box.
     acceptsBlocks: true,
-    blocks: ['collapsible-row'],
+    blocks: ['collapsible-row', 'purchase-options'],
     fields: [
       { key: 'galleryLayout', label: 'Gallery layout', type: 'select', options: ['Thumbnails', 'Stacked'] },
       { key: 'imageRatio', label: 'Image shape', type: 'select', options: ['Portrait', 'Square', 'Landscape'], drawing: 'sections' },
       { key: 'sizeGuide', label: 'Size guide link', type: 'toggle', drawing: 'sections', requires: 'sizes' },
       // An auto-parts store: whether the part fits the shopper's vehicle, under the title.
       { key: 'fitment', label: 'Vehicle fit banner', type: 'toggle', drawing: 'sections', requires: 'parts' },
+      // The page opens with the cheapest variant chosen (Bag, not "From 399 kr" and "Select a format").
+      { key: 'preselectVariant', label: 'Open on the lowest-priced choice', type: 'toggle', drawing: 'sections', hint: 'The page opens with the cheapest variant already chosen.' },
+      { key: 'quantity', label: 'Quantity selector', type: 'toggle', drawing: 'sections', hint: 'A − 1 + stepper beside Add to cart.' },
+      // "In stock, ready to ship", or "Only 2 left", under the price.
+      { key: 'stockLine', label: 'Stock line', type: 'toggle', drawing: 'sections', hint: 'Shows “In stock, ready to ship” or “Only 2 left” under the price.' },
       { key: 'showReviews', label: 'Show reviews', type: 'toggle' },
     ],
   },
@@ -675,19 +693,18 @@ export const sectionCatalog: ThemeSectionDef[] = [
     category: 'Content',
     acceptsBlocks: true,
     blocks: ['feature'],
-    drawing: 'sections',
     variants: [
       { id: 'plain', label: 'Plain', description: 'Icons between two hairlines', preset: { tileStyle: 'Plain' } },
-      { id: 'cards', label: 'Cards', description: 'Each promise on its own card', preset: { tileStyle: 'Card', alignment: 'Center' } },
+      { id: 'cards', label: 'Cards', description: 'Each promise on its own card', preset: { tileStyle: 'Card', alignment: 'Center' }, drawing: 'sections' },
     ],
     fields: [
-      { key: 'eyebrow', label: 'Line above the heading', type: 'text', templates: ['home'] },
+      { key: 'eyebrow', label: 'Line above the heading', type: 'text', templates: ['home'], drawing: 'sections' },
       { key: 'title', label: 'Heading', type: 'text' },
-      { key: 'subtitle', label: 'Line under the heading', type: 'text', templates: ['home'] },
+      { key: 'subtitle', label: 'Line under the heading', type: 'text', templates: ['home'], drawing: 'sections' },
       // Unset, the promises are centred (the heading keeps to the left).
-      { key: 'alignment', label: 'Alignment', type: 'select', options: ['Left', 'Center'], default: 'Center', templates: ['home'] },
+      { key: 'alignment', label: 'Alignment', type: 'select', options: ['Left', 'Center'], default: 'Center', templates: ['home'], drawing: 'sections' },
       // Plain: icons between two hairlines. Card: each on a card, its icon in a tinted circle.
-      { key: 'tileStyle', label: 'Style', type: 'select', options: ['Plain', 'Card'], optionLabels: { Plain: 'Plain', Card: 'Cards' }, default: 'Plain', templates: ['home'] },
+      { key: 'tileStyle', label: 'Style', type: 'select', options: ['Plain', 'Card'], optionLabels: { Plain: 'Plain', Card: 'Cards' }, default: 'Plain', templates: ['home'], drawing: 'sections' },
     ],
   },
   {
@@ -829,6 +846,7 @@ export const COLLAPSIBLE_SOURCES: Readonly<Record<string, string>> = {
   description: 'Product description',
   fit: 'Fit note and size guide',
   'fabric-care': 'Material and care',
+  facts: 'Product facts table',
   specs: 'Specifications (from the product)',
   fitment: 'Vehicle compatibility table',
   warranty: 'Warranty (from the product)',
@@ -841,10 +859,57 @@ const PART_SOURCE_LABELS: Readonly<Record<string, string>> = { specs: 'Part spec
 
 /**
  * The row contents only some stores have: the vehicle table (a parts store), the fit note
- * and size guide (a store with sizes), specifications and a warranty (a store whose
- * products carry them: a part's, a sofa's dimensions and materials).
+ * and size guide (a store with sizes), a table of facts (a store whose products carry one:
+ * a supplement's), specifications and a warranty (a store whose products carry them: a
+ * part's, a sofa's dimensions and materials).
  */
-const COLLAPSIBLE_SOURCE_NEEDS: Readonly<Record<string, StoreNeed>> = { fit: 'sizes', specs: 'specs', fitment: 'parts', warranty: 'specs' }
+const COLLAPSIBLE_SOURCE_NEEDS: Readonly<Record<string, StoreNeed>> = { fit: 'sizes', facts: 'facts', specs: 'specs', fitment: 'parts', warranty: 'specs' }
+/** How a product page lays out its purchase options. */
+export const PURCHASE_OPTION_STYLES = ['Cards', 'Radio buttons', 'Dropdown'] as const
+export type PurchaseOptionStyle = (typeof PURCHASE_OPTION_STYLES)[number]
+/** What a product page opens on. "Subscription" is the plan's default delivery option. */
+export const PURCHASE_DEFAULT_SELECTIONS = ['One-time purchase', 'Subscription'] as const
+
+/** A store's purchase options block, as the storefront reads it. */
+export interface PurchaseOptionsSettings {
+  style: PurchaseOptionStyle
+  /** The product page opens on the subscription instead of buying once. */
+  subscriptionFirst: boolean
+  /** One line under the options ("Pause or cancel any time."); empty for none. */
+  policyText: string
+  /** Where "Subscription terms" leads; empty for no link. */
+  termsLink: string
+  /** Product cards say "Subscribe available" on a product that is on a plan. */
+  cardBadge: boolean
+}
+
+/**
+ * What a theme's product template says about purchase options: the settings of its
+ * purchase options block, or `null` when it has none (the options then show as
+ * they always did: cards, and no line or badge).
+ */
+export function purchaseOptionsSettings(theme: { templates: Partial<Record<TemplateType, ThemeSection[]>> } | undefined): PurchaseOptionsSettings | null {
+  return purchaseOptionsOf(theme?.templates.product?.find((s) => s.kind === 'product-detail' && !s.hidden))
+}
+
+/**
+ * The purchase options block of one product-detail section, as the storefront reads
+ * it: the section a product page draws, hidden or not. `null` without the block.
+ */
+export function purchaseOptionsOf(section: Pick<ThemeSection, 'blocks'> | undefined): PurchaseOptionsSettings | null {
+  const settings = section?.blocks?.find((block) => block.kind === 'purchase-options')?.settings
+  if (!settings) return null
+  const style = PURCHASE_OPTION_STYLES.find((name) => name === settings.style) ?? 'Cards'
+  const line = (key: string) => (typeof settings[key] === 'string' ? (settings[key] as string).trim() : '')
+  return {
+    style,
+    subscriptionFirst: settings.defaultSelection === 'Subscription',
+    policyText: line('policyText'),
+    termsLink: line('termsLink'),
+    cardBadge: settings.cardBadge === true,
+  }
+}
+
 // Blocks nest inside block-accepting sections (hero, image-banner, rich-text,
 // featured-products, collection-grid). Fields reuse ThemeSectionField so the
 // same schema-driven settings renderer applies to blocks.
@@ -908,7 +973,6 @@ export const blockCatalog: ThemeBlockDef[] = [
     kind: 'feature',
     title: 'Feature',
     icon: 'badge-check',
-    drawing: 'sections',
     fields: [
       { key: 'icon', label: 'Icon', type: 'select', options: Object.keys(FEATURE_ICONS), optionLabels: FEATURE_ICONS },
       { key: 'title', label: 'Title', type: 'text' },
@@ -921,13 +985,14 @@ export const blockCatalog: ThemeBlockDef[] = [
     kind: 'collapsible-row',
     title: 'Collapsible row',
     icon: 'list-collapse',
-    drawing: 'sections',
     fields: [
       { key: 'title', label: 'Title', type: 'text' },
       { key: 'source', label: 'Content', type: 'select', options: Object.keys(COLLAPSIBLE_SOURCES), optionLabels: COLLAPSIBLE_SOURCES, optionLabelsFor: { parts: PART_SOURCE_LABELS }, optionRequires: COLLAPSIBLE_SOURCE_NEEDS },
-      // A product's rows come from the product, so they take no text.
-      { key: 'text', label: 'Text', type: 'textarea', hideWhen: { key: 'source', values: ['specs', 'fitment', 'warranty'] } },
+      // A row filled from the product (its facts, a part's rows, a sofa's specifications) takes no text.
+      { key: 'text', label: 'Text', type: 'textarea', hideWhen: { key: 'source', values: ['facts', 'specs', 'fitment', 'warranty'] } },
       { key: 'open', label: 'Open when the page loads', type: 'toggle' },
+      // A row about the plans ("How subscriptions work"), left off a product no plan offers.
+      { key: 'plansOnly', label: 'Only on products sold on a plan', type: 'toggle', requires: 'subscriptions', hint: 'Hidden on a product that no subscription plan offers.' },
     ],
   },
   {
@@ -953,6 +1018,23 @@ export const blockCatalog: ThemeBlockDef[] = [
       { key: 'link', label: 'Link', type: 'text' },
     ],
   },
+  {
+    // How a product's subscription plans are offered in the buy box. Which plans there
+    // are, and on which products, is Commerce › Subscriptions › Plans.
+    kind: 'purchase-options',
+    title: 'Purchase options',
+    icon: 'repeat',
+    requires: 'subscriptions',
+    unique: true,
+    note: 'These settings are for the whole store. Plans and their products are set in Commerce › Subscriptions › Plans.',
+    fields: [
+      { key: 'style', label: 'Style', type: 'select', options: [...PURCHASE_OPTION_STYLES] },
+      { key: 'defaultSelection', label: 'Default selection', type: 'select', options: [...PURCHASE_DEFAULT_SELECTIONS] },
+      { key: 'policyText', label: 'Policy text', type: 'text' },
+      { key: 'termsLink', label: 'Subscription terms link', type: 'text' },
+      { key: 'cardBadge', label: 'Show “Subscribe available” badge on product cards', type: 'toggle' },
+    ],
+  },
 ]
 
 /** Default settings applied when a block of the given kind is created. */
@@ -968,6 +1050,7 @@ const blockDefaults: Record<string, Record<string, string | number | boolean>> =
   'collapsible-row': { title: 'Details', source: 'custom', text: '', open: false },
   stat: { value: '100+', label: 'Happy customers' },
   logo: { name: 'Brand name', link: '/collections/all' },
+  'purchase-options': { style: 'Cards', defaultSelection: 'One-time purchase', policyText: 'Pause or cancel any time.', termsLink: '', cardBadge: true },
 }
 
 export function getBlockDef(kind: string): ThemeBlockDef | undefined {
@@ -1007,10 +1090,10 @@ const OWN_BLOCKS = new Set(sectionCatalog.flatMap((def) => def.blocks ?? []))
  * them (and the general ones too when it says so: an image banner's buttons beside its
  * stats), else the general blocks when it accepts blocks, else none.
  */
-export function blocksFor(kind: string, drawing: Drawing): ThemeBlockDef[] {
+export function blocksFor(kind: string, drawing: Drawing, facts: StoreFacts = NO_FACTS): ThemeBlockDef[] {
   const def = getSectionDef(kind)
   if (!def?.acceptsBlocks) return []
-  const usable = blockCatalog.filter(forDrawing(drawing))
+  const usable = blockCatalog.filter((block) => forDrawing(drawing)(block) && forStore(facts)(block))
   const own = def.blocks ?? []
   if (own.length && !def.generalBlocks) return usable.filter((block) => own.includes(block.kind))
   return usable.filter((block) => !OWN_BLOCKS.has(block.kind) || own.includes(block.kind))

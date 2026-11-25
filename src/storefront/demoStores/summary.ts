@@ -37,6 +37,7 @@ const ASSISTANT_KINDS: Record<AssistantProfileId, string> = {
   apparel: 'a clothing store',
   'auto-parts': 'an auto parts store',
   home: 'a furniture and home store',
+  supplements: 'a supplements store',
 }
 
 /** What a store holds now, as Apply and Restore count it. */
@@ -214,6 +215,24 @@ export function restoreParts(facts: Pick<RestoreFacts, 'plans' | 'sizeCharts'>):
   if (facts.plans) return { card: 'Products, subscription plans and subscribers' }
   if (facts.sizeCharts) return { card: 'Products, size charts and campaigns' }
   return { card: 'Products and campaigns' }
+}
+
+/** The store runs an earlier look of the theme it runs now, kept in this browser (useStoreThemes().earlierLookOf). */
+export interface EarlierLook {
+  /** The theme, as the library names it: "Vitaheal". */
+  name: string
+  /** Its version in the library now: "2.0". */
+  version: string
+  /** The theme was applied to the store, so a restore takes the store back to the theme it started from (or blank), not to this one. */
+  applied: boolean
+}
+
+/** What the Themes page and the Store data card say about it, beside Restore original store. */
+export function earlierLookMessage(look: EarlierLook): string {
+  const runs = `This store runs an earlier ${look.name} look that was edited in this browser.`
+  return look.applied
+    ? `${runs} To get ${look.name} ${look.version}, restore the original store, then apply ${look.name} again.`
+    : `${runs} Restore original store to get ${look.name} ${look.version}.`
 }
 
 /** What a store made from a theme starts with, for the Review step of Create sales channel. Null theme: blank. */

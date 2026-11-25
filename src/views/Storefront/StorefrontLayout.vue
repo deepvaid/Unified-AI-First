@@ -12,8 +12,7 @@ import { useStorefrontStore } from '@/stores/useStorefront'
 import type { Money } from '@/maropay/money'
 import { storefrontOffer } from '@/maropay/storefront'
 import { activeCampaign } from '@/storefront/campaigns'
-import { storesWithOwnCatalogue } from '@/storefront/catalog'
-import { merchandisingStatus } from '@/utils/merchandisingChannels'
+import { canSearch } from '@/storefront/storeSearch'
 import { checkoutProfile } from '@/storefront/checkoutProfile'
 import { formatStorePrice } from '@/storefront/price'
 import { chartFor } from '@/storefront/sizeCharts'
@@ -86,11 +85,8 @@ function offerFor(amount: Money) {
 // A running campaign's message takes the store's announcement bar for as long as it runs.
 const campaignMessage = computed(() => activeCampaign(useStoreCampaignsStore().campaigns, channelId.value)?.offer?.message.trim() ?? '')
 
-// Search is Merchandise Cloud's: a store has it once it is connected. It runs on the store's own
-// products, so a store on the shared catalogue keeps the header it had.
-const searchable = computed(() => !!found.value
-  && merchandisingStatus(found.value) === 'connected'
-  && storesWithOwnCatalogue(useCommerceStore().products).includes(found.value.id))
+// Search is Merchandise Cloud's: a store has it once it is connected (canSearch, the rule the admin's previews share).
+const searchable = computed(() => canSearch(found.value, useCommerceStore().products))
 
 // The richer theme drawing (Northfold, Torqline) and what its pieces read: the store's size charts.
 const sectionsDrawing = computed(() => theme.value?.styles.drawing === 'sections')

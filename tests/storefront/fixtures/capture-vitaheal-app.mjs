@@ -13,6 +13,10 @@
 //   git worktree remove ../vitaheal-before
 //
 // Packages resolve from this repo's node_modules, so the worktree needs no install.
+//
+// Patched once since, on 2026-11-24 (feedback round): Vitaheal's products were given their
+// facts (`detail.specs`) on purpose, so `fresh.products` was replaced with today's; a check
+// confirmed nothing else in either scenario had changed, and nothing but `specs` in a product.
 import { setMaxListeners } from 'node:events'
 import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { register } from 'node:module'

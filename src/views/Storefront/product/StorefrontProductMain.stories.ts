@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/vue3'
 import { isolateStorage, overlayDocs } from '@/stories/decorators'
 import type { Product } from '@/stores/useCommerce'
 import { northfold, northfoldProduct, storefrontFrame } from '../storefrontStoryFixtures'
-import { provideNorthfold } from './productStoryFixtures'
+import { provideNorthfold, provideVitaheal, vitaheal, vitahealFrame, vitahealProduct } from './productStoryFixtures'
 import StorefrontProductMain from './StorefrontProductMain.vue'
 
 const section = northfold.theme.templates.product.find((s) => s.kind === 'product-detail')!
@@ -37,6 +37,13 @@ theme, and the section exactly as Northfold's product template has it.
   seconds, "Added to your cart · Size M · Sand" with "View cart (1)" shows under it, and a screen
   reader hears it. A sold-out choice reads "Sold out" and sends focus back to the sizes.
 - **Buy now** goes to the checkout with just this choice: \`?buy=3015&variant=301503&qty=1\`.
+- **Purchase options** on a store with subscription plans (Vitaheal): StorefrontPurchaseOptions
+  under the choices, laid out as the section's purchase options block says, priced from the chosen
+  variant. With a plan chosen the button reads "Add subscription to cart", the line carries the plan
+  ("Added to your cart · Bag · 3-month supply") and Buy now is hidden, as it buys once.
+- **Section toggles** for the sections drawing, each off until set: \`preselectVariant\` opens on
+  the lowest-priced choice (a choice in the URL still wins), \`quantity\` adds a stepper before Add
+  to cart, \`stockLine\` says "In stock, ready to ship" (or "Only 2 left") under the price.
 - **Rows** from the section's \`collapsible-row\` blocks (StorefrontProductRows).
 - On a **desktop** the buy box stays beside the photos as they scroll (sticky, under a sticky
   header; one taller than the window sticks by its foot). The choices and the buttons carry
@@ -81,6 +88,18 @@ export const OnAPhone: Story = {
 /** The thumbnail layout of the same section, for a theme that sets it. */
 export const ThumbnailGallery: Story = {
   args: { section: { ...section, settings: { ...section.settings, galleryLayout: 'Thumbnails' } } },
+}
+
+/**
+ * Vitaheal's Unwind, on its two plans: "3-month supply" is chosen first, so the button reads
+ * "Add subscription to cart" and Buy now is hidden. Choose One-time purchase to see Buy now.
+ */
+export const Subscription: Story = {
+  args: {
+    product: { ...vitahealProduct('Unwind'), status: 'Active' } as Product,
+    section: vitaheal.theme.templates.product.find((s) => s.kind === 'product-detail')!,
+  },
+  decorators: [vitahealFrame('1200px'), provideVitaheal],
 }
 
 /** The size guide open from the Size guide link. */

@@ -17,6 +17,7 @@ import { useDemoStores } from '@/stores/useDemoStores'
 import { useMaropayStore } from '@/stores/useMaropay'
 import { MAX_QTY, lineTotal, useStorefrontCartStore } from '@/stores/useStorefrontCart'
 import { useStorefrontShopperStore } from '@/stores/useStorefrontShopper'
+import { purchaseOptionsSettings } from '@/storefront/themeSections'
 import { deliverySummary, nextChargeDate, recurringCharges } from '@/subscriptions/plans'
 import StorefrontAnchor from './StorefrontAnchor.vue'
 import StorefrontCardFields from './StorefrontCardFields.vue'
@@ -61,6 +62,9 @@ const profile: SnapshotCheckout = useDemoStores().snapshotOf(channelId.value)?.c
 /** Click & collect is offered unless the store says it has no counter to collect from. */
 const pickupOffered = profile.pickup !== false
 const storeName = computed(() => storefront.chrome.value.wordmark)
+// What the store's theme says about its subscriptions (the product page's purchase options
+// block): its promise and its terms are one press away from the consent they belong to.
+const subscriptionPolicy = computed(() => purchaseOptionsSettings(storefront.theme.value))
 
 function query(key: string): string | null {
   const value = route.query[key]
@@ -159,7 +163,8 @@ const nextCharge = computed(() => {
   const s = session.value
   if (!s?.order) return null
   const dates = s.lineItems.flatMap((l) => (l.plan ? [nextChargeDate(s.order!.date, l.plan)] : [])).sort()
-  return dates[0] ? new Date(`${dates[0]}T00:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : null
+  // The way the store writes dates: "December 24, 2026", or "24 December 2026" for a store that writes amounts its own way.
+  return dates[0] ? new Date(`${dates[0]}T00:00:00`).toLocaleDateString(storefront.ownMoneyFormat.value ? 'en-GB' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric' }) : null
 })
 
 function iconFor(line: CheckoutLineItem): string {
@@ -576,6 +581,13 @@ const storePaymentsHref = computed(() => router.resolve({ name: MAROPAY_STORE_RO
               </span>
             </label>
             <span v-if="errorFor('consent')" id="sf-co-consent-err" class="sf-field__error">{{ errorFor('consent') }}</span>
+            <!-- A new tab, so what is typed here stays. -->
+            <p v-if="subscriptionPolicy?.policyText || subscriptionPolicy?.termsLink" class="sf-co__terms">
+              {{ subscriptionPolicy.policyText }}
+              <a v-if="subscriptionPolicy.termsLink" :href="router.resolve(storefront.link(subscriptionPolicy.termsLink)).href" target="_blank" rel="noopener">
+                Subscription terms<span class="sf-co__hidden"> (opens in a new tab)</span>
+              </a>
+            </p>
           </div>
 
           <div v-if="message" class="sf-co__alert" role="alert">
@@ -985,6 +997,29 @@ legend.sf-co__step-title {
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+/* Under the consent, level with its words: the box is 18px and its gap is the label's. */
+.sf-co__terms {
+  margin: 0;
+  color: var(--sf-muted, #5f5f5f);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.sf-co__terms a {
+  color: var(--sf-text, #121011);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.sf-co__hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
 /* A label of several lines keeps its box level with the first one. */

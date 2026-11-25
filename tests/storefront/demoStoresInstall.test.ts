@@ -77,7 +77,8 @@ test('Vitaheal keeps its seeded ids on its home channel', () => {
 })
 
 test('ids never repeat across every store and blueprint, and each install stays in its block', () => {
-  const stores = [...DEMO_STORES.map((b) => b.homeChannel), ...[7, 8, 9, 10, 11, 42, 99].map((slot) => store(`store-${slot}`, slot))]
+  // Stand-in stores on slots no demo store's own channel has (2-5 and 7 are theirs; 6 is kept for Aurora).
+  const stores = [...DEMO_STORES.map((b) => b.homeChannel), ...[8, 9, 10, 11, 42, 99].map((slot) => store(`store-${slot}`, slot))]
   const seen = { products: new Set<number>(), variants: new Set<number>(), collections: new Set<number>() }
   for (const channel of stores) {
     for (const blueprint of DEMO_STORES) {

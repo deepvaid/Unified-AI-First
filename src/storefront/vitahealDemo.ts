@@ -25,6 +25,19 @@
 // the copy is written for this prototype, and the pictures are free-licence stock
 // photos kept in public/storefront/vitaheal (credits in its CREDITS.md), never BKM's.
 //
+// Since the feedback round (2026-11-24) the store carries the health-store features
+// first built for Daybloom: a mega menu in the header, a strip of promises on the home
+// page, a table of facts on every product with rows under its description, a line
+// under each collection's title, and the product page's Purchase options block. Its two
+// plans, its prices and its brand are as they were.
+//
+// Since the second feedback round (2026-11-25) it is drawn on the Lumos look: the sections
+// drawing, Inter with uppercase headings, boxed product cards, a hero with a badge and
+// three figures, a carousel of goals, the promises as cards, a search field in the header
+// and the newsletter as a footer column. It keeps its own navy, badges and wordmark, and
+// everything above: the mega menu, the plans and Purchase options, the facts, the
+// promises and the collection lines. Its products, plans and copy did not change.
+//
 // Everything a visitor can see or click must read like a real store: no internal
 // wording, no link to a missing page, and never BKM's name (the test checks that).
 // SKUs and weights are placeholders. It imports only types and the pure rule modules,
@@ -83,7 +96,7 @@ export const VITAHEAL_CHANNEL: SalesChannel = {
 export const VITAHEAL_ADMIN = {
   /** Revenue of the last 30 days, in the store's currency. */
   revenue: '1.9M kr',
-  themeName: 'Vitaheal 1.0',
+  themeName: 'Vitaheal 2.0',
   business: [
     { label: 'Legal name', value: 'Vitaheal AB' },
     { label: 'Business type', value: 'Limited company (aktiebolag)' },
@@ -100,19 +113,53 @@ export const VITAHEAL_ADMIN = {
 
 // ── Theme ────────────────────────────────────────────────────────────────────
 
-/** Navy on white, Figtree, 8px solid buttons, and the two badge colours from the reference theme. */
+/**
+ * Vitaheal's navy and badge colours on the Lumos look: Inter throughout with medium-weight
+ * uppercase headings, uppercase navy buttons with corners of 4, white cards of radius 8
+ * with a soft shadow on a near-white surface, and a pale navy tint behind the goal
+ * carousel. A 1328px page with 56px gutters, a 64px hero headline and 32px section
+ * titles. Drawn with the sections drawing.
+ *
+ * Contrast (WCAG 2.1, checked in tests/storefront/vitahealDemo.test.ts): text on the page
+ * 16.5:1, on the surface 15.8:1, on the tint 15.0:1; muted text on the page 5.8:1, on the
+ * surface 5.5:1, on the tint 5.3:1; white on the navy button 16.0:1, on its hover 12.6:1;
+ * the navy as text on the tint 14.5:1; white on the violet sale badge 4.9:1, and the violet
+ * as a price on a white card 4.9:1; near-black on the lime badge 16.9:1. Form fields are
+ * edged in a mid grey, 3.2:1 on the page and on a card (WCAG 2.1 asks 3:1 of a field's
+ * edge); the hairlines between rows and around cards stay the paler divider.
+ */
 export const VITAHEAL_THEME_STYLES: ThemeStyles = {
   brandColor: '#0a2240',
   accentColor: '#0a2240',
   background: '#ffffff',
-  textColor: '#000000',
-  headingFont: 'Figtree',
-  bodyFont: 'Figtree',
-  cornerRadius: 8,
+  textColor: '#1b1f27',
+  headingFont: 'Inter',
+  bodyFont: 'Inter',
+  cornerRadius: 4,
   buttonStyle: 'solid',
   saleBadgeColor: '#6d52ff',
   customBadgeColor: '#e4ff52',
   soldOutBadgeColor: '#000000',
+  drawing: 'sections',
+  // Read by the sections drawing only.
+  buttonColor: '#0a2240',
+  surfaceColor: '#f8fafc',
+  mutedColor: '#5f6672',
+  dividerColor: '#e5e8ee',
+  headingCase: 'Uppercase',
+  headingWeight: 500,
+  cardColor: '#ffffff',
+  cardRadius: 8,
+  cardShadow: 'Soft',
+  buttonBorderColor: '#0a2240',
+  buttonHoverColor: '#16335c',
+  buttonCase: 'Uppercase',
+  tintColor: '#f1f4f9',
+  measure: 1328,
+  gutter: 56,
+  heroTitleSize: 64,
+  sectionTitleSize: 32,
+  controlBorderColor: '#8c919b',
 }
 
 /** Where the store's photos live, as the browser asks for them (the files are in public/). */
@@ -156,7 +203,11 @@ interface ProductSeed {
   variants: VariantSeed[]
   /** What the product is for first: the product page's breadcrumb uses the first one. */
   collections: VitahealCollection[]
+  /** The product's facts, as its page's "Product facts" row shows them: label and value. */
+  facts: [label: string, value: string][]
 }
+
+const FREE_FROM = 'Gluten, lactose, soy and added sugar'
 
 /** In the order the "All" collection lists them. */
 const PRODUCT_SEEDS: ProductSeed[] = [
@@ -172,6 +223,17 @@ const PRODUCT_SEEDS: ProductSeed[] = [
       { title: 'Bag', sku: 'VTH-UNW-BAG', price: 399, weightKg: 0.28, stock: 96 },
     ],
     collections: ['Sleep', 'Subscription'],
+    facts: [
+      ['Serving size', '1 scoop (6 g)'],
+      ['Servings per pack', '30'],
+      ['Magnesium (as bisglycinate)', '300 mg (80% NRV)'],
+      ['L-theanine', '200 mg'],
+      ['Lemon balm extract', '300 mg'],
+      ['Other ingredients', 'Natural flavour, sweetener (steviol glycosides)'],
+      ['How to take it', 'Stir 1 scoop into warm water about an hour before bed.'],
+      ['Free from', FREE_FROM],
+      ['Made in', 'Sweden'],
+    ],
   },
   {
     id: 2002,
@@ -185,6 +247,18 @@ const PRODUCT_SEEDS: ProductSeed[] = [
       { title: 'Refill', sku: 'VTH-FOC-REF', price: 389, weightKg: 0.1, stock: 88 },
     ],
     collections: ['Sport', 'Subscription'],
+    facts: [
+      ['Serving size', '2 capsules'],
+      ['Servings per pack', '30'],
+      ['L-tyrosine', '500 mg'],
+      ['Rhodiola rosea extract', '200 mg'],
+      ['Vitamin B6', '1.4 mg (100% NRV)'],
+      ['Vitamin B12', '2.5 µg (100% NRV)'],
+      ['Other ingredients', 'Vegetable capsule (hypromellose), rice flour'],
+      ['How to take it', 'Take 2 capsules with breakfast.'],
+      ['Free from', FREE_FROM],
+      ['Made in', 'Sweden'],
+    ],
   },
   {
     id: 2003,
@@ -198,6 +272,16 @@ const PRODUCT_SEEDS: ProductSeed[] = [
       { title: 'Refill', sku: 'VTH-NAD-REF', price: 649, weightKg: 0.09, stock: 60 },
     ],
     collections: ['Longevity', 'Subscription'],
+    facts: [
+      ['Serving size', '1 capsule'],
+      ['Servings per pack', '30'],
+      ['Nicotinamide riboside', '300 mg'],
+      ['Niacin', '16 mg (100% NRV)'],
+      ['Other ingredients', 'Vegetable capsule (hypromellose), rice flour'],
+      ['How to take it', 'Take 1 capsule each morning.'],
+      ['Free from', FREE_FROM],
+      ['Made in', 'Sweden'],
+    ],
   },
   {
     id: 2004,
@@ -207,6 +291,14 @@ const PRODUCT_SEEDS: ProductSeed[] = [
     photo: 'nasal-strips',
     variants: [{ title: 'Default', sku: 'VTH-NSL-30', price: 199, weightKg: 0.04, stock: 210 }],
     collections: ['Sleep', 'Sport'],
+    facts: [
+      ['In the box', '30 strips'],
+      ['Size', 'One size, for adults'],
+      ['Made of', 'A flexible band with a skin-friendly adhesive'],
+      ['How to use it', 'Place one strip across the bridge of a clean, dry nose. Remove it within 12 hours.'],
+      ['Free from', 'Latex and medication'],
+      ['Made in', 'Sweden'],
+    ],
   },
   {
     id: 2005,
@@ -221,6 +313,18 @@ const PRODUCT_SEEDS: ProductSeed[] = [
       { title: 'Starter Pack (both flavours)', sku: 'VTH-ELE-STA', price: 499, compareAt: 558, weightKg: 0.36, stock: 52 },
     ],
     collections: ['Hydrate', 'Sport', 'Subscription'],
+    facts: [
+      ['Serving size', '1 stick (5 g)'],
+      ['Servings per pack', '20'],
+      ['Sodium', '500 mg'],
+      ['Potassium', '200 mg (10% NRV)'],
+      ['Magnesium', '60 mg (16% NRV)'],
+      ['Sugars', '0 g'],
+      ['Other ingredients', 'Natural flavour, citric acid, sweetener (steviol glycosides)'],
+      ['How to take it', 'Mix 1 stick with half a litre of water before, during or after training.'],
+      ['Free from', FREE_FROM],
+      ['Made in', 'Sweden'],
+    ],
   },
   {
     id: 2006,
@@ -234,6 +338,16 @@ const PRODUCT_SEEDS: ProductSeed[] = [
       { title: 'Refill', sku: 'VTH-COL-REF', price: 409, weightKg: 0.27, stock: 82 },
     ],
     collections: ['Longevity', 'Subscription'],
+    facts: [
+      ['Serving size', '1 scoop (10 g)'],
+      ['Servings per pack', '30'],
+      ['Collagen peptides (bovine)', '10 g'],
+      ['Vitamin C', '80 mg (100% NRV)'],
+      ['Other ingredients', 'None'],
+      ['How to take it', 'Stir 1 scoop into coffee, a smoothie or water once a day.'],
+      ['Free from', FREE_FROM],
+      ['Made in', 'Sweden'],
+    ],
   },
   {
     id: 2007,
@@ -243,6 +357,18 @@ const PRODUCT_SEEDS: ProductSeed[] = [
     photo: 'balance-refill',
     variants: [{ title: 'Default', sku: 'VTH-BAL-REF', price: 419, weightKg: 0.26, stock: 68 }],
     collections: ['Longevity'],
+    facts: [
+      ['Serving size', '1 scoop (8 g)'],
+      ['Servings per pack', '30'],
+      ['Iron', '7 mg (50% NRV)'],
+      ['Folate', '200 µg (100% NRV)'],
+      ['Vitamin B6', '1.4 mg (100% NRV)'],
+      ['Magnesium', '150 mg (40% NRV)'],
+      ['Other ingredients', 'Natural raspberry flavour, sweetener (steviol glycosides)'],
+      ['How to take it', 'Stir 1 scoop into water, any time of day.'],
+      ['Free from', FREE_FROM],
+      ['Made in', 'Sweden'],
+    ],
   },
   {
     id: 2008,
@@ -252,6 +378,18 @@ const PRODUCT_SEEDS: ProductSeed[] = [
     photo: 'balance',
     variants: [{ title: 'Default', sku: 'VTH-BAL-CAN', price: 419, weightKg: 0.3, stock: 90 }],
     collections: ['Longevity'],
+    facts: [
+      ['Serving size', '1 scoop (8 g)'],
+      ['Servings per pack', '30'],
+      ['Iron', '7 mg (50% NRV)'],
+      ['Folate', '200 µg (100% NRV)'],
+      ['Vitamin B6', '1.4 mg (100% NRV)'],
+      ['Magnesium', '150 mg (40% NRV)'],
+      ['Other ingredients', 'Natural raspberry flavour, sweetener (steviol glycosides)'],
+      ['How to take it', 'Stir 1 scoop into water, any time of day.'],
+      ['Free from', FREE_FROM],
+      ['Made in', 'Sweden'],
+    ],
   },
 ]
 
@@ -329,15 +467,27 @@ export function vitahealProducts(): Omit<Product, 'status'>[] {
           ogTitle: seed.name,
           ogDescription: seed.subtitle,
         },
+        // The product's facts: its page's "Product facts" row shows them as a table.
+        specs: seed.facts.map(([label, value]) => ({ label, value })),
       },
     }
   })
 }
 
+/** What each collection page says under its title: what it is for, in one line. */
+const COLLECTION_DESCRIPTIONS: Record<VitahealCollection, string> = {
+  Subscription: 'Save 20% to 30% on every delivery. Skip, pause or cancel anytime.',
+  Sport: 'For training days: focus, hydration and easier breathing.',
+  Longevity: 'For the long run: cellular energy, skin and joints, and daily balance.',
+  Sleep: 'Wind down in the evening, sleep deeply and wake up ready.',
+  Hydrate: 'Electrolytes for training, heat and long days.',
+}
+
 /** The collections as the admin lists them. On the storefront a collection is its name on the products. */
-export const VITAHEAL_COLLECTIONS: { title: VitahealCollection; productCount: number }[] = VITAHEAL_COLLECTION_NAMES.map((title) => ({
+export const VITAHEAL_COLLECTIONS: { title: VitahealCollection; productCount: number; description: string }[] = VITAHEAL_COLLECTION_NAMES.map((title) => ({
   title,
   productCount: PRODUCT_SEEDS.filter((p) => p.collections.includes(title)).length,
+  description: COLLECTION_DESCRIPTIONS[title],
 }))
 
 // ── Subscription plans ───────────────────────────────────────────────────────
@@ -645,35 +795,71 @@ const COLLECTION_LINKS = [
   { label: 'Hydrate', href: '/collections/hydrate' },
 ]
 
+const SUBSCRIPTION_LINK = { label: 'Subscription', href: '/collections/subscription' }
+
+/** The header's menu: "Shop" and "About" open a panel of links (the mega menu), "Subscription" goes straight to its collection. */
+const NAV: StorefrontChrome['nav'] = [
+  {
+    label: 'Shop',
+    href: '/collections/all',
+    menu: {
+      columns: [
+        { heading: 'Shop by goal', links: COLLECTION_LINKS },
+        { heading: 'More ways to shop', links: [{ label: 'All products', href: '/collections/all' }, { label: 'Subscribe and save', href: SUBSCRIPTION_LINK.href }] },
+      ],
+      feature: {
+        image: VITAHEAL_PHOTOS.storyUnwind,
+        heading: 'Subscribe and save 20% to 30%',
+        text: 'A fresh pack every month, or a 3-month supply. Skip, pause or cancel anytime.',
+        link: { label: 'See subscriptions', href: SUBSCRIPTION_LINK.href },
+      },
+    },
+  },
+  SUBSCRIPTION_LINK,
+  {
+    label: 'About',
+    href: '/page/about',
+    menu: {
+      columns: [
+        { heading: 'About Vitaheal', links: [{ label: 'Our story', href: '/page/about' }, { label: 'Ambassadors', href: '/page/ambassadors' }] },
+        {
+          heading: 'Help',
+          links: [
+            { label: 'Contact', href: '/page/contact' },
+            { label: 'Money-back guarantee', href: '/page/money-back-guarantee' },
+            { label: 'Refund policy', href: '/policies/refund-policy' },
+          ],
+        },
+      ],
+    },
+  },
+]
+
 export const VITAHEAL_CHROME: StorefrontChrome = {
+  // Drawn in capitals by the theme's heading case; the tab title and the logo link's name read "Vitaheal".
   wordmark: 'Vitaheal',
   wordmarkIcon: null,
   announcementAboveHeader: true,
-  // No search or wishlist until their pages exist (search S13): a demo must not hit a 404.
-  // The account icon opens the shopper's subscriptions (/account).
+  // No wishlist: the store has no wishlist page, and a demo must not hit a 404. The account
+  // icon opens the shopper's subscriptions (/account). The search field shows only once the
+  // store is connected to Merchandise Cloud (it starts unconnected), so it never finds nothing.
   headerTools: ['account'],
+  headerSearch: 'field',
   accountHref: '/account',
   social: [],
-  searchPlaceholder: 'Search...',
-  nav: [
-    { label: 'All products', href: '/collections/all' },
-    ...COLLECTION_LINKS,
-    { label: 'Subscription', href: '/collections/subscription' },
-    { label: 'About', href: '/page/about' },
-  ],
+  searchPlaceholder: 'Search supplements',
+  nav: NAV,
+  // On a phone "Shop" and "About" open in place, then the account and the cart.
   mobileNav: [
-    { label: 'All products', href: '/collections/all' },
-    ...COLLECTION_LINKS,
-    { label: 'Subscription', href: '/collections/subscription' },
-    { label: 'About', href: '/page/about' },
-    { label: 'Contact', href: '/page/contact' },
+    ...NAV,
     { label: 'My subscription', href: '/account' },
     { label: 'Cart', href: '/cart-page' },
   ],
+  // The sections footer draws column headings as plain text, so "All products" is a link of its own.
   footerColumns: [
     {
       heading: { label: 'Shop', href: '/collections/all' },
-      items: [...COLLECTION_LINKS, { label: 'Subscription', href: '/collections/subscription' }],
+      items: [{ label: 'All products', href: '/collections/all' }, ...COLLECTION_LINKS, { label: 'Subscription', href: '/collections/subscription' }],
     },
     {
       heading: { label: 'About Vitaheal', href: '/page/about' },
@@ -689,12 +875,13 @@ export const VITAHEAL_CHROME: StorefrontChrome = {
         { label: 'My subscription', href: '/account' },
         { label: 'Money-back guarantee', href: '/page/money-back-guarantee' },
         { label: 'Refund policy', href: '/policies/refund-policy' },
-        { label: 'Privacy policy', href: '/policies/privacy-policy' },
-        { label: 'Terms of service', href: '/policies/terms-of-service' },
-        { label: 'Cookies', href: '/page/cookies' },
+        { label: 'Subscription terms', href: '/policies/subscription-terms' },
       ],
     },
   ],
+  // The About page's own heading.
+  tagline: 'Made in Sweden, for every day',
+  newsletterColumn: true,
   newsletter: {
     heading: 'Get the Vitaheal letter',
     placeholder: 'Email address',
@@ -709,12 +896,19 @@ export const VITAHEAL_CHROME: StorefrontChrome = {
     busy: 'Signing up...',
     success: 'Thank you. You are on the list.',
   },
+  // The legal pages, in the footer's bottom row beside the copyright.
+  bottomLinks: [
+    { label: 'Privacy policy', href: '/policies/privacy-policy' },
+    { label: 'Terms of service', href: '/policies/terms-of-service' },
+    { label: 'Cookies', href: '/page/cookies' },
+  ],
   copyright: '© 2026 Vitaheal (demo store). Made in Sweden.',
 }
 
 // ── Navigation menus (store editor › Navigation) ─────────────────────────────
-// Flat for now: nesting ("Shop by Category") arrives with slice S2, which also
-// makes the storefront header read these menus instead of VITAHEAL_CHROME.
+// The main menu lists the header's three links; the links inside the "Shop" and
+// "About" panels are the theme's (the store's Navigation page does not edit them yet).
+// The footer menu lists the About and Help columns, then the legal links in the bottom row.
 
 const MENU_DATE = 'Nov 16, 2026'
 
@@ -735,9 +929,7 @@ export const VITAHEAL_MENUS: StoreMenu[] = [
     handle: 'footer-menu',
     status: 'Active',
     updatedAt: MENU_DATE,
-    items: VITAHEAL_CHROME.footerColumns
-      .slice(1)
-      .flatMap((column) => column.items)
+    items: [...VITAHEAL_CHROME.footerColumns.slice(1).flatMap((column) => column.items), ...VITAHEAL_CHROME.bottomLinks!]
       .map((link, i) => ({ id: `mi-vitaheal-footer-${i + 1}`, title: link.label, linkType: 'url' as const, target: link.href })),
   },
 ]
@@ -820,6 +1012,13 @@ export const VITAHEAL_CONTENT: ContentEntry[] = [
     'The terms that apply when you buy from the Vitaheal store.',
   ),
   entry(
+    'policy',
+    'subscription-terms',
+    'Subscription terms',
+    '<h2>Subscription terms</h2><p>These terms apply when you buy a product on a subscription.</p><h3>What you agree to</h3><p>You ask us to send the product, and charge the payment method you used at checkout, at the interval of the plan you chose: every month, or every 3 months for a 3-month supply. The subscription runs until you cancel it.</p><h3>Price</h3><p>A monthly subscription saves 20% and a 3-month supply saves 30% on the product’s price. Prices are in Swedish kronor and include VAT.</p><h3>Before each renewal</h3><p>We email you before each renewal, so you have time to change it.</p><h3>Skip, pause or cancel</h3><p>You can skip a delivery, pause or cancel from <a href="/account">your account</a>, at any time before the next charge date. A delivery that has already been charged can be returned under our <a href="/policies/refund-policy">refund policy</a>.</p>',
+    'The terms that apply to a subscription at Vitaheal.',
+  ),
+  entry(
     'blog',
     'three-habits-for-better-sleep',
     'Three habits for better sleep',
@@ -848,8 +1047,22 @@ export const VITAHEAL_BLOG_SEO: BlogSeoSettings = {
 }
 
 // ── Theme templates ──────────────────────────────────────────────────────────
-// Built from the section kinds that exist today; slices S2, S3 and S6 add the sections that build needs.
-// The home page follows the reference store's order: hero, range, a story, goals, a second story.
+// Drawn by the sections drawing (VITAHEAL_THEME_STYLES.drawing), in the Lumos look:
+//   header / footer    Inline, sticky and light; three link columns and the newsletter column.
+//   image-banner       a `badge` above the headline, a second button and three `stat` blocks:
+//                      true facts about the store, never a rating or a count of customers.
+//                      Words on the left (`contentPosition: 'Center left'`, as Lumos): navy on a
+//                      wash of the page colour, the accent words in the brand colour. hero.jpg is
+//                      cropped so the runner sits three-quarters across, past the wash (white
+//                      words over the photo's bright mist read at 1.4:1 to 2.6:1).
+//   collection-grid    on the home page: the goals as a carousel, the name on the photo, on the tint.
+//   featured-products  an `eyebrow` above the title, as a carousel.
+//   icon-row           the promises as centred cards, with an eyebrow.
+//   product-detail     the Purchase options block, then the description and four rows; the
+//                      buy box opens on the lowest-priced choice, with a quantity and a stock line.
+//   collection-grid    on the collection template: boxed cards with quick add, and a price filter
+//                      (every product is the same brand and kind, so price is the one filter that helps).
+// Every section and block id starts with "vitaheal-", so a copy in another store takes its prefix.
 // Shared like the other seeds here, so a store deep-clones them before editing.
 
 /** The storefront link of one of the seeded products. */
@@ -857,20 +1070,64 @@ function productLink(id: number): string {
   return `/products/${productHandle(PRODUCT_SEEDS.find((p) => p.id === id)!)}`
 }
 
+const HEADER = { menuStyle: 'Inline', sticky: true, colorScheme: 'Light' } as const
+const FOOTER = { showSocial: false, columns: 3, colorScheme: 'Light' } as const
+const SUBSCRIPTION_ROW = 'Most of our products can be bought on a subscription: a monthly delivery saves 20%, and a 3-month supply saves 30%.\n\nWe email you before each renewal. Skip a delivery, pause or cancel from your account at any time before the next charge date.'
+const SHIPPING_AND_RETURNS = 'Orders placed before 10:00 CET on a weekday leave our warehouse the same day. Delivery takes 3 to 7 working days, and shipping is free on orders over 549 kr.\n\nYou can return unopened products within 14 days of delivery for a full refund.'
+const WARNINGS = 'Do not exceed the recommended daily dose. Food supplements are not a substitute for a varied diet. Keep out of reach of children.\n\nIf you are pregnant, breastfeeding, taking medication or have a medical condition, ask your doctor before use.'
+/** A row under the product page's buy box that opens and closes. */
+const row = (key: string, settings: Record<string, string | boolean>) => createBlock('collapsible-row', { text: '', open: false, ...settings }, `vitaheal-row-${key}`)
+const header = (template: TemplateType) => createSection('header', { ...HEADER }, `vitaheal-${template}-header`)
+const footer = (template: TemplateType) => createSection('footer', { ...FOOTER }, `vitaheal-${template}-footer`)
+
 export const VITAHEAL_THEME_TEMPLATES: Record<TemplateType, ThemeSection[]> = {
   home: [
     createSection('announcement-bar', { text: 'Free shipping over 549 kr · Made in Sweden · 30-day money-back guarantee on Unwind', link: '' }, 'vitaheal-home-announcement'),
-    createSection('header', { menuStyle: 'Centered' }, 'vitaheal-home-header'),
+    header('home'),
     {
       ...createSection('image-banner', {
+        badge: 'Made in Sweden',
         headline: 'Supplements that do one job well',
+        accentWords: 'one job well',
         subheadline: 'Sleep, focus and recovery, made in Sweden and delivered to your door.',
         height: 'Large',
+        contentPosition: 'Center left',
         image: VITAHEAL_PHOTOS.hero,
       }, 'vitaheal-home-banner'),
-      blocks: [createBlock('button', { label: 'Shop all products', link: '/collections/all' }, 'vitaheal-banner-button')],
+      blocks: [
+        createBlock('button', { label: 'Shop all products', link: '/collections/all' }, 'vitaheal-banner-button'),
+        createBlock('button', { label: 'Subscribe and save', link: '/collections/subscription' }, 'vitaheal-banner-subscribe'),
+        // What the plans save (20% a month, 30% on a 3-month supply), the free-shipping line and
+        // the guarantee, as the store's pages state them: the guarantee is Unwind's.
+        createBlock('stat', { value: '20–30%', label: 'Saved on a plan' }, 'vitaheal-banner-stat-plans'),
+        createBlock('stat', { value: '549 kr', label: 'Free shipping over' }, 'vitaheal-banner-stat-shipping'),
+        createBlock('stat', { value: '30 days', label: 'Money back on Unwind' }, 'vitaheal-banner-stat-guarantee'),
+      ],
     },
-    createSection('featured-products', { title: 'Our range', productCount: 8 }, 'vitaheal-home-featured'),
+    {
+      ...createSection('collection-grid', {
+        title: 'Shop by goal',
+        accentWords: 'goal',
+        layout: 'Carousel',
+        tileStyle: 'Label over photo',
+        background: 'Tint',
+        columns: 3,
+        tileRatio: 'Landscape',
+      }, 'vitaheal-home-collections'),
+      blocks: [
+        createBlock('collection', { label: 'Sleep', link: '/collections/sleep', image: VITAHEAL_PHOTOS.tileSleep }, 'vitaheal-collection-sleep'),
+        createBlock('collection', { label: 'Sport', link: '/collections/sport', image: VITAHEAL_PHOTOS.tileSport }, 'vitaheal-collection-sport'),
+        createBlock('collection', { label: 'Longevity', link: '/collections/longevity', image: VITAHEAL_PHOTOS.tileLongevity }, 'vitaheal-collection-longevity'),
+        createBlock('collection', { label: 'Hydrate', link: '/collections/hydrate', image: VITAHEAL_PHOTOS.tileHydrate }, 'vitaheal-collection-hydrate'),
+      ],
+    },
+    createSection('featured-products', {
+      eyebrow: 'Blended and packed in Sweden',
+      title: 'Our range',
+      collection: 'all',
+      productCount: 8,
+      layout: 'Carousel',
+    }, 'vitaheal-home-featured'),
     createSection('image-with-text', {
       heading: 'Unwind helps you switch off, sleep deeply and wake up ready',
       body: 'One warm cup about an hour before bed. Nothing in it knocks you out; it helps your body do what it already knows how to do.',
@@ -880,12 +1137,18 @@ export const VITAHEAL_THEME_TEMPLATES: Record<TemplateType, ThemeSection[]> = {
       image: VITAHEAL_PHOTOS.storyUnwind,
     }, 'vitaheal-home-story-unwind'),
     {
-      ...createSection('collection-grid', { title: 'Shop by goal', columns: 3 }, 'vitaheal-home-collections'),
+      ...createSection('icon-row', {
+        eyebrow: 'Why Vitaheal',
+        title: 'The Vitaheal promise',
+        alignment: 'Center',
+        tileStyle: 'Card',
+      }, 'vitaheal-home-promises'),
       blocks: [
-        createBlock('collection', { label: 'Sleep', link: '/collections/sleep', image: VITAHEAL_PHOTOS.tileSleep }, 'vitaheal-collection-sleep'),
-        createBlock('collection', { label: 'Sport', link: '/collections/sport', image: VITAHEAL_PHOTOS.tileSport }, 'vitaheal-collection-sport'),
-        createBlock('collection', { label: 'Longevity', link: '/collections/longevity', image: VITAHEAL_PHOTOS.tileLongevity }, 'vitaheal-collection-longevity'),
-        createBlock('collection', { label: 'Hydrate', link: '/collections/hydrate', image: VITAHEAL_PHOTOS.tileHydrate }, 'vitaheal-collection-hydrate'),
+        // Short titles: four sit side by side, and each should fit on one line.
+        createBlock('feature', { icon: 'shield-check', title: 'Tested in Sweden', text: 'Every batch, before it ships.', link: '/page/about' }, 'vitaheal-promise-tested'),
+        createBlock('feature', { icon: 'clock', title: 'Subscribe and save', text: '20% to 30% off. Skip or cancel anytime.', link: '/collections/subscription' }, 'vitaheal-promise-subscribe'),
+        createBlock('feature', { icon: 'truck', title: 'Free shipping', text: 'On orders over 549 kr.', link: '' }, 'vitaheal-promise-shipping'),
+        createBlock('feature', { icon: 'rotate-ccw', title: '30-day guarantee', text: 'Money back on your first Unwind.', link: '/page/money-back-guarantee' }, 'vitaheal-promise-guarantee'),
       ],
     },
     createSection('image-with-text', {
@@ -896,24 +1159,52 @@ export const VITAHEAL_THEME_TEMPLATES: Record<TemplateType, ThemeSection[]> = {
       imageSide: 'Right',
       image: VITAHEAL_PHOTOS.storyFocus,
     }, 'vitaheal-home-story-focus'),
-    createSection('rich-text', { heading: 'Subscribe and save 20%', body: 'Most of our customers subscribe. You get every delivery for less, and you can skip, pause or cancel whenever you like.', alignment: 'Center' }, 'vitaheal-home-subscribe'),
-    createSection('newsletter', { headline: 'Get the Vitaheal letter' }, 'vitaheal-home-newsletter'),
-    createSection('footer', { showSocial: false, columns: 3 }, 'vitaheal-home-footer'),
+    footer('home'),
   ],
   product: [
-    createSection('header', { menuStyle: 'Centered' }, 'vitaheal-product-header'),
-    createSection('product-detail', {}, 'vitaheal-product-detail'),
+    header('product'),
+    {
+      // Square is the shape of the pack shots. The buy box opens on the lowest-priced choice
+      // (a bag, a refill), so one click adds it, and shows a quantity and a stock line.
+      ...createSection('product-detail', {
+        galleryLayout: 'Thumbnails',
+        imageRatio: 'Square',
+        sizeGuide: false,
+        fitment: false,
+        showReviews: false,
+        preselectVariant: true,
+        quantity: true,
+        stockLine: true,
+      }, 'vitaheal-product-detail'),
+      blocks: [
+        // How the store's plans are offered. The 3-month supply stays preselected (it is the
+        // store's default plan); the block adds the promise, the terms and the badge on cards.
+        createBlock('purchase-options', {
+          style: 'Cards',
+          defaultSelection: 'One-time purchase',
+          policyText: 'Skip, pause or cancel anytime.',
+          termsLink: '/policies/subscription-terms',
+          cardBadge: true,
+        }, 'vitaheal-purchase-options'),
+        row('description', { title: 'Description', source: 'description', open: true }),
+        row('facts', { title: 'Product facts', source: 'facts' }),
+        // Only on a product sold on a plan: Nasal Strips and Balance are bought once.
+        row('subscription', { title: 'How subscriptions work', source: 'custom', text: SUBSCRIPTION_ROW, plansOnly: true }),
+        row('shipping', { title: 'Shipping and returns', source: 'delivery-returns', text: SHIPPING_AND_RETURNS }),
+        row('warnings', { title: 'Warnings', source: 'custom', text: WARNINGS }),
+      ],
+    },
     createSection('featured-products', { title: 'You may also like' }, 'vitaheal-product-related'),
-    createSection('footer', { showSocial: false, columns: 3 }, 'vitaheal-product-footer'),
+    footer('product'),
   ],
   collection: [
-    createSection('header', { menuStyle: 'Centered' }, 'vitaheal-collection-header'),
-    createSection('collection-grid', {}, 'vitaheal-collection-grid'),
-    createSection('footer', { showSocial: false, columns: 3 }, 'vitaheal-collection-footer'),
+    header('collection'),
+    createSection('collection-grid', { title: '', columns: 4, filters: true, facets: 'price', sort: true, quickAdd: true, cardStyle: 'Boxed' }, 'vitaheal-collection-grid'),
+    footer('collection'),
   ],
   cart: [
-    createSection('header', { menuStyle: 'Centered' }, 'vitaheal-cart-header'),
+    header('cart'),
     createSection('cart-summary', {}, 'vitaheal-cart-summary'),
-    createSection('footer', { showSocial: false, columns: 3 }, 'vitaheal-cart-footer'),
+    footer('cart'),
   ],
 }

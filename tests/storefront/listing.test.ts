@@ -5,13 +5,16 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { NORTHFOLD_BLUEPRINT } from '../../src/storefront/demoStores/northfold.ts'
 import { snapshotFor } from '../../src/storefront/demoStores/install.ts'
-import { DEFAULT_GRID, addsDirectly, soldOutText, cardPhoto, cardPrice, choiceSummary, chosenColor, colorsOf, gridSettings, isNewArrival, listingNoun, needsChoice, partNumber, soldOut, stockLine, unbrokenHyphens } from '../../src/storefront/listing.ts'
+import { DEFAULT_GRID, addsDirectly, soldOutText, storeNoun, cardBadge, cardPhoto, cardPrice, choiceSummary, chosenColor, colorsOf, gridSettings, isNewArrival, listingNoun, needsChoice, partNumber, soldOut, stockLine, unbrokenHyphens } from '../../src/storefront/listing.ts'
 import { partNumberOf } from '../../src/storefront/productPage.ts'
 import { TORQLINE_BLUEPRINT } from '../../src/storefront/demoStores/torqline.ts'
 import { LUMOS_BLUEPRINT } from '../../src/storefront/demoStores/lumos.ts'
 import { emptyFilters, facetGroups } from '../../src/storefront/facets.ts'
 import type { CardProduct } from '../../src/storefront/listing.ts'
-import { vitahealProducts } from '../../src/storefront/vitahealDemo.ts'
+import { VITAHEAL_CHANNEL_ID, VITAHEAL_PLANS, VITAHEAL_THEME_STYLES, vitahealProducts } from '../../src/storefront/vitahealDemo.ts'
+import { storefrontThemeVars } from '../../src/storefront/themeSections.ts'
+import { plansForProduct } from '../../src/subscriptions/plans.ts'
+import { contrastRatio } from '../../src/utils/brandContrast.ts'
 
 const northfold = snapshotFor(NORTHFOLD_BLUEPRINT.homeChannel, 'northfold', '2026-11-20')
 const torqline = snapshotFor(TORQLINE_BLUEPRINT.homeChannel, 'torqline', '2026-11-20')
@@ -85,6 +88,16 @@ test('a list of clothes holds styles; supplements stay products', () => {
   assert.deepEqual(listingNoun(products), { one: 'style', other: 'styles' })
   assert.deepEqual(listingNoun(vitahealProducts() as CardProduct[]), { one: 'product', other: 'products' })
   assert.deepEqual(listingNoun([{ id: 1, price: '9.00', inventory: 1, detail: { options: [], variantsList: [], fitment: { universal: true, rows: [] } } }]), { one: 'part', other: 'parts' })
+})
+
+test('an empty list names what is on its way in the store\'s word: its catalogue\'s, else what it is set up to sell', () => {
+  assert.equal(storeNoun(products).other, 'styles')
+  assert.equal(storeNoun(torqline.products as CardProduct[]).other, 'parts')
+  assert.equal(storeNoun(vitahealProducts() as CardProduct[]).other, 'products')
+  // No products yet: Northfold has size charts, Torqline's product page shows the vehicle fit banner.
+  assert.equal(storeNoun([], { sizeCharts: true }).other, 'styles')
+  assert.equal(storeNoun([], { fitment: true }).other, 'parts')
+  assert.equal(storeNoun([]).other, 'products')
 })
 
 test('the grid follows the collection template, falling back to every feature on and four columns', () => {
@@ -166,6 +179,49 @@ test('a card adds a part straight to the cart only when there is nothing to choo
   // Doesn't fit the vehicle: quick add opens and says so first.
   assert.equal(addsDirectly(plain, 'no-fit'), false)
   assert.equal(addsDirectly(choice, 'fits'), false)
+  // On a subscription plan: quick add opens to offer the plans, even with nothing to choose.
+  assert.equal(addsDirectly(plain, 'unknown', true), false)
+  assert.equal(addsDirectly(plain, 'unknown', false), true)
+})
+
+test('a card carries one mark: sold out, else the saving, else "Subscribe available", else new', () => {
+  const blouse = byName('Washed Silk Blouse')
+  const jacket = byName('Quilted Liner Jacket')
+  const tee = byName('Organic Cotton Tee')
+  const gone = structuredClone(blouse)
+  for (const v of gone.detail!.variantsList) v.stock = Object.fromEntries(Object.keys(v.stock).map((k) => [k, 0]))
+  assert.deepEqual(cardBadge(gone, { subscribe: true }), { kind: 'sold-out', text: 'Sold out' })
+  assert.deepEqual(cardBadge(blouse, { subscribe: true }), { kind: 'sale', text: '−25%' })
+  assert.deepEqual(cardBadge(jacket, { subscribe: true }), { kind: 'subscribe', text: 'Subscribe available' })
+  assert.deepEqual(cardBadge(jacket), { kind: 'new', text: 'New' })
+  assert.equal(cardBadge(jacket, { showNew: false }), null)
+  assert.equal(cardBadge(tee), null)
+  // Without the theme's ask, Northfold's cards carry the marks they always did.
+  assert.deepEqual(products.map((p) => cardBadge(p)?.kind ?? ''), products.map((p) => (cardPrice(p).salePercent ? 'sale' : isNewArrival(p) ? 'new' : '')))
+})
+
+test('Vitaheal: the five products on a plan say "Subscribe available" and open quick add; the rest add straight away', () => {
+  const vitaheal = vitahealProducts() as CardProduct[]
+  const onPlan = (p: CardProduct) => plansForProduct(VITAHEAL_PLANS, VITAHEAL_CHANNEL_ID, p.id).length > 0
+  const name = (p: CardProduct) => (p as CardProduct & { name: string }).name
+  assert.deepEqual(vitaheal.filter((p) => cardBadge(p, { subscribe: onPlan(p) })?.kind === 'subscribe').map(name), vitaheal.filter(onPlan).map(name))
+  assert.equal(vitaheal.filter(onPlan).length, 5)
+  // The products with nothing to choose and no plan add straight away; the ones on a plan always ask.
+  assert.deepEqual(vitaheal.filter((p) => addsDirectly(p, 'unknown', onPlan(p))).map(name), ['Nasal Strips', 'Balance Refill', 'Balance'])
+  assert.ok(vitaheal.filter(onPlan).every((p) => !addsDirectly(p, 'unknown', true)))
+  // Each of those five also has a format or flavour to choose, so it is Balance, with nothing to
+  // choose, that shows the plan is what opens quick add (the film puts Balance on a plan).
+  assert.ok(vitaheal.filter(onPlan).every(needsChoice))
+  const balance = vitaheal.find((p) => name(p) === 'Balance')!
+  assert.equal(needsChoice(balance), false)
+  assert.equal(addsDirectly(balance, 'unknown', false), true, 'off a plan, Balance adds straight to the cart')
+  assert.equal(addsDirectly(balance, 'unknown', true), false, 'on a plan, Balance opens quick add to offer it')
+})
+
+test('the "Subscribe available" badge is readable on Vitaheal\'s lime badge colour (4.5:1)', () => {
+  const vars = storefrontThemeVars(VITAHEAL_THEME_STYLES)
+  assert.equal(vars['--sf-badge-custom'], '#e4ff52')
+  assert.ok(contrastRatio(vars['--sf-badge-custom']!, vars['--sf-on-badge-custom']!)! >= 4.5)
 })
 
 test('a choice sold out all along is "sold out"; only one that sold out during the visit "just sold out"', () => {

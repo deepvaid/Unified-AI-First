@@ -11,6 +11,7 @@ import type { CreateSalesChannelPayload, SalesChannel } from '@/stores/useSalesC
 import { useSizeChartsStore } from '@/stores/useSizeCharts'
 import { useStoreCampaignsStore } from '@/stores/useStoreCampaigns'
 import { useStoreContentStore } from '@/stores/useStoreContent'
+import { useStoreLaunchStore } from '@/stores/useStoreLaunch'
 import { useStoreNavigationStore } from '@/stores/useStoreNavigation'
 import { useStoreThemesStore } from '@/stores/useStoreThemes'
 import { useStorefrontStore } from '@/stores/useStorefront'
@@ -111,13 +112,15 @@ export const useDemoStores = defineStore('demoStores', () => {
     return true
   }
 
-  /** What only a restore puts back: the store's subscribers, chats, campaign emails and Merchandise Cloud connection as they were, and its theme without drafts. */
+  /** What only a restore puts back: the store's subscribers, chats, campaign emails and Merchandise Cloud connection as they were, its theme without drafts, and its launch checklist with nothing marked done. */
   function restoreHistory(channelId: string): void {
     useSalesChannelsStore().restoreDemoHistory(channelId)
     useStoreThemesStore().restoreDemoHistory(channelId)
     useChatbotStore().restoreDemoHistory(channelId)
     useSubscriptionsStore().restoreDemoHistory(channelId)
     useCampaignsStore().restoreDemoHistory(channelId)
+    // The launch checklist starts again: nothing is marked done by hand.
+    useStoreLaunchStore().forget(channelId)
   }
 
   /**

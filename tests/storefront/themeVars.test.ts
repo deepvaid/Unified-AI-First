@@ -1,10 +1,11 @@
 // A theme's styles as the storefront's CSS variables (storefrontThemeVars), and what
-// the builder offers a theme. The classic themes (Vitaheal, Atlas, Neelam's Aurora and
-// Lumos, Beta) must get exactly the variables they got before the sections drawing;
-// the variables below were read from the app before it was added. Northfold, on the
+// the builder offers a theme. The classic themes (Atlas, Neelam's Aurora and Lumos,
+// Beta) must get exactly the variables they got before the sections drawing; the
+// variables below were read from the app before it was added. Northfold, on the
 // sections drawing, also gets its button, surfaces and heading type. The finer styles
 // Lumos added (part 5) become variables only when a theme sets them, so every theme
-// before them keeps its variables to the byte.
+// before them keeps its variables to the byte. Vitaheal left the classic list on
+// 2026-11-25, when it moved to the Lumos look on the sections drawing.
 // The themes come from the app's own store, so the app's imports are registered first.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
@@ -61,12 +62,6 @@ const BEFORE: Record<string, Record<string, string>> = {
     '--sf-badge-sale': '#121011', '--sf-on-badge-sale': '#ffffff', '--sf-badge-custom': '#373842', '--sf-on-badge-custom': '#ffffff',
     '--sf-badge-sold-out': '#121011', '--sf-on-badge-sold-out': '#ffffff',
   },
-  'theme-vitaheal': {
-    '--sf-brand': '#0a2240', '--sf-on-brand': '#ffffff', '--sf-accent': '#0a2240', '--sf-bg': '#ffffff', '--sf-text': '#000000',
-    '--sf-radius': '8px', '--sf-heading-font': 'Figtree', '--sf-body-font': 'Figtree',
-    '--sf-badge-sale': '#6d52ff', '--sf-on-badge-sale': '#ffffff', '--sf-badge-custom': '#e4ff52', '--sf-on-badge-custom': '#121011',
-    '--sf-badge-sold-out': '#000000', '--sf-on-badge-sold-out': '#ffffff',
-  },
 }
 
 test('the classic themes get exactly the variables they always had', () => {
@@ -75,9 +70,11 @@ test('the classic themes get exactly the variables they always had', () => {
     assert.equal(theme.styles.drawing, undefined, `${id} keeps the classic drawing`)
     assert.deepEqual(storefrontThemeVars(theme.styles), vars, id)
   }
-  // No other theme is seeded on a store that must not change.
+  // No other theme is seeded on a store that must not change. Daybloom's is new, and
+  // is the Aurora look: Aurora's own colours and type, so its variables are Aurora's.
   const classic = themes.themes.filter((t) => t.styles.drawing !== 'sections').map((t) => t.id).sort()
-  assert.deepEqual(classic, Object.keys(BEFORE).sort())
+  assert.deepEqual(classic, [...Object.keys(BEFORE), 'theme-daybloom'].sort())
+  assert.deepEqual(storefrontThemeVars(themeOf('theme-daybloom').styles), BEFORE['theme-neelam-aurora'], 'Daybloom is drawn in Aurora’s colours and type')
 })
 
 test('Northfold, on the sections drawing, also gets its button, surfaces and heading type', () => {
@@ -94,6 +91,29 @@ test('Northfold, on the sections drawing, also gets its button, surfaces and hea
     '--sf-body-font': '"DM Sans", system-ui, sans-serif', '--sf-heading-case': 'none',
     // Its near-black accent stands out on the page, so focus rings keep it.
     '--sf-focus': '#111111',
+  })
+})
+
+test('Vitaheal, on the sections drawing, gets the Lumos look in its own navy, with its badges and kronor store unchanged', () => {
+  const theme = themeOf('theme-vitaheal')
+  assert.equal(theme.styles.drawing, 'sections')
+  assert.deepEqual(storefrontThemeVars(theme.styles), {
+    '--sf-brand': '#0a2240', '--sf-on-brand': '#ffffff', '--sf-accent': '#0a2240', '--sf-bg': '#ffffff', '--sf-text': '#1b1f27',
+    '--sf-radius': '4px',
+    // The badges it had on the classic drawing: violet sale, lime "Subscribe available", black sold out.
+    '--sf-badge-sale': '#6d52ff', '--sf-on-badge-sale': '#ffffff', '--sf-badge-custom': '#e4ff52', '--sf-on-badge-custom': '#121011',
+    '--sf-badge-sold-out': '#000000', '--sf-on-badge-sold-out': '#ffffff',
+    '--sf-button-bg': '#0a2240', '--sf-button-ink': '#ffffff', '--sf-button-border': '#0a2240', '--sf-button-radius': '4px',
+    '--sf-surface': '#f8fafc', '--sf-muted': '#5f6672', '--sf-divider': '#e5e8ee',
+    '--sf-heading-font': '"Inter", system-ui, sans-serif', '--sf-heading-weight': '500',
+    '--sf-body-font': '"Inter", system-ui, sans-serif', '--sf-heading-case': 'uppercase',
+    // The navy stands out on white, so focus rings keep it.
+    '--sf-focus': '#0a2240',
+    '--sf-button-hover': '#16335c', '--sf-button-case': 'uppercase',
+    '--sf-card': '#ffffff', '--sf-card-radius': '8px', '--sf-card-shadow': '0 4px 6px -4px rgba(0,0,0,.10)',
+    '--sf-tint': '#f1f4f9',
+    '--sf-gutter': 'clamp(16px, 4vw, 56px)', '--sf-measure': '1440px',
+    '--sf-hero-title': '64px', '--sf-hero-title-sm': '48px', '--sf-section-title': '32px', '--sf-section-title-sm': '24px',
   })
 })
 
@@ -216,10 +236,11 @@ test('every font a demo theme uses is offered, loaded and has a heading weight',
   }
 })
 
-test('the builder offers a classic theme what it always did, and the sections drawing its own kinds, blocks and fields', () => {
+test('the builder offers a classic theme the kinds it draws, and the sections drawing its own kinds, blocks and fields', () => {
   const kinds = (defs: { kind: string }[]) => defs.map((d) => d.kind)
   const all = { parts: true, sizes: true, specs: true }
-  const SECTIONS_ONLY = ['icon-row', 'logo-strip', 'vehicle-finder']
+  // The classic drawing draws an icon row too (Daybloom's home page has one); the logo strip and the vehicle finder are the sections drawing's.
+  const SECTIONS_ONLY = ['logo-strip', 'vehicle-finder']
   assert.deepEqual(kinds(sectionsFor(undefined)), kinds(sectionCatalog).filter((k) => !SECTIONS_ONLY.includes(k)))
   assert.deepEqual(kinds(sectionsFor(undefined, all)), kinds(sectionsFor(undefined)), 'a classic theme is offered no store-specific kind')
   assert.ok(kinds(sectionsFor('sections')).includes('icon-row'))
@@ -254,7 +275,8 @@ test('the builder offers a classic theme what it always did, and the sections dr
   }
   // An image banner keeps its buttons and gains its stats strip.
   assert.deepEqual(kinds(blocksFor('image-banner', 'sections')), [...general, 'stat'])
-  assert.deepEqual(kinds(blocksFor('product-detail', undefined)), [], 'a classic product page has no blocks')
+  assert.deepEqual(kinds(blocksFor('product-detail', undefined)), ['collapsible-row'], 'a classic product page takes collapsible rows')
+  assert.deepEqual(kinds(blocksFor('icon-row', undefined)), ['feature'])
   assert.deepEqual(kinds(blocksFor('product-detail', 'sections')), ['collapsible-row'])
   assert.deepEqual(kinds(blocksFor('icon-row', 'sections')), ['feature'])
   assert.deepEqual(kinds(blocksFor('logo-strip', 'sections')), ['logo'])
@@ -271,7 +293,14 @@ test('the builder offers a classic theme what it always did, and the sections dr
   assert.deepEqual(keys('collection-grid', 'sections', 'collection'), ['title', 'columns', 'filters', 'sort', 'quickAdd', 'cardStyle'])
   assert.deepEqual(getSectionDef('collection-grid')!.fields.find((f) => f.key === 'cardStyle')!.options, ['Editorial', 'Dense', 'Boxed'])
   assert.deepEqual(keys('product-detail', undefined, 'product'), ['galleryLayout', 'showReviews'])
-  assert.deepEqual(keys('product-detail', 'sections', 'product'), ['galleryLayout', 'imageRatio', 'sizeGuide', 'fitment', 'showReviews'])
+  // Opening on the lowest-priced choice, a quantity stepper and a stock line are the sections buy box's (Vitaheal).
+  assert.deepEqual(keys('product-detail', 'sections', 'product'), ['galleryLayout', 'imageRatio', 'sizeGuide', 'fitment', 'preselectVariant', 'quantity', 'stockLine', 'showReviews'])
+  // Their labels alone do not say what they do: each carries a hint under its switch in the builder.
+  const hint = (key: string) => getSectionDef('product-detail')!.fields.find((f) => f.key === key)!.hint
+  assert.equal(hint('preselectVariant'), 'The page opens with the cheapest variant already chosen.')
+  assert.equal(hint('quantity'), 'A − 1 + stepper beside Add to cart.')
+  assert.equal(hint('stockLine'), 'Shows “In stock, ready to ship” or “Only 2 left” under the price.')
+  assert.equal(hint('galleryLayout'), undefined, 'a field whose label says it all has no hint')
   assert.deepEqual(keys('featured-products', undefined), ['title', 'productCount', 'layout'])
   // The vehicle setting, the eyebrow and the accent words are the home page's row only: the product page's row is the recommendations.
   assert.deepEqual(keys('featured-products', 'sections'), ['eyebrow', 'title', 'accentWords', 'collection', 'productCount', 'layout', 'vehicle'])
@@ -309,8 +338,8 @@ test('the builder offers what the store sells: a clothing store no vehicle setti
 
   const keys = (kind: string, facts: typeof northfold, template: 'home' | 'product' = 'home') =>
     fieldsFor(getSectionDef(kind)!.fields, 'sections', template, facts).map((f) => f.key)
-  assert.deepEqual(keys('product-detail', northfold, 'product'), ['galleryLayout', 'imageRatio', 'sizeGuide', 'showReviews'])
-  assert.deepEqual(keys('product-detail', torqline, 'product'), ['galleryLayout', 'imageRatio', 'fitment', 'showReviews'])
+  assert.deepEqual(keys('product-detail', northfold, 'product'), ['galleryLayout', 'imageRatio', 'sizeGuide', 'preselectVariant', 'quantity', 'stockLine', 'showReviews'])
+  assert.deepEqual(keys('product-detail', torqline, 'product'), ['galleryLayout', 'imageRatio', 'fitment', 'preselectVariant', 'quantity', 'stockLine', 'showReviews'])
   assert.deepEqual(keys('featured-products', northfold), ['eyebrow', 'title', 'accentWords', 'collection', 'productCount', 'layout'])
   assert.deepEqual(keys('featured-products', torqline), ['eyebrow', 'title', 'accentWords', 'collection', 'productCount', 'layout', 'vehicle'])
 
@@ -334,13 +363,24 @@ test('the builder offers what the store sells: a clothing store no vehicle setti
   assert.equal(sofa({ specs: [{ label: 'Width', value: '84 in' }] }), true)
   assert.equal(sofa({ warranty: '5-year frame warranty' }), true)
   assert.equal(sofa({ specs: [], warranty: '  ' }), false)
+  // A table of the product's facts, to a store whose products carry one (a supplements store).
+  assert.deepEqual(sources({ parts: false, sizes: false, facts: true } as typeof northfold), ['description', 'fabric-care', 'facts', 'delivery-returns', 'custom'])
+  // "Only on products sold on a plan", to a store with subscription plans, on either drawing.
+  const rowKeys = (facts: typeof northfold, drawing?: 'sections') => fieldsFor(getBlockDef('collapsible-row')!.fields, drawing, 'product', facts).map((f) => f.key)
+  assert.deepEqual(rowKeys(northfold, 'sections'), ['title', 'source', 'text', 'open'])
+  assert.deepEqual(rowKeys(torqline, 'sections'), ['title', 'source', 'text', 'open'])
+  const plans = { ...northfold, subscriptions: true }
+  assert.deepEqual(rowKeys(plans, 'sections'), ['title', 'source', 'text', 'open', 'plansOnly'])
+  assert.deepEqual(rowKeys(plans), ['title', 'source', 'text', 'open', 'plansOnly'])
+  assert.equal(getBlockDef('collapsible-row')!.fields.find((f) => f.key === 'plansOnly')!.label, 'Only on products sold on a plan')
+  assert.equal(createBlock('collapsible-row').settings.plansOnly, undefined, 'a new row shows on every product')
   // Told nothing, the builder offers neither.
-  assert.deepEqual(fieldsFor(getSectionDef('product-detail')!.fields, 'sections', 'product').map((f) => f.key), ['galleryLayout', 'imageRatio', 'showReviews'])
+  assert.deepEqual(fieldsFor(getSectionDef('product-detail')!.fields, 'sections', 'product').map((f) => f.key), ['galleryLayout', 'imageRatio', 'preselectVariant', 'quantity', 'stockLine', 'showReviews'])
 })
 
-test('a part’s rows take no text, so the builder hides it for them', () => {
+test('a row filled from the product takes no text, so the builder hides it for them', () => {
   const text = getBlockDef('collapsible-row')!.fields.find((f) => f.key === 'text')!
-  for (const source of ['specs', 'fitment', 'warranty']) assert.equal(fieldShown(text, { source }), false, source)
+  for (const source of ['facts', 'specs', 'fitment', 'warranty']) assert.equal(fieldShown(text, { source }), false, source)
   for (const source of ['description', 'fit', 'fabric-care', 'delivery-returns', 'custom']) assert.equal(fieldShown(text, { source }), true, source)
   assert.equal(fieldShown(getBlockDef('collapsible-row')!.fields[0]!, { source: 'specs' }), true, 'a field without a condition always shows')
 })
@@ -426,4 +466,23 @@ test('a select shows what the storefront draws: its value, else its default when
   )
   assert.equal(shown.lumos!['home image-banner.contentPosition'], 'Center left')
   assert.equal(shown.lumos!['collection collection-grid.cardStyle'], 'Boxed')
+  // Vitaheal sets every one of them; its hero has Lumos's words on the left.
+  assert.deepEqual(shown.vitaheal, {
+    'home image-banner.contentPosition': 'Center left',
+    'home collection-grid.layout': 'Carousel',
+    'home collection-grid.tileStyle': 'Label over photo',
+    'home collection-grid.background': 'Tint',
+    'home featured-products.layout': 'Carousel',
+    'home icon-row.alignment': 'Center',
+    'home icon-row.tileStyle': 'Card',
+    'product featured-products.layout': 'Grid',
+    'collection collection-grid.cardStyle': 'Boxed',
+  })
+  const vitaheal = snapshotFor(DEMO_STORES.find((b) => b.id === 'vitaheal')!.homeChannel, 'vitaheal', '2026-11-20').theme.templates
+  const explicit = (template: keyof typeof vitaheal, kind: string, key: string) => vitaheal[template].find((s) => s.kind === kind)!.settings[key]
+  for (const [template, kind, key] of [
+    ['home', 'image-banner', 'contentPosition'], ['home', 'collection-grid', 'layout'], ['home', 'collection-grid', 'tileStyle'], ['home', 'collection-grid', 'background'],
+    ['home', 'featured-products', 'layout'], ['home', 'icon-row', 'alignment'], ['home', 'icon-row', 'tileStyle'],
+    ['product', 'featured-products', 'layout'], ['collection', 'collection-grid', 'cardStyle'],
+  ] as const) assert.notEqual(explicit(template, kind, key), undefined, `${template} ${kind}.${key} is set`)
 })

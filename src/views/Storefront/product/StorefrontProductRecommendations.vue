@@ -41,8 +41,8 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section v-if="products.length" class="sf-recs" aria-labelledby="sf-recs-title">
-    <h2 id="sf-recs-title" class="sf-recs__title">{{ heading }}</h2>
+  <section v-if="products.length" class="sf-recs" aria-labelledby="sf-pdp-related">
+    <h2 id="sf-pdp-related" class="sf-recs__title">{{ heading }}</h2>
     <ul class="sf-recs__grid">
       <li v-for="item in products" :key="item.id" class="sf-recs__item">
         <StorefrontListingCard

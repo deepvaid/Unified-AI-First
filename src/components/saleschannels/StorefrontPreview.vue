@@ -6,6 +6,24 @@ import { FACET_LABELS } from '@/storefront/facets'
 import { toHandle } from '@/storefront/handles'
 import { relatedByCollection } from '@/storefront/productPage'
 import { optionKind } from '@/storefront/variants'
+import { ONE_TIME } from '@/subscriptions/plans'
+import PreviewPurchaseBlock from './PreviewPurchaseBlock.vue'
+import { purchaseChosenId, type PurchasePreview } from './storefrontPreview'
+
+/** What a product template's purchase options block shows when the store has no product on a plan yet. */
+const PURCHASE_EXAMPLE: PurchasePreview = {
+  product: 'Ridgeline Parka',
+  price: '$248.00',
+  single: [{ id: ONE_TIME, name: 'One-time purchase', price: '$248.00', saving: '', first: false }],
+  groups: [{
+    label: 'Subscribe and save',
+    saving: 'Save up to 20%',
+    options: [
+      { id: 'monthly', name: 'Deliver every month', price: '$223.20', saving: 'Save 10%', first: true },
+      { id: 'two-monthly', name: 'Deliver every 2 months', price: '$198.40', saving: 'Save 20%', first: false },
+    ],
+  }],
+}
 
 const props = withDefaults(defineProps<{
   /** Ordered sections of the active template. Omit for the static default storefront mock. */
@@ -39,6 +57,13 @@ const props = withDefaults(defineProps<{
   /** What the header's search field says while empty. */
   searchPlaceholder?: string
   /**
+   * Whether shoppers can search the store yet (connected to Merchandise Cloud, `canSearch`).
+   * Until they can, the sections drawing draws no search, in the header or the vehicle
+   * finder, as the storefront's; the theme builder's interactive canvas still draws it as
+   * the theme lays it out, so the merchant designing the theme sees where it goes.
+   */
+  searchable?: boolean
+  /**
    * The store's product card (its collection template's `cardStyle`): every product row
    * on the sections drawing uses it, as the storefront does. Only 'Boxed' changes the rows.
    */
@@ -48,8 +73,9 @@ const props = withDefaults(defineProps<{
   /**
    * The store's own products, for a featured-products section: photo, name and price. A
    * part also brings its part number, or what it comes in ("Front or rear"), and its
-   * choices; a product its choices as its page offers them (swatches for a colour) and
-   * its card's badge. Omit for drawn stand-ins.
+   * choices; a product its choices as its page offers them (swatches for a colour), the
+   * choice its page opens on when the theme opens on the lowest-priced one (`start`), and
+   * its card's badge ('Subscribe' says "Subscribe available"). Omit for drawn stand-ins.
    */
   products?: Array<{
     name: string
@@ -60,8 +86,16 @@ const props = withDefaults(defineProps<{
     partNumber?: string
     choice?: string
     options?: { name: string; values: string[]; display?: 'buttons' | 'swatches'; swatches?: Record<string, string> }[]
-    badge?: 'Sale' | 'New'
+    start?: Record<string, string>
+    badge?: 'Sale' | 'New' | 'Subscribe'
   }>
+  /**
+   * The purchase options of one of the store's products, for a product template with
+   * a purchase options block: its plans of one fixed delivery and buying once
+   * (`single`), then each plan sold by delivery options under its label (`groups`).
+   * Omit for a drawn example.
+   */
+  purchase?: PurchasePreview
   /**
    * The template the sections belong to. On the sections drawing a collection
    * template's collection grid is the product grid (filters, sort, cards), not tiles.
@@ -83,9 +117,11 @@ const props = withDefaults(defineProps<{
   headerTools: undefined,
   headerSearch: 'icon',
   searchPlaceholder: 'Search',
+  searchable: true,
   cardStyle: undefined,
   quickAdd: false,
   products: undefined,
+  purchase: undefined,
   template: 'home',
   generating: null,
 })
@@ -145,8 +181,10 @@ function featuredProducts(section: ThemeSection) {
 
 /** A store with a wishlist (its header has the heart), on the sections drawing: hearts on its header, cards and product page. */
 const wishlist = computed(() => sectionsDrawing.value && (props.headerTools ?? []).includes('wishlist'))
+/** The store's search is drawn: once shoppers can search it, and always in the builder's canvas. */
+const showsSearch = computed(() => props.searchable || props.interactive)
 /** The header's search as a field with the store's placeholder, on the sections drawing. */
-const searchField = computed(() => sectionsDrawing.value && props.headerSearch === 'field')
+const searchField = computed(() => sectionsDrawing.value && showsSearch.value && props.headerSearch === 'field')
 
 /**
  * Boxed cards (Lumos), on the sections drawing: a collection page's grid when it asks for
@@ -163,8 +201,9 @@ function boxedQuickAdd(section: ThemeSection): boolean {
 }
 
 /** A card's badge: none for "New" in a row of new arrivals, which would say it on every card. */
-function cardBadge(section: ThemeSection, product: { badge?: 'Sale' | 'New' } | null): string {
+function cardBadge(section: ThemeSection, product: { badge?: 'Sale' | 'New' | 'Subscribe' } | null): string {
   if (!product?.badge) return ''
+  if (product.badge === 'Subscribe') return 'Subscribe available'
   return product.badge === 'New' && /^new\b/.test(text(section, 'collection')) ? '' : product.badge
 }
 
@@ -221,12 +260,16 @@ function titleParts(title: string, accent: unknown): { text: string; accent: boo
   return accentParts(title, sectionsDrawing.value && typeof accent === 'string' ? accent : '')
 }
 
-/** Where a block is drawn on the sections drawing: over the banner's photo, beside the product, or under the section. */
+/**
+ * Where a block is drawn: an icon row's features side by side on either drawing (each on a
+ * card, with the Card style, on the sections drawing); on the sections drawing also over
+ * the banner's photo, beside the product, in a logo strip or a carousel; else under the section.
+ */
 function blocksPlacement(section: ThemeSection): string[] {
+  if (section.kind === 'icon-row') return ['sf-blocks--icons', ...(sectionsDrawing.value && section.settings.tileStyle === 'Card' ? ['sf-blocks--cards'] : [])]
   if (!sectionsDrawing.value) return []
   if (section.kind === 'image-banner') return ['sf-blocks--on-banner', ...(wordsLeft(section) ? ['sf-blocks--on-light'] : [])]
   if (section.kind === 'product-detail') return ['sf-blocks--rows']
-  if (section.kind === 'icon-row') return ['sf-blocks--icons', ...(section.settings.tileStyle === 'Card' ? ['sf-blocks--cards'] : [])]
   if (section.kind === 'logo-strip') return ['sf-blocks--logos']
   if (carousel(section)) return ['sf-blocks--carousel', ...(section.settings.tileStyle === 'Label over photo' ? ['sf-blocks--over'] : [])]
   if (section.kind === 'collection-grid' && section.settings.tileStyle === 'Label over photo') return ['sf-blocks--over']
@@ -239,7 +282,7 @@ function blocksPlacement(section: ThemeSection): string[] {
  * in a strip of their own under its buttons.
  */
 function blockGroups(section: ThemeSection): { key: string; blocks: ThemeBlock[]; classes: unknown[]; style?: Record<string, string | number> }[] {
-  const blocks = section.blocks ?? []
+  const blocks = regionBlocks(section)
   if (!blocks.length) return []
   const grid = section.kind === 'collection-grid'
   const main = {
@@ -279,23 +322,53 @@ interface PdpOption {
 }
 
 /**
+ * The product a sections product page shows: the store's first, or with a purchase
+ * options block the one its options are priced for. None for the drawn stand-in, and
+ * none while the block draws the example plans.
+ */
+function pdpProduct(section: ThemeSection) {
+  if (!purchaseBlock(section)) return props.products?.[0]
+  return props.purchase ? props.products?.find((product) => product.name === props.purchase!.product) : undefined
+}
+
+/** The product page's name: the product its purchase options are for when it has the block. */
+function pdpName(section: ThemeSection): string {
+  return purchaseBlock(section) ? purchaseShown.value.product : pdpProduct(section)?.name ?? 'Ridgeline Parka'
+}
+
+/**
+ * The product page's price: the purchase options' unit price when it has the block;
+ * else the product's, or, when the page opens on the lowest-priced choice, that
+ * choice's, which is the price "From" names.
+ */
+function pdpPrice(section: ThemeSection): string {
+  if (purchaseBlock(section)) return purchasePrice(section)
+  const price = pdpProduct(section)?.price ?? '$248.00'
+  return flag(section, 'preselectVariant') ? price.replace(/^From\s+/, '') : price
+}
+
+/**
  * The product page's choices, as the storefront's picker offers them: the shown
  * product's own options (a colour with swatches as swatches, the rest as words; no size
- * row for a product without sizes). The drawn stand-ins: three swatches and XS to XL,
- * or a part's Front and Rear.
+ * row for a product without sizes). A colour opens on its first value and an option
+ * with one value on it; when the page opens on the lowest-priced choice, the rest open
+ * on that choice's. The drawn stand-ins: three swatches and XS to XL, or a part's
+ * Front and Rear.
  */
 function pdpOptions(section: ThemeSection): PdpOption[] {
   const words = (values: string[]) => values.map((value) => ({ value }))
-  if (!props.products) {
+  const product = pdpProduct(section)
+  if (!props.products || (purchaseBlock(section) && !product)) {
     return flag(section, 'fitment')
       ? [{ swatches: false, values: words(['Front', 'Rear']) }]
       : [{ swatches: true, values: words(['', '', '']) }, { swatches: false, values: words(['XS', 'S', 'M', 'L', 'XL']) }]
   }
-  return (props.products[0]?.options ?? []).map((option) => {
+  const start = flag(section, 'preselectVariant') ? product?.start ?? {} : {}
+  return (product?.options ?? []).map((option) => {
     const hexes = option.swatches ?? {}
     const color = optionKind(option) === 'color'
     const swatches = color && option.display !== 'buttons' && option.values.some((value) => !!hexes[value])
-    const chosen = color || option.values.length === 1 ? option.values[0] : undefined
+    const chosen = color || option.values.length === 1 ? option.values[0] : start[option.name]
     return { name: option.name, swatches, chosen, values: option.values.slice(0, 6).map((value) => ({ value, hex: hexes[value] })) }
   })
 }
@@ -303,6 +376,36 @@ function pdpOptions(section: ThemeSection): PdpOption[] {
 /** A collection grid that asks for Dense cards (a parts store's), on the sections drawing. */
 function dense(section: ThemeSection): boolean {
   return sectionsDrawing.value && section.settings.cardStyle === 'Dense'
+}
+
+// ── Purchase options (a product page's block) ──────────────────────────────────
+/** Both drawings draw a product page's purchase options block in the buy box, not under the section. */
+function purchaseBlock(section: ThemeSection): ThemeBlock | undefined {
+  return section.kind === 'product-detail' ? section.blocks?.find((block) => block.kind === 'purchase-options') : undefined
+}
+
+/** The blocks drawn under a section: all of them, less a block the section draws inside itself. */
+function regionBlocks(section: ThemeSection): ThemeBlock[] {
+  const inside = purchaseBlock(section)
+  return (section.blocks ?? []).filter((block) => block !== inside)
+}
+
+const purchaseShown = computed(() => props.purchase ?? PURCHASE_EXAMPLE)
+
+/**
+ * The unit price over the purchase options, as the storefront reads it: "From 399 kr"
+ * while the page opens with no choice made and the variants differ in price; just the
+ * price when it opens on the lowest-priced choice.
+ */
+function purchasePrice(section: ThemeSection): string {
+  const { price, from } = purchaseShown.value
+  return from && !flag(section, 'preselectVariant') ? `From ${price}` : price
+}
+
+/** The page opens on a plan: the sections buy box then says "Add subscription to cart" and holds Buy now back, as the storefront does. */
+function planChosen(section: ThemeSection): boolean {
+  const block = purchaseBlock(section)
+  return !!block && purchaseChosenId(block, purchaseShown.value) !== ONE_TIME
 }
 
 function onSelect(section: ThemeSection) {
@@ -399,7 +502,7 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
               <v-icon size="12">search</v-icon>
             </span>
             <span v-if="sectionsDrawing" class="sf-header__icons" aria-hidden="true">
-              <v-icon v-if="!searchField" size="13">search</v-icon>
+              <v-icon v-if="showsSearch && !searchField" size="13">search</v-icon>
               <v-icon v-if="!headerTools || headerTools.includes('account')" size="13">user-round</v-icon>
               <v-icon v-if="wishlist" size="13">heart</v-icon>
               <v-icon size="13">shopping-bag</v-icon>
@@ -432,7 +535,7 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
                 </span>
                 <span class="sf-btn">Find parts</span>
               </span>
-              <span v-if="flag(section, 'partNumberSearch')" class="sf-finder__part">
+              <span v-if="flag(section, 'partNumberSearch') && showsSearch" class="sf-finder__part">
                 <span class="sf-finder__part-label">Or search by part number</span>
                 <span class="sf-finder__part-row">
                   <span class="sf-finder__part-input">TQ-BRK-4471</span>
@@ -619,14 +722,16 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
           <!-- The sections drawing's product page: a stacked gallery beside the buy box, its collapsible rows under it. -->
           <div v-else-if="section.kind === 'product-detail' && sectionsDrawing" class="sf-pdp">
             <div class="sf-pdp__gallery sf-pdp__gallery--stacked" :class="{ 'sf-pdp__gallery--single': section.settings.galleryLayout !== 'Stacked' }" :style="{ '--sf-tile-ratio': ratioOf(text(section, 'imageRatio')) }">
-              <span class="sf-pdp__img"><img v-if="products?.[0]?.image" :src="products[0].image" alt="" loading="lazy"></span>
+              <span class="sf-pdp__img"><img v-if="pdpProduct(section)?.image" :src="pdpProduct(section)!.image" alt="" loading="lazy"></span>
               <!-- The second photo when the product has one; the drawn stand-in shows an empty tile. -->
-              <span v-if="products?.[0]?.images?.[1]" class="sf-pdp__img"><img :src="products![0]!.images![1]" alt="" loading="lazy"></span>
-              <span v-else-if="!products?.length" class="sf-pdp__img" />
+              <span v-if="pdpProduct(section)?.images?.[1]" class="sf-pdp__img"><img :src="pdpProduct(section)!.images![1]" alt="" loading="lazy"></span>
+              <span v-else-if="!pdpProduct(section)" class="sf-pdp__img" />
             </div>
             <div class="sf-pdp__info">
-              <strong class="sf-heading">{{ products?.[0]?.name ?? 'Ridgeline Parka' }}</strong>
-              <em>{{ products?.[0]?.price ?? '$248.00' }}</em>
+              <strong class="sf-heading">{{ pdpName(section) }}</strong>
+              <em>{{ pdpPrice(section) }}</em>
+              <!-- The stock line, when the page shows one. -->
+              <span v-if="flag(section, 'stockLine')" class="sf-pdp__stock"><i aria-hidden="true" />In stock, ready to ship</span>
               <!-- A part's page (the vehicle fit banner on): its fit over its choices ("Front", "Rear"). -->
               <span v-if="flag(section, 'fitment')" class="sf-pdp__fit"><v-icon size="12" aria-hidden="true">car-front</v-icon>Check fit · Select vehicle</span>
               <!-- The product's own choices: "Fabric: Oat" over its swatches, a size or a part's choice as words. -->
@@ -637,12 +742,29 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
               </span>
               <span v-if="flag(section, 'sizeGuide')" class="sf-pdp__guide">Size guide</span>
               <span v-if="flag(section, 'showReviews')" class="sf-pdp__reviews">★★★★★ · 128 reviews</span>
-              <!-- Add to cart, the heart beside it on a store with a wishlist, then Buy now (as the storefront's buy box). -->
+              <!-- The purchase options block: the store's plans as its theme lays them out, under the choices. -->
+              <PreviewPurchaseBlock
+                v-for="block in purchaseBlock(section) ? [purchaseBlock(section)!] : []"
+                :key="block.id"
+                :block="block"
+                :shown="purchaseShown"
+                :interactive="interactive"
+                :selected="block.id === selectedBlockId"
+                :is-new="pendingBlockSet.has(block.id)"
+                @select="onSelectBlock(section.id, block.id)"
+              />
+              <!-- The quantity when the page shows it, Add to cart (for a plan, "Add subscription to cart"), the heart
+                   beside it on a store with a wishlist, then Buy now, which waits while a plan is chosen (as the storefront's buy box). -->
               <span class="sf-pdp__buy">
-                <span class="sf-btn sf-pdp__add">Add to cart</span>
+                <span v-if="flag(section, 'quantity')" class="sf-pdp__qty" aria-hidden="true">
+                  <v-icon size="11">minus</v-icon>
+                  <b>1</b>
+                  <v-icon size="11">plus</v-icon>
+                </span>
+                <span class="sf-btn sf-pdp__add">{{ planChosen(section) ? 'Add subscription to cart' : 'Add to cart' }}</span>
                 <span v-if="wishlist" class="sf-pdp__heart" aria-hidden="true"><v-icon size="12">heart</v-icon></span>
               </span>
-              <span class="sf-btn sf-btn--quiet sf-pdp__add">Buy now</span>
+              <span v-if="!planChosen(section)" class="sf-btn sf-btn--quiet sf-pdp__add">Buy now</span>
             </div>
           </div>
 
@@ -654,9 +776,20 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
               </span>
             </div>
             <div class="sf-pdp__info">
-              <strong class="sf-heading">Ridgeline Parka</strong>
-              <em>$248.00</em>
+              <strong class="sf-heading">{{ purchaseBlock(section) ? purchaseShown.product : 'Ridgeline Parka' }}</strong>
+              <em>{{ purchaseBlock(section) ? purchasePrice(section) : '$248.00' }}</em>
               <span v-if="flag(section, 'showReviews')" class="sf-pdp__reviews">★★★★★ · 128 reviews</span>
+              <!-- The purchase options block: the store's plans as its theme lays them out. -->
+              <PreviewPurchaseBlock
+                v-for="block in purchaseBlock(section) ? [purchaseBlock(section)!] : []"
+                :key="block.id"
+                :block="block"
+                :shown="purchaseShown"
+                :interactive="interactive"
+                :selected="block.id === selectedBlockId"
+                :is-new="pendingBlockSet.has(block.id)"
+                @select="onSelectBlock(section.id, block.id)"
+              />
               <span class="sf-btn">Add to cart</span>
             </div>
           </div>
@@ -2785,6 +2918,39 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
   flex: 1 1 auto;
 }
 
+/* The quantity stepper before Add to cart. */
+.sf-pdp__qty {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  height: 28px;
+  padding: 0 7px;
+  border: 1px solid var(--sf-divider, var(--sf-soft-line));
+  border-radius: var(--sf-radius);
+  color: var(--sf-text);
+  font-size: 10.5px;
+}
+
+.sf-pdp__qty b {
+  font-weight: 500;
+}
+
+/* "In stock, ready to ship" under the price, after its dot. */
+.sf-pdp__stock {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+}
+
+.sf-pdp__stock i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #2e7d32;
+}
+
 .sf-pdp__heart {
   display: grid;
   flex: none;
@@ -3128,6 +3294,31 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
   .sf-preview--sections .sf-section--flow > .sf-blocks--stats .sf-block {
     flex: 1 1 0;
     min-width: 0;
+  }
+}
+
+/* A canvas narrower than a phone (the Themes page's preview on a phone): the stats strip wraps,
+   two figures to a row and the third across under them, so a figure stays on one line and its
+   label is not squeezed to a word a line. */
+@container (max-width: 320px) {
+  .sf-preview--sections .sf-section--flow > .sf-blocks--stats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: 4px;
+  }
+
+  .sf-preview--sections .sf-section--flow > .sf-blocks--stats .sf-block:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
+  .sf-preview--sections .sf-section--flow > .sf-blocks--stats .sf-block:nth-child(n + 3) {
+    padding-top: 6px;
+    border-top: 1px solid var(--sf-divider, var(--sf-soft-line));
+    border-left: 0;
+  }
+
+  .sf-preview--sections .sf-section--flow > .sf-blocks--stats .sf-block__stat strong {
+    white-space: nowrap;
   }
 }
 </style>

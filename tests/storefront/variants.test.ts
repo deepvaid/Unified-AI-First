@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  LOW_STOCK, buildVariants, describeVariant, initialSelection, nextVariantId, numberVariants, optionKey, optionKind,
+  LOW_STOCK, buildVariants, cheapestInitialSelection, cheapestSelection, describeVariant, initialSelection, nextVariantId, numberVariants, optionKey, optionKind,
   optionValuesOf, stockNote, valueState, variantAvailable, variantFor,
 } from '../../src/storefront/variants.ts'
 import type { SellableVariant, VariantOption, VariantProduct } from '../../src/storefront/variants.ts'
@@ -102,6 +102,57 @@ test('an option with one value is chosen for the shopper; a plain choice is left
   }
   assert.deepEqual(initialSelection(pads), { Pack: 'Set of 4' })
   assert.deepEqual(initialSelection({ detail: { options: [], variantsList: [v(1, [], 1)] } }), {})
+})
+
+test('a page that opens on the lowest-priced choice: Unwind on Bag, Electrolytes on its cheapest flavour', () => {
+  const product = (name: string) => vitahealProducts().find((p) => p.name === name)!
+  // Can 419 kr, Bag 399 kr.
+  assert.deepEqual(cheapestSelection(product('Unwind')), { Format: 'Bag' })
+  // Lemon & Ginger and Wild Berries cost 279 kr each: the first of the two; the Starter Pack is 499 kr.
+  assert.deepEqual(cheapestSelection(product('Vitaheal Electrolytes')), { Flavour: 'Lemon & Ginger' })
+  assert.equal(variantFor(product('Unwind'), cheapestSelection(product('Unwind')))?.sku, 'VTH-UNW-BAG')
+})
+
+test('the lowest-priced choice skips what cannot be bought, and is empty when there is no choice or nothing left', () => {
+  const priced = (id: number, values: string[], units: number, price: string) => ({ ...v(id, values, units), price })
+  const tee = {
+    detail: {
+      options: [colour, size],
+      variantsList: [priced(1, ['Black', 'S'], 0, '20.00'), priced(2, ['Black', 'M'], 4, '25.00'), priced(3, ['Sand', 'S'], 2, '22.00')],
+    },
+  }
+  // Black S is the cheapest but sold out.
+  assert.deepEqual(cheapestSelection(tee), { Colour: 'Sand', Size: 'S' })
+  const gone = { detail: { options: [colour, size], variantsList: tee.detail.variantsList.map((x) => ({ ...x, stock: { Warehouse: 0 } })) } }
+  assert.deepEqual(cheapestSelection(gone), {})
+  assert.deepEqual(cheapestSelection({ detail: { options: [], variantsList: [priced(1, [], 3, '9.00')] } }), {})
+})
+
+test('opening on the lowest-priced choice, a choice in the URL still wins and the rest comes with it', () => {
+  const unwind = vitahealProducts().find((p) => p.name === 'Unwind')!
+  assert.deepEqual(cheapestInitialSelection(unwind), { Format: 'Bag' })
+  assert.deepEqual(cheapestInitialSelection(unwind, { format: 'can' }), { Format: 'Can' })
+  assert.deepEqual(cheapestInitialSelection(unwind, { format: 'tin' }), { Format: 'Bag' }, 'a value it does not have')
+  const priced = (id: number, values: string[], units: number, price: string) => ({ ...v(id, values, units), price })
+  const tee = {
+    detail: {
+      options: [colour, size, { name: 'Pack', values: ['Single'] }],
+      variantsList: [
+        priced(1, ['Black', 'S', 'Single'], 4, '20.00'), priced(2, ['Black', 'M', 'Single'], 4, '24.00'),
+        priced(3, ['Sand', 'M', 'Single'], 4, '22.00'), priced(4, ['Sand', 'L', 'Single'], 4, '21.00'),
+      ],
+    },
+  }
+  assert.deepEqual(cheapestInitialSelection(tee), { Colour: 'Black', Size: 'S', Pack: 'Single' })
+  // The URL asks for Sand: the cheapest Sand is L (21.00), though Black S (20.00) is cheaper.
+  assert.deepEqual(cheapestInitialSelection(tee, { colour: 'sand' }), { Colour: 'Sand', Size: 'L', Pack: 'Single' })
+  assert.deepEqual(cheapestSelection(tee, { Size: 'M' }), { Colour: 'Sand', Size: 'M', Pack: 'Single' })
+  // Every Sand sold out: the URL's colour stays, the size is left open, the one value is chosen.
+  const sandGone = { detail: { ...tee.detail, variantsList: tee.detail.variantsList.map((x) => (x.optionValues![0] === 'Sand' ? { ...x, stock: { Warehouse: 0 } } : x)) } }
+  assert.deepEqual(cheapestInitialSelection(sandGone, { colour: 'sand' }), { Colour: 'Sand', Pack: 'Single' })
+  // Nothing left: the usual start, a colour in stock or not and the one value.
+  const gone = { detail: { ...tee.detail, variantsList: tee.detail.variantsList.map((x) => ({ ...x, stock: { Warehouse: 0 } })) } }
+  assert.deepEqual(cheapestInitialSelection(gone), initialSelection(gone))
 })
 
 test('a chosen variant reads "Size M · Black", sizes first', () => {

@@ -237,6 +237,21 @@ export const useMaropayStore = defineStore('maropay', () => {
 
   watch(() => accounts.activeId, (id) => activateAccount(id), { immediate: true, flush: 'sync' })
 
+  // Another tab took or changed a payment (the storefront, beside an open admin):
+  // follow it, so its order is here without a reload. A removed record is a reset.
+  if (typeof window !== 'undefined') {
+    window.addEventListener('storage', (event) => {
+      const accountId = activeAccountId.value
+      if (!accountId || event.key !== storageKey(accountId)) return
+      const stored = readStored(accountId)
+      if (!stored) unproject()
+      hasExplicitState.value = stored !== null
+      now.value = Date.now()
+      state.value = stored ?? emptyState(accountId, now.value)
+      project()
+    })
+  }
+
   // ── Running adapter operations ──────────────────────────────────────
 
   function env(): AdapterEnv {
@@ -812,6 +827,8 @@ export const useMaropayStore = defineStore('maropay', () => {
 
   function applyScenario(key: MaropayScenarioKey): void {
     unproject()
+    // The scenario's own orders take the numbers of the ones just removed, so nothing done to those may stay.
+    commerce.forgetCheckoutFulfillments(state.value.accountId)
     now.value = Date.now()
     stepUp.value = { challenge: null, token: null }
     lastError.value = null
@@ -825,6 +842,7 @@ export const useMaropayStore = defineStore('maropay', () => {
   /** Clears only this account's Maropay state; other demo state (PLG, onboarding) is untouched. */
   function resetScenario(): void {
     unproject()
+    commerce.forgetCheckoutFulfillments(state.value.accountId)
     if (typeof window !== 'undefined') {
       try {
         window.localStorage.removeItem(storageKey(state.value.accountId))

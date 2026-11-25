@@ -14,6 +14,7 @@ import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpFormField from '@/components/MpFormField.vue'
 import MpFormSection from '@/components/MpFormSection.vue'
 import StorefrontPreview from '@/components/saleschannels/StorefrontPreview.vue'
+import { useStorefrontPreviewProps } from '@/components/saleschannels/storefrontPreview'
 import AddSectionDialog from '@/components/saleschannels/AddSectionDialog.vue'
 import ThemeDaVinciPanel, { type ThemeChatMessage, type ThemeGenerating } from '@/components/saleschannels/ThemeDaVinciPanel.vue'
 import { GENERATION_STAGES, GENERATION_STAGE_MS, generateSections } from '@/composables/useThemeGenerator'
@@ -22,11 +23,10 @@ import { useToast } from '@/composables/useToast'
 import { useCopilotStore } from '@/stores/useCopilot'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import { useStoreThemesStore } from '@/stores/useStoreThemes'
-import { useStorefrontStore } from '@/stores/useStorefront'
 import { useCommerceStore } from '@/stores/useCommerce'
 import { useSizeChartsStore } from '@/stores/useSizeCharts'
-import { collectionsOf, inStock, previewProducts, storefrontProducts } from '@/views/Storefront/storefrontCatalog'
-import { cardPrice, choiceSummary, gridSettings, isNewArrival, partNumber } from '@/storefront/listing'
+import { useSubscriptionsStore } from '@/stores/useSubscriptions'
+import { collectionsOf, storefrontProducts } from '@/views/Storefront/storefrontCatalog'
 import {
   blockHasRoom,
   blocksFor,
@@ -66,7 +66,6 @@ const channelId = computed(() => route.params.channelId as string)
 
 const salesChannelsStore = useSalesChannelsStore()
 const themesStore = useStoreThemesStore()
-const storefronts = useStorefrontStore()
 const toast = useToast()
 
 const channel = computed(() => salesChannelsStore.getChannel(accountId.value, channelId.value))
@@ -75,42 +74,11 @@ const theme = computed(() => {
   const requested = typeof route.query.theme === 'string' ? themesStore.getTheme(route.query.theme) : undefined
   return requested?.channelId === channelId.value ? requested : themesStore.themeForChannel(channelId.value)
 })
-const previewHeader = computed(() => storefronts.previewHeaderFor(channel.value))
-/** The header's search and tools as the store's own header shows them (a search field and a wishlist heart, Lumos). */
-const previewChrome = computed(() => {
-  if (!previewHeader.value.brand || !channel.value) return {}
-  const chrome = storefronts.chromeFor(channel.value)
-  return { headerSearch: chrome.headerSearch, headerTools: chrome.headerTools, searchPlaceholder: chrome.searchPlaceholder }
-})
-/** The collection template's product card and quick add, which every product row of the store uses (as the storefront does). */
-const previewCards = computed(() => {
-  const grid = gridSettings(theme.value?.templates.collection)
-  return { cardStyle: grid.cardStyle, quickAdd: grid.quickAdd }
-})
 /**
- * The store's own products in the canvas's product rows; a store on the shared catalogue
- * keeps the drawn stand-ins. A part also brings what its card and page show: its part
- * number, or what it comes in ("Front or rear"), and its choices; a product its choices
- * as the product page offers them (a fabric's swatches) and its card's badge.
+ * The store as the canvas draws it: its header, card, own products and the purchase
+ * options of a product on a plan (the store page and the Themes page pass the same).
  */
-const previewItems = computed(() => {
-  if (!channel.value) return undefined
-  const products = useCommerceStore().products
-  const items = previewProducts(products, channel.value)
-  if (!items) return undefined
-  const byName = new Map(storefrontProducts(products, channel.value.id).filter(inStock).map((product) => [product.name, product]))
-  return items.map((item) => {
-    const product = byName.get(item.name)
-    if (!product) return item
-    return {
-      ...item,
-      partNumber: partNumber(product),
-      choice: choiceSummary(product),
-      options: product.detail?.options.map((o) => ({ name: o.name, values: o.values, display: o.display, swatches: o.swatches })) ?? [],
-      badge: cardPrice(product).compareAt ? 'Sale' as const : isNewArrival(product) ? 'New' as const : undefined,
-    }
-  })
-})
+const previewProps = useStorefrontPreviewProps(channel, theme)
 
 /**
  * How the storefront draws this theme. A theme on the sections drawing (Northfold,
@@ -121,7 +89,17 @@ const previewItems = computed(() => {
 const drawing = computed(() => theme.value?.styles.drawing)
 /** What the store sells: a parts store is offered the vehicle finder and fit banner, a store with sizes the size guide. */
 const sizeChartsStore = useSizeChartsStore()
-const facts = computed(() => storeFacts(storefrontProducts(useCommerceStore().products, channelId.value), sizeChartsStore.chartsForChannel(channelId.value)))
+const subscriptionsStore = useSubscriptionsStore()
+const facts = computed(() => {
+  const products = storefrontProducts(useCommerceStore().products, channelId.value)
+  return {
+    ...storeFacts(products, sizeChartsStore.chartsForChannel(channelId.value)),
+    // A store with subscription plans is offered the product page's purchase options block.
+    subscriptions: subscriptionsStore.plans.some((plan) => plan.channelId === channelId.value),
+    // A store whose products carry a table of facts is offered a row that shows it.
+    facts: products.some((product) => !!product.detail?.specs?.length),
+  }
+})
 /** The kinds the open template can take (a logo strip is the home page's). */
 const addableSections = computed(() => sectionsFor(drawing.value, facts.value, activeTemplate.value))
 
@@ -245,7 +223,12 @@ function confirmRemove() {
 // A section shows a block sub-tree when its kind accepts blocks, or it already
 // has some. Expand state lives here (default collapsed).
 function sectionAcceptsBlocks(section: ThemeSection): boolean {
-  return blocksFor(section.kind, drawing.value).length > 0 || Boolean(section.blocks?.length)
+  return blocksFor(section.kind, drawing.value, facts.value).length > 0 || Boolean(section.blocks?.length)
+}
+
+/** The blocks Add block offers a section now: what its kind takes on this store, less a one-only block it already has. */
+function addableBlocks(section: ThemeSection) {
+  return blocksFor(section.kind, drawing.value, facts.value).filter((def) => !def.unique || !section.blocks?.some((block) => block.kind === def.kind))
 }
 
 const expandedSectionIds = ref<Set<string>>(new Set())
@@ -1086,7 +1069,7 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
               </div>
 
               <!-- Add block: menu over the blocks this section takes on this theme -->
-              <v-menu v-if="blocksFor(section.kind, drawing).length" location="bottom start">
+              <v-menu v-if="addableBlocks(section).length" location="bottom start">
                 <template #activator="{ props: menuProps }">
                   <button v-bind="menuProps" class="tb-block-add" :aria-label="`Add a block to ${section.label}`">
                     <v-icon size="16" class="tb-block-row__icon">plus</v-icon>
@@ -1096,7 +1079,7 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
                 <v-list density="compact">
                   <!-- A block the section is full of (a banner's three stats) stays listed, turned off, with why. -->
                   <v-list-item
-                    v-for="def in blocksFor(section.kind, drawing)"
+                    v-for="def in addableBlocks(section)"
                     :key="def.kind"
                     :disabled="!blockHasRoom(section, def.kind)"
                     :aria-disabled="!blockHasRoom(section, def.kind) ? 'true' : undefined"
@@ -1297,10 +1280,7 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
             <StorefrontPreview
               :sections="activeSections"
               :styles="theme.styles"
-              :brand="previewHeader.brand"
-              :menu="previewHeader.menu"
-              v-bind="{ ...previewChrome, ...previewCards }"
-              :products="previewItems"
+              v-bind="previewProps"
               :template="activeTemplate"
               :device="device"
               interactive
@@ -1379,6 +1359,8 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
                 v-else-if="f.type === 'toggle'"
                 :model-value="panelSettings[f.key] === true"
                 :label="f.label"
+                :hint="f.hint"
+                :persistent-hint="!!f.hint"
                 @update:model-value="(v: unknown) => panelSet(f.key, v === true)"
               ></v-switch>
               <MpFormField v-else-if="f.type === 'color'" :label="f.label">
@@ -1420,6 +1402,8 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
                 @update:model-value="(v: string) => panelSet(f.key, v)"
               ></v-text-field>
             </template>
+
+            <p v-if="isBlockSelected && selectedBlockDef?.note" class="text-caption text-medium-emphasis mb-0">{{ selectedBlockDef.note }}</p>
 
             <MpAlert tone="info" live="off">
               Changes apply to the preview as you type. Publish the theme to make them live.

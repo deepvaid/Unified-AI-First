@@ -173,7 +173,7 @@ export function selectionFromQuery(query: Readonly<Record<string, unknown>>): Re
 // ── Collapsible rows ─────────────────────────────────────────────────────────
 
 /** Where a row's body comes from. `specs`, `fitment` and `warranty` are a part's (an auto-parts store). */
-export type RowSource = 'description' | 'fit' | 'fabric-care' | 'specs' | 'fitment' | 'warranty' | 'delivery-returns' | 'custom'
+export type RowSource = 'description' | 'fit' | 'fabric-care' | 'facts' | 'specs' | 'fitment' | 'warranty' | 'delivery-returns' | 'custom'
 
 /** A `collapsible-row` block of the product template's product-detail section. */
 export interface RowBlock {
@@ -232,6 +232,7 @@ const ROW_TITLES: Record<RowSource, string> = {
   description: 'Description',
   fit: 'Fit and sizing',
   'fabric-care': 'Fabric and care',
+  facts: 'Product facts',
   specs: 'Specifications',
   fitment: 'Vehicle fit',
   warranty: 'Warranty',
@@ -248,6 +249,9 @@ const SOURCE_WORDS: Record<string, RowSource> = {
   'fabric-care': 'fabric-care',
   'fabric-and-care': 'fabric-care',
   care: 'fabric-care',
+  facts: 'facts',
+  'product-facts': 'facts',
+  'supplement-facts': 'facts',
   specs: 'specs',
   specifications: 'specs',
   fitment: 'fitment',
@@ -288,19 +292,21 @@ export function fitmentTable(fitment: Fitment | undefined, vehicle: Vehicle | nu
 /**
  * The rows under the buy box, in the template's order. A row with nothing to say
  * for this product is left out (a fit row without a fit note or a size guide, a
- * specifications row for a product without specs, say). A product-detail section
- * without rows gets the description alone. `vehicle` marks the shopper's rows in a
- * part's compatibility table.
+ * specifications row for a product without specs, say), and so is a row set to show
+ * only on products sold on a plan (`plansOnly`: "How subscriptions work") unless
+ * `hasPlans` says a plan offers this one. A product-detail section without rows gets
+ * the description alone. `vehicle` marks the shopper's rows in a part's compatibility table.
  */
 export function productRows(
   blocks: readonly RowBlock[] | undefined,
   product: RowProduct,
-  opts: { sizeGuide: boolean; vehicle?: Vehicle | null },
+  opts: { sizeGuide: boolean; vehicle?: Vehicle | null; hasPlans?: boolean },
 ): ProductRow[] {
   const rows = (blocks ?? []).filter((block) => block.kind === 'collapsible-row')
   const wanted: RowBlock[] = rows.length ? rows : [{ id: 'description', kind: 'collapsible-row', settings: { source: 'description', open: true } }]
   const detail = product.detail ?? {}
   return wanted.flatMap((block): ProductRow[] => {
+    if (block.settings.plansOnly === true && !opts.hasPlans) return []
     const source = rowSource(block.settings.source ?? block.settings.content)
     const written = typeof block.settings.title === 'string' ? block.settings.title.trim() : ''
     const row: ProductRow = {
@@ -329,6 +335,8 @@ export function productRows(
           { label: 'Made in', value: detail.countryOfOrigin?.trim() ?? '' },
         ].filter((fact) => fact.value)
         break
+      // A table of label and value: a part's specifications, or any product's facts (a supplement's).
+      case 'facts':
       case 'specs':
         row.specs = (detail.specs ?? [])
           .map((spec) => ({ label: spec.label.trim(), value: spec.value.trim() }))

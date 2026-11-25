@@ -26,6 +26,8 @@ const toneMap: Record<string, Record<string, Tone>> = {
     shipped: 'success', 'return requested': 'danger', cancelled: 'danger',
     fulfilled: 'success', unfulfilled: 'warning', partial: 'brand',
     'awaiting fulfillment': 'warning', picking: 'brand', packed: 'brand', 'ready to ship': 'success',
+    // The fulfillment queue's own statuses (src/commerce/fulfillment.ts).
+    picked: 'warning', 'label created': 'brand', delivered: 'success',
   },
   payment: {
     paid: 'success', refunded: 'danger', voided: 'neutral', pending: 'warning',

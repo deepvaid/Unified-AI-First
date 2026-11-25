@@ -7,11 +7,11 @@ import { useProductStores } from '@/composables/useProductStores'
 import { useToast } from '@/composables/useToast'
 import { parseDecimal } from '@/maropay/money'
 import { localDateKey } from '@/maropay/model'
-import { lowestPrice } from '@/storefront/catalog'
 import { formatStorePrice } from '@/storefront/price'
-import { CANCEL_REASONS, allowedActions, chargeAmount, dayLabel, rescheduleError } from '@/subscriptions/contracts'
+import { lineVariantText } from '@/storefront/shopperOrders'
+import { CANCEL_REASONS, allowedActions, chargeAmount, contractUnitPrice, dayLabel, rescheduleError } from '@/subscriptions/contracts'
 import type { ContractAction, ContractEvent } from '@/subscriptions/contracts'
-import { deliverySummary, nextChargeDate, pricePerDelivery } from '@/subscriptions/plans'
+import { deliverySummary, nextChargeDate, planTitle, pricePerDelivery } from '@/subscriptions/plans'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpSectionHeader from '@/components/MpSectionHeader.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
@@ -46,6 +46,10 @@ const stores = useProductStores(accountId).stores
 const store = computed(() => stores.value.find((s) => s.id === contract.value?.channelId))
 const product = computed(() => commerce.products.find((p) => p.id === contract.value?.productId))
 const price = computed(() => (contract.value ? formatStorePrice(chargeAmount(contract.value), store.value?.webStore?.locale) : ''))
+/** The choice it was bought in, as an order line reads it ("Can"); empty when it had none. */
+const choice = computed(() => (contract.value?.variantTitle
+  ? lineVariantText(product.value, { sku: contract.value.sku, variantTitle: contract.value.variantTitle })
+  : ''))
 
 function can(action: ContractAction): boolean {
   return !!contract.value && allowedActions(contract.value).includes(action)
@@ -117,9 +121,12 @@ const planDrawer = ref(false)
 const newPlanId = ref('')
 const otherPlans = computed(() => (contract.value ? subscriptions.plansToChangeTo(contract.value) : []))
 const planOptions = computed(() => otherPlans.value.map((plan) => {
-  const unit = product.value && contract.value ? parseDecimal(lowestPrice(product.value), contract.value.currency) : null
+  // Priced on the variant it was bought on, as the change itself is.
+  const unit = product.value && contract.value ? parseDecimal(contractUnitPrice(product.value, contract.value), contract.value.currency) : null
   const each = unit ? formatStorePrice(pricePerDelivery(unit, plan), store.value?.webStore?.locale) : null
-  return { title: plan.name, value: plan.id, subtitle: each ? `${deliverySummary(plan)} · ${each} per delivery` : deliverySummary(plan) }
+  // A delivery option is named by how often it comes, so its second line is the price alone.
+  const parts = [plan.optionOf ? '' : deliverySummary(plan), each ? `${each} per delivery` : ''].filter(Boolean)
+  return { title: planTitle(plan), value: plan.id, subtitle: parts.join(' · ') }
 }))
 
 function openPlan(): void {
@@ -243,8 +250,11 @@ function confirmCancel(): void {
               <v-icon v-else size="20">package</v-icon>
             </v-avatar>
             <div class="min-width-0">
-              <RouterLink v-if="product" :to="{ name: 'ProductEdit', params: { accountId, productId: product.id } }" class="mp-link text-body-2 font-weight-medium">{{ contract.product }}</RouterLink>
-              <p v-else class="text-body-2 font-weight-medium mb-0">{{ contract.product }}</p>
+              <p class="text-body-2 font-weight-medium mb-0">
+                <RouterLink v-if="product" :to="{ name: 'ProductEdit', params: { accountId, productId: product.id } }" class="mp-link">{{ contract.product }}</RouterLink>
+                <template v-else>{{ contract.product }}</template>
+                <template v-if="choice"> · {{ choice }}</template>
+              </p>
               <p class="text-caption text-medium-emphasis mb-0">
                 {{ contract.sku }} · {{ contract.plan.name }}<template v-if="contract.qty > 1"> · {{ contract.qty }} per delivery</template>
               </p>
@@ -297,7 +307,7 @@ function confirmCancel(): void {
       </template>
     </MpFormDrawer>
 
-    <MpFormDrawer v-model="planDrawer" title="Change plan" :subtitle="`${contract.customer.name} · ${contract.product}`" size="sm">
+    <MpFormDrawer v-model="planDrawer" title="Change plan" :subtitle="[contract.customer.name, contract.product, choice].filter(Boolean).join(' · ')" size="sm">
       <MpFormGrid>
         <v-select
           v-model="newPlanId"

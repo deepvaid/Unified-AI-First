@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, ref, watch } from 'vue'
+import { computed, inject, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useStorefrontCartStore } from '@/stores/useStorefrontCart'
 import { useStorefrontWishlistStore } from '@/stores/useStorefrontWishlist'
@@ -7,21 +7,26 @@ import { vehicleLabel } from '@/storefront/fitment'
 import { wishlistLinkLabel } from '@/storefront/wishlist'
 import StorefrontAnchor from './StorefrontAnchor.vue'
 import StorefrontDrawer from './StorefrontDrawer.vue'
+import StorefrontMegaPanel from './StorefrontMegaPanel.vue'
 import { STOREFRONT } from './storefrontContext'
 import { chromeSettings, flag, templateForRoute, text } from './sections/sectionSettings'
 
 // The storefront's announcement bar and header. Two drawings:
 // - classic (every theme but the sections drawing's): the markup StorefrontLayout has
-//   always drawn, moved here unchanged, so Vitaheal, Atlas and Neelam look as before;
-// - sections (Northfold, Torqline, Lumos): the theme's header section decides the menu
-//   style (Inline: wordmark and menu in one row; Centered: wordmark over the menu;
-//   Minimal: wordmark and a menu button), whether it sticks to the top on a desktop, and
-//   a light or dark scheme. Search shows only once the store can search; on a phone, and
-//   in the Minimal style, the menu opens in a drawer. The store's chrome can ask for
-//   search as a visible field (`headerSearch: 'field'`, Lumos): in the bar on a wide
-//   screen, in a row of its own under the bar where the bar has no room for it (1240px
-//   and narrower). A store with a wishlist (Lumos) gets a heart beside the cart, with
-//   how many saved products it still sells.
+//   always drawn, moved here unchanged, so Atlas and Neelam look as before;
+// - sections (Vitaheal, Northfold, Torqline, Lumos): the theme's header section decides
+//   the menu style (Inline: wordmark and menu in one row; Centered: wordmark over the
+//   menu; Minimal: wordmark and a menu button), whether it sticks to the top on a
+//   desktop, and a light or dark scheme. Search shows only once the store can search; on
+//   a phone, and in the Minimal style, the menu opens in a drawer. The store's chrome can
+//   ask for search as a visible field (`headerSearch: 'field'`, Lumos, Vitaheal): in the
+//   bar on a wide screen, in a row of its own under the bar where the bar has no room for
+//   it (1240px and narrower, and always in the Centered style). A store with a wishlist
+//   (Lumos) gets a heart beside the cart, with how many saved products it still sells.
+// In both drawings a menu link that carries a `menu` (Vitaheal's "Shop" and "About", Daybloom's
+// "Shop" and "Learn") is a button that opens a panel of links under the header, a mega menu
+// (StorefrontMegaPanel); in the phone menu, and the sections drawing's drawer, it is a row
+// that opens in place.
 // The checkout's header (route meta minimalChrome) is the logo and "Secure checkout".
 
 const storefront = inject(STOREFRONT)!
@@ -46,7 +51,63 @@ const announcement = computed(() => {
 
 // ── Classic ─────────────────────────────────────────────────────────────
 const menuOpen = ref(false)
-watch(() => route.fullPath, () => { menuOpen.value = false })
+watch(() => route.fullPath, () => {
+  menuOpen.value = false
+  closePanel()
+})
+
+// The mega menu, in both drawings (one menu is drawn at a time, so one `navEl`): which
+// link's panel is open, and whether a press opened it. A panel the pointer opened closes
+// when the pointer leaves; one a press opened stays until a press outside it, Escape, a
+// link, or the keyboard moving on.
+const openPanel = ref<number | null>(null)
+const pinned = ref(false)
+const navEl = ref<HTMLElement | null>(null)
+let leaving: ReturnType<typeof setTimeout> | undefined
+
+function closePanel(): void {
+  clearTimeout(leaving)
+  openPanel.value = null
+  pinned.value = false
+}
+function onTrigger(index: number): void {
+  clearTimeout(leaving)
+  if (openPanel.value === index && pinned.value) return closePanel()
+  openPanel.value = index
+  pinned.value = true
+}
+function onPointerEnter(index: number): void {
+  clearTimeout(leaving)
+  if (!pinned.value) openPanel.value = index
+}
+// A moment's grace, so crossing the gap between the link and its panel does not close it.
+function onPointerLeave(): void {
+  clearTimeout(leaving)
+  if (!pinned.value) leaving = setTimeout(() => { if (!pinned.value) openPanel.value = null }, 160)
+}
+/** Escape closes the panel and gives the keyboard back to the link that opened it. */
+function onNavEscape(): void {
+  const index = openPanel.value
+  if (index === null) return
+  closePanel()
+  navEl.value?.querySelector<HTMLElement>(`[aria-controls="sf-mega-${index}"]`)?.focus()
+}
+/** The keyboard left the link and its panel. */
+function onGroupFocusOut(event: FocusEvent): void {
+  const next = event.relatedTarget
+  if (next instanceof Node && !(event.currentTarget as HTMLElement).contains(next)) closePanel()
+}
+function onOutsidePress(event: PointerEvent): void {
+  if (!(event.target instanceof Node) || !navEl.value?.contains(event.target)) closePanel()
+}
+watch(openPanel, (index) => {
+  if (index === null) document.removeEventListener('pointerdown', onOutsidePress)
+  else document.addEventListener('pointerdown', onOutsidePress)
+})
+onBeforeUnmount(() => {
+  clearTimeout(leaving)
+  document.removeEventListener('pointerdown', onOutsidePress)
+})
 
 const query = ref('')
 function search(): void {
@@ -66,6 +127,8 @@ const menuStyle = computed(() => {
 const sticky = computed(() => flag(settings.value, 'sticky'))
 const dark = computed(() => text(settings.value, 'colorScheme') === 'Dark')
 const hasAccount = computed(() => chrome.value.headerTools.includes('account'))
+/** A menu with a mega menu in it: it takes the bar's full height, so the pointer never leaves a link on its way to the panel. */
+const hasPanels = computed(() => chrome.value.nav.some((item) => item.menu))
 
 // Search as a visible field (Lumos): two forms on one query, one shown at a time (in the bar
 // when it has room, else in a row under it), so the DOM order stays the order the eye reads.
@@ -119,77 +182,105 @@ function onMenuClosed(): void {
   <template v-if="sectionsDrawing && !minimal">
     <p v-if="announcement" class="sfh-announce">{{ announcement }}</p>
     <header class="sfh" :class="[`sfh--${menuStyle}`, { 'sfh--dark': dark, 'sfh--sticky': sticky, 'sfh--search-field': searchField }]">
-      <div class="sfh__row">
-        <StorefrontAnchor href="/" class="sfh__logo">
-          <v-icon v-if="chrome.wordmarkIcon" size="26" aria-hidden="true">{{ chrome.wordmarkIcon }}</v-icon>
-          <span>{{ chrome.wordmark }}</span>
-        </StorefrontAnchor>
-
-        <nav v-if="menuStyle === 'inline' && chrome.nav.length" class="sfh__nav" aria-label="Main">
-          <StorefrontAnchor v-for="item in chrome.nav" :key="item.label" :href="item.href" class="sfh__link">{{ item.label }}</StorefrontAnchor>
-        </nav>
-
-        <button
-          v-if="sellsParts"
-          type="button"
-          class="sfh__vehicle sfh__vehicle--inline"
-          aria-haspopup="dialog"
-          :aria-label="vehicleName"
-          @click="storefront.chooseVehicle()"
-        >
-          <v-icon size="18" aria-hidden="true">car-front</v-icon>
-          <span class="sfh__vehicle-text">{{ vehicleText }}</span>
-          <v-icon size="16" aria-hidden="true">chevron-down</v-icon>
-        </button>
-
-        <form v-if="searchField" class="sfh__search sfh__search--bar" role="search" @submit.prevent="search">
-          <span class="sfh__field">
-            <input
-              v-model="query"
-              type="search"
-              class="sfh__field-input"
-              :placeholder="chrome.searchPlaceholder"
-              aria-label="Search the store"
-              enterkeyhint="search"
-              autocomplete="off"
-            >
-            <button type="submit" class="sfh__field-go" aria-label="Search">
-              <v-icon size="20" aria-hidden="true">search</v-icon>
-            </button>
-          </span>
-        </form>
-
-        <div class="sfh__tools">
-          <StorefrontAnchor v-if="searchable && !searchField" href="/search" class="sfh__icon" aria-label="Search" @click="onSearchIcon">
-            <v-icon size="22" aria-hidden="true">search</v-icon>
+      <!-- The bar a mega menu's panel hangs from: under the menu row, over the search and vehicle rows. -->
+      <div class="sfh__bar">
+        <div class="sfh__row">
+          <StorefrontAnchor href="/" class="sfh__logo">
+            <v-icon v-if="chrome.wordmarkIcon" size="26" aria-hidden="true">{{ chrome.wordmarkIcon }}</v-icon>
+            <span>{{ chrome.wordmark }}</span>
           </StorefrontAnchor>
-          <StorefrontAnchor v-if="hasAccount" :href="chrome.accountHref ?? '/user/login'" class="sfh__icon sfh__icon--account" aria-label="Account">
-            <v-icon size="22" aria-hidden="true">user-round</v-icon>
-          </StorefrontAnchor>
-          <StorefrontAnchor v-if="storefront.wishlist.value" href="/wishlist" class="sfh__icon sfh__wish" :aria-label="wishLabel">
-            <v-icon size="22" aria-hidden="true">heart</v-icon>
-            <span v-if="wishCount" class="sfh__count" aria-hidden="true">{{ wishCount > 99 ? '99+' : wishCount }}</span>
-          </StorefrontAnchor>
-          <StorefrontAnchor href="/cart-page" class="sfh__icon sfh__cart" :aria-label="cartLabel">
-            <v-icon size="22" aria-hidden="true">shopping-bag</v-icon>
-            <span v-if="cartCount" class="sfh__count" aria-hidden="true">{{ cartCount > 99 ? '99+' : cartCount }}</span>
-          </StorefrontAnchor>
-          <button
-            type="button"
-            class="sfh__icon sfh__menu"
-            aria-label="Menu"
-            aria-haspopup="dialog"
-            :aria-expanded="menuOpen"
-            @click="menuOpen = true"
+
+          <!-- One menu for Inline and Centered: Centered puts it in a second row, under the wordmark. -->
+          <nav
+            v-if="menuStyle !== 'minimal' && chrome.nav.length"
+            ref="navEl"
+            class="sfh__nav"
+            :class="{ 'sfh__nav--panels': hasPanels }"
+            aria-label="Main"
+            @keydown.esc="onNavEscape"
           >
-            <v-icon size="24" aria-hidden="true">menu</v-icon>
+            <template v-for="(item, index) in chrome.nav" :key="item.label">
+              <div
+                v-if="item.menu"
+                class="sf-nav__group"
+                @pointerenter="$event.pointerType === 'mouse' && onPointerEnter(index)"
+                @pointerleave="$event.pointerType === 'mouse' && onPointerLeave()"
+                @focusout="onGroupFocusOut"
+              >
+                <button
+                  type="button"
+                  class="sf-nav__trigger sfh__trigger"
+                  :aria-expanded="openPanel === index"
+                  :aria-controls="`sf-mega-${index}`"
+                  @click="onTrigger(index)"
+                >
+                  <span class="sfh__link-text">{{ item.label }}</span>
+                  <v-icon size="16" aria-hidden="true">chevron-down</v-icon>
+                </button>
+                <StorefrontMegaPanel :menu="item.menu" :panel-id="`sf-mega-${index}`" :open="openPanel === index" />
+              </div>
+              <StorefrontAnchor v-else :href="item.href" class="sfh__link">{{ item.label }}</StorefrontAnchor>
+            </template>
+          </nav>
+
+          <button
+            v-if="sellsParts"
+            type="button"
+            class="sfh__vehicle sfh__vehicle--inline"
+            aria-haspopup="dialog"
+            :aria-label="vehicleName"
+            @click="storefront.chooseVehicle()"
+          >
+            <v-icon size="18" aria-hidden="true">car-front</v-icon>
+            <span class="sfh__vehicle-text">{{ vehicleText }}</span>
+            <v-icon size="16" aria-hidden="true">chevron-down</v-icon>
           </button>
+
+          <form v-if="searchField" class="sfh__search sfh__search--bar" role="search" @submit.prevent="search">
+            <span class="sfh__field">
+              <input
+                v-model="query"
+                type="search"
+                class="sfh__field-input"
+                :placeholder="chrome.searchPlaceholder"
+                aria-label="Search the store"
+                enterkeyhint="search"
+                autocomplete="off"
+              >
+              <button type="submit" class="sfh__field-go" aria-label="Search">
+                <v-icon size="20" aria-hidden="true">search</v-icon>
+              </button>
+            </span>
+          </form>
+
+          <div class="sfh__tools">
+            <StorefrontAnchor v-if="searchable && !searchField" href="/search" class="sfh__icon" aria-label="Search" @click="onSearchIcon">
+              <v-icon size="22" aria-hidden="true">search</v-icon>
+            </StorefrontAnchor>
+            <StorefrontAnchor v-if="hasAccount" :href="chrome.accountHref ?? '/user/login'" class="sfh__icon sfh__icon--account" aria-label="Account">
+              <v-icon size="22" aria-hidden="true">user-round</v-icon>
+            </StorefrontAnchor>
+            <StorefrontAnchor v-if="storefront.wishlist.value" href="/wishlist" class="sfh__icon sfh__wish" :aria-label="wishLabel">
+              <v-icon size="22" aria-hidden="true">heart</v-icon>
+              <span v-if="wishCount" class="sfh__count" aria-hidden="true">{{ wishCount > 99 ? '99+' : wishCount }}</span>
+            </StorefrontAnchor>
+            <StorefrontAnchor href="/cart-page" class="sfh__icon sfh__cart" :aria-label="cartLabel">
+              <v-icon size="22" aria-hidden="true">shopping-bag</v-icon>
+              <span v-if="cartCount" class="sfh__count" aria-hidden="true">{{ cartCount > 99 ? '99+' : cartCount }}</span>
+            </StorefrontAnchor>
+            <button
+              type="button"
+              class="sfh__icon sfh__menu"
+              aria-label="Menu"
+              aria-haspopup="dialog"
+              :aria-expanded="menuOpen"
+              @click="menuOpen = true"
+            >
+              <v-icon size="24" aria-hidden="true">menu</v-icon>
+            </button>
+          </div>
         </div>
       </div>
-
-      <nav v-if="menuStyle === 'centered' && chrome.nav.length" class="sfh__nav sfh__nav--below" aria-label="Main">
-        <StorefrontAnchor v-for="item in chrome.nav" :key="item.label" :href="item.href" class="sfh__link">{{ item.label }}</StorefrontAnchor>
-      </nav>
 
       <div v-if="sellsParts" class="sfh__vehicle-row">
         <button type="button" class="sfh__vehicle" aria-haspopup="dialog" :aria-label="vehicleName" @click="storefront.chooseVehicle()">
@@ -224,8 +315,23 @@ function onMenuClosed(): void {
           Search
         </StorefrontAnchor>
         <ul v-if="drawerLinks.main.length" class="sfh-drawer__main">
-          <li v-for="item in drawerLinks.main" :key="item.label">
-            <StorefrontAnchor :href="item.href" class="sfh-drawer__link">{{ item.label }}</StorefrontAnchor>
+          <li v-for="(item, index) in drawerLinks.main" :key="item.label">
+            <!-- A link with a panel opens in place: each column's heading and links, one under the other. -->
+            <details v-if="item.menu" class="sfh-drawer__group">
+              <summary class="sfh-drawer__link sfh-drawer__summary">
+                {{ item.label }}
+                <v-icon size="24" aria-hidden="true">chevron-down</v-icon>
+              </summary>
+              <div v-for="(column, c) in item.menu.columns" :key="column.heading" class="sfh-drawer__col">
+                <p :id="`sfh-drawer-${index}-${c}`" class="sfh-drawer__heading">{{ column.heading }}</p>
+                <ul :aria-labelledby="`sfh-drawer-${index}-${c}`">
+                  <li v-for="link in column.links" :key="link.label">
+                    <StorefrontAnchor :href="link.href" class="sfh-drawer__link sfh-drawer__link--small">{{ link.label }}</StorefrontAnchor>
+                  </li>
+                </ul>
+              </div>
+            </details>
+            <StorefrontAnchor v-else :href="item.href" class="sfh-drawer__link">{{ item.label }}</StorefrontAnchor>
           </li>
         </ul>
         <ul v-if="drawerLinks.more.length" class="sfh-drawer__more">
@@ -287,14 +393,49 @@ function onMenuClosed(): void {
         </div>
       </div>
 
-      <nav v-if="chrome.nav.length" class="sf-nav" aria-label="Main">
-        <StorefrontAnchor v-for="item in chrome.nav" :key="item.label" :href="item.href">{{ item.label }}</StorefrontAnchor>
+      <nav v-if="chrome.nav.length" ref="navEl" class="sf-nav" aria-label="Main" @keydown.esc="onNavEscape">
+        <template v-for="(item, index) in chrome.nav" :key="item.label">
+          <div
+            v-if="item.menu"
+            class="sf-nav__group"
+            @pointerenter="$event.pointerType === 'mouse' && onPointerEnter(index)"
+            @pointerleave="$event.pointerType === 'mouse' && onPointerLeave()"
+            @focusout="onGroupFocusOut"
+          >
+            <button
+              type="button"
+              class="sf-nav__trigger"
+              :class="{ 'sf-nav__trigger--open': openPanel === index }"
+              :aria-expanded="openPanel === index"
+              :aria-controls="`sf-mega-${index}`"
+              @click="onTrigger(index)"
+            >
+              {{ item.label }}
+              <v-icon size="16" aria-hidden="true">chevron-down</v-icon>
+            </button>
+            <StorefrontMegaPanel :menu="item.menu" :panel-id="`sf-mega-${index}`" :open="openPanel === index" />
+          </div>
+          <StorefrontAnchor v-else :href="item.href">{{ item.label }}</StorefrontAnchor>
+        </template>
       </nav>
 
       <nav v-if="menuOpen && chrome.mobileNav.length" class="sf-mobile-nav" aria-label="Menu">
         <!-- The header's search box does not fit a phone: the menu leads to the search page instead. -->
         <StorefrontAnchor v-if="searchable" href="/search">Search</StorefrontAnchor>
-        <StorefrontAnchor v-for="item in chrome.mobileNav" :key="item.label" :href="item.href">{{ item.label }}</StorefrontAnchor>
+        <template v-for="item in chrome.mobileNav" :key="item.label">
+          <!-- A link with a panel opens in place: its columns, one under the other. -->
+          <details v-if="item.menu" class="sf-mobile-group">
+            <summary>
+              {{ item.label }}
+              <v-icon size="18" aria-hidden="true">chevron-down</v-icon>
+            </summary>
+            <div v-for="column in item.menu.columns" :key="column.heading" class="sf-mobile-group__col">
+              <p class="sf-mobile-group__heading">{{ column.heading }}</p>
+              <StorefrontAnchor v-for="link in column.links" :key="link.label" :href="link.href">{{ link.label }}</StorefrontAnchor>
+            </div>
+          </details>
+          <StorefrontAnchor v-else :href="item.href">{{ item.label }}</StorefrontAnchor>
+        </template>
       </nav>
     </header>
   </template>
@@ -342,7 +483,10 @@ function onMenuClosed(): void {
   letter-spacing: 0.02em;
 }
 
+/* Positioned, so a mega menu's panel hangs from the header's bottom edge, the page's full width. */
 .sf-top {
+  position: relative;
+  z-index: 20;
   border-bottom: 1px solid var(--sf-divider);
 }
 
@@ -426,12 +570,13 @@ function onMenuClosed(): void {
   text-decoration: none !important;
 }
 
-/* The checkout's logo on a theme with the sections drawing: its wordmark in the heading face. */
+/* The checkout's logo on a theme with the sections drawing: its wordmark in the heading face and case, as on every other page. */
 .sf-top--sections .sf-logo {
   font-family: var(--sf-heading-font, system-ui);
   font-weight: var(--sf-heading-weight, 800);
   font-size: 28px;
   letter-spacing: 0;
+  text-transform: var(--sf-heading-case, none);
 }
 
 .sf-tools {
@@ -491,6 +636,50 @@ function onMenuClosed(): void {
   font-weight: 500;
 }
 
+/* ── Mega menu: a menu link that opens a panel of links (StorefrontMegaPanel) ── */
+.sf-nav__group {
+  display: flex;
+}
+
+/* The link's own words and weight; the padding reaches down to the panel, so the pointer never leaves on the way. */
+.sf-nav__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0 0 -16px;
+  padding: 0 0 16px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.sf-nav__trigger:hover,
+.sf-nav__trigger--open {
+  text-decoration: underline;
+}
+
+.sf-nav__trigger .v-icon {
+  transition: transform 160ms ease-out;
+}
+
+.sf-nav__trigger--open .v-icon {
+  transform: rotate(180deg);
+}
+
+.sf-nav__trigger:focus-visible,
+.sf-mobile-group summary:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sf-nav__trigger .v-icon {
+    transition: none;
+  }
+}
+
 .sf-mobile-nav {
   display: none;
 }
@@ -520,6 +709,40 @@ function onMenuClosed(): void {
     gap: 12px;
     padding: 12px var(--sf-gutter) 16px;
     font-weight: 500;
+  }
+
+  /* A link with a panel, in the phone menu: its name opens the links under it. */
+  .sf-mobile-group summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 24px;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .sf-mobile-group summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .sf-mobile-group[open] summary .v-icon {
+    transform: rotate(180deg);
+  }
+
+  .sf-mobile-group__col {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px 0 4px 12px;
+    font-weight: 400;
+  }
+
+  .sf-mobile-group__heading {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
   }
 }
 
@@ -564,6 +787,12 @@ function onMenuClosed(): void {
   text-decoration: none;
 }
 
+/* The box a mega menu's panel hangs from (StorefrontMegaPanel, top: 100%): right under the
+   menu row, the page's full width, over the search and vehicle rows under it. */
+.sfh__bar {
+  position: relative;
+}
+
 .sfh__row {
   display: flex;
   align-items: center;
@@ -575,18 +804,30 @@ function onMenuClosed(): void {
   padding: 0 var(--sf-gutter, 24px);
 }
 
+/* Centred: the wordmark's row keeps its height, and the menu is a second row under it. */
 .sfh--centered .sfh__row {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
+  grid-template-rows: minmax(76px, auto);
+  row-gap: 0;
 }
 
 .sfh--centered .sfh__logo {
   grid-column: 2;
+  grid-row: 1;
 }
 
 .sfh--centered .sfh__tools {
   grid-column: 3;
+  grid-row: 1;
   justify-self: end;
+}
+
+.sfh--centered .sfh__nav {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  justify-content: center;
+  padding-bottom: 18px;
 }
 
 /* Centred: the vehicle chip takes the empty start column. */
@@ -621,20 +862,34 @@ function onMenuClosed(): void {
   line-height: 20px;
 }
 
-.sfh__nav--below {
-  justify-content: center;
-  max-width: var(--sf-measure, 1200px);
-  margin: 0 auto;
-  padding: 0 var(--sf-gutter, 24px) 18px;
+/* A menu with a mega menu in it takes the bar's full height (its links stay centred), and so
+   does each link with a panel, so the pointer crosses no gap on its way down to the panel.
+   Centred: the link reaches down through the menu row's own bottom padding. A link with a
+   panel stacks above the rows under the bar, so their icons never show through its panel. */
+.sfh--inline .sfh__nav--panels {
+  align-self: stretch;
+}
+
+.sfh__nav--panels .sf-nav__group {
+  z-index: 1;
+  align-self: stretch;
+  align-items: center;
+}
+
+.sfh--centered .sfh__nav--panels .sf-nav__group {
+  margin-bottom: -18px;
+  padding-bottom: 18px;
 }
 
 /* An underline that grows under the link, and stays under the page you are on. */
-.sfh__link {
+.sfh__link,
+.sfh__link-text {
   position: relative;
   padding: 6px 0;
 }
 
-.sfh__link::after {
+.sfh__link::after,
+.sfh__link-text::after {
   content: '';
   position: absolute;
   left: 0;
@@ -648,8 +903,25 @@ function onMenuClosed(): void {
 }
 
 .sfh__link:hover::after,
-.sfh__link[aria-current='page']::after {
+.sfh__link[aria-current='page']::after,
+.sfh__trigger:hover .sfh__link-text::after,
+.sfh__trigger[aria-expanded='true'] .sfh__link-text::after {
   transform: scaleX(1);
+}
+
+/* A link with a panel: the menu's own words and underline (not the classic trigger's reach
+   and underline), and a chevron that turns while its panel is open. */
+.sfh__trigger {
+  margin: 0;
+  padding: 0;
+}
+
+.sfh__trigger:hover {
+  text-decoration: none;
+}
+
+.sfh__trigger[aria-expanded='true'] .v-icon {
+  transform: rotate(180deg);
 }
 
 .sfh__tools {
@@ -750,6 +1022,7 @@ function onMenuClosed(): void {
 }
 
 .sfh__link:focus-visible,
+.sfh__trigger:focus-visible,
 .sfh__logo:focus-visible,
 .sfh__icon:focus-visible {
   outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
@@ -853,6 +1126,51 @@ function onMenuClosed(): void {
   outline-offset: 2px;
 }
 
+/* A link with a panel, in the drawer: its name opens its columns in place (no picture tile). */
+.sfh-drawer__summary {
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.sfh-drawer__summary::-webkit-details-marker {
+  display: none;
+}
+
+.sfh-drawer__summary .v-icon {
+  flex: none;
+  transition: transform 160ms ease-out;
+}
+
+.sfh-drawer__group[open] > .sfh-drawer__summary .v-icon {
+  transform: rotate(180deg);
+}
+
+.sfh-drawer__col {
+  padding: 4px 0;
+}
+
+.sfh-drawer__col:last-child {
+  padding-bottom: 16px;
+}
+
+.sfh-drawer__heading {
+  margin: 0;
+  padding: 12px 0 4px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 16px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sfh-drawer__summary .v-icon {
+    transition: none;
+  }
+}
+
 /* ── Search as a field (Lumos) ───────────────────────────────────────────
  * The theme's field: its control height, a hairline in its field colour that turns
  * its accent on focus (with the focus ring), its corners, the card colour inside,
@@ -870,6 +1188,19 @@ function onMenuClosed(): void {
 
 .sfh__search--row {
   display: none;
+}
+
+/* Centred: the wordmark holds the middle of the bar, so the field always has its row under it. */
+.sfh--centered .sfh__search--bar {
+  display: none;
+}
+
+.sfh--centered .sfh__search--row {
+  display: block;
+  box-sizing: border-box;
+  max-width: var(--sf-measure, 1200px);
+  margin: 0 auto;
+  padding: 0 var(--sf-gutter, 24px) 12px;
 }
 
 .sfh__field {

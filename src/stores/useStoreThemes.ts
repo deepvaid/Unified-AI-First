@@ -13,12 +13,13 @@ import {
   type ThemeStyles,
 } from './themeBuilderData'
 import { SEEDED_DEMO_CHANNELS, demoChannelRecord, demoSnapshotOf, replaceStoreRows, useSalesChannelsStore } from './useSalesChannels'
-import { canApplyTheme, homeBlueprintOf } from '@/storefront/demoStores'
-import { readInstalled } from '@/storefront/demoStores/install'
+import { canApplyTheme, demoStoreFor, homeBlueprintOf } from '@/storefront/demoStores'
+import { currentBlueprintId, readInstalled } from '@/storefront/demoStores/install'
 import { browserStorage, keepPerChannel } from './demoKeep'
 import type { SalesChannel } from './useSalesChannels'
 import type { StoreSnapshot } from '@/storefront/demoStores'
 import type { InstallChannel } from '@/storefront/demoStores/install'
+import type { EarlierLook } from '@/storefront/demoStores/summary'
 
 function nowIso() {
   return new Date().toISOString()
@@ -305,6 +306,23 @@ export const useStoreThemesStore = defineStore('storeThemes', () => {
   function themeForChannel(channelId: string) {
     const installed = themesForChannel(channelId)
     return installed.find((theme) => theme.status === 'Published') ?? installed[0]
+  }
+
+  /**
+   * The store runs an earlier look of the theme it runs now: its published theme is that
+   * theme's own record as this browser kept it from before the library changed its look
+   * (Vitaheal 1.0 on the classic drawing, 2.0 on sections). A record keeps no version, and
+   * only a new version changes a theme's drawing (the builder never does), so the drawing
+   * tells. Null otherwise. Reads only: nothing is written; a restore brings the look back.
+   */
+  function earlierLookOf(channelId: string): EarlierLook | null {
+    const channel = demoChannelRecord(channelId)
+    const published = themeForChannel(channelId)
+    const seed = demoSnapshotOf(channel)?.theme
+    if (!channel || !seed || published?.status !== 'Published' || published.id !== seed.id) return null
+    if (published.styles.drawing === seed.styles.drawing) return null
+    const running = demoStoreFor(currentBlueprintId(channel, browserStorage())!)
+    return { name: running.card.name, version: running.card.version, applied: running.id !== channel.webStore?.blueprint?.original }
   }
 
   function touch(theme: StoreTheme) {
@@ -625,6 +643,7 @@ export const useStoreThemesStore = defineStore('storeThemes', () => {
     getTheme,
     themesForChannel,
     themeForChannel,
+    earlierLookOf,
     updateStyles,
     updateSection,
     addSection,

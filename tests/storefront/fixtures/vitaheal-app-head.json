@@ -124,7 +124,45 @@
             "urlHandle": "unwind",
             "ogTitle": "Unwind",
             "ogDescription": "Sleep and calm"
-          }
+          },
+          "specs": [
+            {
+              "label": "Serving size",
+              "value": "1 scoop (6 g)"
+            },
+            {
+              "label": "Servings per pack",
+              "value": "30"
+            },
+            {
+              "label": "Magnesium (as bisglycinate)",
+              "value": "300 mg (80% NRV)"
+            },
+            {
+              "label": "L-theanine",
+              "value": "200 mg"
+            },
+            {
+              "label": "Lemon balm extract",
+              "value": "300 mg"
+            },
+            {
+              "label": "Other ingredients",
+              "value": "Natural flavour, sweetener (steviol glycosides)"
+            },
+            {
+              "label": "How to take it",
+              "value": "Stir 1 scoop into warm water about an hour before bed."
+            },
+            {
+              "label": "Free from",
+              "value": "Gluten, lactose, soy and added sugar"
+            },
+            {
+              "label": "Made in",
+              "value": "Sweden"
+            }
+          ]
         },
         "status": "In Stock"
       },
@@ -223,7 +261,49 @@
             "urlHandle": "clear-focus",
             "ogTitle": "Clear Focus",
             "ogDescription": "Focus and steady energy"
-          }
+          },
+          "specs": [
+            {
+              "label": "Serving size",
+              "value": "2 capsules"
+            },
+            {
+              "label": "Servings per pack",
+              "value": "30"
+            },
+            {
+              "label": "L-tyrosine",
+              "value": "500 mg"
+            },
+            {
+              "label": "Rhodiola rosea extract",
+              "value": "200 mg"
+            },
+            {
+              "label": "Vitamin B6",
+              "value": "1.4 mg (100% NRV)"
+            },
+            {
+              "label": "Vitamin B12",
+              "value": "2.5 µg (100% NRV)"
+            },
+            {
+              "label": "Other ingredients",
+              "value": "Vegetable capsule (hypromellose), rice flour"
+            },
+            {
+              "label": "How to take it",
+              "value": "Take 2 capsules with breakfast."
+            },
+            {
+              "label": "Free from",
+              "value": "Gluten, lactose, soy and added sugar"
+            },
+            {
+              "label": "Made in",
+              "value": "Sweden"
+            }
+          ]
         },
         "status": "In Stock"
       },
@@ -322,7 +402,41 @@
             "urlHandle": "daily-nad",
             "ogTitle": "Daily NAD+",
             "ogDescription": "Longevity and cellular energy"
-          }
+          },
+          "specs": [
+            {
+              "label": "Serving size",
+              "value": "1 capsule"
+            },
+            {
+              "label": "Servings per pack",
+              "value": "30"
+            },
+            {
+              "label": "Nicotinamide riboside",
+              "value": "300 mg"
+            },
+            {
+              "label": "Niacin",
+              "value": "16 mg (100% NRV)"
+            },
+            {
+              "label": "Other ingredients",
+              "value": "Vegetable capsule (hypromellose), rice flour"
+            },
+            {
+              "label": "How to take it",
+              "value": "Take 1 capsule each morning."
+            },
+            {
+              "label": "Free from",
+              "value": "Gluten, lactose, soy and added sugar"
+            },
+            {
+              "label": "Made in",
+              "value": "Sweden"
+            }
+          ]
         },
         "status": "In Stock"
       },
@@ -400,7 +514,33 @@
             "urlHandle": "nasal-strips",
             "ogTitle": "Nasal Strips",
             "ogDescription": "Easier breathing, day or night"
-          }
+          },
+          "specs": [
+            {
+              "label": "In the box",
+              "value": "30 strips"
+            },
+            {
+              "label": "Size",
+              "value": "One size, for adults"
+            },
+            {
+              "label": "Made of",
+              "value": "A flexible band with a skin-friendly adhesive"
+            },
+            {
+              "label": "How to use it",
+              "value": "Place one strip across the bridge of a clean, dry nose. Remove it within 12 hours."
+            },
+            {
+              "label": "Free from",
+              "value": "Latex and medication"
+            },
+            {
+              "label": "Made in",
+              "value": "Sweden"
+            }
+          ]
         },
         "status": "In Stock"
       },
@@ -515,7 +655,49 @@
             "urlHandle": "vitaheal-electrolytes",
             "ogTitle": "Vitaheal Electrolytes",
             "ogDescription": "Daily hydration, no added sugar"
-          }
+          },
+          "specs": [
+            {
+              "label": "Serving size",
+              "value": "1 stick (5 g)"
+            },
+            {
+              "label": "Servings per pack",
+              "value": "20"
+            },
+            {
+              "label": "Sodium",
+              "value": "500 mg"
+            },
+            {
+              "label": "Potassium",
+              "value": "200 mg (10% NRV)"
+            },
+            {
+              "label": "Magnesium",
+              "value": "60 mg (16% NRV)"
+            },
+            {
+              "label": "Sugars",
+              "value": "0 g"
+            },
+            {
+              "label": "Other ingredients",
+              "value": "Natural flavour, citric acid, sweetener (steviol glycosides)"
+            },
+            {
+              "label": "How to take it",
+              "value": "Mix 1 stick with half a litre of water before, during or after training."
+            },
+            {
+              "label": "Free from",
+              "value": "Gluten, lactose, soy and added sugar"
+            },
+            {
+              "label": "Made in",
+              "value": "Sweden"
+            }
+          ]
         },
         "status": "In Stock"
       },
@@ -614,7 +796,41 @@
             "urlHandle": "collagen",
             "ogTitle": "Collagen+",
             "ogDescription": "Skin, hair and joints"
-          }
+          },
+          "specs": [
+            {
+              "label": "Serving size",
+              "value": "1 scoop (10 g)"
+            },
+            {
+              "label": "Servings per pack",
+              "value": "30"
+            },
+            {
+              "label": "Collagen peptides (bovine)",
+              "value": "10 g"
+            },
+            {
+              "label": "Vitamin C",
+              "value": "80 mg (100% NRV)"
+            },
+            {
+              "label": "Other ingredients",
+              "value": "None"
+            },
+            {
+              "label": "How to take it",
+              "value": "Stir 1 scoop into coffee, a smoothie or water once a day."
+            },
+            {
+              "label": "Free from",
+              "value": "Gluten, lactose, soy and added sugar"
+            },
+            {
+              "label": "Made in",
+              "value": "Sweden"
+            }
+          ]
         },
         "status": "In Stock"
       },
@@ -691,7 +907,49 @@
             "urlHandle": "balance-refill",
             "ogTitle": "Balance Refill",
             "ogDescription": "Made for women"
-          }
+          },
+          "specs": [
+            {
+              "label": "Serving size",
+              "value": "1 scoop (8 g)"
+            },
+            {
+              "label": "Servings per pack",
+              "value": "30"
+            },
+            {
+              "label": "Iron",
+              "value": "7 mg (50% NRV)"
+            },
+            {
+              "label": "Folate",
+              "value": "200 µg (100% NRV)"
+            },
+            {
+              "label": "Vitamin B6",
+              "value": "1.4 mg (100% NRV)"
+            },
+            {
+              "label": "Magnesium",
+              "value": "150 mg (40% NRV)"
+            },
+            {
+              "label": "Other ingredients",
+              "value": "Natural raspberry flavour, sweetener (steviol glycosides)"
+            },
+            {
+              "label": "How to take it",
+              "value": "Stir 1 scoop into water, any time of day."
+            },
+            {
+              "label": "Free from",
+              "value": "Gluten, lactose, soy and added sugar"
+            },
+            {
+              "label": "Made in",
+              "value": "Sweden"
+            }
+          ]
         },
         "status": "In Stock"
       },
@@ -768,7 +1026,49 @@
             "urlHandle": "balance",
             "ogTitle": "Balance",
             "ogDescription": "Made for women"
-          }
+          },
+          "specs": [
+            {
+              "label": "Serving size",
+              "value": "1 scoop (8 g)"
+            },
+            {
+              "label": "Servings per pack",
+              "value": "30"
+            },
+            {
+              "label": "Iron",
+              "value": "7 mg (50% NRV)"
+            },
+            {
+              "label": "Folate",
+              "value": "200 µg (100% NRV)"
+            },
+            {
+              "label": "Vitamin B6",
+              "value": "1.4 mg (100% NRV)"
+            },
+            {
+              "label": "Magnesium",
+              "value": "150 mg (40% NRV)"
+            },
+            {
+              "label": "Other ingredients",
+              "value": "Natural raspberry flavour, sweetener (steviol glycosides)"
+            },
+            {
+              "label": "How to take it",
+              "value": "Stir 1 scoop into water, any time of day."
+            },
+            {
+              "label": "Free from",
+              "value": "Gluten, lactose, soy and added sugar"
+            },
+            {
+              "label": "Made in",
+              "value": "Sweden"
+            }
+          ]
         },
         "status": "In Stock"
       }

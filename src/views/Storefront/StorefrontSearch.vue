@@ -125,7 +125,8 @@ watch(query, (q) => {
       <template #lead>
         <form class="sf-search-v2__form" role="search" @submit.prevent="submit">
           <label class="sf-search-v2__field">
-            <span class="sf-search-v2__sr">Search the store</span>
+            <!-- Its own name: a header with a search field (Lumos) names it "Search the store". -->
+            <span class="sf-search-v2__sr">{{ query ? 'Search again' : 'Search products' }}</span>
             <v-icon size="18" class="sf-search-v2__icon" aria-hidden="true">search</v-icon>
             <input ref="box" v-model="typed" type="search" class="sf-search-v2__input" :placeholder="placeholder" enterkeyhint="search" data-sf-search-box>
           </label>

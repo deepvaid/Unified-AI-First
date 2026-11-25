@@ -127,8 +127,9 @@ onBeforeUnmount(() => resizes?.disconnect())
       :accent-words="text(section.settings, 'accentWords')"
     >
       <div class="sfp__tools">
+        <!-- "View all Our range": the space is an interpolation, as the template drops a space that starts the span. -->
         <StorefrontAnchor :href="`/collections/${handle}`" class="sfs__more">
-          View all<span class="sfs-hidden"> {{ title }}</span>
+          View all{{ ' ' }}<span class="sfs-hidden">{{ title }}</span>
           <v-icon size="18" aria-hidden="true">arrow-right</v-icon>
         </StorefrontAnchor>
         <template v-if="carousel && !(atStart && atEnd)">

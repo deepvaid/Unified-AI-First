@@ -8,6 +8,8 @@ import { useSubscriptionsStore } from '@/stores/useSubscriptions'
 import { toDecimal } from '@/maropay/money'
 import { hasPriceRange } from '@/storefront/catalog'
 import { ONE_TIME, defaultOptionId, linePlan, purchaseOptions } from '@/subscriptions/plans'
+import { purchaseOptionsSettings } from '@/storefront/themeSections'
+import { productRows } from '@/storefront/productPage'
 import StorefrontAnchor from './StorefrontAnchor.vue'
 import StorefrontExpressButtons from './StorefrontExpressButtons.vue'
 import StorefrontNotFound from './StorefrontNotFound.vue'
@@ -19,6 +21,7 @@ import { CATEGORY_ICONS, inStock, priceOf, productFromHandle, relatedProducts, s
 import { useMerchandisingStore } from '@/stores/useMerchandising'
 import { recommendFor, recommendationHeading } from '@/storefront/search'
 import StorefrontProductPage from './product/StorefrontProductPage.vue'
+import StorefrontProductRows from './product/StorefrontProductRows.vue'
 
 // A product page (/products/:handle). Everything below the price follows the
 // store's payment setup in Store › Payments: instalment lines for approved buy
@@ -71,16 +74,34 @@ const description = computed(() => {
   return vendor.value ? `${p.name} from ${vendor.value}, part of our ${p.category} range. Free shipping on every order.` : ''
 })
 
+// The rows under the description that open and close (the product template's collapsible
+// rows): a table of the product's facts, and what the theme says about delivery and the
+// like. A theme without such rows shows none, as every classic store did; a row that
+// holds the description takes the description's place. A row set to show only on
+// products sold on a plan is left off a product no plan offers.
+const rows = computed(() => {
+  const blocks = storefront.theme.value?.templates.product.find((s) => s.kind === 'product-detail' && !s.hidden)?.blocks
+  if (!product.value || !blocks?.some((block) => block.kind === 'collapsible-row')) return []
+  return productRows(blocks, product.value, { sizeGuide: false, hasPlans: subscriptions.offeredFor(channelId.value, product.value.id).length > 0 })
+})
+const descriptionInRows = computed(() => rows.value.some((row) => row.source === 'description'))
+
 // How to buy it: on one of its subscription plans, or once. A product on no plan
 // has only "once", and then the page shows no options at all.
 const options = computed(() => (product.value && unit.value
   ? purchaseOptions(unit.value, subscriptions.offeredFor(channelId.value, product.value.id))
   : []))
+// How the theme's product template wants them shown (its purchase options block): boxed
+// cards, radio rows or a dropdown, which one is chosen first, and a line under them.
+// A theme without the block shows cards, as every store did.
+const buyBox = computed(() => purchaseOptionsSettings(storefront.theme.value))
+const optionsVariant = computed(() => (({ 'Radio buttons': 'radios', Dropdown: 'dropdown' } as const)[buyBox.value?.style as 'Radio buttons' | 'Dropdown'] ?? 'cards'))
+const firstOptionId = () => defaultOptionId(options.value, buyBox.value?.subscriptionFirst)
 const optionId = ref(ONE_TIME)
 const option = computed(() => options.value.find((o) => o.id === optionId.value) ?? null)
 // The chosen plan can go while the page is open (the merchant pauses it): fall back to the default.
 watch(() => options.value.map((o) => o.id).join(), () => {
-  if (!option.value) optionId.value = defaultOptionId(options.value)
+  if (!option.value) optionId.value = firstOptionId()
 })
 
 const qty = ref(1)
@@ -92,7 +113,7 @@ watch(() => product.value?.id, () => {
   qty.value = 1
   added.value = false
   shown.value = 0
-  optionId.value = defaultOptionId(options.value)
+  optionId.value = firstOptionId()
 }, { immediate: true })
 watch(optionId, () => {
   added.value = false
@@ -177,7 +198,16 @@ function buyNow(methodId: string): void {
           {{ available ? 'In stock, ready to ship' : 'Sold out' }}
         </p>
 
-        <StorefrontPurchaseOptions v-if="options.length > 1" v-model="optionId" :options="options" :format-money="formatMoney" />
+        <StorefrontPurchaseOptions
+          v-if="options.length > 1"
+          v-model="optionId"
+          :options="options"
+          :format-money="formatMoney"
+          :variant="optionsVariant"
+          :policy-text="buyBox?.policyText"
+          :terms-href="buyBox?.termsLink"
+          :account-href="buyBox ? '/account' : ''"
+        />
 
         <div class="sf-pdp__buy">
           <div class="sf-qty" role="group" :aria-label="`Quantity of ${product.name}`">
@@ -212,10 +242,12 @@ function buyNow(methodId: string): void {
           </ul>
         </div>
 
-        <section v-if="description" class="sf-pdp__desc" aria-labelledby="sf-pdp-desc">
+        <section v-if="description && !descriptionInRows" class="sf-pdp__desc" aria-labelledby="sf-pdp-desc">
           <h2 id="sf-pdp-desc" class="sf-pdp__desc-title">Description</h2>
-          <p>{{ description }}</p>
+          <p v-for="(paragraph, index) in description.split(/\n\s*\n/)" :key="index">{{ paragraph }}</p>
         </section>
+
+        <StorefrontProductRows v-if="rows.length" :rows="rows" class="sf-pdp__rows" />
       </div>
     </div>
 
@@ -439,6 +471,15 @@ function buyNow(methodId: string): void {
 
 .sf-pdp__desc p {
   margin: 0;
+}
+
+.sf-pdp__desc p + p {
+  margin-top: 12px;
+}
+
+/* The rows that open and close, under the description. */
+.sf-pdp__rows {
+  margin-top: 24px;
 }
 
 .sf-pdp__related {

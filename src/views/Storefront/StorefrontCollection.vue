@@ -3,19 +3,21 @@ import { computed, inject } from 'vue'
 import { useRoute } from 'vue-router'
 import { useCommerceStore } from '@/stores/useCommerce'
 import { useProductExtrasStore } from '@/stores/useProductExtras'
-import { gridSettings } from '@/storefront/listing'
+import { gridSettings, storeNoun } from '@/storefront/listing'
 import StorefrontAnchor from './StorefrontAnchor.vue'
 import StorefrontNotFound from './StorefrontNotFound.vue'
 import StorefrontProductCard from './StorefrontProductCard.vue'
 import StorefrontProductListing from './StorefrontProductListing.vue'
 import { STOREFRONT } from './storefrontContext'
-import { collectionByHandle } from './storefrontCatalog'
+import { collectionByHandle, storefrontProducts } from './storefrontCatalog'
 
 // A collection (/collections/:handle; `all` is every product). Unknown handles get the 404 page.
 // On the richer theme drawing (Northfold, Torqline) it is the collection template's product
 // grid: filters, sort and quick add (StorefrontProductListing), with the collection's
 // description from Products › Collections under its title. Every other theme keeps the
-// classic page below.
+// classic page below, which shows that description too when the collection has one.
+// An empty list says what is on its way in the store's own word: "styles" (Northfold),
+// "parts" (Torqline), else "products" (Vitaheal).
 
 const route = useRoute()
 const storefront = inject(STOREFRONT)!
@@ -26,12 +28,17 @@ const sections = computed(() => storefront.sectionsDrawing.value)
 const isAll = computed(() => String(route.params.handle ?? '') === 'all')
 const title = computed(() => (isAll.value ? 'All products' : collection.value?.title ?? ''))
 const intro = computed(() => {
-  if (!sections.value || isAll.value || !collection.value) return ''
+  if (isAll.value || !collection.value) return ''
   const channelId = storefront.channel.value.id
   const own = useProductExtrasStore().collections.find((c) => c.salesChannels.includes(channelId) && c.title === collection.value!.title)
   return own?.description.trim() ?? ''
 })
 const settings = computed(() => gridSettings(storefront.theme.value?.templates.collection))
+/** What the store calls what it sells: an empty list has nothing of its own to tell by, so the store's catalogue, else its setup. */
+const noun = computed(() => storeNoun(storefrontProducts(commerce.products, storefront.channel.value.id), {
+  sizeCharts: storefront.sizeCharts.value.length > 0,
+  fitment: storefront.theme.value?.templates.product?.find((s) => s.kind === 'product-detail' && !s.hidden)?.settings.fitment === true,
+}))
 </script>
 
 <template>
@@ -53,7 +60,7 @@ const settings = computed(() => gridSettings(storefront.theme.value?.templates.c
       <template #empty>
         <div class="sf-collection-v2__empty">
           <p class="sf-collection-v2__empty-title">Nothing here yet</p>
-          <p class="sf-collection-v2__empty-text">New {{ storefront.sellsParts.value ? 'parts' : 'styles' }} are on their way. In the meantime, have a look at everything else.</p>
+          <p class="sf-collection-v2__empty-text">New {{ noun.other }} are on their way. In the meantime, have a look at everything else.</p>
           <StorefrontAnchor href="/collections/all" class="sf-collection-v2__empty-link">Shop all products</StorefrontAnchor>
         </div>
       </template>
@@ -66,6 +73,7 @@ const settings = computed(() => gridSettings(storefront.theme.value?.templates.c
       <span aria-current="page">{{ collection.title }}</span>
     </nav>
     <h1 class="sf-page-title sf-collection__title">{{ collection.title }}</h1>
+    <p v-if="intro" class="sf-collection__intro">{{ intro }}</p>
     <p class="sf-collection__count sf-muted">{{ collection.products.length }} {{ collection.products.length === 1 ? 'product' : 'products' }}</p>
     <div v-if="collection.products.length" class="sf-grid">
       <StorefrontProductCard v-for="product in collection.products" :key="product.id" :product="product" />
@@ -86,6 +94,14 @@ const settings = computed(() => gridSettings(storefront.theme.value?.templates.c
 
 .sf-collection__title {
   margin-top: 32px;
+}
+
+.sf-collection__intro {
+  max-width: 640px;
+  margin: 12px auto 0;
+  text-align: center;
+  font-size: 17px;
+  line-height: 1.5;
 }
 
 .sf-collection__count {

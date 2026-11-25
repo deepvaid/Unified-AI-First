@@ -9,7 +9,9 @@
 
 import { fromDecimal, money, toDecimal } from '../maropay/money.ts'
 import type { Money } from '../maropay/money.ts'
-import { deliverySummary, linePlan, nextChargeDate, pricePerDelivery } from './plans.ts'
+import { lowestPrice } from '../storefront/catalog.ts'
+import type { CatalogProduct } from '../storefront/catalog.ts'
+import { deliverySummary, intervalLabel, linePlan, nextChargeDate, pricePerDelivery } from './plans.ts'
 import type { LinePlan, SubscriptionPlan } from './plans.ts'
 
 export type ContractStatus = 'Active' | 'Paused' | 'Cancelled' | 'Payment failed'
@@ -48,7 +50,10 @@ export interface SubscriptionContract {
   customer: { name: string; email: string; address?: ContractAddress }
   productId: number | null
   product: string
+  /** The variant bought (its SKU), or the product's own for a product without a choice. */
   sku: string
+  /** The variant's title as it was bought ("Can", "Starter Pack (both flavours)"). Absent: the line had no choice to make. */
+  variantTitle?: string
   /** How many of the plan's deliveries each charge buys; almost always 1. */
   qty: number
   /** The plan as it was bought or last changed. A later edit of the plan does not reach back. */
@@ -104,7 +109,7 @@ export interface ContractStart {
   channelId: string
   customer: SubscriptionContract['customer']
   productId: number | null
-  line: { product: string; sku: string; qty: number; price: string; plan: LinePlan }
+  line: { product: string; sku: string; variantTitle?: string; qty: number; price: string; plan: LinePlan }
   currency: string
   paymentMethod: string
   methodId: string
@@ -123,6 +128,7 @@ export function contractFromLine(start: ContractStart): SubscriptionContract {
     productId: start.productId,
     product: start.line.product,
     sku: start.line.sku,
+    ...(start.line.variantTitle ? { variantTitle: start.line.variantTitle } : {}),
     qty: start.line.qty,
     plan: { ...start.line.plan },
     price: start.line.price,
@@ -177,11 +183,32 @@ export function resume(contract: SubscriptionContract, today: string, actor: Con
   return withEvent(contract, { status: 'Active', nextChargeOn: next }, { date: today, actor, text: `Resumed. Next charge ${dayLabel(next)}` })
 }
 
-/** Moves the subscription to another plan of the same product, at that plan's price for the product's unit price today. */
+/** A product as `contractUnitPrice` reads it. A commerce `Product` satisfies it. */
+export interface ContractProduct extends Pick<CatalogProduct, 'publishStatus' | 'price'> {
+  detail?: { variantsList: { sku: string; price: string }[] }
+}
+
+/**
+ * What one of the subscription's product costs today, as a decimal string: the
+ * variant it was bought on (by SKU), so a plan change keeps the shopper's Can or
+ * Starter Pack, else the product's lowest price, as a plan without a choice is sold.
+ */
+export function contractUnitPrice(product: ContractProduct, contract: Pick<SubscriptionContract, 'sku'>): string {
+  const bought = product.detail?.variantsList.find((v) => v.sku === contract.sku && Number.isFinite(Number.parseFloat(v.price)))
+  return bought?.price ?? lowestPrice(product)
+}
+
+/** Moves the subscription to another plan of the same product, at that plan's price for the product's unit price today (`contractUnitPrice`). */
 export function changePlan(contract: SubscriptionContract, plan: SubscriptionPlan, unit: Money, today: string, actor: ContractActor): SubscriptionContract {
   if (contract.status !== 'Active' || plan.id === contract.plan.id) return contract
+  // Two delivery options of one plan share its name: what changed is how often it comes.
+  const sameLabel = !!contract.plan.byFrequency && !!plan.optionOf && contract.plan.name === plan.name
   return withEvent(contract, { plan: linePlan(plan), price: toDecimal(pricePerDelivery(unit, plan)) }, {
-    date: today, actor, text: `Plan changed from ${contract.plan.name} to ${plan.name} (${deliverySummary(plan)})`,
+    date: today,
+    actor,
+    text: sameLabel
+      ? `Delivery changed from ${intervalLabel(contract.plan)} to ${intervalLabel(plan)}`
+      : `Plan changed from ${contract.plan.name} to ${plan.name} (${deliverySummary(plan)})`,
   })
 }
 

@@ -11,7 +11,7 @@ or logo is in shot. To replace a photo, save a new file under the same name.
 
 | File | Used for | Photographer | Source |
 |---|---|---|---|
-| `hero.jpg` | Home hero | @lcanino | https://unsplash.com/photos/a-man-running-down-a-trail-in-the-mountains-MFCzJQoFXzc |
+| `hero.jpg` | Home hero (re-cropped 2026-11-25 from the 3200 px original so the runner sits on the right, past the words' wash) | @lcanino | https://unsplash.com/photos/a-man-running-down-a-trail-in-the-mountains-MFCzJQoFXzc |
 | `story-unwind.jpg` | Home story: Unwind | @mrsbeccaschultz | https://unsplash.com/photos/rumpled-bed-with-striped-bedding-l6BenhrIc2w |
 | `story-focus.jpg` | Home story: Clear Focus | @nomadicfitlust | https://unsplash.com/photos/a-cup-of-coffee-and-a-notebook-on-a-table-8CGOX7oSMbI |
 | `tile-sleep.jpg` | "Shop by goal": Sleep | @lvphotos | https://unsplash.com/photos/a-bed-with-white-sheets-and-white-pillows-pl3sj3DigxM |

@@ -7,12 +7,11 @@ import type { Order, OrderLineItem } from '@/stores/useCommerce'
 import { useStorefrontShopperStore } from '@/stores/useStorefrontShopper'
 import { useSubscriptionsStore } from '@/stores/useSubscriptions'
 import { lineProduct } from '@/storefront/cart'
-import { lowestPrice } from '@/storefront/catalog'
 import { shopperOrderStatus } from '@/storefront/orderStatus'
-import { lineDetailText, lineImage, orderParam, orderSums, ordersOfShopper, placedOn } from '@/storefront/shopperOrders'
-import { CANCEL_REASONS, allowedActions, chargeAmount, dayLabel } from '@/subscriptions/contracts'
+import { lineDetailText, lineImage, lineVariantText, orderParam, orderSums, ordersOfShopper, placedOn } from '@/storefront/shopperOrders'
+import { CANCEL_REASONS, allowedActions, chargeAmount, contractUnitPrice } from '@/subscriptions/contracts'
 import type { ContractAction, SubscriptionContract } from '@/subscriptions/contracts'
-import { deliverySummary, nextChargeDate, pricePerDelivery } from '@/subscriptions/plans'
+import { deliverySummary, nextChargeDate, planTitle, pricePerDelivery } from '@/subscriptions/plans'
 import type { SubscriptionPlan } from '@/subscriptions/plans'
 import StorefrontAnchor from './StorefrontAnchor.vue'
 import StorefrontLineText from './StorefrontLineText.vue'
@@ -34,6 +33,8 @@ import { CATEGORY_ICONS, collectionsOf, productHandle } from './storefrontCatalo
 // straight here.
 
 const storefront = inject(STOREFRONT)!
+/** A day the way the store writes dates: "Dec 24, 2026", or "24 Dec 2026" for a store that writes amounts its own way. */
+const dayLabel = (date: string): string => placedOn(date, storefront.ownMoneyFormat.value)
 const commerce = useCommerceStore()
 const shopper = useStorefrontShopperStore()
 const subscriptions = useSubscriptionsStore()
@@ -65,6 +66,11 @@ function productOf(contract: SubscriptionContract) {
   return commerce.products.find((p) => p.id === contract.productId)
 }
 
+/** The choice it was bought in, as an order line reads it ("Can"); empty when it had none. */
+function choiceOf(contract: SubscriptionContract): string {
+  return contract.variantTitle ? lineVariantText(productOf(contract), { sku: contract.sku, variantTitle: contract.variantTitle }) : ''
+}
+
 /** What a shopper may do; changing the date and charging are the merchant's. */
 const SHOPPER_ACTIONS: ContractAction[] = ['skip', 'pause', 'resume', 'changePlan', 'retry', 'cancel']
 function actionsFor(contract: SubscriptionContract): ContractAction[] {
@@ -72,10 +78,10 @@ function actionsFor(contract: SubscriptionContract): ContractAction[] {
   return allowed.filter((a) => a !== 'changePlan' || subscriptions.plansToChangeTo(contract).length > 0)
 }
 
-/** What another plan would cost per delivery, at the product's price today. */
+/** What another plan would cost per delivery, at today's price of the choice it was bought in. */
 function priceOn(contract: SubscriptionContract, plan: SubscriptionPlan): Money | null {
   const product = productOf(contract)
-  const unit = product ? parseDecimal(lowestPrice(product), contract.currency) : null
+  const unit = product ? parseDecimal(contractUnitPrice(product, contract), contract.currency) : null
   return unit ? pricePerDelivery(unit, plan) : null
 }
 
@@ -125,7 +131,9 @@ function resume(contract: SubscriptionContract): void {
 function changePlan(contract: SubscriptionContract): void {
   if (!subscriptions.changePlan(contract.id, planId.value, 'customer')) return
   const now = latest(contract.id)!
-  void done(`Your ${contract.product} subscription is now on ${now.plan.name}: ${formatMoney(chargeAmount(now))} per delivery, from ${dayLabel(now.nextChargeOn!)}.`)
+  // A delivery option keeps its plan's name: what changed is how often it comes.
+  const what = now.plan.byFrequency ? `now comes ${deliverySummary(now.plan)}` : `is now on ${now.plan.name}`
+  void done(`Your ${contract.product} subscription ${what}: ${formatMoney(chargeAmount(now))} per delivery, from ${dayLabel(now.nextChargeOn!)}.`)
 }
 
 function cancel(contract: SubscriptionContract): void {
@@ -219,7 +227,8 @@ watch(mine, (list) => {
                   <StorefrontAnchor v-if="productOf(contract)" :href="`/products/${productHandle(productOf(contract)!)}`">{{ contract.product }}</StorefrontAnchor>
                   <template v-else>{{ contract.product }}</template>
                 </h3>
-                <p class="sf-muted">{{ contract.plan.name }} · {{ deliverySummary(contract.plan) }}<template v-if="contract.qty > 1"> · {{ contract.qty }} of them</template></p>
+                <!-- "Can · 3-month supply", as the order lines below read a choice. -->
+                <p class="sf-muted"><template v-if="choiceOf(contract)">{{ choiceOf(contract) }} · </template>{{ contract.plan.name }} · {{ deliverySummary(contract.plan) }}<template v-if="contract.qty > 1"> · {{ contract.qty }} of them</template></p>
               </div>
               <span class="sf-sub__status" :class="`sf-sub__status--${contract.status.toLowerCase().replace(' ', '-')}`">{{ contract.status }}</span>
             </div>
@@ -274,8 +283,9 @@ watch(mine, (list) => {
                 <label v-for="plan in subscriptions.plansToChangeTo(contract)" :key="plan.id" class="sf-sub__choice">
                   <input v-model="planId" type="radio" :name="`sf-plan-${contract.id}`" :value="plan.id">
                   <span>
-                    <strong>{{ plan.name }}</strong>
-                    <span class="sf-muted">{{ deliverySummary(plan) }}<template v-if="priceOn(contract, plan)"> · {{ formatMoney(priceOn(contract, plan)!) }} per delivery</template></span>
+                    <strong>{{ planTitle(plan) }}</strong>
+                    <!-- A delivery option's name already says how often it comes. -->
+                    <span class="sf-muted"><template v-if="!plan.optionOf">{{ deliverySummary(plan) }}<template v-if="priceOn(contract, plan)"> · </template></template><template v-if="priceOn(contract, plan)">{{ formatMoney(priceOn(contract, plan)!) }} per delivery</template></span>
                   </span>
                 </label>
               </fieldset>
@@ -861,6 +871,18 @@ watch(mine, (list) => {
   .sf-sub__thumb {
     width: 56px;
     height: 56px;
+  }
+
+  /* The sections drawing's name is large and may be uppercase ("VITAHEAL ELECTROLYTES"):
+     a smaller size, and a column that asks for 10rem, so the status drops under the name
+     instead of squeezing it. A word still wider than the column breaks, never runs out. */
+  .sf-acct--sections .sf-sub__what {
+    flex: 1 1 10rem;
+  }
+
+  .sf-acct--sections .sf-sub__name {
+    font-size: 20px;
+    overflow-wrap: anywhere;
   }
 
   .sf-sub__facts {

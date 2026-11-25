@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import MpAlert from '@/components/MpAlert.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpDialog from '@/components/MpDialog.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
@@ -11,8 +12,11 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpSegmentedControl from '@/components/MpSegmentedControl.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MaropayMethodMark from '@/components/maropay/MaropayMethodMark.vue'
+import StoreLaunchChecklist from '@/components/saleschannels/StoreLaunchChecklist.vue'
 import StoreRestoreDialog from '@/components/saleschannels/StoreRestoreDialog.vue'
+import StoreSetupProgress from '@/components/saleschannels/StoreSetupProgress.vue'
 import StorefrontPreview from '@/components/saleschannels/StorefrontPreview.vue'
+import { useStorefrontPreviewProps } from '@/components/saleschannels/storefrontPreview'
 import { useToast } from '@/composables/useToast'
 import {
   CHANNEL_STATUS_LABELS,
@@ -22,7 +26,7 @@ import {
   useSalesChannelsStore,
   type ConnectedCloud,
 } from '@/stores/useSalesChannels'
-import { useCommerceStore } from '@/stores/useCommerce'
+import { WAREHOUSE_LOCATIONS, useCommerceStore } from '@/stores/useCommerce'
 import { useDemoStores } from '@/stores/useDemoStores'
 import { useMaropayStore } from '@/stores/useMaropay'
 import { markForProvider } from '@/maropay/methodMarks'
@@ -33,11 +37,14 @@ import { useRetailStore } from '@/stores/useRetail'
 import { useStoreThemesStore } from '@/stores/useStoreThemes'
 import { useStorefrontStore } from '@/stores/useStorefront'
 import { storesWithOwnCatalogue } from '@/storefront/catalog'
+import { checkoutProfile } from '@/storefront/checkoutProfile'
 import { canApplyTheme, demoStoreFor, homeBlueprintOf } from '@/storefront/demoStores'
+import { earlierLookMessage } from '@/storefront/demoStores/summary'
+import { launchChecklist, setupProgress as storeSetupProgress, setupSteps } from '@/storefront/storeLaunch'
+import type { LaunchStepId, LaunchTarget } from '@/storefront/storeLaunch'
+import { useStoreLaunchStore } from '@/stores/useStoreLaunch'
 import { formatStorePrice } from '@/storefront/price'
-import { gridSettings } from '@/storefront/listing'
 import { money, parseDecimal, sum } from '@/maropay/money'
-import { previewProducts } from '@/views/Storefront/storefrontCatalog'
 
 type MetricColor = 'primary' | 'retail' | 'commerce' | 'analytics' | 'contacts' | 'success' | 'warning'
 type DetailTab = 'overview' | 'settings' | 'apps' | 'ai' | 'activity'
@@ -193,6 +200,8 @@ const confirmRestore = ref(false)
 const keptParts = computed(() => demoStores.restorePreview(channelId.value)?.parts.card ?? 'Products and campaigns')
 /** A store made blank: a restore makes it blank again rather than putting original products back. */
 const startedBlank = computed(() => channel.value?.webStore?.blueprint?.original === null)
+/** The store runs an earlier look of its theme, kept in this browser: the Store data card says so, above its Restore original store. */
+const earlierLook = computed(() => storeThemesStore.earlierLookOf(channelId.value))
 
 // A store made with Create sales channel is kept in this browser, and is the only kind that can be deleted.
 const canDeleteStore = computed(() => demoStores.isCreated(channelId.value))
@@ -236,18 +245,12 @@ const seededPlanNames = computed(() => demoStores.snapshotOf(channelId.value)?.p
 const seededSearchRule = computed(() => demoStores.snapshotOf(channelId.value)?.merchandising.synonyms[0]?.queries.slice(0, 3).join(', ') ?? '')
 const previewSections = computed(() => channelTheme.value?.templates.home)
 const previewStyles = computed(() => channelTheme.value?.styles)
-// A crawled store's own wordmark and menu in the preview header (Neelam-Store); others keep the sample header.
-const previewHeader = computed(() => useStorefrontStore().previewHeaderFor(channel.value))
-/** The header's search and tools, and the product card the store's rows use, as the builder draws them. */
-const previewExtras = computed(() => {
-  const grid = gridSettings(channelTheme.value?.templates.collection)
-  const cards = { cardStyle: grid.cardStyle, quickAdd: grid.quickAdd }
-  if (!previewHeader.value.brand || !channel.value) return cards
-  const chrome = useStorefrontStore().chromeFor(channel.value)
-  return { ...cards, headerSearch: chrome.headerSearch, headerTools: chrome.headerTools, searchPlaceholder: chrome.searchPlaceholder }
-})
-/** The store's own products in the preview's product rows; a store on the shared catalogue keeps the drawn stand-ins. */
-const previewItems = computed(() => (channel.value ? previewProducts(commerceStore.products, channel.value) : undefined))
+/**
+ * The store in the preview as the theme builder draws it: a crawled store's own wordmark,
+ * menu, search and tools (others keep the sample header), its card, its own products with
+ * their badges, and the purchase options of a product on a plan.
+ */
+const previewProps = useStorefrontPreviewProps(channel, channelTheme)
 
 const locations = computed(() => {
   if (!channel.value?.offlineStore) return []
@@ -489,6 +492,69 @@ const pendingSetupItems = computed(() => setupChecklist.value.filter((item) => !
 const completedSetupItems = computed(() => setupChecklist.value.filter((item) => item.done && item.id !== 'online_payments'))
 /** Online payments always shows first on a web store, done or not; the other pending items follow, two at a time. */
 const paymentsItem = computed(() => (isWebStore.value ? setupChecklist.value.find((item) => item.id === 'online_payments') ?? null : null))
+// ── A store made with Create sales channel: setting it up, then launching it ──
+// While it is being set up the page shows the steps and nothing else; after that its
+// overview has the "Launch your store" checklist where other stores have "Finish setup".
+const launchStore = useStoreLaunchStore()
+watch(channelId, (id) => { if (id) launchStore.load(id) }, { immediate: true })
+
+const storeSetupSteps = computed(() => {
+  const web = channel.value?.webStore
+  if (!web || !createdStore.value) return []
+  const original = web.blueprint?.original
+  return setupSteps({ merchandise: web.merchandiseConnected, theme: original ? demoStoreFor(original).card.name : null, domain: web.domain })
+})
+const settingUp = ref(false)
+watch(channelId, () => {
+  const current = channel.value
+  settingUp.value = !!current && storeSetupSteps.value.length > 0 && !storeSetupProgress(storeSetupSteps.value, current.createdAt, Date.now()).ready
+}, { immediate: true })
+
+function viewStore(): void {
+  window.open(router.resolve({ name: 'StorefrontHome', params: { accountId: accountId.value, channelId: channelId.value } }).href, '_blank', 'noopener')
+}
+function onSetupReady(): void {
+  if (!settingUp.value) return
+  settingUp.value = false
+  const current = channel.value
+  if (!current) return
+  toast.success(`${current.name} is ready`, noTheme.value ? {} : { action: { label: 'Show store', onClick: viewStore } })
+}
+
+/** Where the store's stock is kept: its products' own locations, or the account's warehouses for a store with nothing to sell yet. */
+const stockLocations = computed(() => {
+  const own = new Set(commerceStore.products
+    .filter((product) => product.channelIds?.includes(channelId.value))
+    .flatMap((product) => product.detail?.variantsList.flatMap((variant) => Object.keys(variant.stock)) ?? []))
+  return own.size ? [...own] : [...WAREHOUSE_LOCATIONS]
+})
+const launchSteps = computed(() => {
+  const current = channel.value
+  if (!current?.webStore || !createdStore.value) return []
+  const checkout = demoStores.snapshotOf(current.id)?.checkout ?? checkoutProfile(current.webStore.currency)
+  return launchChecklist({
+    name: current.name,
+    brand: useStorefrontStore().chromeFor(current).wordmark,
+    locations: stockLocations.value,
+    products: ownProductCount.value,
+    theme: noTheme.value ? null : publishedThemeName.value || 'Your theme',
+    countries: checkout.countries.length,
+    paymentMethods: paymentProviderNames.value,
+    domain: current.webStore.domain,
+    confirmed: launchStore.confirmed(current.id),
+  })
+})
+function runLaunch(target: Exclude<LaunchTarget, 'confirm'>): void {
+  if (target === 'preview') viewStore()
+  else if (target === 'taxes') void router.push({ name: 'ProductTaxCategory', params: { accountId: accountId.value } })
+  else if (target === 'themes') void router.push(themesRoute.value)
+  else runAction(target)
+}
+function confirmLaunchStep(id: LaunchStepId): void {
+  const step = launchSteps.value.find((entry) => entry.id === id)
+  if (step && launchStore.confirm(channelId.value, id)) toast.success(`Marked as done: ${step.title.charAt(0).toLowerCase()}${step.title.slice(1)}`)
+}
+
 const paymentsMark = computed<MethodMarkId>(() => (maropayLive.value || !otherProviders.value.length ? 'maropay' : markForProvider(otherProviders.value[0]!.kind)))
 const visibleSetupItems = computed(() => pendingSetupItems.value.filter((item) => item.id !== 'online_payments').slice(0, 2))
 const setupProgress = computed(() => {
@@ -879,9 +945,11 @@ function locationRoleText(locationId: string) {
         :back-to="isWebStore ? undefined : { name: 'SalesChannels', params: { accountId } }"
       >
         <template #title-append>
-          <MpStatusChip :status="CHANNEL_STATUS_LABELS[channel.status]" type="general" show-icon />
+          <MpStatusChip v-if="settingUp" status="Setting up" type="general" show-icon />
+          <MpStatusChip v-else :status="CHANNEL_STATUS_LABELS[channel.status]" type="general" show-icon />
         </template>
-        <template #actions>
+        <!-- A store still being set up has nothing to preview, edit or switch between yet. -->
+        <template v-if="!settingUp" #actions>
           <v-btn
             v-if="!noTheme"
             variant="outlined"
@@ -904,7 +972,7 @@ function locationRoleText(locationId: string) {
             {{ primaryActionLabel }}
           </v-btn>
         </template>
-        <template #tabs>
+        <template v-if="!settingUp" #tabs>
           <MpFilterTabs
             :model-value="activeTab"
             :tabs="detailTabs"
@@ -915,6 +983,17 @@ function locationRoleText(locationId: string) {
         </template>
       </MpPageHeader>
 
+      <!-- A store just made: its setup steps, until it is ready. -->
+      <StoreSetupProgress
+        v-if="settingUp"
+        id="sc-tab-panel"
+        :store-name="channel.name"
+        :steps="storeSetupSteps"
+        :started-at="channel.createdAt"
+        @ready="onSetupReady"
+      />
+
+      <template v-else>
       <section v-if="activeTab === 'overview'" id="sc-tab-panel" class="sc-tab-panel" role="tabpanel">
         <div class="sc-overview-grid">
           <v-card flat border rounded="lg" class="retail-widget-card sc-hero-card">
@@ -944,7 +1023,7 @@ function locationRoleText(locationId: string) {
                 :heading-level="3"
                 @action="router.push(themesRoute)"
               />
-              <StorefrontPreview v-else-if="isWebStore" :sections="previewSections" :styles="previewStyles" :brand="previewHeader.brand" :menu="previewHeader.menu" :products="previewItems" v-bind="previewExtras" />
+              <StorefrontPreview v-else-if="isWebStore" :sections="previewSections" :styles="previewStyles" v-bind="previewProps" />
 
               <div v-else class="sc-retail-preview sc-retail-preview--hero" aria-label="Retail location summary">
                 <button
@@ -979,7 +1058,15 @@ function locationRoleText(locationId: string) {
             </div>
           </v-card>
 
-          <v-card flat border rounded="lg" class="retail-widget-card sc-setup-card">
+          <StoreLaunchChecklist
+            v-if="launchSteps.length"
+            class="sc-setup-card"
+            :steps="launchSteps"
+            :can-view="!noTheme"
+            @run="runLaunch"
+            @confirm="confirmLaunchStep"
+          />
+          <v-card v-else flat border rounded="lg" class="retail-widget-card sc-setup-card">
             <div class="retail-widget-header">
               <div>
                 <div class="retail-widget-header__title">Finish setup</div>
@@ -1151,7 +1238,8 @@ function locationRoleText(locationId: string) {
               </v-btn>
             </div>
           </div>
-          <div class="retail-widget-body">
+          <div class="retail-widget-body d-flex flex-column ga-4">
+            <MpAlert v-if="earlierLook" tone="info" live="off">{{ earlierLookMessage(earlierLook) }}</MpAlert>
             <p class="text-body-2 text-medium-emphasis mb-0">
               {{ keptParts }} you add or change in this store stay after
               a reload, in this browser only. {{ startedBlank ? 'Restoring makes the store blank again.' : 'Restoring puts the original ones back.' }}
@@ -1281,6 +1369,7 @@ function locationRoleText(locationId: string) {
           </v-list>
         </v-card>
       </section>
+      </template>
 
       <MpDialog
         v-model="previewDialogOpen"
@@ -1303,7 +1392,7 @@ function locationRoleText(locationId: string) {
         </template>
 
         <div class="sc-preview-dialog__body">
-          <StorefrontPreview :sections="previewSections" :styles="previewStyles" :brand="previewHeader.brand" :menu="previewHeader.menu" :products="previewItems" :device="previewDevice" v-bind="previewExtras" />
+          <StorefrontPreview :sections="previewSections" :styles="previewStyles" :device="previewDevice" v-bind="previewProps" />
         </div>
       </MpDialog>
 

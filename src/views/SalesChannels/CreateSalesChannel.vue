@@ -9,7 +9,6 @@ import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpAlert from '@/components/MpAlert.vue'
 import { useWizardSteps } from '@/composables/useWizardSteps'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
-import { useToast } from '@/composables/useToast'
 import {
   CHANNEL_TYPE_LABELS,
   CONNECTED_CLOUD_LABELS,
@@ -27,7 +26,6 @@ const route = useRoute()
 const router = useRouter()
 const demoStores = useDemoStores()
 const retailStore = useRetailStore()
-const toast = useToast()
 
 const selectedType = ref<SalesChannelType | null>(null)
 const name = ref('')
@@ -159,14 +157,7 @@ function createChannel() {
     theme: hasThemeStep.value ? selectedTheme.value : null,
   })
 
-  // The store came up as a copy of the theme (none is made when no store slot is left).
-  const copied = channel.webStore?.blueprint?.original
-  if (copied) {
-    const href = router.resolve({ name: 'StorefrontHome', params: { accountId: accountId.value, channelId: channel.id } }).href
-    toast.success(`${channel.name} is ready, as a copy of ${demoStoreFor(copied).card.name}`, {
-      action: { label: 'Show store', onClick: () => window.open(href, '_blank', 'noopener') },
-    })
-  }
+  // A Store Builder store opens on its setup steps (the store's page), which say when it is ready.
 
   allowNextLeave()
   router.push({

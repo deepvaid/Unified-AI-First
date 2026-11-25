@@ -138,9 +138,11 @@ test('a product with specifications carries them, its warranty and its choices; 
   assert.equal(sofa.specs?.find((s) => s.label === 'Width')?.value, '84 in')
   assert.equal(sofa.warranty, '5-year frame warranty')
   assert.deepEqual(sofa.options, [{ name: 'Fabric', values: ['Oat', 'Slate', 'Moss'] }])
+  // Vitaheal's products carry their supplement facts as rows since the feedback round (and so their choices), never a warranty.
   for (const product of vitahealProducts()) {
     const read = assistantProduct(product)
-    assert.equal('specs' in read || 'warranty' in read || 'options' in read, false, product.name)
+    assert.deepEqual(read.specs, product.detail!.specs, product.name)
+    assert.equal('warranty' in read, false, product.name)
   }
 })
 

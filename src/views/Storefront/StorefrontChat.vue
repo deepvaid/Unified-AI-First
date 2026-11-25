@@ -15,7 +15,7 @@ import { useStorefrontShopperStore } from '@/stores/useStorefrontShopper'
 import { useSubscriptionsStore } from '@/stores/useSubscriptions'
 import { vehicleLabel } from '@/storefront/fitment'
 import type { Vehicle } from '@/storefront/fitment'
-import { optionKind } from '@/storefront/variants'
+import { cheapestSelection, optionKind, variantFor } from '@/storefront/variants'
 import { allowedActions, chargeAmount, dayLabel } from '@/subscriptions/contracts'
 import { onBrand } from '@/utils/brandContrast'
 import StorefrontAnchor from './StorefrontAnchor.vue'
@@ -94,7 +94,8 @@ function context(): AssistantContext {
       number: c.number,
       email: c.customer.email,
       product: c.product,
-      plan: c.plan.name,
+      // A delivery option of a plan is named by the plan's label: "your Subscribe and save plan".
+      plan: c.plan.byFrequency ? `${c.plan.name} plan` : c.plan.name,
       status: c.status,
       nextChargeOn: c.nextChargeOn,
       price: storefront.formatExact(chargeAmount(c)),
@@ -278,22 +279,33 @@ const priceText = computed(() => {
 })
 
 /**
+ * The product page opens on the lowest-priced choice (its product-detail section's
+ * `preselectVariant`, on the richer drawing): a card then adds that choice.
+ */
+const opensOnCheapest = computed(() => storefront.sectionsDrawing.value
+  && storefront.theme.value?.templates.product?.find((s) => s.kind === 'product-detail')?.settings.preselectVariant === true)
+
+/**
  * On the richer theme drawing, a piece sold in colours or sizes is chosen on its
  * page: the card links there ("Choose a size") instead of adding a line without one.
+ * Other options (a format, a flavour) are too, unless the page opens on the cheapest
+ * choice: then the card adds it, as the classic drawing's always did.
  */
 function choiceNeeded(product: Product): string | null {
   if (!storefront.sectionsDrawing.value) return null
   const kinds = (product.detail?.options ?? []).filter((o) => o.values.length > 1).map(optionKind)
   if (kinds.includes('size')) return 'Choose a size'
   if (kinds.includes('color')) return 'Choose a color'
-  return kinds.length ? 'Choose options' : null
+  return kinds.length && !opensOnCheapest.value ? 'Choose options' : null
 }
 
 const added = ref<number[]>([])
 async function addToCart(product: Product): Promise<void> {
   // On a parts store the line carries the shopper's vehicle when the part fits it, as every other Add to cart does.
   const vehicle = storefront.sellsParts.value ? chatLineVehicle(product, storefront.vehicle.value) : undefined
-  cart.add(channelId.value, product, 1, vehicle ? { vehicle } : undefined)
+  // The cheapest choice, as the product page opens on it, so the two add the same line ("Bag").
+  const variant = opensOnCheapest.value && product.detail?.options.length ? variantFor(product, cheapestSelection(product)) : undefined
+  cart.add(channelId.value, product, 1, vehicle || variant ? { vehicle, variant } : undefined)
   added.value.push(product.id)
   say('bot', `Added ${product.name} to your cart.`, { kind: 'text', text: '', link: { label: 'View cart', href: '/cart-page' } })
   record()

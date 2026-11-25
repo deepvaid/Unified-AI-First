@@ -7,7 +7,7 @@
  *
  * A chatbot names its profile in `ChatbotConfig.assistantProfile`, so a store's
  * assistant travels with it when its theme is applied elsewhere. Unset: wellness.
- * Wellness is Vitaheal's, apparel Northfold's, auto parts Torqline's, home Lumos's.
+ * Wellness is Vitaheal's, apparel Northfold's, auto parts Torqline's, home Lumos's, supplements Daybloom's.
  *
  * Pure, with relative `.ts` imports only, so `npm run test:chatbot` runs it in Node.
  */
@@ -180,6 +180,32 @@ const WELLNESS: AssistantProfile = {
     link: { label: 'See subscriptions', href: '/collections/subscription' },
   },
   placeholder: 'Ask about an order, a subscription or a product',
+}
+
+/**
+ * A supplements store that sells by goal (Daybloom): the same careful answers as
+ * wellness, with the goals its own range is made for, and its own subscription pages.
+ */
+const SUPPLEMENTS: AssistantProfile = {
+  ...WELLNESS,
+  id: 'supplements',
+  help: 'I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, energy, gut health, immunity or everyday wellness, and answer questions about delivery, returns and how subscriptions work.',
+  needs: [
+    ...WELLNESS.needs.filter((need) => ['better sleep', 'feeling calmer', 'steady energy', 'skin, hair and joints'].includes(need.label)),
+    { label: 'hydration', says: /\b(hydrat\w*|dehydrat\w*|thirst\w*|cramps?|sweat\w*|electrolytes?|workouts?|gym|exercis\w*)\b/, means: ['hydrat', 'workout'] },
+    { label: 'gut health', says: /\b(gut|digest\w*|bloat\w*|stomach|probiotics?|fib(er|re))\b/, means: ['gut', 'digest', 'probiotic'] },
+    { label: 'immune support', says: /\b(immun\w*|colds?|flu|winter|vitamin d\d?)\b/, means: ['immun'] },
+    { label: 'heart and brain', says: /\b(heart|brain|omega\S*|fish oil)\b/, means: ['heart', 'omega'] },
+  ],
+  askNeed: 'Tell me what you would like help with, for example better sleep, steady energy, gut health or immune support, and I will suggest a product.',
+  noPromotion: {
+    text: 'There is no discount code running right now. Subscribe and save takes up to 20% off every delivery, all year.',
+    link: { label: 'How it works', href: '/page/subscribe-and-save' },
+  },
+  noSubscription: {
+    text: 'You can start one from any product in our Subscribe and save collection.',
+    link: { label: 'See the products', href: '/collections/subscribe-and-save' },
+  },
 }
 
 const FABRIC_PAGE: AssistantLink = { label: 'Fabric and care', href: '/page/fabric-and-care' }
@@ -411,7 +437,7 @@ const HOME: AssistantProfile = {
 }
 
 /** The profiles there are. A store whose profile is not here answers as wellness. */
-export const ASSISTANT_PROFILES: Partial<Record<AssistantProfileId, AssistantProfile>> = { wellness: WELLNESS, apparel: APPAREL, 'auto-parts': AUTO_PARTS, home: HOME }
+export const ASSISTANT_PROFILES: Partial<Record<AssistantProfileId, AssistantProfile>> = { wellness: WELLNESS, apparel: APPAREL, 'auto-parts': AUTO_PARTS, home: HOME, supplements: SUPPLEMENTS }
 
 export const DEFAULT_ASSISTANT_PROFILE: AssistantProfileId = 'wellness'
 

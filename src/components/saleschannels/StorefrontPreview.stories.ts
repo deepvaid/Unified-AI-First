@@ -12,6 +12,11 @@ import { constrain } from '@/stories/decorators'
 import { demoStoreFor } from '@/storefront/demoStores'
 import { snapshotFor } from '@/storefront/demoStores/install'
 import { cardPrice, gridSettings, isNewArrival } from '@/storefront/listing'
+import { parseDecimal } from '@/maropay/money'
+import { formatStorePrice } from '@/storefront/price'
+import { cheapestSelection } from '@/storefront/variants'
+import { plansForProduct, roundForDisplay } from '@/subscriptions/plans'
+import { purchasePreviewFor } from './storefrontPreview'
 
 function homeSections(): ThemeSection[] {
   return [
@@ -92,10 +97,20 @@ page's **collapsible rows** beside a stacked gallery, the header's icons and col
 is unchanged.
 
 **The store's own header and cards** (Lumos). \`headerSearch: 'field'\` draws the header's search as a field with
-\`searchPlaceholder\` (a row of its own on a phone); \`headerTools\` with \`'wishlist'\` adds the heart to the header,
+\`searchPlaceholder\` (a row of its own on a phone); with \`searchable: false\` (a store not yet connected to Merchandise
+Cloud) the header and the vehicle finder draw no search, as the storefront's, except in the builder's \`interactive\`
+canvas; \`headerTools\` with \`'wishlist'\` adds the heart to the header,
 the cards and the buy box. \`cardStyle\` is the collection template's product card: with \`'Boxed'\` every product
 row is drawn in framed cards with their badge, heart and (with \`quickAdd\`) Add to cart. On a product page the
 buy box shows the product's own choices (swatches for a colour) and the row under it leaves the product out.
+
+**Plans** (Vitaheal). A product template's purchase options block is drawn in the buy box on both drawings
+(\`PreviewPurchaseBlock\`), from \`purchase\`: a product's real plans, or a drawn example. On the sections drawing,
+while the page opens on a plan, Add to cart reads "Add subscription to cart" and Buy now is held back; the
+product-detail toggles \`quantity\` and \`stockLine\` add a stepper and "In stock, ready to ship", and
+\`preselectVariant\` marks each product's \`start\` choice (without it a product whose formats differ in price reads
+"From"). A card's \`badge: 'Subscribe'\` reads "Subscribe available".
+The theme builder, the store page and the Themes page all pass these through \`useStorefrontPreviewProps\`.
 
 ### 🟢 Do's
 - **Do** drive \`sections\`/\`styles\` from the \`useStoreThemes\` store so canvas and settings stay in sync.
@@ -127,6 +142,7 @@ buy box shows the product's own choices (swatches for a colour) and the row unde
     styles: { control: 'object', description: 'Partial ThemeStyles applied as CSS vars on the preview root.' },
     device: { control: 'select', options: ['desktop', 'tablet', 'mobile'], description: 'Inner viewport frame width.' },
     interactive: { control: 'boolean', description: 'Hover outline + click/keyboard selection on sections.' },
+    searchable: { control: 'boolean', description: 'Shoppers can search the store (Merchandise Cloud connected). Off: no search in the header or the vehicle finder on the sections drawing, except in the `interactive` canvas.' },
     selectedId: { control: 'text', description: 'Section id highlighted with a labeled selection ring.' },
     onSelect: { table: { category: 'events' }, description: 'Emitted with the section id on click/Enter/Space (interactive only).' },
     onHover: { table: { category: 'events' }, description: 'Emitted with the hovered section id, or null on leave (interactive only).' },
@@ -279,4 +295,59 @@ export const SectionsDrawingLumosProduct: Story = {
 /** Lumos's collection template: its filters, sort, and Boxed cards with their badges and Add to cart. */
 export const SectionsDrawingLumosCollection: Story = {
   args: { ...lumosArgs, sections: lumos.theme.templates.collection, template: 'collection' },
+}
+
+// Vitaheal (the feedback round), as its home channel is seeded: a supplements store in kronor on the sections
+// drawing that sells on plans. The builder passes the purchase options of its first product on a plan, and each
+// product the format its page opens on (the lowest-priced) and its card's badge, "Subscribe available" on a plan.
+const vitahealChannel = demoStoreFor('vitaheal').homeChannel
+const vitaheal = snapshotFor(vitahealChannel, 'vitaheal', '2026-11-20')
+const vitahealStore = { currency: vitahealChannel.webStore!.currency!, locale: vitahealChannel.webStore!.locale }
+const kronor = (amount: string) => formatStorePrice(roundForDisplay(parseDecimal(amount, vitahealStore.currency)!), vitahealStore.locale)
+const vitahealPlansFor = (product: { id: number }) => plansForProduct(vitaheal.plans, vitahealChannel.id, product.id)
+const vitahealProducts = vitaheal.products.map((p) => {
+  const card = cardPrice(p)
+  return {
+    name: p.name,
+    price: `${card.from ? 'From ' : ''}${kronor(card.price)}`,
+    image: p.imageUrls?.[0],
+    images: p.imageUrls?.slice(0, 2),
+    collections: p.collections,
+    options: p.detail?.options ?? [],
+    start: cheapestSelection(p),
+    badge: card.compareAt ? 'Sale' as const : vitahealPlansFor(p).length ? 'Subscribe' as const : undefined,
+  }
+})
+const vitahealOnPlan = vitaheal.products.find((p) => vitahealPlansFor(p).length)!
+const vitahealGrid = gridSettings(vitaheal.theme.templates.collection)
+const vitahealArgs = {
+  styles: vitaheal.theme.styles,
+  products: vitahealProducts,
+  purchase: purchasePreviewFor(vitahealOnPlan, vitahealPlansFor(vitahealOnPlan), vitahealStore),
+  brand: vitaheal.chrome.wordmark,
+  menu: vitaheal.chrome.nav.map((item) => item.label),
+  headerTools: vitaheal.chrome.headerTools,
+  headerSearch: vitaheal.chrome.headerSearch,
+  searchPlaceholder: vitaheal.chrome.searchPlaceholder,
+  cardStyle: vitahealGrid.cardStyle,
+  quickAdd: vitahealGrid.quickAdd,
+}
+
+/**
+ * Vitaheal's product template on the sections drawing: Unwind opens on its cheapest format (Bag) with the stock
+ * line, the purchase options block in the buy box with the 3-month supply chosen, the quantity stepper, and
+ * "Add subscription to cart" with Buy now held back while a plan is chosen; its rows sit under the buy box.
+ */
+export const SectionsDrawingVitahealProduct: Story = {
+  args: { ...vitahealArgs, sections: vitaheal.theme.templates.product, template: 'product', interactive: true },
+}
+
+/**
+ * Vitaheal's home as the Themes page shows it on a phone, before the store is connected to Merchandise Cloud
+ * (`searchable: false`): no search in the header, as on the storefront, and in a canvas this narrow the hero's
+ * stats wrap, two figures to a row and the third under them.
+ */
+export const SectionsDrawingVitahealBeforeSearch: Story = {
+  args: { ...vitahealArgs, sections: vitaheal.theme.templates.home, searchable: false },
+  decorators: [constrain('narrow')],
 }

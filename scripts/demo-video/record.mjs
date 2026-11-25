@@ -57,11 +57,11 @@ function overlay() {
     #dv-ring { position: fixed; z-index: 2147483646; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%; border: 3px solid #2f7ef5; opacity: 0; pointer-events: none; }
     #dv-ring.is-on { animation: dv-ring .5s ease-out; }
     @keyframes dv-ring { from { opacity: .9; transform: scale(.35); } to { opacity: 0; transform: scale(1.25); } }
-    #dv-caption { position: fixed; left: 50%; bottom: 34px; z-index: 2147483645; transform: translate(-50%, 16px); max-width: 1180px; display: flex; align-items: center; gap: 14px; padding: 14px 24px 14px 14px; border-radius: 999px; background: rgba(13, 22, 48, .94); color: #fff; font: 600 25px/1.25 Figtree, Inter, system-ui, sans-serif; box-shadow: 0 10px 34px rgba(0, 0, 0, .28); opacity: 0; pointer-events: none; transition: opacity .35s ease, transform .35s ease; }
+    #dv-caption { position: fixed; left: 50%; bottom: 34px; z-index: 2147483645; transform: translate(-50%, 16px); max-width: 1180px; display: flex; align-items: center; gap: 14px; padding: 14px 24px 14px 14px; border-radius: 999px; background: rgba(13, 22, 48, .94); color: #fff; font: 600 25px/1.25 Inter, system-ui, sans-serif; box-shadow: 0 10px 34px rgba(0, 0, 0, .28); opacity: 0; pointer-events: none; transition: opacity .35s ease, transform .35s ease; }
     #dv-caption.is-on { opacity: 1; transform: translate(-50%, 0); }
     #dv-who { flex: none; padding: 6px 14px; border-radius: 999px; font-size: 17px; letter-spacing: .04em; text-transform: uppercase; background: #fff; color: #0d1630; }
     #dv-who[data-who="Merchant"] { background: #8fd3ff; }
-    #dv-card { position: fixed; inset: 0; z-index: 2147483644; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; padding: 80px; background: #0d1630; color: #fff; text-align: center; font-family: Figtree, Inter, system-ui, sans-serif; opacity: 0; pointer-events: none; transition: opacity .6s ease; }
+    #dv-card { position: fixed; inset: 0; z-index: 2147483644; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; padding: 80px; background: #0d1630; color: #fff; text-align: center; font-family: Inter, system-ui, sans-serif; opacity: 0; pointer-events: none; transition: opacity .6s ease; }
     #dv-card.is-on { opacity: 1; }
     #dv-card h1 { margin: 0; font-size: 84px; line-height: 1.05; font-weight: 700; letter-spacing: -.02em; }
     #dv-card p { margin: 0; max-width: 1100px; font-size: 34px; line-height: 1.35; color: #c9d4f2; }
@@ -159,6 +159,8 @@ const pause = (ms) => page.waitForTimeout(quiet ? 30 : FAST ? ms / 6 : ms * PACE
 const caption = (who, text) => page.evaluate(([w, t]) => window.__dv.caption(w, t), [who, text])
 const card = (title, line, foot) => page.evaluate(([t, l, f]) => window.__dv.card(t, l, f), [title, line, foot])
 const text = (value, exact = true) => page.getByText(value, { exact })
+/** The search field in the store's header (it shows once the store can search). */
+const searchBox = () => page.getByRole('searchbox', { name: 'Search the store' })
 
 async function moveTo(target) {
   await target.scrollIntoViewIfNeeded()
@@ -181,10 +183,13 @@ async function type(target, value, after = 500) {
   await pause(after)
 }
 
+/** Closes the app's messages, so none follows into the next page or covers a drawer's buttons. */
+const closeMessages = () => page.evaluate(() => document.querySelectorAll('.mp-toast button').forEach((button) => button.click()))
+
 /** Goes to a page of the app the way a link would: no reload, so nothing flashes. */
 async function go(to, settle = 1400) {
   // A message from the page being left would follow into the next one (the store is another tab in real use).
-  await page.evaluate(() => document.querySelectorAll('.mp-toast button').forEach((button) => button.click()))
+  await closeMessages()
   await page.evaluate((p) => document.querySelector('#app').__vue_app__.config.globalProperties.$router.push(p), to)
   await page.waitForLoadState('networkidle')
   await pause(settle)
@@ -211,15 +216,18 @@ const SCENES = [
     await scrollTo(780, 2400)
     await scrollTo(1650, 2400)
     await scrollTo(0, 1400)
-    await click(page.locator('.sf-nav a', { hasText: /^Sleep$/ }), 2200)
-    await click(page.locator('.sf-card', { hasText: 'Unwind' }).first(), 2200)
+    // The header's menu: "Shop" opens a panel, with the goals in its first column.
+    await click(page.locator('.sf-nav__trigger', { hasText: 'Shop' }), 1800)
+    await click(page.locator('.sf-mega a', { hasText: /^Sleep$/ }), 2200)
+    // The product's name on its card is the link to its page.
+    await click(page.locator('main').getByRole('link', { name: 'Unwind', exact: true }).first(), 2200)
   }],
 
   ['Subscribe with a campaign code', async () => {
     await caption('Shopper', 'Subscribe and save: the shopper picks a plan')
     await click(page.locator('.sf-plan').nth(1), 1300)
     await click(page.locator('.sf-plan').nth(0), 1300)
-    await click(page.locator('.sf-pdp__add'), 1400)
+    await click(page.getByRole('button', { name: 'Add subscription to cart' }), 1400)
     await click(page.getByRole('link', { name: /View cart/ }), 1800)
     await caption('Shopper', 'A campaign code takes 15% off the first order')
     await type(page.locator('#sf-cart-code'), 'WINTER15')
@@ -267,6 +275,55 @@ const SCENES = [
     await click(page.locator('main tbody tr', { hasText: 'Linnea Berg' }).first(), 3800)
   }],
 
+  ['A plan where shoppers choose how often', async () => {
+    await caption('Merchant', 'Early version: one plan, shoppers choose how often')
+    await go(`/commerce/${ACCOUNT}/subscriptions/plans`, 2400)
+    await click(page.getByRole('button', { name: 'New plan' }), 1200)
+    await click(page.getByRole('menuitem', { name: /Plan with delivery options/ }), 2200)
+    await type(page.getByLabel('Plan name *'), 'Balance subscribe and save', 300)
+    await type(page.getByLabel('Shopper label *'), 'Subscribe and save', 400)
+    // Every 1, 2 and 3 months: the next row takes the next frequency, at a discount of its own.
+    const discount = page.getByRole('spinbutton', { name: 'Discount' })
+    await type(discount.nth(0), '20', 300)
+    await click(page.getByRole('button', { name: 'Add plan option' }), 700)
+    await type(discount.nth(1), '15', 300)
+    await click(page.getByRole('button', { name: 'Add plan option' }), 700)
+    await type(discount.nth(2), '10', 500)
+    await click(page.getByRole('checkbox', { name: 'Sell Balance on this plan', exact: true }), 1000)
+    await page.getByLabel('Shopper preview').scrollIntoViewIfNeeded()
+    await pause(2800)
+    await click(page.getByRole('button', { name: 'Create plan' }), 2000)
+    await caption('Shopper', 'Balance now offers three frequencies')
+    await go(`${SHOP}/products/balance-2008`, 1800)
+    await click(page.getByRole('group', { name: 'Subscribe and save' }).locator('.sf-plan', { hasText: 'Deliver every 2 months' }), 1200)
+    await page.getByRole('button', { name: 'Add subscription to cart' }).scrollIntoViewIfNeeded()
+    await pause(3400)
+  }],
+
+  ['The merchant sends the order', async () => {
+    await caption('Merchant', 'Fulfillment: the new order is first in the queue')
+    await go(`/commerce/${ACCOUNT}/fulfillments`, 2600)
+    // The ID cell links to the fulfillment; the store's order is placed at the top.
+    await click(page.locator('main tbody tr').first().locator('a').first(), 2400)
+    await caption('Merchant', 'Pack it, print the label, hand it to the carrier')
+    await click(page.locator('main').getByRole('button', { name: 'Pack', exact: true }), 1800)
+    // The "Packed" message would sit over the drawer's Create label button.
+    await closeMessages()
+    await click(page.locator('main').getByRole('button', { name: 'Pick carrier', exact: true }), 1800)
+    await caption('Merchant', 'PostNord for Sweden, tracking number filled in')
+    await pause(1600)
+    await click(page.getByRole('button', { name: 'Create label', exact: true }), 2000)
+    await closeMessages()
+    await click(page.locator('main').getByRole('button', { name: 'Mark shipped', exact: true }), 2200)
+    await page.locator('main').getByText('Tracking number').first().scrollIntoViewIfNeeded()
+    await pause(2600)
+    await caption('Shopper', 'On the store, the shopper sees it is on its way')
+    await go(`${SHOP}/account`, 1400)
+    await click(page.locator('.sf-order__view').first(), 1200)
+    await page.locator('.sf-ord__tracking').scrollIntoViewIfNeeded()
+    await pause(4200)
+  }],
+
   ['A campaign for one store', async () => {
     await caption('Merchant', 'Run a campaign for one store: a message, a code, and its results')
     await go(`${STORE}/campaigns`, 3800)
@@ -287,11 +344,11 @@ const SCENES = [
   ['Search and recommendations on the store', async () => {
     await go(SHOP, 1500)
     await caption('Shopper', 'The store now has search, with the merchant’s pinned product first')
-    await type(page.locator('.sf-search input'), 'sleep')
+    await type(searchBox(), 'sleep')
     await page.keyboard.press('Enter')
     await pause(3600)
     await caption('Shopper', '“tired” finds energy and focus, through a synonym')
-    await type(page.locator('.sf-results__form input'), 'tired')
+    await type(page.locator('[data-sf-search-box]'), 'tired')
     await page.keyboard.press('Enter')
     await pause(3800)
     await go(`${SHOP}/products/unwind-2001`, 1200)
@@ -314,7 +371,7 @@ const SCENES = [
     await click(page.getByRole('button', { name: 'Add synonym' }), 2400)
     await go(SHOP, 1200)
     await caption('Shopper', 'The store follows at once')
-    await type(page.locator('.sf-search input'), 'knackered')
+    await type(searchBox(), 'knackered')
     await page.keyboard.press('Enter')
     await pause(4200)
   }],

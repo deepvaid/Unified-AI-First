@@ -4,18 +4,15 @@ import { useRoute, useRouter } from 'vue-router'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import type { SalesChannel } from '@/stores/useSalesChannels'
 import { useStoreThemesStore } from '@/stores/useStoreThemes'
-import { useStorefrontStore } from '@/stores/useStorefront'
-import { useCommerceStore } from '@/stores/useCommerce'
 import { useDemoStores } from '@/stores/useDemoStores'
 import { browserStorage } from '@/stores/demoKeep'
 import { useToast } from '@/composables/useToast'
 import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import type { HideBelow } from '@/composables/useResponsiveTableHeaders'
-import { previewProducts } from '@/views/Storefront/storefrontCatalog'
 import { DEMO_STORES } from '@/storefront/demoStores'
 import type { DemoStoreBlueprint } from '@/storefront/demoStores'
 import { readInstalled } from '@/storefront/demoStores/install'
-import { gridSettings } from '@/storefront/listing'
+import { earlierLookMessage } from '@/storefront/demoStores/summary'
 import type { StoreTheme } from '@/stores/themeBuilderData'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpSectionHeader from '@/components/MpSectionHeader.vue'
@@ -27,6 +24,7 @@ import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpMenuItem from '@/components/MpMenuItem.vue'
 import StorefrontPreview from '@/components/saleschannels/StorefrontPreview.vue'
+import { useStorefrontPreviewProps } from '@/components/saleschannels/storefrontPreview'
 import StoreRestoreDialog from '@/components/saleschannels/StoreRestoreDialog.vue'
 import ThemeLibraryCard from '@/components/saleschannels/ThemeLibraryCard.vue'
 import type { ThemeLibraryAction } from '@/components/saleschannels/ThemeLibraryCard.vue'
@@ -41,7 +39,6 @@ const route = useRoute()
 const router = useRouter()
 const salesChannelsStore = useSalesChannelsStore()
 const themesStore = useStoreThemesStore()
-const storefronts = useStorefrontStore()
 const demoStores = useDemoStores()
 const toast = useToast()
 
@@ -56,20 +53,12 @@ const channelId = computed(() => {
 })
 
 const channel = computed(() => salesChannelsStore.getChannel(accountId.value, channelId.value))
-const previewHeader = computed(() => storefronts.previewHeaderFor(channel.value))
-/** The header's search and tools, and the product card the store's rows use, as the builder draws them. */
-const previewExtras = computed(() => {
-  const grid = gridSettings(current.value?.templates.collection)
-  const cards = { cardStyle: grid.cardStyle, quickAdd: grid.quickAdd }
-  if (!previewHeader.value.brand || !channel.value) return cards
-  const chrome = storefronts.chromeFor(channel.value)
-  return { ...cards, headerSearch: chrome.headerSearch, headerTools: chrome.headerTools, searchPlaceholder: chrome.searchPlaceholder }
-})
-/** The store's own products in the preview's product rows; a store on the shared catalogue keeps the drawn stand-ins. */
-const previewItems = computed(() => (channel.value ? previewProducts(useCommerceStore().products, channel.value) : undefined))
-
 const installed = computed(() => themesStore.themesForChannel(channelId.value))
 const current = computed(() => installed.value.find((theme) => theme.status === 'Published'))
+/** The current theme is an earlier look of the library's, kept in this browser: the preview, the storefront and the library card would disagree without a word. */
+const earlierLook = computed(() => themesStore.earlierLookOf(channelId.value))
+/** The store in the current theme's preview as the theme builder draws it: its header, card, own products and plans. */
+const previewProps = useStorefrontPreviewProps(channel, current)
 
 const search = ref('')
 const filtered = computed(() => {
@@ -246,9 +235,17 @@ function foldedMeta(theme: StoreTheme): string {
     <v-card ref="currentCard" variant="flat" border rounded="lg" class="store-themes__current">
       <MpSectionHeader title="Current theme" :heading-level="2" />
       <template v-if="current">
+        <MpAlert v-if="earlierLook" tone="info" live="off">
+          {{ earlierLookMessage(earlierLook) }}
+          <template #actions>
+            <v-btn size="small" variant="outlined" prepend-icon="rotate-ccw" class="text-none" @click="restoreOpen = true">
+              Restore original store
+            </v-btn>
+          </template>
+        </MpAlert>
         <!-- The top of the home page, fading out: the whole page runs past 2,000px and hid the library below it. -->
         <div class="store-themes__window">
-          <StorefrontPreview :sections="current.templates.home" :styles="current.styles" :brand="previewHeader.brand" :menu="previewHeader.menu" :products="previewItems" v-bind="previewExtras" />
+          <StorefrontPreview :sections="current.templates.home" :styles="current.styles" v-bind="previewProps" />
         </div>
         <div class="store-themes__current-bar">
           <div class="min-width-0">

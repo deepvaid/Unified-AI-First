@@ -4,7 +4,7 @@ import { isolateStorage } from '@/stories/decorators'
 import StorefrontListingCard from './StorefrontListingCard.vue'
 import {
   F150, LUMOS_STORY_CHANNEL, listingProduct, lumosCollection, lumosFrame, lumosProduct, lumosStore, northfoldCollection, northfoldStore, soldOutCopy,
-  torqlineCollection, torqlineFrame, torqlinePart, torqlineStore,
+  torqlineCollection, torqlineFrame, torqlinePart, torqlineStore, vitahealFrame, vitahealProduct, vitahealStore,
 } from './listingStoryFixtures'
 import { storefrontFrame } from './storefrontStoryFixtures'
 
@@ -27,11 +27,11 @@ const meta = {
       description: {
         component: `
 ### Overview
-A product in a list on a store with the richer theme drawing (Northfold, Torqline, Lumos): the
+A product in a list on a store with the richer theme drawing (Northfold, Torqline, Lumos, Vitaheal): the
 collection and search pages, featured products and recommendations. Shown here with Northfold's own
-products and theme, Torqline's for the dense parts card and Lumos's for the boxed card. The classic
-drawing keeps
-\`StorefrontProductCard\` (Vitaheal, Atlas and Neelam are unchanged).
+products and theme, Torqline's for the dense parts card, Lumos's for the boxed card and Vitaheal's for a
+boxed card on a subscription plan. The classic drawing keeps
+\`StorefrontProductCard\` (Daybloom, Atlas and Neelam are unchanged).
 
 ### Anatomy
 - **Photo** at 3:4, with one mark: **Sold out**, else the saving (**−25%**, in the theme's sale
@@ -62,15 +62,19 @@ drawing keeps
 \`cardStyle: 'Boxed'\`, from the collection template's grid:
 - A **framed card** on the theme's card colour (\`--sf-card\`), card corners (\`--sf-card-radius\`) and
   soft shadow (\`--sf-card-shadow\`), with a hairline in its divider colour.
-- **Photo** at 248:273 on the theme's surface, its top corners rounded, with one badge top-left: **Sale**
-  (the sale colour), **New** (the store's badge colour) or **Sold out**; 10px uppercase on a 4px pill.
+- **Photo** at 248:273 on the theme's surface, its top corners rounded, with one badge top-left: **Sold out**,
+  else **Sale** (the sale colour), else **Subscribe available**, else **New** (both on the store's badge colour);
+  10px uppercase on a 4px pill. **Subscribe available** marks a product the store sells on a subscription plan,
+  when the theme's purchase options block asks for the badge (Vitaheal: lime with near-black ink, 16.7:1); the
+  editorial card follows the same rule.
 - **Heart**, top-right, on a store with a wishlist: a 36px white disc (44px hit area). A toggle button
   (\`aria-pressed\`) named "Save Arlo 3-Seat Sofa to your wishlist"; saved, the heart is filled in the
   accent. Pressing it is said politely: "Saved to your wishlist · Arlo 3-Seat Sofa".
 - **Name** (16px bold, two lines at most), the card's one link; **price** (on sale, the sale price in the
   sale colour and the struck "was" price).
 - **Add to cart**: the store's solid button, the card's width, 44px, at the card's foot so a row lines
-  up. Straight into the cart when there is nothing to choose; quick add otherwise.
+  up. Straight into the cart when there is nothing to choose; quick add otherwise, and always for a
+  product on a subscription plan, so the shopper chooses between the plans and buying once.
 
 ### Props
 - \`colorKeys\`: the list's colour filter. The card leads with the first of those colours the product
@@ -239,6 +243,26 @@ export const BoxedInAGrid: Story = {
     setup: () => ({ products: lumosCollection('Living Room').slice(0, 6) }),
     template: `
       <ul role="list" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px 20px; margin: 0; padding: 0; list-style: none;">
+        <li v-for="product in products" :key="product.id"><StorefrontListingCard :product="product" card-style="Boxed" /></li>
+      </ul>
+    `,
+  }),
+}
+
+/** Vitaheal's Unwind, sold on its plans: the Subscribe available badge on the store's lime, and Add to cart opens quick add. */
+export const BoxedSubscribeAvailable: Story = {
+  decorators: [vitahealFrame('300px'), vitahealStore(), isolateStorage],
+  args: { product: vitahealProduct('Unwind'), cardStyle: 'Boxed' },
+}
+
+/** Four of Vitaheal's supplements: three on a plan carry the badge; Nasal Strips, on none, goes straight into the cart. */
+export const BoxedSubscribeInAGrid: Story = {
+  decorators: [vitahealFrame('1100px'), vitahealStore(), isolateStorage],
+  render: () => ({
+    components: { StorefrontListingCard },
+    setup: () => ({ products: ['Unwind', 'Clear Focus', 'Vitaheal Electrolytes', 'Nasal Strips'].map(vitahealProduct) }),
+    template: `
+      <ul role="list" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px 20px; margin: 0; padding: 0; list-style: none;">
         <li v-for="product in products" :key="product.id"><StorefrontListingCard :product="product" card-style="Boxed" /></li>
       </ul>
     `,

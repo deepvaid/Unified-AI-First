@@ -11,6 +11,17 @@ import type { Money } from '../maropay/money.ts'
 export type IntervalUnit = 'week' | 'month'
 export type PlanStatus = 'Active' | 'Paused'
 
+/** One way a plan sold by delivery options is delivered: how often, and what that takes off the price. */
+export interface PlanOption {
+  id: string
+  intervalCount: number
+  intervalUnit: IntervalUnit
+  /** Percent off the one-time unit price. */
+  discountPct: number
+  /** Selected first among the plan's options. One per plan. */
+  isDefault: boolean
+}
+
 export interface SubscriptionPlan {
   id: string
   /** The store that sells it. */
@@ -33,6 +44,17 @@ export interface SubscriptionPlan {
   isDefault: boolean
   /** A paused plan is not offered to shoppers. */
   status: PlanStatus
+  /**
+   * Delivery options, for a plan sold by frequency ("Subscribe and save": every 1, 2
+   * or 3 months): the shopper picks one, each with its own discount. The plan's own
+   * interval and discount then mirror its default option, and a delivery is one unit.
+   * Absent: the plan is one fixed delivery (a "3-month supply").
+   */
+  options?: PlanOption[]
+  /** What shoppers read over a plan's delivery options. `name` is then for the merchant only. */
+  shopperLabel?: string
+  /** On a delivery option as a shopper is offered it (offeredRows): the plan it is an option of. */
+  optionOf?: string
 }
 
 /** What the merchant fills in: a plan without its id and store. */
@@ -75,14 +97,24 @@ export function roundForDisplay(amount: Money): Money {
 
 type Interval = Pick<SubscriptionPlan, 'intervalCount' | 'intervalUnit'>
 
+/** A delivery option, as a plan row (`optionOf`) or on a cart line, an order or a subscription (`byFrequency`). */
+type FrequencyMark = { optionOf?: string; byFrequency?: boolean }
+const soldByFrequency = (plan: FrequencyMark): boolean => !!plan.optionOf || !!plan.byFrequency
+
 /** "every month", "every 3 months", "every 2 weeks". */
 export function intervalLabel(plan: Interval): string {
   return plan.intervalCount === 1 ? `every ${plan.intervalUnit}` : `every ${plan.intervalCount} ${plan.intervalUnit}s`
 }
 
-/** "3 units every 3 months", "1 unit every month". */
-export function deliverySummary(plan: Interval & Pick<SubscriptionPlan, 'unitsPerDelivery'>): string {
+/** "3 units every 3 months", "1 unit every month". A delivery option is its frequency alone: "every 3 months". */
+export function deliverySummary(plan: Interval & Pick<SubscriptionPlan, 'unitsPerDelivery'> & FrequencyMark): string {
+  if (soldByFrequency(plan)) return intervalLabel(plan)
   return `${plan.unitsPerDelivery} ${plan.unitsPerDelivery === 1 ? 'unit' : 'units'} ${intervalLabel(plan)}`
+}
+
+/** What a plan row is called where a shopper or the merchant picks one: a delivery option by its frequency, another plan by its name. */
+export function planTitle(plan: Interval & Pick<SubscriptionPlan, 'name'> & FrequencyMark): string {
+  return soldByFrequency(plan) ? `Deliver ${intervalLabel(plan)}` : plan.name
 }
 
 // ── Dates ────────────────────────────────────────────────────────────────────
@@ -104,11 +136,48 @@ export function nextChargeDate(from: string, plan: Interval): string {
 
 // ── What a shopper is offered ────────────────────────────────────────────────
 
-/** The plans a shopper can pick for a product in a store: active ones, the preselected one first. */
+/** The id a delivery option goes by on a cart line, an order and a subscription. */
+export const optionRowId = (planId: string, optionId: string): string => `${planId}~${optionId}`
+
+/** Whether a line's plan id is this plan, or one of its delivery options. */
+export const isOnPlan = (linePlanId: string, planId: string): boolean => linePlanId === planId || linePlanId.startsWith(`${planId}~`)
+
+/**
+ * A plan as shoppers are offered it. A plan sold by delivery options gives one row
+ * per option, named by the plan's shopper label, so a cart line, an order and a
+ * subscription hold an option exactly as they hold any other plan. Another plan is
+ * its own row.
+ */
+export function offeredRows(plan: SubscriptionPlan): SubscriptionPlan[] {
+  const { options, ...rest } = plan
+  if (!options?.length) return [plan]
+  return options.map((option): SubscriptionPlan => ({
+    ...rest,
+    id: optionRowId(plan.id, option.id),
+    name: plan.shopperLabel?.trim() || plan.name,
+    intervalCount: option.intervalCount,
+    intervalUnit: option.intervalUnit,
+    discountPct: option.discountPct,
+    unitsPerDelivery: 1,
+    isDefault: option.isDefault,
+    optionOf: plan.id,
+  }))
+}
+
+/** A plan row by its id: a plan, or one of a plan's delivery options. */
+export function planRow(plans: SubscriptionPlan[], id: string): SubscriptionPlan | undefined {
+  return plans.flatMap(offeredRows).find((row) => row.id === id) ?? plans.find((plan) => plan.id === id)
+}
+
+/**
+ * The plans a shopper can pick for a product in a store: active ones, the
+ * preselected one first, a plan sold by delivery options as its options.
+ */
 export function plansForProduct(plans: SubscriptionPlan[], channelId: string, productId: number): SubscriptionPlan[] {
   return plans
     .filter((p) => p.channelId === channelId && p.status === 'Active' && p.productIds.includes(productId))
     .sort((a, b) => Number(b.isDefault) - Number(a.isDefault))
+    .flatMap(offeredRows)
 }
 
 export interface PurchaseOption {
@@ -120,23 +189,62 @@ export interface PurchaseOption {
   price: Money
   /** The same units at full price, when the plan is cheaper. */
   compareAt: Money | null
+  /** For a delivery option: the shopper label it sits under ("Subscribe and save"). */
+  group?: string
 }
 
-/** A product's options in the order a shopper reads them: its plans, then buying once. */
+/** A product's options: its plans (a plan sold by delivery options as its options), then buying once. */
 export function purchaseOptions(unit: Money, plans: SubscriptionPlan[]): PurchaseOption[] {
   const subscribed = plans.map((plan): PurchaseOption => ({
     id: plan.id,
     plan,
-    name: plan.name,
+    name: planTitle(plan),
     price: pricePerDelivery(unit, plan),
     compareAt: plan.discountPct > 0 ? fullPricePerDelivery(unit, plan) : null,
+    ...(plan.optionOf ? { group: plan.name } : {}),
   }))
   return [...subscribed, { id: ONE_TIME, plan: null, name: 'One-time purchase', price: unit, compareAt: null }]
 }
 
-/** The option chosen when the page opens: the preselected plan, else buying once. */
-export function defaultOptionId(options: PurchaseOption[]): string {
-  return options.find((o) => o.plan?.isDefault)?.id ?? ONE_TIME
+/** The delivery options of one plan, as the product page shows them: under the plan's label, with the most they save. */
+export interface OptionGroup {
+  /** The plan they belong to. */
+  planId: string
+  label: string
+  /** The largest discount among them; 0 when none takes anything off. */
+  maxDiscountPct: number
+  options: PurchaseOption[]
+}
+
+/**
+ * How a product's options are laid out. `single` holds the plans of one fixed
+ * delivery and buying once, in the order given; each plan sold by delivery
+ * options follows as a group. A store with only such plans therefore reads
+ * "One-time purchase" first, then "Subscribe and save" with its frequencies.
+ */
+export function optionLayout(options: PurchaseOption[]): { single: PurchaseOption[]; groups: OptionGroup[] } {
+  const groups: OptionGroup[] = []
+  for (const option of options) {
+    const planId = option.plan?.optionOf
+    if (!planId || !option.group) continue
+    let group = groups.find((g) => g.planId === planId)
+    if (!group) groups.push(group = { planId, label: option.group, maxDiscountPct: 0, options: [] })
+    group.options.push(option)
+    group.maxDiscountPct = Math.max(group.maxDiscountPct, option.plan!.discountPct)
+  }
+  return { single: options.filter((option) => !option.group), groups }
+}
+
+/**
+ * The option chosen when the page opens. A plan of one fixed delivery that is
+ * preselected leads, as it always did. Delivery options wait behind buying once
+ * unless the store's theme puts the subscription first (`subscriptionFirst`):
+ * then the plan's default option is chosen.
+ */
+export function defaultOptionId(options: PurchaseOption[], subscriptionFirst = false): string {
+  const grouped = options.filter((o) => o.group)
+  if (subscriptionFirst && grouped.length) return (grouped.find((o) => o.plan?.isDefault) ?? grouped[0]!).id
+  return options.find((o) => o.plan?.isDefault && !o.group)?.id ?? ONE_TIME
 }
 
 // ── What a cart line and an order line keep ──────────────────────────────────
@@ -149,11 +257,13 @@ export interface LinePlan {
   intervalUnit: IntervalUnit
   unitsPerDelivery: number
   freeShipping: boolean
+  /** The line is a delivery option of a plan: it reads by its frequency ("every 2 months"), not by units. */
+  byFrequency?: true
 }
 
 export function linePlan(plan: SubscriptionPlan): LinePlan {
   const { id, name, intervalCount, intervalUnit, unitsPerDelivery, freeShipping } = plan
-  return { id, name, intervalCount, intervalUnit, unitsPerDelivery, freeShipping }
+  return { id, name, intervalCount, intervalUnit, unitsPerDelivery, freeShipping, ...(plan.optionOf ? { byFrequency: true as const } : {}) }
 }
 
 /** A line bought on a plan. `price` is the unit price as a decimal string: here, the price of one delivery. */
@@ -192,4 +302,118 @@ export function planErrors(plan: PlanInput): Partial<Record<PlanField, string>> 
   if (!(plan.discountPct >= 0 && plan.discountPct <= 90)) errors.discountPct = 'Enter a discount from 0 to 90.'
   if (!plan.productIds.length) errors.productIds = 'Pick at least one product.'
   return errors
+}
+
+// ── Plans sold by delivery options ───────────────────────────────────────────
+
+/** What the merchant fills in for a plan sold by delivery options. */
+export interface OptionPlanInput {
+  /** For the merchant only; unique in the store. */
+  name: string
+  /** What shoppers read on the product page and in the cart. */
+  shopperLabel: string
+  status: PlanStatus
+  options: PlanOption[]
+  productIds: number[]
+}
+
+/** A product can be on this many plans. */
+export const MAX_PLANS_PER_PRODUCT = 3
+/** A plan can offer this many delivery options. */
+export const MAX_PLAN_OPTIONS = 6
+
+/** "Every 3, 6 or 12 months", "Every month", "Every 2 weeks or every month". */
+export function optionsSummary(options: PlanOption[]): string {
+  if (!options.length) return 'No options'
+  const sentence = (text: string) => text.charAt(0).toUpperCase() + text.slice(1)
+  const list = (parts: (string | number)[]) => (parts.length > 1 ? `${parts.slice(0, -1).join(', ')} or ${parts[parts.length - 1]}` : String(parts[0]))
+  const unit = options[0]!.intervalUnit
+  if (options.length === 1 || options.some((o) => o.intervalUnit !== unit)) return sentence(list(options.map(intervalLabel)))
+  return `Every ${list(options.map((o) => o.intervalCount))} ${unit}s`
+}
+
+/** "10–30%", "20%", or "—" when no option takes anything off. A plan of one fixed delivery reads its own discount. */
+export function discountRange(plan: Pick<SubscriptionPlan, 'discountPct' | 'options'>): string {
+  const all = plan.options?.length ? plan.options.map((o) => o.discountPct) : [plan.discountPct]
+  const low = Math.min(...all)
+  const high = Math.max(...all)
+  if (high <= 0) return '—'
+  return low === high ? `${high}%` : `${low}–${high}%`
+}
+
+/** The options with exactly one default: the first one marked, else the first. */
+export function withOneDefault(options: PlanOption[]): PlanOption[] {
+  const lead = options.find((o) => o.isDefault) ?? options[0]
+  return options.map((option) => ({ ...option, isDefault: option === lead }))
+}
+
+export interface OptionPlanErrors {
+  name?: string
+  shopperLabel?: string
+  /** About the options as a whole: none, too many, or two the same. */
+  options?: string
+  /** By option id. */
+  rows: Record<string, { intervalCount?: string; discountPct?: string }>
+  productIds?: string
+}
+
+/**
+ * What stops a plan sold by delivery options from being saved. `others` are the
+ * store's other plans, with each product's name for the message about its limit.
+ */
+export function optionPlanErrors(
+  input: OptionPlanInput,
+  others: Pick<SubscriptionPlan, 'name' | 'productIds'>[] = [],
+  productName: (id: number) => string = (id) => `Product ${id}`,
+): OptionPlanErrors {
+  const errors: OptionPlanErrors = { rows: {} }
+  const name = input.name.trim().toLowerCase()
+  if (!name) errors.name = 'Give the plan a name. Only you see it.'
+  else if (others.some((plan) => plan.name.trim().toLowerCase() === name)) errors.name = 'Another plan in this store has this name.'
+  if (!input.shopperLabel.trim()) errors.shopperLabel = 'Say what shoppers read, for example “Subscribe and save”.'
+
+  if (!input.options.length) errors.options = 'Add at least one delivery option.'
+  else if (input.options.length > MAX_PLAN_OPTIONS) errors.options = `A plan can offer up to ${MAX_PLAN_OPTIONS} delivery options.`
+  const seen = new Set<string>()
+  for (const option of input.options) {
+    const row: { intervalCount?: string; discountPct?: string } = {}
+    if (!isWhole(option.intervalCount, 1, 12)) row.intervalCount = 'Enter a whole number from 1 to 12.'
+    if (!(option.discountPct >= 0 && option.discountPct <= 90)) row.discountPct = 'Enter a discount from 0 to 90.'
+    if (Object.keys(row).length) errors.rows[option.id] = row
+    const frequency = intervalLabel(option)
+    if (seen.has(frequency) && !errors.options) errors.options = `Two options deliver ${frequency}. Keep one of them.`
+    seen.add(frequency)
+  }
+
+  const full = input.productIds.find((id) => others.filter((plan) => plan.productIds.includes(id)).length >= MAX_PLANS_PER_PRODUCT)
+  if (full !== undefined) errors.productIds = `${productName(full)} is already on ${MAX_PLANS_PER_PRODUCT} plans. A product can have up to ${MAX_PLANS_PER_PRODUCT}.`
+  return errors
+}
+
+export function hasOptionPlanErrors(errors: OptionPlanErrors): boolean {
+  return !!(errors.name || errors.shopperLabel || errors.options || errors.productIds || Object.keys(errors.rows).length)
+}
+
+/**
+ * The plan to save for what the merchant filled in. Its own interval and discount
+ * mirror the default option, so every list that reads a plan as one delivery still
+ * shows something true.
+ */
+export function planFromOptions(input: OptionPlanInput): PlanInput {
+  const options = withOneDefault(input.options)
+  const lead = options.find((o) => o.isDefault)
+  return {
+    name: input.name.trim(),
+    shopperLabel: input.shopperLabel.trim(),
+    options,
+    intervalCount: lead?.intervalCount ?? 1,
+    intervalUnit: lead?.intervalUnit ?? 'month',
+    discountPct: lead?.discountPct ?? 0,
+    unitsPerDelivery: 1,
+    freeShipping: false,
+    benefits: [],
+    productIds: [...input.productIds],
+    isDefault: false,
+    status: input.status,
+  }
 }

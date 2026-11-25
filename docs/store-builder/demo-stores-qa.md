@@ -2,9 +2,11 @@
 
 A check per line, with the result to expect. It covers the four parts of the demo stores work:
 the groundwork (Vitaheal unchanged), Northfold, Torqline, and the theme library with Apply,
-Restore, Start from a theme and Delete store. The click-by-click flows are in the demo scripts:
-[Vitaheal](vitaheal-demo-script.md), [Northfold](northfold-demo-script.md) and
-[Torqline](torqline-demo-script.md). How it works is in [demo-stores.md](demo-stores.md).
+Restore, Start from a theme and Delete store; and Daybloom, the fourth store, added in the
+feedback round, with Vitaheal's move to the Lumos look (D.22 to D.31). The click-by-click flows are in the demo scripts:
+[Vitaheal](vitaheal-demo-script.md), [Northfold](northfold-demo-script.md),
+[Torqline](torqline-demo-script.md) and [Daybloom](daybloom-demo-script.md). How it works is in
+[demo-stores.md](demo-stores.md).
 
 ## Before you start
 
@@ -21,8 +23,8 @@ Restore, Start from a theme and Delete store. The click-by-click flows are in th
 | # | Check | Expected |
 |---|---|---|
 | 1.1 | Open the app in a fresh browser and list the keys. | No `mp.vitaheal-demo.`, `mp.demo-store.` or `mp.store-builder.` key exists until something is changed. |
-| 1.2 | Walk the Vitaheal script, steps 1 to 11. | Every step behaves as the script says: kronor prices, `WINTER15` takes 15% off the first order, Skip next delivery works, the assistant answers, the order and Linnea Berg show in Commerce, Connect Merchandising syncs eight products, `tired` finds energy and focus, `knackered` works after the synonym is added. |
-| 1.3 | Compare the Vitaheal storefront home with `public/storefront/vitaheal/theme.jpg`. | Same look: navy on white, Figtree, the hero, the announcement bar with `WINTER15`. |
+| 1.2 | Walk the Vitaheal script, steps 1 to 13. | Every step behaves as the script says: kronor prices, `WINTER15` takes 15% off the first order, Skip next delivery works, the assistant answers, the order and Linnea Berg show in Commerce, the plan with delivery options is created and Balance offers its three frequencies, Connect Merchandising syncs eight products, `tired` finds energy and focus, `knackered` works after the synonym is added. |
+| 1.3 | Compare the Vitaheal storefront home with `public/storefront/vitaheal/theme.jpg`. | Same look: the Lumos look in navy on white (Inter, uppercase headings), the menu with **Shop**, **Subscription** and **About**, the hero with its badge and three figures, the announcement bar with `WINTER15`. The picture is made by `npm run themes:thumbnails` after a build; until it is rerun it shows the older look. |
 | 1.4 | Look at a charged amount (checkout total, receipt). | Kronor with decimals, such as "585,90 kr". Product pages and the cart show whole kronor. |
 | 1.5 | Products: open a Vitaheal product. | Product ids 2001 to 2008, as before. |
 | 1.6 | Change a Vitaheal product's price, then reload. | The change stays. The key `mp.vitaheal-demo.products.v1` exists. |
@@ -122,13 +124,27 @@ Restore, Start from a theme and Delete store. The click-by-click flows are in th
 | 4.27 | Sales channels › Create sales channel › Web Store, **Enable Store Builder** on. | Four steps: Choose type, Configure, Theme, Review. |
 | 4.28 | The Theme step. | "Start from a theme". **Blank** is selected. One card per theme with its thumbnail, kind and "Prices in …". Tab reaches each card and Space selects it. |
 | 4.29 | Name it "Test Garage", pick **Torqline**, go to Review. | "Starts with": "A copy of Torqline: 21 products, 9 collections, 7 pages and 3 campaigns, priced in US dollars". |
-| 4.30 | **Create sales channel**. | The store page opens. Toast "Test Garage is ready, as a copy of Torqline" with **Show store**. |
+| 4.30 | **Create sales channel**. | The store page opens on "Setting up Test Garage": four steps (five with Merchandise Cloud on), one running at a time, each saying Done, In progress or Waiting. The chip beside the name reads "Setting up", and there are no tabs, Preview or Edit theme yet. |
+| 4.30a | Reload while it is setting up. | The same step is running: setup did not start again. |
+| 4.30b | Wait a few seconds. | Toast "Test Garage is ready" with **Show store**. The overview appears with **Launch your store**, "5 of 8 steps done": a location, the first product, the theme, payments and the address are done. |
+| 4.30c | Press **Mark as done** on **Check your shipping**. Reload. | Toast "Marked as done: check your shipping". "6 of 8 steps done", also after the reload. |
+| 4.30d | **Open tax categories**, then Back. **Manage** on payments, then Back. | Each opens its page; nothing is a dead end. |
+| 4.30e | Mark the last two steps done. | "Every step is done" and a green "Your store is ready to launch" with **View store**, which opens the storefront in a new tab. |
+| 4.30f | At 375 px. | The checklist is one column, each step's buttons under its words. No sideways scroll. |
 | 4.31 | **Show store**. | Torqline's storefront at `/accounts/2000290/sales_channels/test-garage/storefront`, with the vehicle finder. |
 | 4.32 | Sales channels list. | Test Garage is last. Atlas Outfitters is still first among web stores. |
 | 4.33 | Reload, and open the store in a new tab. | Test Garage is still there (`mp.store-builder.created-stores.v1`). |
 | 4.34 | Apply Northfold to Test Garage, then Restore. | It runs Northfold, then Torqline again. |
 | 4.35 | Create another store, **Blank**. | Review says "A blank store: no products, pages or campaigns yet". The store needs setup, has no products and no current theme. Any theme can be applied; a restore makes it blank again, in its own currency. |
+| 4.35a | The blank store's **Launch your store**. | "3 of 8 steps done". **Add your first product** has **Add product**; **Choose a theme** has **Choose theme**, which opens the theme library. The "ready" toast has no Show store. |
 | 4.36 | Create a web store with Store Builder off. | Three steps, no Theme step. Its Themes page shows the info alert and Preview only. It cannot be deleted. |
+
+### Restore and the launch checklist
+
+| # | Check | Expected |
+|---|---|---|
+| 4.36a | On Test Garage with steps marked done: Settings › **Restore original store**. | The checklist is back to "5 of 8 steps done": nothing is marked by hand. No `…test-garage.launch.v1` key is left. |
+| 4.36b | Open Vitaheal, Northfold, Torqline or Daybloom (demo). | No setup steps. The overview still says **Finish setup**, as before. |
 
 ### Delete store
 
@@ -156,6 +172,48 @@ Restore, Start from a theme and Delete store. The click-by-click flows are in th
 | 5.9 | Chat: "How wide is the Arlo sofa?", "Will the Ledger desk fit a 60 inch wall?", "Do you assemble it?". | Answers from the product's own Width, from comparing 60 in with the desk, and from the Assembly row and the delivery page (no promise the pages don't make). |
 | 5.10 | Admin › the Arlo sofa's product page. | The Specifications card lists its rows; unused suggested labels show as chips. Northfold's products show no Specifications card. |
 | 5.11 | Themes page of Vitaheal: apply Lumos, then restore. | Four library cards. The dialog names Lumos's look and its 20 products; Vitaheal becomes the furniture store in dollars, then comes back as it was, and the wishlist is empty again. |
+
+## Feedback round: Daybloom
+
+| # | Check | Expected |
+|---|---|---|
+| D.1 | Sales channels list. | **Daybloom (demo)**, store #17, after Lumos Home. |
+| D.2 | Storefront home. | Matches `public/storefront/daybloom/theme.jpg`: the Aurora look (white page, dark grey bar and buttons, system font), the `SLEEP15` bar, four promises in a row, **Shop by goal**, four **Bestsellers** with a "Subscribe available" badge. |
+| D.3 | Press **Shop** in the header. | A panel opens under the header: **Shop by goal** (5 links), **Shop by format** (3), **More ways to shop** (4) and a picture tile "Subscribe and save up to 20%". The button says it is expanded. |
+| D.4 | With the panel open: press **Escape**; open it again and press outside it; open it and Tab through it and on. | Escape closes it and focus is back on **Shop**. A press outside closes it. Tab walks the panel's links, and it closes when focus leaves it. |
+| D.5 | Hover **Learn** with a mouse, then move away. | The panel opens on hover and closes when the pointer leaves the link and the panel. |
+| D.6 | At 375 px: open the menu, press **Shop**. | The three columns open in place under **Shop**, headings and links. No sideways scroll. |
+| D.7 | Open **Sleep**. | "Wind down in the evening and wake up rested." under the title. Three products. |
+| D.8 | Magnesium Glycinate. | **Subscribe and save** is chosen first, on **Deliver every month**: $23.20, was $29.00, "Save 20%". Every 2 months $24.65 (15%), every 3 months $26.10 (10%), one-time $29.00. Under them: "Pause, skip or cancel any time. · Subscription terms · My subscriptions". |
+| D.9 | Open **Supplement facts**, then **Warnings**. | A table: Size, Serving size, Servings per bottle, Magnesium 200 mg (48% DV), Other ingredients, Suggested use, Free from. The warnings name the suggested use, a varied diet, children and a doctor. |
+| D.10 | Sleep Well Bundle. | $47.00, no purchase options (sold once only). Its facts say what is in the bundle. |
+| D.11 | Add the monthly subscription, apply `SLEEP15` in the cart. | "Subscribe and save · every month". Discount −$3.48, total $19.72, "Then every month $23.20", and a line that the code lowers this order only. |
+| D.12 | Checkout. | Countries: United States, Canada, Australia, New Zealand, United Kingdom. No Click & collect. The consent names $23.20 every month; under it "Pause, skip or cancel any time." and **Subscription terms**, which opens in a new tab. Pay is refused until the box is ticked. |
+| D.13 | Pay, then **Manage your subscription**. | The confirmation says the next charge the US way ("December 24, 2026"). The account lists the subscription with "Next delivery Dec 24, 2026" and the order. |
+| D.14 | Account: **Change plan** to every 2 months. | "Per delivery" becomes $24.65. The admin's subscriber shows "Delivery changed from every month to every 2 months". |
+| D.15 | Chat: "When is my next delivery?" with the shopper's email; "Are your products vegan?"; "Is it safe with my medication?". | The next delivery with its price and "your Subscribe and save plan"; the store's own answer on vegan products; "I can't give medical advice". |
+| D.16 | Search **tired**, then **refund**. | Daily Greens, Electrolyte Mix and the Daily Essentials Bundle; then the refund policy page. |
+| D.17 | Admin › Commerce › Subscriptions › Plans. | **Subscribe and save**, "Every 1, 2 or 3 months", 10–20%, 8 products, Daybloom (demo). Subscribers lists six seeded ones, S-1101 to S-1106: one paused, one failed payment, one cancelled. |
+| D.18 | Admin › Products › Magnesium Glycinate. | A **Product facts** card with seven rows. Change **Serving size** and save: the open storefront's Supplement facts row shows it. A Vitaheal product has the card too; a Northfold product has none. |
+| D.19 | Edit theme › Product › Product detail. | Blocks: Purchase options, Supplement facts, How Subscribe and save works, Shipping and returns, Warnings. **Supplement facts** has Content "Product facts table" and no text field. Home has an **Icon row** with four features, drawn side by side. |
+| D.20 | Footer. | Ends with the statement that the products are not intended to diagnose, treat, cure or prevent any disease. Every footer link opens a page. |
+| D.21 | Restore the store from the Settings tab. | Toast "Daybloom (demo) is back to how it started". The changed fact and plan are as seeded. Orders and subscriptions made in the demo stay in Commerce. |
+| D.22 | Vitaheal storefront, after a restore: header, home, a product page, a collection, the checkout. Since 2026-11-25 it is on the Lumos look (the sections drawing). | The VITAHEAL wordmark and uppercase Inter headings in navy on white. **Shop** and **About** open a panel (goals, more ways to shop, a picture tile); **Subscription** is a plain link. No search field until Merchandise Cloud is connected. The hero has a **Made in Sweden** badge, the headline in navy on the left over a white wash, **one job well** in the brand colour, the runner on the right of the photo, **Shop all products** and **Subscribe and save**, and three figures: 20–30% saved on a plan, 549 kr free shipping over, 30 days money back on Unwind. Then **Shop by goal** as a carousel on a pale tint, **Our range** as a carousel, the two stories and four promise cards. Unwind opens on **Bag** (the lower price) with a quantity and "In stock, ready to ship", and on **3-month supply**, with "Skip, pause or cancel anytime. · Subscription terms · My subscriptions" under the options; the button reads **Add subscription to cart** and there is no Buy now while a plan is chosen. Under the buy box **Description** is open, then four rows; **Product facts** is a table with amounts in % NRV. **Sleep** has a line under its title. The checkout's consent has **Subscription terms** under it. The footer has the tagline, three link columns, a newsletter column, and Privacy policy, Terms of service and Cookies beside the copyright. |
+| D.23 | Vitaheal's plans and prices. | Two plans as before (3-month supply 30%, Monthly subscription 20%). Electrolytes opens on Lemon & Ginger; on the 3-month supply it is still 585,90 kr at checkout, and product pages and the cart show whole kronor. `WINTER15` still takes 15% off the first order. |
+| D.24 | Atlas Outfitters and Neelam-Store storefronts. | No panel in the header, no promises strip, no rows, no Lumos look: these themes do not ask for them. |
+| D.25 | Vitaheal at 1280: hover **Shop**, move away; press **Shop**, then **Escape**; press **About** and press outside it. Then at 375 open the menu. | The panel hangs right under the menu row and opens on hover; a press keeps it open and the button says it is expanded; Escape closes it with focus back on **Shop**; a press outside closes it. At 375 **Shop** and **About** are rows in the menu that open in place, with their headings and links and no picture tile. Nothing scrolls sideways. |
+| D.26 | Vitaheal › **Shop** › **All products**. | Boxed cards four to a row, sort and a Price filter. The five products on a plan say **Subscribe available** on the lime badge, in dark text; Nasal Strips, Balance and Balance Refill have none. A sale or sold-out badge would take its place. |
+| D.27 | Quick add on Unwind's card. | The drawer has **Format** and the purchase options, on the 3-month supply; its button reads **Add subscription to cart**, and the cart line names the plan. With **One-time purchase** chosen it adds the product without a plan. |
+| D.28 | Balance, after step 8 of the Vitaheal script (the plan with delivery options). | **One-time purchase** 419 kr is chosen first. A **Subscribe and save** group, "Save up to 20%": every month 335 kr, every 2 months 356 kr, every 3 months 377 kr, each with 419 kr struck. Pick every 2 months: the button reads **Add subscription to cart**. Restoring the store removes the plan. |
+| D.29 | Daybloom storefront: home, **Shop**, Magnesium Glycinate, a card, the checkout. | Exactly as D.2 to D.12: the classic drawing in the Aurora look, the same panel, Purchase options, facts, promises and card badges. Vitaheal's move changed nothing here. |
+| D.30 | Vitaheal › Themes. | The library card reads **Vitaheal 2.0** with "A supplements store on subscription, in kronor: Inter, uppercase headings, boxed product cards and a mega menu by goal." The store's page names the theme **Vitaheal 2.0**. |
+| D.31 | A browser that saved an edited Vitaheal theme before 2026-11-25. | The store keeps that older look (Figtree, the classic drawing) until **Restore original store**; the Themes page and Settings › Store data say so, with the Restore action. After it, D.22. Nothing new is written to the browser on load. |
+| D.32 | Vitaheal: buy Electrolytes **Starter Pack** on the 3-month supply, pay, then **Manage your subscription** › **Change plan** › Monthly. | The form and the result say 399,20 kr per delivery (the Starter Pack's price at 20% off), not the cheapest flavour's. The card's line starts "Starter Pack (both flavours) ·"; the admin subscriber names it too. |
+| D.33 | Vitaheal store page and **Themes**, before Merchandise Cloud is connected; then connect it. | The previews show no header search field, as the storefront; after connecting, both show **Search supplements**. The builder canvas always shows the field. |
+| D.34 | Plans › New plan › Plan with delivery options, store Vitaheal. | The shopper preview opens on **One-time purchase**, as Vitaheal's product pages do (Daybloom's preview opens on the subscription). The fields read "Discount, every month", "Discount, every 2 months" and so on. |
+| D.35 | Nasal Strips, then Balance after D.28. | No "How subscriptions work" row on Nasal Strips; Balance shows it once a plan offers it. In the builder the row's **Only on products sold on a plan** is on. |
+| D.36 | Commerce › Fulfillment after a Vitaheal checkout. | The fulfilment and the order say **Stockholm warehouse**; the order's fulfilment chip matches the fulfilment's status. |
+| D.37 | Vitaheal at 320 and 360: home, a quick add on Daily NAD+, **Manage your subscription**. | The headline fits the screen; the figures stay on one line; quick add's button stays inside the drawer with the price on its own line; the subscription's name sits clear of its status chip. |
 
 ## Regression stores
 

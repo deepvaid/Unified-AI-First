@@ -3,10 +3,12 @@ import { computed, inject, ref, watch } from 'vue'
 import { parseDecimal } from '@/maropay/money'
 import type { Product } from '@/stores/useCommerce'
 import { useStorefrontWishlistStore } from '@/stores/useStorefrontWishlist'
+import { useSubscriptionsStore } from '@/stores/useSubscriptions'
 import { fitLabel } from '@/storefront/fitment'
 import type { FitState } from '@/storefront/fitment'
-import { addsDirectly, cardPhoto, cardPrice, choiceSummary, chosenColor, colorsOf, isNewArrival, partNumber, soldOut, stockLine, unbrokenHyphens } from '@/storefront/listing'
+import { addsDirectly, cardBadge, cardPhoto, cardPrice, choiceSummary, chosenColor, colorsOf, partNumber, soldOut, stockLine, unbrokenHyphens } from '@/storefront/listing'
 import type { CardStyle } from '@/storefront/listing'
+import { purchaseOptionsSettings } from '@/storefront/themeSections'
 import { heartLabel, toggleAnnouncement } from '@/storefront/wishlist'
 import StorefrontAnchor from './StorefrontAnchor.vue'
 import { STOREFRONT } from './storefrontContext'
@@ -36,6 +38,11 @@ import { CATEGORY_ICONS, priceOf, productHandle } from './storefrontCatalog'
 // straight away or opens quick add when there is a choice to make, as Dense does.
 // The heart is a toggle button (`aria-pressed`) with one name; what it did is said
 // politely ("Saved to your wishlist · Arlo 3-Seat Sofa").
+//
+// A product the store sells on a subscription plan says "Subscribe available" on its
+// photo when the theme's purchase options block asks for that badge (Vitaheal), after
+// Sold out and Sale and before New, on the theme's own badge colour. Its Add to cart
+// always opens quick add, which offers the plans.
 
 const props = withDefaults(defineProps<{
   product: Product
@@ -65,6 +72,7 @@ const emit = defineEmits<{
 }>()
 
 const storefront = inject(STOREFRONT)!
+const subscriptions = useSubscriptionsStore()
 
 const price = computed(() => cardPrice(props.product))
 const money = (decimal: string) => storefront.formatMoney(parseDecimal(decimal, storefront.currency.value) ?? priceOf(props.product, storefront.currency.value))
@@ -74,13 +82,15 @@ const photo = computed(() => cardPhoto(props.product, color.value))
 const out = computed(() => soldOut(props.product))
 const href = computed(() => `/products/${productHandle(props.product)}${color.value ? `?color=${color.value.key}` : ''}`)
 
-/** One mark on the photo: sold out, else the saving, else new. */
-const badge = computed<{ kind: 'sold-out' | 'sale' | 'new'; text: string } | null>(() => {
-  if (out.value) return { kind: 'sold-out', text: 'Sold out' }
-  if (price.value.salePercent) return { kind: 'sale', text: `−${price.value.salePercent}%` }
-  if (props.showNew && isNewArrival(props.product)) return { kind: 'new', text: 'New' }
-  return null
-})
+/** The store sells the product on a subscription plan. */
+const hasPlans = computed(() => subscriptions.offeredFor(storefront.channel.value.id, props.product.id).length > 0)
+/** One mark on the photo: sold out, else the saving, else "Subscribe available" (when the theme asks), else new. */
+const badge = computed(() => cardBadge(props.product, {
+  showNew: props.showNew,
+  subscribe: hasPlans.value && !!purchaseOptionsSettings(storefront.theme.value)?.cardBadge,
+}))
+/** Add to cart puts the product straight in the cart; otherwise it opens quick add (a dialog). */
+const direct = computed(() => addsDirectly(props.product, storefront.fitOf(props.product), hasPlans.value))
 
 /** Up to four dots, then "+2". */
 const DOTS = 4
@@ -164,7 +174,7 @@ const boxedBadge = computed(() => (badge.value?.kind === 'sale' ? { ...badge.val
       class="sf-bcard__add"
       :class="{ 'is-added': added }"
       :aria-label="addLabel"
-      :aria-haspopup="addsDirectly(product, storefront.fitOf(product)) ? undefined : 'dialog'"
+      :aria-haspopup="direct ? undefined : 'dialog'"
       @click="emit('quick-add', product, color?.name)"
     >
       <v-icon v-if="added" size="18" aria-hidden="true">check</v-icon>
@@ -204,7 +214,7 @@ const boxedBadge = computed(() => (badge.value?.kind === 'sale' ? { ...badge.val
       class="sf-dcard__add"
       :class="{ 'is-added': added }"
       :aria-label="addLabel"
-      :aria-haspopup="addsDirectly(product, storefront.fitOf(product)) ? undefined : 'dialog'"
+      :aria-haspopup="direct ? undefined : 'dialog'"
       @click="emit('quick-add', product, undefined)"
     >
       <v-icon size="18" aria-hidden="true">{{ added ? 'check' : 'shopping-cart' }}</v-icon>
@@ -419,6 +429,14 @@ const boxedBadge = computed(() => (badge.value?.kind === 'sale' ? { ...badge.val
   color: var(--sf-on-badge-custom, #ffffff);
 }
 
+/* The store's own badge colour and the ink the theme gives it; without one, the brand pair. */
+.sf-lcard__badge--subscribe {
+  max-width: calc(100% - 24px);
+  box-sizing: border-box;
+  background: var(--sf-badge-custom, var(--sf-brand, #121011));
+  color: var(--sf-on-badge-custom, var(--sf-on-brand, #ffffff));
+}
+
 .sf-lcard__badge--sold-out {
   background: var(--sf-badge-sold-out, #66625c);
   color: var(--sf-on-badge-sold-out, #ffffff);
@@ -621,6 +639,19 @@ const boxedBadge = computed(() => (badge.value?.kind === 'sale' ? { ...badge.val
 .sf-bcard__badge--sold-out {
   background: var(--sf-badge-sold-out, #66625c);
   color: var(--sf-on-badge-sold-out, #ffffff);
+}
+
+/* "Subscribe available": the store's own badge colour and the ink the theme gives it (Vitaheal:
+   lime with near-black, 16.7:1); without one, the brand pair. It wraps rather than run under the heart. */
+.sf-bcard__badge--subscribe {
+  max-width: calc(100% - 16px);
+  box-sizing: border-box;
+  background: var(--sf-badge-custom, var(--sf-brand, #121011));
+  color: var(--sf-on-badge-custom, var(--sf-on-brand, #ffffff));
+}
+
+.sf-bcard__media:has(.sf-bcard__heart) .sf-bcard__badge--subscribe {
+  max-width: calc(100% - 60px);
 }
 
 /* The wishlist heart: a 36px white disc, top-right, above the card's link. Its hit area is

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useCommerceStore, FULFILLMENT_STAGES, type OrderAddress, type OrderLineItem, type Product } from '@/stores/useCommerce'
+import { useCommerceStore, FULFILLMENT_STAGES, type OrderAddress, type OrderLineItem } from '@/stores/useCommerce'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpSectionHeader from '@/components/MpSectionHeader.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
@@ -21,7 +21,8 @@ import { isManualKind } from '@/maropay/providers'
 import { formatDay } from '@/maropay/readiness'
 import { deliverySummary } from '@/subscriptions/plans'
 import { useSubscriptionsStore } from '@/stores/useSubscriptions'
-import { optionKind, optionValuesOf } from '@/storefront/variants'
+import { fulfillmentNumber, shownFulfillment } from '@/commerce/fulfillment'
+import { lineImage as imageOf, placeLine, variantLine as variantOf } from './orderLines'
 import type { RefundResult } from '@/services/maropay/mockAdapter'
 
 const route = useRoute()
@@ -164,41 +165,9 @@ function lineTotal(qty: number, price: string, discountPct: number): string {
 /** The subscription this order started or renewed, for the link on its line. */
 const subscription = computed(() => (order.value ? useSubscriptionsStore().contractOfOrder(order.value.id) : undefined))
 
-/** The line's product: the one it names, else the one with its SKU. */
-function lineProduct(li: OrderLineItem): Product | undefined {
-  const named = li.productId === undefined ? undefined : store.products.find((p) => p.id === li.productId)
-  return named ?? store.products.find((p) => p.sku === li.sku)
-}
-
-/** The variant's values as the line was bought, sizes first: "M · Sand". Empty for a line without a variant. */
-function variantLine(li: OrderLineItem): string {
-  if (!li.variantTitle) return ''
-  const options = lineProduct(li)?.detail?.options ?? []
-  if (!options.length) return li.variantTitle.split(' / ').join(' · ')
-  const values = optionValuesOf({ title: li.variantTitle }, options)
-  const sizes = values.filter((_, i) => optionKind(options[i]!) === 'size')
-  const others = values.filter((_, i) => optionKind(options[i]!) !== 'size')
-  return [...sizes, ...others].filter(Boolean).join(' · ')
-}
-
-/** The line's product photo, when its product has one: the photo of the colour bought, where the product has one per colour. */
-function lineImage(li: OrderLineItem): string | undefined {
-  const product = lineProduct(li)
-  const options = product?.detail?.options ?? []
-  const byColor = product?.detail?.imagesByColor
-  if (byColor && li.variantTitle) {
-    const values = optionValuesOf({ title: li.variantTitle }, options)
-    const colour = values.find((_, i) => optionKind(options[i]!) === 'color')
-    const photo = colour ? byColor[colour]?.[0] : undefined
-    if (photo) return photo
-  }
-  return product?.imageUrls?.[0]
-}
-
-/** City, region and postcode on one line; an address without a region (Sweden) leaves no stray comma. */
-function placeLine(address: OrderAddress): string {
-  return [address.city, [address.region, address.postalCode].filter(Boolean).join(' ')].filter(Boolean).join(', ')
-}
+// The lines read as on the fulfillment page (./orderLines.ts).
+const variantLine = (li: OrderLineItem): string => variantOf(store.products, li)
+const lineImage = (li: OrderLineItem): string | undefined => imageOf(store.products, li)
 
 // ── Money formatting (symbol / integer / demoted cents) ───────────
 function money(value: string) {
@@ -207,8 +176,10 @@ function money(value: string) {
 const heroMoney = computed(() => money(order.value?.total ?? '0'))
 
 // ── Fulfillment stepper ───────────────────────────────────────────
-const stageIndex = computed(() => order.value ? FULFILLMENT_STAGES.indexOf(order.value.fulfillmentStage) + 1 : 1)
 const linkedFulfillment = computed(() => order.value ? store.fulfillments.find(f => f.orderId === order.value!.id) : undefined)
+/** The order reads as its fulfillment does where it has one (Picked, as FF-x is); only the display follows. */
+const shown = computed(() => order.value ? shownFulfillment(order.value, linkedFulfillment.value) : undefined)
+const stageIndex = computed(() => shown.value ? FULFILLMENT_STAGES.indexOf(shown.value.stage) + 1 : 1)
 
 // ── Tags ──────────────────────────────────────────────────────────
 const tagSuggestions = ['VIP', 'Wholesale', 'Repeat Customer', 'Gift', 'Rush', 'Local Pickup']
@@ -241,7 +212,7 @@ function timelineIcon(entry: { kind: string; text: string }): string {
 </script>
 
 <template>
-  <div v-if="order" class="d-flex flex-column gap-4">
+  <div v-if="order && shown" class="d-flex flex-column gap-4">
     <!-- Header: back + order # + inline status chips -->
     <MpPageHeader :title="`Order ${order.orderNumber}`" eyebrow="Commerce · Orders" :back-to="ordersListRoute">
       <template #actions>
@@ -253,7 +224,7 @@ function timelineIcon(entry: { kind: string; text: string }): string {
         <div class="d-flex align-center gap-2 flex-wrap mt-1">
           <MpStatusChip :status="order.status" type="order" size="sm" variant="flat" />
           <MpStatusChip :status="order.paymentStatus" type="payment" size="sm" />
-          <MpStatusChip :status="order.fulfillmentStatus" type="fulfillment" size="sm" show-icon />
+          <MpStatusChip :status="shown.status" type="fulfillment" size="sm" show-icon />
           <span class="text-caption text-medium-emphasis">Placed {{ formatDate(order.date) }} · {{ order.salesChannel }}</span>
         </div>
       </template>
@@ -353,7 +324,7 @@ function timelineIcon(entry: { kind: string; text: string }): string {
                     </div>
                   </div>
                 </td>
-                <td><MpStatusChip :status="li.status" type="fulfillment" size="sm" /></td>
+                <td><MpStatusChip :status="shown.lineStatus ?? li.status" type="fulfillment" size="sm" /></td>
                 <td class="text-right text-medium-emphasis text-no-wrap"><span class="mp-money">{{ money(li.price).symbol }}{{ money(li.price).integer }}<span class="mp-money__cents">.{{ money(li.price).cents }}</span></span></td>
                 <td class="text-center text-medium-emphasis">{{ li.qty }}</td>
                 <td class="text-body-2 text-medium-emphasis">{{ li.coupon ?? '—' }}</td>
@@ -429,7 +400,7 @@ function timelineIcon(entry: { kind: string; text: string }): string {
         <v-card flat border rounded="lg" class="pa-5">
           <MpSectionHeader icon="package-check" title="Fulfillment">
             <template #actions>
-              <MpStatusChip :status="order.fulfillmentStatus" type="fulfillment" size="sm" show-icon />
+              <MpStatusChip :status="shown.status" type="fulfillment" size="sm" show-icon />
             </template>
           </MpSectionHeader>
           <div class="my-5">
@@ -442,11 +413,15 @@ function timelineIcon(entry: { kind: string; text: string }): string {
             </div>
             <div v-if="linkedFulfillment">
               <dt>Fulfillment</dt>
-              <dd>FF-{{ String(linkedFulfillment.id).padStart(4, '0') }}</dd>
+              <dd>
+                <RouterLink :to="{ name: 'FulfillmentDetail', params: { accountId, fulfillmentId: linkedFulfillment.id } }" class="mp-link">
+                  {{ fulfillmentNumber(linkedFulfillment.id) }}
+                </RouterLink>
+              </dd>
             </div>
-            <div v-if="order.trackingNumber">
+            <div v-if="shown.tracking">
               <dt>Tracking</dt>
-              <dd>{{ order.courier }} · {{ order.trackingNumber }}</dd>
+              <dd>{{ shown.tracking.courier }} · {{ shown.tracking.number }}</dd>
             </div>
           </dl>
         </v-card>
@@ -469,7 +444,7 @@ function timelineIcon(entry: { kind: string; text: string }): string {
             </div>
             <div class="d-flex align-center justify-space-between">
               <span class="text-body-2 text-medium-emphasis">Fulfillment</span>
-              <MpStatusChip :status="order.fulfillmentStatus" type="fulfillment" size="sm" />
+              <MpStatusChip :status="shown.status" type="fulfillment" size="sm" />
             </div>
           </div>
         </v-card>
@@ -609,6 +584,10 @@ function timelineIcon(entry: { kind: string; text: string }): string {
   gap: 20px;
   align-items: start;
 }
+/* A column is as wide as the page, never its widest content: the line-items table scrolls in its own card. */
+.order-detail-layout > * {
+  min-width: 0;
+}
 
 .od-sidebar {
   position: sticky;
@@ -617,7 +596,7 @@ function timelineIcon(entry: { kind: string; text: string }): string {
 
 @media (max-width: 1100px) {
   .order-detail-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .od-sidebar {
     position: static;

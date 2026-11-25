@@ -10,11 +10,11 @@ import { chromeSettings, flag, num, templateForRoute, text } from './sections/se
 
 // The storefront's footer, hidden on the checkout. Two drawings:
 // - classic: the markup StorefrontLayout has always drawn, moved here unchanged;
-// - sections (Northfold, Torqline, Lumos): the theme's footer section caps the link
+// - sections (Vitaheal, Northfold, Torqline, Lumos): the theme's footer section caps the link
 //   columns, shows the social links or not, and paints light or dark. The wordmark
 //   leads, with the store's tagline under it when it has one, then the newsletter,
 //   or the newsletter gets a column of its own at the end (`newsletterColumn`,
-//   Lumos); the home page leaves the newsletter out of the footer when the page has
+//   Lumos, Vitaheal); the home page leaves the newsletter out of the footer when the page has
 //   a newsletter section of its own. The copyright, the store's legal links beside
 //   it (`bottomLinks`) and the ways to pay close it.
 

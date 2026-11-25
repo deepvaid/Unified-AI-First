@@ -5,7 +5,11 @@ import { useMaropayStore } from '@/stores/useMaropay'
 import { useStorefrontCartStore } from '@/stores/useStorefrontCart'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import { useDemoStores } from '@/stores/useDemoStores'
-import { browserStorage, keepPerChannel } from '@/stores/demoKeep'
+import { useAccountsStore } from '@/stores/useAccounts'
+import { browserStorage, keepInBrowser, keepPerChannel } from '@/stores/demoKeep'
+import { FULFILLMENT_STATUSES, canFulfill, defaultParcel, deliver, isProgressMap, orderView, pack, pickCarrier, ship, shipNow, shipsFrom, startProgress } from '@/commerce/fulfillment'
+import type { FulfillmentEvent, FulfillmentProgress, FulfillmentStatus, Parcel } from '@/commerce/fulfillment'
+import { slotAt } from '@/storefront/demoStorage'
 import type { CheckoutCustomer, MaropayProvider, OrderPaymentStatusLabel } from '@/maropay/model'
 import { DEMO_STORES, canApplyTheme, homeBlueprintOf } from '@/storefront/demoStores'
 import { currentBlueprintId, nextMerchantProductId, snapshotFor } from '@/storefront/demoStores/install'
@@ -443,10 +447,11 @@ const STREET_NAMES = ['Market St', 'Main St', 'Broadway', 'Oak Ave', 'Elm St', '
 /** Order-detail fulfillment step indicators (legacy: Picked → Pack → Carrier → Shipped). */
 export const FULFILLMENT_STAGES = ['Picked', 'Pack', 'Carrier', 'Shipped'] as const
 export type FulfillmentStage = typeof FULFILLMENT_STAGES[number]
-/** Fulfillment-queue statuses (legacy list statuses). */
-export const FULFILLMENT_QUEUE_STATUSES = ['Picked', 'Packed', 'Label Created', 'Shipped'] as const
-export type FulfillmentQueueStatus = typeof FULFILLMENT_QUEUE_STATUSES[number]
-const WAREHOUSE_LOCATIONS = ['Oxford warehouse', 'Main Warehouse - FL', 'Retail Hub - TX']
+/** Fulfillment-queue statuses, in the order a fulfillment moves through them (src/commerce/fulfillment.ts). */
+export const FULFILLMENT_QUEUE_STATUSES = FULFILLMENT_STATUSES
+export type FulfillmentQueueStatus = FulfillmentStatus
+/** The account's warehouses, by name: where stock is kept and orders ship from. */
+export const WAREHOUSE_LOCATIONS = ['Oxford warehouse', 'Main Warehouse - FL', 'Retail Hub - TX']
 
 export interface OrderAddress {
   name: string
@@ -643,8 +648,16 @@ export interface FulfillmentQueueItem {
   salesChannel: string
   productQty: number
   total: string
+  /** The order's currency, for its total. */
+  currency: string
   createdAt: string
-  trackingNumber: string | null
+  /** The carrier, service and tracking number, once a label exists. */
+  parcel: Parcel | null
+  shippedAt: string | null
+  deliveredAt: string | null
+  events: FulfillmentEvent[]
+  /** For an order placed at a store's checkout: the key its progress is kept under in the browser. */
+  savedAs?: string
 }
 
 function buildAddress(name: string, cityState: string, seed: number): OrderAddress {
@@ -1510,6 +1523,8 @@ export const useCommerceStore = defineStore('commerce', () => {
   function clearPaymentSummary(orderId: number): void {
     if (checkoutOrderIds.has(orderId)) {
       orders.value = orders.value.filter((o) => o.id !== orderId)
+      fulfillments.value = fulfillments.value.filter((f) => f.orderId !== orderId)
+      fulfillmentTimelineIds.delete(orderId)
       checkoutOrderIds.delete(orderId)
       return
     }
@@ -1585,7 +1600,8 @@ export const useCommerceStore = defineStore('commerce', () => {
       shippingAddress: address,
       billingAddress: { ...address },
       fulfillmentStage: 'Picked',
-      fulfilledFromLocation: stockedAt(input.lineItems[0]) ?? WAREHOUSE_LOCATIONS[input.id % WAREHOUSE_LOCATIONS.length]!,
+      // A Swedish store's order leaves the account's Stockholm warehouse; the rest ship from where the product is stocked.
+      fulfilledFromLocation: shipsFrom(input.currency, stockedAt(input.lineItems[0]), WAREHOUSE_LOCATIONS[input.id % WAREHOUSE_LOCATIONS.length]!),
       timeline: [
         ...input.timeline,
         ...(discounted ? [{ text: `Discount code ${discounted.coupon} applied: ${discounted.discountPct}% off`, date: input.date }] : []),
@@ -1600,12 +1616,29 @@ export const useCommerceStore = defineStore('commerce', () => {
     }
     orders.value.unshift(order)
     checkoutOrderIds.add(order.id)
+    // The system creates the order's fulfillment. What the merchant has done to it since is kept in the browser.
+    const savedAs = `${useAccountsStore().activeId}:${order.id}`
+    const progress = progressByOrder.value[savedAs] ?? startProgress(order.fulfilledFromLocation, input.date)
+    // It goes by the order's own number (order #20001 is fulfillment FF-20001), which no seeded fulfillment has.
+    const queueId = Number(input.orderNumber.replace(/\D/g, '')) || order.id
+    // The order takes the progress first, so the queue row is made from the order as it now stands (Completed, once delivered).
+    const placed = getOrderById(order.id)!
+    showOnOrder(placed, progress)
+    // Store orders lead the queue, the newest first, in whatever order they are rebuilt after a reload.
+    const before = fulfillments.value.findIndex((f) => !f.savedAs || f.id < queueId)
+    fulfillments.value.splice(before < 0 ? fulfillments.value.length : before, 0, queueItem(queueId, placed, placed.fulfilledFromLocation, input.date, progress, savedAs))
     return order
   }
 
   function markOrderFulfilled(id: number): void {
     const order = getOrderById(id)
     if (!order || order.fulfillmentStatus === 'Shipped') return
+    // An order with a fulfillment ships through it, so the two cannot disagree.
+    const item = fulfillments.value.find((f) => f.orderId === id)
+    if (item) {
+      markShipped([item.id])
+      return
+    }
     order.fulfillmentStatus = 'Shipped'
     order.fulfillmentStage = 'Shipped'
     order.lineItems.forEach((li) => { li.status = 'Shipped' })
@@ -1703,55 +1736,141 @@ export const useCommerceStore = defineStore('commerce', () => {
   }
 
   // Fulfillment queue — one entry per order being fulfilled (orderId links to `orders`)
+  function queueItem(id: number, order: Order, location: string, createdAt: string, progress: FulfillmentProgress, savedAs?: string): FulfillmentQueueItem {
+    return {
+      id,
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      customer: order.customer.name,
+      location,
+      paymentStatus: order.paymentStatus,
+      orderStatus: order.status,
+      salesChannel: order.salesChannel,
+      productQty: order.lineItems.reduce((sum, li) => sum + li.qty, 0),
+      total: order.total,
+      currency: order.currency,
+      createdAt,
+      ...progress,
+      ...(savedAs ? { savedAs } : {}),
+    }
+  }
+
+  /** The seeded queue: nothing in it has been delivered yet. */
+  const SEED_STATUSES = FULFILLMENT_QUEUE_STATUSES.slice(0, 4)
   const fulfillments = ref<FulfillmentQueueItem[]>(Array.from({ length: 18 }, (_, i) => {
     const orderId = (i % 30) + 1
     const source = orders.value.find((o) => o.id === orderId)!
-    return {
-      id: i + 1,
-      orderId,
-      orderNumber: source.orderNumber,
-      customer: source.customer.name,
-      location: WAREHOUSE_LOCATIONS[i % WAREHOUSE_LOCATIONS.length]!,
-      status: FULFILLMENT_QUEUE_STATUSES[i % FULFILLMENT_QUEUE_STATUSES.length]!,
-      paymentStatus: source.paymentStatus,
-      orderStatus: source.status,
-      salesChannel: source.salesChannel,
-      productQty: source.lineItems.reduce((sum, li) => sum + li.qty, 0),
-      total: source.total,
-      createdAt: new Date(Date.now() - (i * 43200000)).toISOString().split('T')[0]!,
-      trackingNumber: i % FULFILLMENT_QUEUE_STATUSES.length === 3 ? source.trackingNumber : null,
-    }
+    const location = WAREHOUSE_LOCATIONS[i % WAREHOUSE_LOCATIONS.length]!
+    const status = SEED_STATUSES[i % SEED_STATUSES.length]!
+    const createdAt = new Date(Date.now() - (i * 43200000)).toISOString().split('T')[0]!
+    const labelled = status === 'Label Created' || status === 'Shipped'
+    return queueItem(i + 1, source, location, createdAt, {
+      ...startProgress(location, createdAt),
+      status,
+      parcel: labelled ? defaultParcel(source.country, orderId, source.trackingNumber ?? undefined) : null,
+      shippedAt: status === 'Shipped' ? createdAt : null,
+    })
   }))
 
-  // ── Fulfillment actions (mock-persistent) ────────────────────────
-  /** Move a fulfillment one stage forward: Picked → Packed → Label Created → Shipped. */
-  function advanceFulfillment(id: number): void {
-    const item = fulfillments.value.find((f) => f.id === id)
-    if (!item) return
-    const index = FULFILLMENT_QUEUE_STATUSES.indexOf(item.status)
-    if (index < 0 || index >= FULFILLMENT_QUEUE_STATUSES.length - 1) return
-    const next = FULFILLMENT_QUEUE_STATUSES[index + 1]!
-    item.status = next
-    if (next === 'Shipped') markShipped([id])
+  // ── Fulfillment actions ──────────────────────────────────────────
+  // The steps and what they mean for the order are rules in src/commerce/fulfillment.ts.
+
+  /**
+   * What the merchant has done to the fulfillments of store orders, by
+   * `<account>:<order id>`. Kept in the browser, so it survives a reload and
+   * reaches the storefront tab, where the shopper's order page follows it.
+   */
+  const progressSlot = slotAt('mp.commerce.fulfillments.v1', browserStorage(), isProgressMap)
+  const progressByOrder = ref<Record<string, FulfillmentProgress>>(progressSlot.load() ?? {})
+  /** The timeline entries a fulfillment added to its order, so they can be taken back. */
+  const fulfillmentTimelineIds = new Map<number, number[]>()
+
+  function fulfillmentById(id: number): FulfillmentQueueItem | undefined {
+    return fulfillments.value.find((f) => f.id === id)
   }
 
-  /** Mark fulfillments shipped (with optional tracking number) and sync their orders. */
+  function progressOf(item: FulfillmentQueueItem): FulfillmentProgress {
+    return { status: item.status, parcel: item.parcel, shippedAt: item.shippedAt, deliveredAt: item.deliveredAt, events: item.events }
+  }
+
+  /**
+   * Puts a fulfillment's progress on its order: status, step, tracking and one
+   * timeline entry per step taken. A cancelled or refunded order is left alone.
+   */
+  function showOnOrder(order: Order, progress: FulfillmentProgress): void {
+    if (!canFulfill(order.status)) return
+    const view = orderView(progress)
+    order.fulfillmentStatus = view.fulfillmentStatus
+    order.fulfillmentStage = view.fulfillmentStage
+    order.trackingNumber = view.trackingNumber
+    order.courier = view.courier
+    order.lineItems.forEach((li) => { li.status = view.lineStatus })
+    if (view.completed && order.status === 'Processing') order.status = 'Completed'
+    else if (!view.completed && order.status === 'Completed') order.status = 'Processing'
+
+    // The first event is the fulfillment's own creation; the steps after it belong on the order too.
+    const steps = progress.events.slice(1)
+    let logged = fulfillmentTimelineIds.get(order.id) ?? []
+    if (steps.length < logged.length) {
+      const gone = new Set(logged)
+      order.timeline = order.timeline.filter((e) => !gone.has(e.id))
+      logged = []
+    }
+    for (const step of steps.slice(logged.length)) {
+      const id = order.timeline.reduce((max, e) => Math.max(max, e.id), 0) + 1
+      order.timeline.push({ id, kind: 'event', text: step.text, date: step.at.split('T')[0]! })
+      logged = [...logged, id]
+    }
+    fulfillmentTimelineIds.set(order.id, logged)
+  }
+
+  function setProgress(item: FulfillmentQueueItem, progress: FulfillmentProgress): void {
+    Object.assign(item, progress)
+    const order = getOrderById(item.orderId)
+    if (!order) return
+    showOnOrder(order, progress)
+    item.orderStatus = order.status
+  }
+
+  /** Takes one step on a fulfillment. False when the step is not the next one, or the order is cancelled or refunded. */
+  function moveFulfillment(id: number, step: (progress: FulfillmentProgress, at: string) => FulfillmentProgress | null): boolean {
+    const item = fulfillmentById(id)
+    const order = item ? getOrderById(item.orderId) : undefined
+    if (!item || (order && !canFulfill(order.status))) return false
+    const next = step(progressOf(item), new Date().toISOString())
+    if (!next) return false
+    setProgress(item, next)
+    if (item.savedAs) progressByOrder.value = { ...progressByOrder.value, [item.savedAs]: next }
+    return true
+  }
+
+  const packFulfillment = (id: number): boolean => moveFulfillment(id, pack)
+  const pickFulfillmentCarrier = (id: number, parcel: Parcel): boolean => moveFulfillment(id, (p, at) => pickCarrier(p, parcel, at))
+  const shipFulfillment = (id: number): boolean => moveFulfillment(id, ship)
+  const deliverFulfillment = (id: number): boolean => moveFulfillment(id, deliver)
+
+  /** Mark fulfillments shipped from wherever they stand (with an optional tracking number) and sync their orders. */
   function markShipped(ids: number[], trackingNumber?: string): void {
     for (const id of ids) {
-      const item = fulfillments.value.find((f) => f.id === id)
+      const item = fulfillmentById(id)
       if (!item) continue
-      item.status = 'Shipped'
-      if (trackingNumber) item.trackingNumber = trackingNumber
-      const order = getOrderById(item.orderId)
-      if (order && order.fulfillmentStatus !== 'Shipped') {
-        order.fulfillmentStatus = 'Shipped'
-        order.fulfillmentStage = 'Shipped'
-        if (trackingNumber) order.trackingNumber = trackingNumber
-        logOrderEvent(order, `Shipped from ${item.location}${trackingNumber ? ` — tracking ${trackingNumber}` : ''}`)
-      }
-      if (!item.trackingNumber) item.trackingNumber = order?.trackingNumber ?? null
+      const country = getOrderById(item.orderId)?.country ?? ''
+      moveFulfillment(id, (p, at) => shipNow(p, defaultParcel(country, item.orderId, trackingNumber), at))
     }
   }
+
+  /** The store's orders of an account are gone (a payments reset): so is what was done to their fulfillments. */
+  function forgetCheckoutFulfillments(accountId: string): void {
+    progressByOrder.value = Object.fromEntries(Object.entries(progressByOrder.value).filter(([key]) => !key.startsWith(`${accountId}:`)))
+  }
+
+  keepInBrowser(progressSlot, () => progressByOrder.value, (saved) => {
+    // Another tab worked a fulfillment (the admin, beside an open storefront): follow it.
+    progressByOrder.value = saved ?? {}
+    for (const item of fulfillments.value) {
+      if (item.savedAs) setProgress(item, progressByOrder.value[item.savedAs] ?? startProgress(item.location, item.createdAt))
+    }
+  })
 
   const draftOrders = ref<DraftOrder[]>(Array.from({ length: 8 }, (_, i) => {
     const fName = customerFirstNames[(i + 15) % customerFirstNames.length]!
@@ -2057,7 +2176,7 @@ export const useCommerceStore = defineStore('commerce', () => {
     getOrderById, ordersForCustomer, addOrderNote, setOrderTags, updateOrderAddress, cancelOrder, cancelOrders, refundOrder, markOrderFulfilled, markOrdersFulfilled,
     applyPaymentSummary, clearPaymentSummary, createCheckoutOrder,
     posOrders, addPosOrder, refundPosOrder, voidPosOrder,
-    advanceFulfillment, markShipped,
+    fulfillmentById, packFulfillment, pickFulfillmentCarrier, shipFulfillment, deliverFulfillment, markShipped, forgetCheckoutFulfillments,
     createDraftOrder, updateDraftOrder, setDraftOrderStatus, deleteDraftOrders, convertDraftToOrder,
     createPromotion, updatePromotion, duplicatePromotion, setPromotionStatus, deletePromotion, deletePromotions,
     issueGiftCard, updateGiftCard, disableGiftCard, deleteGiftCards,

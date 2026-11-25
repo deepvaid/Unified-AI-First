@@ -33,7 +33,8 @@ import { useSizeChartsStore } from '@/stores/useSizeCharts'
 import { useCopilotStore } from '@/stores/useCopilot'
 import { useSubscriptionsStore } from '@/stores/useSubscriptions'
 import { useDemoStores } from '@/stores/useDemoStores'
-import { deliverySummary, pricePerDelivery, roundForDisplay } from '@/subscriptions/plans'
+import { deliverySummary, discountRange, optionsSummary, pricePerDelivery, roundForDisplay } from '@/subscriptions/plans'
+import type { SubscriptionPlan } from '@/subscriptions/plans'
 import { mp_layout_breakpointCompact } from '@/design-tokens/generated/tokens'
 import { useCatalogCopilotStore, type CatalogApplyPayload } from '@/stores/useCatalogCopilot'
 import type { CatalogField } from '@/composables/catalogCopilotConfig'
@@ -97,6 +98,11 @@ const purchasePlans = computed(() => {
     }
   })
 })
+/** A plan in one line: its delivery options and what they take off, or its one delivery, discount and price. */
+function planLine(plan: SubscriptionPlan, price: string | null): string {
+  if (plan.options?.length) return [optionsSummary(plan.options), discountRange(plan) === '—' ? '' : `${discountRange(plan)} off`].filter(Boolean).join(' · ')
+  return `${deliverySummary(plan)}${plan.discountPct ? ` · ${plan.discountPct}% off` : ''}${price ? ` · ${price} per delivery` : ''}`
+}
 const plansRoute = computed(() => ({ name: 'SubscriptionPlans', params: { accountId: accountId.value } }))
 /** The card shows the product's plans, or offers them where its store sells subscriptions; a store that sells none (Northfold) shows no card. */
 const demoStores = useDemoStores()
@@ -218,6 +224,18 @@ const isPart = computed(() => !!form.value.detail.fitment || sellsParts(storePro
 const carriesSpecs = (detail?: ProductDetail) => !!detail?.specs?.length || !!detail?.warranty
 const showSpecs = computed(() =>
   isPart.value || carriesSpecs(product.value?.detail) || storeProducts.value.some((p) => carriesSpecs(p.detail)))
+/** Rows a furniture or home product carries: a warranty, or rows named as such a product's usually are. */
+const homeRows = (detail?: ProductDetail) => !!detail?.warranty || !!detail?.specs?.some((spec) => homeSpecName(spec.label))
+/**
+ * A table of facts (a supplement's serving size and ingredients): rows on this product or
+ * on its store's products that are neither a part's nor a furniture piece's. It gets the
+ * same card in its own words, without suggested names or a warranty.
+ */
+const hasFacts = computed(() => {
+  if (isPart.value) return false
+  const carried = [form.value.detail, ...storeProducts.value.map((p) => p.detail)]
+  return carried.some((detail) => !!detail?.specs?.length) && !carried.some((detail) => homeRows(detail))
+})
 /** Front and rear, when the part is sold by position. */
 const fitmentPositions = computed(() => positionsFor(form.value.detail.options))
 
@@ -243,22 +261,46 @@ const HOME_SPECS: Readonly<Record<string, string>> = {
 }
 const homeSpecName = (label: string) => Object.keys(HOME_SPECS).find((name) => name.toLowerCase() === label.trim().toLowerCase())
 
-/** The card's words: a part's facts hold for every vehicle; anything else's are its measurements, materials and care. */
-const specCopy = computed(() => (isPart.value
-  ? {
+/** The card's words: a part's facts hold for every vehicle; a supplement's are what is in it; anything else's are its measurements, materials and care. */
+const specCopy = computed(() => {
+  if (isPart.value) {
+    return {
+      title: 'Specifications',
       description: 'Facts that hold for every vehicle. Shoppers see them in a table on the product page.',
       icon: 'list',
+      emptyTitle: 'No specifications yet',
       empty: 'Add the facts shoppers compare, like the friction material or what is in the box.',
+      add: 'Add specification',
+      one: 'specification',
       name: 'Friction material',
       warranty: 'Limited lifetime warranty',
     }
-  : {
-      description: 'Measurements, materials and care shoppers compare, shown in a table on the product page.',
-      icon: 'ruler',
-      empty: 'Start with one shoppers often ask about, or add your own.',
-      name: 'Width',
-      warranty: '5-year frame warranty',
-    }))
+  }
+  if (hasFacts.value) {
+    return {
+      title: 'Product facts',
+      description: 'What is in it and how to take it. Shoppers see these in a table on the product page.',
+      icon: 'list',
+      emptyTitle: 'No product facts yet',
+      empty: 'Add what shoppers look for, like the serving size and each ingredient with its amount.',
+      add: 'Add fact',
+      one: 'fact',
+      name: 'Serving size',
+      warranty: '',
+    }
+  }
+  return {
+    title: 'Specifications',
+    description: 'Measurements, materials and care shoppers compare, shown in a table on the product page.',
+    icon: 'ruler',
+    emptyTitle: 'No specifications yet',
+    empty: 'Start with one shoppers often ask about, or add your own.',
+    add: 'Add specification',
+    one: 'specification',
+    name: 'Width',
+    warranty: '5-year frame warranty',
+  }
+})
 
 /**
  * A row's example value. On a part, the first row has one. Otherwise a row with a usual
@@ -266,13 +308,14 @@ const specCopy = computed(() => (isPart.value
  */
 function specValueExample(index: number, label: string): string | undefined {
   if (isPart.value) return index ? undefined : 'Ceramic'
+  if (hasFacts.value) return index ? undefined : '2 capsules'
   const name = homeSpecName(label) ?? (!label.trim() && !index ? specCopy.value.name : undefined)
   return name ? HOME_SPECS[name] : undefined
 }
 
-/** The usual names not used yet, offered as one-click rows; a part gets none. */
+/** The usual names not used yet, offered as one-click rows; a part and a table of facts get none. */
 const specSuggestions = computed(() => {
-  if (isPart.value) return []
+  if (isPart.value || hasFacts.value) return []
   const used = new Set(specs.value.map((spec) => homeSpecName(spec.label)))
   return Object.keys(HOME_SPECS).filter((name) => !used.has(name))
 })
@@ -591,11 +634,7 @@ function openVariantsWizard() {
         />
 
         <v-card v-if="showSpecs" variant="flat" border rounded="lg" class="ped-card">
-          <MpFormSection
-            :heading-level="2"
-            title="Specifications"
-            :description="specCopy.description"
-          />
+          <MpFormSection :heading-level="2" :title="specCopy.title" :description="specCopy.description" />
           <!-- A small two-column list: the first row's labels head the columns (every row has them
                once the columns stack), and every field is named by its own aria-label, as
                table-cell editors are (aria-labelledby is cleared: Vuetify points it at a label
@@ -607,7 +646,7 @@ function openVariantsWizard() {
                   :id="specFieldId(index, 'label')"
                   v-model="spec.label"
                   :label="specLabel(index, 'Name')"
-                  :aria-label="`Name, specification ${index + 1}`"
+                  :aria-label="`Name, ${specCopy.one} ${index + 1}`"
                   :aria-labelledby="undefined"
                   :placeholder="index ? undefined : specCopy.name"
                   :error-messages="specIssues[index]?.label || undefined"
@@ -616,7 +655,7 @@ function openVariantsWizard() {
                   :id="specFieldId(index, 'value')"
                   v-model="spec.value"
                   :label="specLabel(index, 'Value')"
-                  :aria-label="`Value, ${spec.label.trim() || `specification ${index + 1}`}`"
+                  :aria-label="`Value, ${spec.label.trim() || `${specCopy.one} ${index + 1}`}`"
                   :aria-labelledby="undefined"
                   :placeholder="specValueExample(index, spec.label)"
                   :error-messages="specIssues[index]?.value || undefined"
@@ -627,7 +666,7 @@ function openVariantsWizard() {
                 variant="text"
                 size="small"
                 density="comfortable"
-                :aria-label="`Remove ${spec.label.trim() || `specification ${index + 1}`}`"
+                :aria-label="`Remove ${spec.label.trim() || `${specCopy.one} ${index + 1}`}`"
                 @click="removeSpec(index)"
               />
             </div>
@@ -637,9 +676,9 @@ function openVariantsWizard() {
             :variant="specSuggestions.length ? 'launcher' : 'stack'"
             :icon="specCopy.icon"
             :heading-level="3"
-            title="No specifications yet"
+            :title="specCopy.emptyTitle"
             :description="specCopy.empty"
-            action-label="Add specification"
+            :action-label="specCopy.add"
             action-icon="plus"
             @action="addSpec()"
           >
@@ -662,7 +701,7 @@ function openVariantsWizard() {
           </MpEmptyState>
           <div v-if="specs.length" class="d-flex flex-wrap align-center ga-3">
             <v-btn variant="outlined" prepend-icon="plus" class="text-none" @click="addSpec()">
-              Add specification
+              {{ specCopy.add }}
             </v-btn>
             <div v-if="specSuggestions.length" role="group" aria-label="Suggested specifications" class="d-flex flex-wrap ga-2">
               <v-chip
@@ -681,7 +720,7 @@ function openVariantsWizard() {
               </v-chip>
             </div>
           </div>
-          <v-text-field v-model="warranty" label="Warranty" :placeholder="specCopy.warranty" />
+          <v-text-field v-if="!hasFacts" v-model="warranty" label="Warranty" :placeholder="specCopy.warranty" />
         </v-card>
 
         <v-card variant="flat" border rounded="lg" class="ped-card">
@@ -744,7 +783,7 @@ function openVariantsWizard() {
               :key="plan.id"
               variant="divided"
               :title="plan.name"
-              :subtitle="`${deliverySummary(plan)}${plan.discountPct ? ` · ${plan.discountPct}% off` : ''}${price ? ` · ${price} per delivery` : ''}`"
+              :subtitle="planLine(plan, price)"
             >
               <template #trailing>
                 <MpStatusChip :status="plan.status" type="general" size="sm" />

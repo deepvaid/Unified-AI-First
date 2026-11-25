@@ -11,6 +11,8 @@ import { formatStorePrice } from '@/storefront/price'
 import { chartFor } from '@/storefront/sizeCharts'
 import { storefrontThemeVars } from '@/storefront/themeSections'
 import type { StoreTheme } from '@/storefront/themeSections'
+import { useSubscriptionsStore } from '@/stores/useSubscriptions'
+import { roundForDisplay } from '@/subscriptions/plans'
 import { STOREFRONT } from '../storefrontContext'
 import type { StorefrontContext } from '../storefrontContext'
 import { announce } from '../storefrontAnnouncer'
@@ -158,6 +160,96 @@ export function provideTorqline(vehicle: Vehicle | null = null): Decorator {
       return {}
     },
     template: '<story />',
+  })
+}
+
+// ── Vitaheal (demo) ──────────────────────────────────────────────────────────
+// The supplements store on subscription plans, in kronor, for the product page's
+// purchase options. Prices read as its pages write them ("399 kr"), what is charged
+// to the öre ("585,90 kr").
+
+const VITAHEAL = demoStoreFor('vitaheal')
+
+/** Vitaheal as its home channel is seeded, on a fixed day. */
+export const vitaheal = snapshotFor(VITAHEAL.homeChannel, 'vitaheal', '2026-11-20')
+
+export function vitahealProduct(name: string) {
+  const product = vitaheal.products.find((p) => p.name === name)
+  if (!product) throw new Error(`No Vitaheal product "${name}"`)
+  return product
+}
+
+const vitahealTheme: StoreTheme = {
+  id: vitaheal.theme.id,
+  channelId: VITAHEAL.homeChannel.id,
+  name: vitaheal.theme.name,
+  status: 'Published',
+  publishedAt: vitaheal.theme.publishedAt,
+  updatedAt: vitaheal.theme.publishedAt,
+  styles: vitaheal.theme.styles,
+  templates: vitaheal.theme.templates,
+}
+
+/** Vitaheal's storefront context, as its layout provides it. Links stay as written. */
+export function vitahealContext(): StorefrontContext {
+  const { currency, locale } = vitaheal.market
+  return {
+    channel: computed(() => VITAHEAL.homeChannel),
+    theme: computed(() => vitahealTheme),
+    chrome: computed(() => vitaheal.chrome),
+    link: (href) => href,
+    currency: computed(() => currency),
+    formatMoney: (amount) => formatStorePrice(roundForDisplay(amount), locale),
+    formatExact: (amount) => formatStorePrice(amount, locale),
+    ownMoneyFormat: computed(() => true),
+    checkout: computed(() => vitaheal.checkout),
+    demo: computed(() => true),
+    searchable: computed(() => false),
+    campaignMessage: computed(() => ''),
+    offerFor,
+    sectionsDrawing: computed(() => true),
+    sizeCharts: computed(() => []),
+    sizeChartFor: () => undefined,
+    announce,
+    sellsParts: computed(() => false),
+    vehicle: computed(() => null),
+    setVehicle: () => {},
+    fitOf: () => 'unknown',
+    chooseVehicle: () => {},
+    wishlist: computed(() => false),
+  }
+}
+
+/**
+ * Provides Vitaheal's storefront context to the story, with the store's plans as it
+ * is seeded (the subscriptions store is the app's; pair it with `isolateStorage`).
+ */
+export const provideVitaheal: Decorator = () => ({
+  setup() {
+    const subscriptions = useSubscriptionsStore()
+    subscriptions.plans = [...subscriptions.plans.filter((plan) => plan.channelId !== VITAHEAL.homeChannel.id), ...vitaheal.plans]
+    provide(STOREFRONT, vitahealContext())
+    return {}
+  },
+  template: '<story />',
+})
+
+/** Vitaheal's page around a story: its theme's colours, fonts and corners, as StorefrontLayout gives them. */
+export function vitahealFrame(width = '480px', padding = '24px'): Decorator {
+  const style = {
+    ...storefrontThemeVars(vitaheal.theme.styles),
+    boxSizing: 'border-box',
+    maxWidth: width,
+    padding,
+    background: 'var(--sf-bg)',
+    color: 'var(--sf-text)',
+    fontFamily: 'var(--sf-body-font), system-ui, sans-serif',
+    fontSize: '16px',
+    lineHeight: '24px',
+  }
+  return () => ({
+    setup: () => ({ style }),
+    template: '<div :style="style"><story /></div>',
   })
 }
 

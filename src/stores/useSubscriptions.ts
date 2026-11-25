@@ -7,13 +7,12 @@ import { SEEDED_DEMO_CHANNELS, demoChannelRecord } from '@/stores/useSalesChanne
 import { parseDecimal } from '@/maropay/money'
 import { localDateKey } from '@/maropay/model'
 import type { CheckoutSession, Payment } from '@/maropay/model'
-import { lowestPrice } from '@/storefront/catalog'
 import { DEMO_STORES, canApplyTheme } from '@/storefront/demoStores'
 import { currentBlueprintId, historyFor, snapshotFor } from '@/storefront/demoStores/install'
 import type { InstallChannel } from '@/storefront/demoStores/install'
 import * as rules from '@/subscriptions/contracts'
 import type { ContractActor, ContractOrder, SubscriptionContract } from '@/subscriptions/contracts'
-import { plansForProduct } from '@/subscriptions/plans'
+import { isOnPlan, planRow, plansForProduct } from '@/subscriptions/plans'
 import type { PlanInput, PlanStatus, SubscriptionPlan } from '@/subscriptions/plans'
 
 // The subscription plans stores sell, and the subscriptions shoppers hold on them.
@@ -32,10 +31,16 @@ function isPlanList(value: unknown): value is SubscriptionPlan[] {
   return Array.isArray(value) && value.every((p: Partial<SubscriptionPlan> | null) =>
     !!p && typeof p.id === 'string' && typeof p.channelId === 'string' && typeof p.name === 'string'
     && typeof p.intervalCount === 'number' && typeof p.unitsPerDelivery === 'number' && typeof p.discountPct === 'number'
-    && Array.isArray(p.benefits) && Array.isArray(p.productIds))
+    && Array.isArray(p.benefits) && Array.isArray(p.productIds)
+    && (p.options === undefined || (Array.isArray(p.options) && p.options.every((o) => !!o && typeof o.id === 'string' && typeof o.intervalCount === 'number' && typeof o.discountPct === 'number'))))
 }
 
-const copy = (plan: SubscriptionPlan): SubscriptionPlan => ({ ...plan, benefits: [...plan.benefits], productIds: [...plan.productIds] })
+const copy = (plan: SubscriptionPlan): SubscriptionPlan => ({
+  ...plan,
+  benefits: [...plan.benefits],
+  productIds: [...plan.productIds],
+  ...(plan.options ? { options: plan.options.map((option) => ({ ...option })) } : {}),
+})
 
 /** Saved subscriptions are only read back when they still look like subscriptions. */
 function isContractList(value: unknown): value is SubscriptionContract[] {
@@ -228,6 +233,11 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
     plans.value = plans.value.filter((p) => p.id !== id)
   }
 
+  /** How many shoppers hold an active subscription on a plan, or on one of its delivery options. */
+  function activeSubscribers(planId: string): number {
+    return contracts.value.filter((c) => c.status === 'Active' && isOnPlan(c.plan.id, planId)).length
+  }
+
   // ── Subscriptions ────────────────────────────────────────────────────
   // What shoppers hold. Both the shopper's page and the admin call these, so a
   // change on one shows on the other, with who made it in the history.
@@ -269,12 +279,13 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
     return offeredFor(contract.channelId, contract.productId).filter((p) => p.id !== contract.plan.id)
   }
 
-  /** Moves a subscription to another plan, at that plan's price for the product today. */
+  /** Moves a subscription to another plan, at that plan's price today for the variant it was bought on. */
   function changePlan(id: string, planId: string, actor: ContractActor): boolean {
     const contract = contractById(id)
-    const plan = plans.value.find((p) => p.id === planId)
+    // A plan, or one of a plan's delivery options.
+    const plan = planRow(plans.value, planId)
     const product = useCommerceStore().products.find((p) => p.id === contract?.productId)
-    const unit = contract && product ? parseDecimal(lowestPrice(product), contract.currency) : null
+    const unit = contract && product ? parseDecimal(rules.contractUnitPrice(product, contract), contract.currency) : null
     if (!contract || !plan || !unit) return false
     return change(id, (c) => rules.changePlan(c, plan, unit, today(), actor))
   }
@@ -295,7 +306,10 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
         channelId: session.channelId,
         customer: { name: session.customer.name, email: session.customer.email, ...(session.customer.address ? { address: { ...session.customer.address } } : {}) },
         productId: line.productId ?? products.find((p) => p.sku === line.sku)?.id ?? null,
-        line: { product: line.product, sku: line.sku, qty: line.qty, price: line.price, plan: line.plan },
+        line: {
+          product: line.product, sku: line.sku, qty: line.qty, price: line.price, plan: line.plan,
+          ...(line.variantTitle ? { variantTitle: line.variantTitle } : {}),
+        },
         currency: session.amount.currency,
         paymentMethod: payment.methodLabel,
         methodId: session.methodId,
@@ -322,7 +336,10 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
       flow: 'success',
       amount: rules.chargeAmount(contract),
       customer: { name: contract.customer.name, email: contract.customer.email, ...(contract.customer.address ? { address: { ...contract.customer.address } } : {}) },
-      lineItems: [{ product: contract.product, sku: contract.sku, qty: contract.qty, price: contract.price, plan: { ...contract.plan } }],
+      lineItems: [{
+        product: contract.product, sku: contract.sku, qty: contract.qty, price: contract.price, plan: { ...contract.plan },
+        ...(contract.variantTitle ? { variantTitle: contract.variantTitle } : {}),
+      }],
       cardLabel: contract.methodId === 'card' ? contract.paymentMethod : null,
       renewalOf: contract.number,
     })
@@ -337,7 +354,7 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
   }
 
   return {
-    plans, offeredFor, plansWithProduct, createPlan, updatePlan, setPlanStatus, deletePlan, attachDemo, reseedDemo, restoreDemoHistory,
+    plans, offeredFor, plansWithProduct, createPlan, updatePlan, setPlanStatus, deletePlan, activeSubscribers, attachDemo, reseedDemo, restoreDemoHistory,
     contracts, contractById, contractsOf, contractOfOrder, plansToChangeTo,
     skipNext, reschedule, pause, resume, cancel, changePlan, startFromCheckout, chargeNow,
   }
