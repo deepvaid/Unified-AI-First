@@ -100,7 +100,7 @@ function manualNote(method: ShopperMethod, total: Money): string {
 }
 
 .sf-co__option-head input:focus-visible {
-  outline: 2px solid var(--sf-accent, #2563eb);
+  outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
   outline-offset: 2px;
 }
 

@@ -2,21 +2,29 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { useCommerceStore } from '@/stores/useCommerce'
 import { useMaropayStore } from '@/stores/useMaropay'
-import { browserStorage, keepInBrowser } from '@/stores/demoKeep'
+import { browserStorage, keepPerChannel } from '@/stores/demoKeep'
+import { SEEDED_DEMO_CHANNELS, demoChannelRecord } from '@/stores/useSalesChannels'
 import { parseDecimal } from '@/maropay/money'
 import { localDateKey } from '@/maropay/model'
 import type { CheckoutSession, Payment } from '@/maropay/model'
 import { lowestPrice } from '@/storefront/catalog'
-import { demoSlot } from '@/storefront/demoStorage'
-import { VITAHEAL_PLANS, vitahealSubscriptions } from '@/storefront/vitahealDemo'
+import { DEMO_STORES, canApplyTheme } from '@/storefront/demoStores'
+import { currentBlueprintId, historyFor, snapshotFor } from '@/storefront/demoStores/install'
+import type { InstallChannel } from '@/storefront/demoStores/install'
 import * as rules from '@/subscriptions/contracts'
 import type { ContractActor, ContractOrder, SubscriptionContract } from '@/subscriptions/contracts'
 import { plansForProduct } from '@/subscriptions/plans'
 import type { PlanInput, PlanStatus, SubscriptionPlan } from '@/subscriptions/plans'
 
 // The subscription plans stores sell, and the subscriptions shoppers hold on them.
-// Today only the Vitaheal (demo) store has any, so both lists are kept in this
-// browser with that store's products and put back by its "Restore original store".
+// Only demo stores have any (src/storefront/demoStores/): each store's plans and
+// subscriptions are kept in this browser in slots of its own, under the keys
+// Vitaheal always used (`mp.vitaheal-demo.plans.v1`, `subscriptions.v1`).
+// - Plans come with the theme a store runs. When another theme is applied, the
+//   store's own plans (seeded or made in it) stay listed, switched off, beside the
+//   ones it brings. A restore puts the seeded ones back and removes the others.
+// - Subscriptions are history: applying a theme keeps them; only the store's
+//   "Restore original store" puts them back as seeded.
 // The rules are in src/subscriptions/plans.ts and contracts.ts.
 
 /** Saved plans are only read back when they still look like plans. */
@@ -39,17 +47,140 @@ function isContractList(value: unknown): value is SubscriptionContract[] {
 
 const today = (): string => localDateKey(Date.now())
 
+/** `list` with one store's rows replaced by `rows`, where that store's rows were (else at the end). */
+function withStoreRows<T extends { channelId: string }>(list: T[], channelId: string, rows: T[]): T[] {
+  const at = list.findIndex((row) => row.channelId === channelId)
+  const others = list.filter((row) => row.channelId !== channelId)
+  const cut = at < 0 ? others.length : at
+  return [...others.slice(0, cut), ...rows, ...others.slice(cut)]
+}
+
+/** One store's rows of a saved list (a list saved before stores had slots of their own may hold others'). */
+const rowsOf = <T extends { channelId: string }>(list: T[], channelId: string): T[] => list.filter((row) => row.channelId === channelId)
+
+/**
+ * The plans a store is seeded with: those of the theme it runs, and, when that is
+ * not the one it started from, its own plans switched off.
+ */
+function seededPlans(channel: InstallChannel): SubscriptionPlan[] {
+  const running = currentBlueprintId(channel, browserStorage())
+  const brought = running ? snapshotFor(channel, running, today()).plans : []
+  const original = channel.webStore?.blueprint?.original
+  if (!original || original === running) return brought
+  const own = snapshotFor(channel, original, today()).plans.map((plan): SubscriptionPlan => ({ ...plan, status: 'Paused' }))
+  return [...own, ...brought]
+}
+
+/** The ids of the plans another theme than the store's own brings into it: a later Apply replaces those, and keeps the rest. */
+function broughtPlanIds(channel: InstallChannel): Set<string> {
+  const original = channel.webStore?.blueprint?.original
+  return new Set(DEMO_STORES.filter((blueprint) => blueprint.id !== original)
+    .flatMap((blueprint) => snapshotFor(channel, blueprint.id, today()).plans.map((plan) => plan.id)))
+}
+
+/** The subscriptions a store had before the demo: a demo store's own, whatever theme it runs. */
+const seededContracts = (channelId: string): SubscriptionContract[] => historyFor(channelId, today())?.subscriptions ?? []
+
 /** What charging a subscription came to: the renewal's order, or why nothing was taken. */
 export type ChargeResult = { ok: true; order: ContractOrder } | { ok: false; message: string }
 
 export const useSubscriptionsStore = defineStore('subscriptions', () => {
-  const saved = demoSlot('plans', 1, browserStorage(), isPlanList)
-  const seeded = (): SubscriptionPlan[] => VITAHEAL_PLANS.map(copy)
+  const plans = ref<SubscriptionPlan[]>([])
+  const contracts = ref<SubscriptionContract[]>([])
 
-  const plans = ref<SubscriptionPlan[]>(saved.load() ?? seeded())
-  const kept = keepInBrowser(saved, () => plans.value, (fromOtherTab) => {
-    plans.value = fromOtherTab ?? seeded()
+  /** The store's plans as seeded now (inside an action or event: it reads the sales channels store). */
+  const reseededPlans = (channelId: string): SubscriptionPlan[] => {
+    const channel = demoChannelRecord(channelId)
+    return channel ? seededPlans(channel) : []
+  }
+
+  // `null` from another tab: it restored the store or applied a theme, so seed it again.
+  const keptPlans = keepPerChannel('plans', 1, isPlanList, {
+    read: (channelId) => rowsOf(plans.value, channelId),
+    take: (channelId, saved) => {
+      plans.value = withStoreRows(plans.value, channelId, saved ? rowsOf(saved, channelId) : reseededPlans(channelId))
+    },
   })
+  const keptContracts = keepPerChannel('subscriptions', 1, isContractList, {
+    read: (channelId) => rowsOf(contracts.value, channelId),
+    take: (channelId, saved) => {
+      contracts.value = withStoreRows(contracts.value, channelId, saved ? rowsOf(saved, channelId) : seededContracts(channelId))
+    },
+  })
+
+  /** The stores whose plans and subscriptions are seeded and kept (attachStore): each only once. */
+  const attached = new Set<string>()
+
+  /**
+   * Seeds a store's plans as the theme it runs now has them and its subscriptions as
+   * it had them before the demo, then keeps both: what this browser saved is read,
+   * never cleared. A subscription a shopper buys on the store is saved from then on.
+   */
+  function attachStore(channel: InstallChannel): void {
+    if (attached.has(channel.id)) return
+    attached.add(channel.id)
+    plans.value = withStoreRows(plans.value, channel.id, seededPlans(channel))
+    contracts.value = withStoreRows(contracts.value, channel.id, seededContracts(channel.id))
+    keptPlans.attach(channel.id)
+    keptContracts.attach(channel.id)
+  }
+  for (const channel of SEEDED_DEMO_CHANNELS) attachStore(channel)
+
+  /** The store's record when it can take a theme (inside an action: it reads the sales channels store). */
+  const demoChannel = (channelId: string): InstallChannel | undefined => {
+    const channel = demoChannelRecord(channelId)
+    return canApplyTheme(channel) ? channel : undefined
+  }
+
+  /**
+   * Brings a store that can take a theme in with what this browser saved for it,
+   * as the app starts (a store made from a theme; src/stores/useDemoStores.ts).
+   * Nothing saved is cleared. Does nothing a second time, or for a store that
+   * cannot take a theme.
+   */
+  function attachDemo(channelId: string): void {
+    const channel = demoChannel(channelId)
+    if (channel) attachStore(channel)
+  }
+
+  /**
+   * The store's plans follow the theme it runs now (contract: reseedDemo). On its own
+   * theme they go back as seeded (a restore, a seed fix). On another theme the plans
+   * that theme brings come in, the plans an earlier theme brought go, and the store's
+   * own plans, seeded or made in it, stay listed, switched off. Its subscriptions stay,
+   * and are kept from now on if they were not yet. A store that cannot take a theme is left alone.
+   */
+  function reseedDemo(channelId: string): void {
+    const channel = demoChannel(channelId)
+    if (!channel) return
+    attachStore(channel)
+    const running = currentBlueprintId(channel, browserStorage())
+    const seeded = seededPlans(channel)
+    let next = seeded
+    if (running && running !== channel.webStore?.blueprint?.original) {
+      const brought = broughtPlanIds(channel)
+      // Paused, and no longer the one preselected: the plans the theme brings offer their own.
+      const own = rowsOf(plans.value, channelId).filter((plan) => !brought.has(plan.id)).map((plan): SubscriptionPlan => ({ ...copy(plan), status: 'Paused', isDefault: false }))
+      next = [...own, ...snapshotFor(channel, running, today()).plans]
+    }
+    plans.value = withStoreRows(plans.value, channelId, next)
+    // As seeded: the store follows its seed again. Otherwise the watcher saves the plans it keeps; when
+    // they are the ones already shown (a second Apply), the slot already holds them, so it is left alone.
+    if (JSON.stringify(next) === JSON.stringify(seeded)) {
+      keptPlans.clear(channelId)
+      keptPlans.adopt(channelId)
+    }
+  }
+
+  /** Puts the store's subscriptions back as seeded (contract: restoreDemoHistory, a restore only). */
+  function restoreDemoHistory(channelId: string): void {
+    const channel = demoChannel(channelId)
+    if (!channel) return
+    attachStore(channel)
+    keptContracts.clear(channelId)
+    contracts.value = withStoreRows(contracts.value, channelId, seededContracts(channelId))
+    keptContracts.adopt(channelId)
+  }
 
   /** The plans a shopper can pick for a product in a store. */
   function offeredFor(channelId: string, productId: number): SubscriptionPlan[] {
@@ -88,7 +219,9 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
 
   function setPlanStatus(id: string, status: PlanStatus): void {
     const plan = plans.value.find((p) => p.id === id)
-    if (plan) plan.status = status
+    if (!plan) return
+    plan.status = status
+    if (status === 'Active') keepOneDefault(plan)
   }
 
   function deletePlan(id: string): void {
@@ -98,14 +231,6 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
   // ── Subscriptions ────────────────────────────────────────────────────
   // What shoppers hold. Both the shopper's page and the admin call these, so a
   // change on one shows on the other, with who made it in the history.
-
-  const savedContracts = demoSlot('subscriptions', 1, browserStorage(), isContractList)
-  const seededContracts = (): SubscriptionContract[] => vitahealSubscriptions(today())
-
-  const contracts = ref<SubscriptionContract[]>(savedContracts.load() ?? seededContracts())
-  const keptContracts = keepInBrowser(savedContracts, () => contracts.value, (fromOtherTab) => {
-    contracts.value = fromOtherTab ?? seededContracts()
-  })
 
   function contractById(id: string): SubscriptionContract | undefined {
     return contracts.value.find((c) => c.id === id)
@@ -158,7 +283,9 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
   function startFromCheckout(session: CheckoutSession, payment: Payment): void {
     const order = session.order
     if (!order) return
-    const products = useCommerceStore().products
+    // The line names its product; an older session only has the SKU, looked up
+    // within the store, since a theme copied to another store keeps its SKUs.
+    const products = useCommerceStore().products.filter((p) => p.channelIds?.includes(session.channelId))
     for (const line of session.lineItems) {
       if (!line.plan) continue
       const number = rules.nextContractNumber(contracts.value)
@@ -167,7 +294,7 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
         number,
         channelId: session.channelId,
         customer: { name: session.customer.name, email: session.customer.email, ...(session.customer.address ? { address: { ...session.customer.address } } : {}) },
-        productId: products.find((p) => p.sku === line.sku)?.id ?? null,
+        productId: line.productId ?? products.find((p) => p.sku === line.sku)?.id ?? null,
         line: { product: line.product, sku: line.sku, qty: line.qty, price: line.price, plan: line.plan },
         currency: session.amount.currency,
         paymentMethod: payment.methodLabel,
@@ -209,18 +336,8 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
     return { ok: true, order }
   }
 
-  /** Puts the seeded plans and subscribers back. Called by the demo store's restore (useCommerce). */
-  function restore(): void {
-    saved.clear()
-    plans.value = seeded()
-    kept.adopt()
-    savedContracts.clear()
-    contracts.value = seededContracts()
-    keptContracts.adopt()
-  }
-
   return {
-    plans, offeredFor, plansWithProduct, createPlan, updatePlan, setPlanStatus, deletePlan, restore,
+    plans, offeredFor, plansWithProduct, createPlan, updatePlan, setPlanStatus, deletePlan, attachDemo, reseedDemo, restoreDemoHistory,
     contracts, contractById, contractsOf, contractOfOrder, plansToChangeTo,
     skipNext, reschedule, pause, resume, cancel, changePlan, startFromCheckout, chargeNow,
   }

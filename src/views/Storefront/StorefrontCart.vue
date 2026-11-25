@@ -1,21 +1,31 @@
 <script setup lang="ts">
-import { computed, inject } from 'vue'
+import { computed, inject, nextTick, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCommerceStore } from '@/stores/useCommerce'
+import { lineDetailText, lineImage, lineProductQuery, lineVariantText, withQuery } from '@/storefront/shopperOrders'
 import { MAX_QTY, lineKey, lineTotal, useStorefrontCartStore } from '@/stores/useStorefrontCart'
 import { deliverySummary, recurringCharges } from '@/subscriptions/plans'
 import type { CartLine } from '@/stores/useStorefrontCart'
 import StorefrontAnchor from './StorefrontAnchor.vue'
 import StorefrontDiscountCode from './StorefrontDiscountCode.vue'
 import StorefrontExpressButtons from './StorefrontExpressButtons.vue'
+import StorefrontLineText from './StorefrontLineText.vue'
+import StorefrontStoreChanged from './StorefrontStoreChanged.vue'
 import { useStorefrontDiscount } from './storefrontDiscount'
 import { STOREFRONT } from './storefrontContext'
 import { CATEGORY_ICONS, productHandle } from './storefrontCatalog'
 
 // The storefront cart (/cart-page): its lines, the totals, and the ways to pay
 // the store offers — Checkout, plus express buttons when the merchant shows them
-// (the accepted marks are in the footer).
-// The empty state's wording is the real page's.
+// (the accepted marks are in the footer). A line bought in a size or colour says
+// which ("Size M · Black") and shows that colour's photo; changing its quantity
+// keeps it (src/storefront/shopperOrders.ts). On a store that sells parts a line
+// also names the part number and the vehicle it fit ("Front · Part # TQ-BRK-4471 ·
+// Fits 2019 Ford F-150").
+// The empty state's wording is the real page's; a theme on the sections drawing
+// says it in sentence case and leads to the whole catalogue.
+// When the store changed under the shopper (a theme applied, the store restored),
+// the cart was emptied, and a notice above it says so and names what went.
 
 const router = useRouter()
 const storefront = inject(STOREFRONT)!
@@ -40,13 +50,59 @@ function iconFor(line: CartLine): string {
   return (category && CATEGORY_ICONS[category]) || 'package'
 }
 
-function imageFor(line: CartLine): string | undefined {
-  return commerce.products.find((p) => p.id === line.productId)?.imageUrls?.[0]
+function productOf(line: CartLine) {
+  return commerce.products.find((p) => p.id === line.productId)
 }
 
-/** A line as its buttons name it: the same product bought once and on a plan are two lines, and must not sound alike. */
+function imageFor(line: CartLine): string | undefined {
+  return lineImage(productOf(line), line)
+}
+
+/** "Size M · Black"; empty for a product without a choice. */
+function variantOf(line: CartLine): string {
+  return lineVariantText(productOf(line), line)
+}
+
+/** Everything under the line's name: its variant, and on a store that sells parts its number and vehicle. */
+function detailOf(line: CartLine): string {
+  return lineDetailText(productOf(line), line, { partNumber: storefront.sellsParts.value })
+}
+
+/** The product's page, opened on the line's size and colour. */
+function hrefOf(line: CartLine): string {
+  return withQuery(`/products/${productHandle({ name: line.name, id: line.productId })}`, lineProductQuery(productOf(line), line))
+}
+
+/**
+ * A line as its buttons name it: the same product bought once and on a plan are two
+ * lines, and so are two sizes of a shirt; they must not sound alike.
+ */
 function nameOf(line: CartLine): string {
-  return line.plan ? `${line.name}, ${line.plan.name}` : line.name
+  const variant = variantOf(line)
+  const name = variant ? `${line.name}, ${variant}` : line.name
+  return line.plan ? `${name}, ${line.plan.name}` : name
+}
+
+const root = ref<HTMLElement | null>(null)
+const title = ref<HTMLElement | null>(null)
+
+/** The note about a store change goes, so the keyboard moves to the page's heading. */
+function dismissChanged(): void {
+  title.value?.focus()
+}
+
+/**
+ * Takes a line out. Its row goes, so the keyboard moves to the next line's name (the
+ * new last one when it was the last), or to the page's heading once the cart is empty,
+ * and what went is said.
+ */
+async function removeLine(line: CartLine, index: number): Promise<void> {
+  const name = nameOf(line)
+  cart.remove(channelId.value, lineKey(line))
+  await nextTick()
+  const names = root.value?.querySelectorAll<HTMLElement>('.sf-cart__name') ?? []
+  ;(names[Math.min(index, names.length - 1)] ?? title.value)?.focus()
+  storefront.announce(`Removed ${name}.`)
 }
 
 function setQty(line: CartLine, value: number): void {
@@ -59,24 +115,33 @@ function checkout(express?: string): void {
 </script>
 
 <template>
-  <div class="sf-cart">
-    <h1 class="sf-page-title sf-cart__title">Cart</h1>
+  <div ref="root" class="sf-cart">
+    <h1 ref="title" class="sf-page-title sf-cart__title" tabindex="-1">Cart</h1>
+
+    <StorefrontStoreChanged @dismissed="dismissChanged" />
 
     <div v-if="!lines.length" class="sf-cart__empty">
-      <p class="sf-cart__empty-title">Your Shopping Cart is Empty!</p>
-      <StorefrontAnchor href="/" class="sf-button">Start Shopping!</StorefrontAnchor>
+      <template v-if="storefront.sectionsDrawing.value">
+        <p class="sf-cart__empty-title">Your cart is empty</p>
+        <StorefrontAnchor href="/collections/all" class="sf-button">Start shopping</StorefrontAnchor>
+      </template>
+      <template v-else>
+        <p class="sf-cart__empty-title">Your Shopping Cart is Empty!</p>
+        <StorefrontAnchor href="/" class="sf-button">Start Shopping!</StorefrontAnchor>
+      </template>
     </div>
 
     <div v-else class="sf-cart__layout">
       <section class="sf-cart__lines" aria-label="Items in your cart">
         <ul>
-          <li v-for="line in lines" :key="lineKey(line)" class="sf-cart__line">
+          <li v-for="(line, index) in lines" :key="lineKey(line)" class="sf-cart__line">
             <span class="sf-cart__thumb" aria-hidden="true">
               <img v-if="imageFor(line)" :src="imageFor(line)" alt="" class="sf-cart__image">
               <v-icon v-else size="28">{{ iconFor(line) }}</v-icon>
             </span>
             <div class="sf-cart__item">
-              <StorefrontAnchor :href="`/products/${productHandle({ name: line.name, id: line.productId })}`" class="sf-cart__name">{{ line.name }}</StorefrontAnchor>
+              <StorefrontAnchor :href="hrefOf(line)" class="sf-cart__name">{{ line.name }}</StorefrontAnchor>
+              <StorefrontLineText v-if="detailOf(line)" :text="detailOf(line)" :unbroken="storefront.sellsParts.value" class="sf-cart__variant" :class="{ 'sf-cart__variant--part': storefront.sellsParts.value }" />
               <span v-if="line.plan" class="sf-cart__plan">{{ line.plan.name }} · {{ deliverySummary(line.plan) }}</span>
               <span class="sf-muted">{{ formatMoney(lineTotal({ price: line.price, qty: 1 }, currency)) }} {{ line.plan ? 'per delivery' : 'each' }}</span>
             </div>
@@ -98,7 +163,7 @@ function checkout(express?: string): void {
               </button>
             </div>
             <span class="sf-cart__total">{{ formatMoney(lineTotal(line, currency)) }}</span>
-            <button type="button" class="sf-icon-btn" :aria-label="`Remove ${nameOf(line)}`" @click="cart.remove(channelId, lineKey(line))">
+            <button type="button" class="sf-icon-btn" :aria-label="`Remove ${nameOf(line)}`" @click="removeLine(line, index)">
               <v-icon size="18">trash-2</v-icon>
             </button>
           </li>
@@ -109,7 +174,7 @@ function checkout(express?: string): void {
       </section>
 
       <aside class="sf-cart__summary" aria-label="Order summary">
-        <dl class="sf-cart__sums">
+        <dl class="sf-cart__sums" :class="{ 'sf-cart__sums--sections': storefront.sectionsDrawing.value }">
           <div><dt>Subtotal</dt><dd>{{ formatMoney(subtotal) }}</dd></div>
           <div><dt>Shipping</dt><dd>Free</dd></div>
           <div v-if="code.discount.value" class="sf-cart__discount">
@@ -126,6 +191,7 @@ function checkout(express?: string): void {
           id-prefix="sf-cart"
           :applied="code.discount.value ? code.applied.value : ''"
           :problem="code.notice.value"
+          :saving="code.discount.value ? formatMoney(code.discount.value.amount) : ''"
           @apply="code.apply"
           @remove="code.remove"
         />
@@ -133,13 +199,14 @@ function checkout(express?: string): void {
         <p v-if="offer.payIn4.labels.length" class="sf-cart__instalments sf-muted">
           or 4 interest-free payments of {{ formatMoney(offer.payIn4.amount) }} with {{ offer.payIn4.labels.join(' or ') }}
         </p>
-        <button type="button" class="sf-button sf-button--block" @click="checkout()">
+        <!-- data-sf-clear: the chat launcher on a phone steps aside while it would cover these (StorefrontChat). -->
+        <button type="button" class="sf-button sf-button--block" data-sf-clear @click="checkout()">
           <v-icon size="16">lock</v-icon> Checkout
         </button>
         <!-- Express buttons skip the checkout form, and with it the consent a subscription needs. -->
         <template v-if="offer.express.length && !recurring.length">
           <p class="sf-or">or</p>
-          <StorefrontExpressButtons :methods="offer.express" @pick="checkout" />
+          <StorefrontExpressButtons :methods="offer.express" data-sf-clear @pick="checkout" />
         </template>
       </aside>
     </div>
@@ -157,6 +224,18 @@ function checkout(express?: string): void {
 
 .sf-cart__title {
   margin-bottom: 40px;
+}
+
+/* The heading takes focus only when the last line is removed; no ring for that. */
+.sf-cart__title:focus {
+  outline: none;
+}
+
+/* A theme on the sections drawing sets its headings' weight and case (a serif at its
+   own weight); every other theme keeps the bold title it always had. */
+.sf-page-title {
+  font-weight: var(--sf-heading-weight, 700);
+  text-transform: var(--sf-heading-case, none);
 }
 
 .sf-cart__empty {
@@ -202,7 +281,7 @@ function checkout(express?: string): void {
   justify-content: center;
   width: 72px;
   aspect-ratio: 1;
-  border-radius: 6px;
+  border-radius: var(--sf-corner, 6px);
   background: linear-gradient(160deg, #f4f4f2 0%, #e6e5e1 100%);
   color: #8a8780;
 }
@@ -227,9 +306,14 @@ function checkout(express?: string): void {
   font-weight: 600;
 }
 
-.sf-cart__plan {
+.sf-cart__plan,
+.sf-cart__variant {
   font-size: 13px;
   font-weight: 500;
+}
+
+.sf-cart__variant--part {
+  font-variant-numeric: tabular-nums;
 }
 
 .sf-cart__total {
@@ -250,8 +334,8 @@ function checkout(express?: string): void {
   flex-direction: column;
   gap: 16px;
   padding: 24px;
-  border-radius: 8px;
-  background: #f7f7f5;
+  border-radius: var(--sf-corner, 8px);
+  background: var(--sf-surface, #f7f7f5);
 }
 
 .sf-cart__sums {
@@ -268,6 +352,15 @@ function checkout(express?: string): void {
 
 .sf-cart__sums dd {
   margin: 0;
+}
+
+/* On the sections drawing an amount stays whole: "−$19.60", never "−" over "$19.60". */
+.sf-cart__sums--sections div {
+  gap: 16px;
+}
+
+.sf-cart__sums--sections dd {
+  white-space: nowrap;
 }
 
 .sf-cart__grand {

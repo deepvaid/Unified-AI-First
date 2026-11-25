@@ -11,6 +11,7 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpSegmentedControl from '@/components/MpSegmentedControl.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MaropayMethodMark from '@/components/maropay/MaropayMethodMark.vue'
+import StoreRestoreDialog from '@/components/saleschannels/StoreRestoreDialog.vue'
 import StorefrontPreview from '@/components/saleschannels/StorefrontPreview.vue'
 import { useToast } from '@/composables/useToast'
 import {
@@ -22,6 +23,7 @@ import {
   type ConnectedCloud,
 } from '@/stores/useSalesChannels'
 import { useCommerceStore } from '@/stores/useCommerce'
+import { useDemoStores } from '@/stores/useDemoStores'
 import { useMaropayStore } from '@/stores/useMaropay'
 import { markForProvider } from '@/maropay/methodMarks'
 import type { MethodMarkId } from '@/maropay/methodMarks'
@@ -31,7 +33,10 @@ import { useRetailStore } from '@/stores/useRetail'
 import { useStoreThemesStore } from '@/stores/useStoreThemes'
 import { useStorefrontStore } from '@/stores/useStorefront'
 import { storesWithOwnCatalogue } from '@/storefront/catalog'
-import { VITAHEAL_ADMIN, VITAHEAL_CHANNEL_ID } from '@/storefront/vitahealDemo'
+import { canApplyTheme, demoStoreFor, homeBlueprintOf } from '@/storefront/demoStores'
+import { formatStorePrice } from '@/storefront/price'
+import { gridSettings } from '@/storefront/listing'
+import { money, parseDecimal, sum } from '@/maropay/money'
 import { previewProducts } from '@/views/Storefront/storefrontCatalog'
 
 type MetricColor = 'primary' | 'retail' | 'commerce' | 'analytics' | 'contacts' | 'success' | 'warning'
@@ -145,6 +150,7 @@ const salesChannelsStore = useSalesChannelsStore()
 const retailStore = useRetailStore()
 const commerceStore = useCommerceStore()
 const storeThemesStore = useStoreThemesStore()
+const demoStores = useDemoStores()
 const toast = useToast()
 
 const addedAssistantIds = ref<string[]>([])
@@ -168,18 +174,36 @@ const isWebStore = computed(() => channel.value?.type === 'web_store')
 /** This store sells products of its own, so a product can be added straight to it. */
 const hasOwnCatalogue = computed(() => storesWithOwnCatalogue(commerceStore.products).includes(channelId.value))
 
-// The demo store keeps what is changed in it in this browser, and can be put back.
-const keepsChanges = computed(() => channelId.value === VITAHEAL_CHANNEL_ID)
-/** The demo store's own company, figures and theme name, in place of the placeholders other web stores share. */
-const demoFacts = computed(() => (channelId.value === VITAHEAL_CHANNEL_ID ? VITAHEAL_ADMIN : null))
+// A store that can take a theme from the library keeps what is changed in it in this browser, and can be put back.
+const keepsChanges = computed(() => canApplyTheme(channel.value))
+/** A demo store's own company and figures, in place of the placeholders other web stores share. They stay whatever theme it runs. */
+const demoFacts = computed(() => homeBlueprintOf(channelId.value)?.admin ?? null)
 /** A store shown to prospects has no button that only answers "not built yet". */
 const isDemoStore = computed(() => channel.value?.webStore?.demo === true)
 const ownProductCount = computed(() => commerceStore.products.filter((p) => p.channelIds?.includes(channelId.value)).length)
+/** Made with Create sales channel: its figures, activity and business details are its own, not the samples other stores share. */
+const createdStore = computed(() => demoStores.isCreated(channelId.value))
+/** A Store Builder store with no theme yet (made blank): its theme actions lead to the theme library, not the builder. */
+const noTheme = computed(() => isWebStore.value && !!channel.value?.webStore?.storeBuilderEnabled && !channelTheme.value)
+const themesRoute = computed(() => ({ name: 'StoreThemes', params: { accountId: accountId.value, channelId: channelId.value } }))
+/** A created store's own orders, as its figures count them. */
+const createdOrders = computed(() => (createdStore.value ? commerceStore.orders.filter((order) => order.channelId === channelId.value) : []))
 const confirmRestore = ref(false)
+/** What the store keeps in this browser, as the Store data card names it: "Products, size charts and campaigns". */
+const keptParts = computed(() => demoStores.restorePreview(channelId.value)?.parts.card ?? 'Products and campaigns')
+/** A store made blank: a restore makes it blank again rather than putting original products back. */
+const startedBlank = computed(() => channel.value?.webStore?.blueprint?.original === null)
 
-function restoreStore() {
-  commerceStore.restoreDemoStore()
-  toast.success(`${channel.value?.name ?? 'The store'} is back to its original products, plans and subscribers`)
+// A store made with Create sales channel is kept in this browser, and is the only kind that can be deleted.
+const canDeleteStore = computed(() => demoStores.isCreated(channelId.value))
+const confirmDelete = ref(false)
+
+/** Leaves the store first, so its page never shows "not found", then deletes it. Orders placed on it stay. */
+async function deleteStore() {
+  const id = channelId.value
+  const name = channel.value?.name ?? 'The store'
+  await router.push({ name: 'SalesChannels', params: { accountId: accountId.value } })
+  if (demoStores.remove(id)) toast.success(`${name} deleted`)
 }
 
 const maropay = useMaropayStore()
@@ -199,10 +223,26 @@ const paymentProviderNames = computed(() => [...(maropayLive.value ? ['Maropay']
 // Published theme for this channel drives the preview dialog; falls back to the
 // default static storefront mock when no theme exists.
 const channelTheme = computed(() => (channelId.value ? storeThemesStore.themeForChannel(channelId.value) : undefined))
+/** The published theme as the activity names it: a library theme with its version ("Vitaheal 1.0"), any other by its name. */
+const publishedThemeName = computed(() => {
+  const theme = channelTheme.value
+  const running = demoStores.blueprintOf(channelId.value)
+  if (!running) return theme?.name ?? ''
+  return !theme || theme.name === running.card.name ? `${running.card.name} ${running.card.version}` : theme.name
+})
+/** The plans the store's theme sells on, as the activity lists them. */
+const seededPlanNames = computed(() => demoStores.snapshotOf(channelId.value)?.plans.map((p) => p.name) ?? [])
+/** A demo store without plans names its own first search rule in its activity: "rotor, disc, brake disc". */
+const seededSearchRule = computed(() => demoStores.snapshotOf(channelId.value)?.merchandising.synonyms[0]?.queries.slice(0, 3).join(', ') ?? '')
 const previewSections = computed(() => channelTheme.value?.templates.home)
 const previewStyles = computed(() => channelTheme.value?.styles)
 // A crawled store's own wordmark and menu in the preview header (Neelam-Store); others keep the sample header.
 const previewHeader = computed(() => useStorefrontStore().previewHeaderFor(channel.value))
+/** The store's chrome and the product card its rows use, as the builder draws them. */
+const previewExtras = computed(() => {
+  const grid = gridSettings(channelTheme.value?.templates.collection)
+  return { cardStyle: grid.cardStyle, quickAdd: grid.quickAdd, ...useStorefrontStore().previewChromeFor(channel.value) }
+})
 /** The store's own products in the preview's product rows; a store on the shared catalogue keeps the drawn stand-ins. */
 const previewItems = computed(() => (channel.value ? previewProducts(commerceStore.products, channel.value) : undefined))
 
@@ -241,6 +281,7 @@ const averageBasket = computed(() => {
 const primaryActionLabel = computed(() => {
   if (!channel.value) return ''
   if (channel.value.type === 'offline_store') return 'Launch POS'
+  if (noTheme.value) return 'Choose a theme'
   return channel.value.webStore?.storeBuilderEnabled ? 'Edit theme' : 'Set up theme'
 })
 
@@ -273,6 +314,17 @@ const headerMeta = computed(() => {
 })
 
 const kpiCards = computed<KpiCard[]>(() => {
+  if (isWebStore.value && createdStore.value) {
+    // A store made here counts its own orders; it has no visit figures to show.
+    const currency = channel.value?.webStore?.currency ?? 'USD'
+    const revenue = sum(createdOrders.value.map((order) => parseDecimal(order.total, currency) ?? money(0, currency)), currency)
+    return [
+      { label: 'Revenue', value: formatStorePrice(revenue, channel.value?.webStore?.locale), icon: 'trending-up', color: 'commerce', period: 'Since the store was made' },
+      { label: 'Orders', value: String(createdOrders.value.length), icon: 'shopping-bag', color: 'primary', period: 'Since the store was made' },
+      { label: 'Conversion', value: '—', icon: 'mouse-pointer-click', color: 'analytics', period: 'No visits recorded yet' },
+      { label: 'Sessions', value: '—', icon: 'users', color: 'contacts', period: 'No visits recorded yet' },
+    ]
+  }
   if (isWebStore.value) {
     return [
       { label: 'Revenue', value: demoFacts.value?.revenue ?? '$842K', icon: 'trending-up', color: 'commerce', period: 'Last 30 days', trend: '+12%', trendPositive: true },
@@ -301,8 +353,8 @@ const quickActions = computed<QuickAction[]>(() => {
     return [
       {
         id: 'theme',
-        title: channel.value?.webStore?.published ? 'Edit theme' : 'Finish theme',
-        description: 'Store Builder',
+        title: noTheme.value ? 'Choose a theme' : channel.value?.webStore?.published ? 'Edit theme' : 'Finish theme',
+        description: noTheme.value ? 'Theme library' : 'Store Builder',
         icon: 'palette',
         color: 'primary',
         target: 'store_builder',
@@ -406,7 +458,9 @@ const setupChecklist = computed<SetupItem[]>(() => {
   if (current.type === 'web_store') {
     return [
       { id: 'domain', title: 'Store URL', description: current.webStore?.domain ?? 'Add a storefront domain', done: Boolean(current.webStore?.domain), target: 'preview' },
-      { id: 'theme', title: 'Theme ready', description: current.webStore?.published ? 'Published theme is live' : 'Publish the draft theme', done: Boolean(current.webStore?.published), target: 'store_builder' },
+      noTheme.value
+        ? { id: 'theme', title: 'Choose a theme', description: 'Apply one from the theme library', done: false, target: 'store_builder' }
+        : { id: 'theme', title: 'Theme ready', description: current.webStore?.published ? 'Published theme is live' : 'Publish the draft theme', done: Boolean(current.webStore?.published), target: 'store_builder' },
       current.webStore?.merchandiseConnected
         ? { id: 'merchandise', title: 'Merchandising connected', description: 'Search and recommendations are active', done: true, target: 'merchandise' }
         : { id: 'merchandise', title: 'Connect merchandising', description: 'Turn on search and recommendations for this store', done: false, target: 'merchandise' },
@@ -443,11 +497,25 @@ const activityItems = computed<ActivityItem[]>(() => {
   const current = channel.value
   if (!current) return []
 
-  if (current.type === 'web_store' && demoFacts.value) {
+  if (current.type === 'web_store' && createdStore.value) {
+    const original = current.webStore?.blueprint?.original
     return [
-      { id: 'theme', icon: 'rocket', title: 'Theme published', meta: demoFacts.value.themeName, time: formatRelative(current.lastActivityAt), color: 'primary' },
+      ...(channelTheme.value
+        ? [{ id: 'theme', icon: 'rocket', title: 'Theme published', meta: publishedThemeName.value, time: formatRelative(channelTheme.value.publishedAt ?? current.createdAt), color: 'primary' } satisfies ActivityItem]
+        : []),
+      { id: 'created', icon: 'store', title: 'Store created', meta: original ? `A copy of ${demoStoreFor(original).card.name}` : 'A blank store', time: formatRelative(current.createdAt), color: 'commerce' } satisfies ActivityItem,
+    ]
+  }
+
+  if (current.type === 'web_store' && keepsChanges.value) {
+    return [
+      { id: 'theme', icon: 'rocket', title: 'Theme published', meta: publishedThemeName.value, time: formatRelative(current.lastActivityAt), color: 'primary' },
       { id: 'inventory', icon: 'package', title: 'Catalog synced', meta: `${ownProductCount.value} products from Commerce Cloud`, time: '2 h ago', color: 'commerce' },
-      { id: 'plans', icon: 'repeat', title: 'Subscription plans updated', meta: '3-month supply, Monthly subscription', time: 'Yesterday', color: 'analytics' },
+      ...(seededPlanNames.value.length
+        ? [{ id: 'plans', icon: 'repeat', title: 'Subscription plans updated', meta: seededPlanNames.value.join(', '), time: 'Yesterday', color: 'analytics' } satisfies ActivityItem]
+        : seededSearchRule.value
+          ? [{ id: 'search', icon: 'sliders-horizontal', title: 'Search rules updated', meta: seededSearchRule.value, time: 'Yesterday', color: 'analytics' } satisfies ActivityItem]
+          : []),
     ]
   }
 
@@ -497,6 +565,19 @@ const connectedApps = computed<ConnectedApp[]>(() => {
 
 const businessInfoFields = computed<BusinessInfoField[]>(() => {
   if (demoFacts.value) return [...demoFacts.value.business]
+  if (createdStore.value) {
+    // A store made here has no business details yet: never another merchant's sample ones.
+    const missing = 'Not added yet'
+    return [
+      { label: 'Legal name', value: channel.value?.name ?? missing },
+      { label: 'Website', value: channel.value?.webStore?.domain ?? missing },
+      { label: 'Public email', value: missing },
+      { label: 'Support email', value: missing },
+      { label: 'Phone', value: missing },
+      { label: 'Street', value: missing },
+      { label: 'Country', value: missing },
+    ]
+  }
 
   if (isWebStore.value) {
     return [
@@ -646,7 +727,7 @@ function openPrimaryAction() {
     openPreview('pos')
     return
   }
-  router.push({ name: 'StoreThemeBuilder', params: { accountId: accountId.value, channelId: channelId.value } })
+  router.push(noTheme.value ? themesRoute.value : { name: 'StoreThemeBuilder', params: { accountId: accountId.value, channelId: channelId.value } })
 }
 
 function openPreview(mode: 'desktop' | 'mobile' | 'pos' = 'desktop') {
@@ -694,7 +775,7 @@ function openConnectedProduct(target: ConnectedCloud | 'apps' | 'davinci') {
     router.push({ name: 'DaVinciDashboard', params: { accountId: accountId.value } })
     return
   }
-  router.push({ name: 'StoreThemeBuilder', params: { accountId: accountId.value, channelId: channelId.value } })
+  router.push(noTheme.value ? themesRoute.value : { name: 'StoreThemeBuilder', params: { accountId: accountId.value, channelId: channelId.value } })
 }
 
 function runAction(target: ProductTarget) {
@@ -799,6 +880,7 @@ function locationRoleText(locationId: string) {
         </template>
         <template #actions>
           <v-btn
+            v-if="!noTheme"
             variant="outlined"
             class="text-none"
             :prepend-icon="isWebStore ? 'external-link' : 'map-pin'"
@@ -836,20 +918,30 @@ function locationRoleText(locationId: string) {
             <div class="retail-widget-header">
               <div>
                 <div class="retail-widget-header__title">{{ isWebStore ? 'Storefront preview' : 'POS overview' }}</div>
-                <div class="retail-widget-header__sub">{{ isWebStore ? 'Live storefront' : `${locations.length} locations linked` }}</div>
+                <div class="retail-widget-header__sub">{{ isWebStore ? (noTheme ? 'No theme yet' : 'Live storefront') : `${locations.length} locations linked` }}</div>
               </div>
-              <div class="retail-widget-header__actions">
+              <!-- A store with no theme yet: the empty state below carries its one action. -->
+              <div v-if="!noTheme" class="retail-widget-header__actions">
                 <v-btn variant="outlined" size="small" class="text-none" prepend-icon="external-link" @click="isWebStore ? openPreview() : openPreview('pos')">
                   {{ isWebStore ? 'Preview' : 'Launch POS' }}
                 </v-btn>
                 <v-btn variant="flat" color="primary" size="small" class="text-none" :prepend-icon="isWebStore ? 'palette' : 'map-pin'" @click="isWebStore ? openPrimaryAction() : openLocations()">
-                  {{ isWebStore ? 'Edit theme' : 'Locations' }}
+                  {{ isWebStore ? primaryActionLabel : 'Locations' }}
                 </v-btn>
               </div>
             </div>
 
             <div class="retail-widget-body">
-              <StorefrontPreview v-if="isWebStore" :sections="previewSections" :styles="previewStyles" :brand="previewHeader.brand" :menu="previewHeader.menu" :products="previewItems" />
+              <MpEmptyState
+                v-if="noTheme"
+                icon="palette"
+                title="No theme yet"
+                description="Apply a theme from the library to give this store its look, products and pages."
+                action-label="Choose a theme"
+                :heading-level="3"
+                @action="router.push(themesRoute)"
+              />
+              <StorefrontPreview v-else-if="isWebStore" :sections="previewSections" :styles="previewStyles" :brand="previewHeader.brand" :menu="previewHeader.menu" :products="previewItems" v-bind="previewExtras" />
 
               <div v-else class="sc-retail-preview sc-retail-preview--hero" aria-label="Retail location summary">
                 <button
@@ -1042,19 +1134,24 @@ function locationRoleText(locationId: string) {
         </v-card>
 
         <v-card v-if="keepsChanges" flat border rounded="lg" class="retail-widget-card">
-          <div class="retail-widget-header">
+          <div class="retail-widget-header sc-store-data-header">
             <div>
               <div class="retail-widget-header__title">Store data</div>
               <div class="retail-widget-header__sub">Kept in this browser</div>
             </div>
-            <v-btn size="small" variant="outlined" prepend-icon="rotate-ccw" class="text-none" @click="confirmRestore = true">
-              Restore original store
-            </v-btn>
+            <div class="retail-widget-header__actions flex-wrap">
+              <v-btn size="small" variant="outlined" prepend-icon="rotate-ccw" class="text-none" @click="confirmRestore = true">
+                Restore original store
+              </v-btn>
+              <v-btn v-if="canDeleteStore" size="small" variant="outlined" color="error" prepend-icon="trash-2" class="text-none" @click="confirmDelete = true">
+                Delete store
+              </v-btn>
+            </div>
           </div>
           <div class="retail-widget-body">
             <p class="text-body-2 text-medium-emphasis mb-0">
-              Products, subscription plans and subscribers you add or change in this store stay after
-              a reload, in this browser only. Restoring puts the original ones back.
+              {{ keptParts }} you add or change in this store stay after
+              a reload, in this browser only. {{ startedBlank ? 'Restoring makes the store blank again.' : 'Restoring puts the original ones back.' }}
             </p>
           </div>
         </v-card>
@@ -1203,26 +1300,25 @@ function locationRoleText(locationId: string) {
         </template>
 
         <div class="sc-preview-dialog__body">
-          <StorefrontPreview :sections="previewSections" :styles="previewStyles" :brand="previewHeader.brand" :menu="previewHeader.menu" :products="previewItems" :device="previewDevice" />
+          <StorefrontPreview :sections="previewSections" :styles="previewStyles" :brand="previewHeader.brand" :menu="previewHeader.menu" :products="previewItems" :device="previewDevice" v-bind="previewExtras" />
         </div>
       </MpDialog>
 
+      <StoreRestoreDialog v-if="keepsChanges" v-model="confirmRestore" :channel-id="channel.id" />
+
       <MpConfirmDialog
-        v-model="confirmRestore"
-        title="Restore the original store?"
-        :message="`${channel.name} goes back to the products it started with.`"
+        v-if="canDeleteStore"
+        v-model="confirmDelete"
+        :title="`Delete ${channel.name}?`"
+        :message="`${channel.name} and everything in it are deleted.`"
         :consequences="[
-          'Products you added to this store are removed.',
-          'Your edits to its products are undone.',
-          'Subscription plans go back to the original two, and subscribers to the original eight.',
-          'Campaigns go back to the original three, and their announcement emails are removed.',
-          'The chatbot’s settings go back, and its chats from this store are removed.',
-          'The cart is emptied.',
-          'Orders already placed stay.',
+          'Its products, theme, pages, campaigns, search rules and chatbot are deleted.',
+          'Orders placed on it stay.',
+          'This can’t be undone.',
         ]"
-        confirm-label="Restore store"
+        confirm-label="Delete store"
         danger
-        @confirm="restoreStore"
+        @confirm="deleteStore"
       />
     </template>
 
@@ -1262,6 +1358,13 @@ function locationRoleText(locationId: string) {
 .sc-preview-dialog__body {
   padding: var(--mp-space-20);
   background: var(--surface-secondary);
+}
+
+/* Two actions: they drop under the title when the card is narrow (beside a docked drawer), instead of squeezing it. */
+.sc-store-data-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
 }
 
 .sc-tab-panel {

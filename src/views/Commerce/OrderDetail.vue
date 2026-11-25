@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useCommerceStore, FULFILLMENT_STAGES, type OrderAddress } from '@/stores/useCommerce'
+import { useCommerceStore, FULFILLMENT_STAGES, type OrderAddress, type OrderLineItem, type Product } from '@/stores/useCommerce'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpSectionHeader from '@/components/MpSectionHeader.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
@@ -21,6 +21,7 @@ import { isManualKind } from '@/maropay/providers'
 import { formatDay } from '@/maropay/readiness'
 import { deliverySummary } from '@/subscriptions/plans'
 import { useSubscriptionsStore } from '@/stores/useSubscriptions'
+import { optionKind, optionValuesOf } from '@/storefront/variants'
 import type { RefundResult } from '@/services/maropay/mockAdapter'
 
 const route = useRoute()
@@ -163,9 +164,35 @@ function lineTotal(qty: number, price: string, discountPct: number): string {
 /** The subscription this order started or renewed, for the link on its line. */
 const subscription = computed(() => (order.value ? useSubscriptionsStore().contractOfOrder(order.value.id) : undefined))
 
-/** The line's product photo, when its product has one. */
-function lineImage(sku: string): string | undefined {
-  return store.products.find((p) => p.sku === sku)?.imageUrls?.[0]
+/** The line's product: the one it names, else the one with its SKU. */
+function lineProduct(li: OrderLineItem): Product | undefined {
+  const named = li.productId === undefined ? undefined : store.products.find((p) => p.id === li.productId)
+  return named ?? store.products.find((p) => p.sku === li.sku)
+}
+
+/** The variant's values as the line was bought, sizes first: "M · Sand". Empty for a line without a variant. */
+function variantLine(li: OrderLineItem): string {
+  if (!li.variantTitle) return ''
+  const options = lineProduct(li)?.detail?.options ?? []
+  if (!options.length) return li.variantTitle.split(' / ').join(' · ')
+  const values = optionValuesOf({ title: li.variantTitle }, options)
+  const sizes = values.filter((_, i) => optionKind(options[i]!) === 'size')
+  const others = values.filter((_, i) => optionKind(options[i]!) !== 'size')
+  return [...sizes, ...others].filter(Boolean).join(' · ')
+}
+
+/** The line's product photo, when its product has one: the photo of the colour bought, where the product has one per colour. */
+function lineImage(li: OrderLineItem): string | undefined {
+  const product = lineProduct(li)
+  const options = product?.detail?.options ?? []
+  const byColor = product?.detail?.imagesByColor
+  if (byColor && li.variantTitle) {
+    const values = optionValuesOf({ title: li.variantTitle }, options)
+    const colour = values.find((_, i) => optionKind(options[i]!) === 'color')
+    const photo = colour ? byColor[colour]?.[0] : undefined
+    if (photo) return photo
+  }
+  return product?.imageUrls?.[0]
 }
 
 /** City, region and postcode on one line; an address without a region (Sweden) leaves no stray comma. */
@@ -301,11 +328,16 @@ function timelineIcon(entry: { kind: string; text: string }): string {
               <tr v-for="li in order.lineItems" :key="li.sku + li.product + (li.plan?.id ?? '')">
                 <td>
                   <div class="d-flex align-center ga-3">
-                    <v-avatar v-if="lineImage(li.sku)" :size="36" rounded="lg" class="border flex-shrink-0">
-                      <v-img :src="lineImage(li.sku)" alt="" cover />
+                    <v-avatar v-if="lineImage(li)" :size="36" rounded="lg" class="border flex-shrink-0">
+                      <v-img :src="lineImage(li)" alt="" cover />
                     </v-avatar>
                     <div>
                       <div class="text-body-2 font-weight-medium">{{ li.product }}</div>
+                      <div v-if="variantLine(li)" class="text-body-2">{{ variantLine(li) }}</div>
+                      <div v-if="li.vehicle" class="text-caption d-flex align-center ga-1">
+                        <v-icon size="12">car</v-icon>
+                        Fits {{ li.vehicle }}
+                      </div>
                       <div class="text-caption text-medium-emphasis">{{ li.sku }}</div>
                       <div v-if="li.plan" class="text-caption d-flex align-center ga-1">
                         <v-icon size="12">repeat</v-icon>

@@ -18,14 +18,19 @@ import { STOREFRONT } from './storefrontContext'
 import { CATEGORY_ICONS, inStock, priceOf, productFromHandle, relatedProducts, storefrontProducts } from './storefrontCatalog'
 import { useMerchandisingStore } from '@/stores/useMerchandising'
 import { recommendFor, recommendationHeading } from '@/storefront/search'
+import StorefrontProductPage from './product/StorefrontProductPage.vue'
 
 // A product page (/products/:handle). Everything below the price follows the
 // store's payment setup in Store › Payments: instalment lines for approved buy
 // now, pay later methods, express buttons, and the methods the store accepts.
+// A theme with the sections drawing (Northfold, Torqline) draws its product
+// template instead (./product/StorefrontProductPage.vue); this page's own drawing
+// below is the classic one every other theme keeps.
 
 const route = useRoute()
 const router = useRouter()
 const storefront = inject(STOREFRONT)!
+const { sectionsDrawing } = storefront
 const commerce = useCommerceStore()
 const cart = useStorefrontCartStore()
 const subscriptions = useSubscriptionsStore()
@@ -112,7 +117,8 @@ function buyNow(methodId: string): void {
 </script>
 
 <template>
-  <div v-if="product && unit && offer" class="sf-pdp">
+  <StorefrontProductPage v-if="product && sectionsDrawing" :key="product.id" :product="product" />
+  <div v-else-if="product && unit && offer" class="sf-pdp">
     <nav class="sf-crumbs" aria-label="Breadcrumb">
       <StorefrontAnchor href="/">Home</StorefrontAnchor>
       <span aria-hidden="true">›</span>
@@ -292,7 +298,7 @@ function buyNow(methodId: string): void {
 }
 
 .sf-pdp__thumb:focus-visible {
-  outline: 2px solid var(--sf-accent, #2563eb);
+  outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
   outline-offset: 2px;
 }
 

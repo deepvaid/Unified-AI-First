@@ -54,12 +54,12 @@ This is NOT a production app — it uses mock data and has no backend API.
 │   │   ├── maropay/           ← 23 Maropay* product surfaces (Product/Maropay stories), incl. the Maropay card a store's Payments page sells from, the overview's money panel and the setup timeline
 │   │   ├── chatbot/           ← ChatbotSiteCrawl — the Knowledge base's website source: find pages, pick, extract (Product/Chatbot story)
 │   │   ├── merchandising/     ← MerchProductCard
-│   │   ├── products/          ← ProductMediaField — a product's pictures on the product forms (Product/Products story)
+│   │   ├── products/          ← ProductMediaField — a product's pictures on the product forms; SwatchHexField, VariantGrid and ProductSizeGuideCard (a product's colours, variants and size chart); SizeChartTable and SizeChartDrawer (Products › Size charts); VehicleFitmentCard and VehicleFitmentDrawer (the vehicles an auto part fits) (Product/Products stories)
 │   │   └── settings/          ← SettingsSection, SettingsPlaceholder, settingsMenu (rail = MpSectionRail)
 │   ├── maropay/               ← Maropay domain logic — pure TS, node:test-importable (see docs/maropay/)
 │   ├── services/maropay/      ← Deterministic mock adapter for the payments partner
 │   ├── subscriptions/         ← Subscription rules — pure TS, node:test-importable: plans (price per delivery, display rounding, charge dates, purchase options) and the subscriptions shoppers hold on them (`contracts.ts`: skip, pause, change plan, cancel, renewals)
-│   ├── storefront/            ← Storefront rules — pure TS, node:test-importable: store catalogue and product form rules, cart lines, price format, which countries and sample shopper a store's checkout has (`checkoutProfile.ts`), a store's campaigns and what their discount code takes off (`campaigns.ts`), what a connected store's search finds and what a product page recommends (`search.ts`), pack-shot art, what the demo store keeps in the browser (`demoStorage.ts`), and the Vitaheal (demo) store seed, whose photos are in `public/storefront/vitaheal/` (see docs/store-builder/)
+│   ├── storefront/            ← Storefront rules — pure TS, node:test-importable: store catalogue and product form rules, cart lines, price format, which countries and sample shopper a store's checkout has (`checkoutProfile.ts`), a store's campaigns and what their discount code takes off (`campaigns.ts`), what a connected store's search finds and what a product page recommends (`search.ts`), pack-shot art, what the demo store keeps in the browser (`demoStorage.ts`), collection filters and sort (`facets.ts`), list cards (`listing.ts`), the product page's choice, gallery and rows (`productPage.ts`), the shopper's orders (`shopperOrders.ts`), size chart editing (`sizeChartForm.ts`), whether a piece is for women or men and which size-chart columns it reads (`audience.ts`), which vehicles a part fits and the shopper's vehicle (`fitment.ts`, `vehicles.ts`) and the admin fitment form's rules (`fitmentForm.ts`), the demo store registry (`demoStores/`, with what Apply and Restore say in `demoStores/summary.ts`), the stores made with Create sales channel (`createdStores.ts`), the shopper's wishlist (`wishlist.ts`), and the Vitaheal (demo), Northfold (demo), Torqline (demo), Lumos Home (demo) and Aurora Outdoor (demo) store seeds, whose photos are in `public/storefront/<store>/` (see docs/store-builder/)
 │   ├── design-tokens/
 │   │   ├── tokens.json        ← SOURCE OF TRUTH for all design values
 │   │   ├── build.mjs          ← Generates SCSS/CSS/TS from tokens.json
@@ -75,10 +75,10 @@ This is NOT a production app — it uses mock data and has no backend API.
 │   │   ├── Integrations/
 │   │   ├── Maropay/           ← Payments prototype: overview, setup, transactions, payouts, disputes, settings
 │   │   ├── Marketing/         ← Campaigns, Journeys, JourneyBuilder, Forms, Content, etc.
-│   │   ├── Products/          ← ProductsList, Inventory, Recommendations, TaxCategories
+│   │   ├── Products/          ← ProductsList, Inventory, Recommendations, TaxCategories, SizeCharts
 │   │   ├── Service/           ← Tickets
 │   │   ├── Settings/          ← Settings, Billing, Users, Profile
-│   │   ├── Storefront/        ← Shopper storefront of a web store: home, collections, product, search (once the store is connected to Merchandise Cloud), cart, checkout, account (the shopper's subscriptions), and the store's chatbot widget (`StorefrontChat.vue`) (P4-8, out of system)
+│   │   ├── Storefront/        ← Shopper storefront of a web store: home, collections, product, search (once the store is connected to Merchandise Cloud), cart, checkout, account (the shopper's subscriptions and orders) and an order page, and the store's chatbot widget (`StorefrontChat.vue`); a theme with `drawing: 'sections'` (Northfold, Torqline, Lumos, Aurora) also gets `StorefrontHeader`/`StorefrontFooter`, home sections (`sections/`), the product page (`product/`), filters, quick add, `StorefrontVariantPicker` and `StorefrontSizeGuide`, the wishlist (`StorefrontWishlist.vue`, `src/stores/useStorefrontWishlist.ts`) when the header has its tool, and on a store that sells parts the vehicle selector (`StorefrontVehicleSelector`/`StorefrontVehicleDrawer`, the shopper's vehicle in `src/stores/useStorefrontVehicle.ts`) and `StorefrontFitBanner` (Product/Storefront stories) (P4-8, out of system)
 │   │   └── Templates/         ← /templates page-archetype gallery (engineer reference, placeholder data)
 │   ├── stores/                ← 6 Pinia stores with mock data
 │   ├── plugins/vuetify.ts     ← Vuetify theme (light + dark) + global defaults
@@ -427,10 +427,11 @@ changelog in `DESIGN_AUDIT.md`.
 | `npm run qa:compare` | Design vs LiquidSky build: side-by-side screenshots + a plain list of differences → `output/qa-compare/` (git-ignored; needs `LIQUIDSKY_STORYBOOK` in `.env.local`) |
 | `npm run test:maropay` | Maropay domain + adapter tests (`node:test` over `tests/maropay/`) |
 | `npm run test:catalog` | Da Vinci Catalog Co-Pilot draft-generator tests (`node:test` over `tests/davinci-catalog/`) |
-| `npm run test:chatbot` | Chatbot brand-colour contrast, the builder-preview responder, and the store assistant that answers shoppers on the Vitaheal (demo) storefront (`src/chatbot/storeAssistant.ts`: orders, subscriptions, a product for a wellness need, store questions) (`node:test` over `tests/chatbot/`) |
+| `npm run test:chatbot` | Chatbot brand-colour contrast, the builder-preview responder, and the store assistant that answers shoppers on the Vitaheal (demo) storefront (`src/chatbot/storeAssistant.ts`: orders, subscriptions, a product for a wellness need, store questions), the apparel assistant on the Northfold (demo) and Aurora Outdoor (demo) storefronts (`src/chatbot/clothingAnswers.ts`: size and fit from the size chart, fabric and care, and for outdoor wear waterproofing, warmth, layering and boot sizes), the auto-parts assistant on the Torqline (demo) storefront (`src/chatbot/partsAnswers.ts`: whether a part fits a vehicle, setting the shopper's vehicle, part numbers, a mechanic for safety work), and the home assistant on the Lumos Home (demo) storefront (`src/chatbot/homeAnswers.ts`: sizes and whether a piece fits a space, materials, care, assembly, warranty, delivery) (`node:test` over `tests/chatbot/`) |
 | `npm run test:plg` | PLG promotion tests — coupon maths and code validation in `src/plg/promo.ts` (`node:test` over `tests/plg/`) |
 | `npm run test:subscriptions` | Subscription rules in `src/subscriptions/` — plans (price per delivery, display rounding, charge dates, what a shopper is offered) and subscriptions (skip, pause, change plan, cancel, renewals) — and the Vitaheal (demo) plans and subscribers (`node:test` over `tests/subscriptions/`) |
-| `npm run test:storefront` | Storefront rules — which products a store sells, the product form's stock and collection rules, cart lines, store price formatting, a store's checkout countries and sample shopper, store campaigns and discount codes, store search (pins, synonyms, redirects, blacklisted products) and product recommendations, what the demo store keeps in the browser — and the Vitaheal (demo) seed checked against its reference tables (`node:test` over `tests/storefront/`) |
+| `npm run test:storefront` | Storefront rules — which products a store sells, the product form's stock and collection rules, cart lines, store price formatting, a store's checkout countries and sample shopper, store campaigns and discount codes, store search (pins, synonyms, redirects, blacklisted products) and product recommendations, what the demo store keeps in the browser, collection filters and sort, list cards, the product page, the shopper's orders, size charts, vehicle fitment and part numbers, theme variables, the theme library (every theme applied to every store and restored, stores made from a theme and deleted, theme copies, the store's own plans paused, what the dialogs say) the wishlist — and the Vitaheal (demo), Northfold (demo), Torqline (demo), Lumos Home (demo) and Aurora Outdoor (demo) seeds checked against their reference tables (`node:test` over `tests/storefront/`) |
+| `npm run themes:thumbnails` | The theme library's pictures: serves a build, opens each demo store's storefront in Chrome and writes `public/storefront/<store>/theme.jpg` (`scripts/theme-thumbnails.mjs`; run `npm run build` first) |
 | `npm run demo:video` | The sales film of the Vitaheal (demo) store: builds the app, drives the demo in Chrome and writes `output/demo-video/vitaheal-demo.mp4` (git-ignored). Scenes are in `scripts/demo-video/record.mjs`; the live script is `docs/store-builder/vitaheal-demo-script.md` |
 | `npm run tokens:watch` | Watch tokens.json and regenerate on save |
 | `npm run type-check` | Run vue-tsc type checking |
@@ -479,6 +480,23 @@ Example: `[feat]: add MpDateRangePicker component with story`
   (`mp.vitaheal-demo.*` in localStorage) and put back from the store's Settings tab ("Restore original store").
   The store carries `webStore.demo`: its checkout uses plain words where another store shows a prototype note, and amounts
   that are charged read "585,90 kr" (the product pages and cart show whole kronor).
+  A second demo store, `northfold-demo` (Northfold, women's and men's clothing, US dollars, no subscriptions), is
+  seeded from `src/storefront/northfoldDemo.ts`, keeps its data under `mp.demo-store.northfold-demo.*`, and has its
+  walkthrough in `northfold-demo-script.md`. A third, `torqline-demo` (Torqline Auto Parts, everyday maintenance parts for ten
+  popular US vehicles, US dollars, no subscriptions), is seeded from `src/storefront/torqlineDemo.ts`, keeps its data under
+  `mp.demo-store.torqline-demo.*` (the shopper's chosen vehicle lives for the tab in sessionStorage), and has its
+  walkthrough in `torqline-demo-script.md`. A fourth, `lumos-demo` (Lumos Home, furniture and home, US dollars, no
+  subscriptions), is rebuilt from the live UAT theme Lumos with the look of the Lumos Figma style guide, is seeded from
+  `src/storefront/lumosDemo.ts`, keeps its data under `mp.demo-store.lumos-demo.*` (the shopper's wishlist under
+  `mp.storefront.wishlist.v1`), and has its walkthrough in `lumos-demo-script.md`. A fifth, `aurora-demo` (Aurora Outdoor,
+  outdoor clothing and footwear for women and men, US dollars, no subscriptions), is rebuilt from the live UAT theme Aurora
+  (its own header and footer, with a real serif for headings), is seeded from `src/storefront/auroraDemo.ts`, keeps its data
+  under `mp.demo-store.aurora-demo.*`, and has its walkthrough in `aurora-demo-script.md`. Each demo store is also a theme in the store's **Themes** page library:
+  applying one makes the store a copy of that demo store (orders and subscribers stay; the store's own plans are paused),
+  and "Restore original store" puts everything back, its theme included. Theme edits, copies and drafts are kept in the
+  browser (`themes.v1`). Create sales channel can start a Store Builder store from a theme; such stores are kept in
+  `mp.store-builder.created-stores.v1` and can be deleted from their Settings tab. How it all works, the keys, and how to
+  add a fourth store: `demo-stores.md`; the QA checklist: `demo-stores-qa.md`.
 - **`docs/davinci-catalog/decisions.md`** — Da Vinci Catalog Co-Pilot in the Products module
   (PRD: Da Vinci Catalog Management): decisions, PRD → prototype map, demo guide with the
   `?catalog=` entitlement scenarios, analytics, limitations. Da Vinci drafts, Apply fills the form

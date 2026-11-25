@@ -157,6 +157,14 @@ const today = () => new Date().toISOString().slice(0, 10)
 
 /** The list a Vitaheal store campaign is announced to. */
 export const VITAHEAL_CUSTOMERS_LIST_ID = 901
+/** The list a Northfold store campaign is announced to. */
+export const NORTHFOLD_CUSTOMERS_LIST_ID = 903
+/** The list a Torqline store campaign is announced to. */
+export const TORQLINE_CUSTOMERS_LIST_ID = 904
+/** The Lumos Home (demo) store's customers: who its campaigns are announced to (src/storefront/demoStores/lumos.ts). */
+export const LUMOS_CUSTOMERS_LIST_ID = 905
+/** The Aurora Outdoor (demo) store's customers: who its campaigns are announced to (src/storefront/demoStores/aurora.ts). */
+export const AURORA_CUSTOMERS_LIST_ID = 906
 
 export const useCdpEntitiesStore = defineStore('cdpEntities', () => {
   // ── Lists ────────────────────────────────────────────────────────────────────
@@ -172,6 +180,12 @@ export const useCdpEntitiesStore = defineStore('cdpEntities', () => {
     // A campaign of that store is announced to them (store editor › Campaigns › Announce by email).
     { id: VITAHEAL_CUSTOMERS_LIST_ID, name: 'Vitaheal customers', type: 'Normal', addToManageSubscription: true, brand: 'Vitaheal', displayName: 'Vitaheal', description: 'Everyone who has ordered from the Vitaheal (demo) store.', postUrl: '', fromName: 'Vitaheal', fromEmail: 'hello@vitaheal.example', replyTo: 'hello@vitaheal.example', language: 'English', address: 'Hantverkargatan 8, 112 21 Stockholm', carts: blankCarts(), count: 4812, created: '2026-11-16' },
     { id: 902, name: 'Vitaheal subscribers', type: 'Normal', addToManageSubscription: true, brand: 'Vitaheal', displayName: 'Vitaheal subscribers', description: 'Customers with a running subscription in the Vitaheal (demo) store.', postUrl: '', fromName: 'Vitaheal', fromEmail: 'hello@vitaheal.example', replyTo: 'hello@vitaheal.example', language: 'English', address: 'Hantverkargatan 8, 112 21 Stockholm', carts: blankCarts(), count: 1936, created: '2026-11-16' },
+    // The Northfold (demo) store's customers: a store campaign is announced to them.
+    { id: NORTHFOLD_CUSTOMERS_LIST_ID, name: 'Northfold customers', type: 'Normal', addToManageSubscription: true, brand: 'Northfold', displayName: 'Northfold', description: 'Everyone who has ordered from the Northfold (demo) store.', postUrl: '', fromName: 'Northfold', fromEmail: 'hello@northfold.example', replyTo: 'hello@northfold.example', language: 'English', address: '18 Ferry Lane, Portland, ME 04101', carts: blankCarts(), count: 2316, created: '2026-11-19' },
+    // The Torqline Auto Parts (demo) store's customers: a store campaign is announced to them.
+    { id: TORQLINE_CUSTOMERS_LIST_ID, name: 'Torqline customers', type: 'Normal', addToManageSubscription: true, brand: 'Torqline', displayName: 'Torqline', description: 'Everyone who has ordered from the Torqline Auto Parts (demo) store.', postUrl: '', fromName: 'Torqline', fromEmail: 'hello@torqline.example', replyTo: 'hello@torqline.example', language: 'English', address: '2250 Harmon Avenue, Columbus, OH 43223', carts: blankCarts(), count: 3148, created: '2026-11-23' },
+    { id: LUMOS_CUSTOMERS_LIST_ID, name: 'Lumos Home customers', type: 'Normal', addToManageSubscription: true, brand: 'Lumos', displayName: 'Lumos Home', description: 'Everyone who has ordered from the Lumos Home (demo) store.', postUrl: '', fromName: 'Lumos Home', fromEmail: 'hello@lumos.example', replyTo: 'hello@lumos.example', language: 'English', address: '640 Alder Street, Portland, OR 97205', carts: blankCarts(), count: 2264, created: '2026-11-24' },
+    { id: AURORA_CUSTOMERS_LIST_ID, name: 'Aurora Outdoor customers', type: 'Normal', addToManageSubscription: true, brand: 'Aurora', displayName: 'Aurora Outdoor', description: 'Everyone who has ordered from the Aurora Outdoor (demo) store.', postUrl: '', fromName: 'Aurora Outdoor', fromEmail: 'hello@aurora.example', replyTo: 'hello@aurora.example', language: 'English', address: '88 Larkspur Lane, Denver, CO 80205', carts: blankCarts(), count: 2871, created: '2026-11-24' },
   ])
 
   function addList(input: Omit<CdpList, 'id' | 'count' | 'created'>): CdpList {

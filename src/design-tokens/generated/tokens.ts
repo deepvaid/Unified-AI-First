@@ -1141,6 +1141,7 @@ export const mp_layout_detailSidebarWidth = `340px`
 export const mp_layout_specPanelWidth = `360px`
 export const mp_layout_specPanelYieldWidth = `880px`
 export const mp_layout_previewPanelWidth = `360px`
+export const mp_layout_themePreviewHeight = `480px`
 export const mp_layout_previewSplitWidth = `840px`
 export const mp_layout_breakpointSplit = `960px`
 export const mp_layout_breakpointCompact = `640px`

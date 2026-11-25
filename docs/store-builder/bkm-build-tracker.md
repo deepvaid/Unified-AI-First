@@ -17,7 +17,7 @@ The slices and their rules are in [bkm-build-prompt.md](bkm-build-prompt.md).
 | S2 | Global chrome | pending | | | | |
 | S3 | Content sections | pending | | | | |
 | S4 | Product content fields and bindings | pending | | | | |
-| S5 | Product buy box and product card | pending | | | | |
+| S5 | Product buy box and product card | pending | | | | The variant picker is built for Northfold (demo); see "S5 notes" below |
 | S6 | Product storytelling sections | pending | | | | |
 | S7 | Subscriptions I: plans, purchase options, checkout | pending | | | | |
 | S8 | Subscriptions II: contracts, renewals, portal, messages | pending | | | | |
@@ -44,7 +44,7 @@ The slices and their rules are in [bkm-build-prompt.md](bkm-build-prompt.md).
 
 **Where the prompt and the code disagreed** (the code won, as the prompt says):
 
-- **No store persists anything.** Every store re-seeds on page load, so there was no storage key to bump. Only the storefront cart (`sessionStorage`, already per store) and Maropay state persist.
+- ~~**No store persists anything.** Every store re-seeds on page load, so there was no storage key to bump. Only the storefront cart (`sessionStorage`, already per store) and Maropay state persist.~~ No longer true since the demo pass, part 2: a demo store's products, plans, subscribers, campaigns, chatbot and merchandising are kept in this browser (`mp.vitaheal-demo.*`; another demo store uses `mp.demo-store.<channelId>.*`), and Restore original store puts the seed back.
 - **Section 6 lists no menu items.** The header and footer links were read from the live site's structure on 2026-11-16 and mapped onto the collections in section 6. The live "Shop by Category" dropdown has seven links (Sleep & Recovery, Performance, Woman, Repair, Longevity, Accessories, Hydrate); the seed uses the prompt's five collections. Worth reconciling before S2.
 - **The storefront header and footer do not read the Navigation menus.** They come from `CHROME_BY_CHANNEL` in `useStorefront.ts`. The seeded menus (store editor › Navigation) mirror that chrome; S2 should make the storefront read the menus and delete the duplicate.
 - **There is no blog container or storefront blog route.** A "blog with three articles" is three `kind: 'blog'` entries plus the blog SEO settings. They show in the store editor; the storefront gets them in S13.
@@ -60,9 +60,9 @@ The slices and their rules are in [bkm-build-prompt.md](bkm-build-prompt.md).
 **Left for later slices, on purpose:**
 
 - ~~The pay button, payment sheets and receipt still format money the Maropay way ("Pay SEK 399.00"); checkout countries do not include Sweden.~~ Fixed in the demo pass, part 4: the checkout follows the store's currency. Markets and VAT are still S9.
-- The product editor's variant grid shows "$" prices; the Products list shows the store's currency. S9.
+- ~~The product editor's variant grid shows "$" prices; the Products list shows the store's currency. S9.~~ The variant grid shows the store's currency ("419 kr") since store themes, part 2.
 - The sale and custom badge colours are theme settings but nothing draws those badges yet (S5). The sold-out tag uses its setting.
-- The storefront still shows a search box (the reference site has none) and a single product image without a gallery (S2, S5).
+- ~~The storefront still shows a search box (the reference site has none) and a single product image without a gallery (S2, S5).~~ The search box shows only once Merchandise Cloud is connected, and the product page has a gallery (demo pass, part 1).
 
 **Demo pass (2026-11-17, asked for by the human; branch `feature/vitaheal-demo-pass`).** Not a
 slice: the human asked for four things so sales people can show the store now, delivered in parts
@@ -549,6 +549,21 @@ here already exists when those slices start.
 - **Border colour and accent font.** BKM's `#d3d3d3` border and Inconsolata accent face are not in `ThemeStyles`. S2 (chrome) is the natural place to add them.
 - **Collections.** Keep the prompt's five, or switch to the live site's seven categories?
 
+### S5 notes
+
+S5 has not started for the Vitaheal store. Its variant picker was built ahead of the slice for the
+Northfold (demo) clothing store (store themes, part 2, branch `feature/demo-stores-themes`, 2026-11-20).
+It draws only on themes with `drawing: 'sections'`, so Vitaheal's product page is unchanged.
+
+- **Already there when S5 starts:** `StorefrontVariantPicker` (one fieldset per option, real
+  radios, colour swatches with the chosen name in the legend, size buttons, sold-out values struck
+  through but selectable with "Sorry, L is sold out", "Only 2 left in M", `validate()` for
+  "Select a size"); the choice in the URL (`?color=sand&size=m`); a gallery that follows the colour
+  (`detail.imagesByColor`); "Size M · Sand" on cart, checkout and order lines; product cards with
+  colour dots, the sale price and quick add; Buy now.
+- **Still open for Vitaheal (T37):** its product page still sells the lowest-priced variant, and its
+  plans price from it.
+
 ## Requirements
 
 | ID | Requirement | Slice | Prototype status | Note |
@@ -589,7 +604,7 @@ here already exists when those slices start.
 | T34 | Media gallery | S5 | partial | Large photo with a thumbnail strip, two photos per product (demo pass). Open: zoom lightbox, badge over the image, video |
 | T35 | Rating stars | S5 | not started | |
 | T36 | Subtitle, badges, chips | S5 | partial | Subtitle shows on the card and the product page (S0) |
-| T37 | Button variant picker | S5 | not started | Variants seeded; the page sells the lowest-priced one |
+| T37 | Button variant picker | S5 | partial | Built for Northfold (demo) on the sections drawing (store themes, part 2): colour swatches and size buttons as real radios, sold-out sizes struck through, "Only 2 left in M", the choice in the URL. Vitaheal's page still sells the lowest-priced variant |
 | T38 | Purchase options | S7 | partial | Plan and one-time cards with savings and free-shipping badges, price per delivery, benefits, a preselected plan (demo pass, part 3). Open: per-variant prices (S5) |
 | T39 | Add to cart and express pay | S5 | not started | Existing add to cart and express buttons work for the demo store |
 | T40 | Payment icons | S5 | not started | |

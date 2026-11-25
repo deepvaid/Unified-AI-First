@@ -3,7 +3,10 @@ import type { ComputedRef, InjectionKey } from 'vue'
 import { formatMoney } from '@/maropay/money'
 import type { Money } from '@/maropay/money'
 import type { CheckoutProfile } from '@/storefront/checkoutProfile'
+import type { FitState, FitmentProduct, Vehicle } from '@/storefront/fitment'
+import type { SizeChart, SizedProduct } from '@/storefront/sizeCharts'
 import type { StorefrontOffer } from '@/maropay/storefront'
+import type { ThemeStyles } from '@/storefront/themeSections'
 import type { StoreTheme } from '@/stores/themeBuilderData'
 import type { SalesChannel } from '@/stores/useSalesChannels'
 import type { StorefrontChrome } from '@/stores/useStorefront'
@@ -34,6 +37,35 @@ export interface StorefrontContext {
   campaignMessage: ComputedRef<string>
   /** How the store takes payment for an amount: the merchant's methods, express buttons and instalments. */
   offerFor: (amount: Money) => StorefrontOffer
+  /**
+   * The theme asks for the richer drawing (`styles.drawing === 'sections'`: Northfold and
+   * Torqline): header and footer settings, page templates, filters, quick add, the
+   * variant picker. False for every other theme, which keeps the classic drawing.
+   */
+  sectionsDrawing: ComputedRef<boolean>
+  /** The store's size charts (Products › Size charts). */
+  sizeCharts: ComputedRef<SizeChart[]>
+  /** The chart a product's size guide shows, while it links one that exists. */
+  sizeChartFor: (product: SizedProduct) => SizeChart | undefined
+  /** Says something to screen readers politely: a result count, "Added to your cart" (./storefrontAnnouncer.ts). */
+  announce: (text: string) => void
+  /** The store sells parts with vehicle fitment (Torqline): its pages offer the vehicle selector and fit badges. */
+  sellsParts: ComputedRef<boolean>
+  /** The shopper's vehicle on this store (one, no garage; kept for the browser tab), or null. */
+  vehicle: ComputedRef<Vehicle | null>
+  /** Chooses the shopper's vehicle; null forgets it. */
+  setVehicle: (vehicle: Vehicle | null) => void
+  /** How a part stands against the shopper's vehicle (src/storefront/fitment.ts). */
+  fitOf: (product: FitmentProduct) => FitState
+  /** Opens the vehicle selector (the drawer StorefrontLayout mounts), from the header chip, a list's "Change" or the chat. */
+  chooseVehicle: () => void
+  /**
+   * The store has a wishlist (Lumos): the sections drawing, and the header's tools include
+   * `'wishlist'`. Hearts on Boxed cards and the product page, a heart with a count in the
+   * header, and the /wishlist page. False for every other store (the classic drawing keeps
+   * its own header heart, which leads to /wishlist-page).
+   */
+  wishlist: ComputedRef<boolean>
 }
 
 export const STOREFRONT: InjectionKey<StorefrontContext> = Symbol('storefront')
@@ -55,4 +87,29 @@ export function useDemoStore(): boolean {
 /** A URL with a scheme (https:, mailto:) — it leaves the storefront. */
 export function isExternalHref(href: string): boolean {
   return /^[a-z][a-z0-9+.-]*:/i.test(href)
+}
+
+/**
+ * The storefront's form controls in a theme that styles its own controls (on the
+ * sections drawing, with a control border colour: Lumos). They follow its design:
+ * fields and buttons 44px tall with 16px text, a border in the control border colour
+ * (3:1 on the page, so every field can be found; hairlines and cards keep the divider
+ * colour) that turns the accent on focus (the focus ring stays too), and 20px checkboxes
+ * and radios in the accent. The variables are read with fallbacks
+ * (storefront-controls.css), so every other theme gets none of them and keeps the
+ * controls it had.
+ */
+export function storefrontControlVars(styles?: Partial<ThemeStyles> | null): Record<string, string> {
+  if (styles?.drawing !== 'sections' || !styles.controlBorderColor) return {}
+  const vars: Record<string, string> = {
+    '--sf-control-height': '44px',
+    '--sf-control-text': '16px',
+    '--sf-check-size': '20px',
+    '--sf-input-border': styles.controlBorderColor,
+  }
+  if (styles.accentColor) {
+    vars['--sf-field-focus'] = styles.accentColor
+    vars['--sf-check'] = styles.accentColor
+  }
+  return vars
 }

@@ -21,6 +21,14 @@ export type TemplateEditorType = 'Drag & Drop' | 'WYSIWYG' | 'Drag & Drop (Legac
 
 /** The email content a Vitaheal store campaign is announced with. */
 export const VITAHEAL_CAMPAIGN_CONTENT_ID = 9001
+/** The email content a Northfold store campaign is announced with. */
+export const NORTHFOLD_CAMPAIGN_CONTENT_ID = 9002
+/** The email content a Torqline store campaign is announced with. */
+export const TORQLINE_CAMPAIGN_CONTENT_ID = 9003
+/** The Lumos Home (demo) store's campaign announcement (src/storefront/demoStores/lumos.ts). */
+export const LUMOS_CAMPAIGN_CONTENT_ID = 9004
+/** The Aurora Outdoor (demo) store's campaign announcement (src/storefront/demoStores/aurora.ts). */
+export const AURORA_CAMPAIGN_CONTENT_ID = 9005
 
 export interface ContentItem {
   id: number
@@ -159,6 +167,50 @@ function seedContent(): ContentItem[] {
     editorType: 'Drag & Drop',
     createdAt: new Date(Date.now() - 2 * 86_400_000).toISOString(),
     updatedAt: new Date().toISOString(),
+    folderId: null,
+    archived: false,
+    usedByCampaigns: 0,
+  })
+  // The Northfold (demo) store's, just after it.
+  out.push({
+    id: NORTHFOLD_CAMPAIGN_CONTENT_ID,
+    name: 'Northfold: campaign announcement',
+    editorType: 'Drag & Drop',
+    createdAt: new Date(Date.now() - 86_400_000).toISOString(),
+    updatedAt: new Date(Date.now() - 60_000).toISOString(),
+    folderId: null,
+    archived: false,
+    usedByCampaigns: 0,
+  })
+  // The Torqline Auto Parts (demo) store's, just after that.
+  out.push({
+    id: TORQLINE_CAMPAIGN_CONTENT_ID,
+    name: 'Torqline: campaign announcement',
+    editorType: 'Drag & Drop',
+    createdAt: new Date(Date.now() - 43_200_000).toISOString(),
+    updatedAt: new Date(Date.now() - 120_000).toISOString(),
+    folderId: null,
+    archived: false,
+    usedByCampaigns: 0,
+  })
+  // The Lumos Home (demo) store's, just after that.
+  out.push({
+    id: LUMOS_CAMPAIGN_CONTENT_ID,
+    name: 'Lumos Home: campaign announcement',
+    editorType: 'Drag & Drop',
+    createdAt: new Date(Date.now() - 43_200_000).toISOString(),
+    updatedAt: new Date(Date.now() - 180_000).toISOString(),
+    folderId: null,
+    archived: false,
+    usedByCampaigns: 0,
+  })
+  // The Aurora Outdoor (demo) store's, just after that.
+  out.push({
+    id: AURORA_CAMPAIGN_CONTENT_ID,
+    name: 'Aurora Outdoor: campaign announcement',
+    editorType: 'Drag & Drop',
+    createdAt: new Date(Date.now() - 43_200_000).toISOString(),
+    updatedAt: new Date(Date.now() - 240_000).toISOString(),
     folderId: null,
     archived: false,
     usedByCampaigns: 0,

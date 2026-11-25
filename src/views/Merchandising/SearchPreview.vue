@@ -6,20 +6,30 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MerchProductCard from '@/components/merchandising/MerchProductCard.vue'
 import { useCommerceStore } from '@/stores/useCommerce'
 import { useMerchandisingStore } from '@/stores/useMerchandising'
+import { useStoreThemesStore } from '@/stores/useStoreThemes'
 import { catalogFor } from '@/storefront/catalog'
-import { searchStore } from '@/storefront/search'
+import { sellsParts } from '@/storefront/fitment'
+import { partNumberSearch, partNumberTarget, searchStore } from '@/storefront/search'
 
 /**
  * Merchandising › Search › Preview. For a store with products of its own this
  * runs the search its shoppers get (src/storefront/search.ts), so a pin, synonym,
- * redirect or blacklisted product made here shows before a shopper meets it. The
- * other stores have no storefront search yet and keep the "coming soon" panel.
+ * redirect or blacklisted product made here shows before a shopper meets it. On a
+ * store that sells parts (Torqline) a part number typed whole opens its part, as on
+ * the storefront, unless a redirect takes the same words. The other stores have no
+ * storefront search yet and keep the "coming soon" panel.
  */
 const store = useMerchandisingStore()
 const commerce = useCommerceStore()
+const themes = useStoreThemesStore()
 
 const query = ref('')
-const result = computed(() => searchStore(query.value, catalogFor(commerce.products, store.activeChannelId), store.searchRulesFor(store.activeChannelId)))
+const catalog = computed(() => catalogFor(commerce.products, store.activeChannelId))
+const rules = computed(() => store.searchRulesFor(store.activeChannelId))
+const result = computed(() => searchStore(query.value, catalog.value, rules.value))
+/** The storefront looks up part numbers where the store sells parts on the sections drawing (StorefrontLayout's `sellsParts`). */
+const parts = computed(() => themes.themeForChannel(store.activeChannelId)?.styles.drawing === 'sections' && sellsParts(catalog.value))
+const part = computed(() => (parts.value ? partNumberSearch(query.value, catalog.value, rules.value) : undefined))
 // The same products as Merchandising lists them: photo, and the price the store's way.
 const found = computed(() => result.value.products.flatMap((product) => store.merchProductList.find((p) => p.id === String(product.id)) ?? []))
 const tried = computed(() => [...new Set(store.searchPinList.map((pin) => pin.query))].slice(0, 4))
@@ -57,11 +67,15 @@ const tried = computed(() => [...new Set(store.searchPinList.map((pin) => pin.qu
           <span class="text-caption text-medium-emphasis">Try a pinned search:</span>
           <v-chip v-for="term in tried" :key="term" size="small" variant="tonal" @click="query = term">{{ term }}</v-chip>
         </div>
-        <p class="text-caption text-medium-emphasis mt-3 mb-0">Results follow this store's pins, synonyms, redirects and blacklisted products, the same as on the storefront.</p>
+        <p class="text-caption text-medium-emphasis mt-3 mb-0">Results follow this store's pins, synonyms, redirects{{ parts ? ', blacklisted products and part numbers' : ' and blacklisted products' }}, the same as on the storefront.</p>
       </v-card>
 
       <MpAlert v-if="result.redirectTo" tone="info" title="This search is redirected">
         Shoppers who search “{{ result.query }}” go straight to {{ result.redirectTo }} and see no results.
+      </MpAlert>
+
+      <MpAlert v-else-if="part" tone="info" title="This search is a part number">
+        Shoppers who search “{{ result.query }}” go straight to {{ partNumberTarget(part) }}, the part with that number, and see no results.
       </MpAlert>
 
       <v-card v-else flat border rounded="lg" class="flex-grow-1 mp-card-inset">

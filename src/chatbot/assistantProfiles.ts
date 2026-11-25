@@ -1,0 +1,545 @@
+/**
+ * What a store's assistant knows about what the store sells: the needs shoppers
+ * describe and the words its products use for them, the questions it must answer
+ * with care instead of a product, and the lines that only make sense for that
+ * kind of store. The conversation itself (orders, sign-in, the store's pages) is
+ * the same for every store, in storeAssistant.ts.
+ *
+ * A chatbot names its profile in `ChatbotConfig.assistantProfile`, so a store's
+ * assistant travels with it when its theme is applied elsewhere. Unset: wellness.
+ * Wellness is Vitaheal's, apparel Northfold's and Aurora's, auto parts Torqline's, home Lumos's.
+ *
+ * Pure, with relative `.ts` imports only, so `npm run test:chatbot` runs it in Node.
+ */
+
+import type { AssistantProfileId } from '../storefront/demoStores/types.ts'
+
+/** Everyday words for a need, and the words products use for it. */
+export interface AssistantNeed {
+  /** How the answer names the need: "For better sleep, …". */
+  label: string
+  says: RegExp
+  /** Matched against each product's own name, subtitle, description and collections. */
+  means: string[]
+  /**
+   * Clothing: a kind of piece ("a coat or jacket") or an occasion ("cold days"),
+   * so a suggestion reads "A coat or jacket for cold days". Unset: the need is
+   * named as the wellness store names it ("For better sleep, …").
+   */
+  kind?: 'piece' | 'occasion'
+  /** Furniture and home: a need for pieces that take little room ("a small space"), so a suggestion leads with the smallest. */
+  smallest?: true
+}
+
+export interface AssistantLink {
+  label: string
+  href: string
+}
+
+export interface AssistantProfile {
+  id: AssistantProfileId
+  /** What it can help with, after a greeting and when it did not understand. */
+  help: string
+  /** The needs it suggests products for. A product the merchant adds is matched too, by its own words. */
+  needs: AssistantNeed[]
+  /** Asked for a suggestion without saying what for. */
+  askNeed: string
+  /**
+   * How a suggestion is introduced, for one product or several: after "For better
+   * sleep, " on a store whose needs have no kind, or after "A coat or jacket for
+   * cold days under $250. " on one whose needs do.
+   */
+  suggestionLead: { one: string; many: string }
+  /** Questions that get this careful answer, never a product. */
+  caution: { says: RegExp; text: string; link?: AssistantLink }
+  /** Asked for a discount when no campaign is running. */
+  noPromotion: { text: string; link: AssistantLink }
+  /** Said after "I can’t find a subscription for <email>.", or on its own by a store that sells none. */
+  noSubscription: { text: string; link: AssistantLink }
+  /** The chat's text field, before the shopper types. */
+  placeholder: string
+  /**
+   * False: the store sells no subscriptions. A question about one is answered with
+   * `noSubscription` at once, and "next delivery" means the shopper's order. A store
+   * that still lists subscribers (a theme applied over one that had them) answers
+   * as one that sells them.
+   */
+  subscriptions?: false
+  /** Clothing: size and fit, fabric and care, and suggestions for him or her, under a price. */
+  clothing?: ClothingKnowledge
+  /** Auto parts: whether a part fits a vehicle, part numbers, the shopper's vehicle, and the work it leaves to a mechanic. */
+  parts?: PartsKnowledge
+  /** Furniture and home: a piece's size and whether it fits a space, materials and care, assembly, warranty, and delivery from the store's pages. */
+  home?: HomeKnowledge
+}
+
+/** A fibre a shopper may want to avoid ("I’m allergic to wool"). */
+export interface AssistantFibre {
+  /** How the answer names it: "These are made without any wool". */
+  name: string
+  says: RegExp
+  /** A product contains it when its fabric or its name mentions one of these. */
+  in: string[]
+  /** What to suggest instead when the shopper names nothing to look for. */
+  instead: string[]
+}
+
+/** What a clothing store's assistant knows beyond the needs: sizes, fabrics and how to say them. */
+export interface ClothingKnowledge {
+  fibres: AssistantFibre[]
+  /** Pieces worn over others: between two sizes, the larger one leaves room to layer. Matched against name, subtitle and collections. */
+  layering: string[]
+  /** Collections that are one audience's: a gift "for him" keeps to the first, "for her" to the second. */
+  audiences: { him: RegExp; her: RegExp }
+  /** The store's page on fabrics and washing, pointed to from fabric, care and allergy answers. */
+  fabricPage: AssistantLink
+  /** The store's page on measuring and sizes, pointed to when no piece is named. */
+  sizePage: AssistantLink
+  /** Asked about size or fit without naming a piece, and not on a product page. */
+  askPiece: string
+  /** Given only a height and a weight. */
+  heightWeight: string
+  /** After a fibre-free suggestion, or a fabric answer. */
+  fabricNote: string
+  /**
+   * What the assistant knows for a store that sells for the outdoors: whether a piece keeps
+   * out rain or wind, how warm it is, how to layer, and sizes by foot length, shoe size and
+   * head. Used only where the store's own data is outdoor (`signals`), so a clothing store
+   * that never says "waterproof" answers exactly as it does without it.
+   */
+  outdoor?: OutdoorKnowledge
+}
+
+/** Weather a piece may keep out, as a store writes it: "waterproof", and less, "water-resistant". */
+export interface AssistantProtection {
+  /** The word for full protection, as the answer says it: "waterproof". */
+  word: string
+  /** A question about it: "Is it waterproof?", "Will it keep me dry?". */
+  asks: RegExp
+  /** What a store writes for less than full protection. */
+  partly: RegExp
+  /** How the answer names less: "water-resistant". */
+  partlyName: string
+  /** Where full protection matters, before the piece that has it: "For steady rain". */
+  when: string
+  /**
+   * Words that ask for it by a part or another name ("a membrane", "a hardshell", a fabric
+   * brand), which `asks` also matches: answered with what a piece's page says, never a bare
+   * "Yes", since the page may not use the shopper's word.
+   */
+  proxies?: RegExp
+  /** A fabric brand asked for by name, which the store doesn't sell, and what the answer says first. */
+  brand?: { says: RegExp; text: string }
+}
+
+/**
+ * The layers of an outdoor outfit, by the words a store's product names and subtitles use.
+ * A layer the store sells nothing for is left out of the advice.
+ */
+export interface AssistantLayers {
+  /** Next to the skin. */
+  base: RegExp
+  /** Over the base layer. */
+  mid: RegExp
+  /** The warm layer for the cold. */
+  warm: RegExp
+  /** Keeps out the rain and wind. */
+  shell: RegExp
+  /** For the head in the cold, and socks. */
+  hat: RegExp
+  socks: RegExp
+}
+
+export interface OutdoorKnowledge {
+  /** A store is an outdoor one when one of its products says this, or a size chart sizes feet or heads. */
+  signals: RegExp
+  /** What it can help with, in place of the profile's own. */
+  help: string
+  /** The needs it suggests pieces for, in place of the profile's own. */
+  needs: AssistantNeed[]
+  /** Asked for a suggestion without saying what for. */
+  askNeed: string
+  /** Weather a shopper asks about, full protection first. */
+  protections: AssistantProtection[]
+  layers: AssistantLayers
+  /** More pieces worn over others: between two sizes, the larger one leaves room to layer. */
+  layering: string[]
+  /** After layering advice: what no answer can promise. */
+  layerNote: string
+  /** After asking whose piece it is (one made for women and for men), for a size and for layers. */
+  askAudience: { size: string; layers: string }
+}
+
+/**
+ * What an auto parts store's assistant knows beyond the needs, which name the kinds
+ * of part it sells ("brake pads"). Whether a part fits comes from each product's own
+ * fitment rows (src/storefront/fitment.ts), never from the assistant.
+ */
+export interface PartsKnowledge {
+  /**
+   * Work and safety questions that get a careful answer, never a product or a
+   * how-to: doing brake work yourself, a symptom or "is it safe to drive",
+   * steering, suspension and airbags, and handling fluids and batteries. Checked
+   * in order, after the health caution. `page` names the store's own knowledge
+   * entry that answers it ("Brake work"), whose words are used when it has one.
+   * A question about buying a part is not refused: it gets the fit, and `mechanic`.
+   */
+  cautions: Array<{ says: RegExp; text: string; link?: AssistantLink; page?: RegExp }>
+  /** Asked which part fits without a vehicle the chat knows. */
+  askVehicle: string
+  /** After a fit answer on a universal part sold in grades or sizes ("0W-20"): where the right one is written. */
+  choiceNote: string
+  /** The kinds of part (need labels) a qualified mechanic should fit, and the line said after an answer that offers one. */
+  mechanic: { kinds: string[]; text: string }
+}
+
+/**
+ * What a furniture and home store's assistant knows beyond the needs, which name
+ * rooms. A piece's size, materials, care, assembly and warranty come from the
+ * product's own specifications (homeAnswers.ts), never from the assistant.
+ */
+export interface HomeKnowledge {
+  /** Everyday words for a piece and the word the store's product names use: "couch" → "sofa". */
+  synonyms: Record<string, string>
+  /**
+   * Delivery services a shopper may ask for. The assistant says one is offered only
+   * when the store's own pages mention it (`covered`); otherwise it says it can't
+   * promise it. `assembly`: asking for the service ("will you assemble it?") is not
+   * asking how the piece goes together.
+   */
+  services: Array<{ label: string; says: RegExp; covered: RegExp; assembly?: true }>
+  /** Asked about a piece's size or fit without naming one, and not on a product page. */
+  askPiece: string
+  /** Asked whether a piece fits without giving the space: said before the piece's own size. */
+  askSpace: string
+  /** Asked whether a piece goes through a door without giving its width: said before the piece's smallest side. */
+  askOpening: string
+  /** A fact the store doesn't list for a piece: how to find it out. */
+  unknown: string
+}
+
+const WELLNESS: AssistantProfile = {
+  id: 'wellness',
+  help: 'I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, skin or healthy ageing, and answer questions about delivery and returns.',
+  needs: [
+    { label: 'better sleep', says: /\b(sleep\w*|insomnia|awake|restless|bedtime|wind(ing)? down|at night)\b/, means: ['sleep', 'bed', 'evening'] },
+    { label: 'feeling calmer', says: /\b(stress\w*|anxious|anxiety|calm\w*|relax\w*|overwhelmed)\b/, means: ['calm', 'winding'] },
+    { label: 'focus', says: /\b(focus\w*|concentrat\w*|brain fog|study\w*|sharp\w*|alert\w*|productiv\w*|distract\w*)\b/, means: ['focus'] },
+    { label: 'steady energy', says: /\b(tired\w*|fatigue\w*|exhausted|energy|sluggish|afternoon dip|worn out)\b/, means: ['energy'] },
+    { label: 'hydration and training', says: /\b(hydrat\w*|dehydrat\w*|thirst\w*|cramps?|sweat\w*|electrolytes?|run(ning|ner)?|workouts?|train\w*|gym|sports?|exercis\w*|cycling|marathon)\b/, means: ['hydrat', 'train', 'sport'] },
+    { label: 'skin, hair and joints', says: /\b(skin|hair|nails?|joints?|knees?|collagen|glow\w*|wrinkles?)\b/, means: ['skin', 'hair', 'joint', 'collagen'] },
+    { label: 'healthy ageing', says: /\b(age(ing)?|aging|longevity|getting older|cellular|nad)\b/, means: ['longevity', 'cellular', 'ageing'] },
+    { label: 'easier breathing', says: /\b(snor\w*|breath\w*|blocked nose|stuffy|congest\w*|nasal|nose)\b/, means: ['breath', 'nose'] },
+    { label: 'women’s daily balance', says: /\b(wom[ae]n\w*|cycle|period|hormon\w*|menopause|pms)\b/, means: ['women', 'month'] },
+  ],
+  askNeed: 'Tell me what you would like help with, for example better sleep, focus, hydration, skin or healthy ageing, and I will suggest a product.',
+  suggestionLead: { one: 'this is the one we make for it', many: 'these are the ones we make for it' },
+  caution: {
+    says: /\b(pregnan\w*|breast\s?feed\w*|nursing|medication|medicines?|prescription|antidepress\w*|blood pressure|diabet\w*|disease|illness|diagnos\w*|allerg\w*|side effects?|doctor|cure|treat(s|ment)?|my (child|kid|baby|son|daughter)|under 18)\b/,
+    text: 'I can’t give medical advice. If you are pregnant, breastfeeding, taking medication, managing a condition or asking for a child, please check with your doctor or pharmacist before starting a supplement. I can tell you what each product contains and what it is made for.',
+  },
+  noPromotion: {
+    text: 'There is no discount code running right now. A subscription saves 20% to 30% on every delivery, all year.',
+    link: { label: 'See subscriptions', href: '/collections/subscription' },
+  },
+  noSubscription: {
+    text: 'You can start one from any product in our Subscription collection.',
+    link: { label: 'See subscriptions', href: '/collections/subscription' },
+  },
+  placeholder: 'Ask about an order, a subscription or a product',
+}
+
+const FABRIC_PAGE: AssistantLink = { label: 'Fabric and care', href: '/page/fabric-and-care' }
+
+/**
+ * A clothing store: it suggests pieces by kind and occasion, answers size and fit
+ * from each product's fit note and size chart, and fabric and care from its fabric
+ * and care fields. It gives no health answers: an allergy to a fibre gets the
+ * pieces made without it, never advice. A store whose own data is outdoor (Aurora)
+ * also answers rain, warmth, layers, packs and boot, sock and hat sizes (`outdoor`).
+ */
+const APPAREL: AssistantProfile = {
+  id: 'apparel',
+  help: 'I can look up your order, help you find your size, tell you what a piece is made of and how to wash it, suggest something to wear, and answer questions about shipping and returns.',
+  needs: [
+    { kind: 'piece', label: 'a coat or jacket', says: /\b(coats?|jackets?|outerwear|parkas?|overshirts?|shackets?)\b/, means: ['coat', 'jacket', 'outerwear', 'overshirt'] },
+    { kind: 'piece', label: 'knitwear', says: /\b(sweaters?|jumpers?|knit\w*|cardigans?|pullovers?|crewnecks?|quarter[- ]zips?)\b/, means: ['sweater', 'knit', 'cardigan'] },
+    { kind: 'piece', label: 'a top', says: /\b(tees?|t-shirts?|tops?|shirts?|blouses?|button[- ]downs?)\b/, means: ['tee', 'top', 'shirt', 'blouse'] },
+    { kind: 'piece', label: 'trousers', says: /\b(trousers?|pants|chinos?|slacks|bottoms)\b/, means: ['trouser', 'chino'] },
+    { kind: 'piece', label: 'an accessory', says: /\b(scarf|scarves|hats?|beanies?|bags?|totes?|accessor\w*)\b/, means: ['scarf', 'beanie', 'tote'] },
+    { kind: 'piece', label: 'a gift', says: /\b(gifts?|presents?|birthday|christmas|stocking)\b/, means: ['scarf', 'beanie', 'tote', 'lambswool', 'merino'] },
+    { kind: 'occasion', label: 'cold days', says: /\b(warm(?!\s+(weather|days?|climates?))\w*|cold|winter\w*|chilly|freezing|snow\w*|layer\w*|cozy|cosy)\b/, means: ['wool', 'merino', 'lambswool', 'warm', 'insulation', 'cold', 'flannel'] },
+    { kind: 'occasion', label: 'rainy days', says: /\b(rain\w*|wet|showers?|drizzle)\b/, means: ['rain', 'waxed'] },
+    { kind: 'occasion', label: 'warm days', says: /\b(summer|hot|heat|humid|beach|breathab\w*|warm (weather|days?|climates?))\b/, means: ['linen', 'poplin', 'cotton'] },
+    { kind: 'occasion', label: 'work', says: /\b(work|office|smart|meetings?|interviews?|dressy|dress(ed)? up|weddings?|dinner)\b/, means: ['smart', 'work', 'dressier', 'silk', 'oxford', 'pleat'] },
+    { kind: 'occasion', label: 'the weekend', says: /\b(weekends?|casual|everyday|travel\w*|lounge)\b/, means: ['weekend', 'everyday', 'easy', 'tee'] },
+  ],
+  askNeed: 'Tell me what you’re looking for, for example a warm coat, knitwear, something for work or a gift, and I’ll suggest a few pieces.',
+  suggestionLead: { one: 'Here’s the one I’d pick:', many: 'Here’s what I’d pick:' },
+  caution: {
+    says: /\b(allerg\w*|eczema|dermatitis|psoriasis|rash\w*|hives|skin (conditions?|problems?|irritation)|irritat\w*|sensitive skin|hypo-?allergenic|medical|doctor|latex|nickel|pregnan\w*|medications?|medicines?|toxic\w*|chemicals?)\b/,
+    text: 'I can’t give medical or health advice, so I can’t say how a fabric or finish will suit you. What I can tell you is exactly what each piece is made of: every product lists its fabric under Fabric and care.',
+    link: FABRIC_PAGE,
+  },
+  noPromotion: {
+    text: 'There’s no discount code running right now. Our Sale collection has a few styles at a lower price.',
+    link: { label: 'See the sale', href: '/collections/sale' },
+  },
+  noSubscription: {
+    text: 'We don’t sell subscriptions. Every order you place is listed in your account.',
+    link: { label: 'Your account', href: '/account' },
+  },
+  placeholder: 'Ask about an order, a size or a return',
+  subscriptions: false,
+  clothing: {
+    fibres: [
+      { name: 'wool', says: /\b(wool\w*|merino|lambswool|cashmere|alpaca|mohair|lanolin)\b/, in: ['wool', 'merino', 'cashmere', 'alpaca', 'mohair'], instead: ['sweater', 'knit', 'jacket', 'warm', 'insulation'] },
+      { name: 'silk', says: /\bsilk\w*\b/, in: ['silk'], instead: ['shirt', 'blouse', 'poplin'] },
+      { name: 'linen', says: /\blinen\b/, in: ['linen'], instead: ['shirt', 'cotton', 'poplin'] },
+      { name: 'cotton', says: /\bcotton\b/, in: ['cotton'], instead: ['wool', 'merino', 'silk'] },
+      { name: 'synthetic fibres', says: /\b(polyester|nylon|polyamide|elastane|spandex|synthetic\w*|plastic)\b/, in: ['polyester', 'nylon', 'polyamide', 'elastane', 'spandex'], instead: ['wool', 'cotton', 'linen'] },
+    ],
+    layering: ['knit', 'sweater', 'cardigan', 'coat', 'jacket', 'outerwear', 'overshirt', 'quarter-zip'],
+    audiences: { him: /^(men|mens|men’s|men's|man)$/i, her: /^(women|womens|women’s|women's|woman)$/i },
+    fabricPage: FABRIC_PAGE,
+    sizePage: { label: 'Size guide', href: '/page/size-guide' },
+    askPiece: 'Which piece is it for? Tell me its name, or ask me on its page, and I’ll check its fit note and size chart.',
+    heightWeight: 'I can’t tell your size from height and weight alone, because our sizes go by body measurements.',
+    fabricNote: 'Every product lists its full fabric under Fabric and care.',
+    outdoor: {
+      // A temperature counts only as a rating ("warm to about 14°F"), never a wash temperature ("wash at 30°C").
+      signals: /\b(waterproof|water[- ]?(resistant|repellent)|windproof|wind[- ]?resistant)\b|\b(warm|rated|comfortable)\b[^.!?]{0,40}?\b(to|for)\s+(about\s+|around\s+)?[−-]?\d+\s?°\s?[FC]\b/i,
+      help: 'I can look up your order, help you find your size in clothes, boots, socks and hats, tell you whether a piece is waterproof or warm enough, help you layer for the weather, suggest gear, and answer questions about shipping and returns.',
+      needs: [
+        { kind: 'piece', label: 'a jacket', says: /\b(coats?|jackets?|outerwear|parkas?|shells?|anoraks?|puffers?|raincoats?)\b/, means: ['jacket', 'shell', 'coat'] },
+        { kind: 'piece', label: 'a fleece or mid layer', says: /\b(fleeces?|mid ?layers?|pullovers?|sweaters?|jumpers?|hoodies?)\b/, means: ['fleece', 'pullover'] },
+        { kind: 'piece', label: 'a base layer', says: /\b(base ?layers?|thermals?|long underwear|tops?|tees?|t-shirts?|shirts?)\b/, means: ['base', 'top'] },
+        { kind: 'piece', label: 'pants', says: /\b(pants|trousers?|bottoms|shorts|convertibles?)\b/, means: ['pant', 'trouser'] },
+        { kind: 'piece', label: 'boots', says: /\b(boots?|hiking shoes?|shoes?|footwear)\b/, means: ['boot', 'footwear'] },
+        { kind: 'piece', label: 'a pack', says: /\b(back ?packs?|day ?packs?|packs?|rucksacks?|bags?)\b/, means: ['backpack', 'daypack', 'liter'] },
+        { kind: 'piece', label: 'socks', says: /\bsocks?\b/, means: ['sock'] },
+        { kind: 'piece', label: 'a hat', says: /\b(hats?|caps?|beanies?|toques?)\b/, means: ['hat', 'beanie'] },
+        { kind: 'piece', label: 'gear', says: /\b(gear|accessor\w*|equipment)\b/, means: ['accessor', 'gear'] },
+        { kind: 'piece', label: 'a gift', says: /\b(gifts?|presents?|birthday|christmas|stocking)\b/, means: ['sock', 'beanie', 'bottle', 'headlamp'] },
+        { kind: 'occasion', label: 'the cold', says: /\b(warm(?!\s+(weather|days?|climates?))\w*|cold|winter\w*|chilly|freezing|snow\w*|insulat\w*|cozy|cosy)\b/, means: ['down', 'fleece', 'merino', 'insulat', 'warm', 'beanie'] },
+        { kind: 'occasion', label: 'rain', says: /\b(rain\w*|wet|showers?|drizzle|storms?|waterproof)\b/, means: ['rain', 'waterproof', 'shell'] },
+        { kind: 'occasion', label: 'warm days', says: /\b(summer|hot|heat|humid|sunn?y?|warm (weather|days?|climates?))\b/, means: ['sun', 'lightweight', 'breathable', 'convertible'] },
+        { kind: 'occasion', label: 'hiking', says: /\b(hik\w*|trails?|trek\w*|walk\w*|backpacking)\b/, means: ['hiking', 'trail', 'trek'] },
+        { kind: 'occasion', label: 'camping', says: /\b(camp\w*|overnights?|tents?)\b/, means: ['camp', 'overnight', 'headlamp'] },
+      ],
+      askNeed: 'Tell me what you’re looking for, like a rain shell, hiking boots, a warm layer or a daypack, and I’ll suggest a few pieces.',
+      protections: [
+        {
+          word: 'waterproof',
+          // "hardshell" asks it, and leaves "shell" to name the kind of piece.
+          asks: /\b(water ?proof|rain ?proof|keeps? (me |you |it |them |things |my \w+ )?dry|stay dry|in (the )?(rain|downpours?)|leak\w*|seam[- ]sealed|taped seams|membranes?|gore[- ]?tex|pertex|futurelight|h2no|omni[- ]?tech|dry[- ]?vent|neoshell|dermizax|outdry)\b|\bhard[- ]?(?=shells?\b)/,
+          partly: /\bwater[- ]?(resistant|repellent)\b|\bdwr\b|\bshower ?proof\b/i,
+          partlyName: 'water-resistant',
+          when: 'For steady rain',
+          proxies: /\b(membranes?|gore[- ]?tex|pertex|futurelight|h2no|omni[- ]?tech|dry[- ]?vent|neoshell|dermizax|outdry)\b|\bhard[- ]?shells?\b/,
+          brand: { says: /\b(gore[- ]?tex|pertex|futurelight|h2no|omni[- ]?tech|dry[- ]?vent|neoshell|dermizax|outdry)\b/, text: 'We don’t sell that brand.' },
+        },
+        {
+          word: 'windproof',
+          asks: /\b(wind ?proof|block\w* (the )?wind|in (the )?wind|keeps? (the )?wind out)\b/,
+          partly: /\bwind[- ]?(resistant|blocking)\b/i,
+          partlyName: 'wind-resistant',
+          when: 'For strong wind',
+        },
+      ],
+      layers: {
+        base: /\bbase ?layers?\b/i,
+        mid: /\b(fleece|mid ?layers?)\b/i,
+        warm: /\b(down|insulat\w*|puffer)\b/i,
+        shell: /\b(shell|rain (jacket|coat))\b/i,
+        hat: /\b(beanie|toque)\b/i,
+        socks: /\bsocks?\b/i,
+      },
+      layering: ['fleece', 'shell', 'down', 'insulat', 'pullover'],
+      layerNote: 'I can’t promise how warm you’ll be: wind, rain and how hard you’re moving all count, so take a spare layer.',
+      askAudience: {
+        size: 'Tell me which, and I’ll check its size chart.',
+        layers: 'Is it for women or men? Tell me and I’ll show you each piece.',
+      },
+    },
+  },
+}
+
+/**
+ * An auto parts store: it checks a part against a vehicle from the part's own
+ * fitment rows, finds a part by its number, lists the parts that fit the shopper's
+ * vehicle, and sets that vehicle for the store when the shopper asks or agrees. It
+ * never guesses a fit for a vehicle the store does not list, and it leaves brake,
+ * steering, suspension and airbag work, and handling fluids and batteries, to a
+ * qualified mechanic. It gives no health answers.
+ *
+ * A need is a kind of part: its `says` is matched against the shopper's message and
+ * against each part's name (the first need a name matches is that part's kind, so
+ * the specific kinds come before the general ones), its `means` against each part's
+ * name and category.
+ */
+const AUTO_PARTS: AssistantProfile = {
+  id: 'auto-parts',
+  help: 'I can check whether a part fits your vehicle, find a part by its part number, show the parts that fit your vehicle, look up your order, and answer questions about shipping and returns.',
+  needs: [
+    { label: 'brake pads', says: /\b(brake ?pads?|pads)\b/, means: ['brake', 'pad'] },
+    { label: 'brake rotors', says: /\b(brake )?(rotors?|discs?)\b/, means: ['brake', 'rotor'] },
+    { label: 'brake fluid', says: /\bbrake fluids?\b/, means: ['brake', 'fluid'] },
+    { label: 'brake parts', says: /\bbrak(e|es|ing)\b(?!\s*(pads?|fluids?|rotors?|discs?))/, means: ['brake'] },
+    { label: 'oil filters', says: /\boil filters?\b/, means: ['oil', 'filter'] },
+    { label: 'engine air filters', says: /\bengine (air )?filters?\b/, means: ['engine', 'air', 'filter'] },
+    { label: 'cabin air filters', says: /\bcabin (air )?filters?\b/, means: ['cabin', 'air', 'filter'] },
+    { label: 'air filters', says: /\bair filters?\b/, means: ['air', 'filter'] },
+    { label: 'motor oil', says: /\b(motor oil|engine oil|oil change|synthetic oil|oil)\b(?!\s*filters?)/, means: ['oil'] },
+    { label: 'batteries', says: /\b(batter(y|ies)|agm)\b/, means: ['battery'] },
+    { label: 'headlight bulbs', says: /\b(head ?lights?|head ?lamps?|bulbs?|low beams?|high beams?)\b/, means: ['headlight', 'bulb'] },
+    { label: 'rear wiper blades', says: /\brear wipers?( blades?)?\b/, means: ['rear', 'wiper'] },
+    { label: 'wiper blades', says: /\b(wipers?|wiper blades?)\b/, means: ['wiper'] },
+    { label: 'spark plugs', says: /\b(spark ?plugs?|plugs)\b/, means: ['spark', 'plug'] },
+    { label: 'floor mats', says: /\b(floor ?mats?|mats|floor liners?)\b/, means: ['floor', 'mat'] },
+    { label: 'tire pressure gauges', says: /\b(tire|tyre)s? (pressure )?gauges?\b|\bpressure gauges?\b|\btire pressure\b/, means: ['tire', 'gauge'] },
+    { label: 'jump starters', says: /\b(jump ?starters?|jump ?start\w*|booster packs?)\b/, means: ['jump', 'starter'] },
+  ],
+  askNeed: 'Tell me the part you need, like brake pads, a battery or wiper blades, and your vehicle’s year, make and model, and I’ll find what fits.',
+  suggestionLead: { one: 'this is the one that matches', many: 'these are the ones that match' },
+  caution: {
+    says: /\b(swallow\w*|drank|ingest\w*|poison\w*|in (my|his|her|their|your) eyes?|eyes? (burn|sting)\w*|on (my|his|her|their) (skin|hands?|face)|toxic|skin (burn|rash)\w*|chemical burns?|breath\w* (in )?(the )?fumes|inhal\w*|dizzy|nause\w*|pregnan\w*|medical|doctor|medications?|allerg\w*|injur\w*|hurt (myself|himself|herself)|(got|is|was|am|been) hurt)\b/,
+    text: 'I can’t give medical advice. If someone has swallowed a fluid, got one in their eyes or is hurt, call 911 or Poison Control at 1-800-222-1222 right away. Every fluid we sell has first-aid directions on its label.',
+  },
+  noPromotion: {
+    text: 'There’s no discount code running right now. Our Deals collection has a few parts at a lower price.',
+    link: { label: 'See the deals', href: '/collections/deals' },
+  },
+  noSubscription: {
+    text: 'We don’t sell subscriptions. Every order you place is listed in your account.',
+    link: { label: 'Your account', href: '/account' },
+  },
+  placeholder: 'Ask about a part, a fit or an order',
+  subscriptions: false,
+  parts: {
+    cautions: [
+      {
+        // Doing brake work: how to, or by yourself. The store's own "Brake work" page answers.
+        says: /\bhow (?:(?:do|can|should|would) (?:i|you|we)|to) (?!know|find|tell|choose|pick|check|see|get|order|buy|return|look|pay|track)\w+[^.?!]*\bbrak\w*|\bbrak\w*[^.?!]*\bhow (?:(?:do|can|should|would) (?:i|you|we)|to) (?!know|find|tell|choose|pick|check|see|get|order|buy|return|look|pay|track)\w+|\b(myself|diy|on my own|at home|my own)\b[^.?!]*\b(brak\w*|pads?|rotors?)\b|\b(brak\w*|pads?|rotors?)\b[^.?!]*\b(myself|diy|on my own|at home)\b|\bbleed\w*\b[^.?!]*\bbrak\w*|\bbrak\w*[^.?!]*\bbleed\w*/,
+        page: /\bbrake work\b/i,
+        text: 'Brakes are safety parts, so unless you’ve done the job before, have a qualified mechanic fit pads and rotors, and bleed the brakes after changing the fluid. I can’t walk you through brake work in a chat. I can tell you which parts fit your vehicle.',
+      },
+      {
+        // A symptom, "is it safe to drive", or steering, suspension and airbags: a mechanic, never a diagnosis.
+        // A part that "won't make noise" is a part, not a symptom.
+        says: /\b(safe to drive|ok(ay)? to drive|keep driving|still drive|drive on it|drive with)\b|\bair ?bags?\b|\bsrs\b|\b(steering|suspension|ball joints?|tie rods?|control arms?|struts?|shocks?|wheel bearings?)\b|(?<!\b(?:won['’]?t|don['’]?t|doesn['’]?t|didn['’]?t|no|not|never|less|without|stop|reduce|quiet|quieter)\s+(?:make\s+|any\s+|much\s+|a\s+|the\s+)?)\b(grind\w*|squeal\w*|squeak\w*|noises?|noisy|spongy|soft pedal|pedal (is |feels |goes |went )?(soft|spongy|low|to the floor)|pulls? to (the )?(left|right|one side)|vibrat\w*|shudder\w*|shak(e|es|ing)|smok(e|es|ing|y)|burning smell|warning light|light (is |came |comes |went )?on|fail(s|ed|ing)?|not working|stopped working)\b/,
+        text: 'That’s a safety question, so please have a qualified mechanic look at your vehicle before you drive it. I can’t diagnose a problem or walk you through brake, steering, suspension or airbag work in a chat. I can tell you which parts fit your vehicle and what each one is.',
+      },
+      {
+        // Handling fluids and batteries: the label and a mechanic, never a how-to.
+        says: /\b(mix\w*|dispos\w*|recycl\w*|spill\w*|leak\w*|swollen|bulg\w*|crack\w*|corro\w*|acid|rotten eggs?|sulfur|explod\w*)\b[^.?!]*\b(fluids?|oil|coolant|antifreeze|batter(y|ies))\b|\b(fluids?|oil|coolant|antifreeze|batter(y|ies))\b[^.?!]*\b(mix\w*|dispos\w*|recycl\w*|spill\w*|leak\w*|swollen|bulg\w*|crack\w*|corro\w*|acid|rotten eggs?|smell\w*|explod\w*)\b|\bhow (do|to|can|should) i (jump|charge|connect|disconnect|hook up)\b|\b(safe|safely)\b[^.?!]*\b(jump\w*|charg\w*|batter(y|ies)|fluids?|oil|coolant|antifreeze)\b|\b(jump\w*|charg\w*|batter(y|ies)|fluids?|coolant|antifreeze)\b[^.?!]*\b(safe|safely)\b/,
+        text: 'Fluids and batteries need care, so I won’t walk you through that in a chat. Follow the directions on the label, wear gloves and eye protection, and have a qualified mechanic deal with a leak or a damaged or swollen battery. Your local recycling center can tell you where to take used oil and old batteries.',
+      },
+    ],
+    askVehicle: 'Which vehicle is it for? Tell me the year, make and model, like 2019 Ford F-150, or choose it here.',
+    choiceNote: 'Your owner’s manual says which one your vehicle takes.',
+    mechanic: {
+      kinds: ['brake pads', 'brake rotors'],
+      text: 'Brakes are safety parts: unless you’ve done the job before, have a qualified mechanic fit them.',
+    },
+  },
+}
+
+/**
+ * A furniture and home store: it gives a piece's size and checks it against a space
+ * the shopper measures, says what a piece is made of, how to look after it, how it
+ * arrives and its warranty, all from the piece's own specifications. Delivery is
+ * answered from the store's own pages, and a service they don't mention is never
+ * promised. It suggests pieces by room. It gives no safety or health answers: a
+ * question about tipping, wiring or health gets this careful answer instead.
+ *
+ * A need is a room (or a small space, or lighting); a kind of piece the shopper
+ * names ("a sofa") is matched against the products' own names.
+ */
+const HOME: AssistantProfile = {
+  id: 'home',
+  help: 'I can check a piece’s size against your space, tell you what it’s made of, how to care for it, how it arrives and its warranty, suggest pieces for a room, look up your order, and answer questions about delivery and returns.',
+  needs: [
+    { label: 'the living room', says: /\b(living ?rooms?|lounge rooms?|family rooms?|sitting rooms?|tv rooms?|dens?)\b/, means: ['living', 'sofa', 'lounge', 'coffee', 'console'] },
+    { label: 'the bedroom', says: /\b(bed ?rooms?|guest rooms?|master suites?|sleep\w*)\b/, means: ['bedroom', 'bed', 'nightstand', 'bedding'] },
+    { label: 'dining', says: /\b(dining( rooms?)?|dinners?|eat[- ]in|kitchens?|breakfast nooks?|entertain\w*|hosting)\b/, means: ['dining'] },
+    { label: 'a home office', says: /\b(home offices?|offices?|work(ing)? from home|wfh|remote work\w*|study (rooms?|nooks?|corners?))\b/, means: ['office', 'desk', 'task'] },
+    { label: 'outdoors', says: /\b(outdoors?|outside|patios?|gardens?|terraces?|balcon(y|ies)|decks?|backyards?|porch(es)?|yards?|poolside)\b/, means: ['outdoor'] },
+    { label: 'lighting', says: /\b(lighting|lights|lamps?|pendants?|lanterns?|chandeliers?|sconces?|dark (rooms?|corners?)|brighten\w*|reading lights?)\b/, means: ['lighting', 'lamp', 'pendant', 'lantern'] },
+    {
+      label: 'a small space',
+      smallest: true,
+      says: /\b(small(er)? (spaces?|rooms?|apartments?|flats?|homes?|houses?|places?|areas?|corners?|living rooms?|bedrooms?|dining rooms?|offices?|balcon(y|ies)|patios?)|studio apartments?|studios?|compact|tiny|narrow|apartments?|condos?|not (a lot of|much) (room|space)|tight spaces?|limited space|space[- ]saving)\b/,
+      means: ['compact', 'small', 'narrow', 'apartment', 'studio'],
+    },
+  ],
+  askNeed: 'Tell me the room or what you need, like a sofa for a small living room, a desk for your home office or lighting for the dining room, and I’ll suggest a few pieces.',
+  suggestionLead: { one: 'here’s the one I’d pick', many: 'here’s what I’d pick' },
+  caution: {
+    says: /\b(medical|doctors?|pregnan\w*|back pain|bad back|posture|sciatica|arthritis|injur\w*|allerg\w*|asthma|eczema|toxic\w*|formaldehyde|off-?gas\w*|vocs?|fumes|flame retardants?|tip-?over|tip(s|ping|ped)? (it |them )?over|fall(s|ing)? over|anchor\w*|wall straps?|anti-?tip|child-?(safe|proof)|baby-?proof\w*|toddlers?|bab(y|ies)|cribs?|climb\w*|choking|hard-?wir\w*|wiring|wired in|electrician|electrical|electric shock|candles?|fire)\b/,
+    text: 'I can’t give safety or medical advice. Follow each piece’s assembly instructions, anchor tall pieces to the wall, and have a licensed electrician fit any light that’s wired in. For anything to do with your health, please ask your doctor. I can tell you what each piece is made of, its size and how it arrives.',
+  },
+  noPromotion: {
+    text: 'There’s no discount code running right now. Our Sale collection has a few pieces at a lower price.',
+    link: { label: 'See the sale', href: '/collections/sale' },
+  },
+  noSubscription: {
+    text: 'We don’t sell subscriptions. Every order you place is listed in your account.',
+    link: { label: 'Your account', href: '/account' },
+  },
+  placeholder: 'Ask about a size, delivery or an order',
+  subscriptions: false,
+  home: {
+    synonyms: {
+      couch: 'sofa', couches: 'sofa', settee: 'sofa', settees: 'sofa', loveseat: 'sofa', loveseats: 'sofa', sectional: 'sofa', sectionals: 'sofa',
+      armchair: 'chair', armchairs: 'chair', 'accent chair': 'lounge chair', 'office chair': 'task chair', 'desk chair': 'task chair',
+      bookcase: 'bookshelf', bookcases: 'bookshelf', bookshelves: 'bookshelf', shelves: 'bookshelf', shelving: 'bookshelf',
+      'bedside table': 'nightstand', 'bedside tables': 'nightstand', 'night stand': 'nightstand', 'end table': 'side table', 'end tables': 'side table',
+      'tv stand': 'media console', 'tv unit': 'media console', 'tv console': 'media console',
+      duvet: 'bedding', 'duvet cover': 'bedding', sheets: 'bedding', comforter: 'bedding', carpet: 'rug', 'area rug': 'rug',
+      'ceiling light': 'pendant light', 'desk lamp': 'lamp', 'floor light': 'floor lamp',
+    },
+    services: [
+      {
+        label: 'carrying it inside or upstairs',
+        says: /\b(white[- ]glove|room of (my|your|our) choice|(bring|carry|take) (it |them |the \w+ )?(in|inside|indoors|upstairs|up)|upstairs|(up|down) (the )?stairs|flights? of stairs|walk[- ]?up|(\d+(st|nd|rd|th)|second|third|fourth|fifth|top) floor|inside (my|the|our) (home|house|apartment|flat)|threshold)\b/,
+        covered: /\b(white[- ]glove|room of (your )?choice|(carry|bring|take)\w* (it |them |every piece |your \w+ )?(inside|indoors|upstairs|up the stairs)|inside your (home|door)|over the threshold)\b/i,
+      },
+      {
+        label: 'assembling it for you',
+        assembly: true,
+        says: /\b((will|do|can|could|would) (you|they|the driver|the delivery team|your team|someone) (assemble|build|set (it |them )?up|put (it |them )?together)|assembl\w* (service|included)|(assemble|build|set (it |them )?up|put (it |them )?together) for (me|us))\b/,
+        covered: /\b(assembly service|we('ll| will)? assemble|assembl\w* (it )?for you|set (it )?up for you|includ\w* assembly|assembly (is )?included)\b/i,
+      },
+      {
+        label: 'taking away the packaging or your old furniture',
+        says: /\b((take|haul|cart) (it |them )?(away|off)|take (the )?(boxes|box|packaging|cardboard) (away|back)|haul\w*|(remov|dispos|recycl)\w* (of )?(my|the|our) (old|packaging|boxes|cardboard)|old (sofa|couch|bed|mattress|furniture|table|chairs?|desk|rug)|junk removal)\b/,
+        covered: /\b(take (it |them |the packaging )?away|haul\w* away|remov\w* (the |your )?(packaging|old furniture)|old furniture|recycl\w* (the |your )?packaging)\b/i,
+      },
+      {
+        label: 'choosing a delivery day or time',
+        says: /\b(time ?slots?|delivery (windows?|slots?|appointments?)|(choose|pick|book|select|set) (a |the |my )?(delivery )?(day|date|time|slot|window)|schedul\w*|appointments?|(weekend|evening|saturday|sunday) deliver\w*|deliver\w* (on (a )?)?(saturdays?|sundays?|weekends?|evenings?))\b/,
+        covered: /\b(time ?slots?|delivery windows?|schedul\w*|appointments?|(choose|pick|book) (a |your )?(delivery )?(day|date|time))\b/i,
+      },
+      {
+        label: 'faster delivery',
+        says: /\b(express|expedit\w*|rush|same[- ]day|next[- ]day|overnight|faster|quicker|sooner|by (tomorrow|the weekend|friday|saturday|monday|christmas|thanksgiving))\b/,
+        covered: /\b(express|expedit\w*|same[- ]day|next[- ]day|overnight|faster)\b/i,
+      },
+    ],
+    askPiece: 'Which piece is it for? Tell me its name, or ask me on its page, and I’ll check its measurements.',
+    askSpace: 'Tell me the width and depth of your space in inches or feet, and I’ll check it.',
+    askOpening: 'How wide is the doorway? Tell me in inches and I’ll check it.',
+    unknown: 'Write to us and we’ll find out for you.',
+  },
+}
+
+/** The profiles there are. A store whose profile is not here answers as wellness. */
+export const ASSISTANT_PROFILES: Partial<Record<AssistantProfileId, AssistantProfile>> = { wellness: WELLNESS, apparel: APPAREL, 'auto-parts': AUTO_PARTS, home: HOME }
+
+export const DEFAULT_ASSISTANT_PROFILE: AssistantProfileId = 'wellness'
+
+/** The profile a chatbot names, or wellness when it names none. */
+export function assistantProfile(id?: AssistantProfileId | null): AssistantProfile {
+  return (id && ASSISTANT_PROFILES[id]) || WELLNESS
+}

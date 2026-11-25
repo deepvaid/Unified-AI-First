@@ -6,9 +6,8 @@ import { mp_layout_tableColumnsLg, mp_layout_tableColumnsMd } from '@/design-tok
 import { useToast } from '@/composables/useToast'
 import { money } from '@/maropay/money'
 import { STORE_CAMPAIGN_TAG, useCampaignsStore } from '@/stores/useCampaigns'
-import { VITAHEAL_CUSTOMERS_LIST_ID, useCdpEntitiesStore } from '@/stores/useCdpEntities'
+import { useCdpEntitiesStore } from '@/stores/useCdpEntities'
 import { useCommerceStore } from '@/stores/useCommerce'
-import { VITAHEAL_CAMPAIGN_CONTENT_ID } from '@/stores/useContent'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import {
   campaignStatus,
@@ -20,8 +19,8 @@ import { LINK_RESOURCES } from '@/stores/useStoreNavigation'
 import { offerErrors } from '@/storefront/campaigns'
 import type { CampaignOffer } from '@/storefront/campaigns'
 import { catalogFor, storesWithOwnCatalogue } from '@/storefront/catalog'
+import { homeBlueprintOf } from '@/storefront/demoStores'
 import { formatStorePrice } from '@/storefront/price'
-import { VITAHEAL_CHANNEL_ID } from '@/storefront/vitahealDemo'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
@@ -175,10 +174,15 @@ function saveCampaign() {
 }
 
 // ── Announce by email ────────────────────────────────────────────
-// A store with an audience of its own (today the Vitaheal demo store) can send
+// A store with an audience of its own (a demo store whose facts name one) can send
 // the campaign to its customers. This writes a draft in Marketing and opens the
-// email wizard on it: the merchant reviews it there and sends it.
-const audience = computed(() => (channelId.value === VITAHEAL_CHANNEL_ID ? cdp.lists.find((list) => list.id === VITAHEAL_CUSTOMERS_LIST_ID) : undefined))
+// email wizard on it: the merchant reviews it there and sends it. The audience,
+// the email content and the time zone are the store's own, whatever theme it runs.
+const storeFacts = computed(() => homeBlueprintOf(channelId.value)?.admin)
+const audience = computed(() => {
+  const listId = storeFacts.value?.audienceListId
+  return listId === undefined ? undefined : cdp.lists.find((list) => list.id === listId)
+})
 
 function emailOf(campaign: StoreCampaign) {
   return campaign.emailCampaignId ? emails.getCampaign(campaign.emailCampaignId) : undefined
@@ -198,7 +202,8 @@ function canAnnounce(campaign: StoreCampaign): boolean {
 
 function announce(campaign: StoreCampaign) {
   const list = audience.value
-  if (!list || !campaign.offer) return
+  const facts = storeFacts.value
+  if (!list || !facts || !campaign.offer) return
   const ends = formatWindow(campaign.endDate, campaign.endTime)
   const id = emails.createCampaign({
     kind: 'email',
@@ -220,14 +225,14 @@ function announce(campaign: StoreCampaign) {
     suppressJourneyIds: [],
     suppressSegmentIds: [],
     suppressSecureListIds: [],
-    contentId: VITAHEAL_CAMPAIGN_CONTENT_ID,
+    contentId: facts.announcementContentId ?? null,
     showPreviewLink: false,
     dynamicPreview: false,
     spamCheckResult: null,
     scheduleType: 'now',
     scheduleDate: null,
     scheduleTime: null,
-    timezone: 'Europe/Stockholm',
+    timezone: facts.timezone,
     optimizations: { sto: false, tzo: false, cto: false, preSend: false },
   })
   campaignsStore.setEmailCampaign(campaign.id, id)

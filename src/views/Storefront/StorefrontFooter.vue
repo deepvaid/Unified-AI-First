@@ -1,0 +1,769 @@
+<script setup lang="ts">
+import { computed, inject, onBeforeUnmount, onMounted, ref, useId } from 'vue'
+import { useRoute } from 'vue-router'
+import { money } from '@/maropay/money'
+import StorefrontAnchor from './StorefrontAnchor.vue'
+import StorefrontPayMark from './StorefrontPayMark.vue'
+import NewsletterForm from './sections/NewsletterForm.vue'
+import { STOREFRONT } from './storefrontContext'
+import { chromeSettings, flag, num, templateForRoute, text } from './sections/sectionSettings'
+
+// The storefront's footer, hidden on the checkout. Two drawings:
+// - classic: the markup StorefrontLayout has always drawn, moved here unchanged;
+// - sections (Northfold, Torqline, Lumos, Aurora): the theme's footer section caps the
+//   link columns, shows the social links or not, and paints light or dark. The wordmark
+//   leads, with the store's tagline under it when it has one, then the newsletter,
+//   or the newsletter gets a column of its own at the end (`newsletterColumn`,
+//   Lumos); the home page leaves the newsletter out of the footer when the page has
+//   a newsletter section of its own. The copyright, the store's legal links beside
+//   it (`bottomLinks`) and the ways to pay close it.
+//   The section's `layout: 'Menus and newsletter'` (Aurora) is UAT Aurora's footer
+//   instead: the link columns under small capital heads on the left half, the
+//   newsletter on the right ("Stay in touch", the email field and the button side by
+//   side, the consent box under them), and the copyright alone in a bar under both;
+//   no wordmark, social links or ways to pay. On a phone each column folds behind its
+//   head, a button with a "+" that opens it, and the newsletter follows them.
+
+const storefront = inject(STOREFRONT)!
+const route = useRoute()
+
+const chrome = computed(() => storefront.chrome.value)
+const minimal = computed(() => route.meta.minimalChrome === true)
+const footerMarks = computed(() => storefront.offerFor(money(0, storefront.currency.value)).acceptedMarks)
+
+// ── Classic newsletter ──────────────────────────────────────────────────
+const email = ref('')
+const consent = ref(false)
+const subscribing = ref(false)
+const subscribed = ref(false)
+const canSubscribe = computed(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim()) && consent.value && !subscribing.value)
+
+function subscribe(): void {
+  if (!canSubscribe.value) return
+  subscribing.value = true
+  window.setTimeout(() => {
+    subscribing.value = false
+    subscribed.value = true
+    email.value = ''
+    consent.value = false
+  }, 600)
+}
+
+// ── Sections drawing ────────────────────────────────────────────────────
+const settings = computed(() => chromeSettings(storefront.theme.value, templateForRoute(route.name), 'footer'))
+const dark = computed(() => text(settings.value, 'colorScheme') === 'Dark')
+const columns = computed(() => chrome.value.footerColumns.slice(0, Math.max(1, num(settings.value, 'columns', 3))))
+const social = computed(() => (flag(settings.value, 'showSocial') ? chrome.value.social : []))
+/** The home page's own newsletter section asks for the same thing: one form a page is enough. */
+const newsletterOnPage = computed(() => route.name === 'StorefrontHome'
+  && (storefront.theme.value?.templates.home ?? []).some((s) => s.kind === 'newsletter' && !s.hidden))
+const newsletter = computed(() => (newsletterOnPage.value ? null : chrome.value.newsletter))
+/** The newsletter as the footer's last column (Lumos), not under the wordmark. */
+const newsletterColumn = computed(() => !!newsletter.value && chrome.value.newsletterColumn === true)
+/** The column's line under its heading: the store's own newsletter heading, unless that is just "Newsletter". */
+const newsletterLine = computed(() => {
+  const heading = newsletter.value?.heading.trim() ?? ''
+  return heading.toLowerCase() === 'newsletter' ? '' : heading
+})
+const bottomLinks = computed(() => chrome.value.bottomLinks ?? [])
+
+// ── Menus and newsletter (Aurora) ───────────────────────────────────────
+const menusLayout = computed(() => text(settings.value, 'layout') === 'Menus and newsletter')
+const uid = useId()
+/** A phone: each link column folds behind its head. */
+const PHONE = '(max-width: 600px)'
+const phone = ref(false)
+let phoneQuery: MediaQueryList | null = null
+const onPhoneChange = () => { phone.value = phoneQuery?.matches ?? false }
+onMounted(() => {
+  phoneQuery = window.matchMedia(PHONE)
+  onPhoneChange()
+  phoneQuery.addEventListener('change', onPhoneChange)
+})
+onBeforeUnmount(() => phoneQuery?.removeEventListener('change', onPhoneChange))
+/** The columns open on a phone, by heading. */
+const openColumns = ref<string[]>([])
+const isOpen = (heading: string) => openColumns.value.includes(heading)
+function toggleColumn(heading: string): void {
+  openColumns.value = isOpen(heading) ? openColumns.value.filter((h) => h !== heading) : [...openColumns.value, heading]
+}
+</script>
+
+<template>
+  <template v-if="!minimal">
+    <!-- ── Sections drawing, Menus and newsletter (Aurora) ────────────── -->
+    <footer v-if="storefront.sectionsDrawing.value && menusLayout" class="sff sff--menus" :class="{ 'sff--dark': dark }">
+      <div class="sff__menus-grid">
+        <div v-if="columns.length" class="sff__menus" :style="{ '--sff-menus': columns.length }">
+          <nav v-for="(column, index) in columns" :key="column.heading.label" class="sff__menu" :aria-label="column.heading.label">
+            <h2 class="sff__menu-head">
+              <button
+                v-if="phone"
+                type="button"
+                class="sff__menu-toggle"
+                :aria-expanded="isOpen(column.heading.label) ? 'true' : 'false'"
+                :aria-controls="`${uid}-menu-${index}`"
+                @click="toggleColumn(column.heading.label)"
+              >
+                <span>{{ column.heading.label }}</span>
+                <v-icon size="20" aria-hidden="true">{{ isOpen(column.heading.label) ? 'minus' : 'plus' }}</v-icon>
+              </button>
+              <template v-else>{{ column.heading.label }}</template>
+            </h2>
+            <ul v-show="!phone || isOpen(column.heading.label)" :id="`${uid}-menu-${index}`" class="sff__menu-links">
+              <li v-for="item in column.items" :key="item.label">
+                <StorefrontAnchor :href="item.href" class="sff__menu-link">{{ item.label }}</StorefrontAnchor>
+              </li>
+            </ul>
+          </nav>
+        </div>
+        <div v-if="newsletter" class="sff__stay">
+          <h2 class="sff__stay-title">{{ newsletter.heading }}</h2>
+          <NewsletterForm class="sff__stay-form" inline />
+        </div>
+      </div>
+      <div v-if="chrome.copyright || bottomLinks.length" class="sff__bar">
+        <p v-if="chrome.copyright" class="sff__bar-copy">{{ chrome.copyright }}</p>
+        <nav v-if="bottomLinks.length" aria-label="Legal">
+          <ul class="sff__bottom-links">
+            <li v-for="item in bottomLinks" :key="item.label">
+              <StorefrontAnchor :href="item.href" class="sff__bottom-link">{{ item.label }}</StorefrontAnchor>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </footer>
+
+    <!-- ── Sections drawing ──────────────────────────────────────────── -->
+    <footer v-else-if="storefront.sectionsDrawing.value" class="sff" :class="{ 'sff--dark': dark }">
+      <div class="sff__grid" :class="{ 'sff__grid--news': newsletterColumn }" :style="newsletterColumn ? { '--sff-links': columns.length } : undefined">
+        <div class="sff__lead">
+          <StorefrontAnchor href="/" class="sff__wordmark">{{ chrome.wordmark }}</StorefrontAnchor>
+          <p v-if="chrome.tagline" class="sff__tagline">{{ chrome.tagline }}</p>
+          <template v-if="newsletter && !newsletterColumn">
+            <h2 class="sff__heading">{{ newsletter.heading }}</h2>
+            <NewsletterForm />
+          </template>
+          <ul v-if="social.length" class="sff__social" aria-label="Social links">
+            <li v-for="item in social" :key="item.label">
+              <StorefrontAnchor :href="item.href" class="sff__social-link" :aria-label="item.label">
+                <v-icon size="20" aria-hidden="true">{{ item.icon }}</v-icon>
+              </StorefrontAnchor>
+            </li>
+          </ul>
+        </div>
+        <nav v-for="column in columns" :key="column.heading.label" class="sff__col" :aria-label="column.heading.label">
+          <h2 class="sff__heading">{{ column.heading.label }}</h2>
+          <ul>
+            <li v-for="item in column.items" :key="item.label">
+              <StorefrontAnchor :href="item.href" class="sff__link">{{ item.label }}</StorefrontAnchor>
+            </li>
+          </ul>
+        </nav>
+        <div v-if="newsletter && newsletterColumn" class="sff__news">
+          <h2 class="sff__heading">Newsletter</h2>
+          <p v-if="newsletterLine" class="sff__news-line">{{ newsletterLine }}</p>
+          <NewsletterForm />
+        </div>
+      </div>
+      <div class="sff__base">
+        <div v-if="chrome.copyright || bottomLinks.length" class="sff__legal">
+          <p v-if="chrome.copyright" class="sff__copyright">{{ chrome.copyright }}</p>
+          <nav v-if="bottomLinks.length" aria-label="Legal">
+            <ul class="sff__bottom-links">
+              <li v-for="item in bottomLinks" :key="item.label">
+                <StorefrontAnchor :href="item.href" class="sff__bottom-link">{{ item.label }}</StorefrontAnchor>
+              </li>
+            </ul>
+          </nav>
+        </div>
+        <ul v-if="footerMarks.length" class="sff__marks" aria-label="Ways to pay">
+          <li v-for="mark in footerMarks" :key="mark"><StorefrontPayMark :mark="mark" /></li>
+        </ul>
+      </div>
+    </footer>
+
+    <!-- ── Classic (moved unchanged from StorefrontLayout) ───────────────── -->
+    <footer v-else-if="chrome.footerColumns.length || chrome.newsletter || chrome.copyright || footerMarks.length" class="sf-foot">
+      <div v-if="chrome.footerColumns.length || chrome.newsletter" class="sf-foot__grid">
+        <div v-for="column in chrome.footerColumns" :key="column.heading.label" class="sf-foot__col">
+          <StorefrontAnchor :href="column.heading.href" class="sf-foot__heading">{{ column.heading.label }}</StorefrontAnchor>
+          <ul>
+            <li v-for="item in column.items" :key="item.label">
+              <StorefrontAnchor :href="item.href">{{ item.label }}</StorefrontAnchor>
+            </li>
+          </ul>
+        </div>
+
+        <form v-if="chrome.newsletter" class="sf-foot__col sf-newsletter" novalidate @submit.prevent="subscribe">
+          <p class="sf-foot__heading">{{ chrome.newsletter.heading }}</p>
+          <input v-model="email" type="email" required :placeholder="chrome.newsletter.placeholder" :aria-label="chrome.newsletter.placeholder" class="sf-input">
+          <label class="sf-newsletter__consent">
+            <input v-model="consent" type="checkbox">
+            <span>
+              <template v-for="(part, index) in chrome.newsletter.consent" :key="index">
+                <template v-if="typeof part === 'string'">{{ part }}</template>
+                <StorefrontAnchor v-else :href="part.href">{{ part.label }}</StorefrontAnchor>
+              </template>
+            </span>
+          </label>
+          <button type="submit" class="sf-button" :disabled="!canSubscribe">
+            {{ subscribing ? chrome.newsletter.busy : chrome.newsletter.button }}
+          </button>
+          <p v-if="subscribed && chrome.newsletter.success" class="sf-newsletter__done" role="status">{{ chrome.newsletter.success }}</p>
+        </form>
+      </div>
+      <ul v-if="footerMarks.length" class="sf-foot__marks" aria-label="Ways to pay">
+        <li v-for="mark in footerMarks" :key="mark"><StorefrontPayMark :mark="mark" /></li>
+      </ul>
+      <p v-if="chrome.copyright" class="sf-foot__copyright">{{ chrome.copyright }}</p>
+    </footer>
+  </template>
+</template>
+
+<style scoped>
+/* ─────────────────────────────────────────────────────────────────────────────
+ * P4-8 — DELIBERATELY OUT OF SYSTEM, like the rest of the storefront (see
+ * StorefrontLayout.vue). The classic rules are moved from StorefrontLayout
+ * unchanged; the sections drawing's (.sff*) follow the theme's footer settings.
+ * ───────────────────────────────────────────────────────────────────────────── */
+
+/* ── Classic ─────────────────────────────────────────────────────────── */
+.sf-foot a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.sf-foot a:hover {
+  text-decoration: underline;
+}
+
+.sf-foot {
+  border-top: 1px solid var(--sf-divider);
+  margin-top: 48px;
+}
+
+.sf-foot__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr) 1.4fr;
+  gap: 32px;
+  max-width: var(--sf-measure);
+  margin: 0 auto;
+  padding: 40px var(--sf-gutter);
+}
+
+.sf-foot__col ul {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+}
+
+.sf-foot__heading {
+  display: inline-block;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.sf-newsletter {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sf-input {
+  height: 50px;
+  padding: 0 14px;
+  border: 1px solid var(--sf-divider);
+  border-radius: 4px;
+  background: var(--sf-bg, var(--sf-bg-fallback));
+  color: inherit;
+  font: inherit;
+}
+
+.sf-newsletter__done {
+  margin: 0;
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.sf-newsletter__consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.sf-newsletter__consent a {
+  text-decoration: underline;
+}
+
+.sf-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 50px;
+  padding: 0 24px;
+  border: 0;
+  border-radius: var(--sf-radius, 6px);
+  background: var(--sf-brand, var(--sf-text-fallback));
+  color: var(--sf-bg, var(--sf-bg-fallback));
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.sf-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sf-foot__marks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  max-width: var(--sf-measure);
+  margin: 0 auto;
+  padding: 0 var(--sf-gutter) 24px;
+  list-style: none;
+}
+
+.sf-foot__copyright {
+  margin: 0;
+  padding: 16px var(--sf-gutter) 24px;
+  border-top: 1px solid var(--sf-divider);
+  text-align: center;
+  font-size: 13px;
+}
+
+@media (max-width: 900px) {
+  .sf-foot__grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+}
+
+/* ── Sections drawing ────────────────────────────────────────────────── */
+.sff {
+  /* Matched by the newsletter band's negative margin when the band closes the home page (sections/Newsletter.vue). */
+  margin-top: 96px;
+  border-top: 1px solid var(--sf-divider, #e5e5e5);
+  background: var(--sf-bg, #ffffff);
+  color: var(--sf-text, #121011);
+}
+
+.sff--dark {
+  --sf-accent: var(--sf-on-brand, #ffffff);
+  --sf-focus: var(--sf-on-brand, #ffffff);
+  border-top-color: transparent;
+  background: var(--sf-brand, #121011);
+  color: var(--sf-on-brand, #ffffff);
+}
+
+.sff a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.sff__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) repeat(auto-fit, minmax(150px, 1fr));
+  gap: 48px 40px;
+  box-sizing: border-box;
+  max-width: var(--sf-measure, 1200px);
+  margin: 0 auto;
+  padding: 64px var(--sf-gutter, 24px) 56px;
+}
+
+.sff__lead {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.sff__wordmark {
+  margin-bottom: 8px;
+  font-family: var(--sf-heading-font, system-ui), Georgia, serif;
+  font-size: 34px;
+  font-weight: var(--sf-heading-weight, 700);
+  line-height: 1;
+  letter-spacing: -0.01em;
+  text-transform: var(--sf-heading-case, none);
+}
+
+.sff__tagline {
+  max-width: 300px;
+  margin: -8px 0 0;
+  color: var(--sf-muted, inherit);
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.sff--dark .sff__tagline {
+  color: inherit;
+}
+
+/* The newsletter as the last column (Lumos): the widest after the wordmark's, so the field has room. */
+.sff__grid--news {
+  grid-template-columns: minmax(0, 1.6fr) repeat(var(--sff-links, 2), minmax(0, 1fr)) minmax(0, 1.5fr);
+}
+
+.sff__news {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.sff__news-line {
+  margin: 0;
+  color: var(--sf-muted, inherit);
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.sff--dark .sff__news-line {
+  color: inherit;
+}
+
+.sff__heading {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 18px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.sff__col ul {
+  display: flex;
+  flex-direction: column;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* 32px rows: the links are easy to hit, and still read as a list. */
+.sff__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  font-size: 15px;
+}
+
+.sff__link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.sff__social {
+  display: flex;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sff__social-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+}
+
+.sff__wordmark:focus-visible,
+.sff__link:focus-visible,
+.sff__social-link:focus-visible {
+  outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
+  outline-offset: 2px;
+}
+
+/* Its hairline runs the width of the columns above it, gutter to gutter. */
+.sff__base {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: calc(100% - 2 * var(--sf-gutter, 24px));
+  max-width: calc(var(--sf-measure, 1200px) - 2 * var(--sf-gutter, 24px));
+  margin: 0 auto;
+  padding: 20px 0 32px;
+  border-top: 1px solid var(--sf-divider, #e5e5e5);
+}
+
+.sff--dark .sff__base {
+  border-top-color: color-mix(in srgb, currentColor 20%, transparent);
+}
+
+.sff__legal {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 24px;
+}
+
+.sff__copyright {
+  margin: 0;
+  color: var(--sf-muted, inherit);
+  font-size: 13px;
+}
+
+.sff--dark .sff__copyright {
+  color: inherit;
+}
+
+.sff__bottom-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 20px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* 32px tall, so the small links are still easy to hit. */
+.sff__bottom-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  color: var(--sf-muted, inherit);
+  font-size: 13px;
+}
+
+.sff--dark .sff__bottom-link {
+  color: inherit;
+}
+
+.sff__bottom-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.sff__bottom-link:focus-visible {
+  outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
+  outline-offset: 2px;
+}
+
+.sff__marks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (max-width: 900px) {
+  .sff {
+    margin-top: 64px;
+  }
+
+  .sff__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 40px 24px;
+    padding-top: 48px;
+  }
+
+  .sff__lead,
+  .sff__news {
+    grid-column: 1 / -1;
+  }
+
+  .sff__grid--news {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 420px) {
+  .sff__base {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+/* ── Menus and newsletter (Aurora) ───────────────────────────────────────
+ * UAT Aurora's footer. A hairline the width of the content (gutter to gutter) over two
+ * halves: the link columns, each under a 13px bold head in capitals spaced 2px, its
+ * links 16px; and the newsletter, its title 23px in the heading face, the field and the
+ * button side by side across the half, the consent box under them. The copyright alone
+ * in a bar under a second hairline. A tablet stacks the halves; a phone folds each
+ * column behind its head (a full-width button with a "+"), hairlines between them, and
+ * centres the copyright. */
+.sff--menus {
+  border-top-color: transparent;
+}
+
+.sff__menus-grid,
+.sff__bar {
+  box-sizing: border-box;
+  width: calc(100% - 2 * var(--sf-gutter, 24px));
+  max-width: calc(var(--sf-measure, 1200px) - 2 * var(--sf-gutter, 24px));
+  margin: 0 auto;
+  border-top: 1px solid var(--sf-divider, #e5e5e5);
+}
+
+.sff--dark .sff__menus-grid,
+.sff--dark .sff__bar {
+  border-top-color: color-mix(in srgb, currentColor 20%, transparent);
+}
+
+.sff__menus-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 40px 48px;
+  padding: 40px 0 32px;
+}
+
+.sff__menus {
+  display: grid;
+  grid-template-columns: repeat(var(--sff-menus, 3), minmax(0, 1fr));
+  align-content: start;
+  gap: 24px;
+}
+
+.sff__menu-head {
+  margin: 0 0 12px;
+  font-family: var(--sf-heading-font, system-ui), Georgia, serif;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 18px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.sff__menu-links {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* 28px rows, so the links are easy to hit and still read as a list. */
+.sff__menu-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  font-size: 16px;
+  line-height: 22px;
+}
+
+.sff__menu-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.sff__menu-link:focus-visible,
+.sff__menu-toggle:focus-visible {
+  outline: 2px solid var(--sf-focus, var(--sf-accent, #2563eb));
+  outline-offset: 2px;
+}
+
+.sff__menu-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 52px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-align: start;
+  text-transform: inherit;
+  cursor: pointer;
+}
+
+.sff__stay {
+  min-width: 0;
+}
+
+.sff__stay-title {
+  margin: 0 0 12px;
+  font-family: var(--sf-heading-font, system-ui), Georgia, serif;
+  font-size: 23px;
+  font-weight: var(--sf-heading-weight, 700);
+  line-height: 28px;
+  text-transform: var(--sf-heading-case, none);
+}
+
+/* The form takes the half's width, the field growing beside the button. */
+.sfn.sff__stay-form {
+  max-width: none;
+}
+
+.sff__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 24px;
+  padding: 16px 0 24px;
+}
+
+.sff__bar-copy {
+  margin: 0;
+  color: var(--sf-muted, inherit);
+  font-size: 16px;
+  line-height: 24px;
+}
+
+.sff--dark .sff__bar-copy {
+  color: inherit;
+}
+
+@media (max-width: 900px) {
+  .sff__menus-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .sff__menus-grid {
+    gap: 32px;
+    padding-top: 0;
+  }
+
+  .sff__menus {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  .sff__menu {
+    border-bottom: 1px solid var(--sf-divider, #e5e5e5);
+  }
+
+  .sff--dark .sff__menu {
+    border-bottom-color: color-mix(in srgb, currentColor 20%, transparent);
+  }
+
+  .sff__menu-head {
+    margin: 0;
+  }
+
+  .sff__menu-links {
+    padding-bottom: 16px;
+  }
+
+  .sff__bar {
+    justify-content: center;
+    text-align: center;
+  }
+}
+</style>

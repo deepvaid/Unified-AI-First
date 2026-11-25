@@ -1,8 +1,17 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { browserStorage, keepInBrowser } from '@/stores/demoKeep'
-import { demoSlot } from '@/storefront/demoStorage'
-import { VITAHEAL_CHANNEL_ID, VITAHEAL_CHANNEL_NAME, VITAHEAL_CHATBOT, VITAHEAL_CONVERSATIONS } from '@/storefront/vitahealDemo'
+import { localDateKey } from '@/maropay/model'
+import { keepPerChannel } from '@/stores/demoKeep'
+import { demoChannelRecord, demoSnapshotOf } from '@/stores/useSalesChannels'
+import { DEMO_STORES, canApplyTheme } from '@/storefront/demoStores'
+import type { AssistantProfileId } from '@/storefront/demoStores'
+import { historyFor } from '@/storefront/demoStores/install'
+import type { InstallChannel } from '@/storefront/demoStores/install'
+import { NORTHFOLD_CHANNEL_ID } from '@/storefront/northfoldDemo'
+import { TORQLINE_CHANNEL_ID } from '@/storefront/torqlineDemo'
+import { LUMOS_CHANNEL_ID } from '@/storefront/lumosDemo'
+import { AURORA_CHANNEL_ID } from '@/storefront/auroraDemo'
+import { VITAHEAL_CHANNEL_ID } from '@/storefront/vitahealDemo'
 
 /** A prompt is just its text — the assistant works out the intent itself. */
 export interface QuickPrompt {
@@ -90,6 +99,11 @@ export interface ChatbotConfig {
   preChatFields: PreChatField[]
   shopping: ShoppingConfig
   orderTracking: OrderTrackingConfig
+  /**
+   * The knowledge the store's assistant answers shoppers with
+   * (src/chatbot/assistantProfiles.ts). A demo store's theme brings its own. Unset: 'wellness'.
+   */
+  assistantProfile?: AssistantProfileId
 }
 
 export type ChatbotStatus = 'Active' | 'Inactive' | 'Disabled' | 'Archived'
@@ -284,32 +298,33 @@ function make(
   }
 }
 
-// ── The Vitaheal (demo) store's chatbot ──────────────────────────────────────
-// The one chatbot that also runs on a storefront (StorefrontChat.vue). Its
-// settings and the chats shoppers have with it are kept in the browser with the
-// rest of that store's data, so a change in the builder reaches the store's own
-// tab, a chat on the store shows up under Conversations, and "Restore original
-// store" puts both back. Its id is fixed, clear of the ids `make` hands out.
+// ── The demo stores' chatbots ────────────────────────────────────────────────
+// A demo store's chatbot (Vitaheal (demo)) is the one that also runs on its
+// storefront (StorefrontChat.vue). Its settings and the chats shoppers have with
+// it are kept in the browser with the rest of that store's data, so a change in
+// the builder reaches the store's own tab, a chat on the store shows up under
+// Conversations, and "Restore original store" puts both back. Its settings come
+// from the theme the store runs (src/storefront/demoStores/); its id, whether it
+// is on and its chats are the store's own, so applying another theme keeps them.
 
-export const VITAHEAL_CHATBOT_ID = 101
-
-function vitahealChatbot(): Chatbot {
-  const storeUrl = 'https://2000290-12.uat.maropost.store'
-  return {
-    id: VITAHEAL_CHATBOT_ID,
-    store: VITAHEAL_CHANNEL_NAME,
-    storeUrl,
-    channelId: VITAHEAL_CHANNEL_ID,
-    status: 'Active',
-    conversations: 214,
-    createdOn: 'Nov 16, 2026',
-    lastModified: 'Nov 18, 2026',
-    // A deep copy: the builder edits the config in place, and the seed must stay as written.
-    config: { ...defaultConfig('Vitaheal', storeUrl), ...(JSON.parse(JSON.stringify(VITAHEAL_CHATBOT)) as Partial<ChatbotConfig>) },
-  }
+/** A demo store's chatbot id: 99 + the store's slot, clear of the ids `make` hands out. */
+function demoChatbotId(slot: number): number {
+  return 99 + slot
 }
 
-/** What of the demo chatbot is kept: whether it is on, and how it is set up. */
+/** Vitaheal (demo)'s chatbot (store slot 2). */
+export const VITAHEAL_CHATBOT_ID = 101
+
+/** How a demo store's chatbot is listed: the seeded stores' own have a past, any other starts now. */
+const SEEDED_LISTING: Record<string, Pick<Chatbot, 'conversations' | 'createdOn' | 'lastModified'>> = {
+  [VITAHEAL_CHANNEL_ID]: { conversations: 214, createdOn: 'Nov 16, 2026', lastModified: 'Nov 18, 2026' },
+  [NORTHFOLD_CHANNEL_ID]: { conversations: 138, createdOn: 'Nov 19, 2026', lastModified: 'Nov 19, 2026' },
+  [TORQLINE_CHANNEL_ID]: { conversations: 176, createdOn: 'Nov 23, 2026', lastModified: 'Nov 23, 2026' },
+  [LUMOS_CHANNEL_ID]: { conversations: 152, createdOn: 'Nov 24, 2026', lastModified: 'Nov 24, 2026' },
+  [AURORA_CHANNEL_ID]: { conversations: 164, createdOn: 'Nov 24, 2026', lastModified: 'Nov 24, 2026' },
+}
+
+/** What of a demo chatbot is kept: whether it is on, and how it is set up. */
 type KeptChatbot = Pick<Chatbot, 'status' | 'config'>
 
 function isKeptChatbot(value: unknown): value is KeptChatbot {
@@ -323,12 +338,36 @@ function isConversationList(value: unknown): value is ChatbotConversation[] {
     !!c && typeof c.id === 'string' && typeof c.chatbotId === 'number' && Array.isArray(c.messages))
 }
 
+/** A store's chatbot as the theme it runs now sets it up: on, with that theme's settings (the defaults for a blank store). */
+function seededChatbot(channel: InstallChannel): KeptChatbot {
+  const storeUrl = `https://${channel.webStore!.domain}`
+  const seed = demoSnapshotOf(channel)?.chatbot
+  // The snapshot is a fresh copy: the builder edits the config in place, and the seed must stay as written.
+  const config: ChatbotConfig = seed
+    ? { ...defaultConfig(channel.name, storeUrl), ...seed.config, assistantProfile: seed.assistantProfile }
+    : defaultConfig(channel.name, storeUrl)
+  return { status: 'Active', config }
+}
+
+function demoChatbot(channel: InstallChannel): Chatbot {
+  const { status, config } = seededChatbot(channel)
+  return {
+    id: demoChatbotId(channel.webStore!.blueprint!.slot),
+    store: channel.name,
+    storeUrl: `https://${channel.webStore!.domain}`,
+    channelId: channel.id,
+    status,
+    ...(SEEDED_LISTING[channel.id] ?? { conversations: 0, createdOn: 'Just now', lastModified: 'Just now' }),
+    config,
+  }
+}
+
 export const useChatbotStore = defineStore('chatbot', () => {
-  const keptChatbot = demoSlot('chatbot', 1, browserStorage(), isKeptChatbot)
-  const demoChatbot = (): Chatbot => ({ ...vitahealChatbot(), ...(keptChatbot.load() ?? {}) })
+  // The seeded demo stores' chatbots come first (pure: no other store is read for them while this one sets up).
+  const seededBots = DEMO_STORES.map((blueprint) => demoChatbot(blueprint.homeChannel))
 
   const chatbots = ref<Chatbot[]>([
-    demoChatbot(),
+    ...seededBots,
     make('Johny Style Store', 'https://johny-style.sss.com', 'Active', 1298, 'Jan 1, 2025', 'Nov 11, 2025', { channelId: 'neelam-store' }),
     make('Tech Gizmo Store', 'https://techgizmo.store.com', 'Active', 1298, 'Jan 1, 2025', 'Nov 11, 2025', { primaryColor: '#6D28D9' }),
     make('Gourmet Delights', 'https://gourmet-delights.com', 'Disabled', 752, 'Feb 15, 2023', 'Dec 31, 2024', { primaryColor: '#DD7A3B' }),
@@ -345,19 +384,75 @@ export const useChatbotStore = defineStore('chatbot', () => {
 
   const MAX_CHATBOTS = 20
 
-  // The demo chatbot is seeded above and never removed from the list (archiving only changes its status).
-  const demoBot = (): Chatbot => chatbots.value.find(c => c.id === VITAHEAL_CHATBOT_ID)!
-  const seededDemo = (): KeptChatbot => { const seed = vitahealChatbot(); return { status: seed.status, config: seed.config } }
-  const keptDemo = keepInBrowser<KeptChatbot>(
-    keptChatbot,
-    () => ({ status: demoBot().status, config: demoBot().config }),
-    (saved) => { Object.assign(demoBot(), saved ?? seededDemo()) },
-  )
+  // A demo store's chatbot is never removed from the list (archiving only changes its status).
+  /** Each demo store's own chatbot, by channel. */
+  const demoBotIds = new Map<string, number>()
+  /** The chats a demo store's chatbot had before the demo, by chatbot: history, seeded on the store's own channel only. */
+  const pastChats = new Map<number, Omit<ChatbotConversation, 'id' | 'chatbotId'>[]>()
+  const demoBot = (channelId: string): Chatbot | undefined => {
+    const id = demoBotIds.get(channelId)
+    return id === undefined ? undefined : getById(id)
+  }
+  /** Starts treating a chatbot as its demo store's own. */
+  function registerDemoBot(bot: Chatbot): void {
+    demoBotIds.set(bot.channelId!, bot.id)
+    pastChats.set(bot.id, historyFor(bot.channelId!, localDateKey(Date.now()))?.conversations ?? [])
+  }
+  /** A store back to blank (restored, or deleted) loses the chatbot its theme gave it, with its chats and what this browser kept of them. */
+  function removeDemoBot(channelId: string, bot: Chatbot): void {
+    keptChatbot.clear(channelId)
+    keptChats.clear(channelId)
+    liveChats.value = liveChats.value.filter((chat) => chat.chatbotId !== bot.id)
+    chatbots.value = chatbots.value.filter((entry) => entry.id !== bot.id)
+    demoBotIds.delete(channelId)
+    pastChats.delete(bot.id)
+    keptChatbot.adopt(channelId)
+    keptChats.adopt(channelId)
+  }
+  const seededFor = (channelId: string): KeptChatbot => seededChatbot(demoChannelRecord(channelId)!)
+  const keptChatbot = keepPerChannel<KeptChatbot>('chatbot', 1, isKeptChatbot, {
+    // A store back to blank has no chatbot: nothing to save, nothing to take.
+    read: (channelId) => {
+      const bot = demoBot(channelId)
+      return (bot ? { status: bot.status, config: bot.config } : null) as KeptChatbot
+    },
+    take: (channelId, saved) => {
+      const bot = demoBot(channelId)
+      if (bot) Object.assign(bot, saved ?? seededFor(channelId))
+    },
+  })
 
-  // Chats shoppers had with the demo chatbot on its store, newest first.
-  const keptChats = demoSlot('conversations', 1, browserStorage(), isConversationList)
-  const liveChats = ref<ChatbotConversation[]>(keptChats.load() ?? [])
-  const keptLive = keepInBrowser(keptChats, () => liveChats.value, (saved) => { liveChats.value = saved ?? [] })
+  // Chats shoppers had with a demo store's chatbots on its store, newest first.
+  const liveChats = ref<ChatbotConversation[]>([])
+  const onStore = (channelId: string) => (chat: ChatbotConversation): boolean => getById(chat.chatbotId)?.channelId === channelId
+  const keptChats = keepPerChannel('conversations', 1, isConversationList, {
+    read: (channelId) => liveChats.value.filter(onStore(channelId)),
+    take: (channelId, saved) => { liveChats.value = [...(saved ?? []), ...liveChats.value.filter((chat) => !onStore(channelId)(chat))] },
+  })
+
+  /** The stores whose chatbot is seeded and kept (attachStore): each only once. */
+  const attached = new Set<string>()
+
+  /**
+   * Gives a store its chatbot as the theme it runs now sets it up, if it has none yet
+   * (a store that started blank gets none until it takes a theme), then keeps its
+   * settings, whether it is on and its chats: what this browser saved is read, never cleared.
+   */
+  function attachStore(channel: InstallChannel): void {
+    if (attached.has(channel.id)) return
+    attached.add(channel.id)
+    if (!demoBot(channel.id)) {
+      if (!demoSnapshotOf(channel)) return
+      const added = demoChatbot(channel)
+      chatbots.value.unshift(added)
+      registerDemoBot(added)
+    }
+    keptChatbot.attach(channel.id)
+    keptChats.attach(channel.id)
+  }
+  // The seeded stores' chatbots are already listed first; they are only kept here.
+  for (const bot of seededBots) registerDemoBot(bot)
+  for (const blueprint of DEMO_STORES) attachStore(blueprint.homeChannel)
 
   /** Saves a storefront chat as it goes: the same id replaces the earlier copy. */
   function recordConversation(conversation: ChatbotConversation): void {
@@ -366,14 +461,63 @@ export const useChatbotStore = defineStore('chatbot', () => {
     else liveChats.value.unshift(conversation)
   }
 
-  /** Puts the demo chatbot back as seeded and forgets its live chats. Called by the demo store's restore (useCommerce). */
-  function restoreDemo(): void {
-    keptChatbot.clear()
-    Object.assign(demoBot(), seededDemo())
-    keptDemo.adopt()
-    keptChats.clear()
-    liveChats.value = []
-    keptLive.adopt()
+  /**
+   * Sets a store's chatbot up as the theme it runs now has it, on restore and when
+   * a theme is applied (src/stores/useDemoStores.ts). A store that has no chatbot
+   * yet gets one, unless it started blank. Its id, whether it is on and its chats
+   * stay. Does nothing for a store that cannot take a theme.
+   */
+  function reseedDemo(channelId: string): void {
+    const channel = demoChannelRecord(channelId)
+    if (!channel || !canApplyTheme(channel)) return
+    // A store not kept yet comes in with what it saved: its chats, and whether its chatbot is on.
+    attachStore(channel)
+    const existing = demoBot(channelId)
+    // A store that started blank has no chatbot until it takes a theme, and none again once it is blank.
+    if (!demoSnapshotOf(channel)) {
+      if (existing) removeDemoBot(channelId, existing)
+      return
+    }
+    if (!existing) {
+      const added = demoChatbot(channel)
+      chatbots.value.unshift(added)
+      registerDemoBot(added)
+      keptChats.attach(channelId)
+    }
+    const bot = demoBot(channelId)!
+    const status = bot.status
+    keptChatbot.clear(channelId)
+    Object.assign(bot, seededChatbot(channel))
+    keptChatbot.attach(channelId)
+    keptChatbot.adopt(channelId)
+    // Whether it is on is the store's own: kept as a change from the seed, so it is saved.
+    bot.status = status
+  }
+
+  /**
+   * Puts back what applying a theme keeps: the chatbot on and as seeded, and no chats
+   * from the storefront (its earlier chats are seeded and stay). Restore only.
+   */
+  /**
+   * Brings a store that can take a theme in with what this browser saved for it,
+   * as the app starts (a store made from a theme; src/stores/useDemoStores.ts).
+   * Nothing saved is cleared, so a chatbot switched off stays off. Does nothing a
+   * second time, or for a store that cannot take a theme.
+   */
+  function attachDemo(channelId: string): void {
+    const channel = demoChannelRecord(channelId)
+    if (channel && canApplyTheme(channel)) attachStore(channel)
+  }
+
+  function restoreDemoHistory(channelId: string): void {
+    const bot = demoBot(channelId)
+    if (!bot) return
+    keptChatbot.clear(channelId)
+    Object.assign(bot, seededFor(channelId))
+    keptChatbot.adopt(channelId)
+    keptChats.clear(channelId)
+    liveChats.value = liveChats.value.filter((chat) => !onStore(channelId)(chat))
+    keptChats.adopt(channelId)
   }
 
   function getById(id: number) {
@@ -425,16 +569,17 @@ export const useChatbotStore = defineStore('chatbot', () => {
   function conversationsFor(chatbotId: number): ChatbotConversation[] {
     const bot = getById(chatbotId)
     if (!bot) return []
-    // The demo chatbot shows what shoppers just asked on its store, then its own earlier chats.
-    if (chatbotId === VITAHEAL_CHATBOT_ID) {
+    // A demo store's chatbot shows what shoppers just asked on its store, then its own earlier chats.
+    const past = pastChats.get(chatbotId)
+    if (past) {
       return [
         ...liveChats.value.filter(c => c.chatbotId === chatbotId),
-        ...VITAHEAL_CONVERSATIONS.map((c, i) => ({ ...c, id: `${chatbotId}-${i + 1}`, chatbotId })),
+        ...past.map((c, i) => ({ ...c, id: `${chatbotId}-${i + 1}`, chatbotId })),
       ]
     }
     if (bot.conversations === 0) return []
     return CONVERSATION_SEED.map((c, i) => ({ ...c, id: `${chatbotId}-${i + 1}`, chatbotId }))
   }
 
-  return { chatbots, MAX_CHATBOTS, getById, getByChannel, create, setStatus, archive, restore, conversationsFor, previewProducts, recordConversation, restoreDemo }
+  return { chatbots, MAX_CHATBOTS, getById, getByChannel, create, setStatus, archive, restore, conversationsFor, previewProducts, recordConversation, attachDemo, reseedDemo, restoreDemoHistory }
 })

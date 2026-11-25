@@ -162,5 +162,7 @@ const composedSubtitle = computed(() => {
 }
 .mp-wizard-shell__counter {
   font-variant-numeric: tabular-nums;
+  /* "4 / 4" stays on one line beside a long primary label on a phone. */
+  white-space: nowrap;
 }
 </style>

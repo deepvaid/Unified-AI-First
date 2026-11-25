@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" width="200" height="60" role="img" aria-label="Linden Row">
+<title>Linden Row</title>
+<g fill="none" stroke="#4C4C4C" stroke-linecap="square" stroke-linejoin="miter" stroke-miterlimit="2">
+<g transform="translate(39.55 8.00) scale(1.3000)" stroke-width="2.615"><path transform="translate(0.00 0)" d="M0,0 V20 H11"/><path transform="translate(16.00 0)" d="M0,0 V20"/><path transform="translate(21.00 0)" d="M0,20 V0 L15,20 V0"/><path transform="translate(41.00 0)" d="M0,0 H5 A10,10 0 0 1 5,20 H0 Z"/><path transform="translate(61.00 0)" d="M12,0 H0 V20 H12 M0,10 H10"/><path transform="translate(78.00 0)" d="M0,20 V0 L15,20 V0"/></g>
+<g transform="translate(84.92 42.00) scale(0.4500)" stroke-width="3.111"><path transform="translate(0.00 0)" d="M0,20 V0 H7 A5.5,5.5 0 0 1 7,11 H0 M6.5,11 L13,20"/><path transform="translate(18.00 0)" d="M0,10 A10,10 0 1 0 20,10 A10,10 0 1 0 0,10 Z"/><path transform="translate(43.00 0)" d="M0,0 L6,20 L12,4 L18,20 L24,0"/></g>
+<path stroke-width="1.2" d="M39.5,46.5 H78.9 M121.1,46.5 H160.4"/>
+</g>
+</svg>

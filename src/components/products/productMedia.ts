@@ -1,4 +1,5 @@
 import { packShot } from '@/storefront/packShot'
+import type { PackShape } from '@/storefront/packShot'
 
 // A product's pictures as the product forms handle them. Nothing is uploaded: a
 // picked file is shrunk in the browser and kept as a data URL on the product.
@@ -31,11 +32,12 @@ const PACK_BACKDROP = '#f2f4f7'
 
 /**
  * The two pictures a store product gets when it is saved without any: a pack
- * drawn from its name in the store's colours, front and tilted, so the
+ * drawn from its name in the store's colours and its shape (a can, unless the
+ * store draws another: a garment for a clothing store), front and tilted, so the
  * storefront never shows an empty tile.
  */
-export function placeholderImages(name: string, styles: { brandColor: string; customBadgeColor: string }): string[] {
-  const pack = { name, shape: 'can' as const, ink: styles.brandColor, surface: PACK_BACKDROP, accent: styles.customBadgeColor }
+export function placeholderImages(name: string, styles: { brandColor: string; customBadgeColor: string }, shape: PackShape = 'can'): string[] {
+  const pack = { name, shape, ink: styles.brandColor, surface: PACK_BACKDROP, accent: styles.customBadgeColor }
   return [packShot(pack), packShot({ ...pack, view: 'angle' })]
 }
 

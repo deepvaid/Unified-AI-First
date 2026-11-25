@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   useCommerceStore,
@@ -14,17 +14,27 @@ import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpAlert from '@/components/MpAlert.vue'
 import MpListRow from '@/components/MpListRow.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
+import MpEmptyState from '@/components/MpEmptyState.vue'
 import { useDisplay } from 'vuetify'
 import DvCatalogCta from '@/components/copilot/DvCatalogCta.vue'
 import ProductMediaField from '@/components/products/ProductMediaField.vue'
+import ProductSizeGuideCard from '@/components/products/ProductSizeGuideCard.vue'
+import VehicleFitmentCard from '@/components/products/VehicleFitmentCard.vue'
+import VariantGrid from '@/components/products/VariantGrid.vue'
 import { isPlaceholderImage } from '@/components/products/productMedia'
 import { useProductStores } from '@/composables/useProductStores'
 import { parseDecimal } from '@/maropay/money'
 import { withPrimaryCollection } from '@/storefront/catalog'
+import { sellsParts, type Fitment } from '@/storefront/fitment'
+import { cleanSpecs, positionsFor, specErrors } from '@/storefront/fitmentForm'
 import { formatStorePrice } from '@/storefront/price'
+import { optionKind } from '@/storefront/variants'
+import { useSizeChartsStore } from '@/stores/useSizeCharts'
 import { useCopilotStore } from '@/stores/useCopilot'
 import { useSubscriptionsStore } from '@/stores/useSubscriptions'
+import { useDemoStores } from '@/stores/useDemoStores'
 import { deliverySummary, pricePerDelivery, roundForDisplay } from '@/subscriptions/plans'
+import { mp_layout_breakpointCompact } from '@/design-tokens/generated/tokens'
 import { useCatalogCopilotStore, type CatalogApplyPayload } from '@/stores/useCatalogCopilot'
 import type { CatalogField } from '@/composables/catalogCopilotConfig'
 import type { ProductSnapshot } from '@/composables/useCatalogGenerator'
@@ -39,7 +49,7 @@ const extras = useProductExtrasStore()
 const catalog = useCatalogCopilotStore()
 // The Da Vinci CTA collapses to its mark on phones (so Cancel and Save stay on one
 // row) and while the drawer it opens is already open.
-const { xs } = useDisplay()
+const { xs, width: windowWidth } = useDisplay()
 const copilot = useCopilotStore()
 const ctaIconOnly = computed(() => xs.value || copilot.isOpen)
 const route = useRoute()
@@ -88,6 +98,13 @@ const purchasePlans = computed(() => {
   })
 })
 const plansRoute = computed(() => ({ name: 'SubscriptionPlans', params: { accountId: accountId.value } }))
+/** The card shows the product's plans, or offers them where its store sells subscriptions; a store that sells none (Northfold) shows no card. */
+const demoStores = useDemoStores()
+const showPurchaseOptions = computed(() => {
+  if (purchasePlans.value.length) return true
+  const storeId = productStores.stores.value.find((s) => product.value?.channelIds?.includes(s.id))?.id
+  return !!storefrontLink.value && demoStores.blueprintOf(storeId ?? '')?.capabilities.subscriptions !== false
+})
 
 /** A variant's price in its store's currency ("419 kr"); dollars for the shared catalogue. */
 function money(price: string): string {
@@ -147,9 +164,15 @@ function load() {
 load()
 watch(productId, load)
 
-/** Variant rows shown in the grid — real ones when the wizard built them, else a default row. */
+/**
+ * The variants shown in the grid: the ones the wizard built. A product saved
+ * before it had any shows one default row with its own SKU, price and stock; one
+ * that has options but no variants yet shows none (the grid's empty state).
+ */
 const variantRows = computed<ProductVariant[]>(() => {
-  if (form.value.detail.variantsList.length) return form.value.detail.variantsList
+  const detail = form.value.detail
+  if (detail.variantsList.length) return detail.variantsList
+  if (detail.hasVariants) return []
   return [{
     id: 0,
     title: 'Default variant',
@@ -158,16 +181,139 @@ const variantRows = computed<ProductVariant[]>(() => {
     allowBackorder: false,
     costPrice: '',
     price: form.value.price,
-    stock: Object.fromEntries(INVENTORY_LOCATIONS.map((l) => [l, 0])),
+    stock: { ...Object.fromEntries(INVENTORY_LOCATIONS.map((l) => [l, 0])), [INVENTORY_LOCATIONS[0]!]: product.value?.inventory ?? 0 },
   }]
 })
 
-const variantHeaders = computed(() => [
-  { title: 'Variant', key: 'title', minWidth: '200px' },
-  { title: 'SKU', key: 'sku' },
-  { title: 'Price', key: 'price', align: 'end' as const },
-  ...INVENTORY_LOCATIONS.map((l) => ({ title: `In stock (${l})`, key: `stock.${l}`, align: 'end' as const })),
-])
+// ── Size guide ────────────────────────────────────────────────────────
+// Offered when the product's store has size charts and the product has sizes
+// (or already links a chart). The choice is saved with the page's Save.
+const sizeCharts = useSizeChartsStore()
+const storeCharts = computed(() =>
+  productStores.channelIds(form.value.detail.salesChannels).flatMap((id) => sizeCharts.chartsForChannel(id)))
+const productSizes = computed(() => form.value.detail.options.find((o) => optionKind(o) === 'size')?.values ?? [])
+const showSizeGuide = computed(() => storeCharts.value.length > 0 && (productSizes.value.length > 0 || !!form.value.detail.sizeChartId))
+/** The Size charts page, opened on the product's store. */
+const sizeChartsRoute = computed(() => {
+  if (!router.hasRoute('SizeCharts')) return null
+  const store = storeCharts.value[0]?.channelId
+  return { name: 'SizeCharts', params: { accountId: accountId.value }, ...(store ? { query: { store } } : {}) }
+})
+
+function setSizeChart(chartId: string | undefined) {
+  if (chartId) form.value.detail.sizeChartId = chartId
+  else delete form.value.detail.sizeChartId
+}
+
+// ── Vehicle fitment and specifications ────────────────────────────────
+// Fitment is offered on a part (it carries fitment) and on any product of a store that
+// sells parts. Specifications and a warranty are offered there too, and on any product
+// that has them or whose store's products carry them (a furniture store's measurements).
+// Both are saved with the page's Save; the storefront reads them from there.
+const storeProducts = computed(() => {
+  const storeIds = productStores.channelIds(form.value.detail.salesChannels)
+  return storeIds.length ? store.products.filter((p) => p.channelIds?.some((id) => storeIds.includes(id))) : []
+})
+const isPart = computed(() => !!form.value.detail.fitment || sellsParts(storeProducts.value))
+const carriesSpecs = (detail?: ProductDetail) => !!detail?.specs?.length || !!detail?.warranty
+const showSpecs = computed(() =>
+  isPart.value || carriesSpecs(product.value?.detail) || storeProducts.value.some((p) => carriesSpecs(p.detail)))
+/** Front and rear, when the part is sold by position. */
+const fitmentPositions = computed(() => positionsFor(form.value.detail.options))
+
+function setFitment(fitment: Fitment) {
+  form.value.detail.fitment = fitment
+}
+
+const specs = computed(() => form.value.detail.specs ?? [])
+
+/**
+ * The names a furniture or home product's rows usually take, each with an example
+ * value. The store's chat answers from rows with these names, so the card offers them.
+ */
+const HOME_SPECS: Readonly<Record<string, string>> = {
+  'Width': '84 in',
+  'Depth': '38 in',
+  'Height': '34 in',
+  'Seat height': '18 in',
+  'Weight': '95 lb',
+  'Materials': 'Solid oak, wool blend',
+  'Care': 'Spot clean with a damp cloth',
+  'Assembly': 'Arrives assembled',
+}
+const homeSpecName = (label: string) => Object.keys(HOME_SPECS).find((name) => name.toLowerCase() === label.trim().toLowerCase())
+
+/** The card's words: a part's facts hold for every vehicle; anything else's are its measurements, materials and care. */
+const specCopy = computed(() => (isPart.value
+  ? {
+      description: 'Facts that hold for every vehicle. Shoppers see them in a table on the product page.',
+      icon: 'list',
+      empty: 'Add the facts shoppers compare, like the friction material or what is in the box.',
+      name: 'Friction material',
+      warranty: 'Limited lifetime warranty',
+    }
+  : {
+      description: 'Measurements, materials and care shoppers compare, shown in a table on the product page.',
+      icon: 'ruler',
+      empty: 'Start with one shoppers often ask about, or add your own.',
+      name: 'Width',
+      warranty: '5-year frame warranty',
+    }))
+
+/**
+ * A row's example value. On a part, the first row has one. Otherwise a row with a usual
+ * name has that name's, and the first row, still unnamed, has the one for its name example.
+ */
+function specValueExample(index: number, label: string): string | undefined {
+  if (isPart.value) return index ? undefined : 'Ceramic'
+  const name = homeSpecName(label) ?? (!label.trim() && !index ? specCopy.value.name : undefined)
+  return name ? HOME_SPECS[name] : undefined
+}
+
+/** The usual names not used yet, offered as one-click rows; a part gets none. */
+const specSuggestions = computed(() => {
+  if (isPart.value) return []
+  const used = new Set(specs.value.map((spec) => homeSpecName(spec.label)))
+  return Object.keys(HOME_SPECS).filter((name) => !used.has(name))
+})
+
+/** Save was pressed with a half-filled row: from then on the rows show what they miss. */
+const specsTried = ref(false)
+const specIssues = computed(() => (specsTried.value ? specErrors(specs.value) : []))
+const specFieldId = (index: number, field: 'label' | 'value') => `ped-spec-${index}-${field}`
+/** Side by side, the first row's labels head the columns; stacked (MpFormGrid's compact breakpoint), every row carries its own. */
+const specsStacked = computed(() => windowWidth.value <= parseFloat(mp_layout_breakpointCompact))
+const specLabel = (index: number, text: string) => (index === 0 || specsStacked.value ? text : undefined)
+
+/** Adds a row, named when it is a suggested one: its value is next, else its name. */
+function addSpec(label = '') {
+  form.value.detail.specs = [...specs.value, { label, value: '' }]
+  const index = specs.value.length - 1
+  nextTick(() => document.getElementById(specFieldId(index, label ? 'value' : 'label'))?.focus())
+}
+
+function removeSpec(index: number) {
+  const next = specs.value.filter((_, i) => i !== index)
+  if (next.length) form.value.detail.specs = next
+  else delete form.value.detail.specs
+}
+
+/** The warranty line; cleared, the product has none (no empty string saved beside it). */
+const warranty = computed({
+  get: () => form.value.detail.warranty ?? '',
+  set: (value: string) => {
+    if (value) form.value.detail.warranty = value
+    else delete form.value.detail.warranty
+  },
+})
+
+/** The first half-filled specification row's empty field, or null when every row is whole or empty. */
+function firstSpecProblem(): string | null {
+  const issues = specErrors(specs.value)
+  const index = issues.findIndex((issue) => issue.label || issue.value)
+  if (index < 0) return null
+  return specFieldId(index, issues[index]!.label ? 'label' : 'value')
+}
 
 const dirty = computed(() => JSON.stringify(form.value) !== snapshot.value)
 const valid = computed(() => form.value.name.trim().length > 0)
@@ -183,6 +329,13 @@ function requestCancel() {
 async function save() {
   const p = product.value
   if (!p || !valid.value) return
+  const specProblem = firstSpecProblem()
+  if (specProblem) {
+    specsTried.value = true
+    await nextTick()
+    document.getElementById(specProblem)?.focus()
+    return
+  }
   const wasPublished = p.publishStatus === 'Published'
   saving.value = true
   await new Promise((resolve) => setTimeout(resolve, 450))
@@ -196,10 +349,12 @@ async function save() {
     variants: Math.max(1, form.value.detail.variantsList.length),
     type: p.type,
     publishStatus: form.value.publishStatus,
-    detail: { ...form.value.detail, collection: form.value.collections[0] ?? '', seo: { ...form.value.seo } },
+    detail: partFacts({ ...form.value.detail, collection: form.value.collections[0] ?? '', seo: { ...form.value.seo } }),
     components: p.components,
     collections: [...form.value.collections],
     channelIds: productStores.channelIds(form.value.detail.salesChannels),
+    // A store shows this price crossed out, so it stays as it was (variant prices are edited in the wizard).
+    ...(productStores.channelIds(form.value.detail.salesChannels).length ? { compareAtPrice: p.compareAtPrice } : {}),
     // A store product never goes out without a picture: it gets a drawn pack until one is added.
     imageUrls: form.value.images.length
       ? [...form.value.images]
@@ -209,6 +364,18 @@ async function save() {
   snapshot.value = JSON.stringify(form.value)
   trackSave(p.id, wasPublished)
   router.push({ ...listRoute.value, query: { flash: 'product-updated', product: String(p.id) } })
+}
+
+/** The specifications and warranty as they are saved: trimmed, and dropped when empty. */
+function partFacts(detail: ProductDetail): ProductDetail {
+  const next = { ...detail }
+  const cleaned = cleanSpecs(next.specs ?? [])
+  if (cleaned.length) next.specs = cleaned
+  else delete next.specs
+  const line = next.warranty?.trim()
+  if (line) next.warranty = line
+  else delete next.warranty
+  return next
 }
 
 // ── Da Vinci Catalog Co-Pilot ─────────────────────────────────────────
@@ -388,39 +555,133 @@ function openVariantsWizard() {
             <MpFormField v-for="(option, index) in form.detail.options" :key="index" :label="option.name || `Option ${index + 1}`">
               <template #default="{ labelId }">
                 <div class="d-flex flex-wrap ga-1" :aria-labelledby="labelId">
-                  <v-chip v-for="value in option.values" :key="value" size="small" variant="tonal" label>{{ value }}</v-chip>
+                  <v-chip v-for="value in option.values" :key="value" size="small" variant="tonal" label>
+                    <template v-if="option.display !== 'buttons' && option.swatches?.[value]" #prepend>
+                      <span class="ped-dot" :style="{ '--ped-dot': option.swatches[value] }" aria-hidden="true" />
+                    </template>
+                    {{ value }}
+                  </v-chip>
                 </div>
               </template>
             </MpFormField>
           </template>
-          <p v-else class="text-body-2 text-medium-emphasis mb-0">
+          <p v-else-if="variantRows.length" class="text-body-2 text-medium-emphasis mb-0">
             This product has a single default variant.
           </p>
 
-          <v-data-table
-            :headers="variantHeaders"
-            :items="variantRows"
-            density="comfortable"
-            hide-default-footer
-            :items-per-page="-1"
-            class="ped-variants"
-          >
-            <template #item.title="{ item }">
-              <span class="text-body-2 font-weight-medium">{{ item.title }}</span>
-            </template>
-            <template #item.sku="{ item }">
-              <span class="ped-mono text-body-2">{{ item.sku || '—' }}</span>
-            </template>
-            <template #item.price="{ item }">
-              <span class="text-body-2">{{ money(item.price) }}</span>
-            </template>
-            <template v-for="location in INVENTORY_LOCATIONS" :key="location" #[`item.stock.${location}`]="{ item }">
-              <span class="text-body-2">{{ item.stock[location] ?? 0 }}</span>
-            </template>
-          </v-data-table>
-          <v-btn variant="outlined" prepend-icon="pencil" class="text-none align-self-start" @click="openVariantsWizard">
+          <VariantGrid
+            :options="form.detail.options"
+            :variants="variantRows"
+            :format-price="money"
+            :caption="`Variants of ${form.name || 'this product'}`"
+            empty-action-label="Add options and variants"
+            @empty-action="openVariantsWizard"
+          />
+          <v-btn v-if="variantRows.length" variant="outlined" prepend-icon="pencil" class="text-none align-self-start" @click="openVariantsWizard">
             Edit options and variants
           </v-btn>
+        </v-card>
+
+        <VehicleFitmentCard
+          v-if="isPart"
+          :model-value="form.detail.fitment"
+          :product-name="form.name"
+          :positions="fitmentPositions"
+          @update:model-value="setFitment"
+        />
+
+        <v-card v-if="showSpecs" variant="flat" border rounded="lg" class="ped-card">
+          <MpFormSection
+            :heading-level="2"
+            title="Specifications"
+            :description="specCopy.description"
+          />
+          <!-- A small two-column list: the first row's labels head the columns (every row has them
+               once the columns stack), and every field is named by its own aria-label, as
+               table-cell editors are (aria-labelledby is cleared: Vuetify points it at a label
+               a later row may not have). -->
+          <MpFormGrid v-if="specs.length">
+            <div v-for="(spec, index) in specs" :key="index" class="mp-form-grid__trailing">
+              <MpFormGrid :cols="2">
+                <v-text-field
+                  :id="specFieldId(index, 'label')"
+                  v-model="spec.label"
+                  :label="specLabel(index, 'Name')"
+                  :aria-label="`Name, specification ${index + 1}`"
+                  :aria-labelledby="undefined"
+                  :placeholder="index ? undefined : specCopy.name"
+                  :error-messages="specIssues[index]?.label || undefined"
+                />
+                <v-text-field
+                  :id="specFieldId(index, 'value')"
+                  v-model="spec.value"
+                  :label="specLabel(index, 'Value')"
+                  :aria-label="`Value, ${spec.label.trim() || `specification ${index + 1}`}`"
+                  :aria-labelledby="undefined"
+                  :placeholder="specValueExample(index, spec.label)"
+                  :error-messages="specIssues[index]?.value || undefined"
+                />
+              </MpFormGrid>
+              <v-btn
+                icon="trash-2"
+                variant="text"
+                size="small"
+                density="comfortable"
+                :aria-label="`Remove ${spec.label.trim() || `specification ${index + 1}`}`"
+                @click="removeSpec(index)"
+              />
+            </div>
+          </MpFormGrid>
+          <MpEmptyState
+            v-else
+            :variant="specSuggestions.length ? 'launcher' : 'stack'"
+            :icon="specCopy.icon"
+            :heading-level="3"
+            title="No specifications yet"
+            :description="specCopy.empty"
+            action-label="Add specification"
+            action-icon="plus"
+            @action="addSpec()"
+          >
+            <div role="group" aria-label="Suggested specifications" class="d-flex flex-wrap justify-center ga-2">
+              <v-chip
+                v-for="name in specSuggestions"
+                :key="name"
+                tag="button"
+                type="button"
+                size="small"
+                variant="outlined"
+                prepend-icon="plus"
+                class="text-none"
+                :aria-label="`Add ${name}`"
+                @click="addSpec(name)"
+              >
+                {{ name }}
+              </v-chip>
+            </div>
+          </MpEmptyState>
+          <div v-if="specs.length" class="d-flex flex-wrap align-center ga-3">
+            <v-btn variant="outlined" prepend-icon="plus" class="text-none" @click="addSpec()">
+              Add specification
+            </v-btn>
+            <div v-if="specSuggestions.length" role="group" aria-label="Suggested specifications" class="d-flex flex-wrap ga-2">
+              <v-chip
+                v-for="name in specSuggestions"
+                :key="name"
+                tag="button"
+                type="button"
+                size="small"
+                variant="outlined"
+                prepend-icon="plus"
+                class="text-none"
+                :aria-label="`Add ${name}`"
+                @click="addSpec(name)"
+              >
+                {{ name }}
+              </v-chip>
+            </div>
+          </div>
+          <v-text-field v-model="warranty" label="Warranty" :placeholder="specCopy.warranty" />
         </v-card>
 
         <v-card variant="flat" border rounded="lg" class="ped-card">
@@ -462,7 +723,16 @@ function openVariantsWizard() {
           <v-select v-model="form.publishStatus" :items="['Draft', 'Published']" label="Status" />
         </v-card>
 
-        <v-card v-if="storefrontLink || purchasePlans.length" variant="flat" border rounded="lg" class="ped-card">
+        <ProductSizeGuideCard
+          v-if="showSizeGuide"
+          :model-value="form.detail.sizeChartId"
+          :charts="storeCharts"
+          :sizes="productSizes"
+          :manage-to="sizeChartsRoute"
+          @update:model-value="setSizeChart"
+        />
+
+        <v-card v-if="showPurchaseOptions" variant="flat" border rounded="lg" class="ped-card">
           <MpFormSection
             :heading-level="2"
             title="Purchase options"
@@ -566,14 +836,13 @@ function openVariantsWizard() {
   gap: var(--mp-component-card-gap);
 }
 
-.ped-variants {
-  border: 1px solid rgb(var(--v-border-color), var(--v-border-opacity));
-  border-radius: var(--mp-radius-10);
-}
-
-.ped-mono {
-  font-family: var(--mp-fontFamily-mono);
-  white-space: nowrap;
+.ped-dot {
+  width: var(--mp-space-10);
+  height: var(--mp-space-10);
+  margin-inline-end: var(--mp-space-6);
+  border-radius: var(--mp-radius-full);
+  background: var(--ped-dot);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
 }
 
 .ped-seo {

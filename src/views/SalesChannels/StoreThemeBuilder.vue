@@ -24,11 +24,20 @@ import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import { useStoreThemesStore } from '@/stores/useStoreThemes'
 import { useStorefrontStore } from '@/stores/useStorefront'
 import { useCommerceStore } from '@/stores/useCommerce'
-import { previewProducts } from '@/views/Storefront/storefrontCatalog'
+import { useSizeChartsStore } from '@/stores/useSizeCharts'
+import { collectionsOf, previewProducts, storefrontProducts } from '@/views/Storefront/storefrontCatalog'
+import { gridSettings } from '@/storefront/listing'
 import {
-  blockCatalog,
+  blockHasRoom,
+  blocksFor,
+  fieldShown,
+  fieldsFor,
   getBlockDef,
   getSectionDef,
+  sectionsFor,
+  selectValue,
+  storeFacts,
+  storefrontThemeVars,
   themeFonts,
   TEMPLATE_TYPES,
   TEMPLATE_TYPE_LABELS,
@@ -36,6 +45,7 @@ import {
   type ThemeBlock,
   type ThemeSection,
   type ThemeSectionDef,
+  type ThemeSectionField,
   type ThemeStyles,
 } from '@/stores/themeBuilderData'
 import {
@@ -66,8 +76,34 @@ const theme = computed(() => {
   return requested?.channelId === channelId.value ? requested : themesStore.themeForChannel(channelId.value)
 })
 const previewHeader = computed(() => storefronts.previewHeaderFor(channel.value))
-/** The store's own products in the canvas's product rows; a store on the shared catalogue keeps the drawn stand-ins. */
+/**
+ * The rest of the store's chrome as its own storefront draws it: the header's search, tools
+ * and social icons, and the footer's columns, newsletter and copyright.
+ */
+const previewChrome = computed(() => storefronts.previewChromeFor(channel.value))
+/** The collection template's product card and quick add, which every product row of the store uses (as the storefront does). */
+const previewCards = computed(() => {
+  const grid = gridSettings(theme.value?.templates.collection)
+  return { cardStyle: grid.cardStyle, quickAdd: grid.quickAdd }
+})
+/**
+ * The store's own products in the canvas's product rows, with what their cards show (a part's
+ * number, a sale's struck price, a badge); a store on the shared catalogue keeps the drawn stand-ins.
+ */
 const previewItems = computed(() => (channel.value ? previewProducts(useCommerceStore().products, channel.value) : undefined))
+
+/**
+ * How the storefront draws this theme. A theme on the sections drawing (Northfold,
+ * Torqline) is offered the kinds, blocks and settings only that drawing draws (an
+ * icon row, collapsible rows, a header's colour scheme); a classic theme is offered
+ * exactly what it always was (src/storefront/themeSections.ts).
+ */
+const drawing = computed(() => theme.value?.styles.drawing)
+/** What the store sells: a parts store is offered the vehicle finder and fit banner, a store with sizes the size guide. */
+const sizeChartsStore = useSizeChartsStore()
+const facts = computed(() => storeFacts(storefrontProducts(useCommerceStore().products, channelId.value), sizeChartsStore.chartsForChannel(channelId.value)))
+/** The kinds the open template can take (a logo strip is the home page's; white words on its banner's photo, when it has one). */
+const addableSections = computed(() => sectionsFor(drawing.value, facts.value, activeTemplate.value, activeSections.value))
 
 const backRoute = computed(() =>
   channel.value
@@ -189,7 +225,7 @@ function confirmRemove() {
 // A section shows a block sub-tree when its kind accepts blocks, or it already
 // has some. Expand state lives here (default collapsed).
 function sectionAcceptsBlocks(section: ThemeSection): boolean {
-  return Boolean(getSectionDef(section.kind)?.acceptsBlocks) || Boolean(section.blocks?.length)
+  return blocksFor(section.kind, drawing.value).length > 0 || Boolean(section.blocks?.length)
 }
 
 const expandedSectionIds = ref<Set<string>>(new Set())
@@ -204,10 +240,10 @@ function blockIcon(kind: string) {
   return getBlockDef(kind)?.icon ?? 'square'
 }
 
-/** Tree label for a block: its def title, or a snippet of its primary setting. */
+/** Tree label for a block: its def title, or a snippet of its primary setting (a feature's or a row's title first, a logo's brand). */
 function blockLabel(block: ThemeBlock): string {
   const def = getBlockDef(block.kind)
-  const snippet = String(block.settings.text ?? block.settings.body ?? block.settings.label ?? '').trim()
+  const snippet = String(block.settings.title || block.settings.text || block.settings.body || block.settings.label || block.settings.name || '').trim()
   if (snippet) return snippet.length > 28 ? `${snippet.slice(0, 28)}…` : snippet
   return def?.title ?? block.kind
 }
@@ -342,9 +378,23 @@ function blockSettingNum(key: string, fallback: number): number {
 // One schema field-loop drives both section and block settings — these dispatch
 // to the section or block helpers based on the current selection type.
 const isBlockSelected = computed(() => selected.value?.type === 'block')
-const panelFields = computed(() =>
+const panelFields = computed(() => fieldsFor(
   isBlockSelected.value ? (selectedBlockDef.value?.fields ?? []) : (selectedSectionDef.value?.fields ?? []),
-)
+  drawing.value,
+  activeTemplate.value,
+  facts.value,
+).filter((field) => fieldShown(field, panelSettings.value)))
+
+/** A select's choices, under the names the builder gives them ("truck" reads "Delivery truck"). */
+function selectItems(field: ThemeSectionField) {
+  return (field.options ?? []).map((value) => ({ title: field.optionLabels?.[value] ?? value, value }))
+}
+
+/** A collection setting's choices: every product, or one of the store's collections (by its handle). */
+const collectionItems = computed(() => [
+  { title: 'All products', value: 'all' },
+  ...collectionsOf(useCommerceStore().products, channelId.value).map((c) => ({ title: c.name, value: c.handle })),
+])
 const panelSettings = computed(() => (isBlockSelected.value ? selectedBlock.value?.settings : selectedSection.value?.settings) ?? {})
 
 function panelSet(key: string, value: string | number | boolean) {
@@ -415,14 +465,19 @@ const swatchPalette = [
   { label: 'White', value: mp_color_neutral_0 },
 ]
 
-const styleColorRows: { key: 'brandColor' | 'accentColor' | 'background' | 'textColor'; label: string }[] = [
+type ColorKey = 'brandColor' | 'accentColor' | 'background' | 'textColor' | 'tintColor' | 'saleBadgeColor' | 'customBadgeColor' | 'soldOutBadgeColor'
+type ColorRow = { key: ColorKey; label: string; hint?: string }
+
+/** The theme's colours; a theme on the sections drawing also has its tint (Lumos's tinted bands). */
+const styleColorRows = computed<ColorRow[]>(() => [
   { key: 'brandColor', label: 'Brand color' },
   { key: 'accentColor', label: 'Accent color' },
   { key: 'background', label: 'Background' },
   { key: 'textColor', label: 'Text color' },
-]
+  ...(drawing.value === 'sections' ? [{ key: 'tintColor' as const, label: 'Tint color', hint: 'Behind sections set to a tinted band' }] : []),
+])
 
-const badgeColorRows: { key: 'saleBadgeColor' | 'customBadgeColor' | 'soldOutBadgeColor'; label: string }[] = [
+const badgeColorRows: ColorRow[] = [
   { key: 'saleBadgeColor', label: 'Sale badge' },
   { key: 'customBadgeColor', label: 'Custom badge' },
   { key: 'soldOutBadgeColor', label: 'Sold out badge' },
@@ -434,9 +489,79 @@ const buttonStyleOptions: { value: ThemeStyles['buttonStyle']; title: string; de
   { value: 'pill', title: 'Pill', description: 'Fully rounded, filled buttons.', icon: 'rectangle-horizontal' },
 ]
 
+const buttonCaseItems = [{ value: 'As typed', label: 'As typed' }, { value: 'Uppercase', label: 'Uppercase' }]
+const cardShadowItems = [{ value: 'None', label: 'None' }, { value: 'Soft', label: 'Soft' }]
+
 function setStyle(patch: Partial<ThemeStyles>) {
   if (!theme.value) return
   themesStore.updateStyles(theme.value.id, patch)
+}
+
+// ── Colours: a preset swatch or any hex ──────────────────────────────────────
+/** One colour however it was typed ("#FFFFFF" is the preset "#ffffff"). */
+function sameColor(a: string | undefined, b: string | undefined): boolean {
+  return !!a && !!b && a.trim().toLowerCase() === b.trim().toLowerCase()
+}
+
+/** "495da7", "#495DA7" or "#49d" as "#495da7"; null when it is not a hex colour. */
+function normalizeHex(text: string): string | null {
+  const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(text.trim())
+  if (!m) return null
+  const digits = m[1]!.toLowerCase()
+  return `#${digits.length === 3 ? [...digits].map((d) => d + d).join('') : digits}`
+}
+
+/** A colour as the storefront draws it: a tint the theme leaves out is its quiet surface colour. */
+function colorOf(key: ColorKey): string {
+  const styles = theme.value?.styles
+  if (!styles) return ''
+  if (key === 'tintColor') return styles.tintColor || storefrontThemeVars(styles)['--sf-surface'] || ''
+  return styles[key] ?? ''
+}
+
+/**
+ * Set a colour. On the sections drawing the buttons follow a new brand colour when the
+ * theme had set them to the old one (Lumos's indigo), so Brand color reaches them; a
+ * hover shade made for the old colour goes, and the storefront darkens the new one.
+ */
+function setColor(key: ColorKey, value: string) {
+  const styles = theme.value?.styles
+  if (!styles) return
+  const patch: Partial<ThemeStyles> = { [key]: value }
+  if (key === 'brandColor' && styles.drawing === 'sections' && sameColor(styles.buttonColor, styles.brandColor)) {
+    patch.buttonColor = value
+    if (sameColor(styles.buttonBorderColor, styles.brandColor)) patch.buttonBorderColor = value
+    if (styles.buttonHoverColor) patch.buttonHoverColor = undefined
+  }
+  setStyle(patch)
+}
+
+// What is typed in a colour's hex field, while it is not yet the colour saved.
+const hexDrafts = ref<Partial<Record<ColorKey, string>>>({})
+
+function hexText(key: ColorKey): string {
+  return hexDrafts.value[key] ?? colorOf(key)
+}
+
+function hexError(key: ColorKey): string[] {
+  const draft = hexDrafts.value[key]
+  return draft !== undefined && !normalizeHex(draft) ? ['Use a hex color, like #495DA7'] : []
+}
+
+function onHexInput(key: ColorKey, typed: string | null) {
+  hexDrafts.value = { ...hexDrafts.value, [key]: typed ?? '' }
+  const hex = normalizeHex(typed ?? '')
+  if (hex && !sameColor(hex, colorOf(key))) setColor(key, hex)
+}
+
+function clearHexDraft(key: ColorKey) {
+  const { [key]: _typed, ...rest } = hexDrafts.value
+  hexDrafts.value = rest
+}
+
+function pickSwatch(key: ColorKey, value: string) {
+  clearHexDraft(key)
+  setColor(key, value)
 }
 
 // ── Swatch radiogroup keyboard support (roving tabindex) ─────────────────────
@@ -444,9 +569,9 @@ function setStyle(patch: Partial<ThemeStyles>) {
 // in the same order, so array-index alignment resolves the next value without
 // extra DOM data attributes.
 function swatchTabindex(swatch: { value: string }, currentValue: string): number {
-  const checkedIndex = swatchPalette.findIndex((s) => s.value === currentValue)
+  const checkedIndex = swatchPalette.findIndex((s) => sameColor(s.value, currentValue))
   const targetIndex = checkedIndex === -1 ? 0 : checkedIndex
-  return swatchPalette[targetIndex]?.value === swatch.value ? 0 : -1
+  return sameColor(swatchPalette[targetIndex]?.value, swatch.value) ? 0 : -1
 }
 
 function onSwatchKeydown(e: KeyboardEvent, setValue: (value: string) => void) {
@@ -606,6 +731,7 @@ watch(channelId, () => {
   newBlockIds.value.clear()
   selected.value = null
   leftMode.value = 'panel'
+  hexDrafts.value = {}
 })
 
 const totalSectionCount = computed(() =>
@@ -652,7 +778,17 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
 
 <template>
   <div v-if="!channel || !theme" class="tb-missing d-flex align-center justify-center">
+    <!-- A Store Builder store with no theme yet (made blank) is sent to the theme library to choose one. -->
     <MpEmptyState
+      v-if="channel?.webStore?.storeBuilderEnabled"
+      icon="palette"
+      title="No theme yet"
+      description="This store has no theme to edit. Apply one from the theme library first."
+      action-label="Choose a theme"
+      @action="router.push({ name: 'StoreThemes', params: { accountId, channelId } })"
+    />
+    <MpEmptyState
+      v-else
       icon="paintbrush"
       :title="channel ? 'No theme for this channel' : 'Sales channel not found'"
       :description="channel
@@ -929,8 +1065,8 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
                 </div>
               </div>
 
-              <!-- Add block: menu over the block catalog -->
-              <v-menu location="bottom start">
+              <!-- Add block: menu over the blocks this section takes on this theme -->
+              <v-menu v-if="blocksFor(section.kind, drawing).length" location="bottom start">
                 <template #activator="{ props: menuProps }">
                   <button v-bind="menuProps" class="tb-block-add" :aria-label="`Add a block to ${section.label}`">
                     <v-icon size="16" class="tb-block-row__icon">plus</v-icon>
@@ -938,15 +1074,19 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
                   </button>
                 </template>
                 <v-list density="compact">
+                  <!-- A block the section is full of (a banner's three stats) stays listed, turned off, with why. -->
                   <v-list-item
-                    v-for="def in blockCatalog"
+                    v-for="def in blocksFor(section.kind, drawing)"
                     :key="def.kind"
+                    :disabled="!blockHasRoom(section, def.kind)"
+                    :aria-disabled="!blockHasRoom(section, def.kind) ? 'true' : undefined"
                     @click="addBlockToSection(section.id, def.kind)"
                   >
                     <template #prepend>
                       <v-icon size="16">{{ def.icon }}</v-icon>
                     </template>
                     <v-list-item-title class="text-body-2">{{ def.title }}</v-list-item-title>
+                    <v-list-item-subtitle v-if="!blockHasRoom(section, def.kind)" class="text-caption">{{ def.limit?.reason }}</v-list-item-subtitle>
                   </v-list-item>
                 </v-list>
               </v-menu>
@@ -961,22 +1101,41 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
         <!-- Theme styles tab: global colors, fonts, radius, button style -->
         <div v-else class="flex-grow-1 overflow-y-auto pa-3">
           <MpFormGrid>
-            <MpFormField v-for="row in styleColorRows" :key="row.key" :label="row.label">
+            <!-- Each colour: the presets, and its hex (the current colour, whatever it is), in one field. -->
+            <MpFormField v-for="row in styleColorRows" :key="row.key" :label="row.label" :hint="row.hint">
               <template #default="{ labelId }">
-                <div class="tb-swatch-row" role="radiogroup" :aria-labelledby="labelId">
-                  <button
-                    v-for="swatch in swatchPalette"
-                    :key="swatch.value"
-                    class="tb-swatch"
-                    :class="{ 'tb-swatch--selected': theme.styles[row.key] === swatch.value }"
-                    :style="{ background: swatch.value }"
-                    role="radio"
-                    :tabindex="swatchTabindex(swatch, theme.styles[row.key])"
-                    :aria-checked="theme.styles[row.key] === swatch.value"
-                    :aria-label="`${row.label}: ${swatch.label}`"
-                    @click="setStyle({ [row.key]: swatch.value })"
-                    @keydown="onSwatchKeydown($event, (v: string) => setStyle({ [row.key]: v }))"
-                  ></button>
+                <div class="tb-color">
+                  <div class="tb-swatch-row" role="radiogroup" :aria-labelledby="labelId">
+                    <button
+                      v-for="swatch in swatchPalette"
+                      :key="swatch.value"
+                      class="tb-swatch"
+                      :class="{ 'tb-swatch--selected': sameColor(colorOf(row.key), swatch.value) }"
+                      :style="{ background: swatch.value }"
+                      role="radio"
+                      :tabindex="swatchTabindex(swatch, colorOf(row.key))"
+                      :aria-checked="sameColor(colorOf(row.key), swatch.value)"
+                      :aria-label="`${row.label}: ${swatch.label}`"
+                      @click="pickSwatch(row.key, swatch.value)"
+                      @keydown="onSwatchKeydown($event, (v: string) => pickSwatch(row.key, v))"
+                    ></button>
+                  </div>
+                  <v-text-field
+                    :model-value="hexText(row.key)"
+                    class="tb-hex"
+                    :aria-label="`${row.label}, as a hex value`"
+                    placeholder="#495DA7"
+                    maxlength="7"
+                    spellcheck="false"
+                    autocomplete="off"
+                    :error-messages="hexError(row.key)"
+                    @update:model-value="(v: string | null) => onHexInput(row.key, v)"
+                    @blur="clearHexDraft(row.key)"
+                  >
+                    <template #prepend-inner>
+                      <span class="tb-hex__well" :style="{ background: colorOf(row.key) || 'transparent' }" aria-hidden="true"></span>
+                    </template>
+                  </v-text-field>
                 </div>
               </template>
             </MpFormField>
@@ -1010,6 +1169,55 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
               </template>
             </MpFormField>
 
+            <!-- The sections drawing's cards: their own corners (cards without them follow Corner radius) and shadow;
+                 then the collection tiles', which follow the cards' until set (Aurora: 24px cards, 8px tiles). -->
+            <template v-if="drawing === 'sections'">
+              <MpFormField label="Card corners" hint="Product cards, logo cards and icon cards">
+                <template #default="{ labelId, descriptionId }">
+                  <v-slider
+                    :model-value="theme.styles.cardRadius ?? theme.styles.cornerRadius"
+                    :min="0"
+                    :max="24"
+                    :step="2"
+                    thumb-label
+                    :aria-labelledby="labelId"
+                    :aria-describedby="descriptionId"
+                    @update:model-value="(v: number) => setStyle({ cardRadius: v })"
+                  ></v-slider>
+                </template>
+              </MpFormField>
+              <MpFormField label="Card shadow">
+                <MpSegmentedControl
+                  :model-value="theme.styles.cardShadow ?? 'None'"
+                  :items="cardShadowItems"
+                  ariaLabel="Card shadow"
+                  @update:model-value="(v) => { if (v) setStyle({ cardShadow: v as NonNullable<ThemeStyles['cardShadow']> }) }"
+                />
+              </MpFormField>
+              <MpFormField label="Tile corners" hint="Collection tiles. They follow Card corners until you change them.">
+                <template #default="{ labelId, descriptionId }">
+                  <v-slider
+                    :model-value="theme.styles.tileRadius ?? theme.styles.cardRadius ?? theme.styles.cornerRadius"
+                    :min="0"
+                    :max="24"
+                    :step="2"
+                    thumb-label
+                    :aria-labelledby="labelId"
+                    :aria-describedby="descriptionId"
+                    @update:model-value="(v: number) => setStyle({ tileRadius: v })"
+                  ></v-slider>
+                </template>
+              </MpFormField>
+              <MpFormField label="Tile shadow">
+                <MpSegmentedControl
+                  :model-value="theme.styles.tileShadow ?? theme.styles.cardShadow ?? 'None'"
+                  :items="cardShadowItems"
+                  ariaLabel="Tile shadow"
+                  @update:model-value="(v) => { if (v) setStyle({ tileShadow: v as NonNullable<ThemeStyles['tileShadow']> }) }"
+                />
+              </MpFormField>
+            </template>
+
             <MpFormField label="Button style">
               <div class="d-flex flex-column gap-2">
                 <MpOptionCard
@@ -1024,24 +1232,51 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
               </div>
             </MpFormField>
 
+            <MpFormField v-if="drawing === 'sections'" label="Button labels">
+              <MpSegmentedControl
+                :model-value="theme.styles.buttonCase ?? 'As typed'"
+                :items="buttonCaseItems"
+                ariaLabel="Button labels"
+                @update:model-value="(v) => { if (v) setStyle({ buttonCase: v as NonNullable<ThemeStyles['buttonCase']> }) }"
+              />
+            </MpFormField>
+
             <MpFormSection title="Badges" description="The tags on product cards and galleries. Their text colour follows from the fill." />
 
             <MpFormField v-for="row in badgeColorRows" :key="row.key" :label="row.label">
               <template #default="{ labelId }">
-                <div class="tb-swatch-row" role="radiogroup" :aria-labelledby="labelId">
-                  <button
-                    v-for="swatch in swatchPalette"
-                    :key="swatch.value"
-                    class="tb-swatch"
-                    :class="{ 'tb-swatch--selected': theme.styles[row.key] === swatch.value }"
-                    :style="{ background: swatch.value }"
-                    role="radio"
-                    :tabindex="swatchTabindex(swatch, theme.styles[row.key])"
-                    :aria-checked="theme.styles[row.key] === swatch.value"
-                    :aria-label="`${row.label}: ${swatch.label}`"
-                    @click="setStyle({ [row.key]: swatch.value })"
-                    @keydown="onSwatchKeydown($event, (v: string) => setStyle({ [row.key]: v }))"
-                  ></button>
+                <div class="tb-color">
+                  <div class="tb-swatch-row" role="radiogroup" :aria-labelledby="labelId">
+                    <button
+                      v-for="swatch in swatchPalette"
+                      :key="swatch.value"
+                      class="tb-swatch"
+                      :class="{ 'tb-swatch--selected': sameColor(colorOf(row.key), swatch.value) }"
+                      :style="{ background: swatch.value }"
+                      role="radio"
+                      :tabindex="swatchTabindex(swatch, colorOf(row.key))"
+                      :aria-checked="sameColor(colorOf(row.key), swatch.value)"
+                      :aria-label="`${row.label}: ${swatch.label}`"
+                      @click="pickSwatch(row.key, swatch.value)"
+                      @keydown="onSwatchKeydown($event, (v: string) => pickSwatch(row.key, v))"
+                    ></button>
+                  </div>
+                  <v-text-field
+                    :model-value="hexText(row.key)"
+                    class="tb-hex"
+                    :aria-label="`${row.label}, as a hex value`"
+                    placeholder="#495DA7"
+                    maxlength="7"
+                    spellcheck="false"
+                    autocomplete="off"
+                    :error-messages="hexError(row.key)"
+                    @update:model-value="(v: string | null) => onHexInput(row.key, v)"
+                    @blur="clearHexDraft(row.key)"
+                  >
+                    <template #prepend-inner>
+                      <span class="tb-hex__well" :style="{ background: colorOf(row.key) || 'transparent' }" aria-hidden="true"></span>
+                    </template>
+                  </v-text-field>
                 </div>
               </template>
             </MpFormField>
@@ -1067,7 +1302,9 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
               :styles="theme.styles"
               :brand="previewHeader.brand"
               :menu="previewHeader.menu"
+              v-bind="{ ...previewChrome, ...previewCards }"
               :products="previewItems"
+              :template="activeTemplate"
               :device="device"
               interactive
               :selected-id="selectedSectionId"
@@ -1126,17 +1363,27 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
                 auto-grow
                 @update:model-value="(v: string) => panelSet(f.key, v)"
               ></v-textarea>
+              <!-- Unset, or an older theme's value: the option the storefront draws (selectValue). -->
               <v-select
                 v-else-if="f.type === 'select'"
-                :model-value="panelText(f.key)"
+                :model-value="selectValue(f, panelSettings[f.key])"
                 :label="f.label"
-                :items="f.options"
+                :items="selectItems(f)"
+                @update:model-value="(v: string) => panelSet(f.key, v)"
+              ></v-select>
+              <v-select
+                v-else-if="f.type === 'collection'"
+                :model-value="panelText(f.key) || 'all'"
+                :label="f.label"
+                :items="collectionItems"
                 @update:model-value="(v: string) => panelSet(f.key, v)"
               ></v-select>
               <v-switch
                 v-else-if="f.type === 'toggle'"
                 :model-value="panelSettings[f.key] === true"
                 :label="f.label"
+                :hint="f.hint"
+                :persistent-hint="Boolean(f.hint)"
                 @update:model-value="(v: unknown) => panelSet(f.key, v === true)"
               ></v-switch>
               <MpFormField v-else-if="f.type === 'color'" :label="f.label">
@@ -1146,11 +1393,11 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
                       v-for="swatch in swatchPalette"
                       :key="swatch.value"
                       class="tb-swatch"
-                      :class="{ 'tb-swatch--selected': panelText(f.key) === swatch.value }"
+                      :class="{ 'tb-swatch--selected': sameColor(panelText(f.key), swatch.value) }"
                       :style="{ background: swatch.value }"
                       role="radio"
                       :tabindex="swatchTabindex(swatch, panelText(f.key))"
-                      :aria-checked="panelText(f.key) === swatch.value"
+                      :aria-checked="sameColor(panelText(f.key), swatch.value)"
                       :aria-label="`${f.label}: ${swatch.label}`"
                       @click="panelSet(f.key, swatch.value)"
                       @keydown="onSwatchKeydown($event, (v: string) => panelSet(f.key, v))"
@@ -1189,6 +1436,7 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
 
     <AddSectionDialog
       v-model="addDialog"
+      :sections="addableSections"
       :is-kind-disabled="isKindDisabled"
       @add="addSection"
       @add-variant="addSectionVariant"
@@ -1445,7 +1693,17 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
 .tb-panel-right { width: 340px; flex-shrink: 0; overflow: hidden; }
 
 /* ── Color swatches (token palette presets) ──────────────────────── */
+.tb-color { display: flex; flex-direction: column; gap: var(--mp-space-10); }
 .tb-swatch-row { display: flex; flex-wrap: wrap; gap: var(--mp-space-10); }
+
+/* The current colour's hex, with a well that shows it (whatever it is, preset or not). */
+.tb-hex__well {
+  flex-shrink: 0;
+  width: var(--mp-space-20);
+  height: var(--mp-space-20);
+  border-radius: var(--r-pill);
+  box-shadow: inset 0 0 0 1px var(--mp-border-subtle);
+}
 
 .tb-swatch {
   width: var(--mp-space-28);

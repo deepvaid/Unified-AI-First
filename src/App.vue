@@ -22,6 +22,7 @@ import { applyChartPalette, type ChartPalette } from '@/plugins/chartPalette'
 import { useCopilotStore } from '@/stores/useCopilot'
 import { useAccountsStore } from '@/stores/useAccounts'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
+import { useDemoStores } from '@/stores/useDemoStores'
 import { usePlgStore, isPlgDemoPreset } from '@/stores/usePlg'
 import { useMaropayStore, isMaropayScenarioKey } from '@/stores/useMaropay'
 import { useCatalogCopilotStore } from '@/stores/useCatalogCopilot'
@@ -156,6 +157,8 @@ watch(width, (w, prevW) => {
 // manual re-expand inside the shell is respected; the user's prior state is
 // restored on exit (unless the narrow-viewport rule forces rail anyway).
 const salesChannelsStore = useSalesChannelsStore()
+// From the start, so a theme applied or a store restored in another tab is followed here.
+useDemoStores()
 const railBeforeShell = ref<boolean | null>(null)
 
 const inRailShell = computed(() => {
@@ -186,8 +189,9 @@ const isFlush = computed(() => !!route.meta?.flush)
 // The AI experience owns the whole screen and hosts its own Da Vinci conversation.
 // Showing the drawer alongside it puts two Da Vinci surfaces on screen at once,
 // each with its own greeting, so it stays closed there. The Trial Lab renders
-// its own shell for a brand-new user, so the drawer stays closed there too.
-const copilotAvailable = computed(() => route.name !== 'DaVinciExperience' && !route.meta?.trialLab)
+// its own shell for a brand-new user, so the drawer stays closed there too. A store's storefront is
+// what its shoppers see, so the merchant's assistant never opens over it.
+const copilotAvailable = computed(() => route.name !== 'DaVinciExperience' && !route.meta?.trialLab && !route.meta?.shopper)
 const copilotVisible = computed({
   get: () => copilot.isOpen && copilotAvailable.value,
   set: (value: boolean) => {

@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed, inject, ref } from 'vue'
+import { computed, inject, ref, watchEffect } from 'vue'
 import type { ThemeBlock, ThemeSection } from '@/stores/themeBuilderData'
 import { useCommerceStore } from '@/stores/useCommerce'
 import StorefrontAnchor from './StorefrontAnchor.vue'
 import StorefrontProductCard from './StorefrontProductCard.vue'
 import { STOREFRONT } from './storefrontContext'
 import { inStock, storefrontProducts } from './storefrontCatalog'
+import { BANNER_KINDS, sectionComponent } from './sections'
 
 // The storefront home page: the current theme's home template, section by
 // section. The header and footer belong to StorefrontLayout. Featured products
@@ -13,6 +14,9 @@ import { inStock, storefrontProducts } from './storefrontCatalog'
 // newsletter sections aren't drawn. A banner, a collection card and an
 // image-with-text section show the photograph named in their `image` setting;
 // without one a banner or card keeps its drawn stand-in.
+// A theme on the sections drawing (Northfold, Torqline) is drawn section by section
+// through the components in ./sections (one per kind); the classic drawing below is
+// every other theme's, unchanged.
 
 const storefront = inject(STOREFRONT)!
 const commerce = useCommerceStore()
@@ -44,6 +48,24 @@ function blocksOf(section: ThemeSection, kind: string): ThemeBlock[] {
   return (section.blocks ?? []).filter((b) => b.kind === kind)
 }
 
+// ── Sections drawing ────────────────────────────────────────────────────
+const sectionsDrawing = computed(() => storefront.sectionsDrawing.value)
+/** The first banner with a headline names the page; without one, the store's name does, for screen readers. */
+const titleSectionId = computed(() => sections.value.find((s) => BANNER_KINDS.includes(s.kind) && text(s, 'headline'))?.id)
+
+// A kind the drawing has no component for draws nothing; a developer hears about it once.
+const warned = new Set<string>()
+if (import.meta.env.DEV) {
+  watchEffect(() => {
+    if (!sectionsDrawing.value) return
+    for (const section of sections.value) {
+      if (sectionComponent(section.kind) || warned.has(section.kind)) continue
+      warned.add(section.kind)
+      console.warn(`[storefront] The sections drawing has no component for "${section.kind}" sections; add one to src/views/Storefront/sections/index.ts.`)
+    }
+  })
+}
+
 /** Aurora's image-banner heights; its Medium banner measures 400px on Neelam-Store. */
 const BANNER_HEIGHT: Record<string, string> = { Small: '280px', Medium: '400px', Large: '560px' }
 
@@ -60,7 +82,25 @@ function looped(section: ThemeSection): ThemeBlock[] {
 </script>
 
 <template>
-  <div class="sf-home">
+  <!-- A store made blank, before a theme is applied: one quiet line, not an empty page. -->
+  <div v-if="!storefront.theme.value" class="sf-home sf-home--soon">
+    <h1 class="sf-home__soon-title">{{ storefront.chrome.value.wordmark }} is opening soon</h1>
+    <p class="sf-home__soon-text">This store is being set up. Check back soon.</p>
+  </div>
+
+  <div v-else-if="sectionsDrawing" class="sf-home sf-home--sections">
+    <h1 v-if="!titleSectionId" class="sf-home__title">{{ storefront.chrome.value.wordmark }}</h1>
+    <template v-for="section in sections" :key="section.id">
+      <component
+        :is="sectionComponent(section.kind)"
+        v-if="sectionComponent(section.kind)"
+        :section="section"
+        v-bind="BANNER_KINDS.includes(section.kind) ? { headingLevel: section.id === titleSectionId ? 1 : 2 } : {}"
+      />
+    </template>
+  </div>
+
+  <div v-else class="sf-home">
     <template v-for="section in sections" :key="section.id">
       <section
         v-if="section.kind === 'image-banner'"
@@ -418,6 +458,36 @@ function looped(section: ThemeSection): ThemeBlock[] {
   color: var(--sf-bg, #ffffff);
   text-align: center;
   font-size: 14px;
+}
+
+/* The page's name for screen readers, when no banner gives it a headline. */
+.sf-home--soon {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 120px 24px;
+  text-align: center;
+}
+
+.sf-home__soon-title {
+  margin: 0 0 12px;
+  font-family: var(--sf-heading-font, inherit);
+  font-size: 32px;
+  line-height: 40px;
+  color: var(--sf-text, #121011);
+}
+
+.sf-home__soon-text {
+  margin: 0;
+  color: var(--sf-muted, #5f5f5f);
+}
+
+.sf-home__title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
 @media (max-width: 900px) {

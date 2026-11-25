@@ -1,9 +1,19 @@
-// What a sales person changes in the Vitaheal (demo) store is kept in this browser,
-// so it survives a reload and reaches the storefront tab that "View store" opens.
+// What a sales person changes in a demo store is kept in this browser, so it
+// survives a reload and reaches the storefront tab that "View store" opens.
 // Pure: the storage is passed in, so `npm run test:storefront` runs this in Node.
 
-/** Every key this module writes starts with this, so a restore can be sure it found them all. */
+/** The Vitaheal (demo) store's keys start with this, as they always have. */
 export const DEMO_STORAGE_PREFIX = 'mp.vitaheal-demo.'
+
+/**
+ * Where one store's keys start. Vitaheal keeps its own prefix, so what a browser
+ * saved before stays readable. Every other store's sit under `mp.demo-store.`: a
+ * store made through Create sales channel takes its id from its name, and a bare
+ * `mp.<id>.` could land on an app key such as `mp.maropay.`.
+ */
+export function channelStoragePrefix(channelId: string): string {
+  return channelId === 'vitaheal-demo' ? DEMO_STORAGE_PREFIX : `mp.demo-store.${channelId}.`
+}
 
 /** The part of `Storage` a slot uses. `localStorage` satisfies it. */
 export interface StorageLike {
@@ -32,7 +42,21 @@ export function demoSlot<T>(
   storage: StorageLike | undefined,
   isValid: (value: unknown) => value is T,
 ): DemoSlot<T> {
-  const key = `${DEMO_STORAGE_PREFIX}${name}.v${version}`
+  return slotAt(`${DEMO_STORAGE_PREFIX}${name}.v${version}`, storage, isValid)
+}
+
+/** One saved value of one store: `<channelStoragePrefix(channelId)><name>.v<version>`. */
+export function demoSlotFor<T>(
+  channelId: string,
+  name: string,
+  version: number,
+  storage: StorageLike | undefined,
+  isValid: (value: unknown) => value is T,
+): DemoSlot<T> {
+  return slotAt(`${channelStoragePrefix(channelId)}${name}.v${version}`, storage, isValid)
+}
+
+function slotAt<T>(key: string, storage: StorageLike | undefined, isValid: (value: unknown) => value is T): DemoSlot<T> {
   return {
     key,
     load() {

@@ -7,6 +7,8 @@ import { setPageTitle, titleFromRouteName } from '@/composables/usePageTitle'
 declare module 'vue-router' {
   interface RouteMeta {
     fullPage?: boolean
+    /** A shopper-facing page (a store's storefront): no admin surface, the Da Vinci drawer included, shows on it. */
+    shopper?: boolean
     /** Builder/wizard chrome: real AppBar + rail-collapsed sidebar + rounded content frame. */
     builderShell?: boolean
     flush?: boolean
@@ -116,6 +118,8 @@ const routes: RouteRecordRaw[] = [
   { path: '/commerce/:accountId/products/collections', name: 'Collections', component: () => import('@/views/Products/Collections.vue'), meta: sharedCommerceGate },
   { path: '/commerce/:accountId/products/collections/new', name: 'CollectionNew', component: () => import('@/views/Products/CollectionEditor.vue'), meta: sharedCommerceGate },
   { path: '/commerce/:accountId/products/collections/:collectionId', name: 'CollectionEdit', component: () => import('@/views/Products/CollectionEditor.vue'), meta: sharedCommerceGate },
+  // The measurements a product's size guide shows; query: store (a sales channel id) to open on one store's charts.
+  { path: '/commerce/:accountId/products/size_charts', name: 'SizeCharts', component: () => import('@/views/Products/SizeCharts.vue'), meta: sharedCommerceGate },
   { path: '/commerce/:accountId/inventory', name: 'Inventory', component: () => import('@/views/Products/Inventory.vue'), meta: sharedCommerceGate },
   // Price lists and reservations sit on their UAT paths; the previous sandbox
   // paths redirect so older links and bookmarks keep working.
@@ -281,7 +285,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/accounts/:accountId/sales_channels/:channelId/storefront',
     component: () => import('@/views/Storefront/StorefrontLayout.vue'),
-    meta: { ...commerceGate, fullPage: true },
+    meta: { ...commerceGate, fullPage: true, shopper: true },
     children: [
       { path: '', name: 'StorefrontHome', component: () => import('@/views/Storefront/StorefrontHome.vue') },
       { path: 'page/:handle', name: 'StorefrontPage', component: () => import('@/views/Storefront/StorefrontContent.vue'), meta: { contentKind: 'page' } },
@@ -290,9 +294,13 @@ const routes: RouteRecordRaw[] = [
       { path: 'products/:handle', name: 'StorefrontProduct', component: () => import('@/views/Storefront/StorefrontProduct.vue') },
       { path: 'search', name: 'StorefrontSearch', component: () => import('@/views/Storefront/StorefrontSearch.vue') },
       { path: 'cart-page', name: 'StorefrontCart', component: () => import('@/views/Storefront/StorefrontCart.vue') },
-      // The shopper's own page: sign in (mocked), then their subscriptions.
+      // The products the shopper saved with a heart, on a store whose theme has a wishlist (Lumos); the store's 404 elsewhere.
+      { path: 'wishlist', name: 'StorefrontWishlist', component: () => import('@/views/Storefront/StorefrontWishlist.vue') },
+      // The shopper's own page: sign in (mocked), then their subscriptions (on a store that sells them) and orders.
       { path: 'account', name: 'StorefrontAccount', component: () => import('@/views/Storefront/StorefrontAccount.vue') },
-      // Takes the payment through the store's Maropay setup; query: buy/qty (express buy-now), express, session.
+      // One of the signed-in shopper's orders on this store, by its number without the "#".
+      { path: 'account/orders/:number', name: 'StorefrontOrder', component: () => import('@/views/Storefront/StorefrontOrder.vue') },
+      // Takes the payment through the store's Maropay setup; query: buy/qty/variant (express buy-now), express, session.
       { path: 'checkout', name: 'StorefrontCheckout', component: () => import('@/views/Storefront/StorefrontCheckout.vue'), meta: { minimalChrome: true } },
       { path: ':pathMatch(.*)*', name: 'StorefrontNotFound', component: () => import('@/views/Storefront/StorefrontNotFound.vue') },
     ],

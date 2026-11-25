@@ -2,6 +2,7 @@ import { computed, toValue, type MaybeRefOrGetter } from 'vue'
 import { useRouter } from 'vue-router'
 import { placeholderImages } from '@/components/products/productMedia'
 import { useCommerceStore, type Product } from '@/stores/useCommerce'
+import { useDemoStores } from '@/stores/useDemoStores'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import { useStoreThemesStore } from '@/stores/useStoreThemes'
 import { channelIdsFor, storesWithOwnCatalogue } from '@/storefront/catalog'
@@ -18,6 +19,7 @@ export function useProductStores(accountId: MaybeRefOrGetter<string>) {
   const commerce = useCommerceStore()
   const salesChannels = useSalesChannelsStore()
   const themes = useStoreThemesStore()
+  const demoStores = useDemoStores()
   const router = useRouter()
 
   const stores = computed(() =>
@@ -37,11 +39,11 @@ export function useProductStores(accountId: MaybeRefOrGetter<string>) {
     return currencyAffix(store?.currency, store?.locale)
   }
 
-  /** Drawn pictures for a product saved without any, in the first picked store's colours. None when no store is picked. */
+  /** Drawn pictures for a product saved without any, in the first picked store's colours and shape. None when no store is picked. */
   function placeholdersFor(names: string[], productName: string): string[] {
     const store = picked(names)[0]
     const styles = store ? themes.themeForChannel(store.id)?.styles : undefined
-    return styles ? placeholderImages(productName, styles) : []
+    return store && styles ? placeholderImages(productName, styles, demoStores.blueprintOf(store.id)?.packShot?.shape) : []
   }
 
   /** The product's page on its store, once shoppers can see it there. */

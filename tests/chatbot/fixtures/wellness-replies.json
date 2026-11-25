@@ -1,0 +1,1955 @@
+{
+ "guest · Hi": {
+  "says": [
+   "Hi! I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, skin or healthy ageing, and answer questions about delivery and returns."
+  ],
+  "sha": "361cd89d916078f7"
+ },
+ "guest · Hello there": {
+  "says": [
+   "Hi! I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, skin or healthy ageing, and answer questions about delivery and returns."
+  ],
+  "sha": "361cd89d916078f7"
+ },
+ "guest · hej": {
+  "says": [
+   "Hi! I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, skin or healthy ageing, and answer questions about delivery and returns."
+  ],
+  "sha": "361cd89d916078f7"
+ },
+ "guest · Good morning": {
+  "says": [
+   "Hi! I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, skin or healthy ageing, and answer questions about delivery and returns."
+  ],
+  "sha": "361cd89d916078f7"
+ },
+ "guest · Thanks!": {
+  "says": [
+   "You’re welcome. Is there anything else I can help with?"
+  ],
+  "sha": "675efd32302dce3d"
+ },
+ "guest · thank you so much": {
+  "says": [
+   "You’re welcome. Is there anything else I can help with?"
+  ],
+  "sha": "675efd32302dce3d"
+ },
+ "guest · asdf qwerty": {
+  "says": [
+   "I’m not sure about that one. I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, skin or healthy ageing, and answer questions about delivery and returns."
+  ],
+  "sha": "f0dd5a2e57726c22"
+ },
+ "guest · ": {
+  "says": [
+   "I’m not sure about that one. I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, skin or healthy ageing, and answer questions about delivery and returns."
+  ],
+  "sha": "f0dd5a2e57726c22"
+ },
+ "guest · Where is my order?": {
+  "says": [
+   "I can check that. Which email did you order with?"
+  ],
+  "sha": "6fe38da04b8dac0f"
+ },
+ "guest · Track order 20007": {
+  "says": [
+   "I can look up order #20007. Which email did you order with?"
+  ],
+  "sha": "c645c3b33c6402d1"
+ },
+ "guest · order #20001": {
+  "says": [
+   "I can look up order #20001. Which email did you order with?"
+  ],
+  "sha": "3e22bafc5b596f00"
+ },
+ "guest · #99999": {
+  "says": [
+   "I can look up order #99999. Which email did you order with?"
+  ],
+  "sha": "d1c3965828203ecc"
+ },
+ "guest · 20007": {
+  "says": [
+   "I can look up order #20007. Which email did you order with?"
+  ],
+  "sha": "88765e16d3f12a36"
+ },
+ "guest · Where is order #20007? My email is linnea.berg@example.com": {
+  "says": [
+   "Order #20007, placed 18 Nov 2026: Vitaheal Electrolytes, 585,90 kr. We are packing it and it has not shipped yet. You will get an email as soon as it leaves us."
+  ],
+  "sha": "16953d3c7f91aa05"
+ },
+ "guest · When is my next delivery?": {
+  "says": [
+   "I can check that. Which email did you subscribe with?"
+  ],
+  "sha": "dfd82ee36b46db72"
+ },
+ "guest · I want to skip my next delivery": {
+  "says": [
+   "I can check that. Which email did you subscribe with?"
+  ],
+  "sha": "d157e11942b57fbb"
+ },
+ "guest · How do I cancel my subscription?": {
+  "says": [
+   "I can check that. Which email did you subscribe with?"
+  ],
+  "sha": "2fa363f2c1e9c02f"
+ },
+ "guest · pause my subscription please": {
+  "says": [
+   "I can check that. Which email did you subscribe with?"
+  ],
+  "sha": "790a5cd94b7dc010"
+ },
+ "guest · when does my subscription renew?": {
+  "says": [
+   "I can check that. Which email did you subscribe with?"
+  ],
+  "sha": "7d573d54b3eec232"
+ },
+ "guest · my subscription": {
+  "says": [
+   "I can check that. Which email did you subscribe with?"
+  ],
+  "sha": "86d537a56cd94f01"
+ },
+ "guest · How do subscriptions work?": {
+  "says": [
+   "A subscription sends your product at the interval you choose and saves 20% to 30% on every delivery. You can skip a delivery, pause or cancel at any time from your account page, before the next charge date."
+  ],
+  "sha": "68885890f0f991e9"
+ },
+ "guest · Can I cancel anytime?": {
+  "says": [
+   "A subscription sends your product at the interval you choose and saves 20% to 30% on every delivery. You can skip a delivery, pause or cancel at any time from your account page, before the next charge date."
+  ],
+  "sha": "68885890f0f991e9"
+ },
+ "guest · Do you offer a subscription?": {
+  "says": [
+   "A subscription sends your product at the interval you choose and saves 20% to 30% on every delivery. You can skip a delivery, pause or cancel at any time from your account page, before the next charge date."
+  ],
+  "sha": "68885890f0f991e9"
+ },
+ "guest · I can’t sleep": {
+  "says": [
+   "For better sleep, this is the one we make for it:"
+  ],
+  "sha": "055133e9f0d7677b"
+ },
+ "guest · Help me sleep better": {
+  "says": [
+   "For better sleep, this is the one we make for it:"
+  ],
+  "sha": "055133e9f0d7677b"
+ },
+ "guest · I feel stressed in the evenings": {
+  "says": [
+   "For feeling calmer, this is the one we make for it:"
+  ],
+  "sha": "915c9004f9cef145"
+ },
+ "guest · I need more focus at work": {
+  "says": [
+   "For focus, this is the one we make for it:"
+  ],
+  "sha": "90b1d54d8ea75cc4"
+ },
+ "guest · I get cramps when I train": {
+  "says": [
+   "For hydration and training, this is the one we make for it:"
+  ],
+  "sha": "006aa94b23cfad4c"
+ },
+ "guest · something for my skin": {
+  "says": [
+   "For skin, hair and joints, this is the one we make for it:"
+  ],
+  "sha": "d7d7acdf92b0169f"
+ },
+ "guest · I want to age well": {
+  "says": [
+   "For healthy ageing, this is the one we make for it:"
+  ],
+  "sha": "b74e01a4869deb2f"
+ },
+ "guest · my partner says I snore": {
+  "says": [
+   "For easier breathing, this is the one we make for it:"
+  ],
+  "sha": "38c8e6d0b1751f18"
+ },
+ "guest · something for women": {
+  "says": [
+   "For women’s daily balance, these are the ones we make for it:"
+  ],
+  "sha": "9407cc6267d733c6"
+ },
+ "guest · What do you recommend?": {
+  "says": [
+   "Tell me what you would like help with, for example better sleep, focus, hydration, skin or healthy ageing, and I will suggest a product."
+  ],
+  "sha": "a82183a17b9a4ec1"
+ },
+ "guest · what should I buy?": {
+  "says": [
+   "Tell me what you would like help with, for example better sleep, focus, hydration, skin or healthy ageing, and I will suggest a product."
+  ],
+  "sha": "a82183a17b9a4ec1"
+ },
+ "guest · Which one is best for running?": {
+  "says": [
+   "For hydration and training, this is the one we make for it:"
+  ],
+  "sha": "006aa94b23cfad4c"
+ },
+ "guest · Can I take this while pregnant?": {
+  "says": [
+   "I can’t give medical advice. If you are pregnant, breastfeeding, taking medication, managing a condition or asking for a child, please check with your doctor or pharmacist before starting a supplement. I can tell you what each product contains and what it is made for."
+  ],
+  "sha": "2c50f9db9fa4442f"
+ },
+ "guest · Is Clear Focus safe with my blood pressure medication?": {
+  "says": [
+   "I can’t give medical advice. If you are pregnant, breastfeeding, taking medication, managing a condition or asking for a child, please check with your doctor or pharmacist before starting a supplement. I can tell you what each product contains and what it is made for."
+  ],
+  "sha": "2c50f9db9fa4442f"
+ },
+ "guest · Will Unwind cure my insomnia?": {
+  "says": [
+   "I can’t give medical advice. If you are pregnant, breastfeeding, taking medication, managing a condition or asking for a child, please check with your doctor or pharmacist before starting a supplement. I can tell you what each product contains and what it is made for."
+  ],
+  "sha": "2c50f9db9fa4442f"
+ },
+ "guest · Can my child take it?": {
+  "says": [
+   "I can’t give medical advice. If you are pregnant, breastfeeding, taking medication, managing a condition or asking for a child, please check with your doctor or pharmacist before starting a supplement. I can tell you what each product contains and what it is made for."
+  ],
+  "sha": "2c50f9db9fa4442f"
+ },
+ "guest · I am allergic to nuts": {
+  "says": [
+   "I can’t give medical advice. If you are pregnant, breastfeeding, taking medication, managing a condition or asking for a child, please check with your doctor or pharmacist before starting a supplement. I can tell you what each product contains and what it is made for."
+  ],
+  "sha": "2c50f9db9fa4442f"
+ },
+ "guest · Do you have a discount code?": {
+  "says": [
+   "There is no discount code running right now. A subscription saves 20% to 30% on every delivery, all year."
+  ],
+  "sha": "5a4eaccb01595650"
+ },
+ "guest · any offers right now?": {
+  "says": [
+   "There is no discount code running right now. A subscription saves 20% to 30% on every delivery, all year."
+  ],
+  "sha": "5a4eaccb01595650"
+ },
+ "guest · is anything on sale?": {
+  "says": [
+   "There is no discount code running right now. A subscription saves 20% to 30% on every delivery, all year."
+  ],
+  "sha": "5a4eaccb01595650"
+ },
+ "guest · What is your return policy?": {
+  "says": [
+   "You can return unopened products within 14 days of delivery for a full refund. Write to us first and we will send a return label. We refund to your original payment method within 5 working days of receiving the return."
+  ],
+  "sha": "a14bbbb9c9e85e52"
+ },
+ "guest · Can I return something from the sale?": {
+  "says": [
+   "There is no discount code running right now. A subscription saves 20% to 30% on every delivery, all year."
+  ],
+  "sha": "5a4eaccb01595650"
+ },
+ "guest · Do you ship to Norway?": {
+  "says": [
+   "We ship to Sweden, Norway, Denmark, Finland and Iceland, and to the rest of the EU. Duties and taxes may apply outside the EU."
+  ],
+  "sha": "722b0e3e5ea632d9"
+ },
+ "guest · Is shipping free?": {
+  "says": [
+   "Orders placed before 10:00 CET on a weekday leave our warehouse the same day. Delivery takes 3 to 7 working days, and shipping is free on orders over 549 kr."
+  ],
+  "sha": "1ecf91c4f94ab26c"
+ },
+ "guest · How long does delivery take?": {
+  "says": [
+   "Orders placed before 10:00 CET on a weekday leave our warehouse the same day. Delivery takes 3 to 7 working days, and shipping is free on orders over 549 kr."
+  ],
+  "sha": "1ecf91c4f94ab26c"
+ },
+ "guest · Is Unwind covered by a guarantee?": {
+  "says": [
+   "If Unwind is not right for you, tell us within 30 days of delivery and we will refund your first can or bag. The guarantee covers your first order of Unwind, once per household."
+  ],
+  "sha": "9d4911eacdb18c19"
+ },
+ "guest · Can I talk to a human?": {
+  "says": [
+   "Of course. Our team answers within one working day. Write to us and say what you need."
+  ],
+  "sha": "e5a599c15f0d2ae2"
+ },
+ "guest · speak to someone please": {
+  "says": [
+   "Of course. Our team answers within one working day. Write to us and say what you need."
+  ],
+  "sha": "e5a599c15f0d2ae2"
+ },
+ "guest · What size should I get in the merino sweater?": {
+  "says": [
+   "For hydration and training, this is the one we make for it:"
+  ],
+  "sha": "006aa94b23cfad4c"
+ },
+ "guest · does the car coat run large": {
+  "says": [
+   "For hydration and training, this is the one we make for it:"
+  ],
+  "sha": "006aa94b23cfad4c"
+ },
+ "guest · I’m 5’6 and 140 lb": {
+  "says": [
+   "I’m not sure about that one. I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, skin or healthy ageing, and answer questions about delivery and returns."
+  ],
+  "sha": "f0dd5a2e57726c22"
+ },
+ "guest · between M and L": {
+  "says": [
+   "I’m not sure about that one. I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, skin or healthy ageing, and answer questions about delivery and returns."
+  ],
+  "sha": "f0dd5a2e57726c22"
+ },
+ "guest · Which size should I get?": {
+  "says": [
+   "We ship to Sweden, Norway, Denmark, Finland and Iceland, and to the rest of the EU. Duties and taxes may apply outside the EU."
+  ],
+  "sha": "722b0e3e5ea632d9"
+ },
+ "guest · can I wash the merino": {
+  "says": [
+   "I’m not sure about that one. I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, skin or healthy ageing, and answer questions about delivery and returns."
+  ],
+  "sha": "f0dd5a2e57726c22"
+ },
+ "guest · is the linen see-through": {
+  "says": [
+   "I’m not sure about that one. I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, skin or healthy ageing, and answer questions about delivery and returns."
+  ],
+  "sha": "f0dd5a2e57726c22"
+ },
+ "guest · How do I wash merino?": {
+  "says": [
+   "I’m not sure about that one. I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, skin or healthy ageing, and answer questions about delivery and returns."
+  ],
+  "sha": "f0dd5a2e57726c22"
+ },
+ "guest · I’m allergic to wool": {
+  "says": [
+   "I can’t give medical advice. If you are pregnant, breastfeeding, taking medication, managing a condition or asking for a child, please check with your doctor or pharmacist before starting a supplement. I can tell you what each product contains and what it is made for."
+  ],
+  "sha": "2c50f9db9fa4442f"
+ },
+ "guest · a warm coat under $250": {
+  "says": [
+   "I’m not sure about that one. I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, skin or healthy ageing, and answer questions about delivery and returns."
+  ],
+  "sha": "f0dd5a2e57726c22"
+ },
+ "guest · gift for him": {
+  "says": [
+   "I’m not sure about that one. I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, skin or healthy ageing, and answer questions about delivery and returns."
+  ],
+  "sha": "f0dd5a2e57726c22"
+ },
+ "guest · What’s on sale?": {
+  "says": [
+   "There is no discount code running right now. A subscription saves 20% to 30% on every delivery, all year."
+  ],
+  "sha": "5a4eaccb01595650"
+ },
+ "guest · How do returns work?": {
+  "says": [
+   "You can return unopened products within 14 days of delivery for a full refund. Write to us first and we will send a return label. We refund to your original payment method within 5 working days of receiving the return."
+  ],
+  "sha": "a14bbbb9c9e85e52"
+ },
+ "guest · bust 36 waist 30": {
+  "says": [
+   "I’m not sure about that one. I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, skin or healthy ageing, and answer questions about delivery and returns."
+  ],
+  "sha": "f0dd5a2e57726c22"
+ },
+ "guest · I’m usually a medium. Will it fit?": {
+  "says": [
+   "I’m not sure about that one. I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, skin or healthy ageing, and answer questions about delivery and returns."
+  ],
+  "sha": "f0dd5a2e57726c22"
+ },
+ "guest · anything under 300 kr?": {
+  "says": [
+   "A subscription sends your product at the interval you choose and saves 20% to 30% on every delivery. You can skip a delivery, pause or cancel at any time from your account page, before the next charge date."
+  ],
+  "sha": "68885890f0f991e9"
+ },
+ "signedIn · Hi": {
+  "sha": "361cd89d916078f7"
+ },
+ "signedIn · Hello there": {
+  "sha": "361cd89d916078f7"
+ },
+ "signedIn · hej": {
+  "sha": "361cd89d916078f7"
+ },
+ "signedIn · Good morning": {
+  "sha": "361cd89d916078f7"
+ },
+ "signedIn · Thanks!": {
+  "sha": "675efd32302dce3d"
+ },
+ "signedIn · thank you so much": {
+  "sha": "675efd32302dce3d"
+ },
+ "signedIn · asdf qwerty": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "signedIn · ": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "signedIn · Where is my order?": {
+  "sha": "2f9322768b275c9a"
+ },
+ "signedIn · Track order 20007": {
+  "sha": "16953d3c7f91aa05"
+ },
+ "signedIn · order #20001": {
+  "sha": "1cd28613d622bb7d"
+ },
+ "signedIn · #99999": {
+  "sha": "7991e085f48af055"
+ },
+ "signedIn · 20007": {
+  "sha": "16953d3c7f91aa05"
+ },
+ "signedIn · Where is order #20007? My email is linnea.berg@example.com": {
+  "sha": "16953d3c7f91aa05"
+ },
+ "signedIn · When is my next delivery?": {
+  "sha": "c578e81d3b050251"
+ },
+ "signedIn · I want to skip my next delivery": {
+  "sha": "82fe631ff398ecdd"
+ },
+ "signedIn · How do I cancel my subscription?": {
+  "sha": "3ee5a223c4339bd9"
+ },
+ "signedIn · pause my subscription please": {
+  "sha": "3ee5a223c4339bd9"
+ },
+ "signedIn · when does my subscription renew?": {
+  "sha": "c578e81d3b050251"
+ },
+ "signedIn · my subscription": {
+  "sha": "c578e81d3b050251"
+ },
+ "signedIn · How do subscriptions work?": {
+  "sha": "68885890f0f991e9"
+ },
+ "signedIn · Can I cancel anytime?": {
+  "sha": "68885890f0f991e9"
+ },
+ "signedIn · Do you offer a subscription?": {
+  "sha": "68885890f0f991e9"
+ },
+ "signedIn · I can’t sleep": {
+  "sha": "055133e9f0d7677b"
+ },
+ "signedIn · Help me sleep better": {
+  "sha": "055133e9f0d7677b"
+ },
+ "signedIn · I feel stressed in the evenings": {
+  "sha": "915c9004f9cef145"
+ },
+ "signedIn · I need more focus at work": {
+  "sha": "90b1d54d8ea75cc4"
+ },
+ "signedIn · I get cramps when I train": {
+  "sha": "006aa94b23cfad4c"
+ },
+ "signedIn · something for my skin": {
+  "sha": "d7d7acdf92b0169f"
+ },
+ "signedIn · I want to age well": {
+  "sha": "b74e01a4869deb2f"
+ },
+ "signedIn · my partner says I snore": {
+  "sha": "38c8e6d0b1751f18"
+ },
+ "signedIn · something for women": {
+  "sha": "9407cc6267d733c6"
+ },
+ "signedIn · What do you recommend?": {
+  "sha": "a82183a17b9a4ec1"
+ },
+ "signedIn · what should I buy?": {
+  "sha": "a82183a17b9a4ec1"
+ },
+ "signedIn · Which one is best for running?": {
+  "sha": "006aa94b23cfad4c"
+ },
+ "signedIn · Can I take this while pregnant?": {
+  "sha": "2c50f9db9fa4442f"
+ },
+ "signedIn · Is Clear Focus safe with my blood pressure medication?": {
+  "sha": "2c50f9db9fa4442f"
+ },
+ "signedIn · Will Unwind cure my insomnia?": {
+  "sha": "2c50f9db9fa4442f"
+ },
+ "signedIn · Can my child take it?": {
+  "sha": "2c50f9db9fa4442f"
+ },
+ "signedIn · I am allergic to nuts": {
+  "sha": "2c50f9db9fa4442f"
+ },
+ "signedIn · Do you have a discount code?": {
+  "sha": "5a4eaccb01595650"
+ },
+ "signedIn · any offers right now?": {
+  "sha": "5a4eaccb01595650"
+ },
+ "signedIn · is anything on sale?": {
+  "sha": "5a4eaccb01595650"
+ },
+ "signedIn · What is your return policy?": {
+  "sha": "a14bbbb9c9e85e52"
+ },
+ "signedIn · Can I return something from the sale?": {
+  "sha": "5a4eaccb01595650"
+ },
+ "signedIn · Do you ship to Norway?": {
+  "sha": "722b0e3e5ea632d9"
+ },
+ "signedIn · Is shipping free?": {
+  "sha": "1ecf91c4f94ab26c"
+ },
+ "signedIn · How long does delivery take?": {
+  "sha": "1ecf91c4f94ab26c"
+ },
+ "signedIn · Is Unwind covered by a guarantee?": {
+  "sha": "9d4911eacdb18c19"
+ },
+ "signedIn · Can I talk to a human?": {
+  "sha": "e5a599c15f0d2ae2"
+ },
+ "signedIn · speak to someone please": {
+  "sha": "e5a599c15f0d2ae2"
+ },
+ "signedIn · What size should I get in the merino sweater?": {
+  "sha": "006aa94b23cfad4c"
+ },
+ "signedIn · does the car coat run large": {
+  "sha": "006aa94b23cfad4c"
+ },
+ "signedIn · I’m 5’6 and 140 lb": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "signedIn · between M and L": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "signedIn · Which size should I get?": {
+  "sha": "722b0e3e5ea632d9"
+ },
+ "signedIn · can I wash the merino": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "signedIn · is the linen see-through": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "signedIn · How do I wash merino?": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "signedIn · I’m allergic to wool": {
+  "sha": "2c50f9db9fa4442f"
+ },
+ "signedIn · a warm coat under $250": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "signedIn · gift for him": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "signedIn · What’s on sale?": {
+  "sha": "5a4eaccb01595650"
+ },
+ "signedIn · How do returns work?": {
+  "sha": "a14bbbb9c9e85e52"
+ },
+ "signedIn · bust 36 waist 30": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "signedIn · I’m usually a medium. Will it fit?": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "signedIn · anything under 300 kr?": {
+  "sha": "68885890f0f991e9"
+ },
+ "promotion · Hi": {
+  "sha": "361cd89d916078f7"
+ },
+ "promotion · Hello there": {
+  "sha": "361cd89d916078f7"
+ },
+ "promotion · hej": {
+  "sha": "361cd89d916078f7"
+ },
+ "promotion · Good morning": {
+  "sha": "361cd89d916078f7"
+ },
+ "promotion · Thanks!": {
+  "sha": "675efd32302dce3d"
+ },
+ "promotion · thank you so much": {
+  "sha": "675efd32302dce3d"
+ },
+ "promotion · asdf qwerty": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "promotion · ": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "promotion · Where is my order?": {
+  "sha": "2f9322768b275c9a"
+ },
+ "promotion · Track order 20007": {
+  "sha": "16953d3c7f91aa05"
+ },
+ "promotion · order #20001": {
+  "sha": "1cd28613d622bb7d"
+ },
+ "promotion · #99999": {
+  "sha": "7991e085f48af055"
+ },
+ "promotion · 20007": {
+  "sha": "16953d3c7f91aa05"
+ },
+ "promotion · Where is order #20007? My email is linnea.berg@example.com": {
+  "sha": "16953d3c7f91aa05"
+ },
+ "promotion · When is my next delivery?": {
+  "sha": "c578e81d3b050251"
+ },
+ "promotion · I want to skip my next delivery": {
+  "sha": "82fe631ff398ecdd"
+ },
+ "promotion · How do I cancel my subscription?": {
+  "sha": "3ee5a223c4339bd9"
+ },
+ "promotion · pause my subscription please": {
+  "sha": "3ee5a223c4339bd9"
+ },
+ "promotion · when does my subscription renew?": {
+  "sha": "c578e81d3b050251"
+ },
+ "promotion · my subscription": {
+  "sha": "c578e81d3b050251"
+ },
+ "promotion · How do subscriptions work?": {
+  "sha": "68885890f0f991e9"
+ },
+ "promotion · Can I cancel anytime?": {
+  "sha": "68885890f0f991e9"
+ },
+ "promotion · Do you offer a subscription?": {
+  "sha": "68885890f0f991e9"
+ },
+ "promotion · I can’t sleep": {
+  "sha": "055133e9f0d7677b"
+ },
+ "promotion · Help me sleep better": {
+  "sha": "055133e9f0d7677b"
+ },
+ "promotion · I feel stressed in the evenings": {
+  "sha": "915c9004f9cef145"
+ },
+ "promotion · I need more focus at work": {
+  "sha": "90b1d54d8ea75cc4"
+ },
+ "promotion · I get cramps when I train": {
+  "sha": "006aa94b23cfad4c"
+ },
+ "promotion · something for my skin": {
+  "sha": "d7d7acdf92b0169f"
+ },
+ "promotion · I want to age well": {
+  "sha": "b74e01a4869deb2f"
+ },
+ "promotion · my partner says I snore": {
+  "sha": "38c8e6d0b1751f18"
+ },
+ "promotion · something for women": {
+  "sha": "9407cc6267d733c6"
+ },
+ "promotion · What do you recommend?": {
+  "sha": "a82183a17b9a4ec1"
+ },
+ "promotion · what should I buy?": {
+  "sha": "a82183a17b9a4ec1"
+ },
+ "promotion · Which one is best for running?": {
+  "sha": "006aa94b23cfad4c"
+ },
+ "promotion · Can I take this while pregnant?": {
+  "sha": "2c50f9db9fa4442f"
+ },
+ "promotion · Is Clear Focus safe with my blood pressure medication?": {
+  "sha": "2c50f9db9fa4442f"
+ },
+ "promotion · Will Unwind cure my insomnia?": {
+  "sha": "2c50f9db9fa4442f"
+ },
+ "promotion · Can my child take it?": {
+  "sha": "2c50f9db9fa4442f"
+ },
+ "promotion · I am allergic to nuts": {
+  "sha": "2c50f9db9fa4442f"
+ },
+ "promotion · Do you have a discount code?": {
+  "sha": "a9b7f71cab5e9609"
+ },
+ "promotion · any offers right now?": {
+  "sha": "a9b7f71cab5e9609"
+ },
+ "promotion · is anything on sale?": {
+  "sha": "a9b7f71cab5e9609"
+ },
+ "promotion · What is your return policy?": {
+  "sha": "a14bbbb9c9e85e52"
+ },
+ "promotion · Can I return something from the sale?": {
+  "sha": "a9b7f71cab5e9609"
+ },
+ "promotion · Do you ship to Norway?": {
+  "sha": "722b0e3e5ea632d9"
+ },
+ "promotion · Is shipping free?": {
+  "sha": "1ecf91c4f94ab26c"
+ },
+ "promotion · How long does delivery take?": {
+  "sha": "1ecf91c4f94ab26c"
+ },
+ "promotion · Is Unwind covered by a guarantee?": {
+  "sha": "9d4911eacdb18c19"
+ },
+ "promotion · Can I talk to a human?": {
+  "sha": "e5a599c15f0d2ae2"
+ },
+ "promotion · speak to someone please": {
+  "sha": "e5a599c15f0d2ae2"
+ },
+ "promotion · What size should I get in the merino sweater?": {
+  "sha": "006aa94b23cfad4c"
+ },
+ "promotion · does the car coat run large": {
+  "sha": "006aa94b23cfad4c"
+ },
+ "promotion · I’m 5’6 and 140 lb": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "promotion · between M and L": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "promotion · Which size should I get?": {
+  "sha": "722b0e3e5ea632d9"
+ },
+ "promotion · can I wash the merino": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "promotion · is the linen see-through": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "promotion · How do I wash merino?": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "promotion · I’m allergic to wool": {
+  "sha": "2c50f9db9fa4442f"
+ },
+ "promotion · a warm coat under $250": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "promotion · gift for him": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "promotion · What’s on sale?": {
+  "sha": "a9b7f71cab5e9609"
+ },
+ "promotion · How do returns work?": {
+  "sha": "a14bbbb9c9e85e52"
+ },
+ "promotion · bust 36 waist 30": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "promotion · I’m usually a medium. Will it fit?": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "promotion · anything under 300 kr?": {
+  "sha": "68885890f0f991e9"
+ },
+ "nothingYet · Hi": {
+  "sha": "361cd89d916078f7"
+ },
+ "nothingYet · Hello there": {
+  "sha": "361cd89d916078f7"
+ },
+ "nothingYet · hej": {
+  "sha": "361cd89d916078f7"
+ },
+ "nothingYet · Good morning": {
+  "sha": "361cd89d916078f7"
+ },
+ "nothingYet · Thanks!": {
+  "sha": "675efd32302dce3d"
+ },
+ "nothingYet · thank you so much": {
+  "sha": "675efd32302dce3d"
+ },
+ "nothingYet · asdf qwerty": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "nothingYet · ": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "nothingYet · Where is my order?": {
+  "sha": "c88f49660048e2b8"
+ },
+ "nothingYet · Track order 20007": {
+  "sha": "c93324e394069b86"
+ },
+ "nothingYet · order #20001": {
+  "sha": "cd72112294f9e484"
+ },
+ "nothingYet · #99999": {
+  "sha": "7991e085f48af055"
+ },
+ "nothingYet · 20007": {
+  "sha": "c93324e394069b86"
+ },
+ "nothingYet · Where is order #20007? My email is linnea.berg@example.com": {
+  "sha": "c93324e394069b86"
+ },
+ "nothingYet · When is my next delivery?": {
+  "sha": "6749ce6af145ff4d"
+ },
+ "nothingYet · I want to skip my next delivery": {
+  "sha": "6749ce6af145ff4d"
+ },
+ "nothingYet · How do I cancel my subscription?": {
+  "sha": "6749ce6af145ff4d"
+ },
+ "nothingYet · pause my subscription please": {
+  "sha": "6749ce6af145ff4d"
+ },
+ "nothingYet · when does my subscription renew?": {
+  "sha": "6749ce6af145ff4d"
+ },
+ "nothingYet · my subscription": {
+  "sha": "6749ce6af145ff4d"
+ },
+ "nothingYet · How do subscriptions work?": {
+  "sha": "68885890f0f991e9"
+ },
+ "nothingYet · Can I cancel anytime?": {
+  "sha": "68885890f0f991e9"
+ },
+ "nothingYet · Do you offer a subscription?": {
+  "sha": "68885890f0f991e9"
+ },
+ "nothingYet · I can’t sleep": {
+  "sha": "055133e9f0d7677b"
+ },
+ "nothingYet · Help me sleep better": {
+  "sha": "055133e9f0d7677b"
+ },
+ "nothingYet · I feel stressed in the evenings": {
+  "sha": "915c9004f9cef145"
+ },
+ "nothingYet · I need more focus at work": {
+  "sha": "90b1d54d8ea75cc4"
+ },
+ "nothingYet · I get cramps when I train": {
+  "sha": "006aa94b23cfad4c"
+ },
+ "nothingYet · something for my skin": {
+  "sha": "d7d7acdf92b0169f"
+ },
+ "nothingYet · I want to age well": {
+  "sha": "b74e01a4869deb2f"
+ },
+ "nothingYet · my partner says I snore": {
+  "sha": "38c8e6d0b1751f18"
+ },
+ "nothingYet · something for women": {
+  "sha": "9407cc6267d733c6"
+ },
+ "nothingYet · What do you recommend?": {
+  "sha": "a82183a17b9a4ec1"
+ },
+ "nothingYet · what should I buy?": {
+  "sha": "a82183a17b9a4ec1"
+ },
+ "nothingYet · Which one is best for running?": {
+  "sha": "006aa94b23cfad4c"
+ },
+ "nothingYet · Can I take this while pregnant?": {
+  "sha": "2c50f9db9fa4442f"
+ },
+ "nothingYet · Is Clear Focus safe with my blood pressure medication?": {
+  "sha": "2c50f9db9fa4442f"
+ },
+ "nothingYet · Will Unwind cure my insomnia?": {
+  "sha": "2c50f9db9fa4442f"
+ },
+ "nothingYet · Can my child take it?": {
+  "sha": "2c50f9db9fa4442f"
+ },
+ "nothingYet · I am allergic to nuts": {
+  "sha": "2c50f9db9fa4442f"
+ },
+ "nothingYet · Do you have a discount code?": {
+  "sha": "5a4eaccb01595650"
+ },
+ "nothingYet · any offers right now?": {
+  "sha": "5a4eaccb01595650"
+ },
+ "nothingYet · is anything on sale?": {
+  "sha": "5a4eaccb01595650"
+ },
+ "nothingYet · What is your return policy?": {
+  "sha": "a14bbbb9c9e85e52"
+ },
+ "nothingYet · Can I return something from the sale?": {
+  "sha": "5a4eaccb01595650"
+ },
+ "nothingYet · Do you ship to Norway?": {
+  "sha": "722b0e3e5ea632d9"
+ },
+ "nothingYet · Is shipping free?": {
+  "sha": "1ecf91c4f94ab26c"
+ },
+ "nothingYet · How long does delivery take?": {
+  "sha": "1ecf91c4f94ab26c"
+ },
+ "nothingYet · Is Unwind covered by a guarantee?": {
+  "sha": "9d4911eacdb18c19"
+ },
+ "nothingYet · Can I talk to a human?": {
+  "sha": "e5a599c15f0d2ae2"
+ },
+ "nothingYet · speak to someone please": {
+  "sha": "e5a599c15f0d2ae2"
+ },
+ "nothingYet · What size should I get in the merino sweater?": {
+  "sha": "006aa94b23cfad4c"
+ },
+ "nothingYet · does the car coat run large": {
+  "sha": "006aa94b23cfad4c"
+ },
+ "nothingYet · I’m 5’6 and 140 lb": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "nothingYet · between M and L": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "nothingYet · Which size should I get?": {
+  "sha": "722b0e3e5ea632d9"
+ },
+ "nothingYet · can I wash the merino": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "nothingYet · is the linen see-through": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "nothingYet · How do I wash merino?": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "nothingYet · I’m allergic to wool": {
+  "sha": "2c50f9db9fa4442f"
+ },
+ "nothingYet · a warm coat under $250": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "nothingYet · gift for him": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "nothingYet · What’s on sale?": {
+  "sha": "5a4eaccb01595650"
+ },
+ "nothingYet · How do returns work?": {
+  "sha": "a14bbbb9c9e85e52"
+ },
+ "nothingYet · bust 36 waist 30": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "nothingYet · I’m usually a medium. Will it fit?": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "nothingYet · anything under 300 kr?": {
+  "sha": "68885890f0f991e9"
+ },
+ "shoppingOff · Hi": {
+  "sha": "361cd89d916078f7"
+ },
+ "shoppingOff · Hello there": {
+  "sha": "361cd89d916078f7"
+ },
+ "shoppingOff · hej": {
+  "sha": "361cd89d916078f7"
+ },
+ "shoppingOff · Good morning": {
+  "sha": "361cd89d916078f7"
+ },
+ "shoppingOff · Thanks!": {
+  "sha": "675efd32302dce3d"
+ },
+ "shoppingOff · thank you so much": {
+  "sha": "675efd32302dce3d"
+ },
+ "shoppingOff · asdf qwerty": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "shoppingOff · ": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "shoppingOff · Where is my order?": {
+  "sha": "6fe38da04b8dac0f"
+ },
+ "shoppingOff · Track order 20007": {
+  "sha": "c645c3b33c6402d1"
+ },
+ "shoppingOff · order #20001": {
+  "sha": "3e22bafc5b596f00"
+ },
+ "shoppingOff · #99999": {
+  "sha": "d1c3965828203ecc"
+ },
+ "shoppingOff · 20007": {
+  "sha": "88765e16d3f12a36"
+ },
+ "shoppingOff · Where is order #20007? My email is linnea.berg@example.com": {
+  "sha": "16953d3c7f91aa05"
+ },
+ "shoppingOff · When is my next delivery?": {
+  "sha": "dfd82ee36b46db72"
+ },
+ "shoppingOff · I want to skip my next delivery": {
+  "sha": "d157e11942b57fbb"
+ },
+ "shoppingOff · How do I cancel my subscription?": {
+  "sha": "2fa363f2c1e9c02f"
+ },
+ "shoppingOff · pause my subscription please": {
+  "sha": "790a5cd94b7dc010"
+ },
+ "shoppingOff · when does my subscription renew?": {
+  "sha": "7d573d54b3eec232"
+ },
+ "shoppingOff · my subscription": {
+  "sha": "86d537a56cd94f01"
+ },
+ "shoppingOff · How do subscriptions work?": {
+  "sha": "68885890f0f991e9"
+ },
+ "shoppingOff · Can I cancel anytime?": {
+  "sha": "68885890f0f991e9"
+ },
+ "shoppingOff · Do you offer a subscription?": {
+  "sha": "68885890f0f991e9"
+ },
+ "shoppingOff · I can’t sleep": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "shoppingOff · Help me sleep better": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "shoppingOff · I feel stressed in the evenings": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "shoppingOff · I need more focus at work": {
+  "sha": "68885890f0f991e9"
+ },
+ "shoppingOff · I get cramps when I train": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "shoppingOff · something for my skin": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "shoppingOff · I want to age well": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "shoppingOff · my partner says I snore": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "shoppingOff · something for women": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "shoppingOff · What do you recommend?": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "shoppingOff · what should I buy?": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "shoppingOff · Which one is best for running?": {
+  "sha": "722b0e3e5ea632d9"
+ },
+ "shoppingOff · Can I take this while pregnant?": {
+  "sha": "2c50f9db9fa4442f"
+ },
+ "shoppingOff · Is Clear Focus safe with my blood pressure medication?": {
+  "sha": "2c50f9db9fa4442f"
+ },
+ "shoppingOff · Will Unwind cure my insomnia?": {
+  "sha": "2c50f9db9fa4442f"
+ },
+ "shoppingOff · Can my child take it?": {
+  "sha": "2c50f9db9fa4442f"
+ },
+ "shoppingOff · I am allergic to nuts": {
+  "sha": "2c50f9db9fa4442f"
+ },
+ "shoppingOff · Do you have a discount code?": {
+  "sha": "5a4eaccb01595650"
+ },
+ "shoppingOff · any offers right now?": {
+  "sha": "5a4eaccb01595650"
+ },
+ "shoppingOff · is anything on sale?": {
+  "sha": "5a4eaccb01595650"
+ },
+ "shoppingOff · What is your return policy?": {
+  "sha": "a14bbbb9c9e85e52"
+ },
+ "shoppingOff · Can I return something from the sale?": {
+  "sha": "5a4eaccb01595650"
+ },
+ "shoppingOff · Do you ship to Norway?": {
+  "sha": "722b0e3e5ea632d9"
+ },
+ "shoppingOff · Is shipping free?": {
+  "sha": "1ecf91c4f94ab26c"
+ },
+ "shoppingOff · How long does delivery take?": {
+  "sha": "1ecf91c4f94ab26c"
+ },
+ "shoppingOff · Is Unwind covered by a guarantee?": {
+  "sha": "9d4911eacdb18c19"
+ },
+ "shoppingOff · Can I talk to a human?": {
+  "sha": "e5a599c15f0d2ae2"
+ },
+ "shoppingOff · speak to someone please": {
+  "sha": "e5a599c15f0d2ae2"
+ },
+ "shoppingOff · What size should I get in the merino sweater?": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "shoppingOff · does the car coat run large": {
+  "sha": "212e025dbb71cb33"
+ },
+ "shoppingOff · I’m 5’6 and 140 lb": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "shoppingOff · between M and L": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "shoppingOff · Which size should I get?": {
+  "sha": "722b0e3e5ea632d9"
+ },
+ "shoppingOff · can I wash the merino": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "shoppingOff · is the linen see-through": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "shoppingOff · How do I wash merino?": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "shoppingOff · I’m allergic to wool": {
+  "sha": "2c50f9db9fa4442f"
+ },
+ "shoppingOff · a warm coat under $250": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "shoppingOff · gift for him": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "shoppingOff · What’s on sale?": {
+  "sha": "5a4eaccb01595650"
+ },
+ "shoppingOff · How do returns work?": {
+  "sha": "a14bbbb9c9e85e52"
+ },
+ "shoppingOff · bust 36 waist 30": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "shoppingOff · I’m usually a medium. Will it fit?": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "shoppingOff · anything under 300 kr?": {
+  "sha": "68885890f0f991e9"
+ },
+ "trackingOff · Hi": {
+  "sha": "361cd89d916078f7"
+ },
+ "trackingOff · Hello there": {
+  "sha": "361cd89d916078f7"
+ },
+ "trackingOff · hej": {
+  "sha": "361cd89d916078f7"
+ },
+ "trackingOff · Good morning": {
+  "sha": "361cd89d916078f7"
+ },
+ "trackingOff · Thanks!": {
+  "sha": "675efd32302dce3d"
+ },
+ "trackingOff · thank you so much": {
+  "sha": "675efd32302dce3d"
+ },
+ "trackingOff · asdf qwerty": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "trackingOff · ": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "trackingOff · Where is my order?": {
+  "sha": "b1714001d258a960"
+ },
+ "trackingOff · Track order 20007": {
+  "sha": "b1714001d258a960"
+ },
+ "trackingOff · order #20001": {
+  "sha": "b1714001d258a960"
+ },
+ "trackingOff · #99999": {
+  "sha": "b1714001d258a960"
+ },
+ "trackingOff · 20007": {
+  "sha": "b1714001d258a960"
+ },
+ "trackingOff · Where is order #20007? My email is linnea.berg@example.com": {
+  "sha": "b1714001d258a960"
+ },
+ "trackingOff · When is my next delivery?": {
+  "sha": "500b9a0f16d97622"
+ },
+ "trackingOff · I want to skip my next delivery": {
+  "sha": "500b9a0f16d97622"
+ },
+ "trackingOff · How do I cancel my subscription?": {
+  "sha": "500b9a0f16d97622"
+ },
+ "trackingOff · pause my subscription please": {
+  "sha": "500b9a0f16d97622"
+ },
+ "trackingOff · when does my subscription renew?": {
+  "sha": "500b9a0f16d97622"
+ },
+ "trackingOff · my subscription": {
+  "sha": "500b9a0f16d97622"
+ },
+ "trackingOff · How do subscriptions work?": {
+  "sha": "68885890f0f991e9"
+ },
+ "trackingOff · Can I cancel anytime?": {
+  "sha": "68885890f0f991e9"
+ },
+ "trackingOff · Do you offer a subscription?": {
+  "sha": "68885890f0f991e9"
+ },
+ "trackingOff · I can’t sleep": {
+  "sha": "055133e9f0d7677b"
+ },
+ "trackingOff · Help me sleep better": {
+  "sha": "055133e9f0d7677b"
+ },
+ "trackingOff · I feel stressed in the evenings": {
+  "sha": "915c9004f9cef145"
+ },
+ "trackingOff · I need more focus at work": {
+  "sha": "90b1d54d8ea75cc4"
+ },
+ "trackingOff · I get cramps when I train": {
+  "sha": "006aa94b23cfad4c"
+ },
+ "trackingOff · something for my skin": {
+  "sha": "d7d7acdf92b0169f"
+ },
+ "trackingOff · I want to age well": {
+  "sha": "b74e01a4869deb2f"
+ },
+ "trackingOff · my partner says I snore": {
+  "sha": "38c8e6d0b1751f18"
+ },
+ "trackingOff · something for women": {
+  "sha": "9407cc6267d733c6"
+ },
+ "trackingOff · What do you recommend?": {
+  "sha": "a82183a17b9a4ec1"
+ },
+ "trackingOff · what should I buy?": {
+  "sha": "a82183a17b9a4ec1"
+ },
+ "trackingOff · Which one is best for running?": {
+  "sha": "006aa94b23cfad4c"
+ },
+ "trackingOff · Can I take this while pregnant?": {
+  "sha": "2c50f9db9fa4442f"
+ },
+ "trackingOff · Is Clear Focus safe with my blood pressure medication?": {
+  "sha": "2c50f9db9fa4442f"
+ },
+ "trackingOff · Will Unwind cure my insomnia?": {
+  "sha": "2c50f9db9fa4442f"
+ },
+ "trackingOff · Can my child take it?": {
+  "sha": "2c50f9db9fa4442f"
+ },
+ "trackingOff · I am allergic to nuts": {
+  "sha": "2c50f9db9fa4442f"
+ },
+ "trackingOff · Do you have a discount code?": {
+  "sha": "5a4eaccb01595650"
+ },
+ "trackingOff · any offers right now?": {
+  "sha": "5a4eaccb01595650"
+ },
+ "trackingOff · is anything on sale?": {
+  "sha": "5a4eaccb01595650"
+ },
+ "trackingOff · What is your return policy?": {
+  "sha": "a14bbbb9c9e85e52"
+ },
+ "trackingOff · Can I return something from the sale?": {
+  "sha": "5a4eaccb01595650"
+ },
+ "trackingOff · Do you ship to Norway?": {
+  "sha": "722b0e3e5ea632d9"
+ },
+ "trackingOff · Is shipping free?": {
+  "sha": "1ecf91c4f94ab26c"
+ },
+ "trackingOff · How long does delivery take?": {
+  "sha": "1ecf91c4f94ab26c"
+ },
+ "trackingOff · Is Unwind covered by a guarantee?": {
+  "sha": "9d4911eacdb18c19"
+ },
+ "trackingOff · Can I talk to a human?": {
+  "sha": "e5a599c15f0d2ae2"
+ },
+ "trackingOff · speak to someone please": {
+  "sha": "e5a599c15f0d2ae2"
+ },
+ "trackingOff · What size should I get in the merino sweater?": {
+  "sha": "006aa94b23cfad4c"
+ },
+ "trackingOff · does the car coat run large": {
+  "sha": "006aa94b23cfad4c"
+ },
+ "trackingOff · I’m 5’6 and 140 lb": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "trackingOff · between M and L": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "trackingOff · Which size should I get?": {
+  "sha": "722b0e3e5ea632d9"
+ },
+ "trackingOff · can I wash the merino": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "trackingOff · is the linen see-through": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "trackingOff · How do I wash merino?": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "trackingOff · I’m allergic to wool": {
+  "sha": "2c50f9db9fa4442f"
+ },
+ "trackingOff · a warm coat under $250": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "trackingOff · gift for him": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "trackingOff · What’s on sale?": {
+  "sha": "5a4eaccb01595650"
+ },
+ "trackingOff · How do returns work?": {
+  "sha": "a14bbbb9c9e85e52"
+ },
+ "trackingOff · bust 36 waist 30": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "trackingOff · I’m usually a medium. Will it fit?": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "trackingOff · anything under 300 kr?": {
+  "sha": "68885890f0f991e9"
+ },
+ "notDemo · Hi": {
+  "sha": "361cd89d916078f7"
+ },
+ "notDemo · Hello there": {
+  "sha": "361cd89d916078f7"
+ },
+ "notDemo · hej": {
+  "sha": "361cd89d916078f7"
+ },
+ "notDemo · Good morning": {
+  "sha": "361cd89d916078f7"
+ },
+ "notDemo · Thanks!": {
+  "sha": "675efd32302dce3d"
+ },
+ "notDemo · thank you so much": {
+  "sha": "675efd32302dce3d"
+ },
+ "notDemo · asdf qwerty": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "notDemo · ": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "notDemo · Where is my order?": {
+  "sha": "6fe38da04b8dac0f"
+ },
+ "notDemo · Track order 20007": {
+  "sha": "c645c3b33c6402d1"
+ },
+ "notDemo · order #20001": {
+  "sha": "3e22bafc5b596f00"
+ },
+ "notDemo · #99999": {
+  "sha": "d1c3965828203ecc"
+ },
+ "notDemo · 20007": {
+  "sha": "88765e16d3f12a36"
+ },
+ "notDemo · Where is order #20007? My email is linnea.berg@example.com": {
+  "sha": "16953d3c7f91aa05"
+ },
+ "notDemo · When is my next delivery?": {
+  "sha": "dfd82ee36b46db72"
+ },
+ "notDemo · I want to skip my next delivery": {
+  "sha": "d157e11942b57fbb"
+ },
+ "notDemo · How do I cancel my subscription?": {
+  "sha": "2fa363f2c1e9c02f"
+ },
+ "notDemo · pause my subscription please": {
+  "sha": "790a5cd94b7dc010"
+ },
+ "notDemo · when does my subscription renew?": {
+  "sha": "7d573d54b3eec232"
+ },
+ "notDemo · my subscription": {
+  "sha": "86d537a56cd94f01"
+ },
+ "notDemo · How do subscriptions work?": {
+  "sha": "68885890f0f991e9"
+ },
+ "notDemo · Can I cancel anytime?": {
+  "sha": "68885890f0f991e9"
+ },
+ "notDemo · Do you offer a subscription?": {
+  "sha": "68885890f0f991e9"
+ },
+ "notDemo · I can’t sleep": {
+  "sha": "055133e9f0d7677b"
+ },
+ "notDemo · Help me sleep better": {
+  "sha": "055133e9f0d7677b"
+ },
+ "notDemo · I feel stressed in the evenings": {
+  "sha": "915c9004f9cef145"
+ },
+ "notDemo · I need more focus at work": {
+  "sha": "90b1d54d8ea75cc4"
+ },
+ "notDemo · I get cramps when I train": {
+  "sha": "006aa94b23cfad4c"
+ },
+ "notDemo · something for my skin": {
+  "sha": "d7d7acdf92b0169f"
+ },
+ "notDemo · I want to age well": {
+  "sha": "b74e01a4869deb2f"
+ },
+ "notDemo · my partner says I snore": {
+  "sha": "38c8e6d0b1751f18"
+ },
+ "notDemo · something for women": {
+  "sha": "9407cc6267d733c6"
+ },
+ "notDemo · What do you recommend?": {
+  "sha": "a82183a17b9a4ec1"
+ },
+ "notDemo · what should I buy?": {
+  "sha": "a82183a17b9a4ec1"
+ },
+ "notDemo · Which one is best for running?": {
+  "sha": "006aa94b23cfad4c"
+ },
+ "notDemo · Can I take this while pregnant?": {
+  "sha": "2c50f9db9fa4442f"
+ },
+ "notDemo · Is Clear Focus safe with my blood pressure medication?": {
+  "sha": "2c50f9db9fa4442f"
+ },
+ "notDemo · Will Unwind cure my insomnia?": {
+  "sha": "2c50f9db9fa4442f"
+ },
+ "notDemo · Can my child take it?": {
+  "sha": "2c50f9db9fa4442f"
+ },
+ "notDemo · I am allergic to nuts": {
+  "sha": "2c50f9db9fa4442f"
+ },
+ "notDemo · Do you have a discount code?": {
+  "sha": "5a4eaccb01595650"
+ },
+ "notDemo · any offers right now?": {
+  "sha": "5a4eaccb01595650"
+ },
+ "notDemo · is anything on sale?": {
+  "sha": "5a4eaccb01595650"
+ },
+ "notDemo · What is your return policy?": {
+  "sha": "a14bbbb9c9e85e52"
+ },
+ "notDemo · Can I return something from the sale?": {
+  "sha": "5a4eaccb01595650"
+ },
+ "notDemo · Do you ship to Norway?": {
+  "sha": "722b0e3e5ea632d9"
+ },
+ "notDemo · Is shipping free?": {
+  "sha": "1ecf91c4f94ab26c"
+ },
+ "notDemo · How long does delivery take?": {
+  "sha": "1ecf91c4f94ab26c"
+ },
+ "notDemo · Is Unwind covered by a guarantee?": {
+  "sha": "9d4911eacdb18c19"
+ },
+ "notDemo · Can I talk to a human?": {
+  "sha": "e5a599c15f0d2ae2"
+ },
+ "notDemo · speak to someone please": {
+  "sha": "e5a599c15f0d2ae2"
+ },
+ "notDemo · What size should I get in the merino sweater?": {
+  "sha": "006aa94b23cfad4c"
+ },
+ "notDemo · does the car coat run large": {
+  "sha": "006aa94b23cfad4c"
+ },
+ "notDemo · I’m 5’6 and 140 lb": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "notDemo · between M and L": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "notDemo · Which size should I get?": {
+  "sha": "722b0e3e5ea632d9"
+ },
+ "notDemo · can I wash the merino": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "notDemo · is the linen see-through": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "notDemo · How do I wash merino?": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "notDemo · I’m allergic to wool": {
+  "sha": "2c50f9db9fa4442f"
+ },
+ "notDemo · a warm coat under $250": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "notDemo · gift for him": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "notDemo · What’s on sale?": {
+  "sha": "5a4eaccb01595650"
+ },
+ "notDemo · How do returns work?": {
+  "sha": "a14bbbb9c9e85e52"
+ },
+ "notDemo · bust 36 waist 30": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "notDemo · I’m usually a medium. Will it fit?": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "notDemo · anything under 300 kr?": {
+  "sha": "68885890f0f991e9"
+ },
+ "wellnessNamed · Hi": {
+  "sha": "361cd89d916078f7"
+ },
+ "wellnessNamed · Hello there": {
+  "sha": "361cd89d916078f7"
+ },
+ "wellnessNamed · hej": {
+  "sha": "361cd89d916078f7"
+ },
+ "wellnessNamed · Good morning": {
+  "sha": "361cd89d916078f7"
+ },
+ "wellnessNamed · Thanks!": {
+  "sha": "675efd32302dce3d"
+ },
+ "wellnessNamed · thank you so much": {
+  "sha": "675efd32302dce3d"
+ },
+ "wellnessNamed · asdf qwerty": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "wellnessNamed · ": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "wellnessNamed · Where is my order?": {
+  "sha": "6fe38da04b8dac0f"
+ },
+ "wellnessNamed · Track order 20007": {
+  "sha": "c645c3b33c6402d1"
+ },
+ "wellnessNamed · order #20001": {
+  "sha": "3e22bafc5b596f00"
+ },
+ "wellnessNamed · #99999": {
+  "sha": "d1c3965828203ecc"
+ },
+ "wellnessNamed · 20007": {
+  "sha": "88765e16d3f12a36"
+ },
+ "wellnessNamed · Where is order #20007? My email is linnea.berg@example.com": {
+  "sha": "16953d3c7f91aa05"
+ },
+ "wellnessNamed · When is my next delivery?": {
+  "sha": "dfd82ee36b46db72"
+ },
+ "wellnessNamed · I want to skip my next delivery": {
+  "sha": "d157e11942b57fbb"
+ },
+ "wellnessNamed · How do I cancel my subscription?": {
+  "sha": "2fa363f2c1e9c02f"
+ },
+ "wellnessNamed · pause my subscription please": {
+  "sha": "790a5cd94b7dc010"
+ },
+ "wellnessNamed · when does my subscription renew?": {
+  "sha": "7d573d54b3eec232"
+ },
+ "wellnessNamed · my subscription": {
+  "sha": "86d537a56cd94f01"
+ },
+ "wellnessNamed · How do subscriptions work?": {
+  "sha": "68885890f0f991e9"
+ },
+ "wellnessNamed · Can I cancel anytime?": {
+  "sha": "68885890f0f991e9"
+ },
+ "wellnessNamed · Do you offer a subscription?": {
+  "sha": "68885890f0f991e9"
+ },
+ "wellnessNamed · I can’t sleep": {
+  "sha": "055133e9f0d7677b"
+ },
+ "wellnessNamed · Help me sleep better": {
+  "sha": "055133e9f0d7677b"
+ },
+ "wellnessNamed · I feel stressed in the evenings": {
+  "sha": "915c9004f9cef145"
+ },
+ "wellnessNamed · I need more focus at work": {
+  "sha": "90b1d54d8ea75cc4"
+ },
+ "wellnessNamed · I get cramps when I train": {
+  "sha": "006aa94b23cfad4c"
+ },
+ "wellnessNamed · something for my skin": {
+  "sha": "d7d7acdf92b0169f"
+ },
+ "wellnessNamed · I want to age well": {
+  "sha": "b74e01a4869deb2f"
+ },
+ "wellnessNamed · my partner says I snore": {
+  "sha": "38c8e6d0b1751f18"
+ },
+ "wellnessNamed · something for women": {
+  "sha": "9407cc6267d733c6"
+ },
+ "wellnessNamed · What do you recommend?": {
+  "sha": "a82183a17b9a4ec1"
+ },
+ "wellnessNamed · what should I buy?": {
+  "sha": "a82183a17b9a4ec1"
+ },
+ "wellnessNamed · Which one is best for running?": {
+  "sha": "006aa94b23cfad4c"
+ },
+ "wellnessNamed · Can I take this while pregnant?": {
+  "sha": "2c50f9db9fa4442f"
+ },
+ "wellnessNamed · Is Clear Focus safe with my blood pressure medication?": {
+  "sha": "2c50f9db9fa4442f"
+ },
+ "wellnessNamed · Will Unwind cure my insomnia?": {
+  "sha": "2c50f9db9fa4442f"
+ },
+ "wellnessNamed · Can my child take it?": {
+  "sha": "2c50f9db9fa4442f"
+ },
+ "wellnessNamed · I am allergic to nuts": {
+  "sha": "2c50f9db9fa4442f"
+ },
+ "wellnessNamed · Do you have a discount code?": {
+  "sha": "5a4eaccb01595650"
+ },
+ "wellnessNamed · any offers right now?": {
+  "sha": "5a4eaccb01595650"
+ },
+ "wellnessNamed · is anything on sale?": {
+  "sha": "5a4eaccb01595650"
+ },
+ "wellnessNamed · What is your return policy?": {
+  "sha": "a14bbbb9c9e85e52"
+ },
+ "wellnessNamed · Can I return something from the sale?": {
+  "sha": "5a4eaccb01595650"
+ },
+ "wellnessNamed · Do you ship to Norway?": {
+  "sha": "722b0e3e5ea632d9"
+ },
+ "wellnessNamed · Is shipping free?": {
+  "sha": "1ecf91c4f94ab26c"
+ },
+ "wellnessNamed · How long does delivery take?": {
+  "sha": "1ecf91c4f94ab26c"
+ },
+ "wellnessNamed · Is Unwind covered by a guarantee?": {
+  "sha": "9d4911eacdb18c19"
+ },
+ "wellnessNamed · Can I talk to a human?": {
+  "sha": "e5a599c15f0d2ae2"
+ },
+ "wellnessNamed · speak to someone please": {
+  "sha": "e5a599c15f0d2ae2"
+ },
+ "wellnessNamed · What size should I get in the merino sweater?": {
+  "sha": "006aa94b23cfad4c"
+ },
+ "wellnessNamed · does the car coat run large": {
+  "sha": "006aa94b23cfad4c"
+ },
+ "wellnessNamed · I’m 5’6 and 140 lb": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "wellnessNamed · between M and L": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "wellnessNamed · Which size should I get?": {
+  "sha": "722b0e3e5ea632d9"
+ },
+ "wellnessNamed · can I wash the merino": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "wellnessNamed · is the linen see-through": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "wellnessNamed · How do I wash merino?": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "wellnessNamed · I’m allergic to wool": {
+  "sha": "2c50f9db9fa4442f"
+ },
+ "wellnessNamed · a warm coat under $250": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "wellnessNamed · gift for him": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "wellnessNamed · What’s on sale?": {
+  "sha": "5a4eaccb01595650"
+ },
+ "wellnessNamed · How do returns work?": {
+  "sha": "a14bbbb9c9e85e52"
+ },
+ "wellnessNamed · bust 36 waist 30": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "wellnessNamed · I’m usually a medium. Will it fit?": {
+  "sha": "f0dd5a2e57726c22"
+ },
+ "wellnessNamed · anything under 300 kr?": {
+  "sha": "68885890f0f991e9"
+ },
+ "chat 0 · Where is my order?": {
+  "says": [
+   "I can check that. Which email did you order with?"
+  ],
+  "sha": "6fe38da04b8dac0f"
+ },
+ "chat 0.1 · it is linnea.berg@example.com": {
+  "says": [
+   "Thanks. I sent a 6-digit code to linnea.berg@example.com. Type it here so I know it’s you. This is a demo store, so any 6 digits work."
+  ],
+  "sha": "7437904e5b87aff3"
+ },
+ "chat 0.2 · 1234": {
+  "says": [
+   "The code has 6 digits. Please type it again."
+  ],
+  "sha": "5d8aab4d993c64ea"
+ },
+ "chat 0.3 · 482913": {
+  "says": [
+   "Order #20007, placed 18 Nov 2026: Vitaheal Electrolytes, 585,90 kr. We are packing it and it has not shipped yet. You will get an email as soon as it leaves us. You have 2 orders with us; this is the latest."
+  ],
+  "sha": "44641d0b7f9694c0"
+ },
+ "chat 0.4 · when is my next delivery?": {
+  "says": [
+   "Your next Vitaheal Electrolytes delivery is on 18 Feb 2027, 585,90 kr with your 3-month supply. You have 2 subscriptions; here they all are."
+  ],
+  "sha": "44c7ad1ec7b13e3d"
+ },
+ "chat 1 · Where is my order?": {
+  "says": [
+   "I can check that. Which email did you order with?"
+  ],
+  "sha": "6fe38da04b8dac0f"
+ },
+ "chat 1.1 · nobody@example.com": {
+  "says": [
+   "Thanks. I sent a 6-digit code to nobody@example.com. Type it here so I know it’s you. This is a demo store, so any 6 digits work."
+  ],
+  "sha": "52e67c2108528ef3"
+ },
+ "chat 1.2 · 111111": {
+  "says": [
+   "I can’t find an order for nobody@example.com. If you used another email, tell me that one, or write to us and we will look into it."
+  ],
+  "sha": "6189886b6aa9e4ed"
+ },
+ "chat 2 · Track order 20007": {
+  "says": [
+   "I can look up order #20007. Which email did you order with?"
+  ],
+  "sha": "c645c3b33c6402d1"
+ },
+ "chat 2.1 · linnea.berg@example.com": {
+  "says": [
+   "Order #20007, placed 18 Nov 2026: Vitaheal Electrolytes, 585,90 kr. We are packing it and it has not shipped yet. You will get an email as soon as it leaves us."
+  ],
+  "sha": "16953d3c7f91aa05"
+ },
+ "chat 3 · order #99999": {
+  "says": [
+   "I can look up order #99999. Which email did you order with?"
+  ],
+  "sha": "9f27737dde0deeb9"
+ },
+ "chat 3.1 · linnea.berg@example.com": {
+  "says": [
+   "I can’t find order #99999 for linnea.berg@example.com. Check the number in your confirmation email, or write to us and we will look into it."
+  ],
+  "sha": "7991e085f48af055"
+ },
+ "chat 4 · When is my next delivery?": {
+  "says": [
+   "I can check that. Which email did you subscribe with?"
+  ],
+  "sha": "dfd82ee36b46db72"
+ },
+ "chat 4.1 · linnea.berg@example.com": {
+  "says": [
+   "Thanks. I sent a 6-digit code to linnea.berg@example.com. Type it here so I know it’s you. This is a demo store, so any 6 digits work."
+  ],
+  "sha": "d22ce33bbd8f853d"
+ },
+ "chat 4.2 · 123456": {
+  "says": [
+   "Your next Vitaheal Electrolytes delivery is on 18 Feb 2027, 585,90 kr with your 3-month supply. You have 2 subscriptions; here they all are."
+  ],
+  "sha": "a1f0526d9924bbd1"
+ },
+ "chat 4.3 · skip it": {
+  "says": [
+   "Your next Vitaheal Electrolytes delivery is on 18 Feb 2027. You can skip it right here. You have 2 subscriptions; here they all are."
+  ],
+  "sha": "fbc9e53b7ad1d9fb"
+ },
+ "chat 5 · Where is my order?": {
+  "says": [
+   "I can check that. Which email did you order with?"
+  ],
+  "sha": "6fe38da04b8dac0f"
+ },
+ "chat 5.1 · Help me sleep better": {
+  "says": [
+   "For better sleep, this is the one we make for it:"
+  ],
+  "sha": "055133e9f0d7677b"
+ },
+ "chat 6 · Where is my order?": {
+  "says": [
+   "I can check that. Which email did you order with?"
+  ],
+  "sha": "6fe38da04b8dac0f"
+ },
+ "chat 6.1 · not an email @": {
+  "says": [
+   "That doesn’t look like an email address. It should read like name@example.com."
+  ],
+  "sha": "b185e6c84a308376"
+ },
+ "chat 7 · Where is my order?": {
+  "says": [
+   "I can check that. Which email did you order with?"
+  ],
+  "sha": "6fe38da04b8dac0f"
+ },
+ "chat 7.1 · linnea.berg@example.com": {
+  "says": [
+   "Thanks. I sent a 6-digit code to linnea.berg@example.com. Type it here so I know it’s you."
+  ],
+  "sha": "af6f30939280f9cf"
+ },
+ "chat 8 · What size should I get in the merino sweater?": {
+  "says": [
+   "For hydration and training, this is the one we make for it:"
+  ],
+  "sha": "006aa94b23cfad4c"
+ },
+ "chat 8.1 · between M and L": {
+  "says": [
+   "I’m not sure about that one. I can look up your order, tell you when your next subscription delivery is, suggest a product for sleep, focus, hydration, skin or healthy ageing, and answer questions about delivery and returns."
+  ],
+  "sha": "f0dd5a2e57726c22"
+ }
+}

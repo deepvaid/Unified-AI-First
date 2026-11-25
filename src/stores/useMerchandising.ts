@@ -1,14 +1,14 @@
 import { defineStore } from 'pinia'
 import { computed, ref, type Ref } from 'vue'
 import { parseDecimal } from '@/maropay/money'
-import { browserStorage, keepInBrowser } from '@/stores/demoKeep'
+import { keepPerChannel } from '@/stores/demoKeep'
 import { useCommerceStore } from '@/stores/useCommerce'
-import { useSalesChannelsStore } from '@/stores/useSalesChannels'
+import { demoChannelRecord, demoSnapshotOf, useSalesChannelsStore } from '@/stores/useSalesChannels'
 import { catalogFor, lowestPrice, storesWithOwnCatalogue } from '@/storefront/catalog'
-import { demoSlot } from '@/storefront/demoStorage'
+import { DEMO_STORES, canApplyTheme } from '@/storefront/demoStores'
+import type { InstallChannel } from '@/storefront/demoStores/install'
 import { formatStorePrice } from '@/storefront/price'
 import type { SearchRules } from '@/storefront/search'
-import { VITAHEAL_CHANNEL_ID, VITAHEAL_MERCHANDISING } from '@/storefront/vitahealDemo'
 import { roundForDisplay } from '@/subscriptions/plans'
 
 /* ── Types ─────────────────────────────────────────────────────── */
@@ -695,12 +695,17 @@ const moduleAnalyticsByChannel: Record<string, MerchModuleAnalytics> = {
   },
 }
 
-/** The demo store's rows by list name, as saved in the browser. */
+/** A demo store's rows by list name, as saved in the browser. */
 type KeptRows = Record<string, unknown[]>
 
-function isKeptRows(value: unknown): value is KeptRows {
-  return !!value && typeof value === 'object' && Object.values(value).every((list) =>
-    Array.isArray(list) && list.every((row: { channelId?: unknown } | null) => row?.channelId === VITAHEAL_CHANNEL_ID))
+function isRowLists(value: unknown): value is KeptRows {
+  return !!value && typeof value === 'object' && Object.values(value).every(Array.isArray)
+}
+
+/** Saved rows are read back only when every row is that store's. */
+function isKeptRows(channelId: string, value: unknown): value is KeptRows {
+  return isRowLists(value) && Object.values(value).every((list) =>
+    list.every((row) => (row as { channelId?: unknown } | null)?.channelId === channelId))
 }
 
 /* ── Store ────────────────────────────────────────────────────── */
@@ -749,7 +754,7 @@ export const useMerchandisingStore = defineStore('merchandising', () => {
       const amount = parseDecimal(decimal, store?.currency ?? 'USD')
       return amount ? formatStorePrice(roundForDisplay(amount), store?.locale) : undefined
     }
-    return catalogFor(commerce.products, channelId).map((product, index, all) => {
+    return catalogFor(commerce.products, channelId, canApplyTheme(salesChannelsStore.channels.find((c) => c.id === channelId))).map((product, index, all) => {
       const price = lowestPrice(product)
       const compareAt = Number.parseFloat(product.compareAtPrice) > Number.parseFloat(price) ? product.compareAtPrice : ''
       return {
@@ -821,7 +826,7 @@ export const useMerchandisingStore = defineStore('merchandising', () => {
     // Its sync is the one that ran when the store was connected.
     const at = salesChannelsStore.channels.find((c) => c.id === activeChannelId.value)?.merchandising?.lastSyncAt
     const when = at ? new Date(at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'Not synced yet'
-    return { channelId: activeChannelId.value, catalogCount: catalogFor(commerce.products, activeChannelId.value).length, lastFullSync: when, lastDeltaSync: when, feedStatus: 'healthy' }
+    return { channelId: activeChannelId.value, catalogCount: catalogFor(commerce.products, activeChannelId.value, canApplyTheme(salesChannelsStore.channels.find((c) => c.id === activeChannelId.value))).length, lastFullSync: when, lastDeltaSync: when, feedStatus: 'healthy' }
   })
 
   // ── What a connected store's storefront reads ─────────────────────────
@@ -841,23 +846,23 @@ export const useMerchandisingStore = defineStore('merchandising', () => {
     return allEngines.value.find((engine) => engine.channelId === channelId && engine.page === 'product' && engine.status === 'active')
   }
 
-  // ── The demo store's rows, kept in the browser ────────────────────────
-  // Everything made for Vitaheal (demo) in this workspace survives a reload and
-  // reaches the storefront tab, like the rest of that store's data.
-  function demoRows<T extends { channelId: string }>(rows: Ref<T[]>, seed: T[] = []) {
+  // ── The demo stores' rows, kept in the browser ───────────────────────
+  // Everything made for a demo store (Vitaheal (demo)) in this workspace survives
+  // a reload and reaches the storefront tab, like the rest of that store's data.
+  // Each store has its own slot; Vitaheal's is still mp.vitaheal-demo.merchandising.v1.
+  function demoRows<T extends { channelId: string }>(rows: Ref<T[]>) {
     return {
-      read: (): T[] => rows.value.filter((row) => row.channelId === VITAHEAL_CHANNEL_ID),
-      put: (saved: unknown[] | undefined): void => {
-        const mine = (saved as T[] | undefined) ?? (JSON.parse(JSON.stringify(seed)) as T[])
-        rows.value = [...rows.value.filter((row) => row.channelId !== VITAHEAL_CHANNEL_ID), ...mine]
+      read: (channelId: string): T[] => rows.value.filter((row) => row.channelId === channelId),
+      put: (channelId: string, mine: unknown[]): void => {
+        rows.value = [...rows.value.filter((row) => row.channelId !== channelId), ...(mine as T[])]
       },
     }
   }
   const demoLists = {
-    synonyms: demoRows(allSynonyms, VITAHEAL_MERCHANDISING.synonyms),
-    redirects: demoRows(allRedirects, VITAHEAL_MERCHANDISING.redirects),
-    searchPins: demoRows(allSearchPins, VITAHEAL_MERCHANDISING.searchPins),
-    engines: demoRows(allEngines, VITAHEAL_MERCHANDISING.engines),
+    synonyms: demoRows(allSynonyms),
+    redirects: demoRows(allRedirects),
+    searchPins: demoRows(allSearchPins),
+    engines: demoRows(allEngines),
     collections: demoRows(allCollections),
     pinningRules: demoRows(allPinningRules),
     merchRules: demoRows(allMerchRules),
@@ -868,18 +873,60 @@ export const useMerchandisingStore = defineStore('merchandising', () => {
     blacklistTerms: demoRows(allBlacklistTerms),
     blacklistedProducts: demoRows(allBlacklistedProducts),
   }
-  const keptRows = demoSlot('merchandising', 1, browserStorage(), isKeptRows)
-  const putDemo = (saved: KeptRows | null): void => {
-    for (const [name, list] of Object.entries(demoLists)) list.put(saved?.[name])
-  }
-  putDemo(keptRows.load())
-  const keptDemo = keepInBrowser(keptRows, () => Object.fromEntries(Object.entries(demoLists).map(([name, list]) => [name, list.read()])), putDemo)
 
-  /** Puts the demo store's merchandising back as seeded. Called by its restore (useCommerce). */
-  function restoreDemo(): void {
-    keptRows.clear()
-    putDemo(null)
-    keptDemo.adopt()
+  /** What a store's lists start from: the search rules and engines of the theme it runs now (none for a blank store). */
+  function seededRows(channel: InstallChannel | undefined): KeptRows {
+    const seed = demoSnapshotOf(channel)?.merchandising
+    return { synonyms: seed?.synonyms ?? [], redirects: seed?.redirects ?? [], searchPins: seed?.searchPins ?? [], engines: seed?.engines ?? [] }
+  }
+
+  /** Puts a store's lists in place: the saved ones, else (list by list) its seed. */
+  function putRows(channelId: string, saved: KeptRows | null, seed: () => KeptRows): void {
+    let seeded: KeptRows | undefined
+    for (const [name, list] of Object.entries(demoLists)) list.put(channelId, saved?.[name] ?? (seeded ??= seed())[name] ?? [])
+  }
+
+  const keptRows = keepPerChannel('merchandising', 1, isRowLists, {
+    read: (channelId) => Object.fromEntries(Object.entries(demoLists).map(([name, list]) => [name, list.read(channelId)])),
+    take: (channelId, saved) => putRows(channelId, isKeptRows(channelId, saved) ? saved : null, () => seededRows(demoChannelRecord(channelId))),
+  })
+  /** The stores whose lists are seeded and kept (attachStore): each only once. */
+  const attached = new Set<string>()
+
+  /** Seeds a store's lists as the theme it runs now has them, then keeps them: what this browser saved is read, never cleared. */
+  function attachStore(channel: InstallChannel): void {
+    if (attached.has(channel.id)) return
+    attached.add(channel.id)
+    putRows(channel.id, null, () => seededRows(channel))
+    keptRows.attach(channel.id)
+  }
+  // The seeded demo stores (pure: no other store is read for them while this one sets up).
+  for (const channel of DEMO_STORES.map((blueprint) => blueprint.homeChannel)) attachStore(channel)
+
+  /**
+   * Brings a store that can take a theme in with what this browser saved for it,
+   * as the app starts (a store made from a theme; src/stores/useDemoStores.ts).
+   * Nothing saved is cleared. Does nothing a second time, or for a store that
+   * cannot take a theme.
+   */
+  function attachDemo(channelId: string): void {
+    const channel = demoChannelRecord(channelId)
+    if (channel && canApplyTheme(channel)) attachStore(channel)
+  }
+
+  /**
+   * Puts a store's merchandising back as the theme it runs now seeds it, on restore
+   * and when a theme is applied (src/stores/useDemoStores.ts). Other stores' rows
+   * stay. Does nothing for a store that cannot take a theme.
+   */
+  function reseedDemo(channelId: string): void {
+    const channel = demoChannelRecord(channelId)
+    if (!channel || !canApplyTheme(channel)) return
+    keptRows.clear(channelId)
+    putRows(channelId, null, () => seededRows(channel))
+    keptRows.attach(channelId)
+    keptRows.adopt(channelId)
+    attached.add(channelId)
   }
 
   // When a sales channel is active (channel-scoped workspace), activeStore
@@ -1391,7 +1438,8 @@ export const useMerchandisingStore = defineStore('merchandising', () => {
     createSynonym,
     searchRulesFor,
     productEngineFor,
-    restoreDemo,
+    attachDemo,
+    reseedDemo,
     // channel-scoped list views
     synonymList,
     redirectList,

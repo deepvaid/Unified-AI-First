@@ -9,20 +9,25 @@ import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpAlert from '@/components/MpAlert.vue'
 import { useWizardSteps } from '@/composables/useWizardSteps'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
+import { useToast } from '@/composables/useToast'
 import {
   CHANNEL_TYPE_LABELS,
   CONNECTED_CLOUD_LABELS,
-  useSalesChannelsStore,
   type SalesChannelType,
 } from '@/stores/useSalesChannels'
+import { useDemoStores } from '@/stores/useDemoStores'
 import { useRetailStore } from '@/stores/useRetail'
+import { localDateKey } from '@/maropay/model'
+import { DEMO_STORES, demoStoreFor, type DemoStoreId } from '@/storefront/demoStores'
+import { snapshotFor, type InstallChannel } from '@/storefront/demoStores/install'
+import { currencyName, startSummary, themeFacts } from '@/storefront/demoStores/summary'
+import { FIRST_CREATED_SLOT } from '@/storefront/createdStores'
 
 const route = useRoute()
 const router = useRouter()
-const salesChannelsStore = useSalesChannelsStore()
+const demoStores = useDemoStores()
 const retailStore = useRetailStore()
-
-const STEPS = ['Choose type', 'Configure', 'Review']
+const toast = useToast()
 
 const selectedType = ref<SalesChannelType | null>(null)
 const name = ref('')
@@ -31,7 +36,15 @@ const domain = ref('')
 const storeBuilderEnabled = ref(true)
 const merchandiseConnected = ref(false)
 const selectedLocationIds = ref<string[]>([])
+/** The demo store a Store Builder web store starts as a copy of; null starts it blank. */
+const selectedTheme = ref<DemoStoreId | null>(null)
 const submitted = ref(false)
+
+/** A web store with Store Builder on can start from a theme, so it gets a Theme step before Review. */
+const hasThemeStep = computed(() => selectedType.value === 'web_store' && storeBuilderEnabled.value)
+const steps = computed(() => (hasThemeStep.value
+  ? ['Choose type', 'Configure', 'Theme', 'Review']
+  : ['Choose type', 'Configure', 'Review']))
 
 const accountId = computed(() => {
   const value = route.params.accountId
@@ -50,9 +63,10 @@ const locationOptions = computed(() =>
 const canContinueFromType = computed(() => !!selectedType.value)
 const canCreate = computed(() => !!selectedType.value && name.value.trim().length > 0)
 
-const { step, maxStep, goTo, next: nextStep, prev: prevStep } = useWizardSteps(STEPS.length, {
+const { step, maxStep, goTo, next: nextStep, prev: prevStep } = useWizardSteps(() => steps.value.length, {
   canAdvance: (from) => (from === 1 ? canContinueFromType.value : canCreate.value),
 })
+const isThemeStep = computed(() => hasThemeStep.value && step.value === 3)
 
 const stepHint = computed(() => {
   if (step.value === 1 && !canContinueFromType.value) return 'Choose a channel type to continue'
@@ -102,11 +116,39 @@ const {
   message: 'The channel has not been created. Leaving now will discard your choices.',
 })
 
+// ── Start from a theme ────────────────────────────────────────────────────────
+const themeOptions = DEMO_STORES.map((blueprint) => ({
+  id: blueprint.id,
+  card: blueprint.card,
+  currency: currencyName(blueprint.homeChannel.webStore?.currency ?? 'USD'),
+}))
+
+/** Thumbnails that did not load (not captured yet): their frame shows a placeholder instead of a broken image. */
+const missingThumbnails = ref(new Set<DemoStoreId>())
+
+/** What the new store starts with, for the Review step. Only counts are read, so a stand-in store is enough. */
+const startsWith = computed(() => {
+  const id = selectedTheme.value
+  if (!id) return startSummary(null)
+  const standIn: InstallChannel = {
+    id: 'new-store',
+    name: 'New store',
+    webStore: {
+      domain: 'new-store.maropost.store',
+      storeBuilderEnabled: true,
+      published: false,
+      merchandiseConnected: false,
+      blueprint: { original: id, slot: FIRST_CREATED_SLOT },
+    },
+  }
+  return startSummary(themeFacts(demoStoreFor(id).card.name, snapshotFor(standIn, id, localDateKey(Date.now()))))
+})
+
 function createChannel() {
   submitted.value = true
   if (!canCreate.value || !selectedType.value) return
 
-  const channel = salesChannelsStore.createChannel(accountId.value, {
+  const channel = demoStores.create(accountId.value, {
     name: name.value,
     type: selectedType.value,
     description: description.value,
@@ -114,7 +156,17 @@ function createChannel() {
     storeBuilderEnabled: storeBuilderEnabled.value,
     merchandiseConnected: merchandiseConnected.value,
     locationIds: selectedLocationIds.value,
+    theme: hasThemeStep.value ? selectedTheme.value : null,
   })
+
+  // The store came up as a copy of the theme (none is made when no store slot is left).
+  const copied = channel.webStore?.blueprint?.original
+  if (copied) {
+    const href = router.resolve({ name: 'StorefrontHome', params: { accountId: accountId.value, channelId: channel.id } }).href
+    toast.success(`${channel.name} is ready, as a copy of ${demoStoreFor(copied).card.name}`, {
+      action: { label: 'Show store', onClick: () => window.open(href, '_blank', 'noopener') },
+    })
+  }
 
   allowNextLeave()
   router.push({
@@ -145,6 +197,7 @@ const reviewRows = computed(() => {
           : 'None selected yet'
         : 'Not required',
     },
+    ...(hasThemeStep.value ? [{ label: 'Starts with', value: startsWith.value }] : []),
   ]
 })
 </script>
@@ -152,7 +205,7 @@ const reviewRows = computed(() => {
 <template>
   <MpWizardShell
     title="Create sales channel"
-    :steps="STEPS"
+    :steps="steps"
     :current="step"
     :max-step="maxStep"
     :back-to="channelsRoute"
@@ -242,9 +295,57 @@ const reviewRows = computed(() => {
     </MpWizardStepCard>
 
     <MpWizardStepCard
+      v-else-if="isThemeStep"
+      title="Start from a theme"
+      description="Start blank, or as a copy of a demo store: its look, products, pages and campaigns. You can apply another theme later from the store’s Themes page."
+    >
+      <v-row>
+        <v-col cols="12" md="6">
+          <MpOptionCard
+            :selected="selectedTheme === null"
+            title="Blank"
+            description="An empty store to build yourself."
+            class="h-100"
+            @click="selectedTheme = null"
+          >
+            <template #media>
+              <div class="start-theme__frame" aria-hidden="true">
+                <v-icon size="32">layout-template</v-icon>
+              </div>
+            </template>
+          </MpOptionCard>
+        </v-col>
+        <v-col v-for="option in themeOptions" :key="option.id" cols="12" md="6">
+          <MpOptionCard
+            :selected="selectedTheme === option.id"
+            :title="option.card.name"
+            class="h-100"
+            @click="selectedTheme = option.id"
+          >
+            <p class="text-caption font-weight-medium mb-1">{{ option.card.kind }} · Prices in {{ option.currency }}</p>
+            <p class="start-theme__description text-caption text-medium-emphasis mb-0">{{ option.card.description }}</p>
+            <template #media>
+              <!-- Decorative: the card already names the theme, and a button reads all of its text as its name. -->
+              <div class="start-theme__frame" aria-hidden="true">
+                <img
+                  v-if="!missingThumbnails.has(option.id)"
+                  :src="option.card.thumbnail"
+                  alt=""
+                  class="start-theme__image"
+                  @error="missingThumbnails.add(option.id)"
+                >
+                <v-icon v-else size="32">image</v-icon>
+              </div>
+            </template>
+          </MpOptionCard>
+        </v-col>
+      </v-row>
+    </MpWizardStepCard>
+
+    <MpWizardStepCard
       v-else
       title="Review sales channel"
-      description="This creates a prototype channel in local mock state."
+      description="Check the details, then create the channel."
     >
       <dl class="mp-label-value">
         <div v-for="row in reviewRows" :key="row.label">
@@ -269,7 +370,7 @@ const reviewRows = computed(() => {
     </template>
     <template #footer>
       <v-btn
-        v-if="step < STEPS.length"
+        v-if="step < steps.length"
         color="primary"
         variant="flat"
         class="text-none"
@@ -301,3 +402,31 @@ const reviewRows = computed(() => {
     @confirm="discardAndLeave"
   />
 </template>
+
+<style scoped>
+/* One frame for every option, so the pictures line up whether a thumbnail has loaded, is loading or is missing. */
+.start-theme__frame {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 16 / 10;
+  background: var(--surface-secondary);
+  color: var(--on-surface-muted);
+}
+
+.start-theme__image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top;
+}
+
+.start-theme__description {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+</style>

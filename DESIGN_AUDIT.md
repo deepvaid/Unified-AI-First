@@ -3030,3 +3030,724 @@ Components and tokens (the app looks the same unless stated):
   (`overlayDocs()`); the Controls panel on the Canvas tab does.
 - The Figma ledger in `docs/design-system/figma/` still lists the app bar token as 60 and
   `MpIllustration` / `MpUsageMeter` with their old props.
+
+## Demo store registry (store themes, part 1) — 2026-11-19
+
+Groundwork for two more demo stores and a theme library (plan: Northfold apparel, Torqline auto
+parts). Nothing a shopper or merchant sees changes on Vitaheal (demo) or any other store; the
+checks are `tests/storefront/fixtures/vitaheal-seed.json` (the seed before the change),
+`vitaheal-saved-head.json` (browser data the app saved before it) and `vitaheal-app-head.json`
+(every Pinia store's Vitaheal rows at the commit before, on a frozen clock: products, campaigns,
+search rules and engines, plans, subscribers, the chatbot and its 214 chats, announcement
+emails), read by `tests/storefront/demoStoresVitaheal.test.ts` and `demoStoresApp.test.ts`.
+`tests/storefront/fixtures/capture-vitaheal-app.mjs` captures the last one again from a worktree.
+
+- **Registry** `src/storefront/demoStores/` (pure): `types.ts` (`DemoStoreBlueprint`,
+  `StoreSnapshot`), `index.ts` (`DEMO_STORES`, `demoStoreFor`, `homeBlueprintOf`, `canApplyTheme`),
+  `install.ts` (id blocks, `snapshotFor`, `currentBlueprintId`, the `installed` record),
+  `vitaheal.ts` (wraps `vitahealDemo.ts`; every `VITAHEAL_*` export stays).
+- **Orchestrator** `src/stores/useDemoStores.ts`: `blueprintOf`, `snapshotOf`, `canApply`,
+  `attach(channelId)`, `apply(channelId, id)`, `restore(channelId)`. Every store holding part of a
+  demo store has `attachDemo(channelId)` and `reseedDemo(channelId)`; those holding history have
+  `restoreDemoHistory(channelId)`.
+  - `attach` / `attachDemo` bring in a store the stores do not seed on their own (a store made from
+    a theme, part 4) as the app starts: each part is seeded as the theme the store runs now has it,
+    then what this browser saved for it is read back. Nothing is cleared, history slots included
+    (subscribers, chats, chatbot on/off, the Merchandise connection). A second call does nothing;
+    `attach` returns false for a store that cannot take a theme. `useStorefront.attachDemo` does
+    nothing (chrome is computed when shown); it exists so every store answers the same call.
+  - `reseedDemo` clears and reseeds, and is for apply and restore only. It and
+    `restoreDemoHistory` attach a store first, so a store not attached yet keeps what it saved in
+    its history slots.
+  - A seed fix (`seedVersion` bump) reseeds the store first and writes its `installed` record
+    afterwards, so in a full browser the cleared slots make room for the record. If the browser
+    still refuses it, the next start reseeds the store again. Restore writes the record last too.
+- **Shared suite** `tests/storefront/demoStores.test.ts` runs over every blueprint (links, photos and
+  credits, fonts, SKUs and variants, real brand names, capabilities, fitment), and over the home
+  store's history (its chats' links and brand names; no subscribers on a store without
+  subscriptions). Vehicle makes count as real brands outside `.fitment.` rows; "Ram" counts only
+  capitalised and never in "ram air". The theme card thumbnail check is skipped until the
+  thumbnails are captured.
+- **Pure moves**: `src/storefront/handles.ts` (`toHandle`, `productHandle`),
+  `src/storefront/themeSections.ts` (section and block catalogues, `createSection`, `createBlock`,
+  `storefrontThemeVars`, `onBrandColor`, `themeFonts`; `themeBuilderData.ts` re-exports them).
+- **New pure modules**: `variants.ts`, `fitment.ts`, `vehicles.ts`, `sizeCharts.ts`, `orderStatus.ts`
+  (`src/storefront/`), `src/chatbot/assistantProfiles.ts` (wellness only; the `AssistantProfileId`
+  type also names `'apparel'` and `'auto-parts'`, which answer as wellness until parts 2 and 3 add
+  them).
+  - `parseVehicle` (fitment) reads a vehicle only when the message names it: a spelled-out model
+    (F-150, CR-V) wins over a make found only through "ram"; a make and a model that disagree read
+    null; a make alone ("my 2018 Jeep") reads as its one table model only when the next word in
+    the clause is missing, a year or a filler word. So "2018 Jeep Grand Cherokee", "Ford Explorer"
+    and "2019 ram air intake" read null, and "my 2018 Jeep brakes" now does too (the chat asks for
+    the model).
+  - `shopperOrderStatus` (orderStatus) has two more keys after cancelled, refunded, delivered and
+    shipped: `payment-problem` ("Payment not received") for a Failed or Voided payment, and
+    `awaiting-payment` for a Pending one, except cash on delivery (`paymentProvider: 'cod'`), which
+    stays `preparing`. `ShopperOrder` gains optional `paymentProvider`.
+- `global.scss` loads Instrument Serif, DM Sans, Barlow, Barlow Condensed and Space Grotesk.
+
+### Renames and breaking changes
+
+- Removed `restoreDemo()` from `useChatbot`, `useStoreCampaigns`, `useCampaigns`,
+  `useSalesChannels` and `useMerchandising`, and `useSubscriptions.restore()`: use
+  `useDemoStores().restore(channelId)` (or the per-store `reseedDemo` / `restoreDemoHistory`).
+  `useCommerce.restoreDemoStore(channelId = 'vitaheal-demo')` stays, as a wrapper.
+- `useStorefrontCart.add(channelId, product, qty, choice?)`: the 4th argument is a `CartChoice`
+  (`plan`, `price`, `variant`, `vehicle`); the old `{ plan, price }` still fits it. New `prune`.
+- `lineKey` is `productId[/variantId][:planId]`; a line without a variant keeps its old key. Adding
+  more of a line for a different vehicle drops the line's `vehicle` (no single vehicle is true).
+- `useCommerce.stockedAt` takes a line (`{ sku, productId? }`) and finds its product by id.
+- **Product ids**: a product a merchant creates or duplicates is numbered from 100001
+  (`nextMerchantProductId`), never inside a demo store's block. Its default SKU is therefore
+  `SKU-20001` and up (was `SKU-12009` after the Vitaheal seed), and its links end `-100001`.
+- **Variant ids**: the product wizard keeps a variant's id across saves; a new variant gets
+  `productId*100 + n` (`numberVariants(variants, productId, alsoTaken?)`), with n past the highest
+  n among the kept ids and `alsoTaken`. The wizard passes the ids the product had when it opened,
+  so a variant removed in that session never lends its id to a new one (a cart line for it would
+  otherwise point at the new variant). `nextVariantId` likewise returns the id after the highest
+  one, not the lowest gap. A duplicate's variants are numbered from the copy's id.
+- The product wizard keeps what it does not edit: `detail.sizeChartId`, `detail.fitment`, and each
+  option's `display` and `swatches`.
+- `ProductOption` gains optional `display`, `swatches`; `ProductVariant` gains `optionValues`;
+  `ProductDetail` gains `sizeChartId`, `fitment`; cart, checkout and order lines gain optional
+  `productId`, `variantId`, `variantTitle`, `vehicle`. `SalesChannel.webStore` gains `blueprint`;
+  `ChatbotConfig` gains `assistantProfile`; `Campaign` gains `storeChannelId`
+  (`useCampaigns.markAnnouncement`). `productsFor` (store assistant) takes a profile.
+- **Browser keys**: Vitaheal's nine `mp.vitaheal-demo.<slot>.v1` keys are unchanged. Another demo
+  store keeps its data under `mp.demo-store.<channelId>.`; new slot `installed.v1` (the theme applied
+  to a store). Plans and subscriptions are split by `channelId` on load.
+- **Restore scope**: Restore original store resets the theme, collections, pages and menus only when
+  another theme was applied (the dialog then says so); a store that kept its own theme keeps this
+  session's edits to them, as before. Reseeding a store keeps a product it shares with another store,
+  in the other store only.
+- `discardDraft` on a theme that publishing another one took off the storefront no longer puts it
+  back as Published (its baseline is demoted with it).
+
+### Not done here
+
+- Applying a theme to another store, the theme library and thumbnails, Start from a theme (part 4).
+- Open decisions for part 4: whether theme edits are kept in the browser (a `themes` slot), and
+  whether plans a merchant made on a store survive Apply switched off or are removed.
+- Part 4 must call `useDemoStores().attach(channelId)` for each created store on every start;
+  nothing does yet, because no created stores exist.
+- Variant ids across edit sessions: when the top variant is removed and saved, the next session
+  no longer sees its id and can hand it out again. The lasting fix is a per-product counter
+  (`detail.nextVariantN`). n past 99 also runs into the next product's block, as before.
+- No test covers the seed-fix order (record after reseed); it needs a `seedVersion` bump and a
+  full browser.
+
+## Northfold demo store (store themes, part 2) — 2026-11-20
+
+A second demo store, built to the Vitaheal standard without subscriptions: Northfold (demo),
+channel `northfold-demo`, store #13, blueprint slot 3, a made-up clothing brand for women and men
+in US dollars (no locale, "$64.99"). 20 products (3001-3020) with 195 size × colour variants, six
+collections, five size charts, three campaigns (LAYERS20 runs), search rules and a recommendation
+engine, a chatbot on the apparel profile, and 54 photos in `public/storefront/northfold/` with
+`CREDITS.md`. Merchandise Cloud starts connected; there is no Click & collect and no seeded order.
+Its walkthrough is `docs/store-builder/northfold-demo-script.md`.
+
+Vitaheal (demo), Neelam-Store, Atlas, Fashion Boutique, Beta, Max Test and POS look and work as
+before: 23 of their storefront and admin pages were compared in Chrome with 7d9f70f3 at 1280px and
+375px, and the HTML is identical except the account sign-in's class names (the page looks the
+same: 0 pixels differ at 1280px) and the shared product editor (below). The Vitaheal demo script's steps 1-11 pass,
+and `tests/storefront/demoStoresApp.test.ts` still checks Vitaheal's rows against the fixtures.
+
+- **Seed** `src/storefront/northfoldDemo.ts` (data built from an `InstallContext`, so ids, domain
+  and links follow the store it is installed in) and `src/storefront/demoStores/northfold.ts`
+  (`NORTHFOLD_BLUEPRINT`, appended to `DEMO_STORES`). Admin facts: audience list 903 ("Northfold
+  customers", `NORTHFOLD_CUSTOMERS_LIST_ID`), announcement email 9002
+  (`NORTHFOLD_CAMPAIGN_CONTENT_ID`), timezone America/New_York; chatbot 102 with 138 chats listed.
+- **The sections drawing.** `ThemeStyles.drawing?: 'sections'` switches a theme to the richer
+  drawing; only Northfold sets it (Torqline will). Absent means the classic drawing, unchanged.
+  The storefront context exposes it as `sectionsDrawing`, and every new storefront behaviour is
+  keyed on it: the header and footer settings (menu style, sticky, light or dark, columns), the
+  home page as a section registry, the product and collection templates, filters and sort, quick
+  add, the variant picker and size guide, listing cards, and the plainer cart and checkout copy.
+  `storefrontThemeVars` adds `--sf-button-bg|ink|border|radius`, `--sf-surface`, `--sf-muted`,
+  `--sf-divider`, `--sf-heading-weight`, `--sf-heading-case` and quoted font stacks for this
+  drawing only (`tests/storefront/themeVars.test.ts` pins every classic theme's variables).
+- **Theme catalogue.** New section `icon-row` (owns `feature` blocks: icon, title, text, link) and
+  block `collapsible-row` on `product-detail` (title, source, text, open). Both, and the new fields
+  (header and footer `colorScheme`, hero `ctaLink`, featured-products `collection`, collection-grid
+  `tileRatio` on the home template and `filters`, `sort`, `quickAdd` on the collection template,
+  product-detail `imageRatio` and `sizeGuide`), carry `drawing: 'sections'`, so a classic theme's
+  builder offers exactly what it did. Helpers `sectionsFor`, `blocksFor`, `fieldsFor`.
+- **Shopper (out of system, P4-8).** Product page with colour swatches, size buttons (sold-out
+  struck through, "Only 2 left in M", "Select a size" instead of a disabled button), a gallery that
+  follows the colour, the size guide drawer (in/cm, how to measure), rows for description, fit,
+  fabric and care, delivery and returns, and "Goes well with". Collection and search pages with
+  filters (Category, Size, Color, Price) held in the URL, removable chips, sort, editorial cards
+  and quick add; a bottom sheet on phones. Cart and order lines read "Size M · Sand" with that
+  colour's photo. Account page with order history and an order page.
+- **Admin.** Products › Size charts (list, `MpFormDrawer` editor with an editable grid, duplicate,
+  delete refused while products use a chart); the product editor's variant grid grouped by colour
+  and a Size guide card; "Show as Buttons / Swatches" with a hex field per colour in the product
+  wizard; the order page's variant line ("M · Sand"). A Northfold product saved without photos gets
+  a drawn garment, not the supplement can.
+- **Chat.** The apparel assistant answers size and fit (from the piece's fit note and its size
+  chart, in inches or cm), fabric and care, a fibre to avoid, orders, returns, sale and
+  suggestions, and never gives health answers. A body measurement the best-named piece's chart
+  cannot read moves the answer to the named piece whose chart can ("merino sweater for a 38 inch
+  chest" answers for the Merino Quarter-Zip). Vitaheal's assistant gives the same replies as before
+  (`tests/chatbot/wellnessUnchanged.test.ts`, fingerprints taken from 7d9f70f3).
+
+### Components added
+
+- Storefront (`src/views/Storefront/`): `StorefrontHeader`, `StorefrontFooter`, `StorefrontDrawer`
+  (native `<dialog>`, focus kept inside, Esc and backdrop close, focus returns to the opener),
+  `StorefrontVariantPicker` (real radios, `validate()`), `StorefrontSizeGuide`,
+  `StorefrontListingCard`, `StorefrontQuickAdd`, `StorefrontFilters`, `StorefrontProductListing`,
+  `StorefrontOrder` (page), `StorefrontSignIn` (moved out of the account page, same ids and
+  wording), `StorefrontOrderStatus`; `product/` `StorefrontProductPage`, `…Main`, `…Gallery`,
+  `…Price`, `…Rows`, `…Recommendations`; `sections/` `AnnouncementBar`, `ImageBanner` (also
+  `hero`), `CollectionGrid`, `ImageWithText`, `FeaturedProducts`, `RichText`, `IconRow`,
+  `Newsletter`, `NewsletterForm`, with the registry `sections/index.ts`. `storefrontAnnouncer.ts`
+  is the polite live region (inside an open modal dialog while one is open).
+- Admin (`src/components/products/`): `SwatchHexField`, `VariantGrid`, `ProductSizeGuideCard`,
+  `SizeChartDrawer`, `SizeChartTable`, and `swatchGuess.ts`; page `src/views/Products/SizeCharts.vue`.
+- Stories: `Product/Storefront/…` (18 files, Northfold's real seed and theme) and
+  `Product/Products/…` (`SwatchHexField`, `VariantGrid`, `ProductSizeGuideCard`, `SizeChartTable`,
+  `SizeChartDrawer`); four Northfold stories on `StorefrontPreview`. `.storybook/preview.ts` sorts
+  `Products` and `Storefront` into the Product group.
+
+### Modules, routes, keys, tests
+
+- Pure modules (`src/storefront/`, relative `.ts` imports): `facets.ts` (filters, sort, the URL
+  form `?size=m&color=black&price=50-100&category=&brand=&sort=`), `listing.ts` (card price,
+  colours, grid settings), `productPage.ts` (gallery, price, the choice in the URL, rows,
+  related products), `shopperOrders.ts` (the shopper's orders and their sums), `sizeChartForm.ts`
+  (size chart validation and grid edits); `src/chatbot/clothingAnswers.ts`. Store
+  `src/stores/useSizeCharts.ts` (Pinia id `sizeCharts`, `attachDemo` / `reseedDemo`).
+- Routes: `/commerce/:accountId/products/size_charts` (`SizeCharts`; `?store=<channelId>` picks a
+  store; sidebar Products › Size Charts) and the storefront child `account/orders/:number`
+  (`StorefrontOrder`).
+- Browser keys: Northfold keeps its data under `mp.demo-store.northfold-demo.`: `products.v1`,
+  `campaigns.v1`, `merchandising.v1`, `merchandise.v1`, `chatbot.v1`, `conversations.v1` and the
+  new `size-charts.v1`. Nothing new is written for Vitaheal; its keys are unchanged.
+- Tests: `tests/storefront/` `northfoldDemo`, `facets`, `listing`, `productPage`, `shopperOrders`,
+  `sizeChartForm`, `sizeChartsApp`, `themeVars`, and three Northfold cases in `demoStoresApp`;
+  `tests/chatbot/` `apparelAssistant` and `wellnessUnchanged` (with `wellnessCorpus.ts` and
+  `fixtures/wellness-replies.json`).
+
+### Renames and breaking changes
+
+- `DemoStoreId` is `'vitaheal' | 'northfold'`. `StoreSnapshot.checkout` is a `SnapshotCheckout`
+  (`CheckoutProfile` plus `pickup?: boolean`; `false` hides Click & collect). `DemoStoreBlueprint`
+  gains `packShot?: { shape }`; `SnapshotCollection` gains `description?`, which
+  `useProductExtras` passes on (Vitaheal's stay `''`).
+- `ThemeStyles` gains `drawing?`, `buttonColor?`, `surfaceColor?`, `mutedColor?`,
+  `dividerColor?`, `headingCase?`; `themeFonts` gains Instrument Serif; new `THEME_FONT_META`,
+  `FEATURE_ICONS`, `COLLAPSIBLE_SOURCES`. `ThemeSectionField.type` gains `'collection'`, plus
+  `optionLabels?`, `drawing?`, `templates?`; `ThemeSectionDef` gains `blocks?`, `drawing?`;
+  `ThemeBlockDef` gains `drawing?`.
+- `PackShape` gains `'garment'`; `PackGeometry` gains `textFill?`, `shadow?` (the other shapes'
+  drawings are byte-identical). `placeholderImages(name, styles, shape = 'can')`.
+- `ProductDetail` gains `imagesByColor?`, `fitNote?`, `care?`. `ProductDraftInput` gains
+  `compareAtPrice?`: a store product's save keeps its real compare-at price instead of an invented
+  1.2 × price (a Vitaheal wizard save now keeps `''`); shared-catalogue products as before.
+- `useCommerce` and `useStoreCampaigns`: a reseeded store's products and campaigns go back to
+  where they were in the list, not to the end. `useSalesChannels.seededConnection(channelId)`:
+  a demo store that starts connected to Merchandise Cloud (Northfold) is reconnected by Restore.
+- `StorefrontContext` gains `sectionsDrawing`, `sizeCharts`, `sizeChartFor(product)`,
+  `announce(text)`. `StorefrontLayout`'s header and footer moved into `StorefrontHeader` /
+  `StorefrontFooter` (classic markup unchanged). `.sf-button` reads `--sf-button-*` with today's
+  values as fallbacks. `PreviewProduct` gains `collections?`; `StorefrontPreview` gains
+  `template?`; `AddSectionDialog` gains `sections?`; `StorefrontReceipt` gains `orderHref?`.
+- `AssistantProfile` gains `placeholder`, `subscriptions?`, `clothing?`, `caution.link?`;
+  `AssistantProduct`, `AssistantContext` and `AssistantState` gain optional clothing fields; new
+  `assistantProduct()`. `ASSISTANT_PROFILES` has `apparel`; `'auto-parts'` still answers as wellness.
+- **Visible on Vitaheal (planned):** its account page reads "Your account" with Subscriptions,
+  then Orders (a subscription's name is an h3 now); the confirmation gains "Track your order" and
+  the order page. Order history and "Track your order" are on the demo stores only
+  (`storefront.demo`): every other store's account page keeps its subscriptions-only layout and
+  heading ("Your subscriptions"). On the sections drawing, cart amounts no longer break across lines.
+- **Buy now** on the sections drawing needs a variant in stock: `/checkout?buy=<id>` with no
+  `variant`, or a sold-out one, shows "Choose a color and size first" with a link back to the
+  product, never an order for an unknown size and never the cart instead.
+- **Chat (after review):** a measurement given without a unit is read in the unit that lands
+  within the chart's range ("neck 39" is 39 cm), and the size's row is then shown in that unit;
+  "I'm a size 8" reads the US sizes in the chart's fit note; "a 32 in your chinos" is a size, not
+  inches. A skin or health condition named with a fibre ("a wool allergy and eczema"), or a health
+  word (pregnant, medication, toxic, chemicals), gets the caution instead of product picks.
+- **Visible on every product (shared admin):** the product editor's variants table is the
+  `VariantGrid` (total stock with a stock chip; when more than one location holds stock, the split
+  reads under the number, "Oxford Warehouse 140 · Testing 12"); on a phone the folded SKU wraps so
+  every column stays inside the card. The Purchase options card is hidden on stores that sell no
+  subscriptions.
+- **Admin fixes after review:** the product wizard refuses to save while a swatch's text is not a
+  colour (it goes to the Variants step, focuses the field and says "Fix the colour for Black");
+  `SwatchHexField` gains `update:invalid`. The Products rail flyout lights only the page you are on
+  (it used `startsWith`, so Products lit up with Collections and Size Charts; now `routeMatches`, as
+  the expanded sidebar). The Size charts list folds Unit into the name cell on a phone. A
+  sections-drawing `StorefrontPreview` in a box narrower than 480px draws the phone layout (container
+  query), and its product page shows the product's second photo (`PreviewProduct.images`) rather
+  than an empty tile. "centimeters" on the Size guide card. The order page finds a line's product by `productId` before SKU, so variant lines
+  get their photo.
+- The restore card and dialog name size charts on a store that has them ("Size charts go back to
+  the original five"); Vitaheal's copy is unchanged.
+
+### Storefront fixes after review
+
+An independent shopper review (1280 and 375, keyboard, accessibility tree) found no blocker; its
+findings are fixed. Vitaheal's pages keep every computed style (checked before and after).
+
+- **Gating.** `StorefrontLayout` adds the root class `sf-surface--sections` on the sections drawing
+  only; `storefront-surface.css` sets `--sf-corner` (the theme radius, 0 on Northfold) and
+  `--sf-measure-narrow` (800px) there. Shared CSS reads `var(--sf-corner, <today's value>)`, and
+  page classes `sf-co--sections`, `sf-acct--sections`, `sf-content--sections`,
+  `sf-receipt--sections`, `sf-order-status--sections` carry the rest. `--sf-measure` (1200px) and
+  `--sf-gutter` (24px) were already set for every store; the listing, search and breadcrumbs now
+  use them, so every page's left edge matches the header logo (64 at 1280, 24 at 375).
+- **Chat launcher (phones).** On the sections drawing it is a 48px icon on phones and fades out
+  (no pointer, out of the tab order) while an element marked `data-sf-clear` (the variant picker,
+  Add to cart / Buy now, the cart's Checkout and the checkout's Pay block) sits in its corner; it
+  stays while the chat is open or the launcher has focus. Vitaheal's launcher is unchanged.
+- **Product page.** Each close-up photo is listed only under the colour it shows; `galleryFor`
+  returns `colors[]` and the gallery's alt names a colour only for a photo of it. The buy box is
+  sticky from 901px (by its bottom edge when it is taller than the window); the stacked gallery has
+  no thumbnail rail. "Goes well with" keeps to the same audience or unisex (`forSameAudience`).
+  The seed's product order puts women's pieces first in Women (`PRODUCT_SEEDS` reordered, ids
+  unchanged).
+- **Size guide by audience.** New pure module `src/storefront/audience.ts` (`audienceOf`,
+  `sharesAudience`, `columnsForAudience`, `chartForAudience`; tested): a men's piece on the shared
+  Outerwear chart shows Chest and Sleeve, a women's piece Bust and Sleeve. The chat reads the same
+  columns (`Audience` is re-exported from `clothingAnswers`). `StorefrontSizeGuide` gains `audience`.
+- **Chat.** When a measurement moves the answer to another piece it says why ("The Merino Crewneck
+  Sweater is sized by bust, waist and hip. For a 38 in chest, the men's Merino Quarter-Zip in M
+  fits: …"; `MeasuredPiece`).
+- **Accessibility.** After Apply on a discount code focus moves to Remove and "Code LAYERS20
+  applied. You save $19.60." is announced; after Remove, focus returns to the field; removing a
+  cart line focuses the next line (or the h1) and announces it. This focus and announcement
+  behaviour applies to every store (nothing visible changes). `StorefrontDiscountCode` gains an
+  optional `saving` prop. Screen-reader strings no longer carry a stray space ("L, sold out").
+  Quick add announces "Select a size". Search keeps focus in its box after a new query, and the
+  header's search icon lands in it. The sections drawing has its own skip link in the theme's
+  colours (App.vue's is hidden only while it is on the page).
+- **Square theme.** Cart, checkout (payment tiles, card form, summary), receipt (a plain bordered
+  panel: no shadow, scallop or notches), order status marks (theme surface and text with a
+  coloured icon or dot) and account follow the theme's corners and colours. Checkout and order sit
+  in the store's measure; account and policy pages in the narrow one. Headings use the theme
+  heading font; breadcrumbs use "/". Collection and search titles are 40px (30px at 900px and
+  below), the product title's size.
+- **Policy pages.** The title uses the theme's heading weight and case; a first `<h2>` that repeats
+  the title is not drawn. "ZIP code" for a US address on the sections drawing (classic stores keep
+  "Postcode").
+- Left as is: the round quantity badge on checkout thumbnails, the coloured card marks, and the
+  wallet/bank sheet (it stands in for another company's screen). The Organic Cotton Tee's White
+  and Black photos show a man (fifth in Women now); the launcher can sit over the lowest
+  collapsible row's chevron while visible.
+
+### Not done here
+
+- Theme edits are kept in memory only (Part 4 decides on a `themes` slot): a store tab opened
+  before the edit, or reloaded, shows the theme as seeded. The demo script shows theme edits in the
+  editor.
+- The builder's Styles tab does not edit `buttonColor`, `surfaceColor`, `mutedColor`,
+  `dividerColor` or `headingCase`; the seed sets them.
+- Only a collection template's first `collection-grid` is drawn; collection intros are not kept in
+  the browser.
+- Shared components, not changed here: on a phone a toast (`MpToastStack`) can sit over an open
+  dialog's footer until it goes, and `MpFormDrawer` with unsaved changes ignores an outside click
+  instead of asking "Discard changes?" as its docs say.
+- Part 4 decision: `useSalesChannels.seededConnection` reads the channel's own seed, so a store
+  created from the Northfold theme starts disconnected from Merchandise Cloud, and the theme's
+  search, synonyms, pins and "Goes well with" are installed but unreachable until it connects.
+- `chartInUnit` converts every column, so a size chart must not hold a non-measurement column
+  (the seed keeps US sizes in the fit note).
+- `MpFormDrawer` closes (or asks "Discard changes?") on an Esc meant for an open `v-select` inside
+  it; the size chart grid guards its own menus only.
+- On a phone the chat launcher sits over the lowest row of a product page until it is scrolled.
+- The theme thumbnails (`theme.jpg`) and the theme library, apply and Start from a theme are part 4.
+
+## Torqline demo store (store themes, part 3) — 2026-11-23
+
+A third demo store, built to the same standard without subscriptions: Torqline Auto Parts (demo),
+channel `torqline-demo`, store #14, blueprint slot 4, a made-up parts store for ten popular US
+vehicles in US dollars. 21 parts (4001-4021) with part numbers as SKUs (`TQ-<CAT>-nnnn`), nine
+collections, four made-up part brands (Torqline, Haltmark, Voltaro, Lumvane), fitment rows split
+by model generation, specifications and warranties, three campaigns (Brake week, BRAKES15, runs),
+search rules and a recommendation engine, a chatbot on the auto-parts profile (id 103, 176 chats),
+and 52 photos in `public/storefront/torqline/` (Unsplash and Pexels free licences, `CREDITS.md`).
+Its walkthrough is `docs/store-builder/torqline-demo-script.md`.
+
+Vitaheal, Northfold, Neelam-Store, Atlas and the other stores look and work as before, except
+the deliberate changes listed under "Renames and breaking changes". Every new behaviour is keyed
+on `sellsParts` (the sections drawing and a product with `detail.fitment`) or on a section
+setting, never on a channel id.
+
+- **The shopper's vehicle.** One per store, no garage, kept for the tab in sessionStorage
+  (`src/stores/useStorefrontVehicle.ts`, key `mp.storefront.vehicle.v1`; a vehicle the table no
+  longer offers reads as none). The storefront context adds `sellsParts`, `vehicle`, `setVehicle`,
+  `fitOf` and `chooseVehicle` (opens the vehicle drawer the layout mounts). Apply, Restore and
+  another tab's apply or restore forget it (`useDemoStores`).
+- **One set of fit rules** in `src/storefront/fitment.ts`, used by the cards, the product page,
+  quick add, the cart and checkout lines, the search preview and the chat: `fitState`,
+  `fitLabel` (the same words everywhere), `fitDetail` (what the fitting rows say: "Driver 22 in,
+  passenger 22 in"), `fitsVehicle` (fits or universal), `variantFitState` (one choice: a row's
+  position must be the choice's; a note naming some choices takes only those), `lineVehicle`
+  (a line names the vehicle only when that choice fits), `sellsParts`, `isVehicle`.
+- **Storefront** (sections drawing, parts stores only): the header vehicle button and
+  `StorefrontVehicleDrawer` / `StorefrontVehicleSelector` (Year, Make, Model native selects with
+  visible labels); the `vehicle-finder` home section with part-number search; featured products'
+  `vehicle` setting ("Popular parts for your 2019 Ford F-150"; with no vehicle, one part per
+  category, `acrossCollections`); `StorefrontFitBanner` (four states, icon and words, fixed colour
+  pairs at 4.5:1 on white and on the theme surface); the product page's part number, which follows
+  the choice, and the row sources `specs`, `fitment` (compatibility table, the shopper's rows
+  marked "Your vehicle") and `warranty`; recommendations limited to parts that fit
+  (`forSameVehicles`); the `Dense` card style (part number or what the part comes in,
+  `choiceSummary`: "Front or rear", "6 lengths"; fit badge; stock line; Add to cart, which opens
+  quick add for a part that needs a choice or doesn't fit, `addsDirectly`); the fits bar and
+  "Only show parts that fit" switch; the empty state "No parts fit your 2015 Honda Civic in
+  Brakes"; part-number search straight to the product with the choice made
+  (`partNumberSearch`, a merchant redirect wins, hidden products are skipped); cart, checkout,
+  order and account lines "Front · Part # TQ-BRK-4471 · Fits 2019 Ford F-150"
+  (`StorefrontLineText`, which never breaks "F-150" or a part number).
+- **Admin:** the Vehicle fitment card (`VehicleFitmentCard`, `VehicleFitmentDrawer`; universal
+  switch, table with search, labelled remove, bulk remove, Add vehicle with duplicate and overlap
+  refusal; a row with no position covers Front and Rear) and a Specifications card (name and
+  value rows, warranty) on the product page of a parts store, both saved with the page's Save
+  (`src/storefront/fitmentForm.ts`); the order line reads "Fits 2019 Ford F-150"; Merchandising ›
+  Search preview says where a part number takes shoppers; the theme builder offers each store
+  only what it sells (`storeFacts`, `requires` / `optionRequires` on sections, fields and options,
+  `hideWhen` for fields a choice makes irrelevant).
+- **Chat:** the auto-parts profile (`src/chatbot/partsAnswers.ts`): whether a part fits a vehicle
+  (per choice), what fits the shopper's vehicle, part numbers, setting the vehicle only when the
+  shopper asks or says yes to a strict yes/no offer, never someone else's vehicle; brake and
+  safety symptoms get a qualified-mechanic answer, brake shopping gets the parts and a one-line
+  mechanic note, do-it-yourself questions get the store's own "Brake work" answer; returns and
+  exchanges go to the store's pages.
+- **Focus rings:** the sections drawing emits `--sf-focus`: the accent where it reaches 3:1 on the
+  page, else the text colour (Torqline's safety yellow is 1.6:1 on white, so its rings are
+  charcoal). Every storefront ring reads `var(--sf-focus, var(--sf-accent, …))`; the dark header
+  and footer set their own. Classic themes never get the variable, so their rings are unchanged.
+
+### Modules, keys, tests
+
+- New: `src/storefront/torqlineDemo.ts`, `src/storefront/demoStores/torqline.ts`,
+  `src/storefront/fitmentForm.ts`, `src/stores/useStorefrontVehicle.ts`, `src/chatbot/partsAnswers.ts`;
+  `src/views/Storefront/` `StorefrontFitBanner`, `StorefrontVehicleSelector`,
+  `StorefrontVehicleDrawer`, `StorefrontLineText`, `sections/VehicleFinder`;
+  `src/components/products/` `VehicleFitmentCard`, `VehicleFitmentDrawer`.
+- Admin ids: CDP list 904 "Torqline customers", announcement email 9003, timezone America/New_York.
+  Browser keys: `mp.demo-store.torqline-demo.*` (the same slots as Northfold) and the vehicle's
+  session key above. Nothing new is written for Vitaheal or Northfold.
+- Tests: `tests/storefront/` `torqlineDemo`, `fitmentForm`, and Torqline cases in `fitment`,
+  `facets`, `listing`, `search`, `productPage`, `shopperOrders`, `themeVars`;
+  `tests/chatbot/autoPartsAssistant`. The shared suite `demoStores.test.ts` checks Torqline with
+  the other blueprints.
+
+### Renames and breaking changes
+
+- `DemoStoreId` adds `'torqline'`. `ProductDetail` gains `specs?: { label; value }[]` and
+  `warranty?`. `RowSource` adds `'specs' | 'fitment' | 'warranty'`. `themeFonts` adds Barlow and
+  Barlow Condensed. `sectionsFor` and `fieldsFor` take the store's facts; told nothing they offer
+  no store-specific setting. The `collection-grid` section gains `cardStyle` (Editorial, Dense).
+- **The fits filter works the other way round:** once a vehicle is chosen it is on by default and
+  `fits=0` in the URL turns it off (it was `fits=1` to turn it on). It is a switch, not a chip, and
+  Clear all leaves it alone. `ListingOptions.fitsLabel` is gone; `removeFilter` takes a filter group
+  only; `ListingOptions` is generic.
+- `listing.partNumber` now follows `productPage.partNumberOf`: empty for a part whose choices each
+  have a number (the card shows `choiceSummary` instead), never the first variant's number.
+- Sold-out wording, Northfold too: a choice sold out on arrival reads "Sorry, L is sold out. Choose
+  another size." ("just sold out" only when it sold out during the visit, `soldOutText`).
+- The admin order line says "Fits 2019 Ford F-150" (was "For …"). A demo store without plans names
+  its own first search synonym in its Activity tab (Northfold's was a made-up "Fall outerwear").
+- The list's primary buttons use the theme's button colours (`--sf-button-*`); Northfold's are the
+  same black as before.
+
+### Reviews
+
+Three independent reviews (shopper, merchant, code) ran on the integrated work. Fixed after them:
+a cart line that said a 16 in wiper fits an F-150 that takes 22 in (now `lineVehicle` everywhere,
+and the banner follows the choice); the chat setting the vehicle when nobody asked, reading "ok …"
+or "please …" as yes, losing the question, dropping the vehicle on its own Add to cart, and
+answering exchanges with product cards; the safety caution blocking ordinary brake shopping; a
+part that doesn't fit going into the cart with no warning; the bulk Remove bar painted over by the
+next card; a Front row allowed over an either-end row; parts settings offered in Northfold's theme
+builder (and the size guide in Torqline's); the search preview not knowing part numbers; the header
+icons out of place below 1280px; two identical brake rows on the home page; focus lost after Find
+parts; an empty-state announcement that differed from the heading; delivery copy (now 3 to 5
+business days, as the checkout says); "F-150" and part numbers breaking across lines.
+
+### Not done here
+
+- `oil-filter-truck-1.jpg` is still missing (no unbranded free photo found), so 4006 shows one
+  photo. Close matches kept: brake pads shown fitted, a cone air filter, a dial tire gauge, brake
+  fluid bottles.
+- The fit states use fixed colour pairs, not `--sf-*`, on purpose: a fit has to read the same on any
+  theme. Revisit only with a theme-level semantic palette.
+- `MpFloatingBulkBar` overflows at 375px (shared component; also on `/templates/list`).
+- The builder canvas still draws the fit banner's stand-in for a store that does not sell parts if
+  its template already has the banner on (the builder no longer lets it be switched on there).
+- Cards show no badge until a vehicle is chosen (the fits bar asks for one); part numbers can wrap
+  at the hyphen in chat bubbles (kept so they paste into search intact).
+- Seen on every demo store, not changed here: the announcement email's preview shows the stock
+  abandoned-cart body; the chatbot's shopping-assistant preview shows "red boots"; the SEO URL
+  preview leaves out the product id the storefront path ends in.
+- The theme thumbnails (`theme.jpg`), the theme library, Apply and Start from a theme are part 4.
+
+## Theme library (store themes, part 4) — 2026-11-24
+
+Each demo store (Vitaheal, Northfold, Torqline) is also a theme in a store's **Themes** page library.
+Applying one makes the store a complete copy of that demo store; "Restore original store" puts it
+back. Create sales channel can start a Store Builder store from a theme. The rules are in
+`src/stores/useDemoStores.ts`; what the dialogs say is in `src/storefront/demoStores/summary.ts`.
+How it works and how to add a fourth store: `docs/store-builder/demo-stores.md`; the QA checklist:
+`docs/store-builder/demo-stores-qa.md`.
+
+Decided with the user before building: theme edits, copies and drafts are kept in the browser; Apply
+keeps the store's own subscription plans (seeded or made in it) listed and paused; a store made with
+Create sales channel can be deleted. Decided after the reviews: a store made from a theme, or with one
+applied, shows that theme's brand to shoppers (wordmark, footer, tab title), as a complete copy does;
+the store's own name stays in the admin.
+
+- **Themes page** (`StoreThemes.vue`, `ThemeLibraryCard.vue`): the current theme shows the top of its
+  home page in a 480px window that fades out (`layout.themePreviewHeight`; the whole page ran past
+  2,000px and hid everything below it), and "Copied from Northfold on Nov 24, 2026 · Restore original
+  store" while another theme runs. The library has one card per demo store: thumbnail, name and
+  version, kind, description, showcase store, and Apply, or "Current theme", or Restore original store
+  for the store's own theme while another runs; Preview opens the showcase storefront in a new tab
+  (unavailable, with a note, while that store runs another theme). Stores that cannot take a theme
+  (Neelam-Store, Atlas, Fashion Boutique, Beta, Max Test, POS) get one info alert and Preview only.
+  Themes installed gains a status chip and a row menu: Edit theme, Duplicate, Delete draft.
+- **Apply**: a confirm listing what is replaced, what changes and what stays (`applySummary`: products,
+  look, collections, pages, menus, campaigns, search rules, size charts, the chatbot's kind of store,
+  the currency, plans switched off with subscribers kept, plans brought, orders kept, cart emptied,
+  how to undo). A toast with Show store follows.
+- **Restore** is one dialog (`StoreRestoreDialog.vue`) on the Settings tab and the Themes page
+  (`restoreSummary`), and now always resets the theme too: drafts and copies are removed, and it says
+  when prices go back to another currency.
+- **Create sales channel**: a Web Store with Store Builder gets a "Start from a theme" step (Blank,
+  preselected, then the three themes with their thumbnails), and Review says what the store starts
+  with (`startSummary`). The store is created through `useDemoStores().create`, seeded at once, kept
+  in `mp.store-builder.created-stores.v1`, added at the end of the list, and opens published when made
+  from a theme. Its Settings tab has Delete store (`useDemoStores().remove`): every part is emptied,
+  its keys removed, orders stay.
+- **Storefront cart**: when a theme is applied or the store restored, here or in another tab, the cart
+  is emptied and the cart page says what was taken out, with Got it (`storeChanged`, `noticeFor`,
+  `dismissNotice` on `useStorefrontCart`).
+- **Thumbnails**: `public/storefront/<store>/theme.jpg`, captured from the storefronts by
+  `npm run themes:thumbnails` (`scripts/theme-thumbnails.mjs`).
+
+### Modules, keys, tests
+
+- New: `src/storefront/createdStores.ts`, `src/storefront/demoStores/summary.ts`,
+  `src/components/saleschannels/StoreRestoreDialog.vue`, `ThemeLibraryCard.vue` (+ story),
+  `scripts/theme-thumbnails.mjs`, `docs/store-builder/demo-stores.md`, `demo-stores-qa.md`.
+- `useDemoStores()` adds `create`, `remove`, `isCreated`, `applyPreview`, `restoreFacts`,
+  `restorePreview`. `useStoreThemes` adds `duplicateTheme`, `deleteTheme`, `restoreDemoHistory`.
+  `useSalesChannels` adds `isCreatedStore`, `madeWith`, `deleteCreatedStore`, `syncCreatedStores`;
+  `CreateSalesChannelPayload.theme`. The `StorefrontCart` story adds `StoreChanged`.
+- Browser keys: `themes.v1` per store (`mp.vitaheal-demo.themes.v1`, `mp.demo-store.<id>.themes.v1`),
+  written only once a theme is changed; `mp.store-builder.created-stores.v1`. Nothing is written on
+  load. Created stores take slots 10-99 (2-9 stay for demo stores), so their product ids start at
+  1,100,000 + the theme's digit × 1000.
+- Tests: `tests/storefront/themeSwap.test.ts` (every theme on every store that can take one and back,
+  created and deleted stores, theme copies, paused plans, a second tab, the dialogs, the cart notice),
+  `themeSummary.test.ts`, `createdStores.test.ts`; the three thumbnail tests now run.
+
+### Renames and breaking changes
+
+- **Restore now resets the theme**, with its collections, pages and menus, and removes theme drafts
+  and copies (it used to keep the session's theme edits). Theme edits now survive a reload.
+- **Apply keeps plans a merchant made** in the store, paused, beside the seeded ones (they used to be
+  dropped); Restore removes them.
+- A store back to blank (restored, or deleted) loses the chatbot its theme gave it, and prices again in
+  what it was made with. `useChatbot`'s kept settings tolerate a store with no chatbot.
+- `useDemoStores` `reseed` lost its `look` argument (Restore always resets the look).
+- A created Store Builder store carries `webStore.demo` and `webStore.blueprint`; before, such stores
+  were made at the top of the list, in memory only.
+- The library cards have no Duplicate (the plan had one): duplicating copies an installed theme, so it
+  lives on the Themes installed rows.
+- **A blank store** (made without a theme) gets its own Overview: "No theme yet" with Choose a theme
+  (to the Themes page) in place of a sample preview, a "Choose a theme" setup item and quick action,
+  and no Preview; the theme builder sends it to the library too. Its storefront home reads "<store> is
+  opening soon", and it no longer borrows the account's shared catalogue: `catalogFor(…, ownOnly)`
+  for every store that can take a theme (storefront and Merchandise Cloud's index).
+- **A created store** shows its own figures (its orders and revenue; no visit figures yet), its own
+  activity ("Store created", "Theme published"), and its own business details ("Not added yet"),
+  never Atlas Outfitters' samples. It is set up and published exactly while it runs a theme.
+- **Storefront**: the store-change note shows on every page (`StorefrontStoreChanged`), not only the
+  cart, and goes once the shopper adds something; the tab title follows a theme applied elsewhere;
+  an amount in another currency than the store's (an order from another theme) keeps its own format;
+  order and account lines keep a part's number when the line names a vehicle.
+- **Subscription plans** says when a store's own plans are paused because another theme runs on it.
+- A copied theme is dated when the store got it (applied, or the store made), so the Themes page and
+  the Overview agree.
+
+### Reviews
+
+Three independent reviews (merchant, shopper, code) ran on the integrated work. Fixed after them: the
+store's own plans lost on reload after a second Apply (the plans slot was cleared and nothing saved
+again); a deleted store's id and slot reused, so a store made again with its name came up empty and
+inherited its Maropay data (ids and slots are now retired); Discard doing nothing after a reload (the
+published state is now kept with the themes); a blank store that took a theme still "needs setup";
+two preselected plans after Apply; the Apply dialog calling plans an earlier theme brought "switched
+off" when Apply removes them, "Its" pointing at two stores, "replace" on a blank store, and no word on
+size charts going, the merchant's edits not being kept, or search needing Merchandise Cloud; the
+Restore dialog saying nothing of the currency, brought plans or the connection going back; a blank
+store's Overview showing Atlas's preview, "Theme published" and an Edit theme that dead-ended; Atlas
+Outfitters' legal details on every created store; made-up revenue on a store made seconds ago; focus
+lost after Apply, Restore, Duplicate and Delete draft; the shopper told why the cart emptied only on
+the cart page; a blank store selling the shared catalogue; a USD order formatted in Swedish after a
+restore; the wizard's "4 / 4" wrapping on a phone; empty-state copy that promised actions the page
+did not have.
+
+### Not done here
+
+- The verb stays **Apply** (the plan's word); the dialog's first line says the store becomes a copy.
+- The Products list shows a copied store's products beside the originals with the same SKUs; the
+  Sales channel filter tells them apart. A store column there would be a Products-page change.
+- Preview of a theme still opens its showcase store, so it is unavailable while that store runs
+  another theme (decided in the plan); a read-only preview from the seed would lift that.
+- Chats kept through an Apply show under the new store's assistant; a stale screen-reader message can
+  stay on an emptied checkout; the store-change note is kept for the page view only.
+- Duplicated themes show "—" as their creator; a row menu opened with Enter keeps focus on its
+  trigger (MpRowActionsMenu, app-wide).
+- Collections, pages, menus and the header and footer are still not kept in the browser.
+
+## Lumos demo store (store themes, part 5) — 2026-11-24
+
+A fourth demo store and library theme, **Lumos Home (demo)** (channel `lumos-demo`, store #15, slot 5): furniture,
+lighting and decor in US dollars, no subscriptions. It is rebuilt from the live UAT theme Lumos v1.1.9 (UAT account 1400,
+store #34, crawled read-only in Chrome) with the look of the Lumos Figma style guide (file nhXItT4Eiahp5qnE8nGNmY).
+Decided with the user: a whole demo store like Northfold and Torqline; furniture and home; Figma decides the look (colours,
+Inter, uppercase 64/32 headings with 48/24 on phones, 4px buttons, the product card, forms) and UAT the structure
+(sections, their order, settings and behaviour); UAT's contrast failures are not copied; a simple wishlist; made-up brands
+in place of the real brand logos UAT shows. Its walkthrough is `docs/store-builder/lumos-demo-script.md`.
+
+- **Catalogue:** 20 pieces (5001-5020) from six made-up makers (Oakmere, Linden Row, Morrow & Pine, Halden Works, Cove & Co,
+  Brightwell Studio), with fabric, finish and colour swatches or sizes, specifications (Width, Depth, Height, Seat height,
+  Weight, Materials, Care, Assembly) and warranties; nine collections; the "Winter home event" campaign (COZY20, 20% off the
+  living room); search rules; "Complete the room" recommendations; 50 free Unsplash photos and six SVG logos drawn for the
+  demo (`public/storefront/lumos/CREDITS.md`).
+- **Sections drawing additions** (all optional, read only by the sections drawing, so the stores before it are unchanged;
+  `themeVars.test.ts` pins their variables): theme styles `headingWeight`, `cardColor`, `cardRadius`, `cardShadow`,
+  `buttonBorderColor`, `buttonHoverColor`, `buttonCase`, `tintColor`, `measure`, `gutter`, `heroTitleSize`,
+  `sectionTitleSize`, `controlBorderColor`; the image banner's badge, accent words, "Words on the left" and up to three
+  stats; the collection grid's looping carousel with dots, labels over photos, tint and per-tile accent words; a new
+  `logo-strip` section; eyebrows on featured products (with Previous/Next) and the icon row (with centred card tiles);
+  specification and warranty rows for any store whose products carry them; the header's search field, the footer's tagline,
+  newsletter column and legal links; the `Boxed` product card; the `facets` setting on a collection grid.
+- **Wishlist:** hearts on Boxed cards and the product page, a header heart with its count, and `/wishlist`, on a
+  sections-drawing store whose header lists the wishlist tool. Kept per store in `mp.storefront.wishlist.v1`; Apply, Restore
+  and Delete empty it with the cart, and their dialogs say so.
+- **Chat:** the `home` profile (`src/chatbot/homeAnswers.ts`) answers sizes, whether a piece fits a space (and through a
+  doorway), materials, care, assembly, warranty and delivery from the product's own specifications and the store's pages.
+- **Admin:** the product editor's Specifications card shows for any product with specifications, with the chat's labels as
+  suggestion chips; a product without photos in a furniture store draws a sofa (`packShot` shape `furniture`). The theme
+  builder edits and previews every new section and setting.
+- Ids: chatbot 104, CDP list 905 "Lumos Home customers", announcement email 9004, timezone America/Los_Angeles. The test
+  stores that sat on slot 5 moved to 10 and 11.
+
+### Reviews
+
+Three independent reviews (shopper, merchant, code) ran on the integrated work, each serious finding re-checked by a
+skeptic; all 16 were confirmed and fixed. The largest:
+- form field borders at 1.23:1 (now `controlBorderColor` #949494, 3:1, on every field including the newsletter);
+- the chat answering "do you assemble?" with delivery, calling a sold-out colour available, failing a doorway check for
+  pieces that arrive in parts, and treating "my 72 inch table" as a piece to buy;
+- the chatbot preview answering two of Lumos's quick prompts wrongly (size and sale questions now get the live-store line
+  unless a knowledge entry really answers them; this also fixes Northfold's and Torqline's previews, which answered "What's
+  on sale?" with other entries);
+- the builder canvas not drawing Lumos as the storefront does (Boxed cards, the header search field and heart, the
+  product page, the phone hero), also on the store's Overview and Themes pages;
+- Northfold's and Torqline's inspectors showing blank or invalid values for the new fields (now each field's default);
+- Theme styles unable to show or edit Lumos's look (hex fields, case-insensitive presets, Card corners, Card shadow,
+  Button labels, Tint color);
+- a fourth hero stat accepted but not drawn (capped at 3 with the reason);
+- accent words on the room tiles below 4.5:1 on phones; quick add showing another colour's photo without saying so;
+- copy that contradicted the photos (rewritten to match what each photo shows), and the rug's first photo leading with a
+  sofa;
+- collection filters that mixed rug, bed and table sizes (Lumos now shows Category, Color, Brand and Price through the new
+  `facets` setting).
+
+### Not done here
+
+- Three colourways have no photo of their own (the Arlo sofa's Slate and Moss, the console's Black): they show the first
+  colour and say "Shown in Oat". The Ridge chairs (a set of 2) are photographed as one chair.
+- The logo block's picture is seeded only: images are not editable in the theme builder yet (as for every section).
+- The builder's add-block menu still draws a raw list item; focus does not move into a block just added.
+- The product editor's Attributes card (the packed box) and the Specifications card both have Width and Height fields.
+- `facets` is a seed-only setting (no builder control yet).
+- Aurora (an outdoor gear store built on the UAT Aurora theme) is part 6.
+
+## Aurora demo store (store themes, part 6) — 2026-11-24
+
+A fifth demo store and library theme, **Aurora Outdoor (demo)** (channel `aurora-demo`, store #16, slot 6): outdoor clothing
+and footwear for women and men, with a few packs and accessories, in US dollars, no subscriptions. It is rebuilt from the
+live UAT theme Aurora v1.8.9 (UAT account 1400, store #34, crawled read-only in Chrome). Decided with the user: a whole demo
+store like Northfold, Torqline and Lumos; a real serif for headings (Source Serif 4, weight 700) in place of the browser's
+Times fallback UAT shows, body text in `system-ui`; the Aurora header and footer on every page (not UAT's generic "sy-" set);
+the apparel chat profile; home = UAT's full-bleed banner and Featured Collections slider plus a few existing sections in
+Aurora's style. UAT's defects are not copied (the font fallback, no type scaling on phones, low-contrast field borders and
+small text). Its walkthrough is `docs/store-builder/aurora-demo-script.md`.
+
+- **Catalogue:** 20 pieces (6001-6020): down jackets, rain shells, hiking pants, merino tops and hiking boots made for
+  women and for men, each named for its wearer ("Women’s Summit Down Jacket", "Men’s Summit Down Jacket"; the chat treats a
+  pair as one style), two fleeces, two packs, socks, a beanie, trekking poles, a headlamp, a bottle and a sun hat; sizes and colour
+  swatches; seven size charts (women's and men's tops and pants, boots by foot length, socks, hats); ten collections; three
+  campaigns (Trail season TRAIL20 running, Layer up LAYERUP15 ended, Boot week BOOTS15 upcoming); search rules; "Goes well
+  with" recommendations; 54 free Unsplash photos (`public/storefront/aurora/CREDITS.md`), eight of them colourways, with
+  brand marks retouched or cropped out. The product copy and swatches describe what each photo shows (the women's down
+  jacket is a boxy puffer, the men's rain shell a pullover anorak, the poles have foam grips), and a chat test replays
+  the seeded chats and quick prompts against the real seed.
+- **Sections drawing additions** (optional, read only by the sections drawing, so the stores before it are unchanged):
+  the header's `Stacked` menu style with social icons and a pill search field (`headerSearch: 'pill'`); the footer layout
+  "Menus and newsletter" with accordions on phones; the image banner's "Middle left" position over a shade (white text at
+  4.89:1 or better on any photo) and the "White words on the photo" banner, which takes the photo of the template's own
+  banner and is offered only where there is one (`ThemeSectionVariant.photoFromBanner`, `bannerPhoto`, `variantPreset`;
+  `sectionsFor` takes the template's sections as a 4th argument); the `Framed` product card with a struck "was" price,
+  which follows Theme styles › Card corners and Card shadow; theme styles `tileRadius` and `tileShadow` for collection
+  tiles (Aurora: product cards 24px with no shadow, tiles 8px with a soft one, as on UAT); `ThemeSectionField.hint`;
+  Source Serif 4 loaded in `global.scss`. The builder edits and previews all of them. One rule, `isNewCollection`, keeps
+  the "New" badge off the cards of a "New…" row on the home page, the collection page and the builder canvas alike.
+- **Size charts:** a chart without measurement columns (socks: sizes only) offers no in/cm switch, on the storefront
+  (`isMeasurementColumn`, `hasMeasurements` in `src/storefront/sizeCharts.ts`) or in the admin's chart editor, whose unit
+  switch converts only measurement columns (`convertRows(rows, from, to, columns)`; its check is renamed
+  `hasValuesToConvert`). A foot length converts to the nearest half centimetre (other lengths as before), and one
+  wearer's size guide leaves out the sizes that boot isn't made in.
+- **Chat:** the apparel profile answers outdoor questions too (waterproofing, warmth, layering, boot sizes in inches or
+  centimetres, as the size guide shows them) from the product's own fabric and the size charts; a store counts as outdoor
+  from weather words and warmth ratings, never a laundry temperature. Northfold's replies are unchanged. In the builder's
+  chatbot preview, size and "how warm" questions now defer to the live store instead of showing sample cards or an
+  unrelated entry; this also changes Vitaheal's preview for questions such as "Help me sleep better" (its storefront
+  replies are byte-identical).
+- **Admin previews:** the builder, the theme library and the store page now draw the store's chrome and cards the same way,
+  through `previewChrome` / `previewChromeFor` (useStorefront) and `previewProducts` (ids, part numbers, sale prices,
+  badges; the chat prices its cards by id). The canvas's Standard footer now draws the store's own columns and copyright
+  in place of grey bars, so Northfold's, Torqline's and Lumos's footers in the builder and on the Themes page change
+  (their storefronts don't).
+- Ids: chatbot 105, CDP list 906 "Aurora Outdoor customers", announcement email 9005, timezone America/Denver.
+
+### Reviews
+
+Three independent reviews (shopper, merchant, code) ran on the integrated work, each serious finding re-checked by a
+skeptic; all 20 were confirmed and fixed, with most of the 16 nits, in four file-owned tracks each re-checked by an
+independent checker. The other four demo stores' storefronts were pixel-identical to HEAD throughout. The largest:
+- women's and men's pieces sharing one name, so cards, cart, orders and the admin couldn't tell them apart, and the chat
+  priced the men's hiking pants at the women's $79 (now named for their wearer; the chat prices by id);
+- the boot size guide listing sizes the boot isn't made in, foot lengths rounded to whole centimetres, and the admin's
+  unit switch turning the socks' shoe sizes into centimetres;
+- the chat losing a foot length given in cm without the word "foot", keeping the earlier wearer when a question named the
+  other one, offering down jackets for "gore-tex" or "hardshell", and suggesting the rating's own layers below a rating;
+- two of the chatbot's quick prompts answered wrongly in the builder's preview;
+- the Framed card ignoring Card corners and Card shadow; the "New" badge on every card of the New arrivals row on the
+  storefront but not in the builder; "White words on the photo" adding a banner with no photo; the selection label
+  covering the Stacked header's social icons;
+- walkthrough steps that promised a Category filter and a "Shown in" note the page doesn't show.
+
+### Not done here
+
+- Seven colourways have no photo of their own (the rain shells' Slate and Graphite, the fleeces' Forest and Charcoal, the
+  women's merino top in Black, both packs in Black): they show the first colour's photos and name it ("Shown in Moss").
+- The women's and men's Canyon boots are photographed as two different models, and the Layers tile shows a blue fleece
+  no product comes in.
+- The wishlist page draws Lumos's Boxed card on Aurora too, because its heart is how a shopper removes a piece.
+- The builder canvas shows a cart count of 2 on the Stacked header to show the badge (UAT's builder shows 4).
+- The header's Facebook, Instagram and X links all open the store's community page (the demo has no social accounts),
+  and keep the networks' names.
+- "Words on the left" (Lumos's banner layout) can still be added without a photo; `photoFromBanner` would fix it the
+  same way.
+- A "New…" row lists the collection in its own order, not strictly newest first.

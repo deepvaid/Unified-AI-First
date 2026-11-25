@@ -15,3 +15,12 @@
   font-size: 16px;
   line-height: 24px;
 }
+
+/* A theme on the sections drawing (StorefrontLayout adds the class) draws its panels,
+   fields and thumbnails with its own corner radius, and its reading pages share one
+   narrow measure beside the store's wide one (--sf-measure). Every other theme leaves
+   these unset, so each `var(--sf-corner, <today's value>)` keeps the corner it had. */
+.sf-surface--sections {
+  --sf-corner: var(--sf-radius, 0px);
+  --sf-measure-narrow: 800px;
+}

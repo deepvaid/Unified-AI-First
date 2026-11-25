@@ -34,3 +34,5 @@ or logo is in shot. To replace a photo, save a new file under the same name.
 | `balance-refill-2.jpg` | Balance Refill | @mockupbee | https://unsplash.com/photos/a-roll-of-toilet-paper-ghsa1586bVU |
 | `balance-1.jpg` | Balance | @supliful | https://unsplash.com/photos/a-container-of-nuts-xJ6riIl5yE4 |
 | `balance-2.jpg` | Balance | @supliful | https://unsplash.com/photos/a-white-and-gold-capsule-ZL5PSYBfPwk |
+
+`theme.jpg` is not a photo: it is a screenshot of this store's home page, taken by `npm run themes:thumbnails` (`scripts/theme-thumbnails.mjs`) for the store's card in the theme library.
