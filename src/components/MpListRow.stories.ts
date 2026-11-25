@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
+import { expect, within } from 'storybook/test'
 import MpListRow from './MpListRow.vue'
 import MpStatusChip from './MpStatusChip.vue'
 
@@ -248,6 +249,11 @@ export const States: Story = {
     `,
   }),
   args: {} as never,
+  // A `to` row must be a real link: an <a> without an href has no link role, so this lookup fails.
+  play: async ({ canvasElement }) => {
+    const link = within(canvasElement).getByRole('link', { name: /Route link row/ })
+    await expect(link).toHaveAttribute('href', '/accounts/2000290/orders')
+  },
 }
 
 // ── Scenarios ───────────────────────────────────────────────────────────────
