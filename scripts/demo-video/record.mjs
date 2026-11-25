@@ -376,6 +376,36 @@ const SCENES = [
     await pause(4200)
   }],
 
+  ['A whole store from the theme library', async () => {
+    await caption('Merchant', 'The theme library: each theme is a whole store')
+    await go(`${STORE}/themes`, 1600)
+    await moveTo(page.getByRole('button', { name: 'Apply Aurora' }))
+    await pause(2400)
+    await click(page.getByRole('button', { name: 'Apply Aurora' }), 600)
+    await caption('Merchant', 'Apply Aurora: its look, products, pages and campaigns')
+    await pause(3800)
+    await click(page.getByRole('button', { name: 'Apply theme' }), 1200)
+    await caption('Shopper', 'Vitaheal is now an outdoor store, in dollars')
+    await go(SHOP, 1600)
+    await pause(1600)
+    await scrollTo(760, 2200)
+    await scrollTo(1500, 2200)
+    await click(page.locator('main').getByRole('link', { name: 'Women’s Summit Down Jacket', exact: true }).first(), 2000)
+    await caption('Shopper', 'Each colour has its own photos, with sizes and a size guide')
+    // The radios are drawn as swatches and buttons: the label is what a shopper presses.
+    const value = (name) => page.locator('label.sf-vp__value', { has: page.getByRole('radio', { name, exact: true }) })
+    await click(value('Black'), 1600)
+    await click(value('M'), 1000)
+    await click(page.getByRole('button', { name: 'Size guide' }), 3400)
+    await click(page.getByRole('dialog').getByRole('button', { name: 'Close' }), 800)
+    await caption('Merchant', 'Restore original store puts Vitaheal back')
+    await go(`${STORE}/themes`, 1400)
+    await click(page.getByRole('button', { name: 'Restore original store' }).first(), 1600)
+    await click(page.getByRole('button', { name: 'Restore store' }), 1200)
+    await go(SHOP, 1400)
+    await pause(2600)
+  }],
+
   ['Close', async () => {
     await card('One platform', 'Store, subscriptions, service, marketing and merchandising, working together', 'Maropost')
     await pause(5200)

@@ -2,8 +2,8 @@
 
 For a sales person showing the Vitaheal (demo) store to a prospect. It follows the film
 (`npm run demo:video` makes `output/demo-video/vitaheal-demo.mp4`), so you can play the film or
-do the same steps live. About 10 minutes live, less as a film. The film shows every step but
-the last: step 14, the theme library, is live only. Since 25 November the plan with delivery
+do the same steps live. About 10 minutes live, less as a film. The film shows every step,
+step 14 (the theme library, with Aurora) included. Since 25 November the plan with delivery
 options is step 8, so the steps after it moved down by one.
 
 Vitaheal is a made-up Swedish supplements brand. Nothing is charged and nothing leaves your
@@ -72,7 +72,7 @@ recommendations.
 | 11 | Admin, Merchandising | Open **Merchandising** for the store. The card says connecting syncs the store's 16 published products. Press **Connect Merchandising**. | "Sixteen products sync, and search and recommendations are on." |
 | 12 | Store | Type **sleep** in the search field in the header, then **tired** on the results page. Open Unwind and scroll to **Goes well with Unwind**. | "Unwind is pinned first for sleep. 'Tired' finds Magnesium, whose page talks about tiredness, and a synonym adds energy and focus. The row is chosen by the store's recommendation engine." |
 | 13 | Admin, then store | **Merchandising › Synonyms › Add new**: `knackered` leads to `energy`. Search **knackered** on the store. | "Change a rule, and the store follows at once." |
-| 14 | Admin, store › Themes | Open **Themes**. In **Theme library** press **Apply** on **Northfold**, read the list, press **Apply theme**. Press **Show store** in the message. Back on **Themes**, press **Restore original store**, then **Restore store**. | "A theme here is a whole store: its look, products, pages and campaigns. One click makes Vitaheal a copy of Northfold, in dollars. Its plans are paused, its subscribers keep their subscriptions, and orders stay. Restore puts Vitaheal back, theme included. It is in the Settings tab too." |
+| 14 | Admin, store › Themes | Open **Themes**. In **Theme library** press **Apply** on **Aurora**, read the list, press **Apply theme**. Press **Show store** in the message. Scroll the home page, open **Women’s Summit Down Jacket**, choose **Black** and **M**, open **Size guide**. Back on **Themes**, press **Restore original store**, then **Restore store**. | "A theme here is a whole store: its look, products, pages and campaigns. One click makes Vitaheal a copy of Aurora, an outdoor store in dollars; each colour has its own photos. Its plans are paused, its subscribers keep their subscriptions, and orders stay. Restore puts Vitaheal back, theme included. It is in the Settings tab too." |
 
 ## More to show if they ask
 
@@ -135,7 +135,7 @@ this demo.
 - **Numbers differ from the film:** someone used the demo before you. Restore the store.
 - **The film says eight products sync:** it was recorded before the eight new ones. The store's
   sixteen are right.
-- **The store looks like another store (Northfold, Torqline, Lumos or Daybloom):** another theme is
+- **The store looks like another store (Northfold, Torqline, Lumos, Aurora or Daybloom):** another theme is
   applied. Restore the store.
 - **The store has eight products, or the older look (Figtree, the menu centred under the logo):**
   the page was open while the new version went out. Close every other tab of the demo, then
