@@ -1,5 +1,5 @@
 /*
- * P5.5 exemption — the stores drawn here are a MERCHANT's (Northfold's, Torqline's, Lumos's),
+ * P5.5 exemption — the stores drawn here are a MERCHANT's (Northfold's, Torqline's, Lumos's, Aurora's),
  * the content the storefront draws, not Marobase chrome. Same line Phase 4 drew for the
  * storefront (DESIGN_AUDIT.md P4-8).
  */
@@ -8,6 +8,7 @@ import { useRouter } from 'vue-router'
 import type { Decorator } from '@storybook/vue3'
 import type { Money } from '@/maropay/money'
 import type { Product } from '@/stores/useCommerce'
+import { AURORA_THEME_STYLES } from '@/storefront/auroraDemo'
 import { demoStoreFor } from '@/storefront/demoStores'
 import { contextFor, snapshotFor } from '@/storefront/demoStores/install'
 import { LUMOS_BLUEPRINT } from '@/storefront/demoStores/lumos'
@@ -30,6 +31,7 @@ import { northfold } from './storefrontStoryFixtures'
 // pieces read (money, links, the store, the announcer). The parts stories draw
 // Torqline Auto Parts (demo) the same way, with a vehicle chosen or not, and the
 // Boxed card and wishlist stories draw Lumos Home (demo), whose theme has a wishlist.
+// The Framed card stories draw Northfold's products in Aurora's look (auroraFrame).
 
 const CHANNEL = demoStoreFor('northfold').homeChannel
 const BASE = `/accounts/2000290/sales_channels/${CHANNEL.id}/storefront`
@@ -254,5 +256,34 @@ export function lumosStore(query: Record<string, string> = {}, page = 'collectio
       return { ready }
     },
     template: '<story v-if="ready" />',
+  })
+}
+
+// ── Aurora's look ────────────────────────────────────────────────────────────
+
+/** Aurora's page as a style (its theme's colours, fonts, corners and controls): the one frame its stories draw in. */
+export const AURORA_PAGE_STYLE = {
+  ...storefrontThemeVars(AURORA_THEME_STYLES),
+  ...storefrontControlVars(AURORA_THEME_STYLES),
+  background: 'var(--sf-bg)',
+  color: 'var(--sf-text)',
+  fontFamily: 'var(--sf-body-font), system-ui, sans-serif',
+}
+
+/** Aurora's page around a story (AURORA_PAGE_STYLE), for Northfold's products in Framed cards. */
+export function auroraFrame(width = '340px', padding = '24px'): Decorator {
+  const style = {
+    ...AURORA_PAGE_STYLE,
+    '--sf-gutter': '24px',
+    '--sf-measure': '1200px',
+    boxSizing: 'border-box',
+    maxWidth: width,
+    padding,
+    fontSize: '16px',
+    lineHeight: '24px',
+  }
+  return () => ({
+    setup: () => ({ style }),
+    template: '<div :style="style"><story /></div>',
   })
 }

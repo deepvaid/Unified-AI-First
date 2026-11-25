@@ -29,6 +29,13 @@ const LIVE = /\b(track|tracking|my order|order status|where('s| is).*order|parce
 const SHOPPING = /\b(buy|shop|shopping|looking for|recommend|boots?|shoes?|dress(es)?|add to cart)\b/
 /** A question only the store's products answer: a piece's size, or what is on sale. */
 const CATALOGUE = /\b(how (big|wide|deep|tall|high|heavy) (is|are)|dimensions? of|on sale|sale (items?|pieces?|styles?)|reduced|markdowns?|clearance)\b/
+/** Which size to get: never shopping cards ("What size boots should I get?"); a sizing page answers it, else the live store. */
+const SIZE_ASKED = /\b(what|which) size\b|\bsize (guide|chart)s?\b/
+/** How warm a piece is: only an entry about warmth answers it, never a care page that names "down jackets". */
+const WARMTH = /\b(how warm|warm enough|how cold|temperature rating|rated (to|for))\b/
+const ABOUT_WARMTH = /\bwarm(th|er|est)?\b|°\s?[FC]\b|\btemperatures?\b|\brat(ed|ing)\b/i
+/** A product for a need ("Help me sleep better", "What helps with focus?"): the live store's products answer it. */
+const NEED = /\bhelps? (me|with)\b|\bwhat helps\b/
 
 const STOP_WORDS = new Set([
   'the', 'and', 'for', 'are', 'you', 'your', 'our', 'can', 'what', 'whats', 'how', 'does', 'did', 'will',
@@ -88,14 +95,16 @@ export function respond(message: string, ctx: PreviewContext): PreviewReply {
     }
   }
 
-  if (ctx.shoppingEnabled && SHOPPING.test(text)) {
+  const sizeAsked = SIZE_ASKED.test(text)
+  if (ctx.shoppingEnabled && SHOPPING.test(text) && !sizeAsked) {
     return { kind: 'products', text: 'Here are a few great matches:' }
   }
 
-  const entry = bestEntry(message, ctx.entries)
+  const warmth = WARMTH.test(text)
+  const entry = bestEntry(message, warmth ? ctx.entries.filter((e) => ABOUT_WARMTH.test(`${e.title} ${e.text}`)) : ctx.entries)
   // "How big is the Arlo sofa?" is not the warranty entry because it says "sofas": one word in passing
   // doesn't answer a question about the products. An entry about it ("Arlo sofa sizes") still does.
-  if (CATALOGUE.test(text) && (!entry || scoreOf(keywords(message), entry) < 2)) {
+  if ((CATALOGUE.test(text) || sizeAsked || warmth || NEED.test(text)) && (!entry || scoreOf(keywords(message), entry) < 2)) {
     return {
       kind: 'live',
       text: 'This needs your live store’s products, so the preview can’t look it up. Once the chatbot is published, I’ll answer from each product’s own details.',

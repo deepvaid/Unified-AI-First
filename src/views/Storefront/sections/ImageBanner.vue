@@ -16,7 +16,9 @@ import { blocksOf, num, text } from './sectionSettings'
 // figures under the buttons). With `contentPosition: 'Center left'` the words sit
 // left of centre in the page's own colours, on a wash of the page colour that fades
 // out across the photo (Lumos): the first button is the theme's button and the
-// second its outline.
+// second its outline. With `contentPosition: 'Middle left'` the words are white and
+// centred at the left, over a dark shade that runs across the photo from the left
+// (Aurora's full-bleed hero): the first button is white with the page's ink.
 
 const props = withDefaults(defineProps<{
   section: ThemeSection
@@ -31,6 +33,8 @@ const subheadline = computed(() => text(settings.value, 'subheadline'))
 const centered = computed(() => text(settings.value, 'alignment') === 'Center')
 /** The words left of centre in the page's colours, rather than white at the photo's foot. */
 const left = computed(() => props.section.kind === 'image-banner' && text(settings.value, 'contentPosition') === 'Center left')
+/** The words white and centred at the left, over a dark shade across the photo. */
+const shadeLeft = computed(() => props.section.kind === 'image-banner' && text(settings.value, 'contentPosition') === 'Middle left')
 const badge = computed(() => (props.section.kind === 'image-banner' ? text(settings.value, 'badge') : ''))
 const headlineParts = computed(() => accentParts(headline.value, text(settings.value, 'accentWords')))
 /** The figures under the buttons: three at most. */
@@ -59,7 +63,7 @@ const buttons = computed(() => {
 <template>
   <section
     class="sfb"
-    :class="[`sfb--${height}`, { 'sfb--center': centered && !left, 'sfb--photo': image, 'sfb--left': left }]"
+    :class="[`sfb--${height}`, { 'sfb--center': centered && !left, 'sfb--photo': image, 'sfb--left': left, 'sfb--shade-left': shadeLeft }]"
     :style="shade !== undefined ? { '--sfb-shade': shade / 100 } : undefined"
   >
     <img v-if="image" :src="image" alt="" class="sfb__photo" fetchpriority="high">
@@ -345,6 +349,56 @@ const buttons = computed(() => {
   outline-color: var(--sf-focus, var(--sf-text, #121011));
 }
 
+/* ── White words on the left (contentPosition: 'Middle left') ─────────────
+   Aurora's full-bleed hero, 400px tall when Small (UAT's height, on a phone too). The
+   words are white and centred at the left, over a near-black shade that runs from the
+   left: at least 58% as far as the words reach (their 640px column, wherever the page's
+   measure puts it), so white keeps 4.9:1 even over a white patch of photo, then it fades
+   out across the rest. On a phone the words span the width, and so does that strength.
+   The buttons are the photo's: the first white with dark ink, the others outlined in white. */
+.sfb--shade-left {
+  --sfb-words-end: calc(max(0px, (100% - var(--sf-measure, 1200px)) / 2) + var(--sf-gutter, 24px) + 640px);
+  align-items: center;
+}
+
+.sfb--shade-left.sfb--small { --sfb-height: 400px; }
+
+.sfb--shade-left.sfb--photo::after {
+  background: linear-gradient(90deg,
+    rgba(10, 10, 10, 0.64) 0%,
+    rgba(10, 10, 10, 0.58) var(--sfb-words-end),
+    rgba(10, 10, 10, 0.2) calc(var(--sfb-words-end) + 20%),
+    rgba(10, 10, 10, 0.06) 100%);
+}
+
+.sfb--shade-left .sfb__content {
+  gap: 16px;
+  padding-block: 48px;
+}
+
+.sfb--shade-left .sfb__content > * {
+  max-width: min(100%, 640px);
+}
+
+/* The line under the headline keeps to about 46 characters, so on a laptop (1024 to 1280) it ends before the
+   middle of the photo, where its subject stands (Aurora's hiker), rather than running across him. */
+.sfb--shade-left .sfb__sub {
+  max-width: min(100%, 440px);
+}
+
+.sfb--shade-left .sfb__headline {
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+
+/* UAT's button: 46px tall, 24px in from each side, 14px words. */
+.sfb--shade-left .sfb__button {
+  min-width: 140px;
+  height: 46px;
+  padding: 0 24px;
+  font-size: 14px;
+}
+
 /* ── Stats: a white strip of figures under the buttons ───────────────────── */
 .sfb__stats {
   display: flex;
@@ -413,6 +467,10 @@ const buttons = computed(() => {
   .sfb--left .sfb__button,
   .sfb--left.sfb--photo .sfb__button {
     height: 52px;
+  }
+
+  .sfb--shade-left .sfb__content {
+    padding-block: 40px;
   }
 
   .sfb__actions {

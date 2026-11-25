@@ -3,7 +3,7 @@ import { computed, inject } from 'vue'
 import { useRoute } from 'vue-router'
 import { useCommerceStore } from '@/stores/useCommerce'
 import { useProductExtrasStore } from '@/stores/useProductExtras'
-import { gridSettings } from '@/storefront/listing'
+import { gridSettings, isNewCollection } from '@/storefront/listing'
 import StorefrontAnchor from './StorefrontAnchor.vue'
 import StorefrontNotFound from './StorefrontNotFound.vue'
 import StorefrontProductCard from './StorefrontProductCard.vue'
@@ -47,7 +47,7 @@ const settings = computed(() => gridSettings(storefront.theme.value?.templates.c
       :title="title"
       :intro="intro"
       :settings="settings"
-      :show-new="!/^new\b/i.test(title)"
+      :show-new="!isNewCollection(title)"
       :scope="isAll ? '' : title"
     >
       <template #empty>

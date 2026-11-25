@@ -3,6 +3,8 @@ import type { Meta, StoryObj } from '@storybook/vue3'
 import SizeChartDrawer from './SizeChartDrawer.vue'
 import { overlayDocs } from '@/stories/decorators'
 import { emptySizeChart } from '@/stores/useSizeCharts'
+import { demoStoreFor } from '@/storefront/demoStores'
+import { snapshotFor } from '@/storefront/demoStores/install'
 import { sizesOf } from '@/storefront/sizeChartForm'
 import type { SizeChartDraft } from '@/storefront/sizeChartForm'
 import { northfold, northfoldChart } from '@/views/Storefront/storefrontStoryFixtures'
@@ -36,8 +38,10 @@ its page.
   every cell. Problems are listed at the top (each one moves focus to its field) and marked in
   the grid; focus goes to the first. The host gets \`save\` with the chart trimmed and ranges
   written "34-36".
-- **Unit:** switching between inches and centimeters converts the numbers already written, so the
-  chart still measures the same; the hint says so.
+- **Unit:** switching between inches and centimeters converts the measurements already written, so
+  the chart still measures the same; the hint says so. A column of sizes ("Women’s shoe size") is
+  never converted, and a chart of sizes only has no unit to choose: shoppers see it as written.
+- **Cells:** a number, a range ("34-36") or a dash (—) for a size a column doesn’t have.
 - **Store:** a new chart can go to any store offered; an existing chart stays in its own.
 - A product that uses the chart and sells a size the chart has no row for is named in a warning,
   live as rows change.
@@ -98,5 +102,19 @@ export const Problems: Story = {
     await new Promise((resolve) => setTimeout(resolve, 400))
     const save = [...document.querySelectorAll<HTMLButtonElement>('.mp-form-drawer button')].find((b) => b.textContent?.trim() === 'Create chart')
     save?.click()
+  },
+}
+
+// Aurora Outdoor (demo)'s socks go by shoe size: no column is a length.
+const aurora = snapshotFor(demoStoreFor('aurora').homeChannel, 'aurora', '2026-11-20')
+const socks = aurora.sizeCharts.find((chart) => chart.name === 'Socks')!
+
+/** A chart of sizes only (Aurora’s Socks, by shoe size): the unit can’t be switched, and a dash marks a size a column doesn’t have. */
+export const SizesOnly: Story = {
+  args: {
+    chart: socks,
+    stores: [{ id: socks.channelId, name: 'Aurora Outdoor (demo)' }],
+    others: aurora.sizeCharts,
+    usedBy: [],
   },
 }

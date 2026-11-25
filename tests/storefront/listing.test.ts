@@ -5,7 +5,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { NORTHFOLD_BLUEPRINT } from '../../src/storefront/demoStores/northfold.ts'
 import { snapshotFor } from '../../src/storefront/demoStores/install.ts'
-import { DEFAULT_GRID, addsDirectly, soldOutText, cardPhoto, cardPrice, choiceSummary, chosenColor, colorsOf, gridSettings, isNewArrival, listingNoun, needsChoice, partNumber, soldOut, stockLine, unbrokenHyphens } from '../../src/storefront/listing.ts'
+import { DEFAULT_GRID, addsDirectly, soldOutText, cardPhoto, cardPrice, choiceSummary, chosenColor, colorsOf, gridSettings, isNewArrival, isNewCollection, listingNoun, needsChoice, partNumber, soldOut, stockLine, unbrokenHyphens } from '../../src/storefront/listing.ts'
 import { partNumberOf } from '../../src/storefront/productPage.ts'
 import { TORQLINE_BLUEPRINT } from '../../src/storefront/demoStores/torqline.ts'
 import { LUMOS_BLUEPRINT } from '../../src/storefront/demoStores/lumos.ts'
@@ -81,6 +81,15 @@ test('"New" goes on products in a New… collection; sold out means every varian
   assert.equal(soldOut({ id: 1, price: '1.00', inventory: 0 }), true)
 })
 
+test('a list of a New… collection, by its name or handle, is the one rule for leaving the "New" mark off', () => {
+  // Northfold's and Aurora's rows, and their collection pages, by handle and by name.
+  for (const name of ['new-in', 'new-arrivals', 'New in', 'New arrivals', '  NEW arrivals ']) assert.equal(isNewCollection(name), true, name)
+  for (const name of ['newsletter-picks', 'Renewed', 'all', 'outerwear', 'best-sellers', '']) assert.equal(isNewCollection(name), false, name)
+  // A product is new by the same rule.
+  assert.equal(isNewArrival({ collections: ['Jackets', 'New arrivals'] }), true)
+  assert.equal(isNewArrival({ collections: ['Newsletter picks'] }), false)
+})
+
 test('a list of clothes holds styles; supplements stay products', () => {
   assert.deepEqual(listingNoun(products), { one: 'style', other: 'styles' })
   assert.deepEqual(listingNoun(vitahealProducts() as CardProduct[]), { one: 'product', other: 'products' })
@@ -112,6 +121,11 @@ test('the grid names the filter groups it shows, in its order; without the setti
 test('a parts grid asks for dense cards; any other word keeps the editorial card', () => {
   assert.equal(gridSettings([{ kind: 'collection-grid', settings: { cardStyle: 'Dense' } }]).cardStyle, 'Dense')
   assert.equal(gridSettings([{ kind: 'collection-grid', settings: { cardStyle: 'Compact' } }]).cardStyle, 'Editorial')
+})
+
+test('Aurora\'s grid asks for framed cards, by that exact name', () => {
+  assert.equal(gridSettings([{ kind: 'collection-grid', settings: { cardStyle: 'Framed', columns: 3 } }]).cardStyle, 'Framed')
+  assert.equal(gridSettings([{ kind: 'collection-grid', settings: { cardStyle: 'framed' } }]).cardStyle, 'Editorial')
 })
 
 const tracked = (units: number, sku?: string) => ({ id: units + 1, title: 'Default', price: '10.00', manageInventory: true, allowBackorder: false, stock: { Main: units }, ...(sku ? { sku } : {}) })

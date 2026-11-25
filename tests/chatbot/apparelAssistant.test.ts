@@ -157,6 +157,9 @@ test('fabric and care come from the pieces themselves', () => {
   assert.equal(said('How do I wash merino?'), 'Merino Crewneck Sweater and Merino Quarter-Zip: Hand wash cold or use a wool cycle. Dry flat. Ribbed Merino Beanie: Hand wash cold. Dry flat.')
   assert.equal(said('can I wash the car coat'), 'No. Wool-Blend Car Coat: Dry clean only.')
   assert.equal(said('Can I wash the merino sweater?'), 'Yes, by hand or on a wool cycle. Merino Crewneck Sweater: Hand wash cold or use a wool cycle. Dry flat.')
+  // "How should I wash it?" asks how, not whether: its care, with no yes or no.
+  assert.equal(said('How should I wash the linen overshirt?'), 'Linen Overshirt: Machine wash cold. Line dry. Warm iron if needed.')
+  assert.equal(said('What should I wash the merino sweater with?'), 'Merino Crewneck Sweater: Hand wash cold or use a wool cycle. Dry flat.')
   assert.match(said('How do I clean the waxed jacket?'), /^Waxed Cotton Field Jacket: Do not wash\. Wipe clean/)
   assert.match(said('is the linen see-through'), /^Linen Overshirt: 55% linen, 45% cotton twill\. A washed linen and cotton overshirt, heavy enough to wear open over a tee/)
   const reply = first('How do I wash merino?')

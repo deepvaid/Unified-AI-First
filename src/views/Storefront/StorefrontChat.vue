@@ -271,10 +271,10 @@ function productById(id: number): Product | undefined {
   return commerce.products.find((p) => p.id === id)
 }
 
-/** Price as the store's product cards read it ("From 399 kr"). */
+/** Price as the store's product cards read it ("From 399 kr"), by id: a women's and a men's piece may share a name. */
 const priceText = computed(() => {
   const list = previewProducts(commerce.products, storefront.channel.value) ?? []
-  return (product: Product): string => list.find((p) => p.name === product.name)?.price ?? ''
+  return (product: Product): string => list.find((p) => p.id === product.id)?.price ?? ''
 })
 
 /**

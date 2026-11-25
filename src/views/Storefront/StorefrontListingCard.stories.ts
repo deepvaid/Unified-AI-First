@@ -3,8 +3,8 @@ import { useStorefrontWishlistStore } from '@/stores/useStorefrontWishlist'
 import { isolateStorage } from '@/stories/decorators'
 import StorefrontListingCard from './StorefrontListingCard.vue'
 import {
-  F150, LUMOS_STORY_CHANNEL, listingProduct, lumosCollection, lumosFrame, lumosProduct, lumosStore, northfoldCollection, northfoldStore, soldOutCopy,
-  torqlineCollection, torqlineFrame, torqlinePart, torqlineStore,
+  F150, LUMOS_STORY_CHANNEL, auroraFrame, listingProduct, lumosCollection, lumosFrame, lumosProduct, lumosStore, northfoldCollection, northfoldStore,
+  soldOutCopy, torqlineCollection, torqlineFrame, torqlinePart, torqlineStore,
 } from './listingStoryFixtures'
 import { storefrontFrame } from './storefrontStoryFixtures'
 
@@ -16,6 +16,8 @@ const partCard = torqlineFrame('260px')
 const truckPads = torqlinePart('Ceramic Brake Pads, Truck & SUV')
 /** One of Lumos's boxed cards, about as wide as in its three-column grid. */
 const boxedCard = lumosFrame('300px')
+/** One of Aurora's framed cards, about as wide as in its three-column grid beside the filters. */
+const framedCard = auroraFrame('340px')
 const sofa = lumosProduct('Arlo 3-Seat Sofa')
 
 const meta = {
@@ -29,7 +31,8 @@ const meta = {
 ### Overview
 A product in a list on a store with the richer theme drawing (Northfold, Torqline, Lumos): the
 collection and search pages, featured products and recommendations. Shown here with Northfold's own
-products and theme, Torqline's for the dense parts card and Lumos's for the boxed card. The classic
+products and theme, Torqline's for the dense parts card, Lumos's for the boxed card and Aurora's look for
+the framed card. The classic
 drawing keeps
 \`StorefrontProductCard\` (Vitaheal, Atlas and Neelam are unchanged).
 
@@ -72,10 +75,24 @@ drawing keeps
 - **Add to cart**: the store's solid button, the card's width, 44px, at the card's foot so a row lines
   up. Straight into the cart when there is nothing to choose; quick add otherwise.
 
+### Framed: Aurora's product card
+\`cardStyle: 'Framed'\`, UAT Aurora's card scheme (shown here with Northfold's products in Aurora's look):
+- A card on the theme's card colour in a **5px frame** of its divider colour, on the theme's **Card corners**
+  (\`--sf-card-radius\`) and **Card shadow** (\`--sf-card-shadow\`): UAT's **24px** and **none** when the
+  theme sets neither.
+- Everything sits **20px** inside the frame: the **square photo** (two thirds of the card's corners, 16px on
+  24; the theme's surface behind it) with one badge top-left, as on Boxed: **Sale**, **New** or **Sold out**.
+- **Name** (16px bold, two lines at most), the card's one link, its hit area the whole card, frame and all;
+  the **price** under it (on sale, the sale price in the sale colour and the struck "was" price).
+- **Add to cart**: the store's solid button with its corners (6px on Aurora), the card's width, 44px, at
+  the card's foot. Straight into the cart when there is nothing to choose; quick add otherwise.
+- **No heart**: Aurora's card scheme has the wishlist off; the product page keeps its heart.
+- A phone shows two to a row: a 3px frame, a 10px inset, the card's corners up to 16px and smaller type.
+
 ### Props
 - \`colorKeys\`: the list's colour filter. The card leads with the first of those colours the product
   comes in (its own photo when it has one) and opens the product page in it (\`?color=black\`).
-- \`cardStyle\`: \`'Editorial'\` (default), \`'Dense'\` or \`'Boxed'\`.
+- \`cardStyle\`: \`'Editorial'\` (default), \`'Dense'\`, \`'Boxed'\` or \`'Framed'\`.
 - \`quickAdd\`, \`added\`, \`showNew\`, \`headingLevel\`.
 
 Out of system on purpose (P4-8): it draws with the store's theme variables, not Marobase tokens.
@@ -240,6 +257,44 @@ export const BoxedInAGrid: Story = {
     template: `
       <ul role="list" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px 20px; margin: 0; padding: 0; list-style: none;">
         <li v-for="product in products" :key="product.id"><StorefrontListingCard :product="product" card-style="Boxed" /></li>
+      </ul>
+    `,
+  }),
+}
+
+/** Aurora's framed card: the square photo inset in a thick light frame, the name and price, Add to cart. */
+export const Framed: Story = {
+  decorators: [framedCard],
+  args: { cardStyle: 'Framed' },
+}
+
+/** A framed card on sale: the Sale badge, the sale price in the sale colour and the struck "was" price. */
+export const FramedOnSale: Story = {
+  decorators: [framedCard],
+  args: { product: listingProduct('Washed Silk Blouse'), cardStyle: 'Framed' },
+}
+
+/** A framed card sold out in every size: the badge says so, the photo is quieter, and there is no Add to cart. */
+export const FramedSoldOut: Story = {
+  decorators: [framedCard],
+  args: { product: soldOutCopy(listingProduct('Wool-Blend Car Coat')), cardStyle: 'Framed' },
+}
+
+/** The tote went straight into the cart (it has one variant): the button reads "Added" for a moment. */
+export const FramedJustAdded: Story = {
+  decorators: [framedCard],
+  args: { product: listingProduct('Canvas Market Tote'), cardStyle: 'Framed', added: true },
+}
+
+/** Three framed cards to a row, as Aurora's collection page lists them beside its filters. */
+export const FramedInAGrid: Story = {
+  decorators: [auroraFrame('1040px')],
+  render: () => ({
+    components: { StorefrontListingCard },
+    setup: () => ({ products: northfoldCollection('Outerwear').slice(0, 3) }),
+    template: `
+      <ul role="list" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px 20px; margin: 0; padding: 0; list-style: none;">
+        <li v-for="product in products" :key="product.id"><StorefrontListingCard :product="product" card-style="Framed" /></li>
       </ul>
     `,
   }),

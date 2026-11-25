@@ -126,3 +126,6 @@ export const SectionsDrawingCarousel: Story = sectionsDrawingPicker('Collection 
 
 /** The logo strip (sections drawing, home page): on the page or on a tinted band. */
 export const SectionsDrawingLogoStrip: Story = sectionsDrawingPicker('Logo strip')
+
+/** The image banner's layouts on the sections drawing's home page: words on the left in the page colours (Lumos), and white words on a shaded photo (Aurora). */
+export const SectionsDrawingImageBanner: Story = sectionsDrawingPicker('Image banner')

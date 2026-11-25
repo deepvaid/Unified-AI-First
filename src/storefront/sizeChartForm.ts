@@ -3,7 +3,7 @@
 // hold, and what has to be fixed before a chart is saved. Pure rules: no Vue, no
 // Pinia, no `@/` imports, so `npm run test:storefront` runs them in Node.
 
-import { convertMeasurement } from './sizeCharts.ts'
+import { convertMeasurement, isMeasurementColumn } from './sizeCharts.ts'
 import type { SizeChart, SizeUnit } from './sizeCharts.ts'
 
 /** A chart as the form holds it: everything but its id. */
@@ -16,32 +16,42 @@ const NUMBER = String.raw`\d+(?:\.\d+)?`
 /** "34", "13.5", "34-36"; an en or em dash and spaces round it are fine too. */
 const MEASUREMENT = new RegExp(String.raw`^(${NUMBER})(?:\s*[-–—]\s*(${NUMBER}))?$`)
 
-/** What is wrong with a measurement, or '' when it is a number or a range. */
+/** A dash on its own: the size has nothing in this column (a boots chart has no women's 12). */
+const NONE = /^[-–—]$/
+
+/** What is wrong with a measurement, or '' when it is a number, a range or a dash for none. */
 export function measurementError(value: string): string {
   const text = value.trim()
   if (!text) return 'Enter a measurement'
+  if (NONE.test(text)) return ''
   const match = MEASUREMENT.exec(text)
   if (!match) return 'Use a number or a range, like 34-36'
   if (match[2] !== undefined && Number(match[1]) > Number(match[2])) return 'Put the smaller number first, like 34-36'
   return ''
 }
 
-/** A measurement as it is saved: trimmed, a range written "34-36". Anything else is kept as typed. */
+/** A measurement as it is saved: trimmed, a range written "34-36", a dash for none written "—". Anything else is kept as typed. */
 export function normalizeMeasurement(value: string): string {
   const text = value.trim()
+  if (NONE.test(text)) return '—'
   const match = MEASUREMENT.exec(text)
   if (!match) return text
   return match[2] === undefined ? match[1]! : `${match[1]}-${match[2]}`
 }
 
-/** Every measurement in the other unit (inches to the nearest half, centimeters whole). Sizes are kept. */
-export function convertRows(rows: readonly SizeRow[], from: SizeUnit, to: SizeUnit): SizeRow[] {
-  return rows.map((row) => ({ size: row.size, values: row.values.map((value) => convertMeasurement(value, from, to)) }))
+/**
+ * Every measurement in the other unit, as the size guide converts it (inches to the
+ * nearest half, centimeters whole, a foot length to the half). Sizes are kept, and so
+ * is a column of sizes ("Women's shoe size"): pass the chart's `columns`, or every
+ * value is converted as a length.
+ */
+export function convertRows(rows: readonly SizeRow[], from: SizeUnit, to: SizeUnit, columns: readonly string[] = []): SizeRow[] {
+  return rows.map((row) => ({ size: row.size, values: row.values.map((value, i) => convertMeasurement(value, from, to, columns[i])) }))
 }
 
-/** True when at least one cell holds a number, so switching the unit changes what is written. */
-export function hasMeasurements(rows: readonly SizeRow[]): boolean {
-  return rows.some((row) => row.values.some((value) => /\d/.test(value)))
+/** True when a measurement column holds a number, so switching the unit changes what is written. */
+export function hasValuesToConvert(columns: readonly string[], rows: readonly SizeRow[]): boolean {
+  return columns.some((column, i) => isMeasurementColumn(column) && rows.some((row) => /\d/.test(row.values[i] ?? '')))
 }
 
 // ── Grid edits ───────────────────────────────────────────────────────────────
@@ -165,7 +175,7 @@ const same = (a: string, b: string): boolean => a.trim().toLowerCase() === b.tri
 /**
  * What has to be fixed before the chart is saved: a name no other chart in the
  * store has, at least one size and one measurement, sizes and measurement names
- * filled in and different from each other, and a number or a range in every cell.
+ * filled in and different from each other, and a number, a range or a dash in every cell.
  * `others` are the other charts (the one being edited left out).
  */
 export function sizeChartIssues(draft: SizeChartDraft, others: readonly Pick<SizeChart, 'name' | 'channelId'>[] = []): SizeChartIssues {

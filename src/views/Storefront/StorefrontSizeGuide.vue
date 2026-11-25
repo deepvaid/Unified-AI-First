@@ -2,7 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue'
 import { chartForAudience } from '@/storefront/audience'
 import type { Audience } from '@/storefront/audience'
-import { chartInUnit } from '@/storefront/sizeCharts'
+import { chartInUnit, hasMeasurements } from '@/storefront/sizeCharts'
 import type { SizeChart, SizeUnit } from '@/storefront/sizeCharts'
 
 // What the size guide drawer shows for a product: how the style fits, its size
@@ -44,6 +44,7 @@ const uid = useId()
 /** The chart as this piece reads it: its audience's columns only. */
 const ownChart = computed(() => chartForAudience(props.chart, props.audience))
 const shown = computed(() => chartInUnit(ownChart.value, shownUnit.value))
+const measured = computed(() => hasMeasurements(ownChart.value))
 
 // A table wider than the panel scrolls sideways; only then is its scroll area a Tab stop.
 const scroller = ref<HTMLElement | null>(null)
@@ -101,9 +102,10 @@ const measures = computed(() => ownChart.value.howToMeasure
     <div class="sf-sg__bar">
       <p class="sf-sg__chart">
         <span class="sf-sg__chart-name">{{ chart.name }}</span>
-        <span class="sf-sg__chart-unit">In {{ UNIT_WORDS[shownUnit] }}</span>
+        <span v-if="measured" class="sf-sg__chart-unit">In {{ UNIT_WORDS[shownUnit] }}</span>
       </p>
-      <fieldset class="sf-sg__units" aria-label="Show measurements in">
+      <!-- A chart of sizes only (socks by shoe size) has nothing to show in the other unit. -->
+      <fieldset v-if="measured" class="sf-sg__units" aria-label="Show measurements in">
         <label v-for="option in UNITS" :key="option" class="sf-sg__unit" :class="{ 'is-selected': shownUnit === option }">
           <input
             type="radio"
@@ -120,7 +122,7 @@ const measures = computed(() => ownChart.value.howToMeasure
 
     <div ref="scroller" class="sf-sg__scroll" role="region" :aria-labelledby="`${uid}-caption`" :tabindex="scrollable ? 0 : undefined">
       <table class="sf-sg__table">
-        <caption :id="`${uid}-caption`" class="sf-sg__sr">{{ chart.name }} sizes, in {{ UNIT_WORDS[shownUnit] }}</caption>
+        <caption :id="`${uid}-caption`" class="sf-sg__sr">{{ chart.name }} sizes{{ measured ? `, in ${UNIT_WORDS[shownUnit]}` : '' }}</caption>
         <thead>
           <tr>
             <th scope="col">Size</th>

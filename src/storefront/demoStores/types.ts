@@ -18,7 +18,7 @@ import type { PackShape } from '../packShot.ts'
 import type { TemplateType, ThemeSection, ThemeStyles } from '../themeSections.ts'
 
 /** The demo stores, each also a theme in the library. A new one is added here and to DEMO_STORES. */
-export type DemoStoreId = 'vitaheal' | 'northfold' | 'torqline' | 'lumos'
+export type DemoStoreId = 'vitaheal' | 'northfold' | 'torqline' | 'lumos' | 'aurora'
 
 /**
  * Set on a web store that can take a theme from the library: the three demo

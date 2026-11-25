@@ -2,10 +2,10 @@
 
 For developers working on the demo stores, the theme library, Apply, Restore, Start from a theme
 and Delete store. It says where each piece lives, what the browser keeps, and how to add a store.
-QA checks are in [demo-stores-qa.md](demo-stores-qa.md). The walkthroughs for sales are the four
+QA checks are in [demo-stores-qa.md](demo-stores-qa.md). The walkthroughs for sales are the five
 demo scripts listed below.
 
-## The four demo stores
+## The five demo stores
 
 Each demo store is a web store on account `2000290`, seeded when the app starts. Each one is also a
 theme in the library, named after the store.
@@ -16,6 +16,7 @@ theme in the library, named after the store.
 | Northfold (demo) | `northfold-demo` | 13 | Northfold | Women's and men's clothing in sizes and colors | USD | [northfold-demo-script.md](northfold-demo-script.md) |
 | Torqline Auto Parts (demo) | `torqline-demo` | 14 | Torqline | Auto parts with vehicle fitment | USD | [torqline-demo-script.md](torqline-demo-script.md) |
 | Lumos Home (demo) | `lumos-demo` | 15 | Lumos | Furniture, lighting and decor, in fabrics and finishes | USD | [lumos-demo-script.md](lumos-demo-script.md) |
+| Aurora Outdoor (demo) | `aurora-demo` | 16 | Aurora | Outdoor clothing and footwear for women and men, packs and accessories | USD | [aurora-demo-script.md](aurora-demo-script.md) |
 
 | Store | Blueprint id | Slot | Products (home ids) | Photos | Fonts | Drawing | Chatbot profile |
 |---|---|---|---|---|---|---|---|
@@ -23,6 +24,7 @@ theme in the library, named after the store.
 | Northfold | `northfold` | 3 | 20 (3001-3020) | `public/storefront/northfold/` | Instrument Serif, DM Sans | sections | `apparel` |
 | Torqline | `torqline` | 4 | 21 (4001-4021) | `public/storefront/torqline/` | Barlow Condensed, Barlow | sections | `auto-parts` |
 | Lumos | `lumos` | 5 | 20 (5001-5020) | `public/storefront/lumos/` | Inter | sections | `home` |
+| Aurora | `aurora` | 6 | 20 (6001-6020) | `public/storefront/aurora/` | Source Serif 4, system-ui | sections | `apparel` |
 
 "Drawing" is how the storefront draws the theme. A theme whose styles say `drawing: 'sections'`
 gets the richer storefront: header and footer settings, page templates, filters, quick add, the
@@ -97,8 +99,8 @@ blank. `slot` numbers the store in the id blocks.
 
 | Slot | Store |
 |---|---|
-| 2, 3, 4, 5 | Vitaheal, Northfold, Torqline, Lumos (their home channels) |
-| 6-9 | Kept free for the demo stores added later (6 is planned for Aurora) |
+| 2, 3, 4, 5, 6 | Vitaheal, Northfold, Torqline, Lumos, Aurora (their home channels) |
+| 7-9 | Kept free for the demo stores added later |
 | 10-99 | Stores made with Create sales channel and Store Builder on (`FIRST_CREATED_SLOT` to `MAX_STORE_SLOT`, given by `nextStoreSlot`) |
 
 Every other store has no `webStore.blueprint` and never gets one. These must never change, whatever
@@ -129,7 +131,7 @@ Ids are unique by construction: one block per store and blueprint
 | Where | Products | Variants | Collections |
 |---|---|---|---|
 | Vitaheal on its home channel | 2001-2008 | `productId * 10 + n` (20011...) | 23-27 |
-| Northfold, Torqline, Lumos on their home channel | `slot * 1000 + n` (3001..., 4001..., 5001...) | `productId * 100 + n` | `slot * 1000 + 900 + n` (3901..., 4901..., 5901...) |
+| Northfold, Torqline, Lumos, Aurora on their home channel | `slot * 1000 + n` (3001..., 4001..., 5001..., 6001...) | `productId * 100 + n` | `slot * 1000 + 900 + n` (3901..., 4901..., 5901..., 6901...) |
 | A blueprint installed on store slot 2-9 | `storeSlot * 10000 + blueprintSlot * 1000 + n` (Torqline on Vitaheal: 42001...) | `productId * 100 + n` | product base `+ 900 + n` |
 | A blueprint installed on store slot 10-99 | the same, plus 1,000,000 | `productId * 100 + n` | the same, plus 1,000,000 |
 | A product a merchant creates | 100001 and up (`nextMerchantProductId`) | | |
@@ -427,4 +429,31 @@ Everything it added is optional and only the sections drawing reads it, so the s
   rows Width, Depth, Height, Seat height, Weight, Materials, Care and Assembly, and its warranty.
 - **Admin:** the product editor's Specifications card shows for any product with specifications (suggested labels as
   chips), and a store without photos draws a sofa (`packShot` shape `furniture`).
+
+## Aurora: what it added
+
+Aurora is rebuilt from the live UAT theme Aurora v1.8.9 (UAT account 1400, store #34). Decided with the user: its own
+header and footer on every page (UAT draws a second, generic set on most pages), a real web serif for headings (Source
+Serif 4; UAT's serif is the browser's Times, shown only because its font setting breaks), outdoor clothing and footwear
+with sizes, colours and size charts, and UAT's two home sections plus a few more. What it added, all optional and read only
+by the sections drawing:
+
+- **Header** `menuStyle: 'Stacked'` with `social`: social icons left, wordmark centred, a pill search
+  (`chrome.headerSearch: 'pill'`) and filled account, wishlist and cart icons right, the menu centred on a second row.
+- **Footer** `layout: 'Menus and newsletter'`: menu columns with small uppercase heads, the "Stay in touch" newsletter with
+  a consent checkbox, and a copyright bar; the columns fold into accordions on a phone.
+- **Image banner** `contentPosition: 'Middle left'`: white words on a dark shade over a full-bleed photo.
+- **Card** `Framed` ([listing.ts](../../src/storefront/listing.ts)): Aurora's product card scheme, a thick light border,
+  large corners and an inset photo, with a full-width Add to cart.
+- **Size charts:** a column whose name says it is a size (a sock chart's "Women's shoe size") is never converted between
+  inches and centimeters, in the size guide, the chat or the admin's Unit switch; a chart with no measurement column hides
+  the size guide's in/cm switch, and the admin drawer disables its Unit ("This chart has sizes only")
+  ([sizeCharts.ts](../../src/storefront/sizeCharts.ts) `isMeasurementColumn`, `hasMeasurements`; the admin's
+  [sizeChartForm.ts](../../src/storefront/sizeChartForm.ts) `convertRows`, `hasValuesToConvert`). A foot length converts to
+  the nearest half centimeter (half a shoe size is about 0.4 cm); other lengths to the whole one, as before. A dash (—) in a
+  cell marks a size a column doesn't have (the women's Boots column has no 11 or 12): the admin accepts and saves it, and a
+  piece's size guide leaves out a size that is blank in every column it shows ([audience.ts](../../src/storefront/audience.ts)
+  `chartForAudience`).
+- **Chat:** the apparel profile answers outdoor wear too: waterproofing, warmth for a temperature, layering, and boot, sock
+  and hat sizes, from the product's own rows and charts.
 

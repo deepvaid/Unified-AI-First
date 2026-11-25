@@ -25,8 +25,8 @@ import { useStoreThemesStore } from '@/stores/useStoreThemes'
 import { useStorefrontStore } from '@/stores/useStorefront'
 import { useCommerceStore } from '@/stores/useCommerce'
 import { useSizeChartsStore } from '@/stores/useSizeCharts'
-import { collectionsOf, inStock, previewProducts, storefrontProducts } from '@/views/Storefront/storefrontCatalog'
-import { cardPrice, choiceSummary, gridSettings, isNewArrival, partNumber } from '@/storefront/listing'
+import { collectionsOf, previewProducts, storefrontProducts } from '@/views/Storefront/storefrontCatalog'
+import { gridSettings } from '@/storefront/listing'
 import {
   blockHasRoom,
   blocksFor,
@@ -76,41 +76,21 @@ const theme = computed(() => {
   return requested?.channelId === channelId.value ? requested : themesStore.themeForChannel(channelId.value)
 })
 const previewHeader = computed(() => storefronts.previewHeaderFor(channel.value))
-/** The header's search and tools as the store's own header shows them (a search field and a wishlist heart, Lumos). */
-const previewChrome = computed(() => {
-  if (!previewHeader.value.brand || !channel.value) return {}
-  const chrome = storefronts.chromeFor(channel.value)
-  return { headerSearch: chrome.headerSearch, headerTools: chrome.headerTools, searchPlaceholder: chrome.searchPlaceholder }
-})
+/**
+ * The rest of the store's chrome as its own storefront draws it: the header's search, tools
+ * and social icons, and the footer's columns, newsletter and copyright.
+ */
+const previewChrome = computed(() => storefronts.previewChromeFor(channel.value))
 /** The collection template's product card and quick add, which every product row of the store uses (as the storefront does). */
 const previewCards = computed(() => {
   const grid = gridSettings(theme.value?.templates.collection)
   return { cardStyle: grid.cardStyle, quickAdd: grid.quickAdd }
 })
 /**
- * The store's own products in the canvas's product rows; a store on the shared catalogue
- * keeps the drawn stand-ins. A part also brings what its card and page show: its part
- * number, or what it comes in ("Front or rear"), and its choices; a product its choices
- * as the product page offers them (a fabric's swatches) and its card's badge.
+ * The store's own products in the canvas's product rows, with what their cards show (a part's
+ * number, a sale's struck price, a badge); a store on the shared catalogue keeps the drawn stand-ins.
  */
-const previewItems = computed(() => {
-  if (!channel.value) return undefined
-  const products = useCommerceStore().products
-  const items = previewProducts(products, channel.value)
-  if (!items) return undefined
-  const byName = new Map(storefrontProducts(products, channel.value.id).filter(inStock).map((product) => [product.name, product]))
-  return items.map((item) => {
-    const product = byName.get(item.name)
-    if (!product) return item
-    return {
-      ...item,
-      partNumber: partNumber(product),
-      choice: choiceSummary(product),
-      options: product.detail?.options.map((o) => ({ name: o.name, values: o.values, display: o.display, swatches: o.swatches })) ?? [],
-      badge: cardPrice(product).compareAt ? 'Sale' as const : isNewArrival(product) ? 'New' as const : undefined,
-    }
-  })
-})
+const previewItems = computed(() => (channel.value ? previewProducts(useCommerceStore().products, channel.value) : undefined))
 
 /**
  * How the storefront draws this theme. A theme on the sections drawing (Northfold,
@@ -122,8 +102,8 @@ const drawing = computed(() => theme.value?.styles.drawing)
 /** What the store sells: a parts store is offered the vehicle finder and fit banner, a store with sizes the size guide. */
 const sizeChartsStore = useSizeChartsStore()
 const facts = computed(() => storeFacts(storefrontProducts(useCommerceStore().products, channelId.value), sizeChartsStore.chartsForChannel(channelId.value)))
-/** The kinds the open template can take (a logo strip is the home page's). */
-const addableSections = computed(() => sectionsFor(drawing.value, facts.value, activeTemplate.value))
+/** The kinds the open template can take (a logo strip is the home page's; white words on its banner's photo, when it has one). */
+const addableSections = computed(() => sectionsFor(drawing.value, facts.value, activeTemplate.value, activeSections.value))
 
 const backRoute = computed(() =>
   channel.value
@@ -1189,9 +1169,10 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
               </template>
             </MpFormField>
 
-            <!-- The sections drawing's cards: their own corners (cards without them follow Corner radius) and shadow. -->
+            <!-- The sections drawing's cards: their own corners (cards without them follow Corner radius) and shadow;
+                 then the collection tiles', which follow the cards' until set (Aurora: 24px cards, 8px tiles). -->
             <template v-if="drawing === 'sections'">
-              <MpFormField label="Card corners" hint="Product cards, room tiles and logo cards">
+              <MpFormField label="Card corners" hint="Product cards, logo cards and icon cards">
                 <template #default="{ labelId, descriptionId }">
                   <v-slider
                     :model-value="theme.styles.cardRadius ?? theme.styles.cornerRadius"
@@ -1211,6 +1192,28 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
                   :items="cardShadowItems"
                   ariaLabel="Card shadow"
                   @update:model-value="(v) => { if (v) setStyle({ cardShadow: v as NonNullable<ThemeStyles['cardShadow']> }) }"
+                />
+              </MpFormField>
+              <MpFormField label="Tile corners" hint="Collection tiles. They follow Card corners until you change them.">
+                <template #default="{ labelId, descriptionId }">
+                  <v-slider
+                    :model-value="theme.styles.tileRadius ?? theme.styles.cardRadius ?? theme.styles.cornerRadius"
+                    :min="0"
+                    :max="24"
+                    :step="2"
+                    thumb-label
+                    :aria-labelledby="labelId"
+                    :aria-describedby="descriptionId"
+                    @update:model-value="(v: number) => setStyle({ tileRadius: v })"
+                  ></v-slider>
+                </template>
+              </MpFormField>
+              <MpFormField label="Tile shadow">
+                <MpSegmentedControl
+                  :model-value="theme.styles.tileShadow ?? theme.styles.cardShadow ?? 'None'"
+                  :items="cardShadowItems"
+                  ariaLabel="Tile shadow"
+                  @update:model-value="(v) => { if (v) setStyle({ tileShadow: v as NonNullable<ThemeStyles['tileShadow']> }) }"
                 />
               </MpFormField>
             </template>
@@ -1379,6 +1382,8 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
                 v-else-if="f.type === 'toggle'"
                 :model-value="panelSettings[f.key] === true"
                 :label="f.label"
+                :hint="f.hint"
+                :persistent-hint="Boolean(f.hint)"
                 @update:model-value="(v: unknown) => panelSet(f.key, v === true)"
               ></v-switch>
               <MpFormField v-else-if="f.type === 'color'" :label="f.label">

@@ -10,8 +10,11 @@ import StorefrontPreview from './StorefrontPreview.vue'
 import { createBlock, createSection, type ThemeSection, type ThemeStyles } from '@/stores/themeBuilderData'
 import { constrain } from '@/stories/decorators'
 import { demoStoreFor } from '@/storefront/demoStores'
-import { snapshotFor } from '@/storefront/demoStores/install'
+import { AURORA_BLUEPRINT } from '@/storefront/demoStores/aurora'
+import { contextFor, snapshotFor } from '@/storefront/demoStores/install'
 import { cardPrice, gridSettings, isNewArrival } from '@/storefront/listing'
+import { previewProducts } from '@/views/Storefront/storefrontCatalog'
+import { previewChrome } from '@/stores/useStorefront'
 
 function homeSections(): ThemeSection[] {
   return [
@@ -96,6 +99,14 @@ is unchanged.
 the cards and the buy box. \`cardStyle\` is the collection template's product card: with \`'Boxed'\` every product
 row is drawn in framed cards with their badge, heart and (with \`quickAdd\`) Add to cart. On a product page the
 buy box shows the product's own choices (swatches for a colour) and the row under it leaves the product out.
+
+**Aurora's header, hero, cards and footer** (part 6). A header with \`menuStyle: 'Stacked'\` draws the store's
+\`socialIcons\` (with its \`social\` setting on), the wordmark in the middle and the search and filled tools at the end,
+the menu centred under them; \`headerSearch: 'pill'\` rounds the search field off. An image banner with
+\`contentPosition: 'Middle left'\` draws white words in the middle of its left side, over a shade from the left.
+\`cardStyle: 'Framed'\` draws the cards in a thick frame with the photo inset, a sale's usual price struck through
+(\`compareAt\`). A footer with \`layout: 'Menus and newsletter'\` draws the store's \`footer\` columns beside its
+newsletter and copyright (stand-in lines without them).
 
 ### 🟢 Do's
 - **Do** drive \`sections\`/\`styles\` from the \`useStoreThemes\` store so canvas and settings stay in sync.
@@ -279,4 +290,38 @@ export const SectionsDrawingLumosProduct: Story = {
 /** Lumos's collection template: its filters, sort, and Boxed cards with their badges and Add to cart. */
 export const SectionsDrawingLumosCollection: Story = {
   args: { ...lumosArgs, sections: lumos.theme.templates.collection, template: 'collection' },
+}
+
+// Aurora (part 6), as its blueprint seeds its home channel: the Stacked header with its social icons, search pill and
+// filled tools; the full-width hero with white words on the left over a shade; the collections slider; Framed cards
+// (a sale's usual price struck through); the footer with its menus beside the newsletter. The builder passes the
+// header's and footer's parts from the store's chrome, as here, and the store's products as previewProducts gives
+// them (those in stock, priced as the store prices them).
+const aurora = AURORA_BLUEPRINT.build(contextFor(AURORA_BLUEPRINT, AURORA_BLUEPRINT.homeChannel, '2026-11-20'))
+const auroraProducts = previewProducts(aurora.products, AURORA_BLUEPRINT.homeChannel)
+const auroraGrid = gridSettings(aurora.theme.templates.collection)
+const auroraArgs = {
+  styles: aurora.theme.styles,
+  products: auroraProducts,
+  brand: aurora.chrome.wordmark,
+  menu: aurora.chrome.nav.map((item) => item.label),
+  // The header's search, tools and social icons and the footer, as the builder passes them.
+  ...previewChrome(aurora.chrome),
+  cardStyle: auroraGrid.cardStyle,
+  quickAdd: auroraGrid.quickAdd,
+}
+
+/** Aurora's home page in the builder canvas: every part 6 setting drawn as the storefront draws it. */
+export const SectionsDrawingAurora: Story = {
+  args: { ...auroraArgs, sections: aurora.theme.templates.home },
+}
+
+/** The same in the phone frame: the menu button, the wordmark and the tools over a square search row; one collection in the slider; the footer's columns as rows that open. */
+export const SectionsDrawingAuroraMobile: Story = {
+  args: { ...auroraArgs, sections: aurora.theme.templates.home, device: 'mobile' },
+}
+
+/** Aurora's collection template: filters for size, color, category and price, sort, and Framed cards with their badges and Add to cart. */
+export const SectionsDrawingAuroraCollection: Story = {
+  args: { ...auroraArgs, sections: aurora.theme.templates.collection, template: 'collection' },
 }

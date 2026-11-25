@@ -57,13 +57,10 @@ const channelId = computed(() => {
 
 const channel = computed(() => salesChannelsStore.getChannel(accountId.value, channelId.value))
 const previewHeader = computed(() => storefronts.previewHeaderFor(channel.value))
-/** The header's search and tools, and the product card the store's rows use, as the builder draws them. */
+/** The store's chrome and the product card its rows use, as the builder draws them. */
 const previewExtras = computed(() => {
   const grid = gridSettings(current.value?.templates.collection)
-  const cards = { cardStyle: grid.cardStyle, quickAdd: grid.quickAdd }
-  if (!previewHeader.value.brand || !channel.value) return cards
-  const chrome = storefronts.chromeFor(channel.value)
-  return { ...cards, headerSearch: chrome.headerSearch, headerTools: chrome.headerTools, searchPlaceholder: chrome.searchPlaceholder }
+  return { cardStyle: grid.cardStyle, quickAdd: grid.quickAdd, ...storefronts.previewChromeFor(channel.value) }
 })
 /** The store's own products in the preview's product rows; a store on the shared catalogue keeps the drawn stand-ins. */
 const previewItems = computed(() => (channel.value ? previewProducts(useCommerceStore().products, channel.value) : undefined))

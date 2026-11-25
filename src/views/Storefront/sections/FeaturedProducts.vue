@@ -4,7 +4,7 @@ import type { Product } from '@/stores/useCommerce'
 import { useCommerceStore } from '@/stores/useCommerce'
 import { fitsVehicle, vehicleLabel } from '@/storefront/fitment'
 import { toHandle } from '@/storefront/handles'
-import { gridSettings } from '@/storefront/listing'
+import { gridSettings, isNewCollection } from '@/storefront/listing'
 import { acrossCollections } from '@/storefront/productPage'
 import type { ThemeSection } from '@/storefront/themeSections'
 import StorefrontAnchor from '../StorefrontAnchor.vue'
@@ -156,7 +156,7 @@ onBeforeUnmount(() => resizes?.disconnect())
           :product="product"
           :quick-add="quickAddOn"
           :added="justAdded.includes(product.id)"
-          :show-new="handle !== 'new-in'"
+          :show-new="!isNewCollection(handle)"
           :card-style="grid.cardStyle"
           @quick-add="(p, color) => quickAdd?.start(p, color)"
         />

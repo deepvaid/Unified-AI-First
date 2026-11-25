@@ -27,6 +27,8 @@ export const NORTHFOLD_CAMPAIGN_CONTENT_ID = 9002
 export const TORQLINE_CAMPAIGN_CONTENT_ID = 9003
 /** The Lumos Home (demo) store's campaign announcement (src/storefront/demoStores/lumos.ts). */
 export const LUMOS_CAMPAIGN_CONTENT_ID = 9004
+/** The Aurora Outdoor (demo) store's campaign announcement (src/storefront/demoStores/aurora.ts). */
+export const AURORA_CAMPAIGN_CONTENT_ID = 9005
 
 export interface ContentItem {
   id: number
@@ -198,6 +200,17 @@ function seedContent(): ContentItem[] {
     editorType: 'Drag & Drop',
     createdAt: new Date(Date.now() - 43_200_000).toISOString(),
     updatedAt: new Date(Date.now() - 180_000).toISOString(),
+    folderId: null,
+    archived: false,
+    usedByCampaigns: 0,
+  })
+  // The Aurora Outdoor (demo) store's, just after that.
+  out.push({
+    id: AURORA_CAMPAIGN_CONTENT_ID,
+    name: 'Aurora Outdoor: campaign announcement',
+    editorType: 'Drag & Drop',
+    createdAt: new Date(Date.now() - 43_200_000).toISOString(),
+    updatedAt: new Date(Date.now() - 240_000).toISOString(),
     folderId: null,
     archived: false,
     usedByCampaigns: 0,

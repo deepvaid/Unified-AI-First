@@ -11,6 +11,7 @@ import {
   type ThemeBlock,
   type ThemeSection,
   type ThemeStyles,
+  variantPreset,
 } from './themeBuilderData'
 import { SEEDED_DEMO_CHANNELS, demoChannelRecord, demoSnapshotOf, replaceStoreRows, useSalesChannelsStore } from './useSalesChannels'
 import { canApplyTheme, homeBlueprintOf } from '@/storefront/demoStores'
@@ -353,9 +354,10 @@ export const useStoreThemesStore = defineStore('storeThemes', () => {
     if (!def) return undefined
     const sections = theme.templates[template]
     if (def.unique && sections.some((entry) => entry.kind === kind)) return undefined
-    // When a variant is chosen, seed the section with that variant's preset.
+    // When a variant is chosen, seed the section with that variant's preset (and, for a layout drawn over
+    // the banner's photo, the photo of this template's banner).
     const variant = variantId ? def.variants?.find((entry) => entry.id === variantId) : undefined
-    const section = createSection(kind, variant ? { ...variant.preset } : {})
+    const section = createSection(kind, variant ? variantPreset(variant, sections) : {})
     sections.splice(index ?? contentInsertIndex(sections), 0, section)
     touch(theme)
     return section

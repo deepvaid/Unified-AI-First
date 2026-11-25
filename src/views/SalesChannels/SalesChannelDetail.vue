@@ -238,13 +238,10 @@ const previewSections = computed(() => channelTheme.value?.templates.home)
 const previewStyles = computed(() => channelTheme.value?.styles)
 // A crawled store's own wordmark and menu in the preview header (Neelam-Store); others keep the sample header.
 const previewHeader = computed(() => useStorefrontStore().previewHeaderFor(channel.value))
-/** The header's search and tools, and the product card the store's rows use, as the builder draws them. */
+/** The store's chrome and the product card its rows use, as the builder draws them. */
 const previewExtras = computed(() => {
   const grid = gridSettings(channelTheme.value?.templates.collection)
-  const cards = { cardStyle: grid.cardStyle, quickAdd: grid.quickAdd }
-  if (!previewHeader.value.brand || !channel.value) return cards
-  const chrome = useStorefrontStore().chromeFor(channel.value)
-  return { ...cards, headerSearch: chrome.headerSearch, headerTools: chrome.headerTools, searchPlaceholder: chrome.searchPlaceholder }
+  return { cardStyle: grid.cardStyle, quickAdd: grid.quickAdd, ...useStorefrontStore().previewChromeFor(channel.value) }
 })
 /** The store's own products in the preview's product rows; a store on the shared catalogue keeps the drawn stand-ins. */
 const previewItems = computed(() => (channel.value ? previewProducts(commerceStore.products, channel.value) : undefined))

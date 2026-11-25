@@ -20,8 +20,8 @@ import { STOREFRONT } from './storefrontContext'
 // collection page and the search results. Its title and intro, the result count,
 // the sort, the filters for what the products have (./facets.ts: a rail on a
 // desktop, a "Filter and sort" sheet on a phone), a chip per filter in use with
-// Clear all, and cards in the collection template's style (Editorial, Dense or
-// Boxed) with quick add. Products sold out in every
+// Clear all, and cards in the collection template's style (Editorial, Dense,
+// Boxed or Framed) with quick add. Products sold out in every
 // variant go last.
 //
 // The filters and the sort live in the URL (?size=m&color=black&sort=price-asc),
@@ -279,7 +279,7 @@ function startQuickAdd(product: Product, color: string | undefined): void {
           <button type="button" class="sf-listing__clear" @click="clearAll">Clear all</button>
         </div>
 
-        <ul v-if="shown.length" class="sf-listing__grid" :class="{ 'sf-listing__grid--boxed': settings.cardStyle === 'Boxed' }" role="list">
+        <ul v-if="shown.length" class="sf-listing__grid" :class="{ 'sf-listing__grid--boxed': settings.cardStyle === 'Boxed' || settings.cardStyle === 'Framed' }" role="list">
           <li v-for="product in shown" :key="product.id">
             <StorefrontListingCard
               :product="product"
@@ -546,7 +546,7 @@ function startQuickAdd(product: Product, color: string | undefined): void {
   list-style: none;
 }
 
-/* Framed cards (Boxed) sit closer: their frames already part them. */
+/* Framed cards (Boxed, Framed) sit closer: their frames already part them. */
 .sf-listing__grid--boxed {
   gap: 24px 20px;
 }

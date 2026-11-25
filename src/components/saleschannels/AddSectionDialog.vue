@@ -233,6 +233,14 @@ watch(open, (value) => {
                       <span class="s-stats"></span>
                     </span>
                   </template>
+                  <template v-else-if="selectedDef.kind === 'image-banner' && variant.id === 'photo-left'">
+                    <!-- White words centred at the left over a photo shaded from the left, a white button under them. -->
+                    <span class="s-fill s-banner s-banner--shade">
+                      <span class="s-line s-line--md"></span>
+                      <span class="s-line s-line--sm"></span>
+                      <span class="s-pill s-pill--light"></span>
+                    </span>
+                  </template>
                   <template v-else-if="selectedDef.kind === 'image-banner'">
                     <span class="s-fill s-banner" :class="`s-banner--${variant.id}`">
                       <span class="s-line s-line--md"></span>
@@ -506,6 +514,16 @@ watch(open, (value) => {
 .s-row { display: flex; gap: 4px; }
 .s-pill--ghost { background: transparent; box-shadow: inset 0 0 0 1px rgba(var(--v-theme-surface), 0.85); }
 .s-stats { display: block; width: 60%; height: 10px; margin-top: 2px; border-radius: 2px; background: rgba(var(--v-theme-surface), 0.9); }
+
+/* Image banner: white words on a photo shaded from the left */
+.s-banner--shade {
+  justify-content: center;
+  gap: 4px;
+  background:
+    linear-gradient(to right, rgba(var(--v-theme-on-surface), 0.7) 45%, rgba(var(--v-theme-on-surface), 0.1) 90%),
+    rgba(var(--v-theme-primary), 0.45);
+}
+.s-pill--light { margin-top: 2px; background: rgba(var(--v-theme-surface), 0.95); }
 
 /* Collection grid: carousel */
 .s-carousel { display: flex; flex-direction: column; gap: 6px; width: 100%; height: 100%; }

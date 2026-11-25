@@ -3,7 +3,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  addMeasurement, addSize, canSave, cellKey, cellLabel, cleanSizeChart, convertRows, hasMeasurements, issueList,
+  addMeasurement, addSize, canSave, cellKey, cellLabel, cleanSizeChart, convertRows, hasValuesToConvert, issueList,
   measurementError, missingSizes, moveItem, moveMeasurement, nextSizeName, normalizeMeasurement, removeItem,
   removeMeasurement, sizeChartIssues, sizeRange, sizesOf,
 } from '../../src/storefront/sizeChartForm.ts'
@@ -24,8 +24,8 @@ const draft = (changes: Partial<SizeChartDraft> = {}): SizeChartDraft => ({
   ...changes,
 })
 
-test('a cell holds a number or a range, smaller number first', () => {
-  for (const ok of ['34', '13.5', '34-36', '32–33', '32 - 33', '30-30']) assert.equal(measurementError(ok), '', ok)
+test('a cell holds a number, a range (smaller number first) or a dash for none', () => {
+  for (const ok of ['34', '13.5', '34-36', '32–33', '32 - 33', '30-30', '—', ' - ', '–']) assert.equal(measurementError(ok), '', ok)
   assert.equal(measurementError(''), 'Enter a measurement')
   assert.equal(measurementError('  '), 'Enter a measurement')
   for (const bad of ['34 in', 'abc', '34-', '-34', '34-36-38', '34,5']) assert.equal(measurementError(bad), 'Use a number or a range, like 34-36', bad)
@@ -36,6 +36,7 @@ test('a range is saved as 34-36, whatever dash and spaces were typed', () => {
   assert.equal(normalizeMeasurement(' 32 – 33 '), '32-33')
   assert.equal(normalizeMeasurement('13.5'), '13.5')
   assert.equal(normalizeMeasurement('One size'), 'One size')
+  assert.equal(normalizeMeasurement(' - '), '—', 'a dash for none is saved as —')
 })
 
 test('switching the unit converts every measurement and keeps the sizes', () => {
@@ -43,8 +44,20 @@ test('switching the unit converts every measurement and keeps the sizes', () => 
   const cm = convertRows(inches, 'in', 'cm')
   assert.deepEqual(cm, rows(['M', '91-94', '77'], ['L', '97-102', '79']))
   assert.deepEqual(convertRows(cm, 'cm', 'in'), inches, 'back to inches gives what was written')
-  assert.equal(hasMeasurements(rows(['M', '', ''])), false)
-  assert.equal(hasMeasurements(cm), true)
+  assert.equal(hasValuesToConvert(['Chest', 'Waist'], rows(['M', '', ''])), false)
+  assert.equal(hasValuesToConvert(['Chest', 'Waist'], cm), true)
+})
+
+test('switching the unit leaves a column of sizes alone, and a chart of sizes only has nothing to convert', () => {
+  // Aurora's Socks: shoe sizes, not lengths.
+  const columns = ['Women’s shoe size', 'Men’s shoe size']
+  const socks = rows(['S', '4-6.5', '—'], ['M', '7-9.5', '6-8.5'], ['L', '10-12', '9-12'])
+  assert.deepEqual(convertRows(socks, 'in', 'cm', columns), socks)
+  assert.equal(hasValuesToConvert(columns, socks), false)
+  // A chart with a size column and a length converts the length only, a foot length to the half centimeter.
+  const boots = rows(['8', '8', '10'], ['9', '9', '10.375'])
+  assert.deepEqual(convertRows(boots, 'in', 'cm', ['US size', 'Foot length']), rows(['8', '8', '25.5'], ['9', '9', '26.5']))
+  assert.equal(hasValuesToConvert(['US size', 'Foot length'], boots), true)
 })
 
 test('rows and columns move, go and come, and every row keeps one value per column', () => {
@@ -106,6 +119,17 @@ test('every Northfold chart, as seeded, can be saved as it is', () => {
   for (const chart of northfold.sizeCharts) {
     const { id, ...rest } = chart
     const others = northfold.sizeCharts.filter((c) => c.id !== id)
+    assert.equal(canSave(sizeChartIssues(rest, others)), true, chart.name)
+    assert.deepEqual(cleanSizeChart(rest), rest, `${chart.name} is saved unchanged`)
+  }
+})
+
+test('every Aurora chart, as seeded, can be saved as it is, its dashes included', () => {
+  const aurora = snapshotFor(demoStoreFor('aurora').homeChannel, 'aurora', '2026-11-20')
+  assert.ok(aurora.sizeCharts.some((chart) => chart.rows.some((row) => row.values.includes('—'))), 'a chart marks a size a column does not have')
+  for (const chart of aurora.sizeCharts) {
+    const { id, ...rest } = chart
+    const others = aurora.sizeCharts.filter((c) => c.id !== id)
     assert.equal(canSave(sizeChartIssues(rest, others)), true, chart.name)
     assert.deepEqual(cleanSizeChart(rest), rest, `${chart.name} is saved unchanged`)
   }

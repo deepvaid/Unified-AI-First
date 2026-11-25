@@ -157,6 +157,24 @@ Restore, Start from a theme and Delete store. The click-by-click flows are in th
 | 5.10 | Admin › the Arlo sofa's product page. | The Specifications card lists its rows; unused suggested labels show as chips. Northfold's products show no Specifications card. |
 | 5.11 | Themes page of Vitaheal: apply Lumos, then restore. | Four library cards. The dialog names Lumos's look and its 20 products; Vitaheal becomes the furniture store in dollars, then comes back as it was, and the wishlist is empty again. |
 
+## Part 6: Aurora
+
+| # | Check | Expected |
+|---|---|---|
+| 6.1 | Sales channels list. | **Aurora Outdoor (demo)**, store #16, after Lumos Home. |
+| 6.2 | Storefront home at 1280. | Matches `public/storefront/aurora/theme.jpg`: the TRAIL20 bar, social icons left, the Aurora wordmark centred, a pill search and filled icons right, the menu centred below; a full-bleed trail photo with "Keep the world adventurous forever" in a serif, white, on the left. |
+| 6.3 | Scroll the home page. | "Featured Collections" slider (three tiles, labels over photos, dots); New arrivals (the two fleeces, the headlamp and the beanie) and Best sellers (the trail bottle at $32 with $40 struck through) in Framed cards, with no "New" badge in the New arrivals row; a "Made for the trail" story; the footer with three menu columns and "Stay in touch". |
+| 6.4 | The same at 375. | Burger, wordmark and icons in one row, a full-width search under it, one collection tile at a time, the footer columns as accordions; nothing scrolls sideways. |
+| 6.5 | Women › Women’s Ridgeline Rain Shell: pick Slate and a size; open the size guide. | "Shown in Moss" under the photos; swatches and sizes as on Northfold; the guide shows the women's chart in inches and centimeters. |
+| 6.6 | Trail Merino Socks: open the size guide. | Shoe sizes as written, with no in/cm switch. |
+| 6.7 | Chat: "Is the rain shell waterproof?", "Is the down jacket warm enough for 20°F?", "I'm between sizes in boots". | Answers from the product's own rows and the boots chart; "I can't promise" where the store says nothing. |
+| 6.8 | Buy a jacket with TRAIL20 and pay; Track your order. | 20% off the jacket; the order page names the size and colour. |
+| 6.9 | Jackets, Footwear, Products in the admin, the cart and an order. | Each women's and men's piece says whose it is in its name (Women’s Summit Down Jacket, Men’s Summit Down Jacket); no two cards, admin rows, cart lines or order lines read the same. |
+| 6.10 | Men’s Canyon Hiking Boot › Size guide, then cm. | Sizes 8 to 12 only (the women's boot 6 to 10), no "—" rows; foot lengths in cm to the half centimeter. |
+| 6.11 | Admin › Aurora's chatbot › preview: press each quick prompt. | Each answers from the knowledge base or says it needs the live store; "How warm is the down jacket?" gives 14°F (−10°C); no sample product cards. |
+| 6.12 | Admin › the store › Campaigns. | Trail season Active, started four days ago, 18 orders; Layer up Ended; Boot week Scheduled. |
+| 6.13 | Themes page of Northfold: apply Aurora, then restore. | Five library cards; Northfold becomes Aurora with its header and footer, then comes back as it was. |
+
 ## Regression stores
 
 These stores can never take a theme. They must look and work exactly as before, whatever is applied
