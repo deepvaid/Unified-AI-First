@@ -132,6 +132,10 @@ export const MEMBRANE_VERTEX = `
       float dbl=1.0+smoke*mix(1.0, thick, uShape);
       if(radius>0.60) radius=0.60+(radius-0.60)*dbl;
 
+      // the voice — the whole ring swells with each word and settles in the pauses. A plain scale, so
+      // the inner edge stays a perfect circle; the wide dust is left where it is.
+      radius*=1.0+uSpeakEnergy*0.07*solid;
+
       float tangent=(noise(aSeed+t*0.16)-0.5)*(0.004+smoke*0.014+flux*0.026);
       tangent+=wave*0.030*(noise(theta*17.0+aSeed*0.02)-0.5)*solid;
       tangent+=dust*(noise(aSeed*1.3+t*0.05)-0.5)*0.06;
