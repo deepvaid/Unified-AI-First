@@ -67,7 +67,11 @@ const formatMoney = (amount: Money) => formatStorePrice(roundForDisplay(amount),
 // What is charged is never rounded: the checkout, the pay button and the receipt read "585,90 kr".
 const formatExact = (amount: Money) => formatStorePrice(amount, found.value?.webStore?.locale)
 const ownMoneyFormat = computed(() => Boolean(found.value?.webStore?.locale))
-const checkout = computed(() => checkoutProfile(found.value?.webStore?.currency))
+// A demo store keeps the address typed at checkout on its order, whatever its currency.
+const checkout = computed(() => {
+  const profile = checkoutProfile(found.value?.webStore?.currency)
+  return found.value?.webStore?.demo ? { ...profile, keepsAddress: true } : profile
+})
 const demo = computed(() => found.value?.webStore?.demo === true)
 
 function offerFor(amount: Money) {

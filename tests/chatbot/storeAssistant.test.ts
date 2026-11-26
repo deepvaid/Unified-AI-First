@@ -209,9 +209,9 @@ test('store questions are answered from the knowledge base, with the page they c
   assert.ok(returns.kind === 'answer' && returns.link?.href === '/policies/refund-policy')
 
   const text = (message: string) => chat([message]).replies[0]!.text
-  assert.match(text('Do you ship to Norway?'), /Norway, Denmark/)
-  assert.match(text('Is shipping free?'), /shipping is free on orders over 549 kr/)
-  assert.match(text('How long does delivery take?'), /3 to 7 working days/)
+  assert.match(text('Do you ship to Canada?'), /United States, Canada/)
+  assert.match(text('Is shipping free?'), /shipping is free on orders over \$50/)
+  assert.match(text('How long does delivery take?'), /3 to 7 business days/)
   assert.match(text('Is Unwind covered by a guarantee?'), /30 days/)
 })
 

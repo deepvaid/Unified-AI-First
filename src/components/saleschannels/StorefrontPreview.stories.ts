@@ -181,10 +181,10 @@ function sectionsWithPhotos(): ThemeSection[] {
 }
 
 const storeProducts = [
-  { name: 'Unwind', price: 'From 399 kr', image: `${PHOTOS}/unwind-1.jpg` },
-  { name: 'Clear Focus', price: 'From 389 kr', image: `${PHOTOS}/clear-focus-1.jpg` },
-  { name: 'Daily NAD+', price: 'From 649 kr', image: `${PHOTOS}/daily-nad-1.jpg` },
-  { name: 'New product', price: '199 kr' },
+  { name: 'Unwind', price: 'From $39.99', image: `${PHOTOS}/unwind-1.jpg` },
+  { name: 'Clear Focus', price: 'From $38.99', image: `${PHOTOS}/clear-focus-1.jpg` },
+  { name: 'Daily NAD+', price: 'From $64.99', image: `${PHOTOS}/daily-nad-1.jpg` },
+  { name: 'New product', price: '$19.99' },
 ]
 
 /** With `products` and `image` settings the preview shows the store itself: its photographs, and each product's photo, name and price. A product without a photo keeps the grey stand-in. Without them (every other story) the sections are drawn. */

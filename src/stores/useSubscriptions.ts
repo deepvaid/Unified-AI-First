@@ -99,7 +99,8 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
   // What shoppers hold. Both the shopper's page and the admin call these, so a
   // change on one shows on the other, with who made it in the history.
 
-  const savedContracts = demoSlot('subscriptions', 1, browserStorage(), isContractList)
+  // v2: subscriptions in US dollars (2026-11-26); those saved in kronor are not read again.
+  const savedContracts = demoSlot('subscriptions', 2, browserStorage(), isContractList)
   const seededContracts = (): SubscriptionContract[] => vitahealSubscriptions(today())
 
   const contracts = ref<SubscriptionContract[]>(savedContracts.load() ?? seededContracts())

@@ -516,6 +516,21 @@ here already exists when those slices start.
   - **Not covered:** Safari and Firefox; a screen reader; a real uploaded product picture (the
     test product used the drawn pack shot); creating a new plan through the drawer (checked up
     to its error messages).
+- **Part 10, US dollars (done, 2026-11-26).** Asked for by sales (Akhilesh): the demo in USD.
+  The human chose a Swedish brand with a US store, at US price points, as on
+  `feature/demo-feedback-round`.
+  - Prices: 399 kr became $39.99 (n9 kr is $n.99); the Starter Pack is $49.99, was $55.98;
+    free shipping starts at $50. `webStore` is USD with no locale, so prices read "$39.99".
+  - The checkout is the US one (Ava Brown, San Francisco); a demo store keeps the typed address
+    on its order whatever its currency (`StorefrontLayout.vue`).
+  - Eight US subscribers (Emma Collins and others, with states); the subscriber page writes a US
+    address as "Minneapolis, MN 55401".
+  - Delivery, shipping, payment and contact copy in the policies, pages and chatbot is a US
+    store's (ET hours, business days, ships to the US, Canada, the UK, Australia, New Zealand).
+  - Saved browser data from the kronor store is not read again: the products, subscriptions,
+    chatbot, conversations and campaigns slots moved to v2. Orders placed before stay as placed.
+  - The film was recorded again in dollars. The kronor rules (whole kronor, the Swedish
+    checkout) stay and are still tested; no store uses them now.
 
 **Sales-demo pass (added 2026-11-16, after the audience was confirmed as sales people showing prospects):**
 

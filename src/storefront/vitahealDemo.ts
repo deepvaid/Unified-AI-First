@@ -17,10 +17,15 @@
 //   useStoreCampaigns   vitahealCampaigns()
 //   useMerchandising    VITAHEAL_MERCHANDISING
 //
-// The catalogue has the shape of BKM's (variants, SEK prices, collections), which
+// The catalogue has the shape of BKM's (variants, prices, collections), which
 // is what the requirements test. The brand, product and flavour names are made up,
 // the copy is written for this prototype, and the pictures are free-licence stock
 // photos kept in public/storefront/vitaheal (credits in its CREDITS.md), never BKM's.
+//
+// Since Akhilesh's ask (2026-11-26) it is a Swedish brand's US store: it sells in US dollars,
+// its kronor prices became US price points (399 kr is $39.99, 279 kr is $27.99), free shipping
+// starts at $50, and its checkout, subscribers and delivery are American. It is still made in
+// Sweden, by Vitaheal AB in Stockholm.
 //
 // Everything a visitor can see or click must read like a real store: no internal
 // wording, no link to a missing page, and never BKM's name (the test checks that).
@@ -53,7 +58,7 @@ export const VITAHEAL_CHANNEL: SalesChannel = {
   provider: 'maropost_store_builder',
   status: 'connected',
   health: 'healthy',
-  description: 'Swedish supplements store. Most orders are subscriptions, and prices are in SEK.',
+  description: 'Swedish supplements brand selling in the US. Most orders are subscriptions, and prices are in US dollars.',
   connectedClouds: ['commerce', 'store_builder'],
   createdAt: '2026-11-16T09:00:00Z',
   updatedAt: '2026-11-16T09:00:00Z',
@@ -63,8 +68,7 @@ export const VITAHEAL_CHANNEL: SalesChannel = {
     storeBuilderEnabled: true,
     published: true,
     merchandiseConnected: false,
-    currency: 'SEK',
-    locale: 'sv-SE',
+    currency: 'USD',
     demo: true,
   },
 }
@@ -76,7 +80,7 @@ export const VITAHEAL_CHANNEL: SalesChannel = {
  */
 export const VITAHEAL_ADMIN = {
   /** Revenue of the last 30 days, in the store's currency. */
-  revenue: '1.9M kr',
+  revenue: '$184.5K',
   themeName: 'Vitaheal 1.0',
   business: [
     { label: 'Legal name', value: 'Vitaheal AB' },
@@ -131,7 +135,7 @@ type VitahealCollection = (typeof VITAHEAL_COLLECTION_NAMES)[number]
 interface VariantSeed {
   title: string
   sku: string
-  /** SEK, VAT included. */
+  /** US dollars. */
   price: number
   compareAt?: number
   weightKg: number
@@ -162,8 +166,8 @@ const PRODUCT_SEEDS: ProductSeed[] = [
     photo: 'unwind',
     option: 'Format',
     variants: [
-      { title: 'Can', sku: 'VTH-UNW-CAN', price: 419, weightKg: 0.32, stock: 140 },
-      { title: 'Bag', sku: 'VTH-UNW-BAG', price: 399, weightKg: 0.28, stock: 96 },
+      { title: 'Can', sku: 'VTH-UNW-CAN', price: 41.99, weightKg: 0.32, stock: 140 },
+      { title: 'Bag', sku: 'VTH-UNW-BAG', price: 39.99, weightKg: 0.28, stock: 96 },
     ],
     collections: ['Sleep', 'Subscription'],
   },
@@ -175,8 +179,8 @@ const PRODUCT_SEEDS: ProductSeed[] = [
     photo: 'clear-focus',
     option: 'Format',
     variants: [
-      { title: 'Original', sku: 'VTH-FOC-ORG', price: 409, weightKg: 0.12, stock: 120 },
-      { title: 'Refill', sku: 'VTH-FOC-REF', price: 389, weightKg: 0.1, stock: 88 },
+      { title: 'Original', sku: 'VTH-FOC-ORG', price: 40.99, weightKg: 0.12, stock: 120 },
+      { title: 'Refill', sku: 'VTH-FOC-REF', price: 38.99, weightKg: 0.1, stock: 88 },
     ],
     collections: ['Sport', 'Subscription'],
   },
@@ -188,8 +192,8 @@ const PRODUCT_SEEDS: ProductSeed[] = [
     photo: 'daily-nad',
     option: 'Format',
     variants: [
-      { title: 'Original', sku: 'VTH-NAD-ORG', price: 669, weightKg: 0.11, stock: 74 },
-      { title: 'Refill', sku: 'VTH-NAD-REF', price: 649, weightKg: 0.09, stock: 60 },
+      { title: 'Original', sku: 'VTH-NAD-ORG', price: 66.99, weightKg: 0.11, stock: 74 },
+      { title: 'Refill', sku: 'VTH-NAD-REF', price: 64.99, weightKg: 0.09, stock: 60 },
     ],
     collections: ['Longevity', 'Subscription'],
   },
@@ -199,7 +203,7 @@ const PRODUCT_SEEDS: ProductSeed[] = [
     subtitle: 'Easier breathing, day or night',
     description: 'Drug-free strips that gently open the nose. Thirty in a box, for sleep and for training.',
     photo: 'nasal-strips',
-    variants: [{ title: 'Default', sku: 'VTH-NSL-30', price: 199, weightKg: 0.04, stock: 210 }],
+    variants: [{ title: 'Default', sku: 'VTH-NSL-30', price: 19.99, weightKg: 0.04, stock: 210 }],
     collections: ['Sleep', 'Sport'],
   },
   {
@@ -210,9 +214,9 @@ const PRODUCT_SEEDS: ProductSeed[] = [
     photo: 'electrolytes',
     option: 'Flavour',
     variants: [
-      { title: 'Lemon & Ginger', sku: 'VTH-ELE-LEM', price: 279, weightKg: 0.18, stock: 180 },
-      { title: 'Wild Berries', sku: 'VTH-ELE-BER', price: 279, weightKg: 0.18, stock: 164 },
-      { title: 'Starter Pack (both flavours)', sku: 'VTH-ELE-STA', price: 499, compareAt: 558, weightKg: 0.36, stock: 52 },
+      { title: 'Lemon & Ginger', sku: 'VTH-ELE-LEM', price: 27.99, weightKg: 0.18, stock: 180 },
+      { title: 'Wild Berries', sku: 'VTH-ELE-BER', price: 27.99, weightKg: 0.18, stock: 164 },
+      { title: 'Starter Pack (both flavours)', sku: 'VTH-ELE-STA', price: 49.99, compareAt: 55.98, weightKg: 0.36, stock: 52 },
     ],
     collections: ['Hydrate', 'Sport', 'Subscription'],
   },
@@ -224,8 +228,8 @@ const PRODUCT_SEEDS: ProductSeed[] = [
     photo: 'collagen',
     option: 'Format',
     variants: [
-      { title: 'Original', sku: 'VTH-COL-ORG', price: 429, weightKg: 0.3, stock: 110 },
-      { title: 'Refill', sku: 'VTH-COL-REF', price: 409, weightKg: 0.27, stock: 82 },
+      { title: 'Original', sku: 'VTH-COL-ORG', price: 42.99, weightKg: 0.3, stock: 110 },
+      { title: 'Refill', sku: 'VTH-COL-REF', price: 40.99, weightKg: 0.27, stock: 82 },
     ],
     collections: ['Longevity', 'Subscription'],
   },
@@ -235,7 +239,7 @@ const PRODUCT_SEEDS: ProductSeed[] = [
     subtitle: 'Made for women',
     description: 'The refill bag for Balance. Pour it into the can you already own.',
     photo: 'balance-refill',
-    variants: [{ title: 'Default', sku: 'VTH-BAL-REF', price: 419, weightKg: 0.26, stock: 68 }],
+    variants: [{ title: 'Default', sku: 'VTH-BAL-REF', price: 41.99, weightKg: 0.26, stock: 68 }],
     collections: ['Longevity'],
   },
   {
@@ -244,7 +248,7 @@ const PRODUCT_SEEDS: ProductSeed[] = [
     subtitle: 'Made for women',
     description: 'A daily blend for steady energy through the month. One scoop in water, any time of day.',
     photo: 'balance',
-    variants: [{ title: 'Default', sku: 'VTH-BAL-CAN', price: 419, weightKg: 0.3, stock: 90 }],
+    variants: [{ title: 'Default', sku: 'VTH-BAL-CAN', price: 41.99, weightKg: 0.3, stock: 90 }],
     collections: ['Longevity'],
   },
 ]
@@ -389,17 +393,19 @@ interface SubscriberSeed {
   status: ContractStatus
   card: string
   cancelReason?: string
+  /** The state, as US addresses write it ('MN'). */
+  region: string
 }
 
 const SUBSCRIBER_SEEDS: SubscriberSeed[] = [
-  { name: 'Astrid Lindqvist', email: 'astrid.lindqvist@example.com', street: 'Vasagatan 21', postalCode: '411 24', city: 'Göteborg', productId: 2001, planId: 'plan-3-month', startedDaysAgo: 200, status: 'Active', card: 'Visa •••• 4242' },
-  { name: 'Erik Johansson', email: 'erik.johansson@example.com', street: 'Södra Förstadsgatan 40', postalCode: '211 43', city: 'Malmö', productId: 2005, planId: 'plan-monthly', startedDaysAgo: 75, status: 'Active', card: 'Mastercard •••• 5454' },
-  { name: 'Maja Nilsson', email: 'maja.nilsson@example.com', street: 'Kungsgatan 9', postalCode: '753 21', city: 'Uppsala', productId: 2002, planId: 'plan-monthly', startedDaysAgo: 140, status: 'Active', card: 'Visa •••• 1881' },
-  { name: 'Oskar Bergström', email: 'oskar.bergstrom@example.com', street: 'Drottninggatan 55', postalCode: '111 21', city: 'Stockholm', productId: 2003, planId: 'plan-3-month', startedDaysAgo: 310, status: 'Active', card: 'Amex •••• 0005' },
-  { name: 'Elsa Karlsson', email: 'elsa.karlsson@example.com', street: 'Storgatan 3', postalCode: '582 23', city: 'Linköping', productId: 2006, planId: 'plan-monthly', startedDaysAgo: 110, status: 'Paused', card: 'Visa •••• 7720' },
-  { name: 'Lucas Andersson', email: 'lucas.andersson@example.com', street: 'Nygatan 14', postalCode: '702 11', city: 'Örebro', productId: 2005, planId: 'plan-3-month', startedDaysAgo: 185, status: 'Payment failed', card: 'Mastercard •••• 3102' },
-  { name: 'Freja Holm', email: 'freja.holm@example.com', street: 'Hamngatan 7', postalCode: '392 31', city: 'Kalmar', productId: 2001, planId: 'plan-monthly', startedDaysAgo: 95, status: 'Cancelled', card: 'Visa •••• 6009', cancelReason: 'Too expensive' },
-  { name: 'Nils Ekström', email: 'nils.ekstrom@example.com', street: 'Rådhusesplanaden 2', postalCode: '903 28', city: 'Umeå', productId: 2002, planId: 'plan-3-month', startedDaysAgo: 30, status: 'Active', card: 'Visa •••• 4242' },
+  { name: 'Emma Collins', email: 'emma.collins@example.com', street: '418 Maple Avenue', postalCode: '55401', city: 'Minneapolis', region: 'MN', productId: 2001, planId: 'plan-3-month', startedDaysAgo: 200, status: 'Active', card: 'Visa •••• 4242' },
+  { name: 'Jacob Turner', email: 'jacob.turner@example.com', street: '2210 Pecan Street', postalCode: '78701', city: 'Austin', region: 'TX', productId: 2005, planId: 'plan-monthly', startedDaysAgo: 75, status: 'Active', card: 'Mastercard •••• 5454' },
+  { name: 'Olivia Bennett', email: 'olivia.bennett@example.com', street: '75 Beacon Street', postalCode: '02108', city: 'Boston', region: 'MA', productId: 2002, planId: 'plan-monthly', startedDaysAgo: 140, status: 'Active', card: 'Visa •••• 1881' },
+  { name: 'Ethan Brooks', email: 'ethan.brooks@example.com', street: '1630 Pine Street', postalCode: '98101', city: 'Seattle', region: 'WA', productId: 2003, planId: 'plan-3-month', startedDaysAgo: 310, status: 'Active', card: 'Amex •••• 0005' },
+  { name: 'Sophie Hayes', email: 'sophie.hayes@example.com', street: '309 Peachtree Lane', postalCode: '30303', city: 'Atlanta', region: 'GA', productId: 2006, planId: 'plan-monthly', startedDaysAgo: 110, status: 'Paused', card: 'Visa •••• 7720' },
+  { name: 'Noah Patel', email: 'noah.patel@example.com', street: '88 Lakeshore Drive', postalCode: '60601', city: 'Chicago', region: 'IL', productId: 2005, planId: 'plan-3-month', startedDaysAgo: 185, status: 'Payment failed', card: 'Mastercard •••• 3102' },
+  { name: 'Lily Carter', email: 'lily.carter@example.com', street: '12 Ocean Avenue', postalCode: '92101', city: 'San Diego', region: 'CA', productId: 2001, planId: 'plan-monthly', startedDaysAgo: 95, status: 'Cancelled', card: 'Visa •••• 6009', cancelReason: 'Too expensive' },
+  { name: 'Henry Walsh', email: 'henry.walsh@example.com', street: '540 Elm Street', postalCode: '05401', city: 'Burlington', region: 'VT', productId: 2002, planId: 'plan-3-month', startedDaysAgo: 30, status: 'Active', card: 'Visa •••• 4242' },
 ]
 
 function daysBefore(today: string, days: number): string {
@@ -443,15 +449,15 @@ export function vitahealSubscriptions(today: string): SubscriptionContract[] {
       customer: {
         name: seed.name,
         email: seed.email,
-        address: { line1: seed.street, city: seed.city, region: '', postalCode: seed.postalCode, country: 'Sweden' },
+        address: { line1: seed.street, city: seed.city, region: seed.region, postalCode: seed.postalCode, country: 'United States' },
       },
       productId: product.id,
       product: product.name,
       sku: lowest.sku,
       qty: 1,
       plan: linePlan(plan),
-      price: toDecimal(pricePerDelivery(money(lowest.price * 100, 'SEK'), plan)),
-      currency: 'SEK',
+      price: toDecimal(pricePerDelivery(money(Math.round(lowest.price * 100), 'USD'), plan)),
+      currency: 'USD',
       paymentMethod: seed.card,
       methodId: 'card',
       status: seed.status,
@@ -482,7 +488,7 @@ export function vitahealCampaigns(today: string): StoreCampaign[] {
       updatedAt: stamp(day(-3)),
       offer: { message: 'Winter wellness week: 15% off everything with code WINTER15', code: 'WINTER15', discountPct: 15 },
       orders: 37,
-      revenue: 2_148_000,
+      revenue: 214_800,
     },
     {
       id: 'camp-vitaheal-sleep',
@@ -504,7 +510,7 @@ export function vitahealCampaigns(today: string): StoreCampaign[] {
       updatedAt: stamp(day(-23)),
       offer: { message: 'Black week: 25% off everything with code BLACK25', code: 'BLACK25', discountPct: 25 },
       orders: 112,
-      revenue: 5_936_000,
+      revenue: 593_600,
     },
   ]
 }
@@ -575,19 +581,19 @@ export const VITAHEAL_CHATBOT: Partial<ChatbotConfig> = {
     {
       id: 1, name: 'Store policies', icon: 'file-text', items: 4, meta: 'Added 16 Nov 2026', status: 'Active', enabled: true,
       entries: [
-        { title: 'Returns and refunds', url: '/policies/refund-policy', text: 'You can return unopened products within 14 days of delivery for a full refund. Write to us first and we will send a return label. We refund to your original payment method within 5 working days of receiving the return.' },
+        { title: 'Returns and refunds', url: '/policies/refund-policy', text: 'You can return unopened products within 14 days of delivery for a full refund. Write to us first and we will send a return label. We refund to your original payment method within 5 business days of receiving the return.' },
         { title: 'Money-back guarantee on Unwind', url: '/page/money-back-guarantee', text: 'If Unwind is not right for you, tell us within 30 days of delivery and we will refund your first can or bag. The guarantee covers your first order of Unwind, once per household.' },
         { title: 'Privacy and your data', url: '/policies/privacy-policy', text: 'We keep only what we need to deliver your order and look after your subscription: your name, address, email and order history. Your card details go straight to our payment provider and never reach us.' },
-        { title: 'Prices, VAT and payment', url: '/policies/terms-of-service', text: 'Prices are in Swedish kronor and include VAT. You can pay by card, Apple Pay or Google Pay.' },
+        { title: 'Prices and payment', url: '/policies/terms-of-service', text: 'Prices are in US dollars. You can pay by card, Apple Pay or Google Pay.' },
       ],
     },
     {
       id: 2, name: 'Help pages', icon: 'globe', items: 5, meta: 'Added 16 Nov 2026', status: 'Active', enabled: true,
       entries: [
-        { title: 'Delivery times and shipping cost', url: '/page/contact', text: 'Orders placed before 10:00 CET on a weekday leave our warehouse the same day. Delivery takes 3 to 7 working days, and shipping is free on orders over 549 kr.' },
-        { title: 'Which countries we ship to', url: '/policies/terms-of-service', text: 'We ship to Sweden, Norway, Denmark, Finland and Iceland, and to the rest of the EU. Duties and taxes may apply outside the EU.' },
+        { title: 'Delivery times and shipping cost', url: '/page/contact', text: 'Orders placed before 2 pm ET on a weekday leave our warehouse the same day. Delivery takes 3 to 7 business days, and shipping is free on orders over $50.' },
+        { title: 'Which countries we ship to', url: '/policies/terms-of-service', text: 'We ship to the United States, Canada, the United Kingdom, Australia and New Zealand. Duties and taxes may apply outside the US.' },
         { title: 'How subscriptions work', url: '/page/about', text: 'A subscription sends your product at the interval you choose and saves 20% to 30% on every delivery. You can skip a delivery, pause or cancel at any time from your account page, before the next charge date.' },
-        { title: 'Contact and opening hours', url: '/page/contact', text: 'Write to hello@vitaheal.example and we answer within one working day. We are here Monday to Friday, 09:00 to 17:00 CET.' },
+        { title: 'Contact and opening hours', url: '/page/contact', text: 'Write to hello@vitaheal.example and we answer within one business day. We are here Monday to Friday, 9 am to 5 pm ET.' },
         { title: 'Where our products are made and tested', url: '/page/about', text: 'Everything is blended and packed in Sweden, and every batch is tested before it ships. Refills come in bags, so one can lasts for years.' },
       ],
     },
@@ -597,7 +603,7 @@ export const VITAHEAL_CHATBOT: Partial<ChatbotConfig> = {
 /** Earlier chats, so the admin's Conversations page has this store's own history. */
 export const VITAHEAL_CONVERSATIONS: Omit<ChatbotConversation, 'id' | 'chatbotId'>[] = [
   {
-    visitor: 'astrid.lindqvist@example.com', startedAt: 'Today, 8:12 AM', topic: 'Subscription', resolved: true,
+    visitor: 'emma.collins@example.com', startedAt: 'Today, 8:12 AM', topic: 'Subscription', resolved: true,
     messages: [
       { from: 'shopper', text: 'When is my next delivery?', time: '8:12 AM' },
       { from: 'bot', text: 'Your Unwind subscription is active on the 3-month supply. The next delivery date is below, and you can skip it right here if you have enough at home.', time: '8:12 AM' },
@@ -617,8 +623,8 @@ export const VITAHEAL_CONVERSATIONS: Omit<ChatbotConversation, 'id' | 'chatbotId
   {
     visitor: 'Guest visitor', startedAt: 'Yesterday, 2:05 PM', topic: 'Delivery', resolved: true,
     messages: [
-      { from: 'shopper', text: 'Do you ship to Norway?', time: '2:05 PM' },
-      { from: 'bot', text: 'We ship to Sweden, Norway, Denmark, Finland and Iceland, and to the rest of the EU. Duties and taxes may apply outside the EU.', time: '2:05 PM' },
+      { from: 'shopper', text: 'Do you ship to Canada?', time: '2:05 PM' },
+      { from: 'bot', text: 'We ship to the United States, Canada, the United Kingdom, Australia and New Zealand. Duties and taxes may apply outside the US.', time: '2:05 PM' },
     ],
   },
   {
@@ -768,7 +774,7 @@ export const VITAHEAL_CONTENT: ContentEntry[] = [
     'page',
     'contact',
     'Contact',
-    '<h2>We are here to help</h2><p>Questions about an order, a delivery or a subscription? Write to us and we will answer within one working day.</p><ul><li><strong>Email:</strong> hello@vitaheal.example</li><li><strong>Hours:</strong> Monday to Friday, 09:00 to 17:00 CET</li></ul><h3>Before you write</h3><p>Orders placed before 10:00 CET on a weekday leave our warehouse the same day. Delivery takes 3 to 7 working days.</p>',
+    '<h2>We are here to help</h2><p>Questions about an order, a delivery or a subscription? Write to us and we will answer within one business day.</p><ul><li><strong>Email:</strong> hello@vitaheal.example</li><li><strong>Hours:</strong> Monday to Friday, 9 am to 5 pm ET</li></ul><h3>Before you write</h3><p>Orders placed before 2 pm ET on a weekday leave our warehouse the same day. Delivery takes 3 to 7 business days.</p>',
     'Contact Vitaheal about an order, a delivery or a subscription.',
   ),
   entry(
@@ -782,7 +788,7 @@ export const VITAHEAL_CONTENT: ContentEntry[] = [
     'page',
     'money-back-guarantee',
     'Money-back guarantee terms',
-    '<h2>30 days to try Unwind</h2><p>If Unwind is not right for you, tell us within 30 days of delivery and we will refund your first can or bag.</p><h3>What the guarantee covers</h3><ul><li>Your first order of Unwind, in either format.</li><li>One refund per customer and household.</li></ul><h3>What it does not cover</h3><ul><li>Other Vitaheal products.</li><li>Shipping costs for orders outside Sweden.</li></ul><p>Other returns follow our <a href="/policies/refund-policy">refund policy</a>.</p>',
+    '<h2>30 days to try Unwind</h2><p>If Unwind is not right for you, tell us within 30 days of delivery and we will refund your first can or bag.</p><h3>What the guarantee covers</h3><ul><li>Your first order of Unwind, in either format.</li><li>One refund per customer and household.</li></ul><h3>What it does not cover</h3><ul><li>Other Vitaheal products.</li><li>Shipping costs for orders outside the US.</li></ul><p>Other returns follow our <a href="/policies/refund-policy">refund policy</a>.</p>',
     'The 30-day money-back guarantee for Unwind: what it covers and how to claim it.',
   ),
   entry(
@@ -796,7 +802,7 @@ export const VITAHEAL_CONTENT: ContentEntry[] = [
     'policy',
     'refund-policy',
     'Refund policy',
-    '<h2>Refund policy</h2><p>You can return unopened products within 14 days of delivery for a full refund. Write to us first and we will send a return label.</p><h3>Refunds</h3><p>We refund to your original payment method within 5 working days of receiving the return.</p><h3>Subscriptions</h3><p>You can cancel a subscription before its next charge date. A delivery that has already been charged can be returned under the same 14-day rule.</p><p>Unwind also has a <a href="/page/money-back-guarantee">30-day money-back guarantee</a>.</p>',
+    '<h2>Refund policy</h2><p>You can return unopened products within 14 days of delivery for a full refund. Write to us first and we will send a return label.</p><h3>Refunds</h3><p>We refund to your original payment method within 5 business days of receiving the return.</p><h3>Subscriptions</h3><p>You can cancel a subscription before its next charge date. A delivery that has already been charged can be returned under the same 14-day rule.</p><p>Unwind also has a <a href="/page/money-back-guarantee">30-day money-back guarantee</a>.</p>',
     'How returns and refunds work at Vitaheal.',
   ),
   entry(
@@ -810,7 +816,7 @@ export const VITAHEAL_CONTENT: ContentEntry[] = [
     'policy',
     'terms-of-service',
     'Terms of service',
-    '<h2>Terms of service</h2><p>These terms apply when you buy from this store. Prices are in Swedish kronor and include VAT.</p><h3>Orders</h3><p>An order is confirmed when you receive our confirmation email. We may cancel an order if a product is out of stock, and we refund it in full if we do.</p><h3>Subscriptions</h3><p>A subscription renews at the interval you chose until you cancel it. We email you before each renewal.</p><h3>Delivery</h3><p>We deliver within 3 to 7 working days. Duties and taxes may apply outside the EU.</p>',
+    '<h2>Terms of service</h2><p>These terms apply when you buy from this store. Prices are in US dollars.</p><h3>Orders</h3><p>An order is confirmed when you receive our confirmation email. We may cancel an order if a product is out of stock, and we refund it in full if we do.</p><h3>Subscriptions</h3><p>A subscription renews at the interval you chose until you cancel it. We email you before each renewal.</p><h3>Delivery</h3><p>We deliver within 3 to 7 business days. Duties and taxes may apply outside the US.</p>',
     'The terms that apply when you buy from the Vitaheal store.',
   ),
   entry(

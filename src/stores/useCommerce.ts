@@ -799,7 +799,8 @@ function withDemoProducts(shared: Product[], demo: Product[]): Product[] {
 export const useCommerceStore = defineStore('commerce', () => {
   // What the Vitaheal (demo) store sells is kept in this browser, so a sales person's
   // changes survive a reload and reach the storefront tab (src/storefront/demoStorage.ts).
-  const demoProducts = demoSlot('products', 1, browserStorage(), isProductList)
+  // v2: the store sells in US dollars (2026-11-26), so products saved in kronor are not read again.
+  const demoProducts = demoSlot('products', 2, browserStorage(), isProductList)
   const seededDemoProducts = (): Product[] => vitahealProducts().map((p) => ({ ...p, status: stockStatus(p.inventory) }))
 
   const products = ref<Product[]>(withDemoProducts(productNames.map((name, i): Product => {

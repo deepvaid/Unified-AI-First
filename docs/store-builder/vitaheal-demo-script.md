@@ -25,13 +25,13 @@ store; the merchant sees it all, runs a campaign, and switches on search and rec
 
 | # | Where | Do | Say |
 |---|---|---|---|
-| 1 | Store, home | Scroll the home page. Open **Sleep**, then **Unwind**. | "This is the brand's own store: its photos, its type, prices in kronor." |
+| 1 | Store, home | Scroll the home page. Open **Sleep**, then **Unwind**. | "This is the brand's own store: its photos, its type. A Swedish brand selling in the US, so prices are in US dollars." |
 | 2 | Store, product | Point at the three purchase options. Keep **3-month supply**. Press **Add subscription to cart**, then **View cart**. | "Most of their orders are subscriptions, so the plan is the first choice, with what the shopper saves." |
 | 3 | Store, cart | Type `WINTER15` in **Discount code**, press **Apply**. | "The code is from the campaign in the bar at the top. It lowers the first order; later deliveries stay at the plan's price, and the cart says so." |
-| 4 | Store, checkout | Press **Checkout**. Tick the agreement. Press **Pay**. | "Checkout is in kronor, with card, Apple Pay and Google Pay. The details are filled in for the demo." |
+| 4 | Store, checkout | Press **Checkout**. Tick the agreement. Press **Pay**. | "Checkout is in US dollars, with card, Apple Pay and Google Pay. The details are filled in for the demo." |
 | 5 | Store, account | On the confirmation press **Manage your subscription**. Press **Skip next delivery**, then **Skip this delivery**. | "Shoppers skip, pause, change plan or cancel on their own. No support ticket." |
 | 6 | Store, chat | Open **Need help?**. Press **Where is my order?**. Then type "I am always tired in the afternoon". | "The assistant knows this shopper's order, and suggests products for a need. It does not give medical advice." |
-| 7 | Admin, Commerce | **Orders**: open the newest order. Then **Subscriptions › Subscribers**: open Linnea Berg. | "The order has the code and the discount on its line. The subscriber page has the same actions the shopper has, plus charge now." |
+| 7 | Admin, Commerce | **Orders**: open the newest order. Then **Subscriptions › Subscribers**: open Ava Brown. | "The order has the code and the discount on its line. The subscriber page has the same actions the shopper has, plus charge now." |
 | 8 | Admin, store › Campaigns | Show **Winter wellness week**: its code, orders and revenue. Open its menu, **Announce by email**. | "A campaign is a message on the store, a code, and its results. One click writes the email to this store's customers." |
 | 9 | Admin, Merchandising | Open **Merchandising** for the store. Press **Connect Merchandising**. | "Eight products sync, and search and recommendations are on." |
 | 10 | Store | Search **sleep**, then **tired**. Open Unwind and scroll to **Goes well with Unwind**. | "Unwind is pinned first for sleep. 'Tired' has no product, but a synonym leads to energy and focus. The row is chosen by the store's recommendation engine." |

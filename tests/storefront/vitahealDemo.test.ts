@@ -13,20 +13,20 @@ const byName = (name: string) => products.find((p) => p.name === name)!
 const variantPrices = (name: string) => Object.fromEntries(byName(name).detail!.variantsList.map((v) => [v.title, Number(v.price)]))
 const handle = (name: string) => name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
 
-test('the catalogue is the eight reference products at their SEK prices', () => {
+test('the catalogue is the eight reference products at their US price points', () => {
   assert.equal(products.length, 8)
-  assert.deepEqual(variantPrices('Vitaheal Electrolytes'), { 'Lemon & Ginger': 279, 'Wild Berries': 279, 'Starter Pack (both flavours)': 499 })
-  assert.deepEqual(variantPrices('Unwind'), { Can: 419, Bag: 399 })
-  assert.deepEqual(variantPrices('Clear Focus'), { Original: 409, Refill: 389 })
-  assert.deepEqual(variantPrices('Collagen+'), { Original: 429, Refill: 409 })
-  assert.deepEqual(variantPrices('Daily NAD+'), { Original: 669, Refill: 649 })
-  for (const single of ['Balance', 'Balance Refill']) assert.deepEqual(Object.values(variantPrices(single)), [419])
-  assert.deepEqual(Object.values(variantPrices('Nasal Strips')), [199])
+  assert.deepEqual(variantPrices('Vitaheal Electrolytes'), { 'Lemon & Ginger': 27.99, 'Wild Berries': 27.99, 'Starter Pack (both flavours)': 49.99 })
+  assert.deepEqual(variantPrices('Unwind'), { Can: 41.99, Bag: 39.99 })
+  assert.deepEqual(variantPrices('Clear Focus'), { Original: 40.99, Refill: 38.99 })
+  assert.deepEqual(variantPrices('Collagen+'), { Original: 42.99, Refill: 40.99 })
+  assert.deepEqual(variantPrices('Daily NAD+'), { Original: 66.99, Refill: 64.99 })
+  for (const single of ['Balance', 'Balance Refill']) assert.deepEqual(Object.values(variantPrices(single)), [41.99])
+  assert.deepEqual(Object.values(variantPrices('Nasal Strips')), [19.99])
 })
 
 test('the Starter Pack is the only variant with a compare-at price', () => {
   const withCompareAt = products.flatMap((p) => p.detail!.variantsList).filter((v) => v.compareAtPrice)
-  assert.deepEqual(withCompareAt.map((v) => [v.title, v.compareAtPrice]), [['Starter Pack (both flavours)', '558.00']])
+  assert.deepEqual(withCompareAt.map((v) => [v.title, v.compareAtPrice]), [['Starter Pack (both flavours)', '55.98']])
 })
 
 test('every variant has a unique SKU and a weight', () => {
@@ -39,9 +39,9 @@ test('every variant has a unique SKU and a weight', () => {
 })
 
 test('a card shows the lowest price, with "From" only where variants differ', () => {
-  assert.equal(byName('Unwind').price, '399.00')
+  assert.equal(byName('Unwind').price, '39.99')
   assert.equal(hasPriceRange(byName('Unwind')), true)
-  assert.equal(byName('Nasal Strips').price, '199.00')
+  assert.equal(byName('Nasal Strips').price, '19.99')
   assert.equal(hasPriceRange(byName('Nasal Strips')), false)
 })
 
@@ -64,9 +64,10 @@ test('collections match the reference: five on subscription', () => {
   for (const c of VITAHEAL_COLLECTIONS) assert.ok(c.productCount > 0, `${c.title} has products`)
 })
 
-test('the store is a published web store priced in SEK', () => {
+test('the store is a published web store priced in US dollars', () => {
   assert.equal(VITAHEAL_CHANNEL.type, 'web_store')
-  assert.equal(VITAHEAL_CHANNEL.webStore?.currency, 'SEK')
+  assert.equal(VITAHEAL_CHANNEL.webStore?.currency, 'USD')
+  assert.equal(VITAHEAL_CHANNEL.webStore?.locale, undefined, 'dollars read "$39.99", with no locale of their own')
   assert.equal(VITAHEAL_CHANNEL.webStore?.storeBuilderEnabled, true)
 })
 

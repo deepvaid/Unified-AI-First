@@ -477,8 +477,9 @@ Example: `[feat]: add MpDateRangePicker component with story`
   sales channel `vitaheal-demo` ("Vitaheal", a fictional brand that stands in for BKM so sales can show it to any
   prospect), seeded from `src/storefront/vitahealDemo.ts`. Its products, subscription plans, subscribers, campaigns, chatbot settings and chats, and its Merchandise Cloud connection and rules, are kept in this browser
   (`mp.vitaheal-demo.*` in localStorage) and put back from the store's Settings tab ("Restore original store").
-  The store carries `webStore.demo`: its checkout uses plain words where another store shows a prototype note, and amounts
-  that are charged read "585,90 kr" (the product pages and cart show whole kronor).
+  The store carries `webStore.demo`: its checkout uses plain words where another store shows a prototype note, and keeps the
+  address typed at checkout on the order. It is a Swedish brand's US store: it sells in US dollars ("$39.99"), with
+  US subscribers and a US checkout; saved data from its kronor days is not read again (its storage slots moved to v2).
 - **`docs/davinci-catalog/decisions.md`** — Da Vinci Catalog Co-Pilot in the Products module
   (PRD: Da Vinci Catalog Management): decisions, PRD → prototype map, demo guide with the
   `?catalog=` entitlement scenarios, analytics, limitations. Da Vinci drafts, Apply fills the form

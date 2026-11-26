@@ -324,7 +324,8 @@ function isConversationList(value: unknown): value is ChatbotConversation[] {
 }
 
 export const useChatbotStore = defineStore('chatbot', () => {
-  const keptChatbot = demoSlot('chatbot', 1, browserStorage(), isKeptChatbot)
+  // v2: the knowledge base speaks of US dollars and US delivery (2026-11-26).
+  const keptChatbot = demoSlot('chatbot', 2, browserStorage(), isKeptChatbot)
   const demoChatbot = (): Chatbot => ({ ...vitahealChatbot(), ...(keptChatbot.load() ?? {}) })
 
   const chatbots = ref<Chatbot[]>([
@@ -355,7 +356,8 @@ export const useChatbotStore = defineStore('chatbot', () => {
   )
 
   // Chats shoppers had with the demo chatbot on its store, newest first.
-  const keptChats = demoSlot('conversations', 1, browserStorage(), isConversationList)
+  // v2: the seeded chats are a US store's (2026-11-26).
+  const keptChats = demoSlot('conversations', 2, browserStorage(), isConversationList)
   const liveChats = ref<ChatbotConversation[]>(keptChats.load() ?? [])
   const keptLive = keepInBrowser(keptChats, () => liveChats.value, (saved) => { liveChats.value = saved ?? [] })
 

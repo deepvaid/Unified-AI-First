@@ -88,7 +88,8 @@ const isDemo = (campaign: StoreCampaign): boolean => campaign.channelId === VITA
 
 export const useStoreCampaignsStore = defineStore('storeCampaigns', () => {
   // The demo store's campaigns: saved ones if this browser has any, else the seed.
-  const kept = demoSlot('campaigns', 1, browserStorage(), isCampaignList)
+  // v2: campaign revenue in US dollars (2026-11-26).
+  const kept = demoSlot('campaigns', 2, browserStorage(), isCampaignList)
   const seededDemo = (): StoreCampaign[] => vitahealCampaigns(localDateKey(Date.now()))
 
   const campaigns = ref<StoreCampaign[]>([...(kept.load() ?? seededDemo()), ...seedCampaigns()])
