@@ -53,7 +53,7 @@ The four prompts under the message box ("Try saying") are safe to read out or cl
 - **"Advisor busy" or "Advisor offline".** The open-ended answers need the Gemini connection. Revenue,
   segments, campaigns, journeys and product descriptions work without it. Ask again in a moment.
 - **A campaign question keeps coming back.** Click **New chat**.
-- **Esc** leaves the voice workspace (in the message box it only clears the text).
+- **Esc** or the **×** leaves the voice workspace for the dashboard (in the message box Esc only clears the text).
 - **It works for you but not for someone else.** Ask them to open the link with `?debug=1` on the end and
   send a screenshot. The box at the top left names their browser, the version they loaded, whether voice is
   switched off, what became of the greeting, and whether sound and the microphone are allowed.

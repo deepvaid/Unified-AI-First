@@ -932,8 +932,9 @@ function newChat() {
   pushToast({ title: 'New chat started' })
 }
 
+/** Close (×) and Esc leave for the dashboard, the page most people came from, not the Da Vinci landing page. */
 function exitExperience() {
-  router.push({ name: 'DaVinciAI', params: { accountId: accountId.value } })
+  router.push({ name: 'Dashboard', params: { accountId: accountId.value } })
 }
 
 function onKeydown(e: KeyboardEvent) {

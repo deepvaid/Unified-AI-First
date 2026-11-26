@@ -3080,6 +3080,8 @@ into it here. Merge decisions:
   (about 9px between a loud word and a pause on a 600px ring; radius tracks loudness at r = 0.93). With
   no audio source (landing and login pages) nothing changes. While a reply is still being fetched the
   orb now waits calmly where it used to pulse as if already talking.
+- **Closing the voice page goes to the dashboard.** The × and Esc went to the Da Vinci landing page
+  (`DaVinciAI`), a second Da Vinci screen to get out of. They now go to `Dashboard`.
 - **Voice page top bar.** *Breaking:* the **Classic UI** button is removed (Esc and × still exit). The
   voice switch is an icon button (speaker / speaker crossed out) with a tooltip and `aria-pressed`,
   where it was a labelled pill whose label ("Voice on") read like something to press.
