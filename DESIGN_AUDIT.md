@@ -3069,6 +3069,17 @@ into it here. Merge decisions:
   card ("Meet Da Vinci", **Begin conversation**, **Type instead**). *The orb is the button* shows only the
   dimmed orb and "Tap the orb to talk to Da Vinci". Tab, Escape and modifier keys no longer start the
   greeting, and neither does the top bar. **Once one is chosen, delete the other two and the switch.**
+- **The orb did not move with Da Vinci's voice.** The voice composable has always handed the orb the
+  loudness of the audio being played (`OrbAudioFrame.speakEnergy`), but the shared engine
+  (`public/dv-orb/dv-orb-engine.js`) never read it: while speaking it ran one made-up pulse whatever was
+  said, and the shader keeps the ring's inner edge a fixed circle, so nothing visible changed. Measured
+  on the greeting: the ring's radius varied by 0.5px while speaking, the same as at rest. Now the
+  engine's speaking energy follows the frame (`nextSpeakEnergy`, tested in
+  `tests/davinci/orbSpeakEnergy.test.ts`) and the membrane shader scales the ring by it (7% at full
+  voice, 40% of that under reduced motion): the ring swells on each word and settles in the pauses
+  (about 9px between a loud word and a pause on a 600px ring; radius tracks loudness at r = 0.93). With
+  no audio source (landing and login pages) nothing changes. While a reply is still being fetched the
+  orb now waits calmly where it used to pulse as if already talking.
 - **Voice page top bar.** *Breaking:* the **Classic UI** button is removed (Esc and × still exit). The
   voice switch is an icon button (speaker / speaker crossed out) with a tooltip and `aria-pressed`,
   where it was a labelled pill whose label ("Voice on") read like something to press.

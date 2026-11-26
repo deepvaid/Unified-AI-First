@@ -14,7 +14,7 @@ export interface OrbAudioFrame {
   micLevel: number
   /** 16 smoothed frequency bands, each 0..1 */
   bands: ArrayLike<number>
-  /** 0..1 TTS energy envelope (drives speaking pulse) */
+  /** 0..1 loudness of the voice being played right now. While the orb is speaking, the ring swells with it. */
   speakEnergy: number
 }
 

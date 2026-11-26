@@ -65,6 +65,30 @@ function inkPalette(THREE, colors, dark) {
 }
 
 /**
+ * The ring's speaking energy for the next frame (0..1).
+ *
+ * With an audio source, it follows the voice's own loudness (`frame.speakEnergy`): the ring swells on
+ * each word and rests in the pauses. It rises faster than it falls, as a spoken syllable does. Without
+ * one (the landing and login pages, which have no voice) it keeps a steady made-up pulse.
+ *
+ * Exported for tests (tests/davinci/orbSpeakEnergy.test.ts).
+ *
+ * @param {number} current
+ * @param {boolean} speaking
+ * @param {{ speakEnergy: number } | null} frame
+ * @param {number} time seconds on the orb's own clock
+ */
+export function nextSpeakEnergy(current, speaking, frame, time) {
+  if (!speaking) return current + (0 - current) * 0.06
+  if (frame) {
+    const target = Math.max(0, Math.min(1, frame.speakEnergy))
+    return current + (target - current) * (target > current ? 0.45 : 0.16)
+  }
+  const target = 0.26 + 0.26 * Math.abs(Math.sin(time * 11.0) * Math.cos(time * 19.0))
+  return current + (target - current) * 0.18
+}
+
+/**
  * @param {HTMLCanvasElement} canvas
  * @param {DvOrbInitOptions} opts
  * @returns {OrbHandle}
@@ -305,9 +329,11 @@ export function createDvOrb(canvas, opts) {
   }
 
   // ── audio bands: live mic frame (pulled) or synthetic idle/speaking ───────
-  /** @param {number} time */
-  function updateAudioBands(time) {
-    const f = getFrame ? getFrame() : null
+  /**
+   * @param {number} time
+   * @param {import('../../src/lib/davinci-orb/types').OrbAudioFrame | null} f
+   */
+  function updateAudioBands(time, f) {
     if (f && f.micActive) {
       micLevel += (f.micLevel - micLevel) * 0.4
       for (let b = 0; b < AUDIO_BANDS; b++) {
@@ -443,15 +469,12 @@ export function createDvOrb(canvas, opts) {
     // particle to a new phase in one frame. Accumulating resumes seamlessly.
     animTime += dt
     const time = animTime
-    if (speaking) {
-      const tgt = 0.26 + 0.26 * Math.abs(Math.sin(time * 11.0) * Math.cos(time * 19.0))
-      speakEnergy += (tgt - speakEnergy) * 0.18
-    } else {
-      speakEnergy += (0 - speakEnergy) * 0.06
-    }
+    // One audio frame per step, shared by the speaking energy and the bands.
+    const audioFrame = getFrame ? getFrame() : null
+    speakEnergy = nextSpeakEnergy(speakEnergy, speaking, audioFrame, time)
     thinkEnergy += ((thinking ? 1 : 0) - thinkEnergy) * (thinking ? 0.1 : 0.08)
 
-    updateAudioBands(time)
+    updateAudioBands(time, audioFrame)
     updateMembranePhysics(time, dt)
     agit += (Math.min(1, speakEnergy + micLevel * 1.6 + thinkEnergy * 0.4) - agit) * 0.18
 
@@ -482,7 +505,8 @@ export function createDvOrb(canvas, opts) {
 
     uniforms.uTime.value = time
     uniforms.uAgit.value = agit
-    uniforms.uSpeakEnergy.value = speakEnergy
+    // The ring swells with this (see the membrane shader); under reduced motion it only stirs.
+    uniforms.uSpeakEnergy.value = reduce ? speakEnergy * 0.4 : speakEnergy
     uniforms.uMicLevel.value = micLevel
     uniforms.uPointer.value.set(pointerSmX, pointerSmY)
     uniforms.uPointerStr.value = pointerSmStr
