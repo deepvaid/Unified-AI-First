@@ -40,12 +40,12 @@ function checkOutStarterPack(subscriptions: Subscriptions, commerce: ReturnType<
   const product = commerce.products.find((p) => p.id === ELECTROLYTES)!
   const starter = product.detail!.variantsList.find((v) => v.sku === 'VTH-ELE-STA')!
   subscriptions.startFromCheckout({
-    channelId: VITAHEAL_CHANNEL_ID, methodId: 'card', amount: { currency: 'SEK' },
+    channelId: VITAHEAL_CHANNEL_ID, methodId: 'card', amount: { currency: 'USD' },
     customer: { name: 'Linnea Berg', email: 'linnea.berg@example.com' },
     order: { id: 990101, orderNumber: '#990101', date: '2026-11-25' },
     lineItems: [{
       product: product.name, productId: product.id, sku: starter.sku, variantId: starter.id, variantTitle: starter.title,
-      qty: 1, price: '1047.90', plan: linePlan(THREE_MONTH),
+      qty: 1, price: '104.97', plan: linePlan(THREE_MONTH),
     }],
   } as unknown as Parameters<Subscriptions['startFromCheckout']>[0], { methodLabel: 'Visa •••• 4242' } as Parameters<Subscriptions['startFromCheckout']>[1])
   return subscriptions.contracts[0]!.id
@@ -56,12 +56,12 @@ test('a plan change keeps the variant the shopper subscribed to, and its price',
   const subscriptions = useSubscriptionsStore()
   const id = checkOutStarterPack(subscriptions, useCommerceStore())
   const started = subscriptions.contractById(id)!
-  assert.deepEqual([started.sku, started.variantTitle, started.price], ['VTH-ELE-STA', 'Starter Pack (both flavours)', '1047.90'])
+  assert.deepEqual([started.sku, started.variantTitle, started.price], ['VTH-ELE-STA', 'Starter Pack (both flavours)', '104.97'])
 
   assert.equal(subscriptions.changePlan(id, 'plan-monthly', 'customer'), true)
   const moved = subscriptions.contractById(id)!
   assert.equal(moved.plan.id, 'plan-monthly')
-  assert.equal(moved.price, '399.20', '499 kr at 20% off, not Lemon & Ginger’s 223.20')
+  assert.equal(moved.price, '39.99', '$49.99 at 20% off, not Lemon & Ginger’s $22.39')
   assert.equal(moved.variantTitle, 'Starter Pack (both flavours)')
 })
 
@@ -73,15 +73,15 @@ test('a renewal’s order line names the variant the subscription was bought on'
   const charged = subscriptions.chargeNow(id, 'merchant')
   assert.equal(charged.ok, true, charged.ok ? '' : charged.message)
   const order = commerce.orders.find((o) => charged.ok && o.id === charged.order.id)!
-  assert.deepEqual(order.lineItems.map((l) => [l.sku, l.variantTitle, l.price]), [['VTH-ELE-STA', 'Starter Pack (both flavours)', '1047.90']])
+  assert.deepEqual(order.lineItems.map((l) => [l.sku, l.variantTitle, l.price]), [['VTH-ELE-STA', 'Starter Pack (both flavours)', '104.97']])
 })
 
 test('a seeded subscriber on the cheapest variant moves plans at the price it always had', () => {
   setActivePinia(createPinia())
   const subscriptions = useSubscriptionsStore()
-  // S-1002: Electrolytes Lemon & Ginger, monthly at 223.20.
+  // S-1002: Electrolytes Lemon & Ginger, monthly at $22.39.
   const seeded = subscriptions.contracts.find((c) => c.number === 'S-1002')!
   assert.equal(seeded.variantTitle, undefined)
   assert.equal(subscriptions.changePlan(seeded.id, 'plan-3-month', 'customer'), true)
-  assert.equal(subscriptions.contractById(seeded.id)!.price, '585.90')
+  assert.equal(subscriptions.contractById(seeded.id)!.price, '58.77')
 })

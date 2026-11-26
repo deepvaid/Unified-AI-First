@@ -26,12 +26,12 @@ const variantOf = (name: string, title: string) => productNamed(name).detail!.va
 function boughtOn(name: string, title: string, plan: SubscriptionPlan): SubscriptionContract {
   const product = productNamed(name)
   const variant = variantOf(name, title)
-  const option = purchaseOptions(parseDecimal(variant.price, 'SEK')!, [plan]).find((o) => o.id === plan.id)!
+  const option = purchaseOptions(parseDecimal(variant.price, 'USD')!, [plan]).find((o) => o.id === plan.id)!
   return contractFromLine({
     id: 'sub-9100', number: 'S-9100', channelId: VITAHEAL_CHANNEL_ID, customer: { name: 'Linnea Berg', email: 'linnea.berg@example.com' },
     productId: product.id,
     line: { product: product.name, sku: variant.sku, variantTitle: variant.title, qty: 1, price: toDecimal(option.price!), plan: linePlan(plan) },
-    currency: 'SEK', paymentMethod: 'Visa •••• 4242', methodId: 'card', order: { id: 900100, number: '#20100' }, date: TODAY,
+    currency: 'USD', paymentMethod: 'Visa •••• 4242', methodId: 'card', order: { id: 900100, number: '#20100' }, date: TODAY,
   })
 }
 
@@ -41,17 +41,17 @@ function moveTo(contract: SubscriptionContract, plan: SubscriptionPlan): Subscri
   return changePlan(contract, plan, parseDecimal(contractUnitPrice(product, contract), contract.currency)!, TODAY, 'customer')
 }
 
-test('Electrolytes Starter Pack on the 3-month supply moves to monthly at the Starter Pack’s price, 399.20', () => {
+test('Electrolytes Starter Pack on the 3-month supply moves to monthly at the Starter Pack’s price, $39.99', () => {
   const contract = boughtOn('Vitaheal Electrolytes', 'Starter Pack', THREE_MONTH)
-  assert.equal(contract.price, '1047.90')
+  assert.equal(contract.price, '104.97')
   assert.equal(contract.sku, 'VTH-ELE-STA')
   assert.equal(contract.variantTitle, 'Starter Pack (both flavours)')
-  assert.equal(contractUnitPrice(productNamed('Vitaheal Electrolytes'), contract), '499.00')
+  assert.equal(contractUnitPrice(productNamed('Vitaheal Electrolytes'), contract), '49.99')
 
   const moved = moveTo(contract, MONTHLY)
-  // 499 at 20% off, not Lemon & Ginger's 223.20.
-  assert.equal(moved.price, '399.20')
-  assert.equal(toDecimal(chargeAmount(moved)), '399.20')
+  // $49.99 at 20% off, not Lemon & Ginger's $22.39.
+  assert.equal(moved.price, '39.99')
+  assert.equal(toDecimal(chargeAmount(moved)), '39.99')
   assert.equal(moved.variantTitle, 'Starter Pack (both flavours)', 'the variant stays with the subscription')
   assert.equal(moved.sku, 'VTH-ELE-STA')
 })
@@ -59,17 +59,17 @@ test('Electrolytes Starter Pack on the 3-month supply moves to monthly at the St
 test('Unwind in a Can and in a Bag are told apart, and each keeps its own price across plans', () => {
   const can = boughtOn('Unwind', 'Can', THREE_MONTH)
   const bag = boughtOn('Unwind', 'Bag', THREE_MONTH)
-  assert.deepEqual([can.price, bag.price], ['879.90', '837.90'])
+  assert.deepEqual([can.price, bag.price], ['88.17', '83.97'])
   assert.deepEqual([can.variantTitle, bag.variantTitle], ['Can', 'Bag'])
-  assert.deepEqual([moveTo(can, MONTHLY).price, moveTo(bag, MONTHLY).price], ['335.20', '319.20'])
+  assert.deepEqual([moveTo(can, MONTHLY).price, moveTo(bag, MONTHLY).price], ['33.59', '31.99'])
   // And back again: the Can is the Can's 3-month price, not the Bag's.
-  assert.equal(moveTo(moveTo(can, MONTHLY), THREE_MONTH).price, '879.90')
+  assert.equal(moveTo(moveTo(can, MONTHLY), THREE_MONTH).price, '88.17')
 })
 
 test('without a variant of its SKU, a subscription is priced as the product’s lowest price, as before', () => {
   const electrolytes = productNamed('Vitaheal Electrolytes')
   assert.equal(contractUnitPrice(electrolytes, { sku: 'VTH-ELE-GONE' }), lowestPrice(electrolytes))
-  assert.equal(contractUnitPrice(electrolytes, { sku: 'VTH-ELE-GONE' }), '279.00')
+  assert.equal(contractUnitPrice(electrolytes, { sku: 'VTH-ELE-GONE' }), '27.99')
   // A product without variants costs its own price.
   assert.equal(contractUnitPrice({ publishStatus: 'Published', price: '150.00' }, { sku: 'ANY' }), '150.00')
   // A variant without a price is not a price.

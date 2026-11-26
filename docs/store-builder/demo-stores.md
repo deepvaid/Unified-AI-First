@@ -12,7 +12,7 @@ theme in the library, named after the store.
 
 | Store | Channel id | Store # | Theme | Sells | Currency | Script |
 |---|---|---|---|---|---|---|
-| Vitaheal (demo) | `vitaheal-demo` | 12 | Vitaheal | Supplements, on subscription plans | SEK (`sv-SE`) | [vitaheal-demo-script.md](vitaheal-demo-script.md) |
+| Vitaheal (demo) | `vitaheal-demo` | 12 | Vitaheal | Supplements, on subscription plans | USD | [vitaheal-demo-script.md](vitaheal-demo-script.md) |
 | Northfold (demo) | `northfold-demo` | 13 | Northfold | Women's and men's clothing in sizes and colors | USD | [northfold-demo-script.md](northfold-demo-script.md) |
 | Torqline Auto Parts (demo) | `torqline-demo` | 14 | Torqline | Auto parts with vehicle fitment | USD | [torqline-demo-script.md](torqline-demo-script.md) |
 | Lumos Home (demo) | `lumos-demo` | 15 | Lumos | Furniture, lighting and decor, in fabrics and finishes | USD | [lumos-demo-script.md](lumos-demo-script.md) |
@@ -60,8 +60,10 @@ and its eight subscribers are as they were, and the 3-month supply is still chos
 Vitaheal's `seedVersion` was not raised for this (raising it writes a key in every browser on
 the next start): a browser that had saved an edited Vitaheal theme kept that theme, without the
 strip and the rows, until **Restore original store**, which every script starts with. Since
-2026-11-25 the seed version is 2, so such a browser is seeded again on its next start
-([Sixteen products](#sixteen-products-rubbeccas-second-review-2026-11-25)).
+2026-11-25 the seed version is 3 (2 for the sixteen products, 3 for US dollars), so such a browser
+is seeded again on its next start
+([Sixteen products](#sixteen-products-rubbeccas-second-review-2026-11-25),
+[In US dollars](#vitaheal-in-us-dollars-akhilesh-2026-11-25)).
 
 ### Vitaheal on the Lumos look (feedback round, 2026-11-25)
 
@@ -85,7 +87,7 @@ the classic drawing.
   the sections header too, and opens in place in its phone drawer.
 - **Home:** a hero with a **Made in Sweden** badge, a second button (**Subscribe and save**) and
   three figures that are the store's own facts (what a plan saves, free shipping over
-  549 kr, 30 days to try Unwind); the goals as a carousel on the tint; the range as a carousel; the
+  $50, 30 days to try Unwind); the goals as a carousel on the tint; the range as a carousel; the
   two stories; the promises as centred cards. The home page's rich text and newsletter sections
   were dropped: the footer column carries the sign-up on every page. The hero has Lumos's words on
   the left: navy on a white wash, with **one job well** in the brand colour. White words over the
@@ -101,16 +103,17 @@ the classic drawing.
   a format or flavour.
 
 **What stays:** the navy, the badge colours (violet sale, lime **Subscribe available**, black sold
-out) and the wordmark; the products, plans, prices (whole kronor on the pages, "585,90 kr" where an
-amount is charged), campaigns (the WINTER15 bar), search rules, chatbot, pages, subscribers and
-every section and block id; checkout's consent and terms, the account with subscriptions and
-orders, and chat.
+out) and the wordmark; the products, plans, prices (in US dollars since later the same day: see
+[In US dollars](#vitaheal-in-us-dollars-akhilesh-2026-11-25)), campaigns (the WINTER15 bar),
+search rules, chatbot, pages, subscribers and every section and block id; checkout's consent and
+terms, the account with subscriptions and orders, and chat.
 
 **Seed version.** It stayed 1 for the move, so a browser that saved an edited Vitaheal theme
 before it kept the classic look until **Restore original store**. The Themes page and Settings ›
 Store data say so when a demo store runs an older edited copy of its own theme. Later the same day
-the seed version went to 2 for the sixteen products (below): such a browser is seeded again on its
-next start, so it gets the new look too, and that note has nothing left to show for Vitaheal.
+the seed version went to 2 for the sixteen products, then to 3 for US dollars (below): such a
+browser is seeded again on its next start, so it gets the new look too, and that note has nothing
+left to show for Vitaheal.
 
 **Added with it, for any store:** a theme row can be shown only on products sold on a plan
 (`plansOnly` on a collapsible row); a subscription keeps the price of the format it was bought
@@ -127,16 +130,19 @@ the bottom of its page.
 **The products** (in [vitahealDemo.ts](../../src/storefront/vitahealDemo.ts)). Eight more, after
 Balance. Their variants number from the product, as the first eight's do (`productId * 10 + n`).
 
-| Id | Product | Choice (Format) | Price (kr) | Goals |
+| Id | Product | Choice (Format) | Price (US dollars) | Goals |
 |---|---|---|---|---|
-| 2009 | Plant Protein | Can / Refill bag | 399 / 369 | Sport, Subscription |
-| 2010 | Daily Greens | Can / Refill bag | 449 / 429 | Longevity, Subscription |
-| 2011 | Vitamin D3 + K2 | none | 199 | Immunity |
-| 2012 | Omega-3 | none | 329 | Longevity |
-| 2013 | Magnesium | none | 229 | Sleep, Sport |
-| 2014 | Creatine | Can / Refill bag | 299 / 279 | Sport, Subscription |
-| 2015 | Vitamin C + Zinc | none | 179 | Immunity |
-| 2016 | Daily Multi | none | 249 | Immunity |
+| 2009 | Plant Protein | Can / Refill bag | 39.99 / 36.99 | Sport, Subscription |
+| 2010 | Daily Greens | Can / Refill bag | 44.99 / 42.99 | Longevity, Subscription |
+| 2011 | Vitamin D3 + K2 | none | 19.99 | Immunity |
+| 2012 | Omega-3 | none | 32.99 | Longevity |
+| 2013 | Magnesium | none | 22.99 | Sleep, Sport |
+| 2014 | Creatine | Can / Refill bag | 29.99 / 27.99 | Sport, Subscription |
+| 2015 | Vitamin C + Zinc | none | 17.99 | Immunity |
+| 2016 | Daily Multi | none | 24.99 | Immunity |
+
+They were added in kronor (399 / 369 kr for Plant Protein, and so on); the prices are in US dollars
+since [later the same day](#vitaheal-in-us-dollars-akhilesh-2026-11-25).
 
 - **Plans.** The plans read the Subscription collection, so both now take eight products
   (2001, 2002, 2003, 2005, 2006 and the three powders, 2009, 2010, 2014). Their cards say
@@ -199,12 +205,14 @@ needs:
 - Daybloom's profile turns `refills` and `requestWordsIgnored` off. Apart from the wider medical
   caution, its answers and the other stores' are unchanged.
 
-**Seed 2.** Vitaheal's `seedVersion` is 2
+**Seed 2.** Vitaheal's `seedVersion` went to 2
 ([demoStores/vitaheal.ts](../../src/storefront/demoStores/vitaheal.ts)), the first blueprint to
-raise it. The others stay at 1. On the next start, every store that runs the Vitaheal theme and
-recorded seed 1, or no seed, is seeded again and records seed 2 (`reseedStale`). That is the home
-store in a browser that used it before, a store that had Vitaheal applied, and a store made from
-it. So a reviewer who opened the store before gets the sixteen products on their next visit.
+raise it; it is 3 since the store moved to US dollars
+([below](#vitaheal-in-us-dollars-akhilesh-2026-11-25)). The others stay at 1. On the next start,
+every store that runs the Vitaheal theme and recorded seed 1, or no seed, is seeded again and
+records the seed it now holds (`reseedStale`). That is the home store in a browser that used it
+before, a store that had Vitaheal applied, and a store made from it. So a reviewer who opened the
+store before gets the sixteen products on their next visit.
 
 | Dropped | Kept |
 |---|---|
@@ -230,9 +238,9 @@ Worth knowing:
   store** does. So close every tab of the old build before restoring.
 
 So the first start in any browser, an empty one too, now writes one key:
-`mp.vitaheal-demo.installed.v1`, `{ "blueprintId": "vitaheal", "seedVersion": 2, "appliedAt": … }`.
+`mp.vitaheal-demo.installed.v1`, `{ "blueprintId": "vitaheal", "seedVersion": 3, "appliedAt": … }`.
 It names the store's own theme, so no theme counts as applied (the Themes page shows no "Copied
-from"). A restore clears it and writes it again at once. A browser at seed 2 is not seeded again:
+from"). A restore clears it and writes it again at once. A browser at seed 3 is not seeded again:
 what it saved is read back.
 
 **Fixed with it, for every store: a page opens at its top**
@@ -245,6 +253,45 @@ no scroll rule, so a page opened where the last one was scrolled to. Now:
 - A filter, a sort or a product's choice changes only the address's query, so the page keeps its
   place.
 - Admin pages are unchanged: a link in the admin leaves the window where it is.
+
+### Vitaheal in US dollars (Akhilesh, 2026-11-25)
+
+**Why.** Akhilesh, from sales, asked for the Vitaheal demo in US dollars. Vitaheal is now a
+Swedish brand's US store.
+
+**What changed** (in [vitahealDemo.ts](../../src/storefront/vitahealDemo.ts) and
+[demoStores/vitaheal.ts](../../src/storefront/demoStores/vitaheal.ts)):
+
+- **Money.** `webStore.currency` is `USD` with no locale, so prices read "$39.99" everywhere and
+  are no longer rounded to whole units; a charged amount reads "$58.77". Each kronor price kept
+  its digits as a US price point (399 kr is $39.99, 279 kr is $27.99; the Electrolytes Starter
+  Pack is $49.99, struck from $55.98). The plans are unchanged. Free shipping is over $50 in the
+  announcement bar, the hero figure, the promise card and the policies. The admin's revenue reads
+  $184.5K, and the store's time zone is `America/New_York`.
+- **Checkout and delivery.** USD has no checkout profile of its own, so the store gets the US one
+  ([checkoutProfile.ts](../../src/storefront/checkoutProfile.ts)): Ava Brown, 200 Market Street,
+  San Francisco, CA 94105, a State field, and the United States, Canada, Australia, New Zealand and
+  the United Kingdom. The store sets `keepsAddress`, so the order keeps the typed address. Orders
+  ship from where the products are stocked (no longer the Stockholm warehouse), and **Pick
+  carrier** offers UPS first.
+- **History and copy.** The eight seeded subscribers are Americans with US addresses (Emma Collins
+  in Minneapolis…). Policies, the contact page and the chatbot's knowledge say business days, a
+  2 pm ET cut-off, 9 am to 5 pm ET, delivery to the US, Canada, the UK, Australia and New Zealand,
+  and "Prices are in US dollars". The theme card reads "A supplements store on subscription, in US
+  dollars: …".
+- **What stays.** "Made in Sweden", its badge, and the company Vitaheal AB in Stockholm. The
+  Immunity line reads "Vitamins C and D and zinc, for the dark winter months."
+- **Kronor stay in the code.** The SEK rules and their tests are unchanged: a store set to SEK
+  still shows "399 kr" on its pages and "585,90 kr" when charged, with the Swedish checkout. No
+  demo store uses them now.
+- **Seed 3.** A browser that saved Vitaheal at seed 1 or 2 (in kronor) is seeded again on its next
+  start, in dollars, as at seed 2 (the table above). Because the store's currency changed, more
+  goes back. The blueprint says from which seed it sells in its present currency (`marketChangedAt`,
+  3 for Vitaheal); for a browser recorded below it, `reseedStale` also runs `restoreHistory`, as a restore does (see
+  [Restore](#restore)): the subscribers come back as seeded, chats and announcement emails are
+  removed, and the Merchandise Cloud connection, the chatbot and the theme (its copies removed) are
+  as seeded. It also empties the cart, so nothing is left in kronor. Orders stay as they were
+  placed. **Restore original store** works as before.
 
 ## What a theme is
 
@@ -375,7 +422,7 @@ writes nothing and keeps following its seed.
 
 | Key name | Kept by | What it holds | Apply | Restore |
 |---|---|---|---|---|
-| `installed.v1` | [install.ts](../../src/storefront/demoStores/install.ts) | The theme applied: `{ blueprintId, seedVersion, appliedAt }`. Absent: the store runs what it started with. On Vitaheal it is there from the first start and names Vitaheal itself: it records the seed the store holds (2). | Written first | Cleared first (on Vitaheal, written again at once) |
+| `installed.v1` | [install.ts](../../src/storefront/demoStores/install.ts) | The theme applied: `{ blueprintId, seedVersion, appliedAt }`. Absent: the store runs what it started with. On Vitaheal it is there from the first start and names Vitaheal itself: it records the seed the store holds (3). | Written first | Cleared first (on Vitaheal, written again at once) |
 | `products.v1` | [useCommerce.ts](../../src/stores/useCommerce.ts) | The store's products. | Replaced | Replaced |
 | `size-charts.v1` | [useSizeCharts.ts](../../src/stores/useSizeCharts.ts) | Size charts. | Replaced | Replaced |
 | `themes.v1` | [useStoreThemes.ts](../../src/stores/useStoreThemes.ts) | The store's themes: edits, copies and drafts. | Theme replaced, drafts kept | Drafts and copies removed |
@@ -423,9 +470,10 @@ store.
   `mp.store-builder.created-stores.v1`, so a store made or deleted in another tab comes in or leaves.
 - **A seed fix reaches every browser.** When a blueprint's `seedVersion` passes the one a store was
   seeded at (a store without an `installed` record counts as version 1), the store is reseeded on
-  the next start and the new version is recorded. Vitaheal is at 2 since 2026-11-25 (see
-  [Sixteen products](#sixteen-products-rubbeccas-second-review-2026-11-25) for what that keeps and
-  drops); the other blueprints are at 1.
+  the next start and the new version is recorded. Vitaheal is at 3 since 2026-11-25 (see
+  [Sixteen products](#sixteen-products-rubbeccas-second-review-2026-11-25) for what a reseed keeps
+  and drops, and [In US dollars](#vitaheal-in-us-dollars-akhilesh-2026-11-25) for what seed 3 adds
+  when the currency changes); the other blueprints are at 1.
 - **Storage full.** When the browser refuses a save, one warning toast says changes will be gone
   after a reload. Apply returns false if it cannot write the `installed` record.
 
@@ -453,7 +501,6 @@ store.
 - Northfold’s look, 6 collections, 8 pages and menus replace this store’s.
 - 3 campaigns, 9 search rules and 5 size charts replace this store’s.
 - The chatbot answers as a clothing store.
-- Prices change to US dollars.
 - Search works once this store connects to Merchandise Cloud.
 - This store’s two subscription plans are paused, so no one new can subscribe; its eight subscribers keep their subscriptions.
 - Changes you made to this store’s products and campaigns are not kept: a restore brings back the original store, not your changes.
@@ -480,7 +527,7 @@ record, reseeds every part, then puts back what only a restore touches (`restore
 
 The cart is emptied and the vehicle forgotten. Orders stay. Every key the store kept is gone
 afterwards, apart from the shared emails key, which keeps the other stores' emails. On Vitaheal
-the `installed` record is written again at once, to record seed 2.
+the `installed` record is written again at once, to record seed 3.
 
 A store that started blank goes back to blank: no theme, products, pages, plans or rules, and its
 chatbot's settings back to none.
@@ -607,7 +654,7 @@ thumbnail and that the file exists.
 |---|---|
 | [demoStores.test.ts](../../tests/storefront/demoStores.test.ts) | Every blueprint: ids, SKUs, options and swatches, links on every install, photos and credits, the thumbnail, fonts, no real brand names, no subscription data on a store without subscriptions. |
 | [demoStoresInstall.test.ts](../../tests/storefront/demoStoresInstall.test.ts) | The registry, slots, `canApplyTheme`, the id blocks and the `installed` record. |
-| [demoStoresVitaheal.test.ts](../../tests/storefront/demoStoresVitaheal.test.ts) | Vitaheal's home build deep-equals its seed from before the registry (recaptured on 2026-11-24, then twice on 2026-11-25: the look, then the sixteen products). |
+| [demoStoresVitaheal.test.ts](../../tests/storefront/demoStoresVitaheal.test.ts) | Vitaheal's home build deep-equals its seed from before the registry (recaptured on 2026-11-24, then three times on 2026-11-25: the look, the sixteen products, then US dollars). |
 | [vitahealDemo.test.ts](../../tests/storefront/vitahealDemo.test.ts), [vitahealRange.test.ts](../../tests/storefront/vitahealRange.test.ts), [vitahealReseed.test.ts](../../tests/storefront/vitahealReseed.test.ts) | Vitaheal's reference tables and look; the eight products added on 2026-11-25, the Immunity goal and Our range; seed 2: who is seeded again, and what that keeps and drops. |
 | [scroll.test.ts](../../tests/storefront/scroll.test.ts) | Where a page scrolls after a navigation: storefront pages at their top, Back to the saved place, admin pages as before. |
 | [demoStoresApp.test.ts](../../tests/storefront/demoStoresApp.test.ts) | The Pinia stores together: seeding, browser keys, Restore, the stores that must not change. |

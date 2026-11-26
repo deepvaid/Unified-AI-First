@@ -18,11 +18,11 @@ const entries = VITAHEAL_CHATBOT.knowledgeSources!.flatMap((s) => (s.entries ?? 
 const LINNEA = 'linnea.berg@example.com'
 const order = (over: Partial<AssistantOrder> = {}): AssistantOrder => ({
   id: 900007, number: '#20007', email: LINNEA, date: '2026-11-18', status: 'Processing', fulfillment: 'Not Ready',
-  tracking: null, items: [{ name: 'Vitaheal Electrolytes', qty: 1 }], total: '585,90 kr', ...over,
+  tracking: null, items: [{ name: 'Vitaheal Electrolytes', qty: 1 }], total: '$58.77', ...over,
 })
 const subscription = (over: Partial<AssistantSubscription> = {}): AssistantSubscription => ({
   id: 'sub-1009', number: 'S-1009', email: LINNEA, product: 'Vitaheal Electrolytes', plan: '3-month supply',
-  status: 'Active', nextChargeOn: '2027-02-18', price: '585,90 kr', canSkip: true, ...over,
+  status: 'Active', nextChargeOn: '2027-02-18', price: '$58.77', canSkip: true, ...over,
 })
 
 const ctx = (over: Partial<AssistantContext> = {}): AssistantContext => ({
@@ -244,7 +244,7 @@ test('a signed-in shopper asking about their order gets their latest order', () 
   const older = order({ id: 900001, number: '#20001', date: '2026-11-17' })
   const reply = chat(['Where is my order?'], ctx({ email: LINNEA, orders: [older, order()] })).replies[0]!
   assert.ok(reply.kind === 'order' && reply.order.number === '#20007')
-  assert.match(reply.text, /^Order #20007, placed 18 Nov 2026: Vitaheal Electrolytes, 585,90 kr\. We are packing it/)
+  assert.match(reply.text, /^Order #20007, placed 18 Nov 2026: Vitaheal Electrolytes, \$58\.77\. We are packing it/)
   assert.match(reply.text, /You have 2 orders with us; this is the latest\.$/)
 })
 
@@ -320,7 +320,7 @@ test('another question while an email is awaited drops the wait and is answered'
 test('the next delivery is the subscription’s real date, with its price and plan', () => {
   const reply = chat(['When is my next delivery?'], ctx({ email: LINNEA })).replies[0]!
   assert.ok(reply.kind === 'subscriptions' && reply.subscriptions.length === 1)
-  assert.equal(reply.text, 'Your next Vitaheal Electrolytes delivery is on 18 Feb 2027, 585,90 kr with your 3-month supply.')
+  assert.equal(reply.text, 'Your next Vitaheal Electrolytes delivery is on 18 Feb 2027, $58.77 with your 3-month supply.')
 })
 
 test('asking to skip, pause or cancel says where that happens', () => {
@@ -365,9 +365,9 @@ test('store questions are answered from the knowledge base, with the page they c
   assert.ok(returns.kind === 'answer' && returns.link?.href === '/policies/refund-policy')
 
   const text = (message: string) => chat([message]).replies[0]!.text
-  assert.match(text('Do you ship to Norway?'), /Norway, Denmark/)
-  assert.match(text('Is shipping free?'), /shipping is free on orders over 549 kr/)
-  assert.match(text('How long does delivery take?'), /3 to 7 working days/)
+  assert.match(text('Do you ship to Canada?'), /Canada, the United Kingdom/)
+  assert.match(text('Is shipping free?'), /shipping is free on orders over \$50/)
+  assert.match(text('How long does delivery take?'), /3 to 7 business days/)
   assert.match(text('Is Unwind covered by a guarantee?'), /30 days/)
 })
 

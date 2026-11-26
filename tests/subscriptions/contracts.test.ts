@@ -152,7 +152,7 @@ test('the demo store has eight subscribers, with every status to show', () => {
   for (const c of seeded) {
     assert.equal(c.channelId, VITAHEAL_CHANNEL_ID)
     assert.match(c.customer.email, /@example\.com$/)
-    assert.equal(c.customer.address?.country, 'Sweden')
+    assert.equal(c.customer.address?.country, 'United States')
     assert.ok(c.history.length >= 1 && c.history.at(-1)!.text === 'Subscription started', `${c.number} starts its history`)
     assert.ok(c.history.every((e, i, all) => i === 0 || e.date <= all[i - 1]!.date), `${c.number} history is newest first`)
   }
@@ -169,11 +169,12 @@ test('their dates follow the day the store is opened', () => {
   }
 })
 
-test('a seeded price is the plan’s price for the product: Electrolytes monthly is 223,20', () => {
-  const erik = vitahealSubscriptions(TODAY).find((c) => c.customer.name === 'Erik Johansson')!
-  assert.equal(erik.product, 'Vitaheal Electrolytes')
-  assert.equal(erik.price, '223.20')
-  assert.equal(erik.plan.name, 'Monthly subscription')
+test('a seeded price is the plan’s price for the product: Electrolytes monthly is $22.39', () => {
+  const jacob = vitahealSubscriptions(TODAY).find((c) => c.customer.name === 'Jacob Turner')!
+  assert.equal(jacob.product, 'Vitaheal Electrolytes')
+  assert.equal(jacob.price, '22.39')
+  assert.equal(jacob.currency, 'USD')
+  assert.equal(jacob.plan.name, 'Monthly subscription')
 })
 
 test('a shopper sees their own subscriptions in a store, whatever the case of the email', () => {

@@ -40,6 +40,18 @@ import type { StoreSnapshot } from '../../src/storefront/demoStores/types.ts'
 // protein label) and Creatine's pack (30 servings, as the other powders on the plans); in
 // `theme`, Immunity moved third in "Shop by goal" (in view on a desktop) and the product page's
 // subscription row reads "This product can be bought on a subscription". Nothing else moved.
+//
+// Recaptured a fifth time, on 2026-11-25 (seed version 3: a Swedish brand's US store), by a
+// one-off script that checked every changed leaf path against a list of the paths the move to
+// US dollars may change and patched only those. `channel` sells in USD with no locale and says
+// so in its description; `admin` reads '$184.5K'; in `products`, every price, cost and
+// compare-at price is in dollars (419 kr is $41.99) and Vitamin D3 + K2 no longer names the
+// Swedish sun, nor does Immunity's description in `collectionRecords`; in `theme`, free shipping
+// starts at $50 and delivery is in business days, ET; `content`'s policies, the `chatbot`'s
+// knowledge and the seeded `conversations` are American; the `campaigns`' revenue was divided
+// by ten; the eight `subscriptions` are US people at US addresses, priced in USD. `today`,
+// `photoDir`, `collections`, `themeStyles`, `chrome`, `menus`, `blogSeo`, `plans` and
+// `merchandising` were byte-identical.
 
 const fixture = JSON.parse(readFileSync(new URL('./fixtures/vitaheal-seed.json', import.meta.url), 'utf8'))
 /** As stored: JSON drops undefined fields, as the fixture did. */
@@ -85,8 +97,12 @@ test('the home channel is the seeded one plus where it came from, and its market
   const { blueprint: ref, ...webStore } = blueprint.homeChannel.webStore!
   assert.deepEqual(ref, { original: 'vitaheal', slot: 2 })
   assert.deepEqual(json({ ...blueprint.homeChannel, webStore }), fixture.channel)
-  assert.deepEqual(home.market, { currency: fixture.channel.webStore.currency, locale: fixture.channel.webStore.locale })
-  assert.equal(home.checkout.shopper.country, 'Sweden')
+  // Since seed 3, US dollars with no locale: prices read "$39.99".
+  assert.deepEqual(home.market, { currency: 'USD' })
+  assert.deepEqual(json({ currency: fixture.channel.webStore.currency, locale: fixture.channel.webStore.locale }), home.market)
+  // The US checkout, and the order keeps the address typed there.
+  assert.equal(home.checkout.shopper.country, 'United States')
+  assert.equal(home.checkout.keepsAddress, true)
   assert.equal(blueprint.photoDir, fixture.photoDir)
   const { revenue, themeName, business } = blueprint.admin
   assert.deepEqual(json({ revenue, themeName, business }), fixture.admin)

@@ -6,25 +6,30 @@ do the same steps live. About 10 minutes live, less as a film. The film shows ev
 step 14 (the theme library, with Aurora) included. Since 25 November the plan with delivery
 options is step 8, so the steps after it moved down by one.
 
-Vitaheal is a made-up Swedish supplements brand. Nothing is charged and nothing leaves your
-browser.
+Vitaheal is a made-up Swedish supplements brand that sells in the US, in US dollars. Nothing is
+charged and nothing leaves your browser.
 
 ## New since 25 November
 
-Rubbecca asked for more products, and for pages that open at their top. Both are in.
+Rubbecca asked for more products, and for pages that open at their top. Akhilesh asked for the
+demo in US dollars. All are in.
 
+- **US dollars.** Vitaheal is now a Swedish brand's US store. Prices read "$39.99", and a plan's
+  price is exact: Electrolytes is $58.77 per 3-month delivery, $22.39 monthly. Free shipping is
+  over $50. The checkout is filled in with an American shopper, Ava Brown in San Francisco, and
+  orders go by UPS. The eight seeded subscribers live in the US. **Made in Sweden** stays.
 - **Sixteen products, not eight.** The eight new ones come after Balance:
 
   | Product | Formats | Price | Goals | On the plans |
   |---|---|---|---|---|
-  | Plant Protein | Can or Refill bag | 399 kr / 369 kr | Sport | Yes |
-  | Daily Greens | Can or Refill bag | 449 kr / 429 kr | Longevity | Yes |
-  | Vitamin D3 + K2 | one | 199 kr | Immunity | No |
-  | Omega-3 | one | 329 kr | Longevity | No |
-  | Magnesium | one | 229 kr | Sleep, Sport | No |
-  | Creatine | Can or Refill bag | 299 kr / 279 kr | Sport | Yes |
-  | Vitamin C + Zinc | one | 179 kr | Immunity | No |
-  | Daily Multi | one | 249 kr | Immunity | No |
+  | Plant Protein | Can or Refill bag | $39.99 / $36.99 | Sport | Yes |
+  | Daily Greens | Can or Refill bag | $44.99 / $42.99 | Longevity | Yes |
+  | Vitamin D3 + K2 | one | $19.99 | Immunity | No |
+  | Omega-3 | one | $32.99 | Longevity | No |
+  | Magnesium | one | $22.99 | Sleep, Sport | No |
+  | Creatine | Can or Refill bag | $29.99 / $27.99 | Sport | Yes |
+  | Vitamin C + Zinc | one | $17.99 | Immunity | No |
+  | Daily Multi | one | $24.99 | Immunity | No |
 
 - **A sixth goal, Immunity**, in the **Shop** menu, the footer and the home page's **Shop by goal**.
 - **Our range** on the home page shows twelve products.
@@ -32,10 +37,11 @@ Rubbecca asked for more products, and for pages that open at their top. Both are
   pages open on the cheaper **Refill bag**.
 - **A page opens at its top.** A product or collection opened from the home page used to open
   scrolled to the bottom. **Back** still returns to where you were.
-- **A browser that opened the demo before** gets the sixteen products on its next visit: the store
-  is set up again. Changes made to its products, plans, campaigns, search rules, chatbot settings
-  and theme are gone. Orders, subscribers and chats stay. **Restore original store** (below) brings
-  the sixteen products too.
+- **A browser that opened the demo before** gets the sixteen products, in dollars, on its next
+  visit: the store is set up again. Changes made to its products, plans, campaigns, search rules,
+  chatbot settings and theme are gone. So that nothing is left in kronor, the subscribers are the
+  eight seeded ones again, chats and campaign emails are removed, and the cart is emptied. Orders
+  stay as they were placed. **Restore original store** (below) brings the sixteen products too.
 
 ## Before you start
 
@@ -59,15 +65,15 @@ recommendations.
 
 | # | Where | Do | Say |
 |---|---|---|---|
-| 1 | Store, home | Scroll the home page: the hero with its **Made in Sweden** badge and three figures, the **Shop by goal** carousel (five goals), the range (twelve products), and the promise cards. Press **Shop** in the menu, then **Sleep**, then **Unwind**. | "This is the brand's own store: its colours, its photos, prices in kronor. The hero gives three facts a shopper cares about: what a plan saves, free shipping over 549 kr, and 30 days to try Unwind. Sixteen products, and the menu opens by goal." |
+| 1 | Store, home | Scroll the home page: the hero with its **Made in Sweden** badge and three figures, the **Shop by goal** carousel (five goals), the range (twelve products), and the promise cards. Press **Shop** in the menu, then **Sleep**, then **Unwind**. | "This is the brand's own store: its colours, its photos, prices in US dollars. A Swedish brand selling in the US, so the badge says Made in Sweden. The hero gives three facts a shopper cares about: what a plan saves, free shipping over $50, and 30 days to try Unwind. Sixteen products, and the menu opens by goal." |
 | 2 | Store, product | Point at the three purchase options and the line under them (**Subscription terms**, **My subscriptions**). Scroll down and open **Product facts**. Scroll back up, keep **3-month supply**, press **Add subscription to cart**, then **View cart**. | "Most of their orders are subscriptions, so the plan is the first choice, with what the shopper saves and the terms one press away. Product facts is the product's own table: serving size, each ingredient with its amount, how to take it." |
 | 3 | Store, cart | Type `WINTER15` in **Discount code**, press **Apply**. | "The code is from the campaign in the bar at the top. It lowers the first order; later deliveries stay at the plan's price, and the cart says so." |
-| 4 | Store, checkout | Press **Checkout**. Tick the agreement, which has the **Subscription terms** under it. Press **Pay**. | "Checkout is in kronor, with card, Apple Pay and Google Pay. The details are filled in for the demo." |
+| 4 | Store, checkout | Press **Checkout**. Tick the agreement, which has the **Subscription terms** under it. Press **Pay**. | "Checkout is in US dollars, with card, Apple Pay and Google Pay. The details are filled in for the demo: Ava Brown in San Francisco." |
 | 5 | Store, account | On the confirmation press **Manage your subscription**. Press **Skip next delivery**, then **Skip this delivery**. | "Shoppers skip, pause, change plan or cancel on their own. No support ticket." |
 | 6 | Store, chat | Open **Need help?**. Press **Where is my order?**. Then type "I am always tired in the afternoon". | "The assistant knows this shopper's order, and suggests products for a need. It does not give medical advice." |
-| 7 | Admin, Commerce | **Orders**: open the newest order. Then **Subscriptions › Subscribers**: open Linnea Berg. | "The order has the code and the discount on its line. The subscriber page has the same actions the shopper has, plus charge now." |
+| 7 | Admin, Commerce | **Orders**: open the newest order. Then **Subscriptions › Subscribers**: open Ava Brown. | "The order has the code and the discount on its line. The subscriber page has the same actions the shopper has, plus charge now." |
 | 8 | Admin, then store | **Commerce › Subscriptions › Plans**: press **New plan**, then **Plan with delivery options**. Plan name `Balance subscribe and save`, shopper label `Subscribe and save`. Type `20` in the first row's **Discount**, press **Add plan option** twice and type `15` and `10`: every 1, 2 and 3 months. Tick **Sell Balance on this plan**, point at the **Shopper preview**, press **Create plan**. On the store open **Balance** and pick **Deliver every 2 months**. | "This is an early version of where subscriptions are heading: one plan, and the shopper chooses how often, each with its own discount. The product page offers the three at once, and the button reads Add subscription to cart." |
-| 9 | Admin, then store | **Commerce › Fulfillment**: open the newest one. Press **Pack**, then **Pick carrier** and **Create label**, then **Mark shipped**. On the store, open **Account**, then the order. | "The order is packed, labelled and handed to PostNord in a few clicks. The shopper sees it is on its way, with the tracking number, without asking." |
+| 9 | Admin, then store | **Commerce › Fulfillment**: open the newest one. Press **Pack**, then **Pick carrier** (UPS is offered first) and **Create label**, then **Mark shipped**. On the store, open **Account**, then the order. | "The order is packed, labelled and handed to UPS in a few clicks. The shopper sees it is on its way, with the tracking number, without asking." |
 | 10 | Admin, store › Campaigns | Show **Winter wellness week**: its code, orders and revenue. Open its menu, **Announce by email**. | "A campaign is a message on the store, a code, and its results. One click writes the email to this store's customers." |
 | 11 | Admin, Merchandising | Open **Merchandising** for the store. The card says connecting syncs the store's 16 published products. Press **Connect Merchandising**. | "Sixteen products sync, and search and recommendations are on." |
 | 12 | Store | Type **sleep** in the search field in the header, then **tired** on the results page. Open Unwind and scroll to **Goes well with Unwind**. | "Unwind is pinned first for sleep. 'Tired' finds Magnesium, whose page talks about tiredness, and a synonym adds energy and focus. The row is chosen by the store's recommendation engine." |
@@ -80,8 +86,9 @@ recommendations.
   steps, then a **Launch your store** checklist. The click-by-click is in
   [daybloom-demo-script.md](daybloom-demo-script.md), "To start from the very beginning".
 - **Refills and general supplements:** open **Shop** › **Immunity**: Vitamin D3 + K2, Vitamin C +
-  Zinc and Daily Multi. Open **Plant Protein**: it opens on **Refill bag** (369 kr), the cheaper
-  format; **Can** is 399 kr. Both are on the plans. Daily Greens and Creatine work the same way.
+  Zinc and Daily Multi. Open **Plant Protein**: it opens on **Refill bag** ($36.99), the cheaper
+  format; **Can** is $39.99. Both are on the plans: the bag is $77.67 per 3-month delivery and
+  $29.59 monthly. Daily Greens and Creatine work the same way.
 - **The assistant on the new range:** in **Need help?** type "Do you sell refills?" (it names
   the eight, with the three new powders as cards), "Is there a refill bag for the protein?"
   (Plant Protein), "Do you have anything for a cold?" (the three Immunity products), "protein
@@ -141,8 +148,15 @@ this demo.
   the page was open while the new version went out. Close every other tab of the demo, then
   reload. If it still has eight products, press **Restore original store** in the store's Settings
   tab: the store is set up again with the sixteen products and the new look.
-- **Changes made before 25 November are gone:** the store was set up again for the sixteen
-  products. Orders, subscribers and chats are still there.
+- **Changes made before the store moved to US dollars are gone:** the store was set up again for
+  the sixteen products and US dollars. Orders are still there; the subscribers are the eight
+  seeded ones.
+- **Prices in kronor on the store:** the page was open while the new version went out. Close every
+  other tab of the demo, then reload.
+- **An order in kronor in Commerce:** it was placed before the store moved to US dollars. Orders
+  stay as they were placed.
+- **Kronor, Linnea Berg or PostNord in the film:** a film recorded before the store moved to US
+  dollars shows them. The store's dollars, Ava Brown and UPS are right.
 - **A product or collection opens scrolled down the page:** the page was open while the new
   version went out. Reload it once.
 - **Create plan says the name is taken, or Balance cannot take another plan:** the plan from step 8

@@ -224,10 +224,10 @@ function sectionsWithPhotos(): ThemeSection[] {
 }
 
 const storeProducts = [
-  { name: 'Unwind', price: 'From 399 kr', image: `${PHOTOS}/unwind-1.jpg` },
-  { name: 'Clear Focus', price: 'From 389 kr', image: `${PHOTOS}/clear-focus-1.jpg` },
-  { name: 'Daily NAD+', price: 'From 649 kr', image: `${PHOTOS}/daily-nad-1.jpg` },
-  { name: 'New product', price: '199 kr' },
+  { name: 'Unwind', price: 'From $39.99', image: `${PHOTOS}/unwind-1.jpg` },
+  { name: 'Clear Focus', price: 'From $38.99', image: `${PHOTOS}/clear-focus-1.jpg` },
+  { name: 'Daily NAD+', price: 'From $64.99', image: `${PHOTOS}/daily-nad-1.jpg` },
+  { name: 'New product', price: '$19.99' },
 ]
 
 /** With `products` and `image` settings the preview shows the store itself: its photographs, and each product's photo, name and price. A product without a photo keeps the grey stand-in. Without them (every other story) the sections are drawn. */
@@ -308,19 +308,19 @@ export const SectionsDrawingLumosCollection: Story = {
   args: { ...lumosArgs, sections: lumos.theme.templates.collection, template: 'collection' },
 }
 
-// Vitaheal (the feedback round), as its home channel is seeded: a supplements store in kronor on the sections
+// Vitaheal (the feedback round), as its home channel is seeded: a supplements store in US dollars on the sections
 // drawing that sells on plans. The builder passes the purchase options of its first product on a plan, and each
 // product the format its page opens on (the lowest-priced) and its card's badge, "Subscribe available" on a plan.
 const vitahealChannel = demoStoreFor('vitaheal').homeChannel
 const vitaheal = snapshotFor(vitahealChannel, 'vitaheal', '2026-11-20')
 const vitahealStore = { currency: vitahealChannel.webStore!.currency!, locale: vitahealChannel.webStore!.locale }
-const kronor = (amount: string) => formatStorePrice(roundForDisplay(parseDecimal(amount, vitahealStore.currency)!), vitahealStore.locale)
+const storePrice = (amount: string) => formatStorePrice(roundForDisplay(parseDecimal(amount, vitahealStore.currency)!), vitahealStore.locale)
 const vitahealPlansFor = (product: { id: number }) => plansForProduct(vitaheal.plans, vitahealChannel.id, product.id)
 const vitahealProducts = vitaheal.products.map((p) => {
   const card = cardPrice(p)
   return {
     name: p.name,
-    price: `${card.from ? 'From ' : ''}${kronor(card.price)}`,
+    price: `${card.from ? 'From ' : ''}${storePrice(card.price)}`,
     image: p.imageUrls?.[0],
     images: p.imageUrls?.slice(0, 2),
     collections: p.collections,

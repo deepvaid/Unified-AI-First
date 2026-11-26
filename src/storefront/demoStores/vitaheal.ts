@@ -27,15 +27,22 @@ const VERSION = '2.0'
  * settings and the theme the store started with (a copy of it stays, as a draft); orders,
  * subscribers, chats, announcement emails, the chatbot's on/off, the Merchandise Cloud
  * connection and the cart stay. The store then records seed 2 (tests/storefront/vitahealReseed.test.ts).
+ *
+ * 3 since the store moved to US dollars (2026-11-25): the same reseed reaches a browser at seed 1
+ * or 2. Both held the store in kronor, so that reseed also puts back the store's history as a
+ * restore does and empties the cart (MARKET_CHANGED_AT). Orders stay as they were placed.
  */
-const SEED_VERSION = 2
+const SEED_VERSION = 3
+/** The seed from which the store sells in US dollars; seeds 1 and 2 sold in kronor. */
+const MARKET_CHANGED_AT = 3
 const HOME_DOMAIN = VITAHEAL_CHANNEL.webStore!.domain
 /** When the seed was written: the theme's publish date and the collections' last update. */
 const SEEDED_AT = '2026-11-16T09:00:00Z'
 
 /** The store as seeded on its own channel. */
 function homeSnapshot(ctx: InstallContext): StoreSnapshot {
-  const market = { currency: VITAHEAL_CHANNEL.webStore!.currency!, locale: VITAHEAL_CHANNEL.webStore!.locale }
+  // No locale: prices read "$39.99", and receipts keep US dates.
+  const market = { currency: VITAHEAL_CHANNEL.webStore!.currency! }
   return {
     theme: {
       id: `theme-${ctx.prefix}`,
@@ -57,7 +64,8 @@ function homeSnapshot(ctx: InstallContext): StoreSnapshot {
     chatbot: { config: VITAHEAL_CHATBOT, assistantProfile: 'wellness' },
     plans: VITAHEAL_PLANS,
     sizeCharts: [],
-    checkout: checkoutProfile(market.currency),
+    // The order keeps the address typed at checkout, so the shopper's order page and the admin order show it.
+    checkout: { ...checkoutProfile(market.currency), keepsAddress: true },
   }
 }
 
@@ -146,6 +154,7 @@ export const VITAHEAL_BLUEPRINT: DemoStoreBlueprint = {
   id: 'vitaheal',
   slot: SLOT,
   seedVersion: SEED_VERSION,
+  marketChangedAt: MARKET_CHANGED_AT,
   homeChannel: {
     ...VITAHEAL_CHANNEL,
     webStore: { ...VITAHEAL_CHANNEL.webStore!, blueprint: { original: 'vitaheal', slot: SLOT } },
@@ -156,7 +165,7 @@ export const VITAHEAL_BLUEPRINT: DemoStoreBlueprint = {
     // VITAHEAL_CUSTOMERS_LIST_ID (useCdpEntities) and VITAHEAL_CAMPAIGN_CONTENT_ID (useContent).
     audienceListId: 901,
     announcementContentId: 9001,
-    timezone: 'Europe/Stockholm',
+    timezone: 'America/New_York',
   },
   photoDir: VITAHEAL_PHOTO_DIR,
   // The sections product page lets the shopper pick a format or flavour (it opens on the cheapest).
@@ -165,7 +174,7 @@ export const VITAHEAL_BLUEPRINT: DemoStoreBlueprint = {
     name: 'Vitaheal',
     version: VERSION,
     kind: 'Health and wellness',
-    description: 'A supplements store on subscription, in kronor: Inter, uppercase headings, boxed product cards and a mega menu by goal.',
+    description: 'A supplements store on subscription, in US dollars: Inter, uppercase headings, boxed product cards and a mega menu by goal.',
     thumbnail: `${VITAHEAL_PHOTO_DIR}/theme.jpg`,
   },
   build(ctx) {

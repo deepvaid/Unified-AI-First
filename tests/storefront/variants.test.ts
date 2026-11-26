@@ -106,9 +106,9 @@ test('an option with one value is chosen for the shopper; a plain choice is left
 
 test('a page that opens on the lowest-priced choice: Unwind on Bag, Electrolytes on its cheapest flavour', () => {
   const product = (name: string) => vitahealProducts().find((p) => p.name === name)!
-  // Can 419 kr, Bag 399 kr.
+  // Can $41.99, Bag $39.99.
   assert.deepEqual(cheapestSelection(product('Unwind')), { Format: 'Bag' })
-  // Lemon & Ginger and Wild Berries cost 279 kr each: the first of the two; the Starter Pack is 499 kr.
+  // Lemon & Ginger and Wild Berries cost $27.99 each: the first of the two; the Starter Pack is $49.99.
   assert.deepEqual(cheapestSelection(product('Vitaheal Electrolytes')), { Flavour: 'Lemon & Ginger' })
   assert.equal(variantFor(product('Unwind'), cheapestSelection(product('Unwind')))?.sku, 'VTH-UNW-BAG')
 })

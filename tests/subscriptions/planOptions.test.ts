@@ -84,7 +84,7 @@ test('the page reads buying once first, then the delivery options under their la
 })
 
 test('Vitaheal’s page is laid out as before: its plans, then buying once, and no group', () => {
-  const options = purchaseOptions(fromDecimal('279.00', 'SEK'), plansForProduct(VITAHEAL_PLANS, VITAHEAL_CHANNEL_ID, 2005))
+  const options = purchaseOptions(fromDecimal('27.99', 'USD'), plansForProduct(VITAHEAL_PLANS, VITAHEAL_CHANNEL_ID, 2005))
   const layout = optionLayout(options)
   assert.deepEqual(layout.single, options)
   assert.deepEqual(layout.groups, [])

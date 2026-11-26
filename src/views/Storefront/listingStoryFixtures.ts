@@ -32,7 +32,7 @@ import { northfold } from './storefrontStoryFixtures'
 // pieces read (money, links, the store, the announcer). The parts stories draw
 // Torqline Auto Parts (demo) the same way, with a vehicle chosen or not, and the
 // Boxed card and wishlist stories draw Lumos Home (demo), whose theme has a wishlist.
-// The subscription stories draw Vitaheal (demo): Boxed cards, in kronor, with its plans
+// The subscription stories draw Vitaheal (demo): Boxed cards, in US dollars, with its plans
 // (the subscriptions store seeds them for its channel, as the app does).
 // The Framed card stories draw Northfold's products in Aurora's look (auroraFrame).
 
@@ -280,18 +280,18 @@ export function vitahealProduct(name: string): Product {
   return product
 }
 
-/** Vitaheal's storefront: its own theme and chrome, in kronor (whole kronor shown, öre charged), no wishlist. */
+/** Vitaheal's storefront: its own theme and chrome, in its own currency (US dollars), no wishlist. */
 const vitahealContext = {
   ...context,
   channel: computed(() => VITAHEAL_CHANNEL),
   theme: computed(() => ({ ...vitaheal.theme, channelId: VITAHEAL_CHANNEL.id, status: 'Published' as const, updatedAt: vitaheal.theme.publishedAt })),
   chrome: computed(() => vitaheal.chrome),
   link: (href: string) => (/^[a-z][a-z0-9+.-]*:/i.test(href) ? href : href === '/' ? VITAHEAL_BASE : `${VITAHEAL_BASE}${href.startsWith('/') ? '' : '/'}${href}`),
-  currency: computed(() => 'SEK'),
+  currency: computed(() => VITAHEAL_CHANNEL.webStore!.currency!),
   formatMoney: (amount: Money) => formatStorePrice(roundForDisplay(amount), VITAHEAL_LOCALE),
   formatExact: (amount: Money) => formatStorePrice(amount, VITAHEAL_LOCALE),
-  ownMoneyFormat: computed(() => true),
-  checkout: computed(() => checkoutProfile('SEK')),
+  ownMoneyFormat: computed(() => Boolean(VITAHEAL_LOCALE)),
+  checkout: computed(() => checkoutProfile(VITAHEAL_CHANNEL.webStore!.currency)),
   sizeCharts: computed(() => []),
   wishlist: computed(() => false),
 } as unknown as StorefrontContext

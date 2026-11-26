@@ -6,8 +6,9 @@
 //
 // Since Vitaheal's seed version 2 (eight more products, 2026-11-25), a browser that saved
 // Vitaheal before (seed 1: no seed recorded) is seeded again on its first start, its theme
-// included, so it runs 2.0 and says nothing of an earlier look. The Vitaheal tests below
-// therefore start from a browser that has recorded seed 2; the seed-1 case has its own test.
+// included, so it runs 2.0 and says nothing of an earlier look. Since seed 3 (US dollars) the
+// same goes for a browser at seed 2. The Vitaheal tests below therefore start from a browser
+// that has recorded seed 3; the seed-1 case has its own test.
 // The stores import each other with '@/', so the resolve hook is registered first.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
@@ -47,8 +48,8 @@ const settle = () => new Promise((resolve) => setTimeout(resolve, 10))
 const browser = () => Object.fromEntries(memory)
 /** The key the first start since Vitaheal's seed 2 writes: the seed version the store holds (useDemoStores reseedStale). */
 const VH_SEED = 'mp.vitaheal-demo.installed.v1'
-/** `saved` as a browser that has recorded seed 2 holds it, so Vitaheal is not seeded again on load. */
-const atSeed2 = (saved: Record<string, string>) => ({ ...saved, [VH_SEED]: JSON.stringify({ blueprintId: 'vitaheal', seedVersion: 2, appliedAt: '2026-11-25T09:00:00.000Z' }) })
+/** `saved` as a browser that has recorded seed 3 holds it, so Vitaheal is not seeded again on load. */
+const atSeed3 = (saved: Record<string, string>) => ({ ...saved, [VH_SEED]: JSON.stringify({ blueprintId: 'vitaheal', seedVersion: 3, appliedAt: '2026-11-25T09:00:00.000Z' }) })
 
 /** The app starting in a browser that holds `saved`. */
 function startApp(saved: Record<string, string> = {}) {
@@ -103,7 +104,7 @@ test('in a fresh browser no store runs an earlier look, and asking writes nothin
 })
 
 test('a browser holding an edited Vitaheal theme from before 2.0 runs it, and the store says so; nothing is written on load', async () => {
-  const saved = atSeed2(await olderVitahealBrowser())
+  const saved = atSeed3(await olderVitahealBrowser())
   const app = startApp(saved)
   await settle()
   const current = app.themes.themeForChannel(VH)!
@@ -114,7 +115,7 @@ test('a browser holding an edited Vitaheal theme from before 2.0 runs it, and th
   assert.equal(earlierLookMessage(look!), 'This store runs an earlier Vitaheal look that was edited in this browser. Restore original store to get Vitaheal 2.0.')
   // The other stores are not touched by it.
   for (const blueprint of DEMO_STORES.filter((b) => b.id !== 'vitaheal')) assert.equal(app.themes.earlierLookOf(blueprint.homeChannel.id), null, blueprint.id)
-  assert.deepEqual(browser(), saved, 'a browser at seed 2 is not seeded again: loading leaves the browser as it was')
+  assert.deepEqual(browser(), saved, 'a browser at seed 3 is not seeded again: loading leaves the browser as it was')
 })
 
 test('since seed 2, a browser that kept an edited Vitaheal theme from before 2.0 at seed 1 is seeded again: it runs 2.0 and says nothing of an earlier look', async () => {
@@ -126,11 +127,11 @@ test('since seed 2, a browser that kept an edited Vitaheal theme from before 2.0
   assert.equal(app.themes.earlierLookOf(VH), null)
   // The theme's slot is cleared, and the store records the seed it holds now.
   assert.deepEqual(Object.keys(browser()), [VH_SEED])
-  assert.equal(JSON.parse(browser()[VH_SEED]!).seedVersion, 2)
+  assert.equal(JSON.parse(browser()[VH_SEED]!).seedVersion, 3)
 })
 
 test('Restore original store brings Vitaheal 2.0 back, and the store no longer says it runs an earlier look', async () => {
-  const app = startApp(atSeed2(await olderVitahealBrowser()))
+  const app = startApp(atSeed3(await olderVitahealBrowser()))
   await settle()
   assert.ok(app.themes.earlierLookOf(VH))
   assert.equal(app.demoStores.restore(VH), true)
@@ -158,7 +159,7 @@ test('any demo store: its kept theme drawn as an earlier version drew it is an e
   const first = await startedApp()
   await editTheme(first, 'northfold-demo')
   const key = 'mp.demo-store.northfold-demo.themes.v1'
-  const saved = atSeed2({ [key]: asEarlierLook(memory.get(key)!, 'theme-northfold', undefined) })
+  const saved = atSeed3({ [key]: asEarlierLook(memory.get(key)!, 'theme-northfold', undefined) })
   const app = startApp(saved)
   await settle()
   assert.deepEqual(app.themes.earlierLookOf('northfold-demo'), { name: 'Northfold', version: '1.0', applied: false })
@@ -172,7 +173,7 @@ test('only the published theme counts: an earlier look kept as a draft beside a 
   const copy = first.themes.duplicateTheme('theme-vitaheal')!
   first.themes.publishTheme(copy.id)
   await settle()
-  const app = startApp(atSeed2({ [VH_THEMES]: asEarlierLook(memory.get(VH_THEMES)!, 'theme-vitaheal', undefined) }))
+  const app = startApp(atSeed3({ [VH_THEMES]: asEarlierLook(memory.get(VH_THEMES)!, 'theme-vitaheal', undefined) }))
   await settle()
   assert.equal(app.themes.getTheme('theme-vitaheal')?.status, 'Draft')
   assert.equal(app.themes.earlierLookOf(VH), null)

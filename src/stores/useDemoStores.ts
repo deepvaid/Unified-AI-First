@@ -305,8 +305,19 @@ export const useDemoStores = defineStore('demoStores', () => {
   /** A seed fix reaches a browser that saved the old seed: such a store is seeded again (src/storefront/demoStores/install.ts, isSeedStale). */
   function reseedStale(): void {
     for (const channel of salesChannels.channels) {
-      if (!canApplyTheme(channel) || !isSeedStale(channel, browserStorage())) continue
+      const storage = browserStorage()
+      if (!canApplyTheme(channel) || !isSeedStale(channel, storage)) continue
+      // Read before the reseed: the seed this browser saved the store at, and the theme it runs.
+      const savedAt = readInstalled(channel.id, storage)?.seedVersion ?? 1
+      const changedAt = demoStoreFor(currentBlueprintId(channel, storage)!).marketChangedAt
       reseed(channel.id)
+      // Saved before the store's currency changed (Vitaheal before seed 3, in kronor): nothing is left
+      // priced in the old one. Its history comes back as a restore puts it (subscribers, chats, campaign
+      // emails) and the cart is emptied. Orders stay as they were placed.
+      if (changedAt !== undefined && savedAt < changedAt) {
+        restoreHistory(channel.id)
+        useStorefrontCartStore().storeChanged(channel.id)
+      }
       markSeeded(channel)
     }
   }

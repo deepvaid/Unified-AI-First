@@ -79,9 +79,9 @@
  },
  "guest · Where is order #20007? My email is linnea.berg@example.com": {
   "says": [
-   "Order #20007, placed 18 Nov 2026: Vitaheal Electrolytes, 585,90 kr. We are packing it and it has not shipped yet. You will get an email as soon as it leaves us."
+   "Order #20007, placed 18 Nov 2026: Vitaheal Electrolytes, $58.77. We are packing it and it has not shipped yet. You will get an email as soon as it leaves us."
   ],
-  "sha": "16953d3c7f91aa05"
+  "sha": "059b081569a59066"
  },
  "guest · When is my next delivery?": {
   "says": [
@@ -259,9 +259,9 @@
  },
  "guest · What is your return policy?": {
   "says": [
-   "You can return unopened products within 14 days of delivery for a full refund. Write to us first and we will send a return label. We refund to your original payment method within 5 working days of receiving the return."
+   "You can return unopened products within 14 days of delivery for a full refund. Write to us first and we will send a return label. We refund to your original payment method within 5 business days of receiving the return."
   ],
-  "sha": "a14bbbb9c9e85e52"
+  "sha": "ef7fb65c56a938f7"
  },
  "guest · Can I return something from the sale?": {
   "says": [
@@ -271,21 +271,21 @@
  },
  "guest · Do you ship to Norway?": {
   "says": [
-   "We ship to Sweden, Norway, Denmark, Finland and Iceland, and to the rest of the EU. Duties and taxes may apply outside the EU."
+   "Orders placed before 2 pm ET on a weekday leave our warehouse the same day. Delivery takes 3 to 7 business days, and shipping is free on orders over $50."
   ],
-  "sha": "722b0e3e5ea632d9"
+  "sha": "a2c287420d378630"
  },
  "guest · Is shipping free?": {
   "says": [
-   "Orders placed before 10:00 CET on a weekday leave our warehouse the same day. Delivery takes 3 to 7 working days, and shipping is free on orders over 549 kr."
+   "Orders placed before 2 pm ET on a weekday leave our warehouse the same day. Delivery takes 3 to 7 business days, and shipping is free on orders over $50."
   ],
-  "sha": "1ecf91c4f94ab26c"
+  "sha": "a2c287420d378630"
  },
  "guest · How long does delivery take?": {
   "says": [
-   "Orders placed before 10:00 CET on a weekday leave our warehouse the same day. Delivery takes 3 to 7 working days, and shipping is free on orders over 549 kr."
+   "Orders placed before 2 pm ET on a weekday leave our warehouse the same day. Delivery takes 3 to 7 business days, and shipping is free on orders over $50."
   ],
-  "sha": "1ecf91c4f94ab26c"
+  "sha": "a2c287420d378630"
  },
  "guest · Is Unwind covered by a guarantee?": {
   "says": [
@@ -331,9 +331,9 @@
  },
  "guest · Which size should I get?": {
   "says": [
-   "We ship to Sweden, Norway, Denmark, Finland and Iceland, and to the rest of the EU. Duties and taxes may apply outside the EU."
+   "We ship to the United States, Canada, the United Kingdom, Australia and New Zealand. Duties and taxes may apply outside the US."
   ],
-  "sha": "722b0e3e5ea632d9"
+  "sha": "b231a194246c4865"
  },
  "guest · can I wash the merino": {
   "says": [
@@ -379,9 +379,9 @@
  },
  "guest · How do returns work?": {
   "says": [
-   "You can return unopened products within 14 days of delivery for a full refund. Write to us first and we will send a return label. We refund to your original payment method within 5 working days of receiving the return."
+   "You can return unopened products within 14 days of delivery for a full refund. Write to us first and we will send a return label. We refund to your original payment method within 5 business days of receiving the return."
   ],
-  "sha": "a14bbbb9c9e85e52"
+  "sha": "ef7fb65c56a938f7"
  },
  "guest · bust 36 waist 30": {
   "says": [
@@ -426,40 +426,40 @@
   "sha": "b8d5af00e8fd12ec"
  },
  "signedIn · Where is my order?": {
-  "sha": "2f9322768b275c9a"
+  "sha": "1842979998887e9b"
  },
  "signedIn · Track order 20007": {
-  "sha": "16953d3c7f91aa05"
+  "sha": "059b081569a59066"
  },
  "signedIn · order #20001": {
-  "sha": "1cd28613d622bb7d"
+  "sha": "5988e416f36f5ec9"
  },
  "signedIn · #99999": {
   "sha": "7991e085f48af055"
  },
  "signedIn · 20007": {
-  "sha": "16953d3c7f91aa05"
+  "sha": "059b081569a59066"
  },
  "signedIn · Where is order #20007? My email is linnea.berg@example.com": {
-  "sha": "16953d3c7f91aa05"
+  "sha": "059b081569a59066"
  },
  "signedIn · When is my next delivery?": {
-  "sha": "c578e81d3b050251"
+  "sha": "3cf2268c06f36f2a"
  },
  "signedIn · I want to skip my next delivery": {
-  "sha": "82fe631ff398ecdd"
+  "sha": "1dd5903016e5de16"
  },
  "signedIn · How do I cancel my subscription?": {
-  "sha": "3ee5a223c4339bd9"
+  "sha": "3e4ebc8cd967776a"
  },
  "signedIn · pause my subscription please": {
-  "sha": "3ee5a223c4339bd9"
+  "sha": "3e4ebc8cd967776a"
  },
  "signedIn · when does my subscription renew?": {
-  "sha": "c578e81d3b050251"
+  "sha": "3cf2268c06f36f2a"
  },
  "signedIn · my subscription": {
-  "sha": "c578e81d3b050251"
+  "sha": "3cf2268c06f36f2a"
  },
  "signedIn · How do subscriptions work?": {
   "sha": "68885890f0f991e9"
@@ -531,19 +531,19 @@
   "sha": "5a4eaccb01595650"
  },
  "signedIn · What is your return policy?": {
-  "sha": "a14bbbb9c9e85e52"
+  "sha": "ef7fb65c56a938f7"
  },
  "signedIn · Can I return something from the sale?": {
   "sha": "5a4eaccb01595650"
  },
  "signedIn · Do you ship to Norway?": {
-  "sha": "722b0e3e5ea632d9"
+  "sha": "a2c287420d378630"
  },
  "signedIn · Is shipping free?": {
-  "sha": "1ecf91c4f94ab26c"
+  "sha": "a2c287420d378630"
  },
  "signedIn · How long does delivery take?": {
-  "sha": "1ecf91c4f94ab26c"
+  "sha": "a2c287420d378630"
  },
  "signedIn · Is Unwind covered by a guarantee?": {
   "sha": "9d4911eacdb18c19"
@@ -567,7 +567,7 @@
   "sha": "b8d5af00e8fd12ec"
  },
  "signedIn · Which size should I get?": {
-  "sha": "722b0e3e5ea632d9"
+  "sha": "b231a194246c4865"
  },
  "signedIn · can I wash the merino": {
   "sha": "b8d5af00e8fd12ec"
@@ -591,7 +591,7 @@
   "sha": "5a4eaccb01595650"
  },
  "signedIn · How do returns work?": {
-  "sha": "a14bbbb9c9e85e52"
+  "sha": "ef7fb65c56a938f7"
  },
  "signedIn · bust 36 waist 30": {
   "sha": "b8d5af00e8fd12ec"
@@ -627,40 +627,40 @@
   "sha": "b8d5af00e8fd12ec"
  },
  "promotion · Where is my order?": {
-  "sha": "2f9322768b275c9a"
+  "sha": "1842979998887e9b"
  },
  "promotion · Track order 20007": {
-  "sha": "16953d3c7f91aa05"
+  "sha": "059b081569a59066"
  },
  "promotion · order #20001": {
-  "sha": "1cd28613d622bb7d"
+  "sha": "5988e416f36f5ec9"
  },
  "promotion · #99999": {
   "sha": "7991e085f48af055"
  },
  "promotion · 20007": {
-  "sha": "16953d3c7f91aa05"
+  "sha": "059b081569a59066"
  },
  "promotion · Where is order #20007? My email is linnea.berg@example.com": {
-  "sha": "16953d3c7f91aa05"
+  "sha": "059b081569a59066"
  },
  "promotion · When is my next delivery?": {
-  "sha": "c578e81d3b050251"
+  "sha": "3cf2268c06f36f2a"
  },
  "promotion · I want to skip my next delivery": {
-  "sha": "82fe631ff398ecdd"
+  "sha": "1dd5903016e5de16"
  },
  "promotion · How do I cancel my subscription?": {
-  "sha": "3ee5a223c4339bd9"
+  "sha": "3e4ebc8cd967776a"
  },
  "promotion · pause my subscription please": {
-  "sha": "3ee5a223c4339bd9"
+  "sha": "3e4ebc8cd967776a"
  },
  "promotion · when does my subscription renew?": {
-  "sha": "c578e81d3b050251"
+  "sha": "3cf2268c06f36f2a"
  },
  "promotion · my subscription": {
-  "sha": "c578e81d3b050251"
+  "sha": "3cf2268c06f36f2a"
  },
  "promotion · How do subscriptions work?": {
   "sha": "68885890f0f991e9"
@@ -732,19 +732,19 @@
   "sha": "a9b7f71cab5e9609"
  },
  "promotion · What is your return policy?": {
-  "sha": "a14bbbb9c9e85e52"
+  "sha": "ef7fb65c56a938f7"
  },
  "promotion · Can I return something from the sale?": {
   "sha": "a9b7f71cab5e9609"
  },
  "promotion · Do you ship to Norway?": {
-  "sha": "722b0e3e5ea632d9"
+  "sha": "a2c287420d378630"
  },
  "promotion · Is shipping free?": {
-  "sha": "1ecf91c4f94ab26c"
+  "sha": "a2c287420d378630"
  },
  "promotion · How long does delivery take?": {
-  "sha": "1ecf91c4f94ab26c"
+  "sha": "a2c287420d378630"
  },
  "promotion · Is Unwind covered by a guarantee?": {
   "sha": "9d4911eacdb18c19"
@@ -768,7 +768,7 @@
   "sha": "b8d5af00e8fd12ec"
  },
  "promotion · Which size should I get?": {
-  "sha": "722b0e3e5ea632d9"
+  "sha": "b231a194246c4865"
  },
  "promotion · can I wash the merino": {
   "sha": "b8d5af00e8fd12ec"
@@ -792,7 +792,7 @@
   "sha": "a9b7f71cab5e9609"
  },
  "promotion · How do returns work?": {
-  "sha": "a14bbbb9c9e85e52"
+  "sha": "ef7fb65c56a938f7"
  },
  "promotion · bust 36 waist 30": {
   "sha": "b8d5af00e8fd12ec"
@@ -933,19 +933,19 @@
   "sha": "5a4eaccb01595650"
  },
  "nothingYet · What is your return policy?": {
-  "sha": "a14bbbb9c9e85e52"
+  "sha": "ef7fb65c56a938f7"
  },
  "nothingYet · Can I return something from the sale?": {
   "sha": "5a4eaccb01595650"
  },
  "nothingYet · Do you ship to Norway?": {
-  "sha": "722b0e3e5ea632d9"
+  "sha": "a2c287420d378630"
  },
  "nothingYet · Is shipping free?": {
-  "sha": "1ecf91c4f94ab26c"
+  "sha": "a2c287420d378630"
  },
  "nothingYet · How long does delivery take?": {
-  "sha": "1ecf91c4f94ab26c"
+  "sha": "a2c287420d378630"
  },
  "nothingYet · Is Unwind covered by a guarantee?": {
   "sha": "9d4911eacdb18c19"
@@ -969,7 +969,7 @@
   "sha": "b8d5af00e8fd12ec"
  },
  "nothingYet · Which size should I get?": {
-  "sha": "722b0e3e5ea632d9"
+  "sha": "b231a194246c4865"
  },
  "nothingYet · can I wash the merino": {
   "sha": "b8d5af00e8fd12ec"
@@ -993,7 +993,7 @@
   "sha": "5a4eaccb01595650"
  },
  "nothingYet · How do returns work?": {
-  "sha": "a14bbbb9c9e85e52"
+  "sha": "ef7fb65c56a938f7"
  },
  "nothingYet · bust 36 waist 30": {
   "sha": "b8d5af00e8fd12ec"
@@ -1044,7 +1044,7 @@
   "sha": "88765e16d3f12a36"
  },
  "shoppingOff · Where is order #20007? My email is linnea.berg@example.com": {
-  "sha": "16953d3c7f91aa05"
+  "sha": "059b081569a59066"
  },
  "shoppingOff · When is my next delivery?": {
   "sha": "dfd82ee36b46db72"
@@ -1107,7 +1107,7 @@
   "sha": "b8d5af00e8fd12ec"
  },
  "shoppingOff · Which one is best for running?": {
-  "sha": "722b0e3e5ea632d9"
+  "sha": "b231a194246c4865"
  },
  "shoppingOff · Can I take this while pregnant?": {
   "sha": "2c50f9db9fa4442f"
@@ -1134,19 +1134,19 @@
   "sha": "5a4eaccb01595650"
  },
  "shoppingOff · What is your return policy?": {
-  "sha": "a14bbbb9c9e85e52"
+  "sha": "ef7fb65c56a938f7"
  },
  "shoppingOff · Can I return something from the sale?": {
   "sha": "5a4eaccb01595650"
  },
  "shoppingOff · Do you ship to Norway?": {
-  "sha": "722b0e3e5ea632d9"
+  "sha": "a2c287420d378630"
  },
  "shoppingOff · Is shipping free?": {
-  "sha": "1ecf91c4f94ab26c"
+  "sha": "a2c287420d378630"
  },
  "shoppingOff · How long does delivery take?": {
-  "sha": "1ecf91c4f94ab26c"
+  "sha": "a2c287420d378630"
  },
  "shoppingOff · Is Unwind covered by a guarantee?": {
   "sha": "9d4911eacdb18c19"
@@ -1170,7 +1170,7 @@
   "sha": "b8d5af00e8fd12ec"
  },
  "shoppingOff · Which size should I get?": {
-  "sha": "722b0e3e5ea632d9"
+  "sha": "b231a194246c4865"
  },
  "shoppingOff · can I wash the merino": {
   "sha": "b8d5af00e8fd12ec"
@@ -1194,7 +1194,7 @@
   "sha": "5a4eaccb01595650"
  },
  "shoppingOff · How do returns work?": {
-  "sha": "a14bbbb9c9e85e52"
+  "sha": "ef7fb65c56a938f7"
  },
  "shoppingOff · bust 36 waist 30": {
   "sha": "b8d5af00e8fd12ec"
@@ -1335,19 +1335,19 @@
   "sha": "5a4eaccb01595650"
  },
  "trackingOff · What is your return policy?": {
-  "sha": "a14bbbb9c9e85e52"
+  "sha": "ef7fb65c56a938f7"
  },
  "trackingOff · Can I return something from the sale?": {
   "sha": "5a4eaccb01595650"
  },
  "trackingOff · Do you ship to Norway?": {
-  "sha": "722b0e3e5ea632d9"
+  "sha": "a2c287420d378630"
  },
  "trackingOff · Is shipping free?": {
-  "sha": "1ecf91c4f94ab26c"
+  "sha": "a2c287420d378630"
  },
  "trackingOff · How long does delivery take?": {
-  "sha": "1ecf91c4f94ab26c"
+  "sha": "a2c287420d378630"
  },
  "trackingOff · Is Unwind covered by a guarantee?": {
   "sha": "9d4911eacdb18c19"
@@ -1371,7 +1371,7 @@
   "sha": "b8d5af00e8fd12ec"
  },
  "trackingOff · Which size should I get?": {
-  "sha": "722b0e3e5ea632d9"
+  "sha": "b231a194246c4865"
  },
  "trackingOff · can I wash the merino": {
   "sha": "b8d5af00e8fd12ec"
@@ -1395,7 +1395,7 @@
   "sha": "5a4eaccb01595650"
  },
  "trackingOff · How do returns work?": {
-  "sha": "a14bbbb9c9e85e52"
+  "sha": "ef7fb65c56a938f7"
  },
  "trackingOff · bust 36 waist 30": {
   "sha": "b8d5af00e8fd12ec"
@@ -1446,7 +1446,7 @@
   "sha": "88765e16d3f12a36"
  },
  "notDemo · Where is order #20007? My email is linnea.berg@example.com": {
-  "sha": "16953d3c7f91aa05"
+  "sha": "059b081569a59066"
  },
  "notDemo · When is my next delivery?": {
   "sha": "dfd82ee36b46db72"
@@ -1536,19 +1536,19 @@
   "sha": "5a4eaccb01595650"
  },
  "notDemo · What is your return policy?": {
-  "sha": "a14bbbb9c9e85e52"
+  "sha": "ef7fb65c56a938f7"
  },
  "notDemo · Can I return something from the sale?": {
   "sha": "5a4eaccb01595650"
  },
  "notDemo · Do you ship to Norway?": {
-  "sha": "722b0e3e5ea632d9"
+  "sha": "a2c287420d378630"
  },
  "notDemo · Is shipping free?": {
-  "sha": "1ecf91c4f94ab26c"
+  "sha": "a2c287420d378630"
  },
  "notDemo · How long does delivery take?": {
-  "sha": "1ecf91c4f94ab26c"
+  "sha": "a2c287420d378630"
  },
  "notDemo · Is Unwind covered by a guarantee?": {
   "sha": "9d4911eacdb18c19"
@@ -1572,7 +1572,7 @@
   "sha": "b8d5af00e8fd12ec"
  },
  "notDemo · Which size should I get?": {
-  "sha": "722b0e3e5ea632d9"
+  "sha": "b231a194246c4865"
  },
  "notDemo · can I wash the merino": {
   "sha": "b8d5af00e8fd12ec"
@@ -1596,7 +1596,7 @@
   "sha": "5a4eaccb01595650"
  },
  "notDemo · How do returns work?": {
-  "sha": "a14bbbb9c9e85e52"
+  "sha": "ef7fb65c56a938f7"
  },
  "notDemo · bust 36 waist 30": {
   "sha": "b8d5af00e8fd12ec"
@@ -1647,7 +1647,7 @@
   "sha": "88765e16d3f12a36"
  },
  "wellnessNamed · Where is order #20007? My email is linnea.berg@example.com": {
-  "sha": "16953d3c7f91aa05"
+  "sha": "059b081569a59066"
  },
  "wellnessNamed · When is my next delivery?": {
   "sha": "dfd82ee36b46db72"
@@ -1737,19 +1737,19 @@
   "sha": "5a4eaccb01595650"
  },
  "wellnessNamed · What is your return policy?": {
-  "sha": "a14bbbb9c9e85e52"
+  "sha": "ef7fb65c56a938f7"
  },
  "wellnessNamed · Can I return something from the sale?": {
   "sha": "5a4eaccb01595650"
  },
  "wellnessNamed · Do you ship to Norway?": {
-  "sha": "722b0e3e5ea632d9"
+  "sha": "a2c287420d378630"
  },
  "wellnessNamed · Is shipping free?": {
-  "sha": "1ecf91c4f94ab26c"
+  "sha": "a2c287420d378630"
  },
  "wellnessNamed · How long does delivery take?": {
-  "sha": "1ecf91c4f94ab26c"
+  "sha": "a2c287420d378630"
  },
  "wellnessNamed · Is Unwind covered by a guarantee?": {
   "sha": "9d4911eacdb18c19"
@@ -1773,7 +1773,7 @@
   "sha": "b8d5af00e8fd12ec"
  },
  "wellnessNamed · Which size should I get?": {
-  "sha": "722b0e3e5ea632d9"
+  "sha": "b231a194246c4865"
  },
  "wellnessNamed · can I wash the merino": {
   "sha": "b8d5af00e8fd12ec"
@@ -1797,7 +1797,7 @@
   "sha": "5a4eaccb01595650"
  },
  "wellnessNamed · How do returns work?": {
-  "sha": "a14bbbb9c9e85e52"
+  "sha": "ef7fb65c56a938f7"
  },
  "wellnessNamed · bust 36 waist 30": {
   "sha": "b8d5af00e8fd12ec"
@@ -1828,15 +1828,15 @@
  },
  "chat 0.3 · 482913": {
   "says": [
-   "Order #20007, placed 18 Nov 2026: Vitaheal Electrolytes, 585,90 kr. We are packing it and it has not shipped yet. You will get an email as soon as it leaves us. You have 2 orders with us; this is the latest."
+   "Order #20007, placed 18 Nov 2026: Vitaheal Electrolytes, $58.77. We are packing it and it has not shipped yet. You will get an email as soon as it leaves us. You have 2 orders with us; this is the latest."
   ],
-  "sha": "44641d0b7f9694c0"
+  "sha": "6f0144971b0e12ad"
  },
  "chat 0.4 · when is my next delivery?": {
   "says": [
-   "Your next Vitaheal Electrolytes delivery is on 18 Feb 2027, 585,90 kr with your 3-month supply. You have 2 subscriptions; here they all are."
+   "Your next Vitaheal Electrolytes delivery is on 18 Feb 2027, $58.77 with your 3-month supply. You have 2 subscriptions; here they all are."
   ],
-  "sha": "44c7ad1ec7b13e3d"
+  "sha": "6751e538b92a534e"
  },
  "chat 1 · Where is my order?": {
   "says": [
@@ -1864,9 +1864,9 @@
  },
  "chat 2.1 · linnea.berg@example.com": {
   "says": [
-   "Order #20007, placed 18 Nov 2026: Vitaheal Electrolytes, 585,90 kr. We are packing it and it has not shipped yet. You will get an email as soon as it leaves us."
+   "Order #20007, placed 18 Nov 2026: Vitaheal Electrolytes, $58.77. We are packing it and it has not shipped yet. You will get an email as soon as it leaves us."
   ],
-  "sha": "16953d3c7f91aa05"
+  "sha": "059b081569a59066"
  },
  "chat 3 · order #99999": {
   "says": [
@@ -1894,15 +1894,15 @@
  },
  "chat 4.2 · 123456": {
   "says": [
-   "Your next Vitaheal Electrolytes delivery is on 18 Feb 2027, 585,90 kr with your 3-month supply. You have 2 subscriptions; here they all are."
+   "Your next Vitaheal Electrolytes delivery is on 18 Feb 2027, $58.77 with your 3-month supply. You have 2 subscriptions; here they all are."
   ],
-  "sha": "a1f0526d9924bbd1"
+  "sha": "66966b677e6aa05c"
  },
  "chat 4.3 · skip it": {
   "says": [
    "Your next Vitaheal Electrolytes delivery is on 18 Feb 2027. You can skip it right here. You have 2 subscriptions; here they all are."
   ],
-  "sha": "fbc9e53b7ad1d9fb"
+  "sha": "6ed120ec0a82de9f"
  },
  "chat 5 · Where is my order?": {
   "says": [

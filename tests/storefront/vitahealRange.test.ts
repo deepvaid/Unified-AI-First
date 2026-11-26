@@ -25,16 +25,16 @@ const byName = (name: string) => products.find((p) => p.name === name)!
 const onPlan = (id: number) => plansForProduct(VITAHEAL_PLANS, VITAHEAL_CHANNEL_ID, id).length > 0
 const names = (list: { name: string }[]) => list.map((p) => p.name)
 
-/** The lead's table (2026-11-25): option, prices in kronor, goals. */
+/** The lead's table (2026-11-25): option, prices (US dollars since the third round), goals. */
 const REFERENCE: [id: number, name: string, option: string | null, prices: Record<string, number>, goals: string[]][] = [
-  [2009, 'Plant Protein', 'Format', { Can: 399, 'Refill bag': 369 }, ['Sport', 'Subscription']],
-  [2010, 'Daily Greens', 'Format', { Can: 449, 'Refill bag': 429 }, ['Longevity', 'Subscription']],
-  [2011, 'Vitamin D3 + K2', null, { Default: 199 }, ['Immunity']],
-  [2012, 'Omega-3', null, { Default: 329 }, ['Longevity']],
-  [2013, 'Magnesium', null, { Default: 229 }, ['Sleep', 'Sport']],
-  [2014, 'Creatine', 'Format', { Can: 299, 'Refill bag': 279 }, ['Sport', 'Subscription']],
-  [2015, 'Vitamin C + Zinc', null, { Default: 179 }, ['Immunity']],
-  [2016, 'Daily Multi', null, { Default: 249 }, ['Immunity']],
+  [2009, 'Plant Protein', 'Format', { Can: 39.99, 'Refill bag': 36.99 }, ['Sport', 'Subscription']],
+  [2010, 'Daily Greens', 'Format', { Can: 44.99, 'Refill bag': 42.99 }, ['Longevity', 'Subscription']],
+  [2011, 'Vitamin D3 + K2', null, { Default: 19.99 }, ['Immunity']],
+  [2012, 'Omega-3', null, { Default: 32.99 }, ['Longevity']],
+  [2013, 'Magnesium', null, { Default: 22.99 }, ['Sleep', 'Sport']],
+  [2014, 'Creatine', 'Format', { Can: 29.99, 'Refill bag': 27.99 }, ['Sport', 'Subscription']],
+  [2015, 'Vitamin C + Zinc', null, { Default: 17.99 }, ['Immunity']],
+  [2016, 'Daily Multi', null, { Default: 24.99 }, ['Immunity']],
 ]
 const POWDERS = ['Plant Protein', 'Daily Greens', 'Creatine']
 
@@ -85,7 +85,7 @@ test('the refill bag is the cheaper format, so a card reads "From" the bag\'s pr
 
 test('Immunity is the sixth goal: in the collections, the Shop by goal tiles, with the three immune products', () => {
   assert.deepEqual(VITAHEAL_COLLECTIONS.at(-1), {
-    title: 'Immunity', productCount: 3, description: 'Vitamins C and D and zinc, for the dark Swedish winter.',
+    title: 'Immunity', productCount: 3, description: 'Vitamins C and D and zinc, for the dark winter months.',
   })
   assert.deepEqual(names(products.filter((p) => p.collections.includes('Immunity'))), ['Vitamin D3 + K2', 'Vitamin C + Zinc', 'Daily Multi'])
   const goals = VITAHEAL_THEME_TEMPLATES.home.find((s) => s.id === 'vitaheal-home-collections')!

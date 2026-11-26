@@ -62,7 +62,7 @@ test('applying Northfold to Vitaheal says what is replaced, what changes, what s
   assert.deepEqual(lines.slice(-2), ['Orders already placed stay. The cart is emptied.', 'Restore original store puts this store back as it started.'])
 })
 
-test('applying Vitaheal to a blank USD store adds its products and plans, in Swedish kronor', () => {
+test('applying Vitaheal to a blank USD store adds its products and plans, and says nothing about prices: both are in US dollars', () => {
   const blank: StoreFacts = { name: 'Test Garage', blank: true, products: 0, currency: 'USD', activePlans: 0, runs: null, broughtPlans: 0, subscribers: 0, sizeCharts: 0 }
   const theme = factsOf('vitaheal')
   const lines = applySummary(blank, theme)
@@ -71,7 +71,9 @@ test('applying Vitaheal to a blank USD store adds its products and plans, in Swe
   assert.match(lines[2]!, /campaigns? and \d+ search rules? are added\.$/)
   assert.ok(!lines.some((line) => line.includes('replace') || line.includes('not kept')), lines.join('\n'))
   assert.equal(lines.at(-1), 'Restore original store makes this store blank again.')
-  assert.ok(lines.includes('Prices change to Swedish kronor.'))
+  // Since seed 3 Vitaheal sells in US dollars, as the blank store does.
+  assert.equal(theme.currency, 'USD')
+  assert.ok(!lines.some((line) => line.startsWith('Prices change')), lines.join('\n'))
   assert.ok(lines.includes(`Vitaheal’s ${countWord(theme.plans)} subscription plans are added.`))
   assert.ok(!lines.some((line) => line.includes('switch off')))
 })
@@ -113,7 +115,7 @@ test('Create sales channel says what a new store starts with', () => {
   assert.equal(startSummary(null), 'A blank store: no products, pages or campaigns yet')
   const northfold = factsOf('northfold')
   assert.equal(startSummary(northfold), `A copy of Northfold: 20 products, ${northfold.collections} collections, ${northfold.pages} pages and ${northfold.campaigns} campaign${northfold.campaigns === 1 ? '' : 's'}, priced in US dollars`)
-  assert.match(startSummary(factsOf('vitaheal')), /subscription plans, priced in Swedish kronor$/)
+  assert.match(startSummary(factsOf('vitaheal')), /subscription plans, priced in US dollars$/)
 })
 
 test('counts and currencies read as words', () => {

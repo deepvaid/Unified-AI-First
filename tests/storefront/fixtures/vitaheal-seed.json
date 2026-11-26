@@ -9,7 +9,7 @@
     "provider": "maropost_store_builder",
     "status": "connected",
     "health": "healthy",
-    "description": "Swedish supplements store. Most orders are subscriptions, and prices are in SEK.",
+    "description": "Swedish supplements brand selling in the US. Most orders are subscriptions, and prices are in US dollars.",
     "connectedClouds": [
       "commerce",
       "store_builder"
@@ -22,13 +22,12 @@
       "storeBuilderEnabled": true,
       "published": true,
       "merchandiseConnected": false,
-      "currency": "SEK",
-      "locale": "sv-SE",
+      "currency": "USD",
       "demo": true
     }
   },
   "admin": {
-    "revenue": "1.9M kr",
+    "revenue": "$184.5K",
     "themeName": "Vitaheal 2.0",
     "business": [
       {
@@ -79,7 +78,7 @@
       "id": 2001,
       "name": "Unwind",
       "sku": "VTH-UNW-BAG",
-      "price": "399.00",
+      "price": "39.99",
       "compareAtPrice": "",
       "inventory": 236,
       "category": "Beauty & Health",
@@ -124,8 +123,8 @@
             "sku": "VTH-UNW-CAN",
             "manageInventory": true,
             "allowBackorder": false,
-            "costPrice": "134.08",
-            "price": "419.00",
+            "costPrice": "13.44",
+            "price": "41.99",
             "weight": "0.32",
             "stock": {
               "Oxford Warehouse": 140
@@ -137,8 +136,8 @@
             "sku": "VTH-UNW-BAG",
             "manageInventory": true,
             "allowBackorder": false,
-            "costPrice": "127.68",
-            "price": "399.00",
+            "costPrice": "12.80",
+            "price": "39.99",
             "weight": "0.28",
             "stock": {
               "Oxford Warehouse": 96
@@ -215,7 +214,7 @@
       "id": 2002,
       "name": "Clear Focus",
       "sku": "VTH-FOC-REF",
-      "price": "389.00",
+      "price": "38.99",
       "compareAtPrice": "",
       "inventory": 208,
       "category": "Beauty & Health",
@@ -260,8 +259,8 @@
             "sku": "VTH-FOC-ORG",
             "manageInventory": true,
             "allowBackorder": false,
-            "costPrice": "130.88",
-            "price": "409.00",
+            "costPrice": "13.12",
+            "price": "40.99",
             "weight": "0.12",
             "stock": {
               "Oxford Warehouse": 120
@@ -273,8 +272,8 @@
             "sku": "VTH-FOC-REF",
             "manageInventory": true,
             "allowBackorder": false,
-            "costPrice": "124.48",
-            "price": "389.00",
+            "costPrice": "12.48",
+            "price": "38.99",
             "weight": "0.10",
             "stock": {
               "Oxford Warehouse": 88
@@ -355,7 +354,7 @@
       "id": 2003,
       "name": "Daily NAD+",
       "sku": "VTH-NAD-REF",
-      "price": "649.00",
+      "price": "64.99",
       "compareAtPrice": "",
       "inventory": 134,
       "category": "Beauty & Health",
@@ -400,8 +399,8 @@
             "sku": "VTH-NAD-ORG",
             "manageInventory": true,
             "allowBackorder": false,
-            "costPrice": "214.08",
-            "price": "669.00",
+            "costPrice": "21.44",
+            "price": "66.99",
             "weight": "0.11",
             "stock": {
               "Oxford Warehouse": 74
@@ -413,8 +412,8 @@
             "sku": "VTH-NAD-REF",
             "manageInventory": true,
             "allowBackorder": false,
-            "costPrice": "207.68",
-            "price": "649.00",
+            "costPrice": "20.80",
+            "price": "64.99",
             "weight": "0.09",
             "stock": {
               "Oxford Warehouse": 60
@@ -487,7 +486,7 @@
       "id": 2004,
       "name": "Nasal Strips",
       "sku": "VTH-NSL-30",
-      "price": "199.00",
+      "price": "19.99",
       "compareAtPrice": "",
       "inventory": 210,
       "category": "Beauty & Health",
@@ -524,8 +523,8 @@
             "sku": "VTH-NSL-30",
             "manageInventory": true,
             "allowBackorder": false,
-            "costPrice": "63.68",
-            "price": "199.00",
+            "costPrice": "6.40",
+            "price": "19.99",
             "weight": "0.04",
             "stock": {
               "Oxford Warehouse": 210
@@ -590,7 +589,7 @@
       "id": 2005,
       "name": "Vitaheal Electrolytes",
       "sku": "VTH-ELE-LEM",
-      "price": "279.00",
+      "price": "27.99",
       "compareAtPrice": "",
       "inventory": 396,
       "category": "Beauty & Health",
@@ -637,8 +636,8 @@
             "sku": "VTH-ELE-LEM",
             "manageInventory": true,
             "allowBackorder": false,
-            "costPrice": "89.28",
-            "price": "279.00",
+            "costPrice": "8.96",
+            "price": "27.99",
             "weight": "0.18",
             "stock": {
               "Oxford Warehouse": 180
@@ -650,8 +649,8 @@
             "sku": "VTH-ELE-BER",
             "manageInventory": true,
             "allowBackorder": false,
-            "costPrice": "89.28",
-            "price": "279.00",
+            "costPrice": "8.96",
+            "price": "27.99",
             "weight": "0.18",
             "stock": {
               "Oxford Warehouse": 164
@@ -663,9 +662,9 @@
             "sku": "VTH-ELE-STA",
             "manageInventory": true,
             "allowBackorder": false,
-            "costPrice": "159.68",
-            "price": "499.00",
-            "compareAtPrice": "558.00",
+            "costPrice": "16.00",
+            "price": "49.99",
+            "compareAtPrice": "55.98",
             "weight": "0.36",
             "stock": {
               "Oxford Warehouse": 52
@@ -746,7 +745,7 @@
       "id": 2006,
       "name": "Collagen+",
       "sku": "VTH-COL-REF",
-      "price": "409.00",
+      "price": "40.99",
       "compareAtPrice": "",
       "inventory": 192,
       "category": "Beauty & Health",
@@ -791,8 +790,8 @@
             "sku": "VTH-COL-ORG",
             "manageInventory": true,
             "allowBackorder": false,
-            "costPrice": "137.28",
-            "price": "429.00",
+            "costPrice": "13.76",
+            "price": "42.99",
             "weight": "0.30",
             "stock": {
               "Oxford Warehouse": 110
@@ -804,8 +803,8 @@
             "sku": "VTH-COL-REF",
             "manageInventory": true,
             "allowBackorder": false,
-            "costPrice": "130.88",
-            "price": "409.00",
+            "costPrice": "13.12",
+            "price": "40.99",
             "weight": "0.27",
             "stock": {
               "Oxford Warehouse": 82
@@ -878,7 +877,7 @@
       "id": 2007,
       "name": "Balance Refill",
       "sku": "VTH-BAL-REF",
-      "price": "419.00",
+      "price": "41.99",
       "compareAtPrice": "",
       "inventory": 68,
       "category": "Beauty & Health",
@@ -914,8 +913,8 @@
             "sku": "VTH-BAL-REF",
             "manageInventory": true,
             "allowBackorder": false,
-            "costPrice": "134.08",
-            "price": "419.00",
+            "costPrice": "13.44",
+            "price": "41.99",
             "weight": "0.26",
             "stock": {
               "Oxford Warehouse": 68
@@ -996,7 +995,7 @@
       "id": 2008,
       "name": "Balance",
       "sku": "VTH-BAL-CAN",
-      "price": "419.00",
+      "price": "41.99",
       "compareAtPrice": "",
       "inventory": 90,
       "category": "Beauty & Health",
@@ -1032,8 +1031,8 @@
             "sku": "VTH-BAL-CAN",
             "manageInventory": true,
             "allowBackorder": false,
-            "costPrice": "134.08",
-            "price": "419.00",
+            "costPrice": "13.44",
+            "price": "41.99",
             "weight": "0.30",
             "stock": {
               "Oxford Warehouse": 90
@@ -1114,7 +1113,7 @@
       "id": 2009,
       "name": "Plant Protein",
       "sku": "VTH-PRO-REF",
-      "price": "369.00",
+      "price": "36.99",
       "compareAtPrice": "",
       "inventory": 204,
       "category": "Beauty & Health",
@@ -1159,8 +1158,8 @@
             "sku": "VTH-PRO-CAN",
             "manageInventory": true,
             "allowBackorder": false,
-            "costPrice": "127.68",
-            "price": "399.00",
+            "costPrice": "12.80",
+            "price": "39.99",
             "weight": "1.00",
             "stock": {
               "Oxford Warehouse": 84
@@ -1172,8 +1171,8 @@
             "sku": "VTH-PRO-REF",
             "manageInventory": true,
             "allowBackorder": false,
-            "costPrice": "118.08",
-            "price": "369.00",
+            "costPrice": "11.84",
+            "price": "36.99",
             "weight": "0.93",
             "stock": {
               "Oxford Warehouse": 120
@@ -1250,7 +1249,7 @@
       "id": 2010,
       "name": "Daily Greens",
       "sku": "VTH-GRN-REF",
-      "price": "429.00",
+      "price": "42.99",
       "compareAtPrice": "",
       "inventory": 168,
       "category": "Beauty & Health",
@@ -1295,8 +1294,8 @@
             "sku": "VTH-GRN-CAN",
             "manageInventory": true,
             "allowBackorder": false,
-            "costPrice": "143.68",
-            "price": "449.00",
+            "costPrice": "14.40",
+            "price": "44.99",
             "weight": "0.28",
             "stock": {
               "Oxford Warehouse": 76
@@ -1308,8 +1307,8 @@
             "sku": "VTH-GRN-REF",
             "manageInventory": true,
             "allowBackorder": false,
-            "costPrice": "137.28",
-            "price": "429.00",
+            "costPrice": "13.76",
+            "price": "42.99",
             "weight": "0.24",
             "stock": {
               "Oxford Warehouse": 92
@@ -1394,7 +1393,7 @@
       "id": 2011,
       "name": "Vitamin D3 + K2",
       "sku": "VTH-VD3-90",
-      "price": "199.00",
+      "price": "19.99",
       "compareAtPrice": "",
       "inventory": 230,
       "category": "Beauty & Health",
@@ -1420,7 +1419,7 @@
       "detail": {
         "subtitle": "For the dark months",
         "url": "vitamin-d3-k2",
-        "description": "Vitamin D3 with K2 in one small capsule, for the months when the Swedish sun stays low. Vitamin D contributes to the normal function of the immune system. One capsule a day with a meal.",
+        "description": "Vitamin D3 with K2 in one small capsule, for the months when the winter sun stays low. Vitamin D contributes to the normal function of the immune system. One capsule a day with a meal.",
         "hasVariants": false,
         "options": [],
         "variantsList": [
@@ -1430,8 +1429,8 @@
             "sku": "VTH-VD3-90",
             "manageInventory": true,
             "allowBackorder": false,
-            "costPrice": "63.68",
-            "price": "199.00",
+            "costPrice": "6.40",
+            "price": "19.99",
             "weight": "0.06",
             "stock": {
               "Oxford Warehouse": 230
@@ -1459,7 +1458,7 @@
         ],
         "seo": {
           "title": "Vitamin D3 + K2 | Vitaheal",
-          "metaDescription": "For the dark months. Vitamin D3 with K2 in one small capsule, for the months when the Swedish sun stays low. Vitamin D contributes to the normal function of the immune system. One capsule a day with a meal.",
+          "metaDescription": "For the dark months. Vitamin D3 with K2 in one small capsule, for the months when the winter sun stays low. Vitamin D contributes to the normal function of the immune system. One capsule a day with a meal.",
           "urlHandle": "vitamin-d3-k2",
           "ogTitle": "Vitamin D3 + K2",
           "ogDescription": "For the dark months"
@@ -1504,7 +1503,7 @@
       "id": 2012,
       "name": "Omega-3",
       "sku": "VTH-OMG-60",
-      "price": "329.00",
+      "price": "32.99",
       "compareAtPrice": "",
       "inventory": 150,
       "category": "Beauty & Health",
@@ -1540,8 +1539,8 @@
             "sku": "VTH-OMG-60",
             "manageInventory": true,
             "allowBackorder": false,
-            "costPrice": "105.28",
-            "price": "329.00",
+            "costPrice": "10.56",
+            "price": "32.99",
             "weight": "0.10",
             "stock": {
               "Oxford Warehouse": 150
@@ -1626,7 +1625,7 @@
       "id": 2013,
       "name": "Magnesium",
       "sku": "VTH-MAG-120",
-      "price": "229.00",
+      "price": "22.99",
       "compareAtPrice": "",
       "inventory": 175,
       "category": "Beauty & Health",
@@ -1663,8 +1662,8 @@
             "sku": "VTH-MAG-120",
             "manageInventory": true,
             "allowBackorder": false,
-            "costPrice": "73.28",
-            "price": "229.00",
+            "costPrice": "7.36",
+            "price": "22.99",
             "weight": "0.12",
             "stock": {
               "Oxford Warehouse": 175
@@ -1733,7 +1732,7 @@
       "id": 2014,
       "name": "Creatine",
       "sku": "VTH-CRE-REF",
-      "price": "279.00",
+      "price": "27.99",
       "compareAtPrice": "",
       "inventory": 238,
       "category": "Beauty & Health",
@@ -1778,8 +1777,8 @@
             "sku": "VTH-CRE-CAN",
             "manageInventory": true,
             "allowBackorder": false,
-            "costPrice": "95.68",
-            "price": "299.00",
+            "costPrice": "9.60",
+            "price": "29.99",
             "weight": "0.14",
             "stock": {
               "Oxford Warehouse": 98
@@ -1791,8 +1790,8 @@
             "sku": "VTH-CRE-REF",
             "manageInventory": true,
             "allowBackorder": false,
-            "costPrice": "89.28",
-            "price": "279.00",
+            "costPrice": "8.96",
+            "price": "27.99",
             "weight": "0.10",
             "stock": {
               "Oxford Warehouse": 140
@@ -1861,7 +1860,7 @@
       "id": 2015,
       "name": "Vitamin C + Zinc",
       "sku": "VTH-VCZ-60",
-      "price": "179.00",
+      "price": "17.99",
       "compareAtPrice": "",
       "inventory": 190,
       "category": "Beauty & Health",
@@ -1897,8 +1896,8 @@
             "sku": "VTH-VCZ-60",
             "manageInventory": true,
             "allowBackorder": false,
-            "costPrice": "57.28",
-            "price": "179.00",
+            "costPrice": "5.76",
+            "price": "17.99",
             "weight": "0.07",
             "stock": {
               "Oxford Warehouse": 190
@@ -1971,7 +1970,7 @@
       "id": 2016,
       "name": "Daily Multi",
       "sku": "VTH-MUL-60",
-      "price": "249.00",
+      "price": "24.99",
       "compareAtPrice": "",
       "inventory": 160,
       "category": "Beauty & Health",
@@ -2007,8 +2006,8 @@
             "sku": "VTH-MUL-60",
             "manageInventory": true,
             "allowBackorder": false,
-            "costPrice": "79.68",
-            "price": "249.00",
+            "costPrice": "8.00",
+            "price": "24.99",
             "weight": "0.09",
             "stock": {
               "Oxford Warehouse": 160
@@ -2255,7 +2254,7 @@
       "productCount": 3,
       "status": "Active",
       "updatedAt": "2026-11-16T09:00:00Z",
-      "description": "Vitamins C and D and zinc, for the dark Swedish winter.",
+      "description": "Vitamins C and D and zinc, for the dark winter months.",
       "matchMode": "all",
       "rules": [],
       "productItemIds": [],
@@ -2350,7 +2349,7 @@
           "kind": "announcement-bar",
           "label": "Announcement bar",
           "settings": {
-            "text": "Free shipping over 549 kr · Made in Sweden · 30-day money-back guarantee on Unwind",
+            "text": "Free shipping over $50 · Made in Sweden · 30-day money-back guarantee on Unwind",
             "link": ""
           }
         },
@@ -2406,7 +2405,7 @@
               "id": "vitaheal-banner-stat-shipping",
               "kind": "stat",
               "settings": {
-                "value": "549 kr",
+                "value": "$50",
                 "label": "Free shipping over"
               }
             },
@@ -2543,7 +2542,7 @@
               "settings": {
                 "icon": "truck",
                 "title": "Free shipping",
-                "text": "On orders over 549 kr.",
+                "text": "On orders over $50.",
                 "link": ""
               }
             },
@@ -2657,7 +2656,7 @@
               "settings": {
                 "title": "Shipping and returns",
                 "source": "delivery-returns",
-                "text": "Orders placed before 10:00 CET on a weekday leave our warehouse the same day. Delivery takes 3 to 7 working days, and shipping is free on orders over 549 kr.\n\nYou can return unopened products within 14 days of delivery for a full refund.",
+                "text": "Orders placed before 2 pm ET on a weekday leave our warehouse the same day. Delivery takes 3 to 7 business days, and shipping is free on orders over $50.\n\nYou can return unopened products within 14 days of delivery for a full refund.",
                 "open": false
               }
             },
@@ -3222,7 +3221,7 @@
       "kind": "page",
       "title": "Contact",
       "handle": "contact",
-      "body": "<h2>We are here to help</h2><p>Questions about an order, a delivery or a subscription? Write to us and we will answer within one working day.</p><ul><li><strong>Email:</strong> hello@vitaheal.example</li><li><strong>Hours:</strong> Monday to Friday, 09:00 to 17:00 CET</li></ul><h3>Before you write</h3><p>Orders placed before 10:00 CET on a weekday leave our warehouse the same day. Delivery takes 3 to 7 working days.</p>",
+      "body": "<h2>We are here to help</h2><p>Questions about an order, a delivery or a subscription? Write to us and we will answer within one business day.</p><ul><li><strong>Email:</strong> hello@vitaheal.example</li><li><strong>Hours:</strong> Monday to Friday, 9 am to 5 pm ET</li></ul><h3>Before you write</h3><p>Orders placed before 2 pm ET on a weekday leave our warehouse the same day. Delivery takes 3 to 7 business days.</p>",
       "status": "Active",
       "template": "Default",
       "seoTitle": "Contact | Vitaheal",
@@ -3252,7 +3251,7 @@
       "kind": "page",
       "title": "Money-back guarantee terms",
       "handle": "money-back-guarantee",
-      "body": "<h2>30 days to try Unwind</h2><p>If Unwind is not right for you, tell us within 30 days of delivery and we will refund your first can or bag.</p><h3>What the guarantee covers</h3><ul><li>Your first order of Unwind, in either format.</li><li>One refund per customer and household.</li></ul><h3>What it does not cover</h3><ul><li>Other Vitaheal products.</li><li>Shipping costs for orders outside Sweden.</li></ul><p>Other returns follow our <a href=\"/policies/refund-policy\">refund policy</a>.</p>",
+      "body": "<h2>30 days to try Unwind</h2><p>If Unwind is not right for you, tell us within 30 days of delivery and we will refund your first can or bag.</p><h3>What the guarantee covers</h3><ul><li>Your first order of Unwind, in either format.</li><li>One refund per customer and household.</li></ul><h3>What it does not cover</h3><ul><li>Other Vitaheal products.</li><li>Shipping costs for orders outside the US.</li></ul><p>Other returns follow our <a href=\"/policies/refund-policy\">refund policy</a>.</p>",
       "status": "Active",
       "template": "Default",
       "seoTitle": "Money-back guarantee terms | Vitaheal",
@@ -3282,7 +3281,7 @@
       "kind": "policy",
       "title": "Refund policy",
       "handle": "refund-policy",
-      "body": "<h2>Refund policy</h2><p>You can return unopened products within 14 days of delivery for a full refund. Write to us first and we will send a return label.</p><h3>Refunds</h3><p>We refund to your original payment method within 5 working days of receiving the return.</p><h3>Subscriptions</h3><p>You can cancel a subscription before its next charge date. A delivery that has already been charged can be returned under the same 14-day rule.</p><p>Unwind also has a <a href=\"/page/money-back-guarantee\">30-day money-back guarantee</a>.</p>",
+      "body": "<h2>Refund policy</h2><p>You can return unopened products within 14 days of delivery for a full refund. Write to us first and we will send a return label.</p><h3>Refunds</h3><p>We refund to your original payment method within 5 business days of receiving the return.</p><h3>Subscriptions</h3><p>You can cancel a subscription before its next charge date. A delivery that has already been charged can be returned under the same 14-day rule.</p><p>Unwind also has a <a href=\"/page/money-back-guarantee\">30-day money-back guarantee</a>.</p>",
       "status": "Active",
       "template": "Default",
       "seoTitle": "Refund policy | Vitaheal",
@@ -3312,7 +3311,7 @@
       "kind": "policy",
       "title": "Terms of service",
       "handle": "terms-of-service",
-      "body": "<h2>Terms of service</h2><p>These terms apply when you buy from this store. Prices are in Swedish kronor and include VAT.</p><h3>Orders</h3><p>An order is confirmed when you receive our confirmation email. We may cancel an order if a product is out of stock, and we refund it in full if we do.</p><h3>Subscriptions</h3><p>A subscription renews at the interval you chose until you cancel it. We email you before each renewal.</p><h3>Delivery</h3><p>We deliver within 3 to 7 working days. Duties and taxes may apply outside the EU.</p>",
+      "body": "<h2>Terms of service</h2><p>These terms apply when you buy from this store. Prices are in US dollars.</p><h3>Orders</h3><p>An order is confirmed when you receive our confirmation email. We may cancel an order if a product is out of stock, and we refund it in full if we do.</p><h3>Subscriptions</h3><p>A subscription renews at the interval you chose until you cancel it. We email you before each renewal.</p><h3>Delivery</h3><p>We deliver within 3 to 7 business days. Duties and taxes may apply outside the US.</p>",
       "status": "Active",
       "template": "Default",
       "seoTitle": "Terms of service | Vitaheal",
@@ -3327,7 +3326,7 @@
       "kind": "policy",
       "title": "Subscription terms",
       "handle": "subscription-terms",
-      "body": "<h2>Subscription terms</h2><p>These terms apply when you buy a product on a subscription.</p><h3>What you agree to</h3><p>You ask us to send the product, and charge the payment method you used at checkout, at the interval of the plan you chose: every month, or every 3 months for a 3-month supply. The subscription runs until you cancel it.</p><h3>Price</h3><p>A monthly subscription saves 20% and a 3-month supply saves 30% on the product’s price. Prices are in Swedish kronor and include VAT.</p><h3>Before each renewal</h3><p>We email you before each renewal, so you have time to change it.</p><h3>Skip, pause or cancel</h3><p>You can skip a delivery, pause or cancel from <a href=\"/account\">your account</a>, at any time before the next charge date. A delivery that has already been charged can be returned under our <a href=\"/policies/refund-policy\">refund policy</a>.</p>",
+      "body": "<h2>Subscription terms</h2><p>These terms apply when you buy a product on a subscription.</p><h3>What you agree to</h3><p>You ask us to send the product, and charge the payment method you used at checkout, at the interval of the plan you chose: every month, or every 3 months for a 3-month supply. The subscription runs until you cancel it.</p><h3>Price</h3><p>A monthly subscription saves 20% and a 3-month supply saves 30% on the product’s price. Prices are in US dollars.</p><h3>Before each renewal</h3><p>We email you before each renewal, so you have time to change it.</p><h3>Skip, pause or cancel</h3><p>You can skip a delivery, pause or cancel from <a href=\"/account\">your account</a>, at any time before the next charge date. A delivery that has already been charged can be returned under our <a href=\"/policies/refund-policy\">refund policy</a>.</p>",
       "status": "Active",
       "template": "Default",
       "seoTitle": "Subscription terms | Vitaheal",
@@ -3457,7 +3456,7 @@
         "discountPct": 15
       },
       "orders": 37,
-      "revenue": 2148000
+      "revenue": 214800
     },
     {
       "id": "camp-vitaheal-sleep",
@@ -3495,7 +3494,7 @@
         "discountPct": 25
       },
       "orders": 112,
-      "revenue": 5936000
+      "revenue": 593600
     }
   ],
   "merchandising": {
@@ -3701,7 +3700,7 @@
           {
             "title": "Returns and refunds",
             "url": "/policies/refund-policy",
-            "text": "You can return unopened products within 14 days of delivery for a full refund. Write to us first and we will send a return label. We refund to your original payment method within 5 working days of receiving the return."
+            "text": "You can return unopened products within 14 days of delivery for a full refund. Write to us first and we will send a return label. We refund to your original payment method within 5 business days of receiving the return."
           },
           {
             "title": "Money-back guarantee on Unwind",
@@ -3714,9 +3713,9 @@
             "text": "We keep only what we need to deliver your order and look after your subscription: your name, address, email and order history. Your card details go straight to our payment provider and never reach us."
           },
           {
-            "title": "Prices, VAT and payment",
+            "title": "Prices and payment",
             "url": "/policies/terms-of-service",
-            "text": "Prices are in Swedish kronor and include VAT. You can pay by card, Apple Pay or Google Pay."
+            "text": "Prices are in US dollars. You can pay by card, Apple Pay or Google Pay."
           }
         ]
       },
@@ -3732,12 +3731,12 @@
           {
             "title": "Delivery times and shipping cost",
             "url": "/page/contact",
-            "text": "Orders placed before 10:00 CET on a weekday leave our warehouse the same day. Delivery takes 3 to 7 working days, and shipping is free on orders over 549 kr."
+            "text": "Orders placed before 2 pm ET on a weekday leave our warehouse the same day. Delivery takes 3 to 7 business days, and shipping is free on orders over $50."
           },
           {
             "title": "Which countries we ship to",
             "url": "/policies/terms-of-service",
-            "text": "We ship to Sweden, Norway, Denmark, Finland and Iceland, and to the rest of the EU. Duties and taxes may apply outside the EU."
+            "text": "We ship to the United States, Canada, the United Kingdom, Australia and New Zealand. Duties and taxes may apply outside the US."
           },
           {
             "title": "How subscriptions work",
@@ -3747,7 +3746,7 @@
           {
             "title": "Contact and opening hours",
             "url": "/page/contact",
-            "text": "Write to hello@vitaheal.example and we answer within one working day. We are here Monday to Friday, 09:00 to 17:00 CET."
+            "text": "Write to hello@vitaheal.example and we answer within one business day. We are here Monday to Friday, 9 am to 5 pm ET."
           },
           {
             "title": "Where our products are made and tested",
@@ -3760,7 +3759,7 @@
   },
   "conversations": [
     {
-      "visitor": "astrid.lindqvist@example.com",
+      "visitor": "emma.collins@example.com",
       "startedAt": "Today, 8:12 AM",
       "topic": "Subscription",
       "resolved": true,
@@ -3823,12 +3822,12 @@
       "messages": [
         {
           "from": "shopper",
-          "text": "Do you ship to Norway?",
+          "text": "Do you ship to Canada?",
           "time": "2:05 PM"
         },
         {
           "from": "bot",
-          "text": "We ship to Sweden, Norway, Denmark, Finland and Iceland, and to the rest of the EU. Duties and taxes may apply outside the EU.",
+          "text": "We ship to the United States, Canada, the United Kingdom, Australia and New Zealand. Duties and taxes may apply outside the US.",
           "time": "2:05 PM"
         }
       ]
@@ -3858,14 +3857,14 @@
       "number": "S-1001",
       "channelId": "vitaheal-demo",
       "customer": {
-        "name": "Astrid Lindqvist",
-        "email": "astrid.lindqvist@example.com",
+        "name": "Emma Collins",
+        "email": "emma.collins@example.com",
         "address": {
-          "line1": "Vasagatan 21",
-          "city": "Göteborg",
-          "region": "",
-          "postalCode": "411 24",
-          "country": "Sweden"
+          "line1": "418 Maple Avenue",
+          "city": "Minneapolis",
+          "region": "MN",
+          "postalCode": "55401",
+          "country": "United States"
         }
       },
       "productId": 2001,
@@ -3880,8 +3879,8 @@
         "unitsPerDelivery": 3,
         "freeShipping": true
       },
-      "price": "837.90",
-      "currency": "SEK",
+      "price": "83.97",
+      "currency": "USD",
       "paymentMethod": "Visa •••• 4242",
       "methodId": "card",
       "status": "Active",
@@ -3910,14 +3909,14 @@
       "number": "S-1002",
       "channelId": "vitaheal-demo",
       "customer": {
-        "name": "Erik Johansson",
-        "email": "erik.johansson@example.com",
+        "name": "Jacob Turner",
+        "email": "jacob.turner@example.com",
         "address": {
-          "line1": "Södra Förstadsgatan 40",
-          "city": "Malmö",
-          "region": "",
-          "postalCode": "211 43",
-          "country": "Sweden"
+          "line1": "2210 Pecan Street",
+          "city": "Austin",
+          "region": "TX",
+          "postalCode": "78701",
+          "country": "United States"
         }
       },
       "productId": 2005,
@@ -3932,8 +3931,8 @@
         "unitsPerDelivery": 1,
         "freeShipping": false
       },
-      "price": "223.20",
-      "currency": "SEK",
+      "price": "22.39",
+      "currency": "USD",
       "paymentMethod": "Mastercard •••• 5454",
       "methodId": "card",
       "status": "Active",
@@ -3962,14 +3961,14 @@
       "number": "S-1003",
       "channelId": "vitaheal-demo",
       "customer": {
-        "name": "Maja Nilsson",
-        "email": "maja.nilsson@example.com",
+        "name": "Olivia Bennett",
+        "email": "olivia.bennett@example.com",
         "address": {
-          "line1": "Kungsgatan 9",
-          "city": "Uppsala",
-          "region": "",
-          "postalCode": "753 21",
-          "country": "Sweden"
+          "line1": "75 Beacon Street",
+          "city": "Boston",
+          "region": "MA",
+          "postalCode": "02108",
+          "country": "United States"
         }
       },
       "productId": 2002,
@@ -3984,8 +3983,8 @@
         "unitsPerDelivery": 1,
         "freeShipping": false
       },
-      "price": "311.20",
-      "currency": "SEK",
+      "price": "31.19",
+      "currency": "USD",
       "paymentMethod": "Visa •••• 1881",
       "methodId": "card",
       "status": "Active",
@@ -4024,14 +4023,14 @@
       "number": "S-1004",
       "channelId": "vitaheal-demo",
       "customer": {
-        "name": "Oskar Bergström",
-        "email": "oskar.bergstrom@example.com",
+        "name": "Ethan Brooks",
+        "email": "ethan.brooks@example.com",
         "address": {
-          "line1": "Drottninggatan 55",
-          "city": "Stockholm",
-          "region": "",
-          "postalCode": "111 21",
-          "country": "Sweden"
+          "line1": "1630 Pine Street",
+          "city": "Seattle",
+          "region": "WA",
+          "postalCode": "98101",
+          "country": "United States"
         }
       },
       "productId": 2003,
@@ -4046,8 +4045,8 @@
         "unitsPerDelivery": 3,
         "freeShipping": true
       },
-      "price": "1362.90",
-      "currency": "SEK",
+      "price": "136.47",
+      "currency": "USD",
       "paymentMethod": "Amex •••• 0005",
       "methodId": "card",
       "status": "Active",
@@ -4081,14 +4080,14 @@
       "number": "S-1005",
       "channelId": "vitaheal-demo",
       "customer": {
-        "name": "Elsa Karlsson",
-        "email": "elsa.karlsson@example.com",
+        "name": "Sophie Hayes",
+        "email": "sophie.hayes@example.com",
         "address": {
-          "line1": "Storgatan 3",
-          "city": "Linköping",
-          "region": "",
-          "postalCode": "582 23",
-          "country": "Sweden"
+          "line1": "309 Peachtree Lane",
+          "city": "Atlanta",
+          "region": "GA",
+          "postalCode": "30303",
+          "country": "United States"
         }
       },
       "productId": 2006,
@@ -4103,8 +4102,8 @@
         "unitsPerDelivery": 1,
         "freeShipping": false
       },
-      "price": "327.20",
-      "currency": "SEK",
+      "price": "32.79",
+      "currency": "USD",
       "paymentMethod": "Visa •••• 7720",
       "methodId": "card",
       "status": "Paused",
@@ -4143,14 +4142,14 @@
       "number": "S-1006",
       "channelId": "vitaheal-demo",
       "customer": {
-        "name": "Lucas Andersson",
-        "email": "lucas.andersson@example.com",
+        "name": "Noah Patel",
+        "email": "noah.patel@example.com",
         "address": {
-          "line1": "Nygatan 14",
-          "city": "Örebro",
-          "region": "",
-          "postalCode": "702 11",
-          "country": "Sweden"
+          "line1": "88 Lakeshore Drive",
+          "city": "Chicago",
+          "region": "IL",
+          "postalCode": "60601",
+          "country": "United States"
         }
       },
       "productId": 2005,
@@ -4165,8 +4164,8 @@
         "unitsPerDelivery": 3,
         "freeShipping": true
       },
-      "price": "585.90",
-      "currency": "SEK",
+      "price": "58.77",
+      "currency": "USD",
       "paymentMethod": "Mastercard •••• 3102",
       "methodId": "card",
       "status": "Payment failed",
@@ -4195,14 +4194,14 @@
       "number": "S-1007",
       "channelId": "vitaheal-demo",
       "customer": {
-        "name": "Freja Holm",
-        "email": "freja.holm@example.com",
+        "name": "Lily Carter",
+        "email": "lily.carter@example.com",
         "address": {
-          "line1": "Hamngatan 7",
-          "city": "Kalmar",
-          "region": "",
-          "postalCode": "392 31",
-          "country": "Sweden"
+          "line1": "12 Ocean Avenue",
+          "city": "San Diego",
+          "region": "CA",
+          "postalCode": "92101",
+          "country": "United States"
         }
       },
       "productId": 2001,
@@ -4217,8 +4216,8 @@
         "unitsPerDelivery": 1,
         "freeShipping": false
       },
-      "price": "319.20",
-      "currency": "SEK",
+      "price": "31.99",
+      "currency": "USD",
       "paymentMethod": "Visa •••• 6009",
       "methodId": "card",
       "status": "Cancelled",
@@ -4253,14 +4252,14 @@
       "number": "S-1008",
       "channelId": "vitaheal-demo",
       "customer": {
-        "name": "Nils Ekström",
-        "email": "nils.ekstrom@example.com",
+        "name": "Henry Walsh",
+        "email": "henry.walsh@example.com",
         "address": {
-          "line1": "Rådhusesplanaden 2",
-          "city": "Umeå",
-          "region": "",
-          "postalCode": "903 28",
-          "country": "Sweden"
+          "line1": "540 Elm Street",
+          "city": "Burlington",
+          "region": "VT",
+          "postalCode": "05401",
+          "country": "United States"
         }
       },
       "productId": 2002,
@@ -4275,8 +4274,8 @@
         "unitsPerDelivery": 3,
         "freeShipping": true
       },
-      "price": "816.90",
-      "currency": "SEK",
+      "price": "81.87",
+      "currency": "USD",
       "paymentMethod": "Visa •••• 4242",
       "methodId": "card",
       "status": "Active",

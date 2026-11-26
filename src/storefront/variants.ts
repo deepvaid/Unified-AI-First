@@ -148,8 +148,8 @@ export function initialSelection(product: VariantProduct, query: Readonly<Record
 
 /**
  * The choice of the lowest-priced variant a shopper can buy (the first of any that
- * cost the same), for a product page that opens on it: Unwind opens on Bag at 399 kr
- * rather than "From 399 kr". With `given`, among the variants that come with those
+ * cost the same), for a product page that opens on it: Unwind opens on Bag at $39.99
+ * rather than "From $39.99". With `given`, among the variants that come with those
  * values (the cheapest in Sand). Empty when nothing can be bought, or there is no choice.
  */
 export function cheapestSelection<V extends SellableVariant & { price: string }>(product: VariantProduct<V>, given: VariantSelection = {}): Record<string, string> {

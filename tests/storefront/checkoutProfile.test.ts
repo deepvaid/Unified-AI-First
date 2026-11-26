@@ -31,7 +31,10 @@ test('its sample shopper lives in the store’s home country, at an address with
   assert.equal(keepsAddress, true)
 })
 
-test('the Vitaheal (demo) store gets the Swedish checkout', () => {
-  assert.equal(checkoutProfile(VITAHEAL_CHANNEL.webStore?.currency).shopper.city, 'Stockholm')
+test('the Vitaheal (demo) store gets the US checkout', () => {
+  assert.equal(VITAHEAL_CHANNEL.webStore?.currency, 'USD')
+  const profile = checkoutProfile(VITAHEAL_CHANNEL.webStore?.currency)
+  assert.equal(profile.countries[0], 'United States')
+  assert.equal(profile.shopper.city, 'San Francisco')
   assert.equal(VITAHEAL_CHANNEL.webStore?.demo, true)
 })

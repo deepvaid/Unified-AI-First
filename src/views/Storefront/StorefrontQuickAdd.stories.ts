@@ -63,8 +63,8 @@ StorefrontListingCard). Shown here with Northfold's own products and theme.
 - A product the store sells on a **subscription plan** (Vitaheal) always opens the drawer, even with
   nothing to choose. Under the picker are its purchase options (StorefrontPurchaseOptions) in the theme's
   layout, preselected as its purchase options block says, priced on the choice made, with the policy line.
-  On a plan the button reads **Add subscription to cart · 838 kr**, the line goes into the cart on the plan
-  at its price, and the drawer then reads "Bag · 3-month supply" and "838 kr per delivery". When the
+  On a plan the button reads **Add subscription to cart · $83.97**, the line goes into the cart on the plan
+  at its price, and the drawer then reads "Bag · 3-month supply" and "$83.97 per delivery". When the
   product template opens on the lowest-priced choice (\`preselectVariant\`), so does the drawer.
 
 Out of system on purpose (P4-8): it draws with the store's theme variables, not Marobase tokens.

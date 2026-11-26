@@ -689,7 +689,7 @@ export const sectionCatalog: ThemeSectionDef[] = [
       { key: 'sizeGuide', label: 'Size guide link', type: 'toggle', drawing: 'sections', requires: 'sizes' },
       // An auto-parts store: whether the part fits the shopper's vehicle, under the title.
       { key: 'fitment', label: 'Vehicle fit banner', type: 'toggle', drawing: 'sections', requires: 'parts' },
-      // The page opens with the cheapest variant chosen (Bag, not "From 399 kr" and "Select a format").
+      // The page opens with the cheapest variant chosen (Bag, not "From $39.99" and "Select a format").
       { key: 'preselectVariant', label: 'Open on the lowest-priced choice', type: 'toggle', drawing: 'sections', hint: 'The page opens with the cheapest variant already chosen.' },
       { key: 'quantity', label: 'Quantity selector', type: 'toggle', drawing: 'sections', hint: 'A − 1 + stepper beside Add to cart.' },
       // "In stock, ready to ship", or "Only 2 left", under the price.

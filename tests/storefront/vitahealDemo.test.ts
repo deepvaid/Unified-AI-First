@@ -14,29 +14,31 @@ import { defaultOptionId, plansForProduct, purchaseOptions } from '../../src/sub
 import { catalogFor, hasPriceRange } from '../../src/storefront/catalog.ts'
 
 // The seed against the reference tables in docs/store-builder/bkm-build-prompt.md, section 6.
+// Those tables are in kronor; since 2026-11-25 the store sells in US dollars, each n9 kr price
+// as the US price point $n.99 (399 kr is $39.99), so the prices here are the tables' converted.
 
 const products = vitahealProducts()
 const byName = (name: string) => products.find((p) => p.name === name)!
 const variantPrices = (name: string) => Object.fromEntries(byName(name).detail!.variantsList.map((v) => [v.title, Number(v.price)]))
 const handle = (name: string) => name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
 
-test('the catalogue is the eight reference products at their SEK prices, then the eight added after the second review', () => {
+test('the catalogue is the eight reference products at their US dollar prices, then the eight added after the second review', () => {
   assert.equal(products.length, 16)
   assert.deepEqual(products.slice(0, 8).map((p) => p.name), [
     'Unwind', 'Clear Focus', 'Daily NAD+', 'Nasal Strips', 'Vitaheal Electrolytes', 'Collagen+', 'Balance Refill', 'Balance',
   ])
-  assert.deepEqual(variantPrices('Vitaheal Electrolytes'), { 'Lemon & Ginger': 279, 'Wild Berries': 279, 'Starter Pack (both flavours)': 499 })
-  assert.deepEqual(variantPrices('Unwind'), { Can: 419, Bag: 399 })
-  assert.deepEqual(variantPrices('Clear Focus'), { Original: 409, Refill: 389 })
-  assert.deepEqual(variantPrices('Collagen+'), { Original: 429, Refill: 409 })
-  assert.deepEqual(variantPrices('Daily NAD+'), { Original: 669, Refill: 649 })
-  for (const single of ['Balance', 'Balance Refill']) assert.deepEqual(Object.values(variantPrices(single)), [419])
-  assert.deepEqual(Object.values(variantPrices('Nasal Strips')), [199])
+  assert.deepEqual(variantPrices('Vitaheal Electrolytes'), { 'Lemon & Ginger': 27.99, 'Wild Berries': 27.99, 'Starter Pack (both flavours)': 49.99 })
+  assert.deepEqual(variantPrices('Unwind'), { Can: 41.99, Bag: 39.99 })
+  assert.deepEqual(variantPrices('Clear Focus'), { Original: 40.99, Refill: 38.99 })
+  assert.deepEqual(variantPrices('Collagen+'), { Original: 42.99, Refill: 40.99 })
+  assert.deepEqual(variantPrices('Daily NAD+'), { Original: 66.99, Refill: 64.99 })
+  for (const single of ['Balance', 'Balance Refill']) assert.deepEqual(Object.values(variantPrices(single)), [41.99])
+  assert.deepEqual(Object.values(variantPrices('Nasal Strips')), [19.99])
 })
 
 test('the Starter Pack is the only variant with a compare-at price', () => {
   const withCompareAt = products.flatMap((p) => p.detail!.variantsList).filter((v) => v.compareAtPrice)
-  assert.deepEqual(withCompareAt.map((v) => [v.title, v.compareAtPrice]), [['Starter Pack (both flavours)', '558.00']])
+  assert.deepEqual(withCompareAt.map((v) => [v.title, v.compareAtPrice]), [['Starter Pack (both flavours)', '55.98']])
 })
 
 test('every variant has a unique SKU and a weight', () => {
@@ -49,9 +51,9 @@ test('every variant has a unique SKU and a weight', () => {
 })
 
 test('a card shows the lowest price, with "From" only where variants differ', () => {
-  assert.equal(byName('Unwind').price, '399.00')
+  assert.equal(byName('Unwind').price, '39.99')
   assert.equal(hasPriceRange(byName('Unwind')), true)
-  assert.equal(byName('Nasal Strips').price, '199.00')
+  assert.equal(byName('Nasal Strips').price, '19.99')
   assert.equal(hasPriceRange(byName('Nasal Strips')), false)
 })
 
@@ -77,9 +79,9 @@ test('collections match the reference, with Immunity last: eight on subscription
   for (const c of VITAHEAL_COLLECTIONS) assert.ok(c.productCount > 0, `${c.title} has products`)
 })
 
-test('the store is a published web store priced in SEK', () => {
+test('the store is a published web store priced in US dollars', () => {
   assert.equal(VITAHEAL_CHANNEL.type, 'web_store')
-  assert.equal(VITAHEAL_CHANNEL.webStore?.currency, 'SEK')
+  assert.equal(VITAHEAL_CHANNEL.webStore?.currency, 'USD')
   assert.equal(VITAHEAL_CHANNEL.webStore?.storeBuilderEnabled, true)
 })
 
@@ -130,12 +132,12 @@ test('the theme’s colour pairs pass WCAG 2.1 AA for text, and a field’s edge
   assert.equal(onBrandColor(s.customBadgeColor), '#121011', 'dark ink on the lime badge')
 })
 
-test('the move to the sections drawing keeps what checkout and the account read: kronor, the account link', () => {
+test('on the sections drawing, checkout and the account read US dollars and the account link', () => {
   assert.equal(VITAHEAL_THEME_STYLES.drawing, 'sections')
-  assert.deepEqual([VITAHEAL_CHANNEL.webStore?.currency, VITAHEAL_CHANNEL.webStore?.locale, VITAHEAL_CHANNEL.webStore?.demo], ['SEK', 'sv-SE', true])
-  // Whole kronor on the pages, öre where an amount is charged.
-  assert.equal(formatStorePrice(money(39900, 'SEK'), 'sv-SE').replace(/\s/g, ' '), '399 kr')
-  assert.equal(formatStorePrice(money(58590, 'SEK'), 'sv-SE').replace(/\s/g, ' '), '585,90 kr')
+  assert.deepEqual([VITAHEAL_CHANNEL.webStore?.currency, VITAHEAL_CHANNEL.webStore?.locale, VITAHEAL_CHANNEL.webStore?.demo], ['USD', undefined, true])
+  // No store locale: dollars and cents, on the pages and where an amount is charged.
+  assert.equal(formatStorePrice(money(3999, 'USD'), VITAHEAL_CHANNEL.webStore?.locale), '$39.99')
+  assert.equal(formatStorePrice(money(5877, 'USD'), VITAHEAL_CHANNEL.webStore?.locale), '$58.77')
   assert.equal(VITAHEAL_CHROME.accountHref, '/account')
 })
 
@@ -286,12 +288,12 @@ test('the home page: the hero with its badge and three figures, the goals carous
     ['button', 'Shop all products', '/collections/all'],
     ['button', 'Subscribe and save', '/collections/subscription'],
     ['stat', '20–30%', 'Saved on a plan'],
-    ['stat', '549 kr', 'Free shipping over'],
+    ['stat', '$50', 'Free shipping over'],
     ['stat', '30 days', 'Money back on Unwind'],
   ])
   // The figures are the store's own facts, as its plans and pages state them: no rating, no count of customers.
   assert.deepEqual(VITAHEAL_PLANS.map((p) => p.discountPct).sort(), [20, 30])
-  assert.match(String(sectionOf('vitaheal-home-announcement').settings.text), /Free shipping over 549 kr/)
+  assert.match(String(sectionOf('vitaheal-home-announcement').settings.text), /Free shipping over \$50/)
   assert.match(VITAHEAL_CONTENT.find((e) => e.handle === 'money-back-guarantee')!.body, /30 days to try Unwind/)
 
   const goals = sectionOf('vitaheal-home-collections')
@@ -384,7 +386,7 @@ test('the plans, their prices and the default are as they were: the 3-month supp
   assert.deepEqual(VITAHEAL_PLANS.map((p) => [p.name, p.discountPct, p.unitsPerDelivery, p.isDefault, p.options]), [
     ['3-month supply', 30, 3, true, undefined], ['Monthly subscription', 20, 1, false, undefined],
   ])
-  const options = purchaseOptions(fromDecimal('279.00', 'SEK')!, plansForProduct(VITAHEAL_PLANS, VITAHEAL_CHANNEL_ID, 2005))
+  const options = purchaseOptions(fromDecimal('27.99', 'USD')!, plansForProduct(VITAHEAL_PLANS, VITAHEAL_CHANNEL_ID, 2005))
   const block = purchaseOptionsSettings({ templates: VITAHEAL_THEME_TEMPLATES })!
   assert.equal(block.subscriptionFirst, false)
   assert.equal(defaultOptionId(options, block.subscriptionFirst), 'plan-3-month')

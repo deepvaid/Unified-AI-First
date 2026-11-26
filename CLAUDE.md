@@ -479,10 +479,12 @@ Example: `[feat]: add MpDateRangePicker component with story`
   report for the real MCC; never edit its statuses), `bkm-build-prompt.md` (the slice-by-slice build
   prompt) and `bkm-build-tracker.md` (prototype progress per slice and requirement). The demo store is
   sales channel `vitaheal-demo` ("Vitaheal", a fictional brand that stands in for BKM so sales can show it to any
-  prospect), seeded from `src/storefront/vitahealDemo.ts`: sixteen supplements (2001-2016) in six goals, eight of them on its two plans. Its seed version is 2, so a browser that saved the store at seed 1 is seeded again on its next start. Its products, subscription plans, subscribers, campaigns, chatbot settings and chats, and its Merchandise Cloud connection and rules, are kept in this browser
+  prospect), seeded from `src/storefront/vitahealDemo.ts`: sixteen supplements (2001-2016) in six goals, eight of them on its two plans. Its seed version is 3, so a browser that saved the store at seed 1 or 2 (in kronor) is seeded again on its next start, in dollars. Its products, subscription plans, subscribers, campaigns, chatbot settings and chats, and its Merchandise Cloud connection and rules, are kept in this browser
   (`mp.vitaheal-demo.*` in localStorage) and put back from the store's Settings tab ("Restore original store").
-  The store carries `webStore.demo`: its checkout uses plain words where another store shows a prototype note, and amounts
-  that are charged read "585,90 kr" (the product pages and cart show whole kronor).
+  Since 2026-11-25 it is a Swedish brand's US store: it sells in US dollars ("$39.99", and "$58.77" where an amount is
+  charged), with the US checkout, and stays "Made in Sweden"; the kronor rules ("399 kr", "585,90 kr", the Swedish
+  checkout) stay for any store set to SEK. The store carries `webStore.demo`: its checkout uses plain words where another
+  store shows a prototype note.
   A second demo store, `northfold-demo` (Northfold, women's and men's clothing, US dollars, no subscriptions), is
   seeded from `src/storefront/northfoldDemo.ts`, keeps its data under `mp.demo-store.northfold-demo.*`, and has its
   walkthrough in `northfold-demo-script.md`. A third, `torqline-demo` (Torqline Auto Parts, everyday maintenance parts for ten

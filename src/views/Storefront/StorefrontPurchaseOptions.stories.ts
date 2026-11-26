@@ -4,7 +4,7 @@ import { fromDecimal } from '@/maropay/money'
 import type { Money } from '@/maropay/money'
 import { formatStorePrice } from '@/storefront/price'
 import { VITAHEAL_CHANNEL_ID, VITAHEAL_PLANS } from '@/storefront/vitahealDemo'
-import { defaultOptionId, planFromOptions, plansForProduct, purchaseOptions, roundForDisplay } from '@/subscriptions/plans'
+import { defaultOptionId, planFromOptions, plansForProduct, purchaseOptions } from '@/subscriptions/plans'
 import type { SubscriptionPlan } from '@/subscriptions/plans'
 import StorefrontPurchaseOptions from './StorefrontPurchaseOptions.vue'
 import { STOREFRONT } from './storefrontContext'
@@ -29,10 +29,9 @@ const SUBSCRIBE_AND_SAVE: SubscriptionPlan = {
 }
 
 const byOptions = purchaseOptions(fromDecimal('29.00', 'USD'), plansForProduct([SUBSCRIBE_AND_SAVE], 'store', 1))
-// Vitaheal's plans of one fixed delivery, on its Electrolytes at 279 kr.
-const fixed = purchaseOptions(fromDecimal('279.00', 'SEK'), plansForProduct(VITAHEAL_PLANS, VITAHEAL_CHANNEL_ID, 2005))
+// Vitaheal's plans of one fixed delivery, on its Electrolytes at $27.99.
+const fixed = purchaseOptions(fromDecimal('27.99', 'USD'), plansForProduct(VITAHEAL_PLANS, VITAHEAL_CHANNEL_ID, 2005))
 const dollars = (amount: Money) => formatStorePrice(amount, 'en-US')
-const kronor = (amount: Money) => formatStorePrice(roundForDisplay(amount), 'sv-SE')
 
 const POLICY = { policyText: 'Pause or cancel any time.', termsHref: 'https://example.com/subscription-terms' }
 
@@ -107,5 +106,5 @@ export const Dropdown: Story = {
 
 /** Vitaheal's plans of one fixed delivery, with no line under them: as the store shows them without the block. */
 export const FixedDeliveryPlans: Story = {
-  args: { options: fixed, modelValue: defaultOptionId(fixed), formatMoney: kronor, policyText: '', termsHref: '' },
+  args: { options: fixed, modelValue: defaultOptionId(fixed), formatMoney: dollars, policyText: '', termsHref: '' },
 }

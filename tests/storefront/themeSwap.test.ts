@@ -62,6 +62,7 @@ const savedBrowser = () => Object.fromEntries(keptKeys().map((key) => [key, memo
  * Since Vitaheal's seed version 2 (eight more products, 2026-11-25) a browser's first start
  * seeds Vitaheal again and records the version it holds (useDemoStores reseedStale); a restore
  * clears it and writes it again. It names the theme the store started with: no theme is applied.
+ * Vitaheal is at seed 3 since it moved to US dollars (the same day).
  */
 const VH_SEED = 'mp.vitaheal-demo.installed.v1'
 const seedRecord = () => JSON.parse(memory.get(VH_SEED) ?? 'null') as { blueprintId: string; seedVersion: number } | null
@@ -150,7 +151,7 @@ for (const storeId of [...STORES, GARAGE]) {
       // Nothing of the store is kept, but Vitaheal's record of the seed it holds (its own theme, not an applied one).
       const kept = keptKeys().filter((key) => key.includes(`${storeId}.`) && !key.endsWith('created-stores.v1'))
       assert.deepEqual(kept, storeId === VH ? [VH_SEED] : [], keptKeys().join())
-      if (storeId === VH) assert.deepEqual([seedRecord()?.blueprintId, seedRecord()?.seedVersion], ['vitaheal', 2])
+      if (storeId === VH) assert.deepEqual([seedRecord()?.blueprintId, seedRecord()?.seedVersion], ['vitaheal', 3])
     })
   }
 }
@@ -432,7 +433,8 @@ test('the Apply and Restore dialogs count what the store holds and what the them
   const products = app.commerce.products.filter((p) => p.channelIds?.includes(VH)).length
   const lines = app.demoStores.applyPreview(VH, 'northfold')
   assert.ok(lines.includes(`20 products replace the ${products} in this store.`), lines.join('\n'))
-  assert.ok(lines.includes('Prices change to US dollars.'), lines.join('\n'))
+  // Since seed 3 Vitaheal sells in US dollars, as Northfold does: nothing is said about prices.
+  assert.ok(!lines.some((line) => line.startsWith('Prices change')), lines.join('\n'))
   assert.ok(lines.some((line) => /subscription plans are paused, so no one new can subscribe; its \w+ subscribers keep their subscriptions\.$/.test(line)), lines.join('\n'))
   assert.ok(lines.includes('The chatbot answers as a clothing store.'))
 
@@ -442,7 +444,9 @@ test('the Apply and Restore dialogs count what the store holds and what the them
   await settle()
   assert.equal(app.demoStores.restorePreview(VH)?.lines[0], 'The theme goes back to Vitaheal, with its collections, pages and menus.')
   assert.equal(app.demoStores.restoreFacts(VH)?.applied, 'Torqline')
-  assert.ok(app.demoStores.restorePreview(VH)?.lines.includes('Prices go back to Swedish kronor.'))
+  // Torqline is in US dollars too, so a restore does not change the prices' currency either.
+  assert.equal(app.demoStores.restoreFacts(VH)?.pricesBackTo, undefined)
+  assert.ok(!app.demoStores.restorePreview(VH)?.lines.some((line) => line.startsWith('Prices go back')))
   // Vitaheal is seeded without Merchandise Cloud: search waits for it, and a restore disconnects a store connected since.
   assert.ok(app.demoStores.applyPreview(VH, 'northfold').includes('Search works once this store connects to Merchandise Cloud.'))
   app.channels.connectMerchandising(ACCOUNT, VH)

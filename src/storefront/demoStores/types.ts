@@ -183,6 +183,13 @@ export interface DemoStoreBlueprint {
   slot: number
   /** Bumped when the seed changes, so a browser that saved data from the old one starts again. */
   seedVersion: number
+  /**
+   * The seed version from which the store sells in its present currency, when an earlier seed sold
+   * in another. A browser that saved the store before it (in the old currency) is seeded again with
+   * its history put back as a restore does (subscribers, chats, campaign emails) and its cart emptied,
+   * so nothing is left priced in the old currency. Orders stay as they were placed.
+   */
+  marketChangedAt?: number
   /** The seeded sales channel, with `webStore.blueprint` set. */
   homeChannel: SalesChannel
   admin: AdminFacts

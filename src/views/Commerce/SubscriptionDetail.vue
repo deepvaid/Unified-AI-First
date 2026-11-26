@@ -69,7 +69,10 @@ const facts = computed(() => {
 
 const address = computed(() => {
   const a = contract.value?.customer.address
-  return a ? [a.line1, [a.postalCode, a.city].filter(Boolean).join(' '), a.country].filter(Boolean) : []
+  if (!a) return []
+  // An address with a state reads "San Francisco, CA 94105"; one without (Sweden) "114 51 Stockholm", as it is written there.
+  const place = a.region ? `${a.city}, ${[a.region, a.postalCode].filter(Boolean).join(' ')}` : [a.postalCode, a.city].filter(Boolean).join(' ')
+  return [a.line1, place, a.country].filter(Boolean)
 })
 
 const WHO: Record<ContractEvent['actor'], string> = { customer: 'By the customer', merchant: 'By the store' }

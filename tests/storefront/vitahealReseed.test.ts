@@ -1,8 +1,15 @@
 // Vitaheal's seed version 2 (eight more products, 2026-11-25), as the app runs it. A browser
 // that saved Vitaheal at seed 1 (no `installed` record, or one at version 1) is seeded again
 // on its next start (useDemoStores reseedStale), so a reviewer who already opened the store
-// sees all sixteen products. What that reseed keeps and drops is pinned here: it is the same
-// reseed an applied theme does, without emptying the cart. A browser at seed 2 is left alone.
+// sees all sixteen products. That reseed is the same one an applied theme does.
+//
+// Seed version 3 (the same day) moved the store to US dollars, so a browser at seed 2 is seeded
+// again too. A browser saved before seed 3 (at 1 or 2) held the store in kronor, so its reseed
+// also puts the store's history back as a restore does (subscribers, chats and the chatbot's
+// on/off, campaign emails, the Merchandise Cloud connection, theme copies) and empties the cart,
+// so nothing is left in kronor; orders stay as they were placed (the blueprint's
+// `marketChangedAt`). What it keeps and drops is pinned here, part by part. A browser at seed 3
+// is left alone.
 //
 // A store made with Create sales channel from the Vitaheal theme records the seed it was made at
 // (useDemoStores.create, markSeeded), so its next start does not seed it again: see
@@ -46,7 +53,7 @@ const { useStoreCampaignsStore } = await import('@/stores/useStoreCampaigns')
 const { useMerchandisingStore } = await import('@/stores/useMerchandising')
 const { useChatbotStore } = await import('@/stores/useChatbot')
 const { useSubscriptionsStore } = await import('@/stores/useSubscriptions')
-const { useCampaignsStore } = await import('@/stores/useCampaigns')
+const { useCampaignsStore, STORE_CAMPAIGN_TAG } = await import('@/stores/useCampaigns')
 const { useSizeChartsStore } = await import('@/stores/useSizeCharts')
 const { useStorefrontCartStore } = await import('@/stores/useStorefrontCart')
 const { useDemoStores } = await import('@/stores/useDemoStores')
@@ -91,40 +98,40 @@ const vitaheal = (app: App) => app.channels.channels.find((c) => c.id === VH)!
 
 // ── Which browsers are seeded again ──────────────────────────────────────────
 
-test('only Vitaheal\'s seed version moves to 2; every other demo store stays at 1', () => {
-  assert.equal(demoStoreFor('vitaheal').seedVersion, 2)
+test('only Vitaheal\'s seed version has moved, to 3; every other demo store stays at 1', () => {
+  assert.equal(demoStoreFor('vitaheal').seedVersion, 3)
   assert.deepEqual(DEMO_STORES.filter((b) => b.id !== 'vitaheal').map((b) => [b.id, b.seedVersion]), [
     ['northfold', 1], ['torqline', 1], ['lumos', 1], ['aurora', 1], ['daybloom', 1],
   ])
 })
 
-test('an empty browser seeds sixteen products and records seed 2; the next start seeds nothing again', async () => {
+test('an empty browser seeds sixteen products and records seed 3; the next start seeds nothing again', async () => {
   const first = await startApp()
   assert.equal(vitahealProducts(first).length, 16)
   assert.deepEqual(Object.keys(browser()), [VH_SEED])
-  assert.deepEqual([record()?.blueprintId, record()?.seedVersion], ['vitaheal', 2])
+  assert.deepEqual([record()?.blueprintId, record()?.seedVersion], ['vitaheal', 3])
   const saved = browser()
   await startApp(saved)
   assert.deepEqual(browser(), saved)
 })
 
-test('a browser at seed 1 with no record (as the app before the registry left it) is seeded again: sixteen products, seed 2 recorded', async () => {
+test('a browser at seed 1 with no record (as the app before the registry left it) is seeded again: sixteen products, seed 3 recorded', async () => {
   const app = await startApp(SAVED_HEAD)
   const products = vitahealProducts(app)
   assert.equal(products.length, 16)
   assert.deepEqual(products.map((p) => p.id), Array.from({ length: 16 }, (_, i) => 2001 + i))
   assert.equal(products[0]!.name, 'Unwind', 'the edit made at seed 1 went with the reseed')
-  assert.deepEqual([record()?.blueprintId, record()?.seedVersion], ['vitaheal', 2])
+  assert.deepEqual([record()?.blueprintId, record()?.seedVersion], ['vitaheal', 3])
 })
 
 test('a browser whose record says seed 1 is seeded again too, and keeps the date it was first recorded', async () => {
   const app = await startApp({ ...SAVED_HEAD, [VH_SEED]: at(1) })
   assert.equal(vitahealProducts(app).length, 16)
-  assert.deepEqual(record(), { blueprintId: 'vitaheal', seedVersion: 2, appliedAt: '2026-11-20T09:00:00.000Z' })
+  assert.deepEqual(record(), { blueprintId: 'vitaheal', seedVersion: 3, appliedAt: '2026-11-20T09:00:00.000Z' })
 })
 
-test('a browser at seed 2 is not seeded again: what it saved is read back and nothing is written', async () => {
-  const saved = { ...SAVED_HEAD, [VH_SEED]: at(2) }
+test('a browser at seed 3 is not seeded again: what it saved is read back and nothing is written', async () => {
+  const saved = { ...SAVED_HEAD, [VH_SEED]: at(3) }
   const app = await startApp(saved)
   assert.equal(vitahealProducts(app).find((p) => p.id === 2001)?.name, 'Unwind (edited)')
   // It saved the store as it was then: eight products. Restore original store brings the sixteen.
@@ -160,12 +167,24 @@ test('a store that applied the Vitaheal theme at seed 1 is seeded again too: it 
   const app = await startApp(saved)
   assert.equal(northfoldSells(app).length, 16)
   assert.notEqual(northfoldSells(app)[0]!.name, 'Edited on Northfold')
-  assert.deepEqual([JSON.parse(memory.get(key)!).blueprintId, JSON.parse(memory.get(key)!).seedVersion], ['vitaheal', 2])
+  assert.deepEqual([JSON.parse(memory.get(key)!).blueprintId, JSON.parse(memory.get(key)!).seedVersion], ['vitaheal', 3])
 })
 
 // ── What the reseed keeps and drops ──────────────────────────────────────────
 
-test('the reseed of a browser saved before the registry: the catalogue goes back, history and the connection stay', async () => {
+/** What a store holds as history once seeded in an empty browser: what a restore puts back. */
+function seededHistoryOf(app: App) {
+  return plain({
+    contracts: app.subscriptions.contracts.filter((c) => c.channelId === VH),
+    chats: app.chatbot.conversationsFor(101),
+    status: app.chatbot.getByChannel(VH)?.status,
+    connected: vitaheal(app).webStore?.merchandiseConnected,
+    themes: app.themes.themesForChannel(VH),
+  })
+}
+
+test('the reseed of a browser saved before the registry, in kronor: the catalogue goes back, and its history and connection come back as seeded', async () => {
+  const seeded = seededHistoryOf(await startApp())
   const app = await startApp(SAVED_HEAD)
   app.merch.setActiveChannel(VH)
   // Dropped: what the reviewer changed in the store's products, plans, campaigns, search rules and chatbot settings.
@@ -173,24 +192,27 @@ test('the reseed of a browser saved before the registry: the catalogue goes back
   assert.deepEqual(app.subscriptions.plans.find((p) => p.id === 'plan-3-month')?.productIds, [2001, 2002, 2003, 2005, 2006, 2009, 2010, 2014])
   const winter = app.storeCampaigns.campaignsForChannel(VH).find((c) => c.id === 'camp-vitaheal-winter')!
   assert.equal(winter.name, 'Winter wellness week')
-  // The campaign also forgets the announcement it was sent with, though the email itself stays (below).
+  // The campaign also forgets the announcement it was sent with, and the email goes too (below).
   assert.equal(winter.emailCampaignId, undefined)
   const synonyms = app.merch.searchRulesFor(VH).synonyms
   assert.equal(synonyms.some((s) => s.queries.includes('knackered')), false)
   assert.ok(synonyms.some((s) => s.queries.includes('flu') && s.leadsTo.includes('immunity')), 'the new synonym comes with the reseed')
   assert.notEqual(app.chatbot.getByChannel(VH)?.config.welcomeMessage, 'Hej! (edited)')
-  // Kept: the subscribers, the chats, the announcement email, the Merchandise Cloud connection.
-  assert.deepEqual(app.subscriptions.contracts.filter((c) => c.channelId === VH).map((c) => c.number).sort(),
-    ['S-1001', 'S-1002', 'S-1003', 'S-1004', 'S-1005', 'S-1006', 'S-1007', 'S-1008', 'S-1009'])
-  assert.deepEqual(app.chatbot.conversationsFor(101).filter((c) => c.id.startsWith('live-')).map((c) => c.id), ['live-1795102046839'])
-  assert.ok(app.emails.campaigns.some((email) => email.id === 34))
-  assert.equal(vitaheal(app).webStore?.merchandiseConnected, true)
-  // In the browser: the reseeded parts' slots are cleared; history stays as it was saved.
-  const kept = Object.keys(browser()).sort()
-  assert.deepEqual(kept, [
-    'mp.vitaheal-demo.conversations.v1', 'mp.vitaheal-demo.emails.v1', VH_SEED, 'mp.vitaheal-demo.merchandise.v1', 'mp.vitaheal-demo.subscriptions.v1',
-  ])
-  for (const key of kept.filter((k) => k !== VH_SEED)) assert.equal(memory.get(key), SAVED_HEAD[key], `${key} is as it was saved`)
+  // Saved before seed 3, in kronor: the history comes back as a restore puts it.
+  // The subscribers: the eight seeded, in dollars at US addresses; the one who subscribed in kronor (S-1009) goes.
+  const contracts = plain(app.subscriptions.contracts.filter((c) => c.channelId === VH))
+  assert.deepEqual(contracts, seeded.contracts)
+  assert.deepEqual(contracts.map((c: { number: string }) => c.number).sort(), ['S-1001', 'S-1002', 'S-1003', 'S-1004', 'S-1005', 'S-1006', 'S-1007', 'S-1008'])
+  for (const c of contracts) assert.deepEqual([c.currency, c.customer.address.country], ['USD', 'United States'], c.number)
+  // The chats: the seeded ones; the live chat saved in the browser goes.
+  assert.deepEqual(plain(app.chatbot.conversationsFor(101)), seeded.chats)
+  assert.equal(app.chatbot.conversationsFor(101).some((c) => c.id === 'live-1795102046839'), false)
+  // The announcement email goes, and Merchandise Cloud is as seeded: not connected.
+  assert.equal(app.emails.campaigns.some((email) => email.id === 34), false)
+  assert.equal(vitaheal(app).webStore?.merchandiseConnected, seeded.connected)
+  assert.equal(seeded.connected, false)
+  // In the browser: every slot it saved is cleared, and only the seed it holds now is written.
+  assert.deepEqual(Object.keys(browser()), [VH_SEED])
 })
 
 /** A reviewer's session on Vitaheal: something changed in every part, a shopper's cart, an order and a subscription. */
@@ -198,6 +220,9 @@ async function reviewersSession(app: App) {
   app.commerce.products.find((p) => p.id === 2001)!.name = 'Unwind (edited)'
   app.subscriptions.plans.find((p) => p.id === 'plan-monthly')!.name = 'Monthly (edited)'
   app.storeCampaigns.saveCampaign({ ...app.storeCampaigns.campaignsForChannel(VH)[0]!, name: 'Campaign (edited)' })
+  // The campaign announced by email.
+  const emailId = app.emails.createCampaign({ kind: 'email', name: 'Announcement', tag: STORE_CAMPAIGN_TAG, audienceSummary: 'Vitaheal customers' } as Parameters<typeof app.emails.createCampaign>[0])
+  app.storeCampaigns.setEmailCampaign(app.storeCampaigns.campaignsForChannel(VH)[0]!.id, emailId)
   app.merch.setActiveChannel(VH)
   app.merch.createSynonym({ type: 'two_way', queries: ['knackered'], leadsTo: ['energy'] })
   app.channels.connectMerchandising(ACCOUNT, VH)
@@ -227,15 +252,17 @@ async function reviewersSession(app: App) {
     lineItems: [{ product: unwind.name, productId: unwind.id, sku: unwind.sku, qty: 1, price: unwind.price, plan: linePlan(plan) }],
   } as unknown as Parameters<typeof app.subscriptions.startFromCheckout>[0], { methodLabel: 'Visa •••• 4242' } as Parameters<typeof app.subscriptions.startFromCheckout>[1])
   await settle()
-  return { copyId: copy.id }
+  return { copyId: copy.id, emailId }
 }
 
 test('the reseed of a reviewer\'s browser: what it keeps and what it drops, part by part', async () => {
-  // The session runs on today's app; dropping the record makes the browser one saved at seed 1.
+  // The session runs on today's app; dropping the record makes the browser one saved at seed 1, before seed 3.
   const first = await startApp()
-  const { copyId } = await reviewersSession(first)
-  const contracts = plain(first.subscriptions.contracts.filter((c) => c.channelId === VH))
-  const chats = plain(first.chatbot.conversationsFor(101))
+  const seeded = seededHistoryOf(first)
+  const { copyId, emailId } = await reviewersSession(first)
+  assert.equal(first.subscriptions.contracts.filter((c) => c.channelId === VH).length, 9, 'the session added a subscriber')
+  assert.ok(first.chatbot.conversationsFor(101).some((c) => c.id === 'live-review'))
+  assert.ok(first.emails.campaigns.some((email) => email.id === emailId))
   const { [VH_SEED]: _, ...atSeed1 } = browser()
   const tab = Object.fromEntries(session)
   assert.ok(tab['mp.storefront.cart.v1'], 'the cart is kept by the tab')
@@ -250,22 +277,107 @@ test('the reseed of a reviewer\'s browser: what it keeps and what it drops, part
   assert.equal(app.merch.searchRulesFor(VH).synonyms.some((s) => s.queries.includes('knackered')), false)
   assert.notEqual(app.chatbot.getByChannel(VH)?.config.welcomeMessage, 'Hello (edited)')
   assert.notEqual(app.themes.getTheme('theme-vitaheal')?.styles.brandColor, '#123456')
-  // The copy stays, as a draft: the store runs its own theme again.
+  // Saved before seed 3, so the history comes back as a restore puts it.
+  // The themes: the store runs its own again, and the copy goes, as a restore removes it.
   assert.equal(app.themes.themeForChannel(VH)?.id, 'theme-vitaheal')
-  assert.equal(app.themes.getTheme(copyId)?.status, 'Draft')
-  // Kept: subscribers (the new one too), chats, the chatbot switched off, the Merchandise Cloud connection, the cart.
-  assert.deepEqual(plain(app.subscriptions.contracts.filter((c) => c.channelId === VH)), contracts)
-  assert.deepEqual(plain(app.chatbot.conversationsFor(101)), chats)
-  assert.equal(app.chatbot.getByChannel(VH)?.status, 'Inactive')
-  assert.equal(vitaheal(app).webStore?.merchandiseConnected, true)
-  assert.deepEqual(app.cart.linesFor(VH).map((line) => [line.name, line.qty]), [['Unwind (edited)', 2]])
-  assert.equal(app.cart.noticeFor(VH), null, 'the cart is not emptied, so no notice')
+  assert.equal(app.themes.getTheme(copyId), undefined)
+  assert.deepEqual(plain(app.themes.themesForChannel(VH)), seeded.themes)
+  // The subscribers: the eight seeded, in dollars; the one who subscribed in the session goes.
+  assert.deepEqual(plain(app.subscriptions.contracts.filter((c) => c.channelId === VH)), seeded.contracts)
+  assert.equal(app.subscriptions.contracts.some((c) => c.customer.email === 'review@example.com'), false)
+  // The chats: the seeded ones, and the chatbot switched on again.
+  assert.deepEqual(plain(app.chatbot.conversationsFor(101)), seeded.chats)
+  assert.equal(app.chatbot.getByChannel(VH)?.status, seeded.status)
+  assert.equal(seeded.status, 'Active')
+  // The announcement email goes, and Merchandise Cloud is as seeded: not connected.
+  assert.equal(app.emails.campaigns.some((email) => email.id === emailId), false)
+  assert.equal(vitaheal(app).webStore?.merchandiseConnected, false)
+  // The cart is emptied, and the storefront can say why.
+  assert.deepEqual(app.cart.linesFor(VH), [])
+  assert.deepEqual(app.cart.noticeFor(VH), ['Unwind (edited)'])
+  // In the browser: only the seed it holds now is kept for the store.
+  assert.deepEqual(Object.keys(browser()).filter((key) => key.startsWith('mp.vitaheal-demo.')), [VH_SEED])
   // Orders: Maropay keeps them and the fulfillments' progress outside the store's slots, which the reseed never touches.
   for (const [key, value] of Object.entries(atSeed1)) {
     if (!key.startsWith('mp.vitaheal-demo.')) assert.equal(memory.get(key), value, `${key} is untouched`)
   }
   assert.ok(atSeed1['mp.commerce.fulfillments.v1'], 'the order\'s fulfillment step was kept')
-  assert.deepEqual([record()?.blueprintId, record()?.seedVersion], ['vitaheal', 2])
+  assert.deepEqual([record()?.blueprintId, record()?.seedVersion], ['vitaheal', 3])
+})
+
+// ── A browser at seed 2: the store in kronor ─────────────────────────────────
+
+/**
+ * A browser as the app at seed 2 left it, with Vitaheal in kronor: its parts as SAVED_HEAD holds
+ * them (products, plans and subscribers in SEK, a live chat, an announcement email), a tab whose
+ * cart holds a line priced in kronor, and an order placed in kronor. The old app kept no market
+ * of its own for the store: its channel was the seed's, SEK and sv-SE. Recorded at `seedVersion`.
+ */
+async function kronorBrowser(seedVersion: number): Promise<{ saved: Record<string, string>; tab: Record<string, string> }> {
+  // Made on the store as that browser reads it back (at the current seed nothing is seeded again).
+  const first = await startApp({ ...SAVED_HEAD, [VH_SEED]: at(3) })
+  const unwind = first.commerce.products.find((p) => p.id === 2001)!
+  assert.equal(unwind.price, '399.00', 'the saved store is priced in kronor')
+  first.cart.add(VH, unwind, 2)
+  first.commerce.createCheckoutOrder({
+    id: 20001, orderNumber: '#20001', date: '2026-11-24', channelId: VH, salesChannel: 'Vitaheal (demo)',
+    customer: { name: 'Linnea Berg', email: 'linnea@example.com', address: { line1: 'Storgatan 12', city: 'Stockholm', region: '', postalCode: '111 51', country: 'Sweden' } },
+    lineItems: [{ product: 'Unwind', sku: 'VTH-UNW-BAG', qty: 2, price: '399.00' }], shipping: '0.00', total: '798.00', currency: 'SEK',
+    payment: { provider: 'maropay', paymentId: 'pay_20001', paymentStatus: 'Paid', paymentMethod: 'Visa •••• 4242' },
+    timeline: [{ text: 'Order placed via Vitaheal (demo) checkout', date: '2026-11-24' }],
+  } as Parameters<typeof first.commerce.createCheckoutOrder>[0])
+  assert.equal(first.commerce.packFulfillment(20001), true)
+  await settle()
+  return { saved: { ...browser(), [VH_SEED]: at(seedVersion) }, tab: Object.fromEntries(session) }
+}
+
+test('a browser at seed 2 holds the store in kronor: its next start seeds it in US dollars, puts its subscribers and chats back and empties the cart; orders stay', async () => {
+  const { saved, tab } = await kronorBrowser(2)
+  assert.ok(saved['mp.commerce.fulfillments.v1'], 'the order\'s fulfillment step is kept')
+  assert.equal(JSON.parse(saved['mp.vitaheal-demo.subscriptions.v1']!)[0].currency, 'SEK')
+  assert.equal(JSON.parse(tab['mp.storefront.cart.v1']!)[VH][0].price, '399.00')
+
+  const app = await startApp(saved, tab)
+  // The products, in dollars.
+  const products = vitahealProducts(app)
+  assert.equal(products.length, 16)
+  assert.equal(products.find((p) => p.id === 2001)?.name, 'Unwind')
+  assert.equal(products.find((p) => p.id === 2001)?.price, '39.99')
+  // The channel sells in US dollars, with no locale.
+  assert.equal(vitaheal(app).webStore?.currency, 'USD')
+  assert.equal('locale' in vitaheal(app).webStore!, false)
+  // The seeded subscribers, in dollars at US addresses: the one who subscribed in kronor goes.
+  const contracts = app.subscriptions.contracts.filter((c) => c.channelId === VH)
+  assert.deepEqual(contracts.map((c) => c.number).sort(), ['S-1001', 'S-1002', 'S-1003', 'S-1004', 'S-1005', 'S-1006', 'S-1007', 'S-1008'])
+  for (const c of contracts) {
+    assert.equal(c.currency, 'USD', c.number)
+    assert.equal(c.customer.address?.country, 'United States', c.number)
+    assert.ok(c.customer.address?.region, `${c.number} has a state`)
+  }
+  assert.equal(contracts.find((c) => c.number === 'S-1001')?.customer.name, 'Emma Collins')
+  // The seeded chats, and no announcement email.
+  assert.deepEqual(app.chatbot.conversationsFor(101).filter((c) => c.id.startsWith('live-')), [])
+  assert.equal(app.chatbot.conversationsFor(101)[0]?.visitor, 'emma.collins@example.com')
+  assert.equal(app.emails.campaigns.some((email) => email.id === 34), false)
+  // The cart is emptied, and the storefront can say why.
+  assert.deepEqual(app.cart.linesFor(VH), [])
+  assert.deepEqual(app.cart.noticeFor(VH), ['Unwind (edited)'])
+  // Orders: Maropay keeps them and the fulfillments' progress outside the store's slots, which the reseed never touches.
+  for (const [key, value] of Object.entries(saved)) {
+    if (!key.startsWith('mp.vitaheal-demo.')) assert.equal(memory.get(key), value, `${key} is untouched`)
+  }
+  assert.deepEqual(record(), { blueprintId: 'vitaheal', seedVersion: 3, appliedAt: '2026-11-20T09:00:00.000Z' })
+})
+
+test('a browser at seed 3 is not touched: what it saved, its cart included, is read back and nothing is written', async () => {
+  const { saved, tab } = await kronorBrowser(3)
+  const app = await startApp(saved, tab)
+  assert.equal(vitahealProducts(app).find((p) => p.id === 2001)?.price, '399.00')
+  assert.equal(app.subscriptions.contracts.filter((c) => c.channelId === VH).length, 9)
+  assert.deepEqual(app.cart.linesFor(VH).map((line) => [line.name, line.price, line.qty]), [['Unwind (edited)', '399.00', 2]])
+  assert.equal(app.cart.noticeFor(VH), null)
+  assert.deepEqual(browser(), saved)
+  assert.deepEqual(Object.fromEntries(session), tab)
 })
 
 test('within a session the same reseed leaves orders alone', async () => {

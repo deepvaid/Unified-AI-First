@@ -35,7 +35,11 @@ const KEY = 'mp.commerce.fulfillments.v1'
 const settle = () => new Promise((resolve) => setTimeout(resolve, 10))
 const saved = () => JSON.parse(memory.get(KEY) ?? '{}') as Record<string, { status: string }>
 
-/** An order as Maropay hands it over after a checkout on the Vitaheal (demo) store. */
+/**
+ * An order as Maropay hands it over after a checkout on the Vitaheal (demo) store while it sold in kronor
+ * (until 2026-11-25; it sells in US dollars now). An order keeps the currency it was placed in, so this
+ * one still ships as a Swedish store's order does.
+ */
 function checkoutOrder(id: number) {
   return {
     id,
@@ -180,7 +184,7 @@ test('a payments reset forgets what was done to the store orders, and removes th
 
 test('a Swedish store order ships from the Stockholm warehouse; another store ships from where its stock is', () => {
   const commerce = openTab()
-  // Unwind, Bag: Vitaheal keeps its stock under "Oxford Warehouse", but its checkout is Swedish.
+  // Unwind, Bag: Vitaheal keeps its stock under "Oxford Warehouse", but this order was paid in kronor at its Swedish checkout.
   const swedish = commerce.createCheckoutOrder({ ...checkoutOrder(20005), lineItems: [{ product: 'Unwind', sku: 'VTH-UNW-BAG', qty: 1, price: '399.00' }] })
   assert.equal(swedish.fulfilledFromLocation, 'Stockholm warehouse')
   const item = commerce.fulfillmentById(20005)!

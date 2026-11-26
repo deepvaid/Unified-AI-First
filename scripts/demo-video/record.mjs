@@ -236,7 +236,7 @@ const SCENES = [
   }],
 
   ['Checkout', async () => {
-    await caption('Shopper', 'Checkout in kronor, by card, Apple Pay or Google Pay')
+    await caption('Shopper', 'Checkout in US dollars, by card, Apple Pay or Google Pay')
     await page.locator('#sf-co-email').waitFor()
     await pause(1800)
     await click(page.locator('#sf-co-consent'), 1200)
@@ -272,7 +272,7 @@ const SCENES = [
     await pause(3200)
     await caption('Merchant', 'The new subscriber, with every action the shopper has')
     await go(`/commerce/${ACCOUNT}/subscriptions/subscribers`, 2600)
-    await click(page.locator('main tbody tr', { hasText: 'Linnea Berg' }).first(), 3800)
+    await click(page.locator('main tbody tr', { hasText: 'Ava Brown' }).first(), 3800)
   }],
 
   ['A plan where shoppers choose how often', async () => {
@@ -310,7 +310,7 @@ const SCENES = [
     // The "Packed" message would sit over the drawer's Create label button.
     await closeMessages()
     await click(page.locator('main').getByRole('button', { name: 'Pick carrier', exact: true }), 1800)
-    await caption('Merchant', 'PostNord for Sweden, tracking number filled in')
+    await caption('Merchant', 'UPS for the US, tracking number filled in')
     await pause(1600)
     await click(page.getByRole('button', { name: 'Create label', exact: true }), 2000)
     await closeMessages()

@@ -164,9 +164,8 @@ export function provideTorqline(vehicle: Vehicle | null = null): Decorator {
 }
 
 // ── Vitaheal (demo) ──────────────────────────────────────────────────────────
-// The supplements store on subscription plans, in kronor, for the product page's
-// purchase options. Prices read as its pages write them ("399 kr"), what is charged
-// to the öre ("585,90 kr").
+// The supplements store on subscription plans, in US dollars, for the product page's
+// purchase options. Prices read as its pages write them ("$39.99").
 
 const VITAHEAL = demoStoreFor('vitaheal')
 
@@ -201,7 +200,7 @@ export function vitahealContext(): StorefrontContext {
     currency: computed(() => currency),
     formatMoney: (amount) => formatStorePrice(roundForDisplay(amount), locale),
     formatExact: (amount) => formatStorePrice(amount, locale),
-    ownMoneyFormat: computed(() => true),
+    ownMoneyFormat: computed(() => Boolean(locale)),
     checkout: computed(() => vitaheal.checkout),
     demo: computed(() => true),
     searchable: computed(() => false),

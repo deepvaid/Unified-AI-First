@@ -30,6 +30,17 @@
 // Patched a third time, the same day, after the review of the new range: in `fresh`, only
 // `products` was replaced (the new products' copy, and Creatine's 30-serving pack and weights);
 // every other part was checked identical, and `saved` was not touched.
+//
+// Patched a fourth time, on 2026-11-25 (Vitaheal sells in US dollars, seed version 3): in
+// `fresh`, the channel's market and description (USD, no locale), the products' prices (each
+// n9 kr became $n.99, with the cost and compare-at prices) and Vitamin D3 + K2's copy, the
+// campaigns' revenue, the subscribers (US people and addresses, priced in USD), the chatbot's
+// knowledge and the seeded chats were patched path by path to today's; every other part, and
+// every other path in those parts, was checked identical. `saved` is now read in a browser that
+// has recorded seed 3, and only what comes from the seed rather than that browser moved: the
+// channel's market and description, and the seeded chats (its own live chat is as it was).
+// vitaheal-saved-head.json was not touched; at seed 1 or 2 that browser is seeded again
+// (vitahealReseed.test.ts).
 import { setMaxListeners } from 'node:events'
 import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { register } from 'node:module'

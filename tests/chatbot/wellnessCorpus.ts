@@ -15,11 +15,11 @@ const LINNEA = 'linnea.berg@example.com'
 
 const order = (over: Partial<AssistantOrder> = {}): AssistantOrder => ({
   id: 900007, number: '#20007', email: LINNEA, date: '2026-11-18', status: 'Processing', fulfillment: 'Not Ready',
-  tracking: null, items: [{ name: 'Vitaheal Electrolytes', qty: 1 }], total: '585,90 kr', ...over,
+  tracking: null, items: [{ name: 'Vitaheal Electrolytes', qty: 1 }], total: '$58.77', ...over,
 })
 const subscription = (over: Partial<AssistantSubscription> = {}): AssistantSubscription => ({
   id: 'sub-1009', number: 'S-1009', email: LINNEA, product: 'Vitaheal Electrolytes', plan: '3-month supply',
-  status: 'Active', nextChargeOn: '2027-02-18', price: '585,90 kr', canSkip: true, ...over,
+  status: 'Active', nextChargeOn: '2027-02-18', price: '$58.77', canSkip: true, ...over,
 })
 
 const base: AssistantContext = {

@@ -37,7 +37,7 @@ The slices and their rules are in [bkm-build-prompt.md](bkm-build-prompt.md).
 1. One typed seed module, `src/storefront/vitahealDemo.ts`, holds everything for the `vitaheal-demo` channel; each Pinia store spreads its part into its own seed. No new store.
 2. Pure rules under `src/storefront/` with tests (`npm run test:storefront`): which products a store sells (`catalog.ts`), how a store formats a price (`price.ts`), the generated pack shots (`packShot.ts`). The test also checks the seed against the reference tables in the prompt and that every seeded link leads somewhere.
 3. Products can be assigned to stores (`Product.channelIds`). A store with assigned products sells only those; the others keep the shared catalogue exactly as before.
-4. A web store can have its own currency and locale (`webStore.currency`, `webStore.locale`). Vitaheal (demo) is SEK / `sv-SE`, so prices read "399 kr".
+4. A web store can have its own currency and locale (`webStore.currency`, `webStore.locale`). Vitaheal (demo) is SEK / `sv-SE`, so prices read "399 kr" (until 2026-11-25; now US dollars, see "Vitaheal in US dollars" in the feedback round below).
 5. `ThemeStyles` gains the three badge colours; Figtree and Inconsolata join the theme fonts and load through the existing Google Fonts import.
 6. The storefront card and product page show a product's picture, subtitle and a "From" price when it has them. Products without them look as they did.
 7. The "Vitaheal" theme is seeded from the section kinds that exist today.
@@ -816,6 +816,47 @@ here already exists when those slices start.
     Greens and Vitamin D3 + K2 share their names with Daybloom products in admin lists; no photo
     shows a refill bag; the Immunity products' "You may also like" has two cards; an admin page
     opened from low on a list still opens low (as before this round).
+- **Feedback round, third follow-up: Vitaheal in US dollars (Akhilesh, 2026-11-25).** Akhilesh,
+  from sales, asked for the Vitaheal demo in US dollars. Vitaheal is now a Swedish brand's US
+  store.
+  - **Prices.** `webStore.currency` is `USD` with no locale, so prices read "$39.99" everywhere and
+    are no longer rounded to whole units; a charged amount reads "$58.77". Each kronor price kept
+    its digits as a US price point (399 kr is $39.99, 279 kr is $27.99). The Electrolytes Starter
+    Pack is $49.99, struck from $55.98. The plans are unchanged (3-month supply: 3 units at 30%
+    off; Monthly subscription: 20% off): Electrolytes is $58.77 per 3-month delivery and $22.39
+    monthly, the Unwind Bag $83.97 and $31.99, the Plant Protein refill bag $77.67 and $29.59.
+  - **Free shipping over $50** (was 549 kr) in the announcement bar, the hero figure, the promise
+    card and the policies. The admin's revenue reads $184.5K (was 1.9M kr).
+  - **Checkout.** The US checkout: Ava Brown, 200 Market Street, San Francisco, CA 94105, with a
+    State field; its countries are the United States, Canada, Australia, New Zealand and the United
+    Kingdom. The order keeps the typed address.
+  - **Delivery.** Orders ship from the store's US warehouse, where its products are stocked (no
+    longer Stockholm), and **Pick carrier** offers UPS first (was PostNord).
+  - **Subscribers.** The eight seeded subscribers are Americans with US addresses (Emma Collins in
+    Minneapolis…). The subscriber the demo opens after buying is Ava Brown (was Linnea Berg).
+  - **Copy.** Policies, the contact page and the chatbot's knowledge say business days, a 2 pm ET
+    cut-off, 9 am to 5 pm ET, delivery to the US, Canada, the UK, Australia and New Zealand, and
+    "Prices are in US dollars". The store's time zone is America/New_York. The theme library card
+    reads "A supplements store on subscription, in US dollars: …".
+  - **What stays Swedish.** "Made in Sweden", the badge and the company Vitaheal AB in Stockholm.
+    The Immunity line is now "Vitamins C and D and zinc, for the dark winter months."
+  - **The kronor rules stay in the code and its tests.** What the BKM requirements test (SEK
+    prices, whole kronor on the pages with the exact amount when charged, the Swedish checkout
+    with no State field) still serves any store set to SEK: it shows "399 kr" and "585,90 kr". No
+    demo store uses it now, so the demo no longer shows it.
+  - **Seed 3.** A browser that saved the store at seed 1 or 2, in kronor, is seeded again on its
+    next start, in dollars. Because the currency changed, that reseed also puts back the seeded
+    subscribers, chats and campaign emails, as a restore does, and empties the cart. Orders stay as
+    they were placed. Restore original store works as before.
+  - **Film.** The film script's captions say "Checkout in US dollars, by card, Apple Pay or Google
+    Pay" and "UPS for the US, tracking number filled in", and it opens subscriber Ava Brown.
+  - **Reference files and tests** follow the dollar prices (`vitaheal-seed.json`,
+    `vitaheal-app-head.json`; the Starter Pack moved to monthly is $39.99, not Lemon & Ginger's
+    $22.39).
+  - **Docs.** `vitaheal-demo-script.md` (prices, steps 1, 4, 7 and 9, the Plant Protein note, and
+    what to do when kronor show), `demo-stores.md` ("Vitaheal in US dollars") and
+    `demo-stores-qa.md` (the rows that expected kronor, Linnea Berg, Stockholm or PostNord, and
+    D.66 for a browser that saved the store in kronor).
 
 **Sales-demo pass (added 2026-11-16, after the audience was confirmed as sales people showing prospects):**
 
@@ -830,7 +871,8 @@ here already exists when those slices start.
   `src/storefront/vitahealDemo.ts`. BKM's name, product names and flavour names no longer appear on
   screen, in a URL, in a SKU or in the seed. The mapping from BKM's names to the demo names is in
   section 6 of the build prompt.
-- Kept, because the requirements test them: the shape of the catalogue, the SEK prices, the five
+- Kept, because the requirements test them: the shape of the catalogue, the SEK prices (until
+  2026-11-25; now US dollars, see "Vitaheal in US dollars" in the feedback round above), the five
   collections, and the theme's fonts and colours.
 - `npm run test:storefront` fails if a real name comes back into the seed.
 - **Branches.** The rename is on `feature/bkm-s0-vitaheal-brand`, on top of S0.
