@@ -3080,6 +3080,19 @@ into it here. Merge decisions:
   (about 9px between a loud word and a pause on a 600px ring; radius tracks loudness at r = 0.93). With
   no audio source (landing and login pages) nothing changes. While a reply is still being fetched the
   orb now waits calmly where it used to pulse as if already talking.
+- **The orb shimmers with the low end of the voice, like grains on a speaker.** After the swell, the
+  ring still moved as one piece. The voice composable now cuts the orb's 16 bands from the range a voice
+  lives in (up to 4 kHz; over the full range speech filled only the first few) and flags them
+  (`OrbAudioFrame.voiceActive`). While Da Vinci speaks, every ring particle hops a hair off the ring with
+  the voice's first three bands (`uVoiceBass`), each at its own rate, and each quarter of the ring leans
+  out or in a little with its own band (`VOICE_RING`, `voiceRingOffsets`, tested; `uVoice`,
+  `uVoiceShape`): broad and slow, so the outline stays calm (1.7px out of round while speaking, 1.2px at
+  rest). Two stronger versions were tried and dropped: the bands fed to the particle physics (the dust
+  across the page went dark enough to sit on the text), and a deep per-area wave (read as too strong).
+  Under reduced motion the particles do not hop.
+- **Greeting.** "I'm Da Vinci, your guide." → "I'm Da Vinci, how can I help you?" The clip
+  (`public/davinci/greeting.wav`) is re-recorded in the same voice (`scripts/bake-greeting.mjs`); the
+  clip is keyed by the exact words, so the two must change together.
 - **Closing the voice page goes to the dashboard.** The × and Esc went to the Da Vinci landing page
   (`DaVinciAI`), a second Da Vinci screen to get out of. They now go to `Dashboard`.
 - **Voice page top bar.** *Breaking:* the **Classic UI** button is removed (Esc and × still exit). The

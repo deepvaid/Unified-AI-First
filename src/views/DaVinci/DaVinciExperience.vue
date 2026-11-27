@@ -168,7 +168,7 @@ const greetingReady = () =>
 let grantProbeCleanup: (() => void) | null = null
 // Personalized greeting — spoken aloud on open, and captioned on screen.
 // Keep in sync with scripts/bake-greeting.mjs (the baked WAV is keyed by this exact text).
-const greetingText = computed(() => `Hi ${profile.firstName} — welcome to Maropost. I'm Da Vinci, your guide.`)
+const greetingText = computed(() => `Hi ${profile.firstName} — welcome to Maropost. I'm Da Vinci, how can I help you?`)
 // Diagnostic overlay: append ?debug=1 to the URL to see voices / chosen voice
 // (local vs REMOTE) / last TTS lifecycle event / speaking state on the page itself.
 const showDebug = computed(() => route.query.debug === '1')
@@ -964,7 +964,7 @@ onMounted(() => {
   // browser TTS if the asset is missing. The speak paths await this handle (capped).
   // The WAV was baked for the demo user's exact greeting (scripts/bake-greeting.mjs) —
   // seeding it under any other name's text would greet fresh signups as "Ross".
-  const bakedGreeting = "Hi Ross — welcome to Maropost. I'm Da Vinci, your guide."
+  const bakedGreeting = "Hi Ross — welcome to Maropost. I'm Da Vinci, how can I help you?"
   greetingPrefetch = voice.prefetchSpeech(
     greetingText.value,
     greetingText.value === bakedGreeting ? '/davinci/greeting.wav' : undefined,

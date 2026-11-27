@@ -18,6 +18,8 @@ export const MEMBRANE_VERTEX = `
     uniform vec2 uFieldOff;
     uniform float uAgit;
     uniform float uSpeakEnergy;
+    uniform float uVoiceShape;
+    uniform float uVoiceBass;
     uniform float uMicLevel;
     uniform float uAspect;
     uniform float uRadius;
@@ -26,6 +28,7 @@ export const MEMBRANE_VERTEX = `
     uniform float uPointerStr;
     uniform float uShape;
     uniform float uAudio[16];
+    uniform float uVoice[16];
     uniform float uWave[48];
     uniform float uFlux[48];
     varying float vAlpha;
@@ -63,6 +66,17 @@ export const MEMBRANE_VERTEX = `
         v+=uAudio[i]*max(0.0,1.0-d);
       }
       return clamp(v,0.0,1.0);
+    }
+    // The voice around the ring (+ out, − in), eased between neighbours so the outline has no corners.
+    float voiceAt(float x){
+      float v=0.0;
+      for(int i=0;i<16;i++){
+        float center=(float(i)+0.5)/16.0;
+        float d=abs(fract(x-center+0.5)-0.5)*16.0;
+        float w=max(0.0,1.0-d);
+        v+=uVoice[i]*w*w*(3.0-2.0*w);
+      }
+      return clamp(v,-1.0,1.0);
     }
     float waveAt(float x){
       float v=0.0;
@@ -135,6 +149,12 @@ export const MEMBRANE_VERTEX = `
       // the voice — the whole ring swells with each word and settles in the pauses. A plain scale, so
       // the inner edge stays a perfect circle; the wide dust is left where it is.
       radius*=1.0+uSpeakEnergy*0.07*solid;
+      // …and each area of it leans out or in a little with its own band of the voice.
+      radius+=voiceAt(theta)*uVoiceShape*0.12*solid;
+      // Grains on a speaker: every particle hops a hair off the ring with the low end of the voice, each
+      // at its own rate, so the ring shimmers with the bass while its outline stays calm.
+      float hop=0.5+0.5*sin(t*(34.0+hash(aSeed*0.37)*30.0)+aSeed);
+      radius+=uVoiceBass*hop*hop*0.014*(0.5+aGain)*solid;
 
       float tangent=(noise(aSeed+t*0.16)-0.5)*(0.004+smoke*0.014+flux*0.026);
       tangent+=wave*0.030*(noise(theta*17.0+aSeed*0.02)-0.5)*solid;
