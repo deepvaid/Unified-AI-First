@@ -15,7 +15,7 @@ const KEY = process.env.GEMINI_API_KEY
 const VOICE = process.env.TTS_VOICE || 'Charon'
 const MODEL = process.env.TTS_MODEL || 'gemini-3.1-flash-tts-preview'
 // Must match DaVinciExperience.vue's greetingText for the demo user (the text is the audio-cache key).
-const TEXT = process.argv[2] || "Hi Ross — welcome to Maropost. I'm Da Vinci, your guide."
+const TEXT = process.argv[2] || "Hi Ross — welcome to Maropost. I'm Da Vinci, how can I help you?"
 const OUT = process.argv[3] || 'public/davinci/greeting.wav'
 // The audition-locked pace (pitch-preserving, applied via ffmpeg post-step).
 const ATEMPO = process.env.BAKE_ATEMPO || '1.12'

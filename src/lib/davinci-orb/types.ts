@@ -8,7 +8,7 @@ export type OrbState = 'idle' | 'listening' | 'thinking' | 'speaking'
  * Buffers may be reused by the producer — consume synchronously, never retain.
  */
 export interface OrbAudioFrame {
-  /** True while the mic analyser is live — engine uses bands; false ⇒ engine synthesizes */
+  /** True while the mic analyser is live — the engine reads `bands` as the microphone */
   micActive: boolean
   /** 0..1 smoothed microphone amplitude */
   micLevel: number
@@ -16,6 +16,8 @@ export interface OrbAudioFrame {
   bands: ArrayLike<number>
   /** 0..1 loudness of the voice being played right now. While the orb is speaking, the ring swells with it. */
   speakEnergy: number
+  /** True while `bands` are the voice being played: each area of the ring then moves with its own band of it. */
+  voiceActive?: boolean
 }
 
 /** Resolved literal hex colors — fed straight into shader uniforms. */

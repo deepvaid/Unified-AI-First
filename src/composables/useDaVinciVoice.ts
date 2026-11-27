@@ -512,6 +512,8 @@ let playCtx: AudioContext | null = null
 let playAnalyser: AnalyserNode | null = null
 let playSource: AudioBufferSourceNode | null = null
 const playFreq = new Uint8Array(256) // playback FFT → feeds the orb the real voice
+/** The top of the range the orb's bands are cut from while Da Vinci speaks: speech sits below it. */
+const VOICE_BAND_HZ = 4000
 // text → synthesized WAV bytes. Seeded by prefetch() (e.g. the pre-baked greeting);
 // decodeAudioData detaches its input, so always decode a .slice(0) copy.
 const cloudAudioCache = new Map<string, ArrayBuffer>()
@@ -1035,7 +1037,7 @@ let micSession = 0
 // Preallocated, reused every frame — zero per-frame allocation
 const freqData = new Uint8Array(256)
 const bands = new Float32Array(16)
-const frame: OrbAudioFrame = { micActive: false, micLevel: 0, bands, speakEnergy: 0 }
+const frame: OrbAudioFrame = { micActive: false, micLevel: 0, bands, speakEnergy: 0, voiceActive: false }
 
 // ── Which microphone ─────────────────────────────────────────────────────────
 // Chrome and Edge record from the microphone chosen in THEIR settings, not the system's. When that one
@@ -1180,6 +1182,7 @@ function closeMic() {
  */
 function getVoiceFrame(): OrbAudioFrame {
   frame.micActive = !!analyser
+  frame.voiceActive = false
   if (analyser) {
     analyser.getByteFrequencyData(freqData)
     const usable = Math.floor(freqData.length * 0.7) // top bins are near-silent
@@ -1199,20 +1202,26 @@ function getVoiceFrame(): OrbAudioFrame {
   } else if (playAnalyser) {
     // Real cloud-TTS audio → the orb reacts to the actual voice
     playAnalyser.getByteFrequencyData(playFreq)
+    // Loudness, over the same wide range as before (the ring's swell is tuned to it).
     const usable = Math.floor(playFreq.length * 0.7)
     let pSum = 0
+    for (let i = 0; i < usable; i++) pSum += playFreq[i] ?? 0
+    // The 16 bands cover only where a voice lives (up to VOICE_BAND_HZ). Spread over the whole range,
+    // speech filled the first three or four and left the rest of the ring with nothing to move to.
+    const binHz = playAnalyser.context.sampleRate / playAnalyser.fftSize
+    const voiceBins = Math.min(playFreq.length, Math.max(16, Math.round(VOICE_BAND_HZ / binHz)))
     for (let b = 0; b < 16; b++) {
-      const start = Math.floor((b / 16) * usable)
-      const end = Math.max(start + 1, Math.floor(((b + 1) / 16) * usable))
+      const start = Math.floor((b / 16) * voiceBins)
+      const end = Math.max(start + 1, Math.floor(((b + 1) / 16) * voiceBins))
       let acc = 0
       for (let i = start; i < end; i++) acc += playFreq[i] ?? 0
       const raw = acc / ((end - start) * 255)
       const prev = bands[b] ?? 0
       bands[b] = prev + (raw - prev) * 0.4
-      pSum += raw
     }
     frame.micLevel = 0
-    frame.speakEnergy = Math.min(1, (pSum / 16) * 2.2)
+    frame.speakEnergy = Math.min(1, (pSum / (usable * 255)) * 2.2)
+    frame.voiceActive = true
   } else {
     frame.micLevel = 0
     frame.speakEnergy = currentSpeakEnergy()

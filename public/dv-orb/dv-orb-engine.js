@@ -26,6 +26,38 @@ const TAU = Math.PI * 2
 const AUDIO_BANDS = 16
 const PHYS_SEGMENTS = 48
 
+// Where each band of the voice sits around the ring while Da Vinci speaks. Four quarters, each led by
+// one of the four lowest bands (where a voice carries most) with higher bands between them, so four
+// areas of the ring each move to a different part of the voice. Neighbours are close in pitch, which
+// keeps the outline smooth.
+const VOICE_RING = [0, 8, 15, 7, 1, 9, 14, 6, 2, 10, 13, 5, 3, 11, 12, 4]
+
+/**
+ * How far each of the 16 places around the ring stands out (+) or draws in (−) for this frame of the
+ * voice. The ring's overall swell already follows how loud the voice is, so this is only what is left
+ * over: each band against its own recent level, with the part every band shares taken off. A vowel
+ * changing moves some areas out and others in; a voice simply getting louder moves none of them.
+ *
+ * `baseline` is each band's recent level and is updated here; `out` receives the offsets (they sum
+ * to zero). Exported for tests (tests/davinci/orbSpeakEnergy.test.ts).
+ *
+ * @param {ArrayLike<number>} bands the frame's 16 voice bands, 0..1
+ * @param {Float32Array} baseline
+ * @param {Float32Array} out
+ */
+export function voiceRingOffsets(bands, baseline, out) {
+  let shared = 0
+  for (let p = 0; p < AUDIO_BANDS; p++) {
+    const level = Math.max(0, Math.min(1, bands[VOICE_RING[p]] ?? 0))
+    baseline[p] += (level - baseline[p]) * 0.03
+    out[p] = level - baseline[p]
+    shared += out[p]
+  }
+  shared /= AUDIO_BANDS
+  for (let p = 0; p < AUDIO_BANDS; p++) out[p] -= shared
+  return out
+}
+
 // Adaptive particle budget — chosen ONCE at init (buffers are never resized).
 // Low-power heuristic: few cores, little memory, or a coarse (touch) pointer.
 function particleBudget() {
@@ -127,8 +159,18 @@ export function createDvOrb(canvas, opts) {
   let micLevel = 0
   let agit = 0
   let thinkEnergy = 0
+  // 0..1, eased: how far the ring has taken the shape of the voice (see the membrane shader)
+  let voiceShape = 0
+  // 0..1, eased: the low end of the voice. The particles hop with it, like grains on a speaker.
+  let voiceBass = 0
 
   const audioBands = new Float32Array(AUDIO_BANDS)
+  // The voice around the ring (voiceRingOffsets). It shapes the ring's outline and nothing else: fed to
+  // the particle physics as well, a voice's quick changes turned the dust across the page dark and
+  // heavy enough to sit on the text.
+  const voiceRing = new Float32Array(AUDIO_BANDS)
+  const voiceBaseline = new Float32Array(AUDIO_BANDS)
+  const voiceOffsets = new Float32Array(AUDIO_BANDS)
   const membraneWave = new Float32Array(PHYS_SEGMENTS)
   const membraneVelocity = new Float32Array(PHYS_SEGMENTS)
   const membraneForce = new Float32Array(PHYS_SEGMENTS)
@@ -219,6 +261,8 @@ export function createDvOrb(canvas, opts) {
     uTime: { value: 0 },
     uAgit: { value: 0 },
     uSpeakEnergy: { value: 0 },
+    uVoiceShape: { value: 0 },
+    uVoiceBass: { value: 0 },
     uMicLevel: { value: 0 },
     uAspect: { value: 1 },
     uRadius: { value: 0.64 },
@@ -229,6 +273,7 @@ export function createDvOrb(canvas, opts) {
     uPointerStr: { value: 0 },
     uFieldOff: { value: new THREE.Vector2(0, 0) },
     uAudio: { value: audioBands },
+    uVoice: { value: voiceRing },
     uWave: { value: membraneWave },
     uFlux: { value: membraneFlux },
     uInkA: { value: initialInk.inkA },
@@ -475,6 +520,20 @@ export function createDvOrb(canvas, opts) {
     thinkEnergy += ((thinking ? 1 : 0) - thinkEnergy) * (thinking ? 0.1 : 0.08)
 
     updateAudioBands(time, audioFrame)
+    const voiceLive = !!(speaking && audioFrame && audioFrame.voiceActive)
+    voiceShape += ((voiceLive ? 1 : 0) - voiceShape) * 0.12
+    if (voiceLive && audioFrame) voiceRingOffsets(audioFrame.bands, voiceBaseline, voiceOffsets)
+    else voiceOffsets.fill(0)
+    // Broad and slow: each place takes half its own offset and a quarter of each neighbour's, and eases
+    // towards it, so the outline leans gently from one quarter to the next and never ripples.
+    for (let b = 0; b < AUDIO_BANDS; b++) {
+      const prev = voiceOffsets[(b + AUDIO_BANDS - 1) % AUDIO_BANDS]
+      const next = voiceOffsets[(b + 1) % AUDIO_BANDS]
+      voiceRing[b] += (prev * 0.25 + voiceOffsets[b] * 0.5 + next * 0.25 - voiceRing[b]) * 0.08
+    }
+    // The low end of the voice (its first three bands, up to 750 Hz).
+    const bass = voiceLive && audioFrame ? ((audioFrame.bands[0] ?? 0) + (audioFrame.bands[1] ?? 0) + (audioFrame.bands[2] ?? 0)) / 3 : 0
+    voiceBass += (bass - voiceBass) * (bass > voiceBass ? 0.5 : 0.15)
     updateMembranePhysics(time, dt)
     agit += (Math.min(1, speakEnergy + micLevel * 1.6 + thinkEnergy * 0.4) - agit) * 0.18
 
@@ -507,6 +566,8 @@ export function createDvOrb(canvas, opts) {
     uniforms.uAgit.value = agit
     // The ring swells with this (see the membrane shader); under reduced motion it only stirs.
     uniforms.uSpeakEnergy.value = reduce ? speakEnergy * 0.4 : speakEnergy
+    uniforms.uVoiceShape.value = reduce ? voiceShape * 0.4 : voiceShape
+    uniforms.uVoiceBass.value = reduce ? 0 : voiceBass
     uniforms.uMicLevel.value = micLevel
     uniforms.uPointer.value.set(pointerSmX, pointerSmY)
     uniforms.uPointerStr.value = pointerSmStr
